@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codebase-graph"
+version = "0.1.0"
+description = "Generic codebase knowledge graph engine for Python projects."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Rabii Chaarani" }]
+dependencies = [
+  "tomli; python_version < '3.11'",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.optional-dependencies]
+ladybug = ["real_ladybug"]
+parquet = ["pyarrow"]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+codebase-graph = "codebase_graph.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
