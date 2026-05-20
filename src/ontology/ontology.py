@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-ONTOLOGY_NAME = "code_graph_tree_sitter_v1"
+ONTOLOGY_NAME = "code_ontology_v1"
 ONTOLOGY_VERSION = "1.0.0"
 
 
