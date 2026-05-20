@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import ast
 import hashlib
-import posixpath
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -71,26 +70,40 @@ class CodebaseGraphBuilder:
 def is_excluded_codebase_path_parts(parts: tuple[str, ...]) -> bool:
     return any(part in EXCLUDED_PARTS for part in parts)
 
-def _iter_python_files(root: Path) -> list[Path]:
+def _iter_indexable_files(root: Path, suffixes: set[str], *, case_insensitive_suffixes: bool = False) -> list[Path]:
     if not root.exists():
         return []
     paths: list[Path] = []
-    for path in root.rglob("*.py"):
-        if not path.is_file() or path.name in EXCLUDED_FILENAMES:
-            continue
-        try:
-            rel_parts = path.relative_to(root).parts
-        except ValueError:
-            continue
-        if is_excluded_codebase_path_parts(rel_parts):
-            continue
-        try:
-            if path.stat().st_size > MAX_INDEXED_FILE_BYTES:
-                continue
-        except OSError:
-            continue
-        paths.append(path)
+    for path in root.rglob("*"):
+        if _is_indexable_file(path, root, suffixes, case_insensitive_suffixes=case_insensitive_suffixes):
+            paths.append(path)
     return sorted(paths)
+
+def _is_indexable_file(
+    path: Path,
+    root: Path,
+    suffixes: set[str],
+    *,
+    case_insensitive_suffixes: bool = False,
+) -> bool:
+    if not path.is_file() or path.name in EXCLUDED_FILENAMES:
+        return False
+    suffix = path.suffix.lower() if case_insensitive_suffixes else path.suffix
+    if suffix not in suffixes:
+        return False
+    try:
+        rel_parts = path.relative_to(root).parts
+    except ValueError:
+        return False
+    if is_excluded_codebase_path_parts(rel_parts):
+        return False
+    try:
+        return path.stat().st_size <= MAX_INDEXED_FILE_BYTES
+    except OSError:
+        return False
+
+def _iter_python_files(root: Path) -> list[Path]:
+    return _iter_indexable_files(root, CODE_EXTENSIONS)
 
 def _parse_python_file(path: Path, root: Path) -> CodeFile:
     rel_path = path.relative_to(root).as_posix()
@@ -209,6 +222,3 @@ def _file_as_dict(file: CodeFile) -> dict[str, Any]:
         "calls": file.calls,
         "symbols": [symbol.__dict__ for symbol in file.symbols],
     }
-
-def relative_posix(path: Path, root: Path) -> str:
-    return posixpath.join(*path.relative_to(root).parts)

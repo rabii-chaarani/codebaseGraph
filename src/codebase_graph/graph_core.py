@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
-from .code_map import CODE_EXTENSIONS, EXCLUDED_FILENAMES, MAX_INDEXED_FILE_BYTES, is_excluded_codebase_path_parts
+from .code_map import CODE_EXTENSIONS, _iter_indexable_files
 from .graph_context import build_compact_graph_context
 from .ladybug import HashingEmbeddingProvider, LadybugGraphExporter, LadybugGraphStore
 from .ontology import schema_payload
@@ -239,23 +239,13 @@ def _normalize_global_args(argv: list[str]) -> list[str]:
     return extracted + remaining
 
 def _source_mtimes(source_root: Path) -> list[float]:
-    if not source_root.exists():
-        return []
     mtimes: list[float] = []
-    for path in source_root.rglob("*"):
-        if not path.is_file() or path.name in EXCLUDED_FILENAMES:
-            continue
+    paths = {
+        *_iter_indexable_files(source_root, CODE_EXTENSIONS),
+        *_iter_indexable_files(source_root, {".md", ".txt", ".rst", ".toml"}, case_insensitive_suffixes=True),
+    }
+    for path in sorted(paths):
         try:
-            rel_parts = path.relative_to(source_root).parts
-        except ValueError:
-            continue
-        if is_excluded_codebase_path_parts(rel_parts):
-            continue
-        if path.suffix not in CODE_EXTENSIONS and path.suffix.lower() not in {".md", ".txt", ".rst", ".toml"}:
-            continue
-        try:
-            if path.stat().st_size > MAX_INDEXED_FILE_BYTES:
-                continue
             mtimes.append(path.stat().st_mtime)
         except OSError:
             continue
@@ -328,16 +318,6 @@ def _where_matches(node: dict[str, Any], variable: str, expression: str, paramet
     else:
         expected = raw_value.strip("\'\"")
     return node.get(field) == expected
-
-def _is_ladybug_lock_error(exc: BaseException) -> bool:
-    return "lock" in str(exc).lower()
-
-def _json_safe_value(value: Any) -> Any:
-    try:
-        json.dumps(value)
-        return value
-    except TypeError:
-        return str(value)
 
 if __name__ == "__main__":
     raise SystemExit(main())

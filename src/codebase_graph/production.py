@@ -11,7 +11,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - py310 fallback
     import tomli as tomllib  # type: ignore[no-redef]
 
-from .code_map import CodebaseGraphBuilder, EXCLUDED_FILENAMES, MAX_INDEXED_FILE_BYTES, is_excluded_codebase_path_parts
+from .code_map import CodebaseGraphBuilder, _iter_indexable_files
 from .document_layers import LogicalChunker
 from .markdown import parse_markdown, plain_text
 from .ontology import ONTOLOGY_NAME
@@ -239,25 +239,7 @@ def _chunk_as_dict(chunk: Any) -> dict[str, Any]:
 
 def _iter_documentation_files(root: Path) -> list[Path]:
     suffixes = {".md", ".txt", ".rst"}
-    paths: list[Path] = []
-    if not root.exists():
-        return paths
-    for path in root.rglob("*"):
-        if not path.is_file() or path.suffix.lower() not in suffixes or path.name in EXCLUDED_FILENAMES:
-            continue
-        try:
-            rel_parts = path.relative_to(root).parts
-        except ValueError:
-            continue
-        if is_excluded_codebase_path_parts(rel_parts):
-            continue
-        try:
-            if path.stat().st_size > MAX_INDEXED_FILE_BYTES:
-                continue
-        except OSError:
-            continue
-        paths.append(path)
-    return sorted(paths)
+    return _iter_indexable_files(root, suffixes, case_insensitive_suffixes=True)
 
 def _id(prefix: str, value: str) -> str:
     return f"{prefix}:{hashlib.sha1(value.encode('utf-8')).hexdigest()[:20]}"
