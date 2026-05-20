@@ -306,7 +306,17 @@ RELATION_TYPES = (
     _relation(
         "Contains",
         ("Repository", "SourceRoot", "File", "Module", "Scope", "Class", "Function", "Method", "Component"),
-        ("SourceRoot", "File", "Module", "Scope", *DECLARATION_NODES, *EXPRESSION_NODES, *DOCUMENTATION_NODES),
+        (
+            "SourceRoot",
+            "File",
+            "Module",
+            "Scope",
+            "ImportDeclaration",
+            "ExportDeclaration",
+            *DECLARATION_NODES,
+            *EXPRESSION_NODES,
+            *DOCUMENTATION_NODES,
+        ),
         "Structural containment between repository, files, scopes, declarations, and syntax-derived units.",
     ),
     _relation(
@@ -437,7 +447,7 @@ RELATION_TYPES = (
     ),
     _relation(
         "DerivedFrom",
-        (*DECLARATION_NODES, *EXPRESSION_NODES, "Module", "ImportDeclaration", "ExportDeclaration"),
+        (*DECLARATION_NODES, *EXPRESSION_NODES, *DOCUMENTATION_NODES, "Module", "ImportDeclaration", "ExportDeclaration"),
         ("SyntaxCapture",),
         "A semantic node was derived from a raw parser capture.",
     ),

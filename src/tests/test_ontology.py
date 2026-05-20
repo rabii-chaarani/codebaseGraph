@@ -4,6 +4,7 @@ import json
 import re
 
 from ontology import (
+    ONTOLOGY_NAME,
     PARSER_NODE_MAPPINGS,
     QUERY_HELPERS,
     RELATION_TYPES,
@@ -20,7 +21,7 @@ def test_schema_payload_is_json_serializable() -> None:
 
     encoded = json.dumps(payload, sort_keys=True)
 
-    assert "code_graph_tree_sitter_v1" in encoded
+    assert ONTOLOGY_NAME in encoded
     assert payload["node_types"]
     assert payload["relation_types"]
 
