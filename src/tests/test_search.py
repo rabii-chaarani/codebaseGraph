@@ -41,10 +41,10 @@ def test_search_query_uses_ontology_index_names_and_parameterized_user_text() ->
     for statement, parameters in store.calls:
         assert statement.startswith("CALL QUERY_FTS_INDEX('")
         assert malicious_query not in statement
-        assert parameters == {"query": malicious_query, "top": 2}
+        assert parameters == {"query": malicious_query, "top": 10}
 
 
-def test_search_result_ranking_dedupes_by_node_id_and_uses_stable_tiebreaks() -> None:
+def test_search_result_ranking_dedupes_by_node_id_preserving_best_raw_score() -> None:
     service = SearchService(_RecordingStore())
     hits = [
         SearchHit(id="Function:helper", type="Function", label="helper", score=0.2, index_order=4),
@@ -57,6 +57,81 @@ def test_search_result_ranking_dedupes_by_node_id_and_uses_stable_tiebreaks() ->
 
     assert [hit.id for hit in ranked] == ["Class:SampleService", "Function:helper", "File:service"]
     assert ranked[1].score == 0.7
+
+
+def test_identifier_query_reranks_concrete_definition_above_generic_symbol() -> None:
+    service = SearchService(_RecordingStore())
+    hits = [
+        SearchHit(
+            id="Symbol:SampleService",
+            type="Symbol",
+            label="SampleService",
+            path="sample_project/cli.py",
+            score=1.4,
+            index_order=0,
+        ),
+        SearchHit(
+            id="Class:SampleService",
+            type="Class",
+            label="SampleService",
+            qualified_name="sample_project.service.SampleService",
+            path="sample_project/service.py",
+            score=0.2,
+            index_order=2,
+        ),
+    ]
+
+    ranked = service._rank_hits(hits, query="SampleService", profile="brief")
+
+    assert ranked[0].type == "Class"
+    assert ranked[0].score == 0.2
+    assert ranked[0].rank_score > ranked[1].rank_score
+    assert ranked[1].score_components["generic_penalty"] > 0
+
+
+def test_generic_penalty_only_applies_when_matching_concrete_definition_exists() -> None:
+    service = SearchService(_RecordingStore())
+
+    without_definition = service._rank_hits(
+        [SearchHit(id="Symbol:SampleService", type="Symbol", label="SampleService", score=1.0)],
+        query="SampleService",
+        profile="brief",
+    )
+    with_definition = service._rank_hits(
+        [
+            SearchHit(id="Symbol:SampleService", type="Symbol", label="SampleService", score=1.0),
+            SearchHit(id="Class:SampleService", type="Class", label="SampleService", score=0.1),
+        ],
+        query="SampleService",
+        profile="brief",
+    )
+
+    assert without_definition[0].score_components["generic_penalty"] == 0
+    symbol_hit = next(hit for hit in with_definition if hit.type == "Symbol")
+    assert symbol_hit.score_components["generic_penalty"] > 0
+
+
+def test_path_and_dependency_intents_boost_matching_ontology_families() -> None:
+    service = SearchService(_RecordingStore())
+    path_ranked = service._rank_hits(
+        [
+            SearchHit(id="Function:helper", type="Function", label="helper", path="sample_project/service.py", score=1.0),
+            SearchHit(id="File:service", type="File", label="service.py", path="sample_project/service.py", score=0.3),
+        ],
+        query="service.py",
+        profile="brief",
+    )
+    dependency_ranked = service._rank_hits(
+        [
+            SearchHit(id="Class:SampleService", type="Class", label="SampleService", score=1.0),
+            SearchHit(id="Dependency:service", type="Dependency", label=".service.SampleService", score=0.3),
+        ],
+        query=".service.SampleService",
+        profile="dependencies",
+    )
+
+    assert path_ranked[0].type == "File"
+    assert dependency_ranked[0].type == "Dependency"
 
 
 def test_compact_context_respects_max_depth_limit_and_budget() -> None:
@@ -101,8 +176,24 @@ def test_search_service_returns_sample_class_with_compact_context(tmp_path: Path
     class_hit = next(hit for hit in data["results"] if hit["type"] == "Class" and hit["label"] == "SampleService")
     assert class_hit["path"] == "sample_project/service.py"
     assert class_hit["score"] > 0
+    assert class_hit["rank_score"] > 0
+    assert class_hit["score_components"]["type"] > 0
     assert class_hit["context"]
     assert any(item["type"] in {"Module", "Method"} for item in class_hit["context"])
+
+
+def test_search_service_returns_sample_class_first_for_exact_identifier(tmp_path: Path) -> None:
+    _require_graph_runtime()
+    materializer = _materialize_fixture(tmp_path, include_fts=True)
+
+    payload = SearchService(materializer.store).search(SearchRequest("SampleService", limit=1))
+    hit = payload.as_dict()["results"][0]
+
+    assert hit["type"] == "Class"
+    assert hit["label"] == "SampleService"
+    assert hit["path"] == "sample_project/service.py"
+    assert hit["score"] < 1.0
+    assert hit["rank_score"] > hit["score"]
 
 
 def test_search_service_returns_function_hit_with_score_and_context(tmp_path: Path) -> None:
@@ -115,6 +206,7 @@ def test_search_service_returns_function_hit_with_score_and_context(tmp_path: Pa
     assert helper_hit["path"] == "sample_project/service.py"
     assert helper_hit["span"]["line_start"] > 0
     assert helper_hit["score"] > 0
+    assert helper_hit["rank_score"] > 0
     assert helper_hit["context"]
 
 
@@ -152,6 +244,24 @@ def test_cli_search_and_context_return_compact_json_without_refresh(tmp_path: Pa
     search_payload = json.loads(capsys.readouterr().out)
     assert search_payload["results"]
     assert any(hit["label"] == "SampleService" for hit in search_payload["results"])
+
+    assert cli_main([
+        "search",
+        "SampleService",
+        "--source-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--limit",
+        "1",
+        "--no-refresh",
+        "--json",
+    ]) == 0
+    top_payload = json.loads(capsys.readouterr().out)
+    assert top_payload["results"][0]["type"] == "Class"
+    assert top_payload["results"][0]["rank_score"] > top_payload["results"][0]["score"]
 
     assert cli_main([
         "context",

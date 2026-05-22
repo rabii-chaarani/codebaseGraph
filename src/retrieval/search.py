@@ -8,6 +8,10 @@ from reasoning.context_builder import CompactContextBuilder, ContextNode, DEFAUL
 
 
 DEFAULT_SEARCH_LIMIT = 3
+MAX_CANDIDATE_LIMIT = 50
+MIN_CANDIDATE_LIMIT = 10
+DEFINITION_TYPES = {"Class", "Function", "Method", "Variable", "Constant"}
+GENERIC_TYPES = {"Symbol", "Dependency"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +45,8 @@ class SearchHit:
     path: str = ""
     span: dict[str, int] = field(default_factory=dict)
     score: float = 0.0
+    rank_score: float = 0.0
+    score_components: dict[str, float] = field(default_factory=dict)
     summary: str = ""
     context: list[ContextNode] = field(default_factory=list)
     index_order: int = 0
@@ -54,6 +60,8 @@ class SearchHit:
             "path": self.path,
             "span": dict(self.span),
             "score": self.score,
+            "rank_score": self.rank_score,
+            "score_components": dict(self.score_components),
             "summary": self.summary,
             "context": [node.as_dict() for node in self.context],
         }
@@ -91,7 +99,12 @@ class SearchService:
 
     def search(self, request: SearchRequest) -> CompactContextPayload:
         request.validate()
-        hits = self._rank_hits(self._query_fts(request.query, request.limit))
+        candidate_limit = _candidate_limit(request.limit)
+        hits = self._rank_hits(
+            self._query_fts(request.query, candidate_limit),
+            query=request.query,
+            profile=request.profile,
+        )
         context_builder = CompactContextBuilder(self.store)
         compact_hits: list[SearchHit] = []
         for hit in hits[: request.limit]:
@@ -123,13 +136,15 @@ class SearchService:
             hits.extend(_hit_from_row(row, spec) for row in rows)
         return hits
 
-    def _rank_hits(self, hits: list[SearchHit]) -> list[SearchHit]:
+    def _rank_hits(self, hits: list[SearchHit], *, query: str = "", profile: str = "brief") -> list[SearchHit]:
         best_by_id: dict[str, SearchHit] = {}
         for hit in hits:
             previous = best_by_id.get(hit.id)
-            if previous is None or _hit_sort_key(hit) < _hit_sort_key(previous):
+            if previous is None or _raw_hit_sort_key(hit) < _raw_hit_sort_key(previous):
                 best_by_id[hit.id] = hit
-        return sorted(best_by_id.values(), key=_hit_sort_key)
+        deduped = list(best_by_id.values())
+        _assign_rank_scores(deduped, query=query, profile=profile)
+        return sorted(deduped, key=_ranked_hit_sort_key)
 
 
 def _fts_query_statement(spec: FTSIndexSpec) -> str:
@@ -165,7 +180,118 @@ def _hit_from_row(row: Any, spec: FTSIndexSpec) -> SearchHit:
     )
 
 
-def _hit_sort_key(hit: SearchHit) -> tuple[float, int, str, str, str]:
+def _assign_rank_scores(hits: list[SearchHit], *, query: str, profile: str) -> None:
+    if not hits:
+        return
+    max_score = max((hit.score for hit in hits), default=0.0)
+    concrete_labels = {
+        _normalize(hit.label)
+        for hit in hits
+        if hit.type in DEFINITION_TYPES and hit.label
+    }
+    intent = _query_intent(query, profile)
+
+    for hit in hits:
+        fts_score = hit.score / max_score if max_score > 0 else 0.0
+        lexical_score = _lexical_score(query, hit)
+        type_score = _type_score(hit.type, intent)
+        generic_penalty = _generic_penalty(hit, concrete_labels)
+        rank_score = (0.45 * fts_score) + (0.35 * lexical_score) + type_score - generic_penalty
+        hit.score_components = {
+            "fts": round(fts_score, 6),
+            "lexical": round(lexical_score, 6),
+            "type": round(type_score, 6),
+            "generic_penalty": round(generic_penalty, 6),
+        }
+        hit.rank_score = round(rank_score, 6)
+
+
+def _candidate_limit(limit: int) -> int:
+    return min(max(limit * 4, MIN_CANDIDATE_LIMIT), MAX_CANDIDATE_LIMIT)
+
+
+def _query_intent(query: str, profile: str) -> str:
+    if profile in {"dependencies", "runtime", "docs"}:
+        return profile
+    if _looks_like_path(query):
+        return "path"
+    if _looks_like_identifier(query):
+        return "definition"
+    return "general"
+
+
+def _lexical_score(query: str, hit: SearchHit) -> float:
+    normalized_query = _normalize(query)
+    if not normalized_query:
+        return 0.0
+    label = _normalize(hit.label)
+    qualified_name = _normalize(hit.qualified_name)
+    path = _normalize(hit.path)
+
+    if label == normalized_query:
+        return 1.0
+    if qualified_name == normalized_query:
+        return 0.95
+    if qualified_name.endswith(f".{normalized_query}") or qualified_name.endswith(f"/{normalized_query}"):
+        return 0.85
+    if path == normalized_query or path.endswith(f"/{normalized_query}"):
+        return 0.8
+    if normalized_query in label:
+        return 0.55
+    if normalized_query in qualified_name:
+        return 0.45
+    if normalized_query in path:
+        return 0.35
+    return 0.0
+
+
+def _type_score(node_type: str, intent: str) -> float:
+    if intent == "definition":
+        if node_type in {"Class", "Function", "Method"}:
+            return 0.7
+        if node_type in {"Variable", "Constant"}:
+            return 0.6
+        if node_type == "Module":
+            return 0.2
+        return 0.0
+    if intent == "path":
+        return {"File": 0.7, "Module": 0.6, "SourceRoot": 0.25, "Repository": 0.2}.get(node_type, 0.0)
+    if intent == "dependencies":
+        return {"Dependency": 0.7, "ImportDeclaration": 0.65, "Module": 0.2}.get(node_type, 0.0)
+    if intent == "runtime":
+        return {"APIEndpoint": 0.7, "Route": 0.65, "Component": 0.55, "Query": 0.45, "SecretRef": 0.35}.get(node_type, 0.0)
+    if intent == "docs":
+        return {"DocumentationSource": 0.7, "DocumentationChunk": 0.65}.get(node_type, 0.0)
+    if node_type in DEFINITION_TYPES:
+        return 0.25
+    return 0.0
+
+
+def _generic_penalty(hit: SearchHit, concrete_labels: set[str]) -> float:
+    if hit.type in GENERIC_TYPES and _normalize(hit.label) in concrete_labels:
+        return 0.45
+    return 0.0
+
+
+def _looks_like_identifier(query: str) -> bool:
+    cleaned = query.strip()
+    return cleaned.replace("_", "").isalnum() and not cleaned[0:1].isdigit()
+
+
+def _looks_like_path(query: str) -> bool:
+    cleaned = query.strip()
+    return "/" in cleaned or "\\" in cleaned or cleaned.endswith((".py", ".toml", ".md", ".json", ".yaml", ".yml"))
+
+
+def _normalize(value: str) -> str:
+    return value.strip().lower()
+
+
+def _ranked_hit_sort_key(hit: SearchHit) -> tuple[float, int, str, str, str]:
+    return (-hit.rank_score, hit.index_order, hit.type, hit.path, hit.label)
+
+
+def _raw_hit_sort_key(hit: SearchHit) -> tuple[float, int, str, str, str]:
     return (-hit.score, hit.index_order, hit.type, hit.path, hit.label)
 
 
@@ -193,6 +319,7 @@ __all__ = [
     "CompactContextPayload",
     "DEFAULT_SEARCH_LIMIT",
     "FTSIndexSpec",
+    "MAX_CANDIDATE_LIMIT",
     "SearchHit",
     "SearchRequest",
     "SearchService",
