@@ -11,6 +11,8 @@ requires-python = ">=3.10"
 authors = [{ name = "Rabii Chaarani" }]
 dependencies = [
   "tomli; python_version < '3.11'",
+  "tree-sitter",
+  "tree-sitter-python",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -24,6 +26,9 @@ classifiers = [
 ladybug = ["real_ladybug"]
 parquet = ["pyarrow"]
 dev = ["pytest", "ruff"]
+
+[project.scripts]
+codebase-graph = "cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
