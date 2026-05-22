@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from core import CodeGraph, GraphEdge, GraphNode
-from ontology import ONTOLOGY_NAME, node_type_names, relation_type_names
+from ontology import ONTOLOGY_NAME, get_relation_type, node_type_names, relation_type_names
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,6 +102,7 @@ class GraphBuilder:
         self._graph = CodeGraph()
         self._context = BuildContext("", "", "", repository_label, self.source_root)
         self._syntax_nodes: dict[int, str] = {}
+        self._symbols_by_name: dict[str, list[str]] = {}
         self._diagnostics: list[str] = []
         self._unresolved: list[str] = []
 
@@ -161,6 +162,7 @@ class GraphBuilder:
             source_root=root,
         )
         self._syntax_nodes = {}
+        self._symbols_by_name = {}
         self._diagnostics = []
         self._unresolved = []
 
@@ -364,6 +366,9 @@ class GraphBuilder:
         self._connect_owner(owner, call)
         if owner.table in {"Function", "Method", "APIEndpoint", "Route", "Component"}:
             self._edge("Calls", owner.node_id, call.id, "body_call")
+        target = self._emit_reference_edges(call, call.label, kind_prefix="call")
+        if target is not None:
+            self._edge_if_allowed("Calls", call.id, target.id, "call_target")
         self._derived_from(call.id, syntax_id)
         return call
 
@@ -376,6 +381,7 @@ class GraphBuilder:
             owner_qualified_name=owner.qualified_name,
         )
         self._connect_owner(owner, reference)
+        self._emit_reference_edges(reference, reference.label, kind_prefix="reference")
         self._derived_from(reference.id, syntax_id)
         return reference
 
@@ -388,6 +394,7 @@ class GraphBuilder:
             owner_qualified_name=owner.qualified_name,
         )
         self._connect_owner(owner, semantic)
+        self._emit_contextual_relations(semantic, node, owner, syntax_id)
         self._derived_from(semantic.id, syntax_id)
         return semantic
 
@@ -423,6 +430,8 @@ class GraphBuilder:
             owner_qualified_name=callable_node.qualified_name,
         )
         self._edge("HasReturnType", callable_node.id, return_node.id, "callable_return_type")
+        type_node = self._emit_type_annotation(return_parser, return_node)
+        self._edge("HasTypeAnnotation", return_node.id, type_node.id, "return_type_annotation")
         self._derived_from(return_node.id, syntax_id)
 
     def _emit_type_annotation(self, raw_node: Any, owner: GraphNode) -> GraphNode:
@@ -435,6 +444,7 @@ class GraphBuilder:
             owner_id=owner.id,
             owner_qualified_name=owner.qualified_name,
         )
+        self._emit_reference_edges(type_node, type_node.label, kind_prefix="type_annotation")
         self._derived_from(type_node.id, syntax_id)
         return type_node
 
@@ -450,7 +460,106 @@ class GraphBuilder:
                 owner_qualified_name=declaration.qualified_name,
             )
             self._edge("DecoratedBy", declaration.id, decorator.id, "declaration_decorator")
+            target = self._emit_reference_edges(decorator, decorator.label, kind_prefix="decorator")
+            if target is not None:
+                self._edge_if_allowed("Calls", decorator.id, target.id, "decorator_call")
             self._derived_from(decorator.id, syntax_id)
+
+    def _emit_contextual_relations(
+        self,
+        semantic: GraphNode,
+        node: ParserNode,
+        owner: ScopeFrame,
+        syntax_id: str,
+    ) -> None:
+        table = semantic.table
+
+        if table == "ExportDeclaration":
+            self._edge_if_allowed("Exports", owner.node_id, semantic.id, "exports_declaration")
+            target = self._resolve_reference_target(_export_target_label(node) or semantic.label, EXPORT_TARGET_TYPES)
+            if target is not None and target.id != semantic.id:
+                self._edge_if_allowed("Exports", owner.node_id, target.id, "exports_symbol")
+
+        if table in DEFINED_CAPTURE_TABLES:
+            self._edge_if_allowed("Defines", owner.node_id, semantic.id, f"defines_{table.lower()}")
+            self._edge_if_allowed("Declares", owner.node_id, semantic.id, f"declares_{table.lower()}")
+
+        if table in {"Component", "APIEndpoint", "Route"}:
+            self._edge_if_allowed("Exposes", owner.node_id, semantic.id, f"exposes_{table.lower()}")
+
+        if table in {"Route", "APIEndpoint"}:
+            target = self._runtime_target(node, owner, syntax_id)
+            if target is not None and target.id != semantic.id:
+                self._edge_if_allowed("RoutesTo", semantic.id, target.id, "runtime_handler")
+                self._edge_if_allowed("Exposes", semantic.id, target.id, "runtime_surface")
+
+        if table == "Parameter":
+            self._edge_if_allowed("HasParameter", owner.node_id, semantic.id, "captured_parameter")
+            annotation = _field(node, "annotation", "type_annotation")
+            if annotation is not None:
+                type_node = self._emit_type_annotation(annotation, semantic)
+                self._edge("HasTypeAnnotation", semantic.id, type_node.id, "parameter_annotation")
+
+        if table == "ReturnType":
+            self._edge_if_allowed("HasReturnType", owner.node_id, semantic.id, "captured_return_type")
+            type_node = self._emit_type_annotation(node, semantic)
+            self._edge("HasTypeAnnotation", semantic.id, type_node.id, "return_type_annotation")
+
+        if table == "TypeAnnotation":
+            self._edge_if_allowed("HasTypeAnnotation", owner.node_id, semantic.id, "captured_type_annotation")
+            self._emit_reference_edges(semantic, semantic.label, kind_prefix="type_annotation")
+
+        if table == "TypeAlias":
+            annotation = _field(node, "annotation", "type_annotation", "value")
+            if annotation is not None:
+                type_node = self._emit_type_annotation(annotation, semantic)
+                self._edge_if_allowed("HasTypeAnnotation", semantic.id, type_node.id, "type_alias_annotation")
+
+        if table == "Decorator":
+            self._edge_if_allowed("DecoratedBy", owner.node_id, semantic.id, "captured_decorator")
+            target = self._emit_reference_edges(semantic, semantic.label, kind_prefix="decorator")
+            if target is not None:
+                self._edge_if_allowed("Calls", semantic.id, target.id, "decorator_call")
+
+        if table == "Query":
+            self._edge_if_allowed("ExecutesQuery", owner.node_id, semantic.id, "executes_query")
+            self._emit_reference_edges(semantic, _query_reference_label(node), kind_prefix="query")
+
+        if table == "SecretRef":
+            self._edge_if_allowed("UsesSecret", owner.node_id, semantic.id, "uses_secret")
+            self._emit_reference_edges(semantic, semantic.label, kind_prefix="secret")
+
+        if table in {"DocumentationSource", "DocumentationChunk"}:
+            self._edge_if_allowed("Documents", semantic.id, owner.node_id, "documents_owner")
+            self._edge_if_allowed("EvidencedBy", semantic.id, syntax_id, "parser_evidence")
+
+        if table == "ExceptionFlow":
+            if _is_raise_flow(node):
+                self._edge_if_allowed("Raises", owner.node_id, semantic.id, "raises_exception")
+            if _is_handle_flow(node):
+                self._edge_if_allowed("Handles", owner.node_id, semantic.id, "handles_exception")
+
+        if table == "Reference":
+            self._emit_reference_edges(semantic, semantic.label, kind_prefix="reference")
+
+        if table == "ControlFlowBlock":
+            self._emit_reference_edges(semantic, _control_flow_reference_label(node), kind_prefix="control_flow")
+
+    def _emit_reference_edges(
+        self,
+        source: GraphNode,
+        label: str,
+        *,
+        kind_prefix: str,
+        target_tables: set[str] | None = None,
+    ) -> GraphNode | None:
+        target = self._resolve_reference_target(label, target_tables)
+        if target is None or target.id == source.id:
+            return None
+        metadata = {"label": label, "resolver": "label"}
+        self._edge_if_allowed("References", source.id, target.id, f"{kind_prefix}_reference", metadata=metadata)
+        self._edge_if_allowed("ResolvesTo", source.id, target.id, f"{kind_prefix}_resolution", metadata=metadata)
+        return target
 
     def _connect_owner(self, owner: ScopeFrame, semantic: GraphNode) -> None:
         self._edge("Contains", owner.node_id, semantic.id, f"contains_{semantic.table.lower()}")
@@ -467,7 +576,9 @@ class GraphBuilder:
             summary=label,
             metadata={"canonical_key": stable_key},
         )
-        return self._graph.add_node(node)
+        added = self._graph.add_node(node)
+        self._register_resolvable(added)
+        return added
 
     def _semantic_node(
         self,
@@ -514,7 +625,55 @@ class GraphBuilder:
             summary=semantic_label,
             metadata={"canonical_key": stable_key, **(metadata or {})},
         )
-        return self._graph.add_node(node)
+        added = self._graph.add_node(node)
+        self._register_resolvable(added)
+        return added
+
+    def _symbol_node(self, label: str) -> GraphNode | None:
+        symbol_label = label.strip()
+        if not symbol_label:
+            return None
+        stable_key = f"{self._context.path}|Symbol|{symbol_label}"
+        node = GraphNode(
+            id=_id("Symbol", stable_key),
+            table="Symbol",
+            label=symbol_label,
+            kind="symbol_reference",
+            language=self._context.language,
+            path=self._context.path,
+            qualified_name=symbol_label,
+            summary=symbol_label,
+            metadata={"canonical_key": stable_key, "resolution": "name_placeholder"},
+        )
+        added = self._graph.add_node(node)
+        self._register_resolvable(added)
+        return added
+
+    def _register_resolvable(self, node: GraphNode) -> None:
+        if node.table not in RESOLVABLE_NODE_TYPES:
+            return
+        keys = {node.label, node.qualified_name, str(node.metadata.get("imported_name") or "")}
+        for key in keys:
+            normalized = _symbol_key(key)
+            if not normalized:
+                continue
+            self._symbols_by_name.setdefault(normalized, [])
+            if node.id not in self._symbols_by_name[normalized]:
+                self._symbols_by_name[normalized].append(node.id)
+
+    def _resolve_reference_target(self, label: str, target_tables: set[str] | None = None) -> GraphNode | None:
+        reference_label = label.strip()
+        if not reference_label:
+            return None
+        candidate_labels = (reference_label, reference_label.rsplit(".", 1)[-1])
+        for candidate_label in candidate_labels:
+            for node_id in reversed(self._symbols_by_name.get(_symbol_key(candidate_label), ())):
+                node = self._graph.nodes.get(node_id)
+                if node is not None and (target_tables is None or node.table in target_tables):
+                    return node
+        if target_tables is not None and "Symbol" not in target_tables:
+            return None
+        return self._symbol_node(reference_label)
 
     def _scope_for(self, owner: GraphNode) -> GraphNode:
         stable_key = f"{self._context.path}|{owner.id}|scope"
@@ -569,6 +728,47 @@ class GraphBuilder:
     def _derived_from(self, semantic_id: str, syntax_id: str) -> None:
         if self.include_syntax_captures and syntax_id in self._graph.nodes:
             self._edge("DerivedFrom", semantic_id, syntax_id, "parser_capture")
+
+    def _runtime_target(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode | None:
+        label = _runtime_target_label(node)
+        if label:
+            target = self._resolve_reference_target(label, RUNTIME_TARGET_TYPES)
+            if target is not None:
+                return target
+            endpoint = self._semantic_node(
+                "APIEndpoint",
+                node,
+                label=label,
+                owner_id=owner.node_id,
+                owner_qualified_name=owner.qualified_name,
+                metadata={"inferred_from": "runtime_target"},
+            )
+            self._connect_owner(owner, endpoint)
+            self._edge_if_allowed("Defines", owner.node_id, endpoint.id, "defines_inferred_endpoint")
+            self._edge_if_allowed("Exposes", owner.node_id, endpoint.id, "exposes_inferred_endpoint")
+            self._derived_from(endpoint.id, syntax_id)
+            return endpoint
+        if owner.table in RUNTIME_TARGET_TYPES:
+            return self._graph.nodes.get(owner.node_id)
+        return None
+
+    def _edge_if_allowed(
+        self,
+        edge_type: str,
+        source_id: str,
+        target_id: str,
+        kind: str,
+        *,
+        metadata: dict[str, Any] | None = None,
+    ) -> GraphEdge | None:
+        source = self._graph.nodes.get(source_id)
+        target = self._graph.nodes.get(target_id)
+        if source is None or target is None:
+            return None
+        spec = get_relation_type(edge_type)
+        if source.table not in spec.source_types or target.table not in spec.target_types:
+            return None
+        return self._edge(edge_type, source_id, target_id, kind, metadata=metadata)
 
     def _edge(
         self,
@@ -661,6 +861,46 @@ REFERENCE_NODE_TYPES = {"identifier", "field_identifier", "attribute", "Name", "
 LITERAL_NODE_TYPES = {"string", "integer", "float", "true", "false", "null", "none", "Constant"}
 CONTROL_FLOW_NODE_TYPES = {"if_statement", "for_statement", "while_statement", "match_statement", "switch_statement"}
 EXCEPTION_FLOW_NODE_TYPES = {"try_statement", "except_clause", "catch_clause", "raise_statement", "throw_statement"}
+RESOLVABLE_NODE_TYPES = {
+    "Symbol",
+    "Module",
+    "Class",
+    "Function",
+    "Method",
+    "Variable",
+    "Constant",
+    "ClassAttribute",
+    "InstanceAttribute",
+    "Property",
+    "Parameter",
+    "Dependency",
+    "APIEndpoint",
+    "Component",
+}
+EXPORT_TARGET_TYPES = {
+    "Class",
+    "Function",
+    "Method",
+    "Variable",
+    "Constant",
+    "ClassAttribute",
+    "InstanceAttribute",
+    "Property",
+    "APIEndpoint",
+    "Component",
+}
+RUNTIME_TARGET_TYPES = {"Function", "Method", "Component", "APIEndpoint"}
+DEFINED_CAPTURE_TABLES = {
+    "APIEndpoint",
+    "Component",
+    "Route",
+    "TypeAlias",
+    "Variable",
+    "Constant",
+    "ClassAttribute",
+    "InstanceAttribute",
+    "Property",
+}
 DICT_NODE_META_KEYS = {
     "type",
     "node_type",
@@ -846,6 +1086,52 @@ def _value_label(value: Any) -> str:
     if hasattr(value, "value"):
         return _value_label(getattr(value, "value"))
     return ""
+
+
+def _symbol_key(label: str) -> str:
+    return label.strip().lower()
+
+
+def _export_target_label(node: ParserNode) -> str:
+    for field_name in ("exported", "target", "name", "declaration"):
+        label = _value_label(node.fields.get(field_name))
+        if label:
+            return label
+    return _label_for(node)
+
+
+def _runtime_target_label(node: ParserNode) -> str:
+    for field_name in ("handler", "endpoint", "target", "function", "callback"):
+        label = _value_label(node.fields.get(field_name))
+        if label:
+            return label
+    return ""
+
+
+def _query_reference_label(node: ParserNode) -> str:
+    for field_name in ("table", "collection", "model", "target", "index"):
+        label = _value_label(node.fields.get(field_name))
+        if label:
+            return label
+    return ""
+
+
+def _control_flow_reference_label(node: ParserNode) -> str:
+    for field_name in ("test", "condition", "subject"):
+        label = _value_label(node.fields.get(field_name))
+        if label:
+            return label
+    return ""
+
+
+def _is_raise_flow(node: ParserNode) -> bool:
+    capture = node.capture_name.lstrip("@")
+    return capture == "raises" or node.node_type in {"raise_statement", "throw_statement"}
+
+
+def _is_handle_flow(node: ParserNode) -> bool:
+    capture = node.capture_name.lstrip("@")
+    return capture == "handles" or node.node_type in {"try_statement", "except_clause", "catch_clause"}
 
 
 def _import_label(node: ParserNode) -> str:

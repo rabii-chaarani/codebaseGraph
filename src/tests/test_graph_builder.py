@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from extract import CaptureRecord, GraphBuilder, ParseBundle
+from ontology import PARSER_NODE_MAPPINGS
 
 
 def test_graph_builder_maps_python_ast_shaped_tree_to_ontology() -> None:
@@ -116,3 +117,62 @@ def test_graph_builder_uses_capture_names_as_primary_semantic_signal() -> None:
     assert {node.label for node in graph.nodes_by_type("DocumentationChunk")} == {"Handle the API request."}
     assert not result.diagnostics
     assert not result.unresolved
+
+
+def test_graph_builder_emits_relation_families_advertised_by_parser_mappings() -> None:
+    parse_tree = {
+        "type": "Module",
+        "body": [
+            {
+                "type": "ImportFrom",
+                "module": "fastapi",
+                "names": [{"type": "alias", "name": "APIRouter"}],
+            },
+            {"type": "FunctionDef", "name": "helper", "body": []},
+            {"type": "FunctionDef", "name": "auth_required", "body": []},
+            {
+                "type": "FunctionDef",
+                "name": "list_users",
+                "args": {
+                    "type": "arguments",
+                    "args": [
+                        {
+                            "type": "arg",
+                            "arg": "user_id",
+                            "annotation": {"type": "Name", "id": "int"},
+                        }
+                    ],
+                },
+                "returns": {"type": "Name", "id": "Response"},
+                "decorator_list": [{"type": "Name", "id": "auth_required"}],
+                "body": [
+                    {"type": "call", "capture_name": "route", "text": "/users", "handler": "list_users"},
+                    {"type": "Call", "func": {"type": "Name", "id": "helper"}},
+                    {
+                        "type": "string",
+                        "capture_name": "query.sql",
+                        "text": "SELECT * FROM users",
+                        "table": "users",
+                    },
+                    {"type": "Name", "capture_name": "secret.env", "id": "DATABASE_URL"},
+                    {
+                        "type": "Assign",
+                        "targets": [{"type": "Name", "id": "CACHE"}],
+                        "value": {"type": "Call", "func": {"type": "Name", "id": "helper"}},
+                    },
+                    {"type": "Name", "capture_name": "reference.identifier", "id": "helper"},
+                    {"type": "raise_statement", "capture_name": "raises", "name": "ValueError"},
+                    {"type": "except_clause", "capture_name": "handles", "name": "ValueError"},
+                    {"type": "docstring", "capture_name": "doc.string", "text": "List users."},
+                ],
+            },
+            {"type": "component_declaration", "capture_name": "component", "name": "UserService"},
+            {"type": "export_statement", "name": "list_users"},
+        ],
+    }
+
+    graph = GraphBuilder(default_language="python").build(parse_tree, source_path="api.py")
+
+    mapped_relations = {relation for mapping in PARSER_NODE_MAPPINGS for relation in mapping.relation_types}
+    emitted_relations = set(graph.summary()["edge_counts"])
+    assert mapped_relations <= emitted_relations
