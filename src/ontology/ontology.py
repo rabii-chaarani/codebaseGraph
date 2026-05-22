@@ -710,25 +710,25 @@ QUERY_HELPERS = (
     QueryHelperSpec(
         "callgraph_neighborhood",
         "Find call expressions and resolved callable targets near a symbol.",
-        "MATCH (c:CallExpression)-[:ResolvesTo]->(target) RETURN c.id, c.path, target.id, target.label LIMIT 50",
+        "MATCH (c:CallExpression)-[:FROM_ResolvesTo]->(:ResolvesTo)-[:TO_ResolvesTo]->(target) RETURN c.id, c.path, target.id, target.label LIMIT 50",
         returns=("call_id", "path", "target_id", "target_label"),
     ),
     QueryHelperSpec(
         "dependency_map",
         "Inspect imports and dependencies.",
-        "MATCH (i:ImportDeclaration)-[:DependsOn]->(d:Dependency) RETURN i.id, i.label, d.id, d.label LIMIT 100",
+        "MATCH (i:ImportDeclaration)-[:FROM_DependsOn]->(:DependsOn)-[:TO_DependsOn]->(d:Dependency) RETURN i.id, i.label, d.id, d.label LIMIT 100",
         returns=("import_id", "import_label", "dependency_id", "dependency_label"),
     ),
     QueryHelperSpec(
         "runtime_surface",
         "Inspect routes, endpoints, executed queries, and secret use.",
-        "MATCH (r:Route)-[:RoutesTo]->(e:APIEndpoint) RETURN r.id, r.label, e.id, e.label LIMIT 100",
+        "MATCH (r:Route)-[:FROM_RoutesTo]->(:RoutesTo)-[:TO_RoutesTo]->(e:APIEndpoint) RETURN r.id, r.label, e.id, e.label LIMIT 100",
         returns=("route_id", "route_label", "endpoint_id", "endpoint_label"),
     ),
     QueryHelperSpec(
         "documentation_context",
         "Find documentation chunks connected to code nodes.",
-        "MATCH (d:DocumentationChunk)-[:Documents]->(n) RETURN d.id, d.label, n.id, n.label LIMIT 50",
+        "MATCH (d:DocumentationChunk)-[:FROM_Documents]->(:Documents)-[:TO_Documents]->(n) RETURN d.id, d.label, n.id, n.label LIMIT 50",
         returns=("doc_id", "doc_label", "node_id", "node_label"),
     ),
     QueryHelperSpec(

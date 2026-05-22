@@ -307,7 +307,7 @@ class GraphBuilder:
             metadata={"imported_name": imported},
         )
         self._connect_owner(owner, semantic)
-        self._edge("Imports", owner.node_id, semantic.id, "declares_import")
+        self._edge_if_allowed("Imports", _import_source_id(owner), semantic.id, "declares_import")
         self._derived_from(semantic.id, syntax_id)
         if imported:
             dependency = self._support_node("Dependency", imported, imported, path=self._context.path)
@@ -890,6 +890,7 @@ EXPORT_TARGET_TYPES = {
     "Component",
 }
 RUNTIME_TARGET_TYPES = {"Function", "Method", "Component", "APIEndpoint"}
+IMPORT_SOURCE_TYPES = {"File", "Module", "Scope"}
 DEFINED_CAPTURE_TABLES = {
     "APIEndpoint",
     "Component",
@@ -995,6 +996,12 @@ def _table_from_capture(capture_name: str, owner: ScopeFrame) -> str | None:
     if capture.startswith("reference"):
         return "Reference"
     return None
+
+
+def _import_source_id(owner: ScopeFrame) -> str:
+    if owner.table in IMPORT_SOURCE_TYPES:
+        return owner.node_id
+    return owner.scope_id or owner.node_id
 
 
 def _id(prefix: str, value: str) -> str:

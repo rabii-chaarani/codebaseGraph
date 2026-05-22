@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -207,22 +208,35 @@ class GraphMaterializer:
     ) -> None:
         self.source_root = Path(source_root).resolve()
         self.state_dir = self.source_root / DEFAULT_STATE_DIR
-        self.db_path = db_path if db_path is not None else self.state_dir / DEFAULT_DB_NAME
+        self.db_path = _normalize_db_path(db_path if db_path is not None else self.state_dir / DEFAULT_DB_NAME)
         self.manifest_path = Path(manifest_path) if manifest_path is not None else self.state_dir / DEFAULT_MANIFEST_NAME
         self.include_fts = include_fts
         self.repository_label = repository_label or self.source_root.name or "repository"
-        self.store = store or create_ladybug_database(self.db_path, include_fts=include_fts)
+        self._store = store
+        self._store_injected = store is not None
         self.builder = GraphBuilder(repository_label=self.repository_label, source_root=self.source_root)
+
+    @property
+    def store(self) -> LadybugCodeGraphStore:
+        if self._store is None:
+            self._store = create_ladybug_database(self.db_path, include_fts=self.include_fts)
+        return self._store
+
+    @store.setter
+    def store(self, value: LadybugCodeGraphStore | None) -> None:
+        self._store = value
+        self._store_injected = value is not None
 
     def materialize(self, mode: MaterializeMode = "changed") -> MaterializationResult:
         if mode not in {"full", "changed"}:
             raise ValueError(f"Unsupported materialization mode: {mode}")
 
-        previous_manifest = self.store.read_manifest(self.manifest_path)
+        previous_manifest = self._read_manifest()
         snapshots, diagnostics = self._scan_source_files()
         supported = {path: snapshot for path, snapshot in snapshots.items() if snapshot.language is not None}
+        force_atomic_recovery = self._should_force_atomic_recovery()
 
-        if mode == "full":
+        if mode == "full" or force_atomic_recovery:
             diff = ManifestDiff(
                 added=tuple(sorted(supported)),
                 modified=(),
@@ -230,34 +244,66 @@ class GraphMaterializer:
                 deleted=tuple(sorted(previous_manifest.files)),
                 force_rebuild=True,
             )
+            if self._can_atomic_rebuild():
+                return self._materialize_full_atomic(
+                    mode=mode,
+                    snapshots=snapshots,
+                    diagnostics=diagnostics,
+                    supported=supported,
+                    diff=diff,
+                )
             self.store.clear_graph()
             retained_node_ids: set[str] = set()
+            retained_edge_ids: set[str] = set()
         else:
             diff = previous_manifest.diff(supported)
             if diff.force_rebuild:
+                if self._can_atomic_rebuild():
+                    return self._materialize_full_atomic(
+                        mode=mode,
+                        snapshots=snapshots,
+                        diagnostics=diagnostics,
+                        supported=supported,
+                        diff=diff,
+                    )
                 self.store.clear_graph()
                 retained_node_ids = set()
+                retained_edge_ids = set()
             else:
-                retained_node_ids = _retained_node_ids(previous_manifest, set(diff.rebuild_paths) | set(diff.deleted))
+                touched_paths = set(diff.rebuild_paths) | set(diff.deleted)
+                retained_node_ids = _retained_node_ids(previous_manifest, touched_paths)
+                retained_edge_ids = _retained_edge_ids(previous_manifest, touched_paths)
                 for path in diff.deleted:
                     self.store.delete_partition(
                         path,
                         manifest_entry=previous_manifest.files.get(path),
                         retained_node_ids=retained_node_ids,
+                        retained_edge_ids=retained_edge_ids,
                     )
 
         rebuilt_entries: dict[str, ManifestEntry] = {}
+        rebuilt_graphs: dict[str, CodeGraph] = {}
         for path in diff.rebuild_paths:
             snapshot = supported[path]
-            previous_entry = None if diff.force_rebuild else previous_manifest.files.get(path)
             graph = self._build_graph(snapshot)
-            self.store.replace_partition(
-                path,
-                graph,
-                previous_entry=previous_entry,
-                retained_node_ids=retained_node_ids,
-            )
+            rebuilt_graphs[path] = graph
             rebuilt_entries[path] = _manifest_entry(snapshot, graph)
+
+        if not diff.force_rebuild:
+            for path in diff.rebuild_paths:
+                self.store.delete_partition(
+                    path,
+                    manifest_entry=previous_manifest.files.get(path),
+                    retained_node_ids=retained_node_ids,
+                    retained_edge_ids=retained_edge_ids,
+                )
+
+        if rebuilt_graphs:
+            self.store.insert_graphs_bulk(
+                [rebuilt_graphs[path] for path in sorted(rebuilt_graphs)],
+                skip_node_ids=retained_node_ids,
+                skip_edge_ids=retained_edge_ids,
+            )
 
         next_files = {
             path: entry
@@ -266,40 +312,122 @@ class GraphMaterializer:
         }
         next_files.update(rebuilt_entries)
         next_manifest = MaterializationManifest(files=next_files)
-        self.store.write_manifest(next_manifest, self.manifest_path)
+        self._write_manifest(next_manifest)
 
-        unsupported_paths = tuple(path for path, snapshot in snapshots.items() if snapshot.language is None)
-        skipped_paths = tuple(sorted((*diff.unchanged, *unsupported_paths)))
-        return MaterializationResult(
+        return _materialization_result(
             mode=mode,
-            scanned=len(snapshots),
-            rebuilt=len(rebuilt_entries),
-            skipped=len(skipped_paths),
-            deleted=len(diff.deleted),
-            diagnostics=tuple(diagnostics),
-            manifest_path=self.manifest_path.as_posix(),
-            rebuilt_paths=tuple(sorted(rebuilt_entries)),
-            skipped_paths=skipped_paths,
-            deleted_paths=diff.deleted,
-            graph_summary=_manifest_summary(next_manifest),
+            snapshots=snapshots,
+            diagnostics=diagnostics,
+            diff=diff,
+            manifest_path=self.manifest_path,
+            rebuilt_entries=rebuilt_entries,
+            next_manifest=next_manifest,
         )
+
+    def _materialize_full_atomic(
+        self,
+        *,
+        mode: MaterializeMode,
+        snapshots: Mapping[str, SourceSnapshot],
+        diagnostics: list[str],
+        supported: Mapping[str, SourceSnapshot],
+        diff: ManifestDiff,
+    ) -> MaterializationResult:
+        rebuilt_entries: dict[str, ManifestEntry] = {}
+        rebuilt_graphs: dict[str, CodeGraph] = {}
+        for path in diff.rebuild_paths:
+            snapshot = supported[path]
+            graph = self._build_graph(snapshot)
+            rebuilt_graphs[path] = graph
+            rebuilt_entries[path] = _manifest_entry(snapshot, graph)
+
+        next_manifest = MaterializationManifest(files=rebuilt_entries)
+        target_db_path = _filesystem_db_path(self.db_path)
+        temp_db_path = _temporary_sibling(target_db_path, suffix=".lbug.tmp")
+        temp_manifest_path = _temporary_sibling(self.manifest_path, suffix=".manifest.tmp")
+        marker_path = self._rebuild_marker_path
+        temp_store: LadybugCodeGraphStore | None = None
+        try:
+            temp_store = create_ladybug_database(temp_db_path, include_fts=self.include_fts)
+            if rebuilt_graphs:
+                temp_store.insert_graphs_bulk([rebuilt_graphs[path] for path in sorted(rebuilt_graphs)])
+            temp_store.close()
+            temp_store = None
+
+            next_manifest.write(temp_manifest_path)
+            _write_rebuild_marker(marker_path, target_db_path, self.manifest_path)
+            self._close_store()
+            os.replace(temp_db_path, target_db_path)
+            os.replace(temp_manifest_path, self.manifest_path)
+            _unlink_if_exists(marker_path)
+            self._store = None
+        except Exception:
+            if temp_store is not None:
+                temp_store.close()
+            _unlink_if_exists(temp_db_path)
+            _unlink_if_exists(temp_manifest_path)
+            _unlink_if_exists(temp_manifest_path.with_suffix(temp_manifest_path.suffix + ".tmp"))
+            raise
+
+        return _materialization_result(
+            mode=mode,
+            snapshots=snapshots,
+            diagnostics=diagnostics,
+            diff=diff,
+            manifest_path=self.manifest_path,
+            rebuilt_entries=rebuilt_entries,
+            next_manifest=next_manifest,
+        )
+
+    def _read_manifest(self) -> MaterializationManifest:
+        if self._store_injected and self._store is not None and hasattr(self._store, "read_manifest"):
+            return self._store.read_manifest(self.manifest_path)
+        return MaterializationManifest.load(self.manifest_path)
+
+    def _write_manifest(self, manifest: MaterializationManifest) -> None:
+        if self._store_injected and self._store is not None and hasattr(self._store, "write_manifest"):
+            self._store.write_manifest(manifest, self.manifest_path)
+            return
+        manifest.write(self.manifest_path)
+
+    def _can_atomic_rebuild(self) -> bool:
+        return not self._store_injected and not _is_memory_db_path(self.db_path)
+
+    def _should_force_atomic_recovery(self) -> bool:
+        return self._can_atomic_rebuild() and self._rebuild_marker_path.exists()
+
+    @property
+    def _rebuild_marker_path(self) -> Path:
+        return self.manifest_path.with_suffix(self.manifest_path.suffix + ".rebuild-pending")
+
+    def _close_store(self) -> None:
+        if self._store is None:
+            return
+        close = getattr(self._store, "close", None)
+        if callable(close):
+            close()
+        self._store = None
 
     def _scan_source_files(self) -> tuple[dict[str, SourceSnapshot], list[str]]:
         snapshots: dict[str, SourceSnapshot] = {}
         diagnostics: list[str] = []
-        for path in sorted(self.source_root.rglob("*")):
-            if not path.is_file() or _is_excluded(path, self.source_root):
-                continue
-            relative_path = path.relative_to(self.source_root).as_posix()
-            language = SUPPORTED_SUFFIXES.get(path.suffix)
-            snapshots[relative_path] = SourceSnapshot(
-                path=relative_path,
-                absolute_path=path,
-                content_hash=_file_hash(path),
-                language=language,
-            )
-            if language is None:
-                diagnostics.append(f"Skipped unsupported file: {relative_path}")
+        for current_root, dirnames, filenames in os.walk(self.source_root):
+            dirnames[:] = [name for name in sorted(dirnames) if not _is_excluded_part(name)]
+            current_path = Path(current_root)
+            for filename in sorted(filenames):
+                path = current_path / filename
+                if _is_excluded(path, self.source_root):
+                    continue
+                relative_path = path.relative_to(self.source_root).as_posix()
+                language = SUPPORTED_SUFFIXES.get(path.suffix)
+                snapshots[relative_path] = SourceSnapshot(
+                    path=relative_path,
+                    absolute_path=path,
+                    content_hash=_file_hash(path),
+                    language=language,
+                )
+                if language is None:
+                    diagnostics.append(f"Skipped unsupported file: {relative_path}")
         return snapshots, diagnostics
 
     def _build_graph(self, snapshot: SourceSnapshot) -> CodeGraph:
@@ -320,9 +448,62 @@ class GraphMaterializer:
         return result.graph
 
 
+def _is_excluded_part(part: str) -> bool:
+    return part in EXCLUDED_PARTS or part.endswith(".egg-info")
+
+
+def _normalize_db_path(db_path: str | Path) -> str | Path:
+    if _is_memory_db_path(db_path):
+        return ":memory:"
+    return Path(db_path)
+
+
+def _is_memory_db_path(db_path: str | Path) -> bool:
+    return str(db_path) == ":memory:"
+
+
+def _filesystem_db_path(db_path: str | Path) -> Path:
+    if _is_memory_db_path(db_path):
+        raise ValueError("In-memory databases do not have a filesystem path")
+    return Path(db_path)
+
+
+def _temporary_sibling(path: Path, *, suffix: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temp_path = tempfile.mkstemp(prefix=f".{path.name}.", suffix=suffix, dir=path.parent)
+    os.close(descriptor)
+    os.unlink(temp_path)
+    return Path(temp_path)
+
+
+def _write_rebuild_marker(marker_path: Path, db_path: Path, manifest_path: Path) -> None:
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = marker_path.with_suffix(marker_path.suffix + ".tmp")
+    with tmp_path.open("w", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "created_at": datetime.now(UTC).isoformat(),
+                "db_path": db_path.as_posix(),
+                "manifest_path": manifest_path.as_posix(),
+            },
+            handle,
+            indent=2,
+            sort_keys=True,
+        )
+        handle.write("\n")
+    os.replace(tmp_path, marker_path)
+
+
+def _unlink_if_exists(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return
+
+
 def _is_excluded(path: Path, source_root: Path) -> bool:
     parts = path.relative_to(source_root).parts
-    return any(part in EXCLUDED_PARTS or part.endswith(".egg-info") for part in parts)
+    return any(_is_excluded_part(part) for part in parts)
 
 
 def _file_hash(path: Path) -> str:
@@ -351,12 +532,48 @@ def _manifest_entry(snapshot: SourceSnapshot, graph: CodeGraph) -> ManifestEntry
     )
 
 
+def _materialization_result(
+    *,
+    mode: MaterializeMode,
+    snapshots: Mapping[str, SourceSnapshot],
+    diagnostics: list[str],
+    diff: ManifestDiff,
+    manifest_path: Path,
+    rebuilt_entries: Mapping[str, ManifestEntry],
+    next_manifest: MaterializationManifest,
+) -> MaterializationResult:
+    unsupported_paths = tuple(path for path, snapshot in snapshots.items() if snapshot.language is None)
+    skipped_paths = tuple(sorted((*diff.unchanged, *unsupported_paths)))
+    return MaterializationResult(
+        mode=mode,
+        scanned=len(snapshots),
+        rebuilt=len(rebuilt_entries),
+        skipped=len(skipped_paths),
+        deleted=len(diff.deleted),
+        diagnostics=tuple(diagnostics),
+        manifest_path=manifest_path.as_posix(),
+        rebuilt_paths=tuple(sorted(rebuilt_entries)),
+        skipped_paths=skipped_paths,
+        deleted_paths=diff.deleted,
+        graph_summary=_manifest_summary(next_manifest),
+    )
+
+
 def _retained_node_ids(manifest: MaterializationManifest, touched_paths: set[str]) -> set[str]:
     retained: set[str] = set()
     for path, entry in manifest.files.items():
         if path in touched_paths:
             continue
         retained.update(entry.node_ids)
+    return retained
+
+
+def _retained_edge_ids(manifest: MaterializationManifest, touched_paths: set[str]) -> set[str]:
+    retained: set[str] = set()
+    for path, entry in manifest.files.items():
+        if path in touched_paths:
+            continue
+        retained.update(entry.edge_ids)
     return retained
 
 

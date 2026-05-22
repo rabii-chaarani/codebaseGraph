@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from core import CodeGraph, GraphEdge, GraphNode
 from db import (
     LadybugCodeGraphStore,
     build_ladybug_schema,
@@ -117,3 +118,28 @@ def test_ladybug_store_schema_setup_is_idempotent() -> None:
     store = create_ladybug_database(":memory:")
 
     store.ensure_schema()
+
+
+def test_ladybug_store_bulk_loader_groups_rows_by_table() -> None:
+    graph = CodeGraph()
+    graph.add_node(GraphNode(id="file:service", table="File", label="service.py", kind="source_file"))
+    graph.add_node(GraphNode(id="function:one", table="Function", label="one", kind="function"))
+    graph.add_node(GraphNode(id="function:two", table="Function", label="two", kind="function"))
+    graph.add_edge(GraphEdge(id="contains:one", type="Contains", source_id="file:service", target_id="function:one"))
+    graph.add_edge(GraphEdge(id="contains:two", type="Contains", source_id="file:service", target_id="function:two"))
+    store = object.__new__(LadybugCodeGraphStore)
+    statements: list[str] = []
+    store.execute = lambda statement, parameters=None: statements.append(statement)  # type: ignore[method-assign]
+
+    stats = store.insert_graphs_bulk([graph])
+
+    assert stats.node_rows == 3
+    assert stats.edge_rows == 2
+    assert stats.connector_rows == 4
+    assert stats.copy_calls == 5
+    assert len(statements) == 5
+    assert any(statement.startswith("COPY `File`") and statement.endswith('";') for statement in statements)
+    assert any(statement.startswith("COPY `Function`") and statement.endswith('";') for statement in statements)
+    assert any(statement.startswith("COPY `Contains`") and statement.endswith('";') for statement in statements)
+    assert any('COPY `FROM_Contains`' in statement and 'from="File", to="Contains"' in statement for statement in statements)
+    assert any('COPY `TO_Contains`' in statement and 'from="Contains", to="Function"' in statement for statement in statements)

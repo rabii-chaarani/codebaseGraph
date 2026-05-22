@@ -116,6 +116,23 @@ def test_query_helpers_are_read_only() -> None:
         assert not forbidden.search(helper.query)
 
 
+def test_query_helpers_use_edge_node_relation_traversal() -> None:
+    direct_relation = re.compile(r"-\[:(?!FROM_|TO_)([A-Za-z][A-Za-z0-9_]*)\]->")
+
+    for helper in QUERY_HELPERS:
+        assert not direct_relation.search(helper.query), helper.name
+
+    helper_queries = {helper.name: helper.query for helper in QUERY_HELPERS}
+    assert "[:FROM_ResolvesTo]" in helper_queries["callgraph_neighborhood"]
+    assert "[:TO_ResolvesTo]" in helper_queries["callgraph_neighborhood"]
+    assert "[:FROM_DependsOn]" in helper_queries["dependency_map"]
+    assert "[:TO_DependsOn]" in helper_queries["dependency_map"]
+    assert "[:FROM_RoutesTo]" in helper_queries["runtime_surface"]
+    assert "[:TO_RoutesTo]" in helper_queries["runtime_surface"]
+    assert "[:FROM_Documents]" in helper_queries["documentation_context"]
+    assert "[:TO_Documents]" in helper_queries["documentation_context"]
+
+
 def test_lookup_helpers_return_expected_specs() -> None:
     assert get_node_type("Class").name == "Class"
     assert get_relation_type("Calls").name == "Calls"

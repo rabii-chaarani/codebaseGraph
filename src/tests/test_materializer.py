@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+import ingest.materializer as materializer_module
+from db import LadybugCodeGraphStore
 from ingest import (
     GraphMaterializer,
     ManifestEntry,
@@ -70,11 +72,37 @@ def test_tree_sitter_python_parser_maps_sample_fixture_to_graph_tree() -> None:
     assert any(child["type"] == "function_definition" and child["name"] == "helper" for child in bundle.tree["children"])
 
 
+def test_scan_source_files_prunes_excluded_directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    source_dir = tmp_path / "src"
+    source_dir.mkdir()
+    (source_dir / "app.py").write_text("VALUE = 1\n", encoding="utf-8")
+    observed_dirnames: list[tuple[str, ...]] = []
+
+    def fake_walk(root: Path) -> object:
+        dirnames = [".venv", "src", "package.egg-info"]
+        yield Path(root).as_posix(), dirnames, []
+        observed_dirnames.append(tuple(dirnames))
+        for dirname in dirnames:
+            yield (Path(root) / dirname).as_posix(), [], ["app.py"]
+
+    monkeypatch.setattr("ingest.materializer.os.walk", fake_walk)
+    materializer = GraphMaterializer(tmp_path, db_path=":memory:", manifest_path=tmp_path / "manifest.json", store=object())
+
+    snapshots, diagnostics = materializer._scan_source_files()
+
+    assert observed_dirnames == [("src",)]
+    assert tuple(snapshots) == ("src/app.py",)
+    assert not diagnostics
+
+
 def test_full_materialization_writes_python_graph_to_ladybug(tmp_path: Path) -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")
     pytest.importorskip("real_ladybug")
     source_root = _copy_fixture(tmp_path)
+    ignored_dir = source_root / ".venv"
+    ignored_dir.mkdir()
+    (ignored_dir / "ignored.py").write_text("def ignored() -> None:\n    pass\n", encoding="utf-8")
 
     materializer = GraphMaterializer(
         source_root,
@@ -95,6 +123,38 @@ def test_full_materialization_writes_python_graph_to_ladybug(tmp_path: Path) -> 
     assert "SampleService" in _labels(materializer, "Class")
     assert "run" in _labels(materializer, "Method")
     assert {"helper", "main"} <= _labels(materializer, "Function")
+    assert "ignored" not in _labels(materializer, "Function")
+
+
+def test_full_materialization_handles_local_imports_inside_methods(tmp_path: Path) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    source_root = tmp_path / "local_import_project"
+    source_root.mkdir()
+    (source_root / "service.py").write_text(
+        "class Loader:\n"
+        "    def load(self) -> object:\n"
+        "        from pathlib import Path\n"
+        "        return Path('.')\n",
+        encoding="utf-8",
+    )
+
+    materializer = GraphMaterializer(
+        source_root,
+        db_path=":memory:",
+        manifest_path=tmp_path / "manifest.json",
+        include_fts=False,
+    )
+    result = materializer.materialize(mode="full")
+
+    assert result.rebuilt == 1
+    assert "pathlib.Path" in _labels(materializer, "ImportDeclaration")
+    assert "Path" in _labels(materializer, "CallExpression")
+    metadata = materializer.store.execute(
+        "MATCH (n:`ImportDeclaration` {label: 'pathlib.Path'}) RETURN n.metadata"
+    ).get_all()
+    assert '"imported_name":"pathlib.Path"' in metadata[0][0]
 
 
 def test_changed_materialization_only_rebuilds_changed_files(tmp_path: Path) -> None:
@@ -124,6 +184,104 @@ def test_changed_materialization_only_rebuilds_changed_files(tmp_path: Path) -> 
     assert "cli.py" not in _labels(materializer, "File")
 
 
+def test_full_ondisk_materialization_failure_keeps_previous_db_and_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    source_root = tmp_path / "project"
+    source_root.mkdir()
+    service_path = source_root / "service.py"
+    service_path.write_text("def old_name() -> str:\n    return 'old'\n", encoding="utf-8")
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+
+    GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
+    previous_manifest = manifest_path.read_text(encoding="utf-8")
+    service_path.write_text("def new_name() -> str:\n    return 'new'\n", encoding="utf-8")
+    real_create_ladybug_database = materializer_module.create_ladybug_database
+
+    def failing_create_ladybug_database(db_path: str | Path, *, include_fts: bool = True) -> LadybugCodeGraphStore:
+        store = real_create_ladybug_database(db_path, include_fts=include_fts)
+
+        def fail_insert(*args: object, **kwargs: object) -> None:
+            raise RuntimeError("bulk insert failed")
+
+        store.insert_graphs_bulk = fail_insert  # type: ignore[method-assign]
+        return store
+
+    monkeypatch.setattr(materializer_module, "create_ladybug_database", failing_create_ladybug_database)
+
+    with pytest.raises(RuntimeError, match="bulk insert failed"):
+        GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
+
+    assert manifest_path.read_text(encoding="utf-8") == previous_manifest
+    reader = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False)
+    assert "old_name" in _labels(reader, "Function")
+    assert "new_name" not in _labels(reader, "Function")
+    assert not _marker_path(manifest_path).exists()
+
+
+def test_full_ondisk_materialization_replaces_stale_db_without_clear_graph(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    source_root = tmp_path / "project"
+    source_root.mkdir()
+    old_path = source_root / "old_module.py"
+    old_path.write_text("def old_name() -> str:\n    return 'old'\n", encoding="utf-8")
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+
+    GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
+    old_path.unlink()
+    (source_root / "new_module.py").write_text("def new_name() -> str:\n    return 'new'\n", encoding="utf-8")
+
+    def fail_clear_graph(self: LadybugCodeGraphStore) -> None:
+        raise AssertionError("full on-disk rebuild must not clear the target DB in place")
+
+    monkeypatch.setattr(LadybugCodeGraphStore, "clear_graph", fail_clear_graph)
+    result = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
+
+    assert result.rebuilt == 1
+    reader = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False)
+    assert "new_name" in _labels(reader, "Function")
+    assert "old_name" not in _labels(reader, "Function")
+
+
+def test_pending_rebuild_marker_forces_changed_mode_atomic_rebuild(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    source_root = _copy_fixture(tmp_path)
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+
+    GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
+    marker_path = _marker_path(manifest_path)
+    marker_path.write_text("{}\n", encoding="utf-8")
+
+    def fail_clear_graph(self: LadybugCodeGraphStore) -> None:
+        raise AssertionError("marker recovery must use the atomic rebuild path")
+
+    monkeypatch.setattr(LadybugCodeGraphStore, "clear_graph", fail_clear_graph)
+    result = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="changed")
+
+    assert result.mode == "changed"
+    assert result.rebuilt == 3
+    assert not marker_path.exists()
+    reader = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False)
+    assert "SampleService" in _labels(reader, "Class")
+
+
 def _entry(path: str, content_hash: str) -> ManifestEntry:
     return ManifestEntry(
         path=path,
@@ -149,3 +307,7 @@ def _copy_fixture(tmp_path: Path) -> Path:
 def _labels(materializer: GraphMaterializer, table: str) -> set[str]:
     result = materializer.store.execute(f"MATCH (n:`{table}`) RETURN n.label")
     return {row[0] for row in result.get_all()}
+
+
+def _marker_path(manifest_path: Path) -> Path:
+    return manifest_path.with_suffix(manifest_path.suffix + ".rebuild-pending")

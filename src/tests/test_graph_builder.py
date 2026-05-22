@@ -119,6 +119,42 @@ def test_graph_builder_uses_capture_names_as_primary_semantic_signal() -> None:
     assert not result.unresolved
 
 
+def test_graph_builder_routes_local_imports_through_containing_scope() -> None:
+    parse_tree = {
+        "type": "Module",
+        "body": [
+            {
+                "type": "ClassDef",
+                "name": "Loader",
+                "body": [
+                    {
+                        "type": "FunctionDef",
+                        "name": "load",
+                        "body": [
+                            {
+                                "type": "ImportFrom",
+                                "module": "pathlib",
+                                "names": [{"type": "alias", "name": "Path"}],
+                                "line_start": 3,
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    }
+
+    graph = GraphBuilder(default_language="python").build(parse_tree, source_path="loader.py")
+
+    import_edge = next(
+        edge
+        for edge in graph.edges_by_type("Imports")
+        if graph.nodes[edge.target_id].label == "pathlib.Path"
+    )
+    assert graph.nodes[import_edge.source_id].table == "Scope"
+    assert graph.nodes[import_edge.target_id].table == "ImportDeclaration"
+
+
 def test_graph_builder_emits_relation_families_advertised_by_parser_mappings() -> None:
     parse_tree = {
         "type": "Module",
