@@ -60,6 +60,7 @@ def run_setup(options: SetupOptions) -> SetupResult:
             target=options.instructions_target,
             server_name=MCP_SERVER_NAME,
             config_path=paths.config_path,
+            setup_command=mcp_entry["command"],
         )
         materializer = GraphMaterializer(
             paths.repo_root,

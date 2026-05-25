@@ -22,12 +22,13 @@ def upsert_instruction_block(
     target: str = "auto",
     server_name: str,
     config_path: Path,
+    setup_command: str = "codebase-graph",
 ) -> InstructionResult:
     if target == "skip":
         return InstructionResult("skipped", None)
     path = _select_instruction_path(repo_root, target)
     existing = path.read_text(encoding="utf-8") if path.exists() else ""
-    block = _instruction_block(server_name=server_name, config_path=config_path)
+    block = _instruction_block(server_name=server_name, config_path=config_path, setup_command=setup_command)
     next_text, action = _upsert_block(existing, block, created=not path.exists())
     if next_text == existing:
         return InstructionResult("unchanged", path.as_posix())
@@ -65,14 +66,14 @@ def _select_instruction_path(repo_root: Path, target: str) -> Path:
     return agents
 
 
-def _instruction_block(*, server_name: str, config_path: Path) -> str:
+def _instruction_block(*, server_name: str, config_path: Path, setup_command: str) -> str:
     return (
         f"{START_MARKER}\n"
         "## codebaseGraph workflow\n"
         f"- Use the `{server_name}` MCP server for repository graph search, schema, and compact context before answering repo-structure questions.\n"
         "- Prefer `graph_search` for symbols, paths, docs, and setup instructions; follow with `graph_context` when relationships or nearby evidence matter.\n"
         "- Use `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.\n"
-        f"- Refresh the graph with `codebase-graph setup --repo-root .` when files change materially. Setup config: `{config_path.as_posix()}`.\n"
+        f"- Refresh the graph with `{setup_command} setup --repo-root .` when files change materially. Setup config: `{config_path.as_posix()}`.\n"
         f"{END_MARKER}\n"
     )
 

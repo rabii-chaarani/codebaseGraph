@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 try:
@@ -15,7 +16,7 @@ from codebase_graph.db import LadybugUnavailableError
 from codebase_graph.mcp.server import McpGraphServer, handle_tool_call
 from codebase_graph.setup import SetupError, SetupOptions, run_setup
 from codebase_graph.setup.instructions import END_MARKER, START_MARKER
-from codebase_graph.setup.mcp_config import configure_mcp_client
+from codebase_graph.setup.mcp_config import configure_mcp_client, server_entry
 
 
 def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
@@ -122,6 +123,22 @@ def test_mcp_config_dry_run_preserves_existing_servers(tmp_path: Path) -> None:
 
     assert written.action == "created"
     assert set(payload["mcpServers"]) == {"otherServer", "codebaseGraph"}
+
+
+def test_server_entry_prefers_current_environment_script(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    bin_dir = tmp_path / "venv" / "bin"
+    bin_dir.mkdir(parents=True)
+    python_path = bin_dir / "python"
+    script_path = bin_dir / "codebase-graph"
+    python_path.write_text("", encoding="utf-8")
+    script_path.write_text("", encoding="utf-8")
+    script_path.chmod(0o755)
+    monkeypatch.setattr(sys, "executable", python_path.as_posix())
+    monkeypatch.setenv("PATH", "")
+
+    entry = server_entry(tmp_path / ".codebaseGraph" / "config.json")
+
+    assert entry["command"] == script_path.as_posix()
 
 
 def test_setup_preflight_failure_stops_before_state_creation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

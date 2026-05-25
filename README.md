@@ -48,7 +48,7 @@ codebase-graph setup --instructions-target claude
 
 ## MCP usage
 
-Setup writes an MCP server entry equivalent to:
+Setup writes an MCP server entry equivalent to the block below. When setup is run from a virtual environment, the command may be the absolute path to that environment's `codebase-graph` executable so the MCP client can launch it without relying on shell `PATH`.
 
 ```json
 {

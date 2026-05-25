@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -53,7 +55,7 @@ def configure_mcp_client(
 
 def server_entry(setup_config_path: Path) -> dict[str, Any]:
     return {
-        "command": "codebase-graph",
+        "command": _resolve_server_command(),
         "args": ["mcp", "serve", "--config", setup_config_path.as_posix()],
     }
 
@@ -68,6 +70,13 @@ def default_config_path(client: str) -> Path:
             return mac_path
         return Path.home() / ".config" / "claude" / "claude_desktop_config.json"
     raise ValueError(f"Unsupported MCP client: {client}")
+
+
+def _resolve_server_command() -> str:
+    sibling_script = Path(sys.executable).with_name("codebase-graph")
+    if sibling_script.exists() and os.access(sibling_script, os.X_OK):
+        return sibling_script.as_posix()
+    return shutil.which("codebase-graph") or "codebase-graph"
 
 
 def _next_config_payload(path: Path, entry: dict[str, Any]) -> tuple[dict[str, Any], str]:
