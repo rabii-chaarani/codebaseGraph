@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from codebase_graph.core import CodeGraph, GraphEdge, GraphNode
@@ -118,6 +120,20 @@ def test_ladybug_store_schema_setup_is_idempotent() -> None:
     store = create_ladybug_database(":memory:")
 
     store.ensure_schema()
+
+
+def test_ladybug_store_allows_multiple_read_only_handles(tmp_path: Path) -> None:
+    pytest.importorskip("real_ladybug")
+    db_path = tmp_path / "graph.ldb"
+    writer = create_ladybug_database(db_path, include_fts=False)
+    writer.close()
+
+    first = create_ladybug_database(db_path, include_fts=False, read_only=True)
+    try:
+        second = create_ladybug_database(db_path, include_fts=False, read_only=True)
+        second.close()
+    finally:
+        first.close()
 
 
 def test_ladybug_store_bulk_loader_groups_rows_by_table() -> None:

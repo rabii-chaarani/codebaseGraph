@@ -27,7 +27,7 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     pytest.importorskip("tree_sitter_python")
     pytest.importorskip("real_ladybug")
     repo_root = _fresh_repo(tmp_path)
-    mcp_config_path = tmp_path / "mcp.json"
+    mcp_config_path = tmp_path / "config.toml"
 
     exit_code = cli_main(
         [
@@ -54,9 +54,9 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     agents_text = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
     assert agents_text.count(START_MARKER) == 1
     assert agents_text.count(END_MARKER) == 1
-    mcp_payload = json.loads(mcp_config_path.read_text(encoding="utf-8"))
-    assert "otherServer" not in mcp_payload.get("mcpServers", {})
-    assert mcp_payload["mcpServers"]["codebaseGraph"]["args"] == [
+    mcp_payload = tomllib.loads(mcp_config_path.read_text(encoding="utf-8"))
+    assert "otherServer" not in mcp_payload.get("mcp_servers", {})
+    assert mcp_payload["mcp_servers"]["codebaseGraph"]["args"] == [
         "mcp",
         "serve",
         "--config",
@@ -96,7 +96,7 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     assert any(hit["label"] == "SampleService" for hit in symbol_payload["results"])
 
 
-def test_mcp_config_dry_run_preserves_existing_servers(tmp_path: Path) -> None:
+def test_mcp_config_dry_run_preserves_existing_json_servers(tmp_path: Path) -> None:
     config_path = tmp_path / "mcp.json"
     config_path.write_text(
         json.dumps({"mcpServers": {"otherServer": {"command": "other", "args": []}}}),
@@ -105,7 +105,7 @@ def test_mcp_config_dry_run_preserves_existing_servers(tmp_path: Path) -> None:
     setup_config_path = tmp_path / ".codebaseGraph" / "config.json"
 
     dry_run = configure_mcp_client(
-        client="codex",
+        client="generic",
         config_path=config_path,
         setup_config_path=setup_config_path,
         dry_run=True,
@@ -115,7 +115,7 @@ def test_mcp_config_dry_run_preserves_existing_servers(tmp_path: Path) -> None:
     assert "codebaseGraph" not in json.loads(config_path.read_text(encoding="utf-8"))["mcpServers"]
 
     written = configure_mcp_client(
-        client="codex",
+        client="generic",
         config_path=config_path,
         setup_config_path=setup_config_path,
     )

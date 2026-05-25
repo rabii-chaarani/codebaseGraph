@@ -28,9 +28,16 @@ class BulkLoadStats:
 
 
 class LadybugCodeGraphStore:
-    def __init__(self, db_path: str | Path = ":memory:", *, include_fts: bool = True) -> None:
+    def __init__(
+        self,
+        db_path: str | Path = ":memory:",
+        *,
+        include_fts: bool = True,
+        read_only: bool = False,
+    ) -> None:
         self.db_path = db_path
         self.include_fts = include_fts
+        self.read_only = read_only
         try:
             import real_ladybug as lb
         except ImportError as exc:
@@ -40,9 +47,9 @@ class LadybugCodeGraphStore:
             ) from exc
 
         self._lb = lb
-        if str(db_path) != ":memory:":
+        if str(db_path) != ":memory:" and not read_only:
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = lb.Database(str(db_path))
+        self.db = lb.Database(str(db_path), read_only=read_only)
         self.conn = lb.Connection(self.db)
 
     @property
@@ -52,6 +59,11 @@ class LadybugCodeGraphStore:
     def ensure_schema(self) -> None:
         for statement in build_ladybug_schema_statements(include_fts=self.include_fts):
             self._execute_ignoring_existing(statement)
+
+    def load_extensions(self) -> None:
+        for statement in build_ladybug_schema_statements(include_fts=self.include_fts):
+            if statement.upper().startswith("LOAD "):
+                self.execute(statement)
 
     def execute(self, statement: str, parameters: dict[str, Any] | None = None) -> Any:
         if parameters is None:
@@ -200,9 +212,17 @@ class LadybugCodeGraphStore:
         )
 
 
-def create_ladybug_database(db_path: str | Path = ":memory:", *, include_fts: bool = True) -> LadybugCodeGraphStore:
-    store = LadybugCodeGraphStore(db_path, include_fts=include_fts)
-    store.ensure_schema()
+def create_ladybug_database(
+    db_path: str | Path = ":memory:",
+    *,
+    include_fts: bool = True,
+    read_only: bool = False,
+) -> LadybugCodeGraphStore:
+    store = LadybugCodeGraphStore(db_path, include_fts=include_fts, read_only=read_only)
+    if read_only:
+        store.load_extensions()
+    else:
+        store.ensure_schema()
     return store
 
 

@@ -5,10 +5,12 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
+from codebase_graph.db import create_ladybug_database
 from codebase_graph.ingest import GraphMaterializer
 from codebase_graph.ontology import CONTEXT_PROFILES
 from codebase_graph.retrieval import SearchRequest, SearchService
 from codebase_graph.setup import SetupError, SetupOptions, run_setup
+from codebase_graph.setup.clients import supported_client_ids
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -30,8 +32,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     setup_parser = subparsers.add_parser("setup", help="Bootstrap codebaseGraph state for a repository")
     setup_parser.add_argument("--repo-root", default=".", help="Repository root to configure")
-    setup_parser.add_argument("--mcp-client", choices=("codex", "claude", "none"), default="codex")
-    setup_parser.add_argument("--mcp-config-path", default=None, help="Override MCP JSON config path")
+    setup_parser.add_argument("--mcp-client", choices=supported_client_ids(), default="codex")
+    setup_parser.add_argument("--mcp-config-path", default=None, help="Override MCP client config path")
     setup_parser.add_argument("--skip-mcp-config", action="store_true", help="Do not write MCP client config")
     setup_parser.add_argument("--dry-run", action="store_true", help="Return the MCP config patch without writing it")
     setup_parser.add_argument(
@@ -50,6 +52,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     serve_parser.add_argument("--config", default=None, help="Path to .codebaseGraph/config.json")
     serve_parser.add_argument("--db", default=None, help="Override LadyBugDB path")
     serve_parser.add_argument("--manifest", default=None, help="Override manifest path")
+    http_parser = mcp_subparsers.add_parser("http", help="Serve graph tools over Streamable HTTP")
+    http_parser.add_argument("--repo-root", default=".", help="Repository root containing .codebaseGraph/config.json")
+    http_parser.add_argument("--config", default=None, help="Path to .codebaseGraph/config.json")
+    http_parser.add_argument("--db", default=None, help="Override LadyBugDB path")
+    http_parser.add_argument("--manifest", default=None, help="Override manifest path")
+    http_parser.add_argument("--host", default="127.0.0.1", help="HTTP bind host; default keeps the server local")
+    http_parser.add_argument("--port", type=int, default=8765, help="HTTP bind port")
+    http_parser.add_argument("--path", default="/mcp", help="MCP HTTP endpoint path")
 
     args = parser.parse_args(argv)
     if args.command == "materialize":
@@ -59,7 +69,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             manifest_path=args.manifest,
             include_fts=not args.no_fts,
         )
-        result = materializer.materialize(mode=args.mode)
+        try:
+            result = materializer.materialize(mode=args.mode)
+        finally:
+            materializer.close()
         print(json.dumps(_result_payload(result), indent=2, sort_keys=True))
         return 0
     if args.command in {"search", "context"}:
@@ -80,9 +93,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             manifest_path=args.manifest,
             include_fts=True,
         )
-        if not args.no_refresh:
-            materializer.materialize(mode="changed")
-        payload = SearchService(materializer.store).search(request)
+        if args.no_refresh:
+            with create_ladybug_database(materializer.db_path, include_fts=True, read_only=True) as store:
+                payload = SearchService(store).search(request)
+        else:
+            try:
+                materializer.materialize(mode="changed")
+                payload = SearchService(materializer.store).search(request)
+            finally:
+                materializer.close()
         print(json.dumps(payload.as_dict(), indent=2, sort_keys=True))
         return 0
     if args.command == "setup":
@@ -106,6 +125,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         from codebase_graph.mcp.server import serve_stdio
 
         serve_stdio(repo_root=args.repo_root, config_path=args.config, db_path=args.db, manifest_path=args.manifest)
+        return 0
+    if args.command == "mcp" and args.mcp_command == "http":
+        from codebase_graph.mcp.server import serve_http
+
+        serve_http(
+            repo_root=args.repo_root,
+            config_path=args.config,
+            db_path=args.db,
+            manifest_path=args.manifest,
+            host=args.host,
+            port=args.port,
+            endpoint_path=args.path,
+        )
         return 0
     parser.error(f"Unknown command: {args.command}")
     return 2

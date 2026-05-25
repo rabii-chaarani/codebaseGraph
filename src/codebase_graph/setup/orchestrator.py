@@ -69,7 +69,10 @@ def run_setup(options: SetupOptions) -> SetupResult:
             include_fts=True,
             repository_label=paths.repo_name,
         )
-        materialization = materializer.materialize(mode=options.mode)  # type: ignore[arg-type]
+        try:
+            materialization = materializer.materialize(mode=options.mode)  # type: ignore[arg-type]
+        finally:
+            materializer.close()
         mcp_result = configure_mcp_client(
             client=options.mcp_client,
             config_path=options.mcp_config_path,

@@ -230,6 +230,9 @@ class GraphMaterializer:
         self._store = value
         self._store_injected = value is not None
 
+    def close(self) -> None:
+        self._close_store()
+
     def materialize(self, mode: MaterializeMode = "changed") -> MaterializationResult:
         if mode not in {"full", "changed"}:
             raise ValueError(f"Unsupported materialization mode: {mode}")
@@ -360,14 +363,17 @@ class GraphMaterializer:
             next_manifest.write(temp_manifest_path)
             _write_rebuild_marker(marker_path, target_db_path, self.manifest_path)
             self._close_store()
+            _unlink_db_sidecars(target_db_path)
             os.replace(temp_db_path, target_db_path)
             os.replace(temp_manifest_path, self.manifest_path)
+            _unlink_db_sidecars(target_db_path)
             _unlink_if_exists(marker_path)
             self._store = None
         except Exception:
             if temp_store is not None:
                 temp_store.close()
             _unlink_if_exists(temp_db_path)
+            _unlink_db_sidecars(temp_db_path)
             _unlink_if_exists(temp_manifest_path)
             _unlink_if_exists(temp_manifest_path.with_suffix(temp_manifest_path.suffix + ".tmp"))
             raise
@@ -502,6 +508,11 @@ def _unlink_if_exists(path: Path) -> None:
         path.unlink()
     except FileNotFoundError:
         return
+
+
+def _unlink_db_sidecars(db_path: Path) -> None:
+    for suffix in (".wal", ".shm"):
+        _unlink_if_exists(Path(f"{db_path}{suffix}"))
 
 
 def _is_excluded(path: Path, source_root: Path) -> bool:
