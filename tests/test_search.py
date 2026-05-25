@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from codebase_graph.cli import main as cli_main
+from codebase_graph.db import GraphNeighbor, SearchIndexRow
 from codebase_graph.ingest import GraphMaterializer
 from codebase_graph.reasoning import CompactContextBuilder
 from codebase_graph.retrieval.search import SearchHit, SearchRequest, SearchService
@@ -29,6 +30,64 @@ class _RecordingStore:
     def execute(self, statement: str, parameters: dict[str, Any] | None = None) -> _Result:
         self.calls.append((statement, parameters))
         return _Result(self.rows)
+
+
+class _Adapter:
+    def __init__(self) -> None:
+        self.search_calls: list[dict[str, Any]] = []
+        self.neighbor_calls: list[dict[str, Any]] = []
+
+    def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
+        self.search_calls.append({"node_type": node_type, "index_name": index_name, "query": query, "limit": limit})
+        if node_type != "Class":
+            return []
+        return [
+            SearchIndexRow(
+                id="opaque-class-id",
+                node_type="Class",
+                label="SampleService",
+                qualified_name="sample.SampleService",
+                path="sample/service.py",
+                score=1.0,
+            )
+        ]
+
+    def neighbors(
+        self,
+        *,
+        node_id: str,
+        node_type: str,
+        relation: str,
+        direction: str,
+        limit: int,
+    ) -> list[GraphNeighbor]:
+        self.neighbor_calls.append(
+            {
+                "node_id": node_id,
+                "node_type": node_type,
+                "relation": relation,
+                "direction": direction,
+                "limit": limit,
+            }
+        )
+        if relation != "Defines" or direction != "outgoing":
+            return []
+        return [
+            GraphNeighbor(
+                node_id="opaque-neighbor-id",
+                node_type="Method",
+                label="run",
+                path="sample/service.py",
+                line_start=2,
+                line_end=3,
+                summary="Run the service.",
+            )
+        ]
+
+
+class _AdapterStore:
+    def __init__(self, adapter: _Adapter) -> None:
+        self.graph_query_adapter = adapter
 
 
 def test_search_query_uses_ontology_index_names_and_parameterized_user_text() -> None:
@@ -157,6 +216,29 @@ def test_compact_context_respects_max_depth_limit_and_budget() -> None:
     assert context[0].direction == "outgoing"
     assert context[0].summary
     assert len(context[0].summary) < len(long_summary)
+
+
+def test_compact_context_uses_adapter_types_and_opaque_node_ids() -> None:
+    adapter = _Adapter()
+    builder = CompactContextBuilder(_AdapterStore(adapter))
+
+    context = builder.build("opaque-class-id", "Class", profile="definitions", limit=1, budget=120, max_depth=1)
+
+    assert context[0].id == "opaque-neighbor-id"
+    assert context[0].type == "Method"
+    assert context[0].label == "run"
+    assert adapter.neighbor_calls[0]["node_id"] == "opaque-class-id"
+
+
+def test_search_service_uses_query_adapter_for_fts() -> None:
+    adapter = _Adapter()
+
+    payload = SearchService(_AdapterStore(adapter)).search(SearchRequest("SampleService", limit=1, budget=0))
+
+    data = payload.as_dict()
+    assert data["results"][0]["id"] == "opaque-class-id"
+    assert data["results"][0]["type"] == "Class"
+    assert adapter.search_calls
 
 
 def test_search_request_rejects_invalid_profile() -> None:

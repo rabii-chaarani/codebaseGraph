@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from codebase_graph.extract import ParseBundle
 from .document_parser import MarkdownDocumentParser
@@ -11,6 +12,71 @@ from .document_parser import MarkdownDocumentParser
 
 class ParserUnavailableError(RuntimeError):
     pass
+
+
+class SourceParser(Protocol):
+    language: str
+    parser_version: str
+
+    def parse_file(
+        self,
+        path: Path,
+        *,
+        relative_path: str,
+        source_root: Path,
+        repository_label: str,
+        content_hash: str,
+    ) -> ParseBundle:
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class ParserRegistration:
+    language: str
+    suffixes: tuple[str, ...]
+    parser_factory: Callable[[], SourceParser]
+    parser_version: str
+
+
+class ParserRegistry:
+    def __init__(self, registrations: Mapping[str, ParserRegistration] | None = None) -> None:
+        self._registrations: dict[str, ParserRegistration] = dict(registrations or {})
+        self._suffix_to_language: dict[str, str] = {}
+        for registration in self._registrations.values():
+            self._register_suffixes(registration)
+
+    @property
+    def parser_version(self) -> str:
+        return "+".join(
+            registration.parser_version
+            for registration in self._registrations.values()
+        )
+
+    def register(
+        self,
+        language: str,
+        *,
+        suffixes: tuple[str, ...],
+        parser_factory: Callable[[], SourceParser],
+        parser_version: str,
+    ) -> None:
+        registration = ParserRegistration(language, suffixes, parser_factory, parser_version)
+        self._registrations[language] = registration
+        self._register_suffixes(registration)
+
+    def language_for_path(self, path: Path) -> str | None:
+        return self._suffix_to_language.get(path.suffix)
+
+    def parser_for_language(self, language: str) -> SourceParser:
+        try:
+            registration = self._registrations[language]
+        except KeyError as exc:
+            raise ValueError(f"Unsupported materializer language: {language}") from exc
+        return registration.parser_factory()
+
+    def _register_suffixes(self, registration: ParserRegistration) -> None:
+        for suffix in registration.suffixes:
+            self._suffix_to_language[suffix] = registration.language
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,12 +111,25 @@ class TreeSitterPythonParser:
         return _convert_node(tree.root_node, source_bytes)
 
 
-def parser_for_language(language: str) -> TreeSitterPythonParser | MarkdownDocumentParser:
-    if language == "python":
-        return TreeSitterPythonParser()
-    if language == "markdown":
-        return MarkdownDocumentParser()
-    raise ValueError(f"Unsupported materializer language: {language}")
+def default_parser_registry() -> ParserRegistry:
+    registry = ParserRegistry()
+    registry.register(
+        "python",
+        suffixes=(".py",),
+        parser_factory=TreeSitterPythonParser,
+        parser_version=TreeSitterPythonParser().parser_version,
+    )
+    registry.register(
+        "markdown",
+        suffixes=(".md", ".mdx"),
+        parser_factory=MarkdownDocumentParser,
+        parser_version=MarkdownDocumentParser().parser_version,
+    )
+    return registry
+
+
+def parser_for_language(language: str) -> SourceParser:
+    return default_parser_registry().parser_for_language(language)
 
 
 def _python_parser() -> Any:

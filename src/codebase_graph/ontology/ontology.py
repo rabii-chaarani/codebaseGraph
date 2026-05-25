@@ -687,6 +687,29 @@ CONTEXT_PROFILES = {
     },
 }
 
+SYMBOL_LOOKUP_DEFINITION_TYPES = (
+    "Class",
+    "Function",
+    "Method",
+    "Variable",
+    "Constant",
+    "ClassAttribute",
+    "InstanceAttribute",
+    "Property",
+    "Parameter",
+    "TypeAlias",
+)
+
+SYMBOL_LOOKUP_QUERY = (
+    " UNION ALL ".join(
+        f"MATCH (s:{node_type}) "
+        "WHERE s.label = $name OR s.qualified_name = $name "
+        "RETURN s.id, s.label, s.qualified_name, s.path"
+        for node_type in SYMBOL_LOOKUP_DEFINITION_TYPES
+    )
+    + " LIMIT 25"
+)
+
 QUERY_HELPERS = (
     QueryHelperSpec(
         "repository_overview",
@@ -696,8 +719,8 @@ QUERY_HELPERS = (
     ),
     QueryHelperSpec(
         "symbol_lookup",
-        "Find declarations by label or qualified name.",
-        "MATCH (s:Symbol) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path LIMIT 25",
+        "Find concrete semantic definitions by label or qualified name.",
+        SYMBOL_LOOKUP_QUERY,
         parameters=("name",),
         returns=("id", "label", "qualified_name", "path"),
     ),
@@ -734,7 +757,9 @@ QUERY_HELPERS = (
     QueryHelperSpec(
         "unresolved_references",
         "Find references that have not been resolved to a semantic target.",
-        "MATCH (r:Reference) RETURN r.id, r.label, r.path, r.line_start LIMIT 100",
+        "MATCH (r:Reference) "
+        "WHERE NOT EXISTS { MATCH (r)-[:FROM_ResolvesTo]->(:ResolvesTo)-[:TO_ResolvesTo]->() } "
+        "RETURN r.id, r.label, r.path, r.line_start LIMIT 100",
         returns=("id", "label", "path", "line_start"),
     ),
 )

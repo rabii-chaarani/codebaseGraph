@@ -9,7 +9,15 @@ from .materializer import (
     MaterializeMode,
     SourceSnapshot,
 )
-from .tree_sitter_parser import ParserUnavailableError, TreeSitterPythonParser, parser_for_language
+from .tree_sitter_parser import (
+    ParserRegistry,
+    ParserRegistration,
+    ParserUnavailableError,
+    SourceParser,
+    TreeSitterPythonParser,
+    default_parser_registry,
+    parser_for_language,
+)
 from .document_parser import MarkdownDocumentParser
 
 __all__ = [
@@ -20,8 +28,12 @@ __all__ = [
     "MaterializationManifest",
     "MaterializationResult",
     "MaterializeMode",
+    "ParserRegistry",
+    "ParserRegistration",
     "ParserUnavailableError",
+    "SourceParser",
     "SourceSnapshot",
     "TreeSitterPythonParser",
+    "default_parser_registry",
     "parser_for_language",
 ]

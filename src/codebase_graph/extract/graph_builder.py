@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -77,6 +77,75 @@ class ScopeFrame:
     qualified_name: str
 
 
+CaptureTableResolver = Callable[[str, ScopeFrame], str | None]
+
+
+class CaptureTableRegistry:
+    def __init__(self) -> None:
+        self._exact: dict[str, str | CaptureTableResolver] = {}
+        self._prefix: list[tuple[str, str | CaptureTableResolver]] = []
+
+    def register_exact(self, capture_name: str, table: str | CaptureTableResolver) -> None:
+        self._exact[_normalize_capture_name(capture_name)] = table
+
+    def register_prefix(self, prefix: str, table: str | CaptureTableResolver) -> None:
+        self._prefix.append((_normalize_capture_name(prefix), table))
+
+    def table_for(self, capture_name: str, owner: ScopeFrame) -> str | None:
+        capture = _normalize_capture_name(capture_name)
+        if not capture:
+            return None
+        if capture in self._exact:
+            return _resolve_capture_table(self._exact[capture], capture, owner)
+        for prefix, table in self._prefix:
+            if capture.startswith(prefix):
+                return _resolve_capture_table(table, capture, owner)
+        return None
+
+
+def default_capture_table_registry() -> CaptureTableRegistry:
+    registry = CaptureTableRegistry()
+    for capture in ("definition.class", "definition.struct", "definition.interface"):
+        registry.register_exact(capture, "Class")
+    registry.register_exact("definition.component", "Component")
+    registry.register_exact("component", "Component")
+    registry.register_exact("definition.method", "Method")
+    registry.register_exact("definition.function", _function_capture_table)
+    registry.register_exact("definition.parameter", "Parameter")
+    registry.register_exact("parameter", "Parameter")
+    registry.register_exact("type.return", "ReturnType")
+    registry.register_exact("return_type", "ReturnType")
+    for capture in ("type", "type.annotation", "reference.type"):
+        registry.register_exact(capture, "TypeAnnotation")
+    registry.register_exact("definition.type_alias", "TypeAlias")
+    registry.register_exact("definition.constant", "Constant")
+    registry.register_exact("definition.variable", "Variable")
+    registry.register_exact("decorator", "Decorator")
+    registry.register_exact("definition.decorator", "Decorator")
+    for capture in ("reference.import", "reference.include", "reference.require", "reference.use", "import"):
+        registry.register_exact(capture, "ImportDeclaration")
+    registry.register_exact("export", "ExportDeclaration")
+    registry.register_exact("definition.export", "ExportDeclaration")
+    registry.register_exact("reference.call", "CallExpression")
+    registry.register_exact("call", "CallExpression")
+    registry.register_prefix("query.", "Query")
+    registry.register_prefix("secret.", "SecretRef")
+    registry.register_exact("entrypoint.api", "APIEndpoint")
+    registry.register_exact("endpoint", "APIEndpoint")
+    registry.register_exact("route", "Route")
+    registry.register_exact("doc.source", "DocumentationSource")
+    registry.register_prefix("doc", "DocumentationChunk")
+    registry.register_exact("literal", "Literal")
+    registry.register_exact("string", "Literal")
+    registry.register_exact("number", "Literal")
+    registry.register_exact("control_flow", "ControlFlowBlock")
+    registry.register_exact("exception", "ExceptionFlow")
+    registry.register_exact("raises", "ExceptionFlow")
+    registry.register_exact("handles", "ExceptionFlow")
+    registry.register_prefix("reference", "Reference")
+    return registry
+
+
 class GraphBuilder:
     """Build an ontology graph from tree-sitter-shaped parser output.
 
@@ -92,11 +161,13 @@ class GraphBuilder:
         repository_label: str = "repository",
         source_root: str | Path = ".",
         include_syntax_captures: bool = True,
+        capture_table_registry: CaptureTableRegistry | None = None,
     ) -> None:
         self.default_language = default_language
         self.repository_label = repository_label
         self.source_root = Path(source_root).as_posix()
         self.include_syntax_captures = include_syntax_captures
+        self.capture_table_registry = capture_table_registry or default_capture_table_registry()
         self._node_types = set(node_type_names())
         self._relation_types = set(relation_type_names())
         self._graph = CodeGraph()
@@ -218,7 +289,7 @@ class GraphBuilder:
         node = self._normalize(raw_node)
         syntax_id = self._syntax_capture(node)
         next_owner = owner
-        capture_table = _table_from_capture(node.capture_name, owner)
+        capture_table = self.capture_table_registry.table_for(node.capture_name, owner)
 
         if capture_table is not None:
             semantic = self._emit_captured_semantic(capture_table, node, owner, syntax_id)
@@ -946,58 +1017,21 @@ def _capture_node_type(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
 
 
 def _table_from_capture(capture_name: str, owner: ScopeFrame) -> str | None:
-    capture = capture_name.lstrip("@")
-    if not capture:
-        return None
-    if capture in {"definition.class", "definition.struct", "definition.interface"}:
-        return "Class"
-    if capture == "definition.component" or capture == "component":
-        return "Component"
-    if capture == "definition.method":
-        return "Method"
-    if capture == "definition.function":
-        return "Method" if owner.table in {"Class", "Component"} else "Function"
-    if capture == "definition.parameter" or capture == "parameter":
-        return "Parameter"
-    if capture in {"type.return", "return_type"}:
-        return "ReturnType"
-    if capture in {"type", "type.annotation", "reference.type"}:
-        return "TypeAnnotation"
-    if capture == "definition.type_alias":
-        return "TypeAlias"
-    if capture == "definition.constant":
-        return "Constant"
-    if capture == "definition.variable":
-        return "Variable"
-    if capture in {"decorator", "definition.decorator"}:
-        return "Decorator"
-    if capture in {"reference.import", "reference.include", "reference.require", "reference.use", "import"}:
-        return "ImportDeclaration"
-    if capture in {"export", "definition.export"}:
-        return "ExportDeclaration"
-    if capture in {"reference.call", "call"}:
-        return "CallExpression"
-    if capture.startswith("query."):
-        return "Query"
-    if capture.startswith("secret."):
-        return "SecretRef"
-    if capture in {"entrypoint.api", "endpoint"}:
-        return "APIEndpoint"
-    if capture == "route":
-        return "Route"
-    if capture == "doc.source":
-        return "DocumentationSource"
-    if capture.startswith("doc"):
-        return "DocumentationChunk"
-    if capture in {"literal", "string", "number"}:
-        return "Literal"
-    if capture == "control_flow":
-        return "ControlFlowBlock"
-    if capture in {"exception", "raises", "handles"}:
-        return "ExceptionFlow"
-    if capture.startswith("reference"):
-        return "Reference"
-    return None
+    return default_capture_table_registry().table_for(capture_name, owner)
+
+
+def _normalize_capture_name(capture_name: str) -> str:
+    return capture_name.lstrip("@")
+
+
+def _resolve_capture_table(table: str | CaptureTableResolver, capture: str, owner: ScopeFrame) -> str | None:
+    if callable(table):
+        return table(capture, owner)
+    return table
+
+
+def _function_capture_table(_capture: str, owner: ScopeFrame) -> str:
+    return "Method" if owner.table in {"Class", "Component"} else "Function"
 
 
 def _import_source_id(owner: ScopeFrame) -> str:

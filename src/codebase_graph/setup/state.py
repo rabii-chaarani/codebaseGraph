@@ -2,55 +2,29 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
+from codebase_graph import paths as graph_paths
 from codebase_graph.ontology import ONTOLOGY_VERSION
 
-DEFAULT_STATE_DIR = ".codebaseGraph"
-CONFIG_NAME = "config.json"
-MANIFEST_NAME = "manifest.json"
-MCP_SERVER_NAME = "codebaseGraph"
-
-
-@dataclass(frozen=True, slots=True)
-class SetupPaths:
-    repo_root: Path
-    repo_name: str
-    state_dir: Path
-    db_path: Path
-    manifest_path: Path
-    config_path: Path
-
-    def as_dict(self) -> dict[str, str]:
-        return {
-            "repo_root": self.repo_root.as_posix(),
-            "repo_name": self.repo_name,
-            "state_dir": self.state_dir.as_posix(),
-            "db_path": self.db_path.as_posix(),
-            "manifest_path": self.manifest_path.as_posix(),
-            "config_path": self.config_path.as_posix(),
-        }
+CONFIG_NAME = graph_paths.CONFIG_NAME
+DEFAULT_STATE_DIR = graph_paths.DEFAULT_STATE_DIR
+MANIFEST_NAME = graph_paths.MANIFEST_NAME
+MCP_SERVER_NAME = graph_paths.MCP_SERVER_NAME
+GraphStatePaths = graph_paths.GraphStatePaths
+derive_graph_state_paths = graph_paths.derive_graph_state_paths
+SetupPaths = graph_paths.GraphStatePaths
 
 
 def derive_setup_paths(repo_root: str | Path) -> SetupPaths:
-    root = Path(repo_root).expanduser().resolve()
-    if not root.exists():
-        raise FileNotFoundError(f"Repository root does not exist: {root}")
-    if not root.is_dir():
-        raise NotADirectoryError(f"Repository root is not a directory: {root}")
-    repo_name = _repo_name(root)
-    state_dir = root / DEFAULT_STATE_DIR
-    return SetupPaths(
-        repo_root=root,
-        repo_name=repo_name,
-        state_dir=state_dir,
-        db_path=state_dir / f"{repo_name}_graph.ldb",
-        manifest_path=state_dir / MANIFEST_NAME,
-        config_path=state_dir / CONFIG_NAME,
-    )
+    paths = derive_graph_state_paths(repo_root)
+    if not paths.repo_root.exists():
+        raise FileNotFoundError(f"Repository root does not exist: {paths.repo_root}")
+    if not paths.repo_root.is_dir():
+        raise NotADirectoryError(f"Repository root is not a directory: {paths.repo_root}")
+    return paths
 
 
 def build_setup_config(paths: SetupPaths, *, mcp_command: list[str]) -> dict[str, Any]:
@@ -92,18 +66,6 @@ def write_setup_config(path: Path, payload: dict[str, Any]) -> str:
         handle.write("\n")
     os.replace(tmp_path, path)
     return action
-
-
-def _repo_name(root: Path) -> str:
-    name = root.name.strip()
-    if name:
-        return _safe_name(name)
-    return "repository"
-
-
-def _safe_name(value: str) -> str:
-    normalized = "".join(character if character.isalnum() or character in {"-", "_"} else "_" for character in value)
-    return normalized.strip("._-") or "repository"
 
 
 def _package_version() -> str:

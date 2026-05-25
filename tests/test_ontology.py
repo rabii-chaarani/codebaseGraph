@@ -133,6 +133,21 @@ def test_query_helpers_use_edge_node_relation_traversal() -> None:
     assert "[:TO_Documents]" in helper_queries["documentation_context"]
 
 
+def test_query_helper_semantics_match_public_names() -> None:
+    helper_queries = {helper.name: helper.query for helper in QUERY_HELPERS}
+
+    symbol_lookup = helper_queries["symbol_lookup"]
+    assert ":Class" in symbol_lookup
+    assert ":Function" in symbol_lookup
+    assert ":Method" in symbol_lookup
+    assert "s:Symbol" not in symbol_lookup
+
+    unresolved_references = helper_queries["unresolved_references"]
+    assert "NOT EXISTS" in unresolved_references
+    assert "FROM_ResolvesTo" in unresolved_references
+    assert "TO_ResolvesTo" in unresolved_references
+
+
 def test_lookup_helpers_return_expected_specs() -> None:
     assert get_node_type("Class").name == "Class"
     assert get_relation_type("Calls").name == "Calls"

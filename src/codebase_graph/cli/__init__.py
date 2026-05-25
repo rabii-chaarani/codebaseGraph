@@ -17,8 +17,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     materialize_parser = subparsers.add_parser("materialize", help="Materialize the code graph")
     materialize_parser.add_argument("--source-root", default=".", help="Repository or source root to scan")
-    materialize_parser.add_argument("--db", default=None, help="LadybugDB path; defaults under .codebase_graph")
-    materialize_parser.add_argument("--manifest", default=None, help="Manifest path; defaults under .codebase_graph")
+    materialize_parser.add_argument("--db", default=None, help="LadybugDB path; defaults under .codebaseGraph")
+    materialize_parser.add_argument("--manifest", default=None, help="Manifest path; defaults under .codebaseGraph")
     materialize_parser.add_argument("--mode", choices=("full", "changed"), default="changed")
     materialize_parser.add_argument("--no-fts", action="store_true", help="Skip FTS index creation")
 
@@ -114,8 +114,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _add_search_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("query", help="Search query")
     parser.add_argument("--source-root", default=".", help="Repository or source root to search")
-    parser.add_argument("--db", default=None, help="LadybugDB path; defaults under .codebase_graph")
-    parser.add_argument("--manifest", default=None, help="Manifest path; defaults under .codebase_graph")
+    parser.add_argument("--db", default=None, help="LadybugDB path; defaults under .codebaseGraph")
+    parser.add_argument("--manifest", default=None, help="Manifest path; defaults under .codebaseGraph")
     parser.add_argument("--limit", type=int, default=3, help="Maximum search hits to return")
     parser.add_argument("--profile", choices=sorted(CONTEXT_PROFILES), default="brief", help="Context profile")
     parser.add_argument("--budget", type=int, default=600, help="Approximate per-hit context character budget")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from codebase_graph.extract import CaptureRecord, GraphBuilder, ParseBundle
+from codebase_graph.extract import CaptureRecord, CaptureTableRegistry, GraphBuilder, ParseBundle
 from codebase_graph.ontology import PARSER_NODE_MAPPINGS
 
 
@@ -117,6 +117,25 @@ def test_graph_builder_uses_capture_names_as_primary_semantic_signal() -> None:
     assert {node.label for node in graph.nodes_by_type("DocumentationChunk")} == {"Handle the API request."}
     assert not result.diagnostics
     assert not result.unresolved
+
+
+def test_graph_builder_accepts_registered_capture_table_mapping() -> None:
+    registry = CaptureTableRegistry()
+    registry.register_exact("custom.component", "Component")
+    bundle = ParseBundle(
+        language="custom",
+        path="component.custom",
+        captures=(
+            CaptureRecord(
+                "custom.component",
+                {"type": "identifier", "name": "RegisteredWidget", "line_start": 1},
+            ),
+        ),
+    )
+
+    result = GraphBuilder(capture_table_registry=registry).build_file_graph(bundle)
+
+    assert {node.label for node in result.graph.nodes_by_type("Component")} == {"RegisteredWidget"}
 
 
 def test_graph_builder_routes_local_imports_through_containing_scope() -> None:

@@ -14,17 +14,14 @@ from codebase_graph.core import CodeGraph
 from codebase_graph.db import LadybugCodeGraphStore, create_ladybug_database
 from codebase_graph.extract import GraphBuilder
 from codebase_graph.ontology import ONTOLOGY_NAME
+from codebase_graph.paths import DEFAULT_STATE_DIR, derive_graph_state_paths
 
-from .tree_sitter_parser import ParserUnavailableError, parser_for_language
+from .tree_sitter_parser import ParserRegistry, ParserUnavailableError, default_parser_registry
 
 MaterializeMode = Literal["full", "changed"]
 
 MANIFEST_SCHEMA_VERSION = 1
-DEFAULT_STATE_DIR = ".codebase_graph"
-DEFAULT_MANIFEST_NAME = "manifest.json"
-DEFAULT_DB_NAME = "graph.lbug"
 PARSER_VERSION = "tree-sitter-python-v1+markdown-docs-v1"
-SUPPORTED_SUFFIXES = {".py": "python", ".md": "markdown", ".mdx": "markdown"}
 EXCLUDED_PARTS = {
     ".git",
     ".venv",
@@ -34,7 +31,7 @@ EXCLUDED_PARTS = {
     "build",
     "dist",
     ".codebase_graph",
-    ".codebaseGraph",
+    DEFAULT_STATE_DIR,
 }
 
 
@@ -94,8 +91,8 @@ class MaterializationManifest:
     files: Mapping[str, ManifestEntry] = field(default_factory=dict)
 
     @classmethod
-    def empty(cls) -> MaterializationManifest:
-        return cls(files={})
+    def empty(cls, *, parser_version: str = PARSER_VERSION) -> MaterializationManifest:
+        return cls(parser_version=parser_version, files={})
 
     @classmethod
     def load(cls, path: Path) -> MaterializationManifest:
@@ -129,15 +126,15 @@ class MaterializationManifest:
             handle.write("\n")
         os.replace(tmp_path, path)
 
-    def is_compatible(self) -> bool:
+    def is_compatible(self, *, parser_version: str = PARSER_VERSION) -> bool:
         return (
             self.schema_version == MANIFEST_SCHEMA_VERSION
             and self.ontology == ONTOLOGY_NAME
-            and self.parser_version == PARSER_VERSION
+            and self.parser_version == parser_version
         )
 
-    def diff(self, current_files: Mapping[str, SourceSnapshot]) -> ManifestDiff:
-        if not self.is_compatible():
+    def diff(self, current_files: Mapping[str, SourceSnapshot], *, parser_version: str = PARSER_VERSION) -> ManifestDiff:
+        if not self.is_compatible(parser_version=parser_version):
             return ManifestDiff(
                 added=tuple(sorted(current_files)),
                 modified=(),
@@ -206,16 +203,21 @@ class GraphMaterializer:
         include_fts: bool = True,
         repository_label: str | None = None,
         store: LadybugCodeGraphStore | None = None,
+        parser_registry: ParserRegistry | None = None,
+        graph_builder: GraphBuilder | None = None,
     ) -> None:
         self.source_root = Path(source_root).resolve()
-        self.state_dir = self.source_root / DEFAULT_STATE_DIR
-        self.db_path = _normalize_db_path(db_path if db_path is not None else self.state_dir / DEFAULT_DB_NAME)
-        self.manifest_path = Path(manifest_path) if manifest_path is not None else self.state_dir / DEFAULT_MANIFEST_NAME
+        paths = derive_graph_state_paths(self.source_root)
+        self.state_dir = paths.state_dir
+        self.db_path = _normalize_db_path(db_path if db_path is not None else paths.db_path)
+        self.manifest_path = Path(manifest_path) if manifest_path is not None else paths.manifest_path
         self.include_fts = include_fts
         self.repository_label = repository_label or self.source_root.name or "repository"
         self._store = store
         self._store_injected = store is not None
-        self.builder = GraphBuilder(repository_label=self.repository_label, source_root=self.source_root)
+        self.parser_registry = parser_registry or default_parser_registry()
+        self.parser_version = self.parser_registry.parser_version
+        self.builder = graph_builder or GraphBuilder(repository_label=self.repository_label, source_root=self.source_root)
 
     @property
     def store(self) -> LadybugCodeGraphStore:
@@ -257,7 +259,7 @@ class GraphMaterializer:
             retained_node_ids: set[str] = set()
             retained_edge_ids: set[str] = set()
         else:
-            diff = previous_manifest.diff(supported)
+            diff = previous_manifest.diff(supported, parser_version=self.parser_version)
             if diff.force_rebuild:
                 if self._can_atomic_rebuild():
                     return self._materialize_full_atomic(
@@ -312,7 +314,7 @@ class GraphMaterializer:
             if path not in set(diff.deleted) | set(diff.rebuild_paths)
         }
         next_files.update(rebuilt_entries)
-        next_manifest = MaterializationManifest(files=next_files)
+        next_manifest = MaterializationManifest(parser_version=self.parser_version, files=next_files)
         self._write_manifest(next_manifest)
 
         return _materialization_result(
@@ -342,7 +344,7 @@ class GraphMaterializer:
             rebuilt_graphs[path] = graph
             rebuilt_entries[path] = _manifest_entry(snapshot, graph)
 
-        next_manifest = MaterializationManifest(files=rebuilt_entries)
+        next_manifest = MaterializationManifest(parser_version=self.parser_version, files=rebuilt_entries)
         target_db_path = _filesystem_db_path(self.db_path)
         temp_db_path = _temporary_sibling(target_db_path, suffix=".lbug.tmp")
         temp_manifest_path = _temporary_sibling(self.manifest_path, suffix=".manifest.tmp")
@@ -420,7 +422,7 @@ class GraphMaterializer:
                 if _is_excluded(path, self.source_root):
                     continue
                 relative_path = path.relative_to(self.source_root).as_posix()
-                language = SUPPORTED_SUFFIXES.get(path.suffix)
+                language = self.parser_registry.language_for_path(path)
                 snapshots[relative_path] = SourceSnapshot(
                     path=relative_path,
                     absolute_path=path,
@@ -435,7 +437,7 @@ class GraphMaterializer:
         if snapshot.language is None:
             raise ValueError(f"Cannot build graph for unsupported file: {snapshot.path}")
         try:
-            parser = parser_for_language(snapshot.language)
+            parser = self.parser_registry.parser_for_language(snapshot.language)
             bundle = parser.parse_file(
                 snapshot.absolute_path,
                 relative_path=snapshot.path,

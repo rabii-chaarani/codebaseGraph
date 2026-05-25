@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from codebase_graph.db.schema import quote_identifier
+from codebase_graph.db import graph_query_adapter
 from codebase_graph.ontology import CONTEXT_PROFILES, RELATION_TYPES
 
 
@@ -37,6 +37,7 @@ class ContextNode:
 class CompactContextBuilder:
     def __init__(self, store: Any) -> None:
         self.store = store
+        self.query = graph_query_adapter(store)
         self._relation_names = {relation_type.name for relation_type in RELATION_TYPES}
 
     def build(
@@ -113,35 +114,24 @@ class CompactContextBuilder:
         direction: str,
         limit: int,
     ) -> list[ContextNode]:
-        if direction == "outgoing":
-            statement = (
-                f"MATCH (source:{quote_identifier(node_type)} {{id: $node_id}})"
-                f"-[:{quote_identifier(f'FROM_{relation}')}]->(edge:{quote_identifier(relation)})"
-                f"-[:{quote_identifier(f'TO_{relation}')}]->(neighbor) "
-                "RETURN neighbor.id, neighbor.label, neighbor.qualified_name, neighbor.path, "
-                f"neighbor.line_start, neighbor.line_end, neighbor.summary LIMIT {int(limit)}"
-            )
-        else:
-            statement = (
-                "MATCH (neighbor)"
-                f"-[:{quote_identifier(f'FROM_{relation}')}]->(edge:{quote_identifier(relation)})"
-                f"-[:{quote_identifier(f'TO_{relation}')}]->(target:{quote_identifier(node_type)} {{id: $node_id}}) "
-                "RETURN neighbor.id, neighbor.label, neighbor.qualified_name, neighbor.path, "
-                f"neighbor.line_start, neighbor.line_end, neighbor.summary LIMIT {int(limit)}"
-            )
-        rows = self.store.execute(statement, {"node_id": node_id}).get_all()
         return [
             ContextNode(
                 relation=relation,
                 direction=direction,
-                type=_type_from_id(_value(row, 0)),
-                label=_text(_value(row, 1)) or _text(_value(row, 2)),
-                path=_text(_value(row, 3)),
-                span=_span(_value(row, 4), _value(row, 5)),
-                summary=_text(_value(row, 6)),
-                id=_text(_value(row, 0)),
+                type=neighbor.node_type,
+                label=neighbor.label or neighbor.qualified_name,
+                path=neighbor.path,
+                span=_span(neighbor.line_start, neighbor.line_end),
+                summary=neighbor.summary,
+                id=neighbor.node_id,
             )
-            for row in rows
+            for neighbor in self.query.neighbors(
+                node_id=node_id,
+                node_type=node_type,
+                relation=relation,
+                direction=direction,
+                limit=limit,
+            )
         ]
 
 
@@ -177,13 +167,6 @@ def _node_key(node: ContextNode) -> str:
     return node.id
 
 
-def _type_from_id(value: Any) -> str:
-    text = _text(value)
-    if ":" not in text:
-        return ""
-    return text.split(":", 1)[0]
-
-
 def _span(line_start: Any, line_end: Any) -> dict[str, int]:
     span: dict[str, int] = {}
     if line_start is not None:
@@ -191,17 +174,6 @@ def _span(line_start: Any, line_end: Any) -> dict[str, int]:
     if line_end is not None:
         span["line_end"] = int(line_end)
     return span
-
-
-def _text(value: Any) -> str:
-    return "" if value is None else str(value)
-
-
-def _value(row: Any, index: int) -> Any:
-    try:
-        return row[index]
-    except IndexError:
-        return None
 
 
 __all__ = ["CompactContextBuilder", "ContextNode", "DEFAULT_CONTEXT_BUDGET", "DEFAULT_CONTEXT_LIMIT"]

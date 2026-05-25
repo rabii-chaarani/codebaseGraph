@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from codebase_graph.db import SearchIndexRow, graph_query_adapter
 from codebase_graph.ontology import CONTEXT_PROFILES, SEARCH_INDEXES
 from codebase_graph.reasoning.context_builder import CompactContextBuilder, ContextNode, DEFAULT_CONTEXT_BUDGET, DEFAULT_CONTEXT_LIMIT
 
@@ -95,6 +96,7 @@ class FTSIndexSpec:
 class SearchService:
     def __init__(self, store: Any) -> None:
         self.store = store
+        self.query = graph_query_adapter(store)
         self.indexes = tuple(_fts_index_specs())
 
     def search(self, request: SearchRequest) -> CompactContextPayload:
@@ -128,12 +130,15 @@ class SearchService:
     def _query_fts(self, query: str, limit: int) -> list[SearchHit]:
         hits: list[SearchHit] = []
         for spec in self.indexes:
-            result = self.store.execute(
-                _fts_query_statement(spec),
-                {"query": query, "top": limit},
+            hits.extend(
+                _hit_from_index_row(row, spec)
+                for row in self.query.search_index(
+                    node_type=spec.node_type,
+                    index_name=spec.index_name,
+                    query=query,
+                    limit=limit,
+                )
             )
-            rows = result.get_all()
-            hits.extend(_hit_from_row(row, spec) for row in rows)
         return hits
 
     def _rank_hits(self, hits: list[SearchHit], *, query: str = "", profile: str = "brief") -> list[SearchHit]:
@@ -147,14 +152,6 @@ class SearchService:
         return sorted(deduped, key=_ranked_hit_sort_key)
 
 
-def _fts_query_statement(spec: FTSIndexSpec) -> str:
-    return (
-        f"CALL QUERY_FTS_INDEX('{spec.node_type}', '{spec.index_name}', $query, TOP := $top) "
-        "RETURN node.id, node.label, node.qualified_name, node.path, "
-        "node.line_start, node.line_end, node.summary, score"
-    )
-
-
 def _fts_index_specs() -> list[FTSIndexSpec]:
     specs: list[FTSIndexSpec] = []
     order = 0
@@ -166,16 +163,16 @@ def _fts_index_specs() -> list[FTSIndexSpec]:
     return specs
 
 
-def _hit_from_row(row: Any, spec: FTSIndexSpec) -> SearchHit:
+def _hit_from_index_row(row: SearchIndexRow, spec: FTSIndexSpec) -> SearchHit:
     return SearchHit(
-        id=_text(_value(row, 0)),
+        id=row.id,
         type=spec.node_type,
-        label=_text(_value(row, 1)),
-        qualified_name=_text(_value(row, 2)),
-        path=_text(_value(row, 3)),
-        span=_span(_value(row, 4), _value(row, 5)),
-        summary=_text(_value(row, 6)),
-        score=float(_value(row, 7) or 0.0),
+        label=row.label,
+        qualified_name=row.qualified_name,
+        path=row.path,
+        span=_span(row.line_start, row.line_end),
+        summary=row.summary,
+        score=row.score,
         index_order=spec.order,
     )
 
@@ -302,17 +299,6 @@ def _span(line_start: Any, line_end: Any) -> dict[str, int]:
     if line_end is not None:
         span["line_end"] = int(line_end)
     return span
-
-
-def _text(value: Any) -> str:
-    return "" if value is None else str(value)
-
-
-def _value(row: Any, index: int) -> Any:
-    try:
-        return row[index]
-    except IndexError:
-        return None
 
 
 __all__ = [

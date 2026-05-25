@@ -9,8 +9,10 @@ import codebase_graph.ingest.materializer as materializer_module
 from codebase_graph.db import LadybugCodeGraphStore
 from codebase_graph.ingest import (
     GraphMaterializer,
+    MarkdownDocumentParser,
     ManifestEntry,
     MaterializationManifest,
+    ParserRegistry,
     SourceSnapshot,
     TreeSitterPythonParser,
 )
@@ -70,6 +72,36 @@ def test_tree_sitter_python_parser_maps_sample_fixture_to_graph_tree() -> None:
     assert bundle.tree["type"] == "module"
     assert any(child["type"] == "class_definition" and child["name"] == "SampleService" for child in bundle.tree["children"])
     assert any(child["type"] == "function_definition" and child["name"] == "helper" for child in bundle.tree["children"])
+
+
+def test_materializer_defaults_to_canonical_codebasegraph_state_paths(tmp_path: Path) -> None:
+    source_root = tmp_path / "sample repo"
+    source_root.mkdir()
+
+    materializer = GraphMaterializer(source_root, store=object())
+
+    assert materializer.state_dir == source_root / ".codebaseGraph"
+    assert materializer.db_path == source_root / ".codebaseGraph" / "sample_repo_graph.ldb"
+    assert materializer.manifest_path == source_root / ".codebaseGraph" / "manifest.json"
+
+
+def test_scan_source_files_uses_parser_registry_for_suffix_mapping(tmp_path: Path) -> None:
+    registry = ParserRegistry()
+    registry.register(
+        "notes",
+        suffixes=(".notes",),
+        parser_factory=MarkdownDocumentParser,
+        parser_version="notes-v1",
+    )
+    source_root = tmp_path / "project"
+    source_root.mkdir()
+    (source_root / "handoff.notes").write_text("# Handoff\n", encoding="utf-8")
+
+    materializer = GraphMaterializer(source_root, store=object(), parser_registry=registry)
+    snapshots, diagnostics = materializer._scan_source_files()
+
+    assert snapshots["handoff.notes"].language == "notes"
+    assert not diagnostics
 
 
 def test_scan_source_files_prunes_excluded_directories(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
