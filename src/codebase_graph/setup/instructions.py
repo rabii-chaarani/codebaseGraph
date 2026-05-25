@@ -70,7 +70,7 @@ def _instruction_block(*, server_name: str, config_path: Path, setup_command: st
     return (
         f"{START_MARKER}\n"
         "## codebaseGraph workflow\n"
-        f"- Use the `{server_name}` MCP server for repository graph search, schema, and compact context before answering repo-structure questions.\n"
+        f"- Use the `{server_name}` MCP server for repository graph search, schema, and compact context before answering repo-structure questions or performing coding tasks.\n"
         "- Prefer `graph_search` for symbols, paths, docs, and setup instructions; follow with `graph_context` when relationships or nearby evidence matter.\n"
         "- Use `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.\n"
         f"- Refresh the graph with `{setup_command} setup --repo-root .` when files change materially. Setup config: `{config_path.as_posix()}`.\n"
