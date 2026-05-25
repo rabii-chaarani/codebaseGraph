@@ -191,7 +191,7 @@ def test_hermes_default_path_is_documented_home_config(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("HOME", tmp_path.as_posix())
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
     descriptor = build_server_descriptor(tmp_path / ".codebaseGraph" / "config.json")
 
     assert get_client_adapter("hermes").default_config_path(descriptor) == tmp_path / ".hermes" / "config.yaml"

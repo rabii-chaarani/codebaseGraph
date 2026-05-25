@@ -6,7 +6,7 @@ import os
 import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -505,7 +505,7 @@ def _write_rebuild_marker(marker_path: Path, db_path: Path, manifest_path: Path)
     with tmp_path.open("w", encoding="utf-8") as handle:
         json.dump(
             {
-                "created_at": datetime.now(UTC).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
                 "db_path": db_path.as_posix(),
                 "manifest_path": manifest_path.as_posix(),
             },
@@ -560,7 +560,7 @@ def _manifest_entry(snapshot: SourceSnapshot, graph: CodeGraph) -> ManifestEntry
         edge_ids=tuple(sorted(graph.edges)),
         node_types={node_id: node.table for node_id, node in graph.nodes.items()},
         edge_types={edge_id: edge.type for edge_id, edge in graph.edges.items()},
-        materialized_at=datetime.now(UTC).isoformat(),
+        materialized_at=datetime.now(timezone.utc).isoformat(),
     )
 
 
