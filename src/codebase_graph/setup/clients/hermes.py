@@ -15,7 +15,7 @@ class HermesAdapter:
     client_id = "hermes"
 
     def default_config_path(self, descriptor: McpServerDescriptor) -> Path:
-        return Path.home() / ".config" / "hermes" / "mcp_servers.yaml"
+        return Path.home() / ".hermes" / "config.yaml"
 
     def render(self, existing_text: str | None, descriptor: McpServerDescriptor) -> RenderedClientConfig:
         entry = descriptor.stdio_entry(include_type=True)

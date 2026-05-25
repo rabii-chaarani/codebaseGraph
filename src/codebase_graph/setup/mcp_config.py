@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from .clients import get_client_adapter
 from .descriptor import build_server_descriptor
+from .installer import McpInstallOptions, McpInstallResult, install_mcp_server
 from .state import MCP_SERVER_NAME
 
 
@@ -18,8 +18,14 @@ class McpConfigResult:
     server_name: str
     entry: dict[str, Any]
     descriptor: dict[str, Any] | None = None
+    method: str | None = None
+    scope: str | None = None
+    command: list[str] | None = None
     patch: Any = None
     payload: Any = None
+    verification: dict[str, Any] | None = None
+    native_command: list[str] | None = None
+    native_error: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         payload = {
@@ -31,11 +37,42 @@ class McpConfigResult:
         }
         if self.descriptor is not None:
             payload["descriptor"] = self.descriptor
+        if self.method is not None:
+            payload["method"] = self.method
+        if self.scope is not None:
+            payload["scope"] = self.scope
+        if self.command is not None:
+            payload["command"] = self.command
         if self.patch is not None:
             payload["patch"] = self.patch
         if self.payload is not None:
             payload["payload"] = self.payload
+        if self.verification is not None:
+            payload["verification"] = self.verification
+        if self.native_command is not None:
+            payload["native_command"] = self.native_command
+        if self.native_error is not None:
+            payload["native_error"] = self.native_error
         return payload
+
+    @classmethod
+    def from_install_result(cls, result: McpInstallResult) -> McpConfigResult:
+        return cls(
+            action=result.action,
+            client=result.client,
+            path=result.path,
+            server_name=result.server_name,
+            entry=result.entry,
+            descriptor=result.descriptor,
+            method=result.method,
+            scope=result.scope,
+            command=result.command,
+            patch=result.patch,
+            payload=result.payload,
+            verification=result.verification,
+            native_command=result.native_command,
+            native_error=result.native_error,
+        )
 
 
 def configure_mcp_client(
@@ -46,40 +83,19 @@ def configure_mcp_client(
     dry_run: bool = False,
     skip: bool = False,
 ) -> McpConfigResult:
-    descriptor = build_server_descriptor(setup_config_path)
-    entry = descriptor.stdio_entry()
-    if skip or client == "none":
-        return McpConfigResult("skipped", client, None, MCP_SERVER_NAME, entry, descriptor=descriptor.as_dict())
-    adapter = get_client_adapter(client)
-    path = Path(config_path).expanduser().resolve() if config_path is not None else adapter.default_config_path(descriptor)
-    existing_text = path.read_text(encoding="utf-8") if path.exists() else None
-    rendered = adapter.render(existing_text, descriptor)
-    if dry_run:
-        return McpConfigResult(
-            "dry_run",
-            client,
-            path.as_posix(),
-            MCP_SERVER_NAME,
-            rendered.entry,
-            descriptor=descriptor.as_dict(),
-            patch=rendered.patch,
-            payload=rendered.payload,
+    result = install_mcp_server(
+        McpInstallOptions(
+            client=client,
+            scope="project" if client == "claude-project" else "local",
+            setup_config_path=setup_config_path,
+            server_name=MCP_SERVER_NAME,
+            client_config_path=config_path,
+            dry_run=dry_run,
+            skip=skip,
+            require_setup_config=False,
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = path.with_suffix(path.suffix + ".tmp")
-    with tmp_path.open("w", encoding="utf-8") as handle:
-        handle.write(rendered.text)
-    os.replace(tmp_path, path)
-    return McpConfigResult(
-        rendered.action,
-        client,
-        path.as_posix(),
-        MCP_SERVER_NAME,
-        rendered.entry,
-        descriptor=descriptor.as_dict(),
-        patch=rendered.patch,
-        payload=rendered.payload,
     )
+    return McpConfigResult.from_install_result(result)
 
 
 def server_entry(setup_config_path: Path) -> dict[str, Any]:

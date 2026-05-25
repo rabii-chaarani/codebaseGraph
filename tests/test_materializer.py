@@ -219,6 +219,105 @@ def test_changed_materialization_only_rebuilds_changed_files(tmp_path: Path) -> 
     assert "cli.py" not in _labels(materializer, "File")
 
 
+def test_changed_ondisk_materialization_rebuilds_atomically_without_inplace_deletes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    source_root = _copy_fixture(tmp_path)
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+
+    GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
+    service_path = source_root / "sample_project" / "service.py"
+    service_path.write_text(
+        service_path.read_text(encoding="utf-8") + "\n\ndef changed_mode_added() -> str:\n    return 'added'\n",
+        encoding="utf-8",
+    )
+
+    def fail_clear_graph(self: LadybugCodeGraphStore) -> None:
+        raise AssertionError("on-disk changed mode must not clear the target DB in place")
+
+    def fail_delete_partition(self: LadybugCodeGraphStore, *args: object, **kwargs: object) -> None:
+        raise AssertionError("on-disk changed mode must not delete target partitions in place")
+
+    monkeypatch.setattr(LadybugCodeGraphStore, "clear_graph", fail_clear_graph)
+    monkeypatch.setattr(LadybugCodeGraphStore, "delete_partition", fail_delete_partition)
+
+    result = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(
+        mode="changed"
+    )
+
+    assert result.mode == "changed"
+    assert result.rebuilt == 4
+    assert "changed_mode_added" in _labels(
+        GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False),
+        "Function",
+    )
+
+
+def test_changed_ondisk_materialization_noop_does_not_rebuild(tmp_path: Path) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    source_root = _copy_fixture(tmp_path)
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+
+    GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
+    result = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(
+        mode="changed"
+    )
+
+    assert result.mode == "changed"
+    assert result.rebuilt == 0
+    assert result.deleted == 0
+
+
+def test_changed_ondisk_materialization_failure_keeps_previous_db_and_manifest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    source_root = tmp_path / "project"
+    source_root.mkdir()
+    service_path = source_root / "service.py"
+    service_path.write_text("def old_name() -> str:\n    return 'old'\n", encoding="utf-8")
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+
+    GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
+    previous_manifest = manifest_path.read_text(encoding="utf-8")
+    service_path.write_text("def new_name() -> str:\n    return 'new'\n", encoding="utf-8")
+    real_create_ladybug_database = materializer_module.create_ladybug_database
+
+    def failing_create_ladybug_database(db_path: str | Path, *, include_fts: bool = True) -> LadybugCodeGraphStore:
+        store = real_create_ladybug_database(db_path, include_fts=include_fts)
+
+        def fail_insert(*args: object, **kwargs: object) -> None:
+            raise RuntimeError("changed bulk insert failed")
+
+        store.insert_graphs_bulk = fail_insert  # type: ignore[method-assign]
+        return store
+
+    monkeypatch.setattr(materializer_module, "create_ladybug_database", failing_create_ladybug_database)
+
+    with pytest.raises(RuntimeError, match="changed bulk insert failed"):
+        GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(
+            mode="changed"
+        )
+
+    assert manifest_path.read_text(encoding="utf-8") == previous_manifest
+    reader = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False)
+    assert "old_name" in _labels(reader, "Function")
+    assert "new_name" not in _labels(reader, "Function")
+    assert not _marker_path(manifest_path).exists()
+
+
 def test_full_ondisk_materialization_failure_keeps_previous_db_and_manifest(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -289,7 +388,7 @@ def test_full_ondisk_materialization_replaces_stale_db_without_clear_graph(
     assert "old_name" not in _labels(reader, "Function")
 
 
-def test_full_ondisk_materialization_replaces_stale_wal_sidecar(tmp_path: Path) -> None:
+def test_full_ondisk_materialization_replaces_stale_sidecars(tmp_path: Path) -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")
     pytest.importorskip("real_ladybug")
@@ -299,11 +398,13 @@ def test_full_ondisk_materialization_replaces_stale_wal_sidecar(tmp_path: Path) 
 
     GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
     Path(f"{db_path}.wal").write_text("stale wal from previous database", encoding="utf-8")
+    Path(f"{db_path}.shadow").write_text("stale shadow from previous database", encoding="utf-8")
 
     GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="full")
 
     reader = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False)
     assert "SampleService" in _labels(reader, "Class")
+    assert not Path(f"{db_path}.shadow").exists()
 
 
 def test_pending_rebuild_marker_forces_changed_mode_atomic_rebuild(

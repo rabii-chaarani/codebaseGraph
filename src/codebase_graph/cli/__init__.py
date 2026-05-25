@@ -11,6 +11,7 @@ from codebase_graph.ontology import CONTEXT_PROFILES
 from codebase_graph.retrieval import SearchRequest, SearchService
 from codebase_graph.setup import SetupError, SetupOptions, run_setup
 from codebase_graph.setup.clients import supported_client_ids
+from codebase_graph.setup.installer import McpInstallOptions, install_mcp_clients, supported_install_client_ids
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -47,6 +48,16 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     mcp_parser = subparsers.add_parser("mcp", help="Run or inspect the MCP server")
     mcp_subparsers = mcp_parser.add_subparsers(dest="mcp_command", required=True)
+    install_parser = mcp_subparsers.add_parser("install", help="Install the MCP server in a supported client")
+    install_parser.add_argument("--client", choices=supported_install_client_ids(include_all=True), default="codex")
+    install_parser.add_argument("--scope", choices=("local", "user", "project"), default="local")
+    install_parser.add_argument("--name", default=None, help="MCP server name; defaults to codebaseGraph-<repo>")
+    install_parser.add_argument("--config-path", default=None, help="Path to .codebaseGraph/config.json")
+    install_parser.add_argument("--repo-root", default=".", help="Repository root used to find .codebaseGraph/config.json")
+    install_parser.add_argument("--dry-run", action="store_true", help="Show the install action without writing or invoking CLIs")
+    install_parser.add_argument("--verify", action="store_true", help="Run direct MCP smoke checks after installation")
+    install_parser.add_argument("--json", action="store_true", help="Emit JSON output")
+
     serve_parser = mcp_subparsers.add_parser("serve", help="Serve graph tools over MCP stdio")
     serve_parser.add_argument("--repo-root", default=".", help="Repository root containing .codebaseGraph/config.json")
     serve_parser.add_argument("--config", default=None, help="Path to .codebaseGraph/config.json")
@@ -121,6 +132,35 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.error(str(exc))
         print(json.dumps(result.as_dict(), indent=2, sort_keys=True))
         return 0
+    if args.command == "mcp" and args.mcp_command == "install":
+        setup_config_path = (
+            Path(args.config_path).expanduser().resolve()
+            if args.config_path is not None
+            else Path(args.repo_root).expanduser().resolve() / ".codebaseGraph" / "config.json"
+        )
+        try:
+            results = install_mcp_clients(
+                McpInstallOptions(
+                    client=args.client,
+                    scope=args.scope,
+                    setup_config_path=setup_config_path,
+                    server_name=args.name,
+                    dry_run=args.dry_run,
+                    verify=args.verify,
+                )
+            )
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
+        payload: dict[str, object]
+        if args.client == "all":
+            payload = {"results": [result.as_dict() for result in results]}
+        else:
+            payload = results[0].as_dict()
+        if args.json:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            _print_mcp_install_results(results)
+        return 1 if any(result.action == "failed" for result in results) else 0
     if args.command == "mcp" and args.mcp_command == "serve":
         from codebase_graph.mcp.server import serve_stdio
 
@@ -170,6 +210,17 @@ def _result_payload(result: object) -> dict[str, object]:
         "deleted_paths": list(getattr(result, "deleted_paths")),
         "graph_summary": dict(getattr(result, "graph_summary")),
     }
+
+
+def _print_mcp_install_results(results: Sequence[object]) -> None:
+    for result in results:
+        action = getattr(result, "action")
+        client = getattr(result, "client")
+        method = getattr(result, "method") or "none"
+        server_name = getattr(result, "server_name")
+        target = getattr(result, "path") or " ".join(getattr(result, "command") or [])
+        suffix = f" -> {target}" if target else ""
+        print(f"{client}: {action} {server_name} via {method}{suffix}")
 
 
 __all__ = ["main"]

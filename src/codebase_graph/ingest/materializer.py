@@ -275,6 +275,20 @@ class GraphMaterializer:
                 self.store.clear_graph()
                 retained_node_ids = set()
                 retained_edge_ids = set()
+            elif self._can_atomic_rebuild() and _diff_has_changes(diff):
+                return self._materialize_full_atomic(
+                    mode=mode,
+                    snapshots=snapshots,
+                    diagnostics=diagnostics,
+                    supported=supported,
+                    diff=ManifestDiff(
+                        added=tuple(sorted(supported)),
+                        modified=(),
+                        unchanged=(),
+                        deleted=tuple(sorted(previous_manifest.files)),
+                        force_rebuild=True,
+                    ),
+                )
             else:
                 touched_paths = set(diff.rebuild_paths) | set(diff.deleted)
                 retained_node_ids = _retained_node_ids(previous_manifest, touched_paths)
@@ -511,8 +525,12 @@ def _unlink_if_exists(path: Path) -> None:
 
 
 def _unlink_db_sidecars(db_path: Path) -> None:
-    for suffix in (".wal", ".shm"):
+    for suffix in (".wal", ".shm", ".shadow"):
         _unlink_if_exists(Path(f"{db_path}{suffix}"))
+
+
+def _diff_has_changes(diff: ManifestDiff) -> bool:
+    return bool(diff.rebuild_paths or diff.deleted)
 
 
 def _is_excluded(path: Path, source_root: Path) -> bool:

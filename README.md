@@ -31,7 +31,7 @@ The setup command also:
 
 - Materializes the repository graph into the repo-local database.
 - Writes or updates one marked codebaseGraph block in `AGENTS.md` or `CLAUDE.md`.
-- Writes a native MCP client config entry named `codebaseGraph`, unless skipped.
+- Installs an MCP client entry named `codebaseGraph`, unless skipped.
 
 Useful options:
 
@@ -52,9 +52,47 @@ codebase-graph setup --instructions-target claude
 
 `--dry-run` returns the raw server descriptor plus the exact client patch or payload without writing the MCP client file. Repository graph state and instruction handling still run so the graph can be verified.
 
+## MCP installation
+
+The user-facing installer is:
+
+```bash
+codebase-graph mcp install
+```
+
+By default this installs Codex with a repository-specific server name, for example `codebaseGraph-my-service`. It builds the server descriptor from `.codebaseGraph/config.json`, uses the supported native client CLI when available, and falls back to the adapter file writer when the CLI is missing or fails.
+
+Useful installer options:
+
+```bash
+codebase-graph mcp install --client codex
+codebase-graph mcp install --client claude --scope user
+codebase-graph mcp install --client claude-project
+codebase-graph mcp install --client lmstudio
+codebase-graph mcp install --client hermes
+codebase-graph mcp install --client openclaw
+codebase-graph mcp install --client generic
+codebase-graph mcp install --client all --dry-run --json
+codebase-graph mcp install --name codebaseGraph
+codebase-graph mcp install --config-path /path/to/.codebaseGraph/config.json
+codebase-graph mcp install --verify
+```
+
+Native CLI installers are attempted first for Codex, Claude, Claude project scope, and OpenClaw:
+
+```bash
+codex mcp add <name> -- <command> <args...>
+claude mcp add --transport stdio --scope <scope> <name> -- <command> <args...>
+openclaw mcp set <name> '<json>'
+```
+
+If native installation is unavailable, codebaseGraph writes the client config file directly. `setup --mcp-client ...` remains supported and delegates to the same installer behavior after materializing graph state and updating instructions. For backward compatibility, setup still uses the legacy fixed server name `codebaseGraph`; use `codebase-graph mcp install --name codebaseGraph` if you want that name from the installer too.
+
+`--dry-run` reports the native command or emitted file patch without calling native CLIs or writing files. `--verify` runs a direct stdio MCP smoke test and, where available, asks the client CLI whether it can see the server.
+
 ## MCP usage
 
-Setup builds one canonical server descriptor and serializes it into the selected client format. When setup is run from a virtual environment, the command may be the absolute path to that environment's `codebase-graph` executable so the MCP client can launch it without relying on shell `PATH`.
+Setup and install build one canonical server descriptor and serialize it into the selected client format. When run from a virtual environment, the command may be the absolute path to that environment's `codebase-graph` executable so the MCP client can launch it without relying on shell `PATH`.
 
 Codex uses `~/.codex/config.toml`:
 
@@ -79,18 +117,18 @@ Claude Desktop, Claude project config, LM Studio, and generic MCP JSON use an `m
 }
 ```
 
-OpenClaw uses JSON5-compatible JSON under `mcp.servers`, and Hermes emits YAML under `mcp_servers`. Use `--dry-run --mcp-client <client>` to inspect the exact emitted patch before writing a config file.
+OpenClaw uses JSON5-compatible JSON under `mcp.servers`, and Hermes emits YAML under `mcp_servers` in `~/.hermes/config.yaml`. LM Studio reads `~/.lmstudio/mcp.json` and requires enabling "Allow calling servers from mcp.json" in the app. Use `codebase-graph mcp install --dry-run --client <client> --json` to inspect the exact emitted command or patch before installation.
 
 Client examples:
 
 ```bash
-codebase-graph setup --repo-root . --mcp-client codex
-codebase-graph setup --repo-root . --mcp-client claude
-codebase-graph setup --repo-root . --mcp-client claude-project
-codebase-graph setup --repo-root . --mcp-client lmstudio
-codebase-graph setup --repo-root . --mcp-client hermes
-codebase-graph setup --repo-root . --mcp-client openclaw
-codebase-graph setup --repo-root . --mcp-client generic --dry-run
+codebase-graph mcp install --client codex
+codebase-graph mcp install --client claude
+codebase-graph mcp install --client claude-project
+codebase-graph mcp install --client lmstudio
+codebase-graph mcp install --client hermes
+codebase-graph mcp install --client openclaw
+codebase-graph mcp install --client generic --dry-run --json
 ```
 
 The server can also be run directly:
@@ -145,9 +183,9 @@ ruff check .
 
 - Missing LadyBugDB: install a package build that includes `real_ladybug`; setup will fail before creating `.codebaseGraph`.
 - Stale graph: rerun `codebase-graph setup --repo-root .` after material source or documentation changes.
-- Broken Codex config: rerun setup with `--mcp-client codex`, then check `codex mcp list`.
-- Broken Claude config: rerun setup with `--mcp-client claude` for desktop config or `--mcp-client claude-project` for a repo-local `.mcp.json`.
-- Broken LM Studio, Hermes, OpenClaw, or generic config: run setup with the matching `--mcp-client` and `--dry-run` first, then copy or write the emitted payload to the client path.
+- Broken Codex config: rerun `codebase-graph mcp install --client codex --verify`, then check `codex mcp list`.
+- Broken Claude config: rerun `codebase-graph mcp install --client claude --scope user --verify` or `codebase-graph mcp install --client claude-project --verify`.
+- Broken LM Studio, Hermes, OpenClaw, or generic config: run `codebase-graph mcp install --client <client> --dry-run --json` first, then inspect the emitted payload and target path.
 - PATH or executable issues: run setup from the virtual environment that contains `codebase-graph`; the descriptor prefers that absolute executable path.
 - Direct smoke test: run `codebase-graph mcp serve --config .codebaseGraph/config.json` and send MCP `initialize`, `tools/list`, and `tools/call` JSON-RPC messages over stdio.
 - Unsupported files: binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, and `.codebaseGraph` paths are skipped.
