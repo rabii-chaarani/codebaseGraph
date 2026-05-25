@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from codebase_graph.paths import MCP_SERVER_NAME
+
 from .runtime import GraphRuntimeConfig, package_version
 from .tools import UnknownToolError, call_tool_result, tool_specs
 
@@ -74,7 +76,7 @@ class McpGraphServer:
         return {
             "protocolVersion": protocol_version,
             "capabilities": {"tools": {"listChanged": False}},
-            "serverInfo": {"name": "codebaseGraph", "version": package_version()},
+            "serverInfo": {"name": MCP_SERVER_NAME, "version": package_version()},
         }
 
     def _call_tool(self, params: dict[str, Any]) -> dict[str, Any]:

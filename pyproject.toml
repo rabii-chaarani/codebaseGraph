@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "codebase-graph"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Generic codebase knowledge graph engine for Python projects."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,6 +20,8 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
@@ -36,6 +38,10 @@ codebase-graph-mcp = "codebase_graph.mcp.server:main"
 where = ["src"]
 include = ["codebase_graph*"]
 exclude = ["tests*", "codebase_graph.egg-info*"]
+
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+local_scheme = "no-local-version"
 
 [tool.ruff]
 line-length = 120

@@ -31,7 +31,7 @@ The setup command also:
 
 - Materializes the repository graph into the repo-local database.
 - Writes or updates one marked codebaseGraph block in `AGENTS.md` or `CLAUDE.md`.
-- Installs an MCP client entry named `codebaseGraph`, unless skipped.
+- Installs an MCP client entry named `codebase_graph`, unless skipped.
 
 Useful options:
 
@@ -60,7 +60,7 @@ The user-facing installer is:
 codebase-graph mcp install
 ```
 
-By default this installs Codex with a repository-specific server name, for example `codebaseGraph-my-service`. It builds the server descriptor from `.codebaseGraph/config.json`, uses the supported native client CLI when available, and falls back to the adapter file writer when the CLI is missing or fails.
+By default this installs Codex with a repository-specific server name, for example `codebase_graph_my_service`. It builds the server descriptor from `.codebaseGraph/config.json`, uses the supported native client CLI when available, and falls back to the adapter file writer when the CLI is missing or fails.
 
 Useful installer options:
 
@@ -73,7 +73,7 @@ codebase-graph mcp install --client hermes
 codebase-graph mcp install --client openclaw
 codebase-graph mcp install --client generic
 codebase-graph mcp install --client all --dry-run --json
-codebase-graph mcp install --name codebaseGraph
+codebase-graph mcp install --name codebase_graph
 codebase-graph mcp install --config-path /path/to/.codebaseGraph/config.json
 codebase-graph mcp install --verify
 ```
@@ -86,7 +86,7 @@ claude mcp add --transport stdio --scope <scope> <name> -- <command> <args...>
 openclaw mcp set <name> '<json>'
 ```
 
-If native installation is unavailable, codebaseGraph writes the client config file directly. `setup --mcp-client ...` remains supported and delegates to the same installer behavior after materializing graph state and updating instructions. For backward compatibility, setup still uses the legacy fixed server name `codebaseGraph`; use `codebase-graph mcp install --name codebaseGraph` if you want that name from the installer too.
+If native installation is unavailable, codebaseGraph writes the client config file directly. `setup --mcp-client ...` remains supported and delegates to the same installer behavior after materializing graph state and updating instructions. The default MCP server name is `codebase_graph`, which avoids mixed-case tool namespace issues in clients that normalize or validate MCP labels strictly.
 
 `--dry-run` reports the native command or emitted file patch without calling native CLIs or writing files. `--verify` runs a direct stdio MCP smoke test and, where available, asks the client CLI whether it can see the server.
 
@@ -97,7 +97,7 @@ Setup and install build one canonical server descriptor and serialize it into th
 Codex uses `~/.codex/config.toml`:
 
 ```toml
-[mcp_servers.codebaseGraph]
+[mcp_servers.codebase_graph]
 command = "codebase-graph"
 args = ["mcp", "serve", "--config", ".codebaseGraph/config.json"]
 startup_timeout_sec = 60
@@ -108,7 +108,7 @@ Claude Desktop, Claude project config, LM Studio, and generic MCP JSON use an `m
 ```json
 {
   "mcpServers": {
-    "codebaseGraph": {
+    "codebase_graph": {
       "type": "stdio",
       "command": "codebase-graph",
       "args": ["mcp", "serve", "--config", ".codebaseGraph/config.json"]
@@ -178,6 +178,12 @@ Run checks:
 python -m pytest
 ruff check .
 ```
+
+## CI and releases
+
+GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff and package-build validation. Releases are driven by `vX.Y.Z` tags, use tag-derived package versions, and publish to PyPI through Trusted Publishing.
+
+Conda distribution uses the conda-forge staged-recipes path rather than direct Anaconda.org uploads. See [docs/release.md](docs/release.md) for the release workflow and conda-forge submission checklist.
 
 ## Troubleshooting
 

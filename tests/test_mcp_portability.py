@@ -79,14 +79,14 @@ def test_client_adapters_emit_native_config_shapes(tmp_path: Path) -> None:
 
     codex_patch = rendered["codex"]["patch"]
     codex_payload = tomllib.loads(codex_patch)
-    assert codex_payload["mcp_servers"]["codebaseGraph"]["command"]
-    assert codex_payload["mcp_servers"]["codebaseGraph"]["startup_timeout_sec"] == 60
-    assert "type" not in rendered["claude"]["payload"]["mcpServers"]["codebaseGraph"]
-    assert rendered["claude"]["payload"]["mcpServers"]["codebaseGraph"]["command"]
-    assert rendered["claude-project"]["payload"]["mcpServers"]["codebaseGraph"]["type"] == "stdio"
-    assert rendered["lmstudio"]["payload"]["mcpServers"]["codebaseGraph"]["type"] == "stdio"
-    assert rendered["generic"]["payload"]["mcpServers"]["codebaseGraph"]["args"][0:2] == ["mcp", "serve"]
-    assert rendered["openclaw"]["payload"]["mcp"]["servers"]["codebaseGraph"]["type"] == "stdio"
+    assert codex_payload["mcp_servers"]["codebase_graph"]["command"]
+    assert codex_payload["mcp_servers"]["codebase_graph"]["startup_timeout_sec"] == 60
+    assert "type" not in rendered["claude"]["payload"]["mcpServers"]["codebase_graph"]
+    assert rendered["claude"]["payload"]["mcpServers"]["codebase_graph"]["command"]
+    assert rendered["claude-project"]["payload"]["mcpServers"]["codebase_graph"]["type"] == "stdio"
+    assert rendered["lmstudio"]["payload"]["mcpServers"]["codebase_graph"]["type"] == "stdio"
+    assert rendered["generic"]["payload"]["mcpServers"]["codebase_graph"]["args"][0:2] == ["mcp", "serve"]
+    assert rendered["openclaw"]["payload"]["mcp"]["servers"]["codebase_graph"]["type"] == "stdio"
     assert "mcp_servers:" in rendered["hermes"]["patch"]
 
 

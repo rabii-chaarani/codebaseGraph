@@ -18,6 +18,10 @@ from codebase_graph.setup.installer import (
 from codebase_graph.setup.state import build_setup_config, derive_setup_paths, write_setup_config
 
 
+def test_default_server_name_is_namespace_safe() -> None:
+    assert default_server_name("My Service") == "codebase_graph_my_service"
+
+
 def test_codex_native_command_generation_uses_repo_server_name(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -29,8 +33,8 @@ def test_codex_native_command_generation_uses_repo_server_name(
 
     assert result.action == "dry_run"
     assert result.method == "native_cli"
-    assert result.server_name == "codebaseGraph-fresh_repo"
-    assert result.command[:4] == ["codex", "mcp", "add", "codebaseGraph-fresh_repo"]
+    assert result.server_name == "codebase_graph_fresh_repo"
+    assert result.command[:4] == ["codex", "mcp", "add", "codebase_graph_fresh_repo"]
     assert result.command[4] == "--"
 
 
@@ -53,7 +57,7 @@ def test_claude_native_command_includes_transport_and_scope(
         "stdio",
         "--scope",
         "user",
-        "codebaseGraph-fresh_repo",
+        "codebase_graph_fresh_repo",
     ]
 
 
@@ -68,7 +72,7 @@ def test_claude_project_native_command_forces_project_scope(
         McpInstallOptions(client="claude-project", scope="user", setup_config_path=config_path, dry_run=True)
     )
 
-    assert result.command[6:8] == ["project", "codebaseGraph-fresh_repo"]
+    assert result.command[6:8] == ["project", "codebase_graph_fresh_repo"]
 
 
 def test_openclaw_native_command_emits_server_json(
@@ -83,7 +87,7 @@ def test_openclaw_native_command_emits_server_json(
     )
     entry = json.loads(result.command[-1])
 
-    assert result.command[:4] == ["openclaw", "mcp", "set", "codebaseGraph-fresh_repo"]
+    assert result.command[:4] == ["openclaw", "mcp", "set", "codebase_graph_fresh_repo"]
     assert entry["type"] == "stdio"
     assert entry["args"][:2] == ["mcp", "serve"]
 
@@ -124,7 +128,7 @@ def test_native_cli_failure_falls_back_to_adapter(
 
     assert result.action == "created"
     assert result.method == "file_adapter"
-    assert result.native_command[:4] == ["codex", "mcp", "add", "codebaseGraph-fresh_repo"]
+    assert result.native_command[:4] == ["codex", "mcp", "add", "codebase_graph_fresh_repo"]
     assert result.native_error == "exit 2: native failed"
     assert (codex_home / "config.toml").exists()
 
@@ -150,7 +154,7 @@ def test_dry_run_never_writes_files_or_calls_native_cli(
     assert not (tmp_path / ".config" / "mcp" / "mcp.json").exists()
 
 
-def test_setup_compatibility_uses_legacy_server_name_and_file_adapter(
+def test_setup_compatibility_uses_snake_case_server_name_and_file_adapter(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -178,7 +182,7 @@ def test_setup_compatibility_uses_legacy_server_name_and_file_adapter(
     output = json.loads(capsys.readouterr().out)
 
     assert exit_code == 0
-    assert output["mcp_config"]["server_name"] == "codebaseGraph"
+    assert output["mcp_config"]["server_name"] == "codebase_graph"
     assert output["mcp_config"]["method"] == "file_adapter"
     assert output["mcp_config"]["path"] == mcp_config_path.as_posix()
 

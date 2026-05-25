@@ -56,7 +56,7 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     assert agents_text.count(END_MARKER) == 1
     mcp_payload = tomllib.loads(mcp_config_path.read_text(encoding="utf-8"))
     assert "otherServer" not in mcp_payload.get("mcp_servers", {})
-    assert mcp_payload["mcp_servers"]["codebaseGraph"]["args"] == [
+    assert mcp_payload["mcp_servers"]["codebase_graph"]["args"] == [
         "mcp",
         "serve",
         "--config",
@@ -112,7 +112,7 @@ def test_mcp_config_dry_run_preserves_existing_json_servers(tmp_path: Path) -> N
     )
 
     assert dry_run.action == "dry_run"
-    assert "codebaseGraph" not in json.loads(config_path.read_text(encoding="utf-8"))["mcpServers"]
+    assert "codebase_graph" not in json.loads(config_path.read_text(encoding="utf-8"))["mcpServers"]
 
     written = configure_mcp_client(
         client="generic",
@@ -122,7 +122,7 @@ def test_mcp_config_dry_run_preserves_existing_json_servers(tmp_path: Path) -> N
     payload = json.loads(config_path.read_text(encoding="utf-8"))
 
     assert written.action == "created"
-    assert set(payload["mcpServers"]) == {"otherServer", "codebaseGraph"}
+    assert set(payload["mcpServers"]) == {"otherServer", "codebase_graph"}
 
 
 def test_server_entry_prefers_current_environment_script(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

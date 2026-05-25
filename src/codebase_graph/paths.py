@@ -6,7 +6,7 @@ from pathlib import Path
 DEFAULT_STATE_DIR = ".codebaseGraph"
 CONFIG_NAME = "config.json"
 MANIFEST_NAME = "manifest.json"
-MCP_SERVER_NAME = "codebaseGraph"
+MCP_SERVER_NAME = "codebase_graph"
 
 
 @dataclass(frozen=True, slots=True)

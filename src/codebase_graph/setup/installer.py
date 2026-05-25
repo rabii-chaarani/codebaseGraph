@@ -93,7 +93,7 @@ def supported_install_client_ids(*, include_all: bool = False) -> tuple[str, ...
 
 def default_server_name(repo_name: str | None) -> str:
     safe_repo_name = _safe_name(repo_name or "repository")
-    return f"{MCP_SERVER_NAME}-{safe_repo_name}"
+    return f"{MCP_SERVER_NAME}_{safe_repo_name}"
 
 
 def install_mcp_clients(options: McpInstallOptions) -> list[McpInstallResult]:
@@ -508,4 +508,4 @@ def _subprocess_error(completed: subprocess.CompletedProcess[str]) -> str:
 
 def _safe_name(value: str) -> str:
     normalized = re.sub(r"[^A-Za-z0-9_-]+", "_", value.strip())
-    return normalized.strip("._-") or "repository"
+    return normalized.strip("._-").lower() or "repository"
