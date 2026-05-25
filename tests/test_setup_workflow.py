@@ -1,0 +1,192 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+try:
+    import tomllib
+except ImportError:  # pragma: no cover - Python 3.10 compatibility
+    import tomli as tomllib
+
+import pytest
+
+from codebase_graph.cli import main as cli_main
+from codebase_graph.db import LadybugUnavailableError
+from codebase_graph.mcp.server import McpGraphServer, handle_tool_call
+from codebase_graph.setup import SetupError, SetupOptions, run_setup
+from codebase_graph.setup.instructions import END_MARKER, START_MARKER
+from codebase_graph.setup.mcp_config import configure_mcp_client
+
+
+def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    repo_root = _fresh_repo(tmp_path)
+    mcp_config_path = tmp_path / "mcp.json"
+
+    exit_code = cli_main(
+        [
+            "setup",
+            "--repo-root",
+            repo_root.as_posix(),
+            "--mcp-client",
+            "codex",
+            "--mcp-config-path",
+            mcp_config_path.as_posix(),
+        ]
+    )
+    first_output = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert first_output["state_dir"] == (repo_root / ".codebaseGraph").as_posix()
+    assert first_output["db_path"] == (repo_root / ".codebaseGraph" / "fresh_repo_graph.ldb").as_posix()
+    assert Path(first_output["db_path"]).exists()
+    assert Path(first_output["config_path"]).exists()
+    assert first_output["materialization"]["rebuilt"] == 4
+    assert first_output["instructions"]["path"] == (repo_root / "AGENTS.md").as_posix()
+    assert first_output["mcp_config"]["action"] == "created"
+
+    agents_text = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
+    assert agents_text.count(START_MARKER) == 1
+    assert agents_text.count(END_MARKER) == 1
+    mcp_payload = json.loads(mcp_config_path.read_text(encoding="utf-8"))
+    assert "otherServer" not in mcp_payload.get("mcpServers", {})
+    assert mcp_payload["mcpServers"]["codebaseGraph"]["args"] == [
+        "mcp",
+        "serve",
+        "--config",
+        (repo_root / ".codebaseGraph" / "config.json").as_posix(),
+    ]
+
+    second_exit_code = cli_main(
+        [
+            "setup",
+            "--repo-root",
+            repo_root.as_posix(),
+            "--mcp-config-path",
+            mcp_config_path.as_posix(),
+        ]
+    )
+    second_output = json.loads(capsys.readouterr().out)
+
+    assert second_exit_code == 0
+    assert second_output["config_action"] == "unchanged"
+    assert second_output["instructions"]["action"] == "unchanged"
+    assert second_output["mcp_config"]["action"] == "unchanged"
+    assert (repo_root / "AGENTS.md").read_text(encoding="utf-8").count(START_MARKER) == 1
+
+    server = McpGraphServer.from_paths(config_path=repo_root / ".codebaseGraph" / "config.json")
+    docs_payload = handle_tool_call(
+        "graph_search",
+        {"query": "codebaseGraph workflow", "profile": "docs", "limit": 5},
+        runtime=server.runtime,
+    )
+    symbol_payload = handle_tool_call(
+        "graph_search",
+        {"query": "SampleService", "profile": "brief", "limit": 3},
+        runtime=server.runtime,
+    )
+
+    assert any(hit["path"] == "AGENTS.md" for hit in docs_payload["results"])
+    assert any(hit["label"] == "SampleService" for hit in symbol_payload["results"])
+
+
+def test_mcp_config_dry_run_preserves_existing_servers(tmp_path: Path) -> None:
+    config_path = tmp_path / "mcp.json"
+    config_path.write_text(
+        json.dumps({"mcpServers": {"otherServer": {"command": "other", "args": []}}}),
+        encoding="utf-8",
+    )
+    setup_config_path = tmp_path / ".codebaseGraph" / "config.json"
+
+    dry_run = configure_mcp_client(
+        client="codex",
+        config_path=config_path,
+        setup_config_path=setup_config_path,
+        dry_run=True,
+    )
+
+    assert dry_run.action == "dry_run"
+    assert "codebaseGraph" not in json.loads(config_path.read_text(encoding="utf-8"))["mcpServers"]
+
+    written = configure_mcp_client(
+        client="codex",
+        config_path=config_path,
+        setup_config_path=setup_config_path,
+    )
+    payload = json.loads(config_path.read_text(encoding="utf-8"))
+
+    assert written.action == "created"
+    assert set(payload["mcpServers"]) == {"otherServer", "codebaseGraph"}
+
+
+def test_setup_preflight_failure_stops_before_state_creation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo_root = _fresh_repo(tmp_path)
+
+    def fail_preflight() -> None:
+        raise LadybugUnavailableError("missing LadyBugDB")
+
+    monkeypatch.setattr("codebase_graph.setup.orchestrator.validate_ladybug_runtime", fail_preflight)
+
+    with pytest.raises(SetupError, match="missing LadyBugDB"):
+        run_setup(SetupOptions(repo_root=repo_root, mcp_client="none"))
+
+    assert not (repo_root / ".codebaseGraph").exists()
+
+
+def test_mcp_graph_query_rejects_write_like_statements(tmp_path: Path) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    repo_root = _fresh_repo(tmp_path)
+    result = run_setup(SetupOptions(repo_root=repo_root, mcp_client="none", instructions_target="skip"))
+    server = McpGraphServer.from_paths(config_path=result.paths.config_path)
+
+    with pytest.raises(ValueError, match="read-only"):
+        handle_tool_call(
+            "graph_query",
+            {"statement": "MATCH (n) DELETE n"},
+            runtime=server.runtime,
+        )
+
+
+def test_setup_invalid_repo_root_exits_nonzero(tmp_path: Path) -> None:
+    missing = tmp_path / "missing"
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli_main(["setup", "--repo-root", missing.as_posix(), "--mcp-client", "none"])
+
+    assert exc_info.value.code == 2
+
+
+def test_packaging_requires_ladybug_and_namespaced_package_discovery() -> None:
+    payload = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+
+    assert "real_ladybug" in payload["project"]["dependencies"]
+    assert payload["project"]["scripts"]["codebase-graph"] == "codebase_graph.cli:main"
+    assert payload["project"]["scripts"]["codebase-graph-mcp"] == "codebase_graph.mcp.server:main"
+    assert payload["tool"]["setuptools"]["packages"]["find"]["include"] == ["codebase_graph*"]
+
+
+def _fresh_repo(tmp_path: Path) -> Path:
+    repo_root = tmp_path / "fresh_repo"
+    package = repo_root / "sample_project"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "service.py").write_text(
+        "class SampleService:\n"
+        "    def run(self) -> str:\n"
+        "        return helper()\n\n"
+        "def helper() -> str:\n"
+        "    return 'ok'\n",
+        encoding="utf-8",
+    )
+    (repo_root / "README.md").write_text(
+        "# Fresh Repo\n\nThis repository documents the SampleService workflow.\n",
+        encoding="utf-8",
+    )
+    return repo_root

@@ -5,9 +5,10 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
-from ingest import GraphMaterializer
-from ontology import CONTEXT_PROFILES
-from retrieval import SearchRequest, SearchService
+from codebase_graph.ingest import GraphMaterializer
+from codebase_graph.ontology import CONTEXT_PROFILES
+from codebase_graph.retrieval import SearchRequest, SearchService
+from codebase_graph.setup import SetupError, SetupOptions, run_setup
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -26,6 +27,29 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     context_parser = subparsers.add_parser("context", help="Return compact context for a search query")
     _add_search_arguments(context_parser)
+
+    setup_parser = subparsers.add_parser("setup", help="Bootstrap codebaseGraph state for a repository")
+    setup_parser.add_argument("--repo-root", default=".", help="Repository root to configure")
+    setup_parser.add_argument("--mcp-client", choices=("codex", "claude", "none"), default="codex")
+    setup_parser.add_argument("--mcp-config-path", default=None, help="Override MCP JSON config path")
+    setup_parser.add_argument("--skip-mcp-config", action="store_true", help="Do not write MCP client config")
+    setup_parser.add_argument("--dry-run", action="store_true", help="Return the MCP config patch without writing it")
+    setup_parser.add_argument(
+        "--instructions-target",
+        choices=("auto", "agents", "claude", "skip"),
+        default="auto",
+        help="Instruction file to update",
+    )
+    setup_parser.add_argument("--mode", choices=("full", "changed"), default="changed", help="Materialization mode")
+    setup_parser.add_argument("--json", action="store_true", help="Emit JSON output")
+
+    mcp_parser = subparsers.add_parser("mcp", help="Run or inspect the MCP server")
+    mcp_subparsers = mcp_parser.add_subparsers(dest="mcp_command", required=True)
+    serve_parser = mcp_subparsers.add_parser("serve", help="Serve graph tools over MCP stdio")
+    serve_parser.add_argument("--repo-root", default=".", help="Repository root containing .codebaseGraph/config.json")
+    serve_parser.add_argument("--config", default=None, help="Path to .codebaseGraph/config.json")
+    serve_parser.add_argument("--db", default=None, help="Override LadyBugDB path")
+    serve_parser.add_argument("--manifest", default=None, help="Override manifest path")
 
     args = parser.parse_args(argv)
     if args.command == "materialize":
@@ -60,6 +84,28 @@ def main(argv: Sequence[str] | None = None) -> int:
             materializer.materialize(mode="changed")
         payload = SearchService(materializer.store).search(request)
         print(json.dumps(payload.as_dict(), indent=2, sort_keys=True))
+        return 0
+    if args.command == "setup":
+        try:
+            result = run_setup(
+                SetupOptions(
+                    repo_root=args.repo_root,
+                    mcp_client=args.mcp_client,
+                    mcp_config_path=args.mcp_config_path,
+                    skip_mcp_config=args.skip_mcp_config,
+                    dry_run=args.dry_run,
+                    instructions_target=args.instructions_target,
+                    mode=args.mode,
+                )
+            )
+        except SetupError as exc:
+            parser.error(str(exc))
+        print(json.dumps(result.as_dict(), indent=2, sort_keys=True))
+        return 0
+    if args.command == "mcp" and args.mcp_command == "serve":
+        from codebase_graph.mcp.server import serve_stdio
+
+        serve_stdio(repo_root=args.repo_root, config_path=args.config, db_path=args.db, manifest_path=args.manifest)
         return 0
     parser.error(f"Unknown command: {args.command}")
     return 2

@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from extract import ParseBundle
+from codebase_graph.extract import ParseBundle
+from .document_parser import MarkdownDocumentParser
 
 
 class ParserUnavailableError(RuntimeError):
@@ -44,9 +45,11 @@ class TreeSitterPythonParser:
         return _convert_node(tree.root_node, source_bytes)
 
 
-def parser_for_language(language: str) -> TreeSitterPythonParser:
+def parser_for_language(language: str) -> TreeSitterPythonParser | MarkdownDocumentParser:
     if language == "python":
         return TreeSitterPythonParser()
+    if language == "markdown":
+        return MarkdownDocumentParser()
     raise ValueError(f"Unsupported materializer language: {language}")
 
 

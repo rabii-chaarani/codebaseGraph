@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from core import CodeGraph
-from ontology import NODE_TYPES, RELATION_TYPES
+from codebase_graph.core import CodeGraph
+from codebase_graph.ontology import NODE_TYPES, RELATION_TYPES
 
 from .schema import build_ladybug_schema, build_ladybug_schema_statements, quote_identifier
 
@@ -35,7 +35,8 @@ class LadybugCodeGraphStore:
             import real_ladybug as lb
         except ImportError as exc:
             raise LadybugUnavailableError(
-                "LadyBugDB Python bindings are not installed. Install `real_ladybug` or `codebase-graph[ladybug]`."
+                "LadyBugDB Python bindings are required for codebaseGraph. "
+                "Install a valid `codebase-graph` runtime with `real_ladybug` available."
             ) from exc
 
         self._lb = lb
@@ -60,6 +61,12 @@ class LadybugCodeGraphStore:
     def close(self) -> None:
         self.conn.close()
         self.db.close()
+
+    def __enter__(self) -> LadybugCodeGraphStore:
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        self.close()
 
     def clear_graph(self) -> None:
         for relation_type in RELATION_TYPES:
@@ -149,7 +156,7 @@ class LadybugCodeGraphStore:
                 self._delete_node(node_id, node_type)
 
     def read_manifest(self, path: str | Path) -> Any:
-        from ingest.materializer import MaterializationManifest
+        from codebase_graph.ingest.materializer import MaterializationManifest
 
         return MaterializationManifest.load(Path(path))
 

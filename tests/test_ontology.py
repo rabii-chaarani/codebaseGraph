@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 
-from ontology import (
+from codebase_graph.ontology import (
     ONTOLOGY_NAME,
     PARSER_NODE_MAPPINGS,
     QUERY_HELPERS,

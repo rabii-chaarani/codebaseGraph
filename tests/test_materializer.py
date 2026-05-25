@@ -5,16 +5,16 @@ from pathlib import Path
 
 import pytest
 
-import ingest.materializer as materializer_module
-from db import LadybugCodeGraphStore
-from ingest import (
+import codebase_graph.ingest.materializer as materializer_module
+from codebase_graph.db import LadybugCodeGraphStore
+from codebase_graph.ingest import (
     GraphMaterializer,
     ManifestEntry,
     MaterializationManifest,
     SourceSnapshot,
     TreeSitterPythonParser,
 )
-from ontology import ONTOLOGY_NAME
+from codebase_graph.ontology import ONTOLOGY_NAME
 
 
 def test_manifest_diff_tracks_added_modified_unchanged_and_deleted(tmp_path: Path) -> None:
@@ -85,7 +85,7 @@ def test_scan_source_files_prunes_excluded_directories(tmp_path: Path, monkeypat
         for dirname in dirnames:
             yield (Path(root) / dirname).as_posix(), [], ["app.py"]
 
-    monkeypatch.setattr("ingest.materializer.os.walk", fake_walk)
+    monkeypatch.setattr("codebase_graph.ingest.materializer.os.walk", fake_walk)
     materializer = GraphMaterializer(tmp_path, db_path=":memory:", manifest_path=tmp_path / "manifest.json", store=object())
 
     snapshots, diagnostics = materializer._scan_source_files()
@@ -112,14 +112,17 @@ def test_full_materialization_writes_python_graph_to_ladybug(tmp_path: Path) -> 
     )
     result = materializer.materialize(mode="full")
 
-    assert result.rebuilt == 3
+    assert result.rebuilt == 4
     assert result.deleted == 0
-    assert result.graph_summary["partition_count"] == 3
+    assert result.graph_summary["partition_count"] == 4
     assert _labels(materializer, "File") == {
         "__init__.py",
+        "README.md",
         "cli.py",
         "service.py",
     }
+    assert "README.md" in _labels(materializer, "DocumentationSource")
+    assert _labels(materializer, "DocumentationChunk")
     assert "SampleService" in _labels(materializer, "Class")
     assert "run" in _labels(materializer, "Method")
     assert {"helper", "main"} <= _labels(materializer, "Function")
@@ -173,7 +176,7 @@ def test_changed_materialization_only_rebuilds_changed_files(tmp_path: Path) -> 
     (source_root / "sample_project" / "cli.py").unlink()
     fourth = materializer.materialize(mode="changed")
 
-    assert first.rebuilt == 3
+    assert first.rebuilt == 4
     assert second.rebuilt == 0
     assert third.rebuilt == 1
     assert third.rebuilt_paths == ("sample_project/service.py",)
@@ -276,7 +279,7 @@ def test_pending_rebuild_marker_forces_changed_mode_atomic_rebuild(
     result = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(mode="changed")
 
     assert result.mode == "changed"
-    assert result.rebuilt == 3
+    assert result.rebuilt == 4
     assert not marker_path.exists()
     reader = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False)
     assert "SampleService" in _labels(reader, "Class")

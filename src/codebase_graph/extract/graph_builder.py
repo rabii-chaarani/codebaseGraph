@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from core import CodeGraph, GraphEdge, GraphNode
-from ontology import ONTOLOGY_NAME, get_relation_type, node_type_names, relation_type_names
+from codebase_graph.core import CodeGraph, GraphEdge, GraphNode
+from codebase_graph.ontology import ONTOLOGY_NAME, get_relation_type, node_type_names, relation_type_names
 
 
 @dataclass(frozen=True, slots=True)
@@ -622,7 +622,7 @@ class GraphBuilder:
             byte_end=parser_node.byte_end,
             tree_sitter_node_type=parser_node.node_type,
             capture_name=parser_node.capture_name,
-            summary=semantic_label,
+            summary=_summary_for(table, semantic_label, parser_node),
             metadata={"canonical_key": stable_key, **(metadata or {})},
         )
         added = self._graph.add_node(node)
@@ -985,6 +985,8 @@ def _table_from_capture(capture_name: str, owner: ScopeFrame) -> str | None:
         return "APIEndpoint"
     if capture == "route":
         return "Route"
+    if capture == "doc.source":
+        return "DocumentationSource"
     if capture.startswith("doc"):
         return "DocumentationChunk"
     if capture in {"literal", "string", "number"}:
@@ -1060,6 +1062,12 @@ def _label_for(node: ParserNode) -> str:
     if "value" in node.fields:
         return _value_label(node.fields["value"])
     return node.text.strip() or node.node_type
+
+
+def _summary_for(table: str, label: str, node: ParserNode) -> str:
+    if table in {"DocumentationSource", "DocumentationChunk"} and node.text.strip():
+        return node.text.strip()
+    return label
 
 
 def _value_label(value: Any) -> str:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from core import CodeGraph, GraphEdge, GraphNode
-from db import (
+from codebase_graph.core import CodeGraph, GraphEdge, GraphNode
+from codebase_graph.db import (
     LadybugCodeGraphStore,
     build_ladybug_schema,
     build_ladybug_schema_statements,
@@ -11,7 +11,7 @@ from db import (
     ladybug_type,
     quote_identifier,
 )
-from ontology import NODE_TYPES, RELATION_TYPES, SEARCH_INDEXES
+from codebase_graph.ontology import NODE_TYPES, RELATION_TYPES, SEARCH_INDEXES
 
 
 def test_ladybug_schema_declares_all_ontology_nodes_and_edge_nodes() -> None:

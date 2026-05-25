@@ -10,10 +10,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from core import CodeGraph
-from db import LadybugCodeGraphStore, create_ladybug_database
-from extract import GraphBuilder
-from ontology import ONTOLOGY_NAME
+from codebase_graph.core import CodeGraph
+from codebase_graph.db import LadybugCodeGraphStore, create_ladybug_database
+from codebase_graph.extract import GraphBuilder
+from codebase_graph.ontology import ONTOLOGY_NAME
 
 from .tree_sitter_parser import ParserUnavailableError, parser_for_language
 
@@ -23,8 +23,8 @@ MANIFEST_SCHEMA_VERSION = 1
 DEFAULT_STATE_DIR = ".codebase_graph"
 DEFAULT_MANIFEST_NAME = "manifest.json"
 DEFAULT_DB_NAME = "graph.lbug"
-PARSER_VERSION = "tree-sitter-python-v1"
-SUPPORTED_SUFFIXES = {".py": "python"}
+PARSER_VERSION = "tree-sitter-python-v1+markdown-docs-v1"
+SUPPORTED_SUFFIXES = {".py": "python", ".md": "markdown", ".mdx": "markdown"}
 EXCLUDED_PARTS = {
     ".git",
     ".venv",
@@ -34,6 +34,7 @@ EXCLUDED_PARTS = {
     "build",
     "dist",
     ".codebase_graph",
+    ".codebaseGraph",
 }
 
 

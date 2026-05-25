@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Rabii Chaarani" }]
 dependencies = [
+  "real_ladybug",
   "tomli; python_version < '3.11'",
   "tree-sitter",
   "tree-sitter-python",
@@ -23,15 +24,18 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-ladybug = ["real_ladybug"]
+ladybug = []
 parquet = ["pyarrow"]
 dev = ["pytest", "ruff"]
 
 [project.scripts]
-codebase-graph = "cli:main"
+codebase-graph = "codebase_graph.cli:main"
+codebase-graph-mcp = "codebase_graph.mcp.server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["codebase_graph*"]
+exclude = ["tests*", "codebase_graph.egg-info*"]
 
 [tool.ruff]
 line-length = 120
@@ -39,4 +43,4 @@ target-version = "py310"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-testpaths = ["src/tests"]
+testpaths = ["tests"]

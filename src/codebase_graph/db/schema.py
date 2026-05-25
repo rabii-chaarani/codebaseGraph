@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ontology import EDGE_FIELDS, NODE_TYPES, RELATION_TYPES, SEARCH_INDEXES, FieldSpec
+from codebase_graph.ontology import EDGE_FIELDS, NODE_TYPES, RELATION_TYPES, SEARCH_INDEXES, FieldSpec
 
 TYPE_MAP = {
     "string": "STRING",

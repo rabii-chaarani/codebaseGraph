@@ -1,0 +1,95 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+START_MARKER = "<!-- codebaseGraph:start -->"
+END_MARKER = "<!-- codebaseGraph:end -->"
+
+
+@dataclass(frozen=True, slots=True)
+class InstructionResult:
+    action: str
+    path: str | None
+
+    def as_dict(self) -> dict[str, str | None]:
+        return {"action": self.action, "path": self.path}
+
+
+def upsert_instruction_block(
+    repo_root: Path,
+    *,
+    target: str = "auto",
+    server_name: str,
+    config_path: Path,
+) -> InstructionResult:
+    if target == "skip":
+        return InstructionResult("skipped", None)
+    path = _select_instruction_path(repo_root, target)
+    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+    block = _instruction_block(server_name=server_name, config_path=config_path)
+    next_text, action = _upsert_block(existing, block, created=not path.exists())
+    if next_text == existing:
+        return InstructionResult("unchanged", path.as_posix())
+    path.write_text(next_text, encoding="utf-8")
+    return InstructionResult(action, path.as_posix())
+
+
+def remove_instruction_block(path: Path) -> bool:
+    if not path.exists():
+        return False
+    existing = path.read_text(encoding="utf-8")
+    start = existing.find(START_MARKER)
+    end = existing.find(END_MARKER)
+    if start == -1 or end == -1 or end < start:
+        return False
+    after_end = end + len(END_MARKER)
+    next_text = (existing[:start].rstrip() + "\n\n" + existing[after_end:].lstrip()).strip() + "\n"
+    path.write_text(next_text, encoding="utf-8")
+    return True
+
+
+def _select_instruction_path(repo_root: Path, target: str) -> Path:
+    if target == "agents":
+        return repo_root / "AGENTS.md"
+    if target == "claude":
+        return repo_root / "CLAUDE.md"
+    if target != "auto":
+        raise ValueError(f"Unsupported instruction target: {target}")
+    agents = repo_root / "AGENTS.md"
+    claude = repo_root / "CLAUDE.md"
+    if agents.exists():
+        return agents
+    if claude.exists():
+        return claude
+    return agents
+
+
+def _instruction_block(*, server_name: str, config_path: Path) -> str:
+    return (
+        f"{START_MARKER}\n"
+        "## codebaseGraph workflow\n"
+        f"- Use the `{server_name}` MCP server for repository graph search, schema, and compact context before answering repo-structure questions.\n"
+        "- Prefer `graph_search` for symbols, paths, docs, and setup instructions; follow with `graph_context` when relationships or nearby evidence matter.\n"
+        "- Use `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.\n"
+        f"- Refresh the graph with `codebase-graph setup --repo-root .` when files change materially. Setup config: `{config_path.as_posix()}`.\n"
+        f"{END_MARKER}\n"
+    )
+
+
+def _upsert_block(existing: str, block: str, *, created: bool) -> tuple[str, str]:
+    if not existing.strip():
+        return block, "created"
+    start = existing.find(START_MARKER)
+    end = existing.find(END_MARKER)
+    if start != -1 and end != -1 and end > start:
+        after_end = end + len(END_MARKER)
+        return _join_sections(existing[:start], block, existing[after_end:]), "updated"
+    separator = "" if existing.endswith("\n") else "\n"
+    action = "created" if created else "updated"
+    return existing.rstrip() + separator + "\n" + block, action
+
+
+def _join_sections(prefix: str, block: str, suffix: str) -> str:
+    sections = [section.strip() for section in (prefix, block, suffix) if section.strip()]
+    return "\n\n".join(sections) + "\n"

@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from db.schema import quote_identifier
-from ontology import CONTEXT_PROFILES, RELATION_TYPES
+from codebase_graph.db.schema import quote_identifier
+from codebase_graph.ontology import CONTEXT_PROFILES, RELATION_TYPES
 
 
 DEFAULT_CONTEXT_LIMIT = 3

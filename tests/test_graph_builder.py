@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from extract import CaptureRecord, GraphBuilder, ParseBundle
-from ontology import PARSER_NODE_MAPPINGS
+from codebase_graph.extract import CaptureRecord, GraphBuilder, ParseBundle
+from codebase_graph.ontology import PARSER_NODE_MAPPINGS
 
 
 def test_graph_builder_maps_python_ast_shaped_tree_to_ontology() -> None:

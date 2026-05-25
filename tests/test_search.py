@@ -7,10 +7,10 @@ from typing import Any
 
 import pytest
 
-from cli import main as cli_main
-from ingest import GraphMaterializer
-from reasoning import CompactContextBuilder
-from retrieval.search import SearchHit, SearchRequest, SearchService
+from codebase_graph.cli import main as cli_main
+from codebase_graph.ingest import GraphMaterializer
+from codebase_graph.reasoning import CompactContextBuilder
+from codebase_graph.retrieval.search import SearchHit, SearchRequest, SearchService
 
 
 class _Result:

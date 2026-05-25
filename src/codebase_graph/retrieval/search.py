@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ontology import CONTEXT_PROFILES, SEARCH_INDEXES
-from reasoning.context_builder import CompactContextBuilder, ContextNode, DEFAULT_CONTEXT_BUDGET, DEFAULT_CONTEXT_LIMIT
+from codebase_graph.ontology import CONTEXT_PROFILES, SEARCH_INDEXES
+from codebase_graph.reasoning.context_builder import CompactContextBuilder, ContextNode, DEFAULT_CONTEXT_BUDGET, DEFAULT_CONTEXT_LIMIT
 
 
 DEFAULT_SEARCH_LIMIT = 3

@@ -10,9 +10,11 @@ from .materializer import (
     SourceSnapshot,
 )
 from .tree_sitter_parser import ParserUnavailableError, TreeSitterPythonParser, parser_for_language
+from .document_parser import MarkdownDocumentParser
 
 __all__ = [
     "GraphMaterializer",
+    "MarkdownDocumentParser",
     "ManifestDiff",
     "ManifestEntry",
     "MaterializationManifest",

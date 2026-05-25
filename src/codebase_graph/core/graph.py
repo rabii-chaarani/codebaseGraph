@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from ontology import ONTOLOGY_NAME, get_relation_type
+from codebase_graph.ontology import ONTOLOGY_NAME, get_relation_type
 
 
 @dataclass(slots=True)
