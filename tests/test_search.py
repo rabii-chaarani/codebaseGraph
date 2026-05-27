@@ -11,7 +11,7 @@ from codebase_graph.cli import main as cli_main
 from codebase_graph.db import GraphNeighbor, SearchIndexRow
 from codebase_graph.ingest import GraphMaterializer
 from codebase_graph.mcp.runtime import GraphRuntimeConfig
-from codebase_graph.mcp.tools import handle_tool_call
+from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _query_payload, handle_tool_call
 from codebase_graph.reasoning import CompactContextBuilder, ContextNode
 from codebase_graph.retrieval.search import CompactContextPayload, SearchHit, SearchRequest, SearchService
 
@@ -19,9 +19,18 @@ from codebase_graph.retrieval.search import CompactContextPayload, SearchHit, Se
 class _Result:
     def __init__(self, rows: list[list[Any]]) -> None:
         self.rows = rows
+        self.requested_n: int | None = None
+        self.closed = False
 
     def get_all(self) -> list[list[Any]]:
         return self.rows
+
+    def get_n(self, count: int) -> list[list[Any]]:
+        self.requested_n = count
+        return self.rows[:count]
+
+    def close(self) -> None:
+        self.closed = True
 
 
 class _RecordingStore:
@@ -31,7 +40,8 @@ class _RecordingStore:
 
     def execute(self, statement: str, parameters: dict[str, Any] | None = None) -> _Result:
         self.calls.append((statement, parameters))
-        return _Result(self.rows)
+        self.result = _Result(self.rows)
+        return self.result
 
 
 class _Adapter:
@@ -592,6 +602,30 @@ def test_cli_graph_query_rejects_write_like_statements(tmp_path: Path) -> None:
         ])
 
     assert exc_info.value.code == 2
+
+
+def test_graph_query_fetches_limit_plus_one_rows_without_materializing_all() -> None:
+    store = _RecordingStore([[1], [2], [3], [4]])
+
+    payload = _query_payload(store, {"statement": "MATCH (n) RETURN n", "limit": 2})
+
+    assert store.result.requested_n == 3
+    assert store.result.closed is True
+    assert payload == {
+        "statement": "MATCH (n) RETURN n",
+        "row_count": 2,
+        "rows": [[1], [2]],
+        "truncated": True,
+    }
+
+
+def test_graph_query_rejects_unbounded_response_limits() -> None:
+    store = _RecordingStore([[1]])
+
+    with pytest.raises(ValueError, match="greater than zero"):
+        _query_payload(store, {"statement": "MATCH (n) RETURN n", "limit": 0})
+    with pytest.raises(ValueError, match=f"{MAX_GRAPH_QUERY_LIMIT} or less"):
+        _query_payload(store, {"statement": "MATCH (n) RETURN n", "limit": MAX_GRAPH_QUERY_LIMIT + 1})
 
 
 def _require_graph_runtime() -> None:

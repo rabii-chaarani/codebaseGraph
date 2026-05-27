@@ -192,6 +192,33 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
     assert failure["result"]["structuredContent"]["error"]["type"] == "ValueError"
 
 
+def test_stdio_mcp_malformed_frame_returns_parse_error(tmp_path: Path) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    repo_root = _fresh_repo(tmp_path)
+    result = run_setup(SetupOptions(repo_root=repo_root, mcp_client="none", instructions_target="skip"))
+    setup_payload = json.loads(result.paths.config_path.read_text(encoding="utf-8"))
+
+    completed = subprocess.run(
+        setup_payload["mcp"]["command"],
+        input=b"Content-Length: 1\r\n\r\n{",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    responses = _stdio_messages(completed.stdout)
+    assert completed.returncode == 0
+    assert completed.stderr == b""
+    assert responses[0]["error"]["code"] == -32700
+
+
+def test_http_mcp_rejects_remote_bind_without_explicit_opt_in(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="localhost"):
+        build_http_server(repo_root=tmp_path, db_path=tmp_path / "missing.ldb", host="0.0.0.0", port=0)
+
+
 def test_http_mcp_transport_handles_initialize_list_and_call(tmp_path: Path) -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")
@@ -240,6 +267,26 @@ def _read_stdio_response(stdout: BinaryIO) -> dict[str, Any]:
     length = int(header.split(b":", 1)[1].strip())
     assert stdout.readline() in {b"\r\n", b"\n"}
     return json.loads(stdout.read(length).decode("utf-8"))
+
+
+def _stdio_messages(data: bytes) -> list[dict[str, Any]]:
+    messages: list[dict[str, Any]] = []
+    cursor = 0
+    while cursor < len(data):
+        header_end = data.find(b"\r\n\r\n", cursor)
+        assert header_end != -1
+        header = data[cursor:header_end].decode("ascii")
+        length = None
+        for line in header.splitlines():
+            if line.lower().startswith("content-length:"):
+                length = int(line.split(":", 1)[1].strip())
+                break
+        assert length is not None
+        body_start = header_end + 4
+        body_end = body_start + length
+        messages.append(json.loads(data[body_start:body_end].decode("utf-8")))
+        cursor = body_end
+    return messages
 
 
 def _http_rpc(

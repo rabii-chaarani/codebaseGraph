@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from codebase_graph.mcp.protocol import SUPPORTED_PROTOCOL_VERSIONS, McpGraphServer, rpc_error
 
 LOCAL_ORIGINS = {"localhost", "127.0.0.1", "::1"}
+MAX_HTTP_BODY_BYTES = 1_000_000
 
 
 class McpHttpServer(ThreadingHTTPServer):
@@ -28,7 +29,10 @@ def build_http_server(
     host: str = "127.0.0.1",
     port: int = 8765,
     endpoint_path: str = "/mcp",
+    allow_remote: bool = False,
 ) -> McpHttpServer:
+    if not allow_remote and host not in LOCAL_ORIGINS:
+        raise ValueError("MCP HTTP transport may only bind to localhost unless allow_remote is enabled")
     graph_server = McpGraphServer.from_paths(
         repo_root=repo_root,
         config_path=config_path,
@@ -50,6 +54,7 @@ def serve_http(
     host: str = "127.0.0.1",
     port: int = 8765,
     endpoint_path: str = "/mcp",
+    allow_remote: bool = False,
 ) -> None:
     server = build_http_server(
         repo_root=repo_root,
@@ -59,6 +64,7 @@ def serve_http(
         host=host,
         port=port,
         endpoint_path=endpoint_path,
+        allow_remote=allow_remote,
     )
     try:
         server.serve_forever()
@@ -74,8 +80,10 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
             return
         if not self._valid_protocol_header():
             return
+        length = self._content_length()
+        if length is None:
+            return
         try:
-            length = int(self.headers.get("Content-Length", "0"))
             message = json.loads(self.rfile.read(length).decode("utf-8"))
         except Exception as exc:
             self._send_json(rpc_error(None, -32700, f"Invalid JSON-RPC payload: {exc}"), status=HTTPStatus.BAD_REQUEST)
@@ -132,6 +140,24 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
             status=HTTPStatus.BAD_REQUEST,
         )
         return False
+
+    def _content_length(self) -> int | None:
+        raw_length = self.headers.get("Content-Length", "0")
+        try:
+            length = int(raw_length)
+        except ValueError:
+            self._send_json(rpc_error(None, -32600, "Content-Length must be an integer"), status=HTTPStatus.BAD_REQUEST)
+            return None
+        if length < 0:
+            self._send_json(rpc_error(None, -32600, "Content-Length must be non-negative"), status=HTTPStatus.BAD_REQUEST)
+            return None
+        if length > MAX_HTTP_BODY_BYTES:
+            self._send_json(
+                rpc_error(None, -32000, "MCP request body is too large", {"max_bytes": MAX_HTTP_BODY_BYTES}),
+                status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+            )
+            return None
+        return length
 
     def _send_json(self, payload: dict[str, Any], *, status: HTTPStatus = HTTPStatus.OK) -> None:
         body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")

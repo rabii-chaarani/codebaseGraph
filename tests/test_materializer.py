@@ -407,6 +407,24 @@ def test_full_ondisk_materialization_replaces_stale_sidecars(tmp_path: Path) -> 
     assert not Path(f"{db_path}.shadow").exists()
 
 
+def test_ondisk_materialization_rejects_concurrent_writer_lock(tmp_path: Path) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    source_root = _copy_fixture(tmp_path)
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+    lock_path = Path(f"{db_path}.lock")
+    lock_path.write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="materialization is already in progress"):
+        GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path, include_fts=False).materialize(
+            mode="full"
+        )
+
+    assert lock_path.exists()
+
+
 def test_pending_rebuild_marker_forces_changed_mode_atomic_rebuild(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

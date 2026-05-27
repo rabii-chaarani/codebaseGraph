@@ -114,6 +114,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     http_parser.add_argument("--host", default="127.0.0.1", help="HTTP bind host; default keeps the server local")
     http_parser.add_argument("--port", type=int, default=8765, help="HTTP bind port")
     http_parser.add_argument("--path", default="/mcp", help="MCP HTTP endpoint path")
+    http_parser.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="Allow binding MCP HTTP to a non-local host; no authentication is provided",
+    )
 
     args = parser.parse_args(argv)
     if args.command == "materialize":
@@ -262,6 +267,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             host=args.host,
             port=args.port,
             endpoint_path=args.path,
+            allow_remote=args.allow_remote,
         )
         return 0
     parser.error(f"Unknown command: {args.command}")

@@ -15,6 +15,7 @@ READ_ONLY_DENY_RE = re.compile(
     r"\b(CREATE|DELETE|SET|MERGE|DROP|COPY|INSERT|LOAD|INSTALL|DETACH|REMOVE|ALTER|RENAME)\b",
     re.IGNORECASE,
 )
+MAX_GRAPH_QUERY_LIMIT = 1000
 
 
 class UnknownToolError(ValueError):
@@ -125,7 +126,7 @@ def tool_specs() -> list[dict[str, Any]]:
                 "properties": {
                     "statement": {"type": "string"},
                     "parameters": {"type": "object"},
-                    "limit": {"type": "integer", "minimum": 1},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": MAX_GRAPH_QUERY_LIMIT},
                 },
                 "required": ["statement"],
                 "additionalProperties": False,
@@ -135,12 +136,27 @@ def tool_specs() -> list[dict[str, Any]]:
 
 
 def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
-    return {
-        "ok": runtime.db_path.exists(),
+    payload: dict[str, Any] = {
+        "ok": False,
         "repo_root": runtime.repo_root.as_posix(),
         "database_path": runtime.db_path.as_posix(),
         "manifest_path": runtime.manifest_path.as_posix() if runtime.manifest_path else None,
+        "database_exists": runtime.db_path.exists(),
+        "manifest_exists": runtime.manifest_path.exists() if runtime.manifest_path else None,
     }
+    if not runtime.db_path.exists():
+        return payload
+    try:
+        with open_graph_store(runtime) as store:
+            rows = store.execute("MATCH (n) RETURN count(n) AS total_nodes LIMIT 1").get_n(1)
+    except Exception as exc:
+        payload["graph_readable"] = False
+        payload["error"] = {"type": exc.__class__.__name__, "message": str(exc)}
+        return payload
+    payload["ok"] = True
+    payload["graph_readable"] = True
+    payload["total_nodes"] = _json_safe(rows[0][0]) if rows and rows[0] else 0
+    return payload
 
 
 def _search_request(arguments: dict[str, Any]) -> SearchRequest:
@@ -189,12 +205,19 @@ def _query_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> d
     parameters = arguments.get("parameters") or {}
     if not isinstance(parameters, dict):
         raise ValueError("graph_query parameters must be a JSON object")
-    limit = int(arguments.get("limit", 100))
-    rows = store.execute(statement, parameters).get_all()
+    limit = _graph_query_limit(arguments)
+    result = store.execute(statement, parameters)
+    try:
+        rows = result.get_n(limit + 1)
+    finally:
+        close = getattr(result, "close", None)
+        if callable(close):
+            close()
+    visible_rows = rows[:limit]
     return {
         "statement": statement,
-        "row_count": len(rows),
-        "rows": [_row_values(row) for row in rows[:limit]],
+        "row_count": len(visible_rows),
+        "rows": [_row_values(row) for row in visible_rows],
         "truncated": len(rows) > limit,
     }
 
@@ -206,6 +229,15 @@ def _validate_read_only_statement(statement: str) -> None:
     match = READ_ONLY_DENY_RE.search(stripped)
     if match is not None:
         raise ValueError(f"graph_query is read-only; blocked keyword: {match.group(1).upper()}")
+
+
+def _graph_query_limit(arguments: dict[str, Any]) -> int:
+    limit = int(arguments.get("limit", 100))
+    if limit <= 0:
+        raise ValueError("graph_query limit must be greater than zero")
+    if limit > MAX_GRAPH_QUERY_LIMIT:
+        raise ValueError(f"graph_query limit must be {MAX_GRAPH_QUERY_LIMIT} or less")
+    return limit
 
 
 def _row_values(row: Any) -> list[Any]:

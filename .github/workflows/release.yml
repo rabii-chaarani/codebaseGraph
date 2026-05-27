@@ -110,6 +110,7 @@ jobs:
           /tmp/codebase-graph-wheel/bin/python -m pip install dist/*.whl
           /tmp/codebase-graph-wheel/bin/codebase-graph --help
           /tmp/codebase-graph-wheel/bin/codebase-graph-mcp --help
+          /tmp/codebase-graph-wheel/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-wheel/bin/codebase-graph
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
@@ -132,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/cbasegraph
+      url: https://pypi.org/p/codebase-graph
     permissions:
       id-token: write
 

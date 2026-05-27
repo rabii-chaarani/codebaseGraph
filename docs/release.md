@@ -19,7 +19,8 @@ Pull requests and pushes to `main` or `codex/**` run:
 
 - `pytest` on Linux, macOS, and Windows for Python 3.10 through 3.14.
 - `ruff check .` on Linux.
-- A package build on Linux with `python -m build`, `twine check`, and console-script smoke tests from the built wheel.
+- A package build on Linux with `python -m build`, `twine check`, console-script smoke tests from the built wheel,
+  and a packaged runtime smoke that runs `setup`, `graph-health`, `graph-search`, and stdio MCP handshake checks.
 
 ## Release flow
 

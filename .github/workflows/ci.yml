@@ -106,3 +106,4 @@ jobs:
           /tmp/codebase-graph-wheel/bin/python -m pip install dist/*.whl
           /tmp/codebase-graph-wheel/bin/codebase-graph --help
           /tmp/codebase-graph-wheel/bin/codebase-graph-mcp --help
+          /tmp/codebase-graph-wheel/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-wheel/bin/codebase-graph

@@ -353,44 +353,48 @@ class GraphMaterializer:
         supported: Mapping[str, SourceSnapshot],
         diff: ManifestDiff,
     ) -> MaterializationResult:
-        rebuilt_entries: dict[str, ManifestEntry] = {}
-        rebuilt_graphs: dict[str, CodeGraph] = {}
-        for path in diff.rebuild_paths:
-            snapshot = supported[path]
-            graph = self._build_graph(snapshot)
-            rebuilt_graphs[path] = graph
-            rebuilt_entries[path] = _manifest_entry(snapshot, graph)
-
-        next_manifest = MaterializationManifest(parser_version=self.parser_version, files=rebuilt_entries)
         target_db_path = _filesystem_db_path(self.db_path)
-        temp_db_path = _temporary_sibling(target_db_path, suffix=".lbug.tmp")
-        temp_manifest_path = _temporary_sibling(self.manifest_path, suffix=".manifest.tmp")
-        marker_path = self._rebuild_marker_path
-        temp_store: LadybugCodeGraphStore | None = None
+        lock_fd, lock_path = _acquire_materialization_lock(target_db_path)
         try:
-            temp_store = create_ladybug_database(temp_db_path, include_fts=self.include_fts)
-            if rebuilt_graphs:
-                temp_store.insert_graphs_bulk([rebuilt_graphs[path] for path in sorted(rebuilt_graphs)])
-            temp_store.close()
-            temp_store = None
+            rebuilt_entries: dict[str, ManifestEntry] = {}
+            rebuilt_graphs: dict[str, CodeGraph] = {}
+            for path in diff.rebuild_paths:
+                snapshot = supported[path]
+                graph = self._build_graph(snapshot)
+                rebuilt_graphs[path] = graph
+                rebuilt_entries[path] = _manifest_entry(snapshot, graph)
 
-            next_manifest.write(temp_manifest_path)
-            _write_rebuild_marker(marker_path, target_db_path, self.manifest_path)
-            self._close_store()
-            _unlink_db_sidecars(target_db_path)
-            os.replace(temp_db_path, target_db_path)
-            os.replace(temp_manifest_path, self.manifest_path)
-            _unlink_db_sidecars(target_db_path)
-            _unlink_if_exists(marker_path)
-            self._store = None
-        except Exception:
-            if temp_store is not None:
+            next_manifest = MaterializationManifest(parser_version=self.parser_version, files=rebuilt_entries)
+            temp_db_path = _temporary_sibling(target_db_path, suffix=".lbug.tmp")
+            temp_manifest_path = _temporary_sibling(self.manifest_path, suffix=".manifest.tmp")
+            marker_path = self._rebuild_marker_path
+            temp_store: LadybugCodeGraphStore | None = None
+            try:
+                temp_store = create_ladybug_database(temp_db_path, include_fts=self.include_fts)
+                if rebuilt_graphs:
+                    temp_store.insert_graphs_bulk([rebuilt_graphs[path] for path in sorted(rebuilt_graphs)])
                 temp_store.close()
-            _unlink_if_exists(temp_db_path)
-            _unlink_db_sidecars(temp_db_path)
-            _unlink_if_exists(temp_manifest_path)
-            _unlink_if_exists(temp_manifest_path.with_suffix(temp_manifest_path.suffix + ".tmp"))
-            raise
+                temp_store = None
+
+                next_manifest.write(temp_manifest_path)
+                _write_rebuild_marker(marker_path, target_db_path, self.manifest_path)
+                self._close_store()
+                _unlink_db_sidecars(target_db_path)
+                os.replace(temp_db_path, target_db_path)
+                os.replace(temp_manifest_path, self.manifest_path)
+                _unlink_db_sidecars(target_db_path)
+                _unlink_if_exists(marker_path)
+                self._store = None
+            except Exception:
+                if temp_store is not None:
+                    temp_store.close()
+                _unlink_if_exists(temp_db_path)
+                _unlink_db_sidecars(temp_db_path)
+                _unlink_if_exists(temp_manifest_path)
+                _unlink_if_exists(temp_manifest_path.with_suffix(temp_manifest_path.suffix + ".tmp"))
+                raise
+        finally:
+            _release_materialization_lock(lock_fd, lock_path)
 
         return _materialization_result(
             mode=mode,
@@ -497,6 +501,35 @@ def _temporary_sibling(path: Path, *, suffix: str) -> Path:
     os.close(descriptor)
     os.unlink(temp_path)
     return Path(temp_path)
+
+
+def _acquire_materialization_lock(db_path: Path) -> tuple[int, Path]:
+    lock_path = Path(f"{db_path}.lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError as exc:
+        raise RuntimeError(
+            f"codebaseGraph materialization is already in progress for {db_path}. "
+            f"If no materializer is running, remove the stale lock file: {lock_path}"
+        ) from exc
+    payload = {
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "pid": os.getpid(),
+        "db_path": db_path.as_posix(),
+    }
+    try:
+        os.write(descriptor, (json.dumps(payload, sort_keys=True) + "\n").encode("utf-8"))
+    except Exception:
+        os.close(descriptor)
+        _unlink_if_exists(lock_path)
+        raise
+    return descriptor, lock_path
+
+
+def _release_materialization_lock(descriptor: int, lock_path: Path) -> None:
+    os.close(descriptor)
+    _unlink_if_exists(lock_path)
 
 
 def _write_rebuild_marker(marker_path: Path, db_path: Path, manifest_path: Path) -> None:

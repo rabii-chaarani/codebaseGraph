@@ -144,7 +144,8 @@ Stdio is the default transport for local MCP clients. An optional local Streamab
 codebase-graph mcp http --config .codebaseGraph/config.json --host 127.0.0.1 --port 8765
 ```
 
-Keep HTTP bound to `127.0.0.1` unless you have added authentication and understand the DNS rebinding risk for local MCP servers.
+The HTTP transport rejects non-local bind hosts unless `--allow-remote` is passed. Keep it bound to `127.0.0.1`
+for normal use; `--allow-remote` does not add authentication, TLS, rate limiting, or a multi-user session model.
 
 Available MCP tools:
 
@@ -155,6 +156,9 @@ Available MCP tools:
 - `graph_query_helpers`
 - `graph_architecture_queries`
 - `graph_query` with write-like statements blocked
+
+`graph_query` returns at most 1,000 rows per call and fetches only one extra row to determine whether the result was
+truncated. Add a narrower `MATCH` pattern or a query-side `LIMIT` for broader graph exploration.
 
 For coding-task architecture orientation, call `graph_architecture_queries` first to fetch the grouped read-only Cypher catalog, then run selected statements with `graph_query`.
 
@@ -198,7 +202,7 @@ ruff check .
 
 ## CI and releases
 
-GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff and package-build validation. Releases are managed by release-please, use tag-derived package versions, create GitHub Releases with distribution assets, and publish to PyPI through Trusted Publishing.
+GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff and package-build validation. Built wheels are smoke-tested with `setup`, `graph-health`, `graph-search`, and a stdio MCP handshake before release. Releases are managed by release-please, use tag-derived package versions, create GitHub Releases with distribution assets, and publish to PyPI through Trusted Publishing.
 
 Conda distribution uses the conda-forge staged-recipes path rather than direct Anaconda.org uploads. See [docs/release.md](docs/release.md) for the release workflow and conda-forge submission checklist.
 
@@ -212,4 +216,4 @@ Conda distribution uses the conda-forge staged-recipes path rather than direct A
 - PATH or executable issues: run setup from the virtual environment that contains `codebase-graph`; the descriptor prefers that absolute executable path.
 - Direct smoke test: run `codebase-graph mcp serve --config .codebaseGraph/config.json` and send MCP `initialize`, `tools/list`, and `tools/call` JSON-RPC messages over stdio.
 - Unsupported files: binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, and `.codebaseGraph` paths are skipped.
-- Lock/contention errors: stop other graph materialization or MCP processes using the same `.codebaseGraph/<repositoryName>_graph.ldb`, then rerun setup.
+- Lock/contention errors: stop other graph materialization or setup processes using the same `.codebaseGraph/<repositoryName>_graph.ldb`. If no writer is running, remove the stale `.ldb.lock` file named in the error, then rerun setup.

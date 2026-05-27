@@ -92,12 +92,16 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
         {"query": "codebaseGraph workflow", "profile": "docs", "limit": 5},
         runtime=server.runtime,
     )
+    health_payload = handle_tool_call("graph_health", {}, runtime=server.runtime)
     symbol_payload = handle_tool_call(
         "graph_search",
         {"query": "SampleService", "profile": "brief", "limit": 3},
         runtime=server.runtime,
     )
 
+    assert health_payload["ok"] is True
+    assert health_payload["graph_readable"] is True
+    assert health_payload["total_nodes"] > 0
     assert any(hit["path"] == "AGENTS.md" for hit in docs_payload["results"])
     assert any(hit["label"] == "SampleService" for hit in symbol_payload["results"])
 
