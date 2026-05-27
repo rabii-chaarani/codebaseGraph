@@ -26,11 +26,24 @@ PARSER_VERSION = "tree-sitter-python-v1+markdown-docs-v1"
 EXCLUDED_PARTS = {
     ".git",
     ".venv",
-    "__pycache__",
+    ".cache",
+    ".coverage",
+    ".hypothesis",
+    ".mypy_cache",
+    ".nox",
+    ".pyre",
     ".pytest_cache",
+    ".pytype",
     ".ruff_cache",
+    ".tox",
+    ".vscode",
+    "__pycache__",
     "build",
+    "coverage",
     "dist",
+    "htmlcov",
+    "node_modules",
+    "vendor",
     ".codebase_graph",
     DEFAULT_STATE_DIR,
 }
@@ -448,14 +461,21 @@ class GraphMaterializer:
                     continue
                 relative_path = path.relative_to(self.source_root).as_posix()
                 language = self.parser_registry.language_for_path(path)
+                if language is None:
+                    snapshots[relative_path] = SourceSnapshot(
+                        path=relative_path,
+                        absolute_path=path,
+                        content_hash="",
+                        language=None,
+                    )
+                    diagnostics.append(f"Skipped unsupported file: {relative_path}")
+                    continue
                 snapshots[relative_path] = SourceSnapshot(
                     path=relative_path,
                     absolute_path=path,
                     content_hash=_file_hash(path),
                     language=language,
                 )
-                if language is None:
-                    diagnostics.append(f"Skipped unsupported file: {relative_path}")
         return snapshots, diagnostics
 
     def _build_graph(self, snapshot: SourceSnapshot) -> CodeGraph:

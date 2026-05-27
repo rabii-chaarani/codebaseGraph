@@ -50,7 +50,7 @@ codebase-graph setup --skip-mcp-config
 codebase-graph setup --instructions-target claude
 ```
 
-`--dry-run` returns the raw server descriptor plus the exact client patch or payload without writing the MCP client file. Repository graph state and instruction handling still run so the graph can be verified.
+`--dry-run` returns the raw server descriptor plus the exact client patch or payload without writing repository graph state, instruction files, or MCP client files.
 
 ## MCP installation
 
@@ -215,7 +215,7 @@ ruff check .
 
 ## CI and releases
 
-GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff, supply-chain, and package-build validation. Supply-chain checks include dependency consistency, audit dependency collection, Dependabot update coverage, and CycloneDX SBOM generation. Built wheels are smoke-tested with `setup`, `graph-health`, `graph-search`, and a stdio MCP handshake before release. Releases are managed by release-please, use tag-derived package versions, create GitHub Releases with distribution assets and SBOMs, and publish to PyPI through Trusted Publishing.
+GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff, supply-chain, and package-build validation. Supply-chain checks include dependency consistency, vulnerability advisory scanning, Dependabot update coverage, immutable GitHub Action pins, and CycloneDX SBOM generation. Built wheels and source distributions are smoke-tested with `setup`, `graph-health`, `graph-search`, and a stdio MCP handshake before release. Releases are managed by release-please, use tag-derived package versions, create GitHub Releases with distribution assets and SBOMs, and publish to PyPI through Trusted Publishing.
 
 Conda distribution uses the conda-forge staged-recipes path rather than direct Anaconda.org uploads. See [docs/release.md](docs/release.md) for the release workflow and conda-forge submission checklist.
 

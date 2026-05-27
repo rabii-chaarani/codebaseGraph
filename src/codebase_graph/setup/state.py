@@ -24,6 +24,10 @@ def derive_setup_paths(repo_root: str | Path) -> SetupPaths:
         raise FileNotFoundError(f"Repository root does not exist: {paths.repo_root}")
     if not paths.repo_root.is_dir():
         raise NotADirectoryError(f"Repository root is not a directory: {paths.repo_root}")
+    if DEFAULT_STATE_DIR in paths.repo_root.parts:
+        raise ValueError(
+            f"Repository root may not be inside a {DEFAULT_STATE_DIR} state directory: {paths.repo_root}"
+        )
     return paths
 
 

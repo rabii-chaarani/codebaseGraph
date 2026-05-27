@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 from codebase_graph.diagnostics import log_event
 from codebase_graph.mcp.protocol import SUPPORTED_PROTOCOL_VERSIONS, McpGraphServer, rpc_error
+from codebase_graph.mcp.runtime import GraphRuntimeConfig, runtime_config
 
 LOCAL_ORIGINS = {"localhost", "127.0.0.1", "::1"}
 MAX_HTTP_BODY_BYTES = 1_000_000
@@ -17,7 +18,7 @@ MAX_HTTP_BODY_BYTES = 1_000_000
 class McpHttpServer(ThreadingHTTPServer):
     def __init__(self, server_address: tuple[str, int], handler: type[BaseHTTPRequestHandler]) -> None:
         super().__init__(server_address, handler)
-        self.mcp_server: McpGraphServer
+        self.mcp_runtime: GraphRuntimeConfig
         self.endpoint_path: str
 
 
@@ -35,14 +36,14 @@ def build_http_server(
     if not allow_remote and host not in LOCAL_ORIGINS:
         log_event("mcp.http_remote_bind_rejected", level="WARNING", host=host, port=port)
         raise ValueError("MCP HTTP transport may only bind to localhost unless allow_remote is enabled")
-    graph_server = McpGraphServer.from_paths(
+    graph_runtime = runtime_config(
         repo_root=repo_root,
         config_path=config_path,
         db_path=db_path,
         manifest_path=manifest_path,
     )
     httpd = McpHttpServer((host, port), _McpHttpHandler)
-    httpd.mcp_server = graph_server
+    httpd.mcp_runtime = graph_runtime
     httpd.endpoint_path = endpoint_path
     return httpd
 
@@ -94,7 +95,7 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         if not isinstance(message, dict):
             self._send_json(rpc_error(None, -32600, "JSON-RPC payload must be an object"), status=HTTPStatus.BAD_REQUEST)
             return
-        response = self.server.mcp_server.handle_json_rpc(message)
+        response = McpGraphServer(self.server.mcp_runtime).handle_json_rpc(message)
         if response is None:
             self.send_response(HTTPStatus.ACCEPTED)
             self.end_headers()

@@ -36,6 +36,12 @@ def upsert_instruction_block(
     return InstructionResult(action, path.as_posix())
 
 
+def instruction_target_path(repo_root: Path, *, target: str = "auto") -> Path | None:
+    if target == "skip":
+        return None
+    return _select_instruction_path(repo_root, target)
+
+
 def remove_instruction_block(path: Path) -> bool:
     if not path.exists():
         return False

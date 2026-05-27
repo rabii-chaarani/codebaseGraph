@@ -19,11 +19,11 @@ Pull requests and pushes to `main` or `codex/**` run:
 
 - `pytest` on Linux, macOS, and Windows for Python 3.10 through 3.14.
 - `ruff check .` on Linux.
-- Supply-chain checks on Linux with `pip check`, `pip-audit --dry-run --strict` dependency collection, and CycloneDX
-  SBOM generation.
-- A package build on Linux with `python -m build`, `twine check`, console-script smoke tests from the built wheel,
-  packaged runtime smoke that runs `setup`, `graph-health`, `graph-search`, and stdio MCP handshake checks, and release
-  SBOM generation.
+- Supply-chain checks on Linux with `pip check`, `pip-audit --strict` vulnerability advisory scanning, immutable
+  GitHub Action pins, and CycloneDX SBOM generation.
+- A package build on Linux with `python -m build`, `twine check`, console-script smoke tests from the built wheel and
+  source distribution, packaged runtime smoke that runs `setup`, `graph-health`, `graph-search`, and stdio MCP handshake
+  checks, and release SBOM generation.
 
 ## Release flow
 
@@ -32,8 +32,18 @@ Pull requests and pushes to `main` or `codex/**` run:
 3. Review and merge the release pull request when ready to publish.
 4. The `Release` workflow creates the `vX.Y.Z` tag and GitHub Release, builds the distributions from that tag, verifies `Version: X.Y.Z`, uploads the distributions and SBOM to the GitHub Release, and publishes to PyPI from the protected `pypi` environment.
 
-Vulnerability advisory scans require an external advisory service. Keep them in the hosted CI/release environment or
-run them explicitly from a development machine; do not make local setup call external advisory APIs implicitly.
+## Release gate
+
+Before publishing a production release, confirm:
+
+- Hosted CI is green for tests, ruff, package build, supply-chain, wheel smoke, and source-distribution smoke.
+- The project owner has selected an SPDX license, added package license metadata, and included the corresponding license file.
+- The PyPI Trusted Publisher, `pypi` GitHub environment, and release-please token posture have been verified in GitHub/PyPI settings.
+- Conda-forge submission is either explicitly out of scope for the release or the recipe placeholders have been replaced with the release version, source-distribution SHA256, and chosen SPDX license.
+
+Vulnerability advisory scans require an external advisory service. Hosted CI and release workflows run those scans and
+fail on known vulnerable dependencies. Local setup stays offline-safe and must not call external advisory APIs
+implicitly; run local advisory scans explicitly when that disclosure is acceptable.
 
 The package version remains tag-derived through `setuptools_scm`; do not add a static `project.version` field to `pyproject.toml` just for release-please.
 

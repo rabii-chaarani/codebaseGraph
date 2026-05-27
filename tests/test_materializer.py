@@ -111,7 +111,7 @@ def test_scan_source_files_prunes_excluded_directories(tmp_path: Path, monkeypat
     observed_dirnames: list[tuple[str, ...]] = []
 
     def fake_walk(root: Path) -> object:
-        dirnames = [".venv", "src", "package.egg-info"]
+        dirnames = [".mypy_cache", ".tox", ".venv", "node_modules", "src", "package.egg-info", "vendor"]
         yield Path(root).as_posix(), dirnames, []
         observed_dirnames.append(tuple(dirnames))
         for dirname in dirnames:
@@ -125,6 +125,35 @@ def test_scan_source_files_prunes_excluded_directories(tmp_path: Path, monkeypat
     assert observed_dirnames == [("src",)]
     assert tuple(snapshots) == ("src/app.py",)
     assert not diagnostics
+
+
+def test_scan_source_files_does_not_hash_unsupported_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_root = tmp_path / "project"
+    source_root.mkdir()
+    unsupported = source_root / "archive.bin"
+    supported = source_root / "service.py"
+    unsupported.write_bytes(b"\0" * 1024)
+    supported.write_text("VALUE = 1\n", encoding="utf-8")
+    hashed_paths: list[str] = []
+    real_file_hash = materializer_module._file_hash
+
+    def recording_file_hash(path: Path) -> str:
+        hashed_paths.append(path.name)
+        return real_file_hash(path)
+
+    monkeypatch.setattr(materializer_module, "_file_hash", recording_file_hash)
+    materializer = GraphMaterializer(source_root, db_path=":memory:", manifest_path=tmp_path / "manifest.json", store=object())
+
+    snapshots, diagnostics = materializer._scan_source_files()
+
+    assert hashed_paths == ["service.py"]
+    assert snapshots["archive.bin"].language is None
+    assert snapshots["archive.bin"].content_hash == ""
+    assert snapshots["service.py"].content_hash
+    assert diagnostics == ["Skipped unsupported file: archive.bin"]
 
 
 def test_full_materialization_writes_python_graph_to_ladybug(tmp_path: Path) -> None:

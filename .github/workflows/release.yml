@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Create release pull request or GitHub release
         id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
@@ -45,13 +45,13 @@ jobs:
 
     steps:
       - name: Check out release tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
           cache: pip
@@ -113,7 +113,7 @@ jobs:
           /tmp/codebase-graph-wheel/bin/codebase-graph-mcp --help
           /tmp/codebase-graph-wheel/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-wheel/bin/codebase-graph
           /tmp/codebase-graph-wheel/bin/python -m pip check
-          /tmp/codebase-graph-wheel/bin/python -m pip_audit --strict --dry-run --skip-editable --progress-spinner off --cache-dir /tmp/pip-audit-cache
+          /tmp/codebase-graph-wheel/bin/python -m pip_audit --strict --skip-editable --progress-spinner off --cache-dir /tmp/pip-audit-cache
           /tmp/codebase-graph-wheel/bin/cyclonedx-py environment /tmp/codebase-graph-wheel/bin/python \
             --pyproject pyproject.toml \
             --mc-type library \
@@ -121,15 +121,25 @@ jobs:
             --of JSON \
             -o codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom.cdx.json
 
+      - name: Smoke-test source distribution
+        shell: bash
+        run: |
+          python -m venv /tmp/codebase-graph-sdist
+          /tmp/codebase-graph-sdist/bin/python -m pip install --upgrade pip
+          /tmp/codebase-graph-sdist/bin/python -m pip install dist/*.tar.gz
+          /tmp/codebase-graph-sdist/bin/codebase-graph --help
+          /tmp/codebase-graph-sdist/bin/codebase-graph-mcp --help
+          /tmp/codebase-graph-sdist/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-sdist/bin/codebase-graph
+
       - name: Upload distributions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: codebase-graph-${{ steps.verify-version.outputs.package-version }}-dist
           path: dist/*
           if-no-files-found: error
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom
           path: codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom.cdx.json
@@ -155,10 +165,10 @@ jobs:
 
     steps:
       - name: Download distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: codebase-graph-${{ needs.build.outputs.package-version }}-dist
           path: dist
 
       - name: Publish distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1

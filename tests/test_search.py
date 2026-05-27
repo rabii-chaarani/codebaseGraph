@@ -628,6 +628,13 @@ def test_graph_query_rejects_unbounded_response_limits() -> None:
         _query_payload(store, {"statement": "MATCH (n) RETURN n", "limit": MAX_GRAPH_QUERY_LIMIT + 1})
 
 
+def test_graph_query_rejects_procedure_calls() -> None:
+    store = _RecordingStore([[1]])
+
+    with pytest.raises(ValueError, match="blocked keyword: CALL"):
+        _query_payload(store, {"statement": "CALL CREATE_FTS_INDEX('File', 'label')"})
+
+
 def _require_graph_runtime() -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")

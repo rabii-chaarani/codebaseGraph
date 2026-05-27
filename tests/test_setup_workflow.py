@@ -165,6 +165,67 @@ def test_setup_preflight_failure_stops_before_state_creation(tmp_path: Path, mon
     assert not (repo_root / ".codebaseGraph").exists()
 
 
+def test_setup_rejects_state_directory_as_repo_root(tmp_path: Path) -> None:
+    state_root = tmp_path / ".codebaseGraph"
+    state_root.mkdir()
+
+    with pytest.raises(SetupError, match="state directory"):
+        run_setup(SetupOptions(repo_root=state_root, mcp_client="none"))
+
+    assert not (state_root / ".codebaseGraph").exists()
+
+
+def test_setup_dry_run_does_not_write_repo_or_client_state(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    pytest.importorskip("real_ladybug")
+    repo_root = _fresh_repo(tmp_path)
+    mcp_config_path = tmp_path / "config.toml"
+
+    exit_code = cli_main(
+        [
+            "setup",
+            "--repo-root",
+            repo_root.as_posix(),
+            "--mcp-client",
+            "codex",
+            "--mcp-config-path",
+            mcp_config_path.as_posix(),
+            "--dry-run",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["config_action"] == "dry_run"
+    assert payload["materialization"]["mode"] == "dry_run"
+    assert payload["instructions"]["action"] == "dry_run"
+    assert payload["mcp_config"]["action"] == "dry_run"
+    assert not (repo_root / ".codebaseGraph").exists()
+    assert not (repo_root / "AGENTS.md").exists()
+    assert not mcp_config_path.exists()
+
+
+def test_setup_materialization_failure_rolls_back_published_control_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("real_ladybug")
+    repo_root = _fresh_repo(tmp_path)
+
+    def fail_materialize(self: object, *, mode: str = "changed") -> object:
+        raise RuntimeError("materialization failed")
+
+    monkeypatch.setattr("codebase_graph.setup.orchestrator.GraphMaterializer.materialize", fail_materialize)
+
+    with pytest.raises(SetupError, match="materialization failed"):
+        run_setup(SetupOptions(repo_root=repo_root, mcp_client="none"))
+
+    assert not (repo_root / ".codebaseGraph").exists()
+    assert not (repo_root / "AGENTS.md").exists()
+
+
 def test_mcp_graph_query_rejects_write_like_statements(tmp_path: Path) -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")
