@@ -6,7 +6,7 @@ from typing import Any
 
 from codebase_graph.db import LadybugCodeGraphStore
 from codebase_graph.ontology import QUERY_HELPERS, schema_payload
-from codebase_graph.reasoning import CompactContextBuilder
+from codebase_graph.reasoning import CompactContextBuilder, architecture_query_catalog
 from codebase_graph.retrieval import SearchRequest, SearchService
 
 from .runtime import GraphRuntimeConfig, open_graph_store
@@ -28,6 +28,8 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
         return schema_payload()
     if name == "graph_query_helpers":
         return {"query_helpers": [helper.as_dict() for helper in QUERY_HELPERS]}
+    if name == "graph_architecture_queries":
+        return architecture_query_catalog(group=_optional_str(arguments.get("group")))
     if name == "graph_search":
         with open_graph_store(runtime) as store:
             request = _search_request(arguments)
@@ -100,6 +102,20 @@ def tool_specs() -> list[dict[str, Any]]:
             "name": "graph_query_helpers",
             "description": "Return named read-only query helpers for common graph exploration tasks.",
             "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+        {
+            "name": "graph_architecture_queries",
+            "description": "Return the grouped architecture-discovery Cypher catalog for coding-agent first-step orientation.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "group": {
+                        "type": "string",
+                        "description": "Optional architecture query group to return.",
+                    },
+                },
+                "additionalProperties": False,
+            },
         },
         {
             "name": "graph_query",
@@ -226,3 +242,9 @@ def _optional_int(value: Any) -> int | None:
     if value is None or value == "":
         return None
     return int(value)
+
+
+def _optional_str(value: Any) -> str | None:
+    if value is None or value == "":
+        return None
+    return str(value)

@@ -153,7 +153,10 @@ Available MCP tools:
 - `graph_context`
 - `graph_schema`
 - `graph_query_helpers`
+- `graph_architecture_queries`
 - `graph_query` with write-like statements blocked
+
+For coding-task architecture orientation, call `graph_architecture_queries` first to fetch the grouped read-only Cypher catalog, then run selected statements with `graph_query`.
 
 ## CLI search
 

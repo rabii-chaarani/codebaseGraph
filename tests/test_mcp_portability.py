@@ -44,6 +44,49 @@ def test_initialize_negotiates_supported_and_fallback_protocol_versions(tmp_path
     assert "2025-11-25" in SUPPORTED_PROTOCOL_VERSIONS
 
 
+def test_architecture_query_catalog_is_available_over_mcp_without_opening_graph(tmp_path: Path) -> None:
+    db_path = tmp_path / "graph.ldb"
+    db_path.write_text("", encoding="utf-8")
+    server = McpGraphServer(GraphRuntimeConfig(repo_root=tmp_path, db_path=db_path))
+
+    listed = server.handle_json_rpc({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})
+    all_queries = server.handle_json_rpc(
+        {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {"name": "graph_architecture_queries", "arguments": {}},
+        }
+    )
+    filtered = server.handle_json_rpc(
+        {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {"name": "graph_architecture_queries", "arguments": {"group": "overview"}},
+        }
+    )
+    invalid = server.handle_json_rpc(
+        {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {"name": "graph_architecture_queries", "arguments": {"group": "missing"}},
+        }
+    )
+
+    assert listed is not None
+    assert all_queries is not None
+    assert filtered is not None
+    assert invalid is not None
+    assert any(tool["name"] == "graph_architecture_queries" for tool in listed["result"]["tools"])
+    assert all_queries["result"]["structuredContent"]["workflow"] == "coding_task_architecture_discovery"
+    assert all_queries["result"]["structuredContent"]["execution_tool"] == "graph_query"
+    assert [group["name"] for group in filtered["result"]["structuredContent"]["groups"]] == ["overview"]
+    assert invalid["result"]["isError"] is True
+    assert invalid["result"]["structuredContent"]["error"]["type"] == "ValueError"
+
+
 def test_descriptor_prefers_current_environment_script(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     bin_dir = tmp_path / "venv" / "bin"
     bin_dir.mkdir(parents=True)
