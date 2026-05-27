@@ -164,13 +164,15 @@ The CLI exposes the same graph workflow as the MCP tools, which is useful in cli
 
 ```bash
 codebase-graph graph-health --repo-root .
-codebase-graph graph-search SampleService --repo-root . --no-refresh --json
-codebase-graph graph-context SampleService --repo-root . --profile definitions --no-refresh --json
+codebase-graph graph-search SampleService --repo-root . --no-refresh --detail slim --context-limit 1 --json
+codebase-graph graph-context SampleService --repo-root . --profile definitions --no-refresh --detail slim --context-limit 2 --json
 codebase-graph graph-schema
 codebase-graph graph-query-helpers
 codebase-graph graph-architecture-queries --group overview
 codebase-graph graph-query "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" --repo-root .
 ```
+
+CLI JSON output is minified by default to reduce tokens. Add `--pretty` to JSON-producing commands when you want indented output. Retrieval commands support `--detail standard|slim`; `standard` keeps the full payload, while `slim` drops score diagnostics and duplicate or empty summary fields.
 
 `graph-query` blocks write-like statements and should be used read-only. The older `search` and `context` commands remain available. Setup reports the explicit database and manifest paths to use with them when needed:
 

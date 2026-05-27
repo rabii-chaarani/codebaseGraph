@@ -11,6 +11,7 @@ from codebase_graph.reasoning.context_builder import CompactContextBuilder, Cont
 DEFAULT_SEARCH_LIMIT = 3
 MAX_CANDIDATE_LIMIT = 50
 MIN_CANDIDATE_LIMIT = 10
+DETAIL_LEVELS = {"standard", "slim"}
 DEFINITION_TYPES = {"Class", "Function", "Method", "Variable", "Constant"}
 GENERIC_TYPES = {"Symbol", "Dependency"}
 
@@ -22,6 +23,8 @@ class SearchRequest:
     profile: str = "brief"
     budget: int = DEFAULT_CONTEXT_BUDGET
     max_depth: int | None = None
+    context_limit: int = DEFAULT_CONTEXT_LIMIT
+    detail: str = "standard"
 
     def validate(self) -> None:
         if not self.query.strip():
@@ -32,6 +35,9 @@ class SearchRequest:
             raise ValueError("Context budget must be zero or greater")
         if self.max_depth is not None and self.max_depth < 0:
             raise ValueError("Context max depth must be zero or greater")
+        if self.context_limit < 0:
+            raise ValueError("Context limit must be zero or greater")
+        _validate_detail(self.detail)
         if self.profile not in CONTEXT_PROFILES:
             valid = ", ".join(sorted(CONTEXT_PROFILES))
             raise ValueError(f"Unknown context profile: {self.profile}. Valid profiles: {valid}")
@@ -52,7 +58,21 @@ class SearchHit:
     context: list[ContextNode] = field(default_factory=list)
     index_order: int = 0
 
-    def as_dict(self) -> dict[str, Any]:
+    def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+        _validate_detail(detail)
+        if detail == "slim":
+            payload: dict[str, Any] = {
+                "id": self.id,
+                "type": self.type,
+                "label": self.label,
+                "rank_score": self.rank_score,
+            }
+            _set_non_empty(payload, "path", self.path)
+            _set_non_empty(payload, "span", dict(self.span))
+            _set_meaningful_summary(payload, self.summary, self.label)
+            context = [node.as_dict(detail=detail) for node in self.context]
+            _set_non_empty(payload, "context", context)
+            return payload
         return {
             "id": self.id,
             "type": self.type,
@@ -64,7 +84,7 @@ class SearchHit:
             "rank_score": self.rank_score,
             "score_components": dict(self.score_components),
             "summary": self.summary,
-            "context": [node.as_dict() for node in self.context],
+            "context": [node.as_dict(detail=detail) for node in self.context],
         }
 
 
@@ -76,13 +96,14 @@ class CompactContextPayload:
     budget: int
     results: tuple[SearchHit, ...]
 
-    def as_dict(self) -> dict[str, Any]:
+    def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+        _validate_detail(detail)
         return {
             "query": self.query,
             "profile": self.profile,
             "limit": self.limit,
             "budget": self.budget,
-            "results": [hit.as_dict() for hit in self.results],
+            "results": [hit.as_dict(detail=detail) for hit in self.results],
         }
 
 
@@ -114,7 +135,7 @@ class SearchService:
                 hit.id,
                 hit.type,
                 profile=request.profile,
-                limit=DEFAULT_CONTEXT_LIMIT,
+                limit=request.context_limit,
                 budget=request.budget,
                 max_depth=request.max_depth,
             )
@@ -301,8 +322,25 @@ def _span(line_start: Any, line_end: Any) -> dict[str, int]:
     return span
 
 
+def _validate_detail(detail: str) -> None:
+    if detail not in DETAIL_LEVELS:
+        valid = ", ".join(sorted(DETAIL_LEVELS))
+        raise ValueError(f"Unknown detail level: {detail}. Valid levels: {valid}")
+
+
+def _set_non_empty(payload: dict[str, Any], key: str, value: Any) -> None:
+    if value not in ("", None, [], {}):
+        payload[key] = value
+
+
+def _set_meaningful_summary(payload: dict[str, Any], summary: str, label: str) -> None:
+    if summary and summary != label:
+        payload["summary"] = summary
+
+
 __all__ = [
     "CompactContextPayload",
+    "DETAIL_LEVELS",
     "DEFAULT_SEARCH_LIMIT",
     "FTSIndexSpec",
     "MAX_CANDIDATE_LIMIT",

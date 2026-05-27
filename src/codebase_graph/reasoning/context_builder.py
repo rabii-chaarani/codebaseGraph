@@ -22,7 +22,23 @@ class ContextNode:
     summary: str = ""
     id: str = field(default="", repr=False)
 
-    def as_dict(self) -> dict[str, Any]:
+    def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+        if detail not in {"standard", "slim"}:
+            raise ValueError(f"Unknown detail level: {detail}. Valid levels: slim, standard")
+        if detail == "slim":
+            payload: dict[str, Any] = {
+                "relation": self.relation,
+                "direction": self.direction,
+                "type": self.type,
+                "label": self.label,
+            }
+            if self.path:
+                payload["path"] = self.path
+            if self.span:
+                payload["span"] = dict(self.span)
+            if self.summary and self.summary != self.label:
+                payload["summary"] = self.summary
+            return payload
         return {
             "relation": self.relation,
             "direction": self.direction,

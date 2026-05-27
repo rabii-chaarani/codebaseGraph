@@ -27,6 +27,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     materialize_parser.add_argument("--manifest", default=None, help="Manifest path; defaults under .codebaseGraph")
     materialize_parser.add_argument("--mode", choices=("full", "changed"), default="changed")
     materialize_parser.add_argument("--no-fts", action="store_true", help="Skip FTS index creation")
+    _add_json_output_arguments(materialize_parser)
 
     search_parser = subparsers.add_parser("search", help="Search the code graph with compact context")
     _add_search_arguments(search_parser)
@@ -36,6 +37,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     graph_health_parser = subparsers.add_parser("graph-health", help="Check configured graph paths")
     _add_runtime_arguments(graph_health_parser)
+    _add_json_output_arguments(graph_health_parser)
 
     graph_search_parser = subparsers.add_parser("graph-search", help="Search the code graph with compact context")
     graph_search_parser.add_argument("query", help="Search query")
@@ -51,20 +53,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     _add_runtime_arguments(graph_context_parser)
     _add_graph_compatibility_arguments(graph_context_parser)
 
-    subparsers.add_parser("graph-schema", help="Return ontology schema, indexes, profiles, and helpers")
-    subparsers.add_parser("graph-query-helpers", help="Return named read-only graph query helpers")
+    graph_schema_parser = subparsers.add_parser("graph-schema", help="Return ontology schema, indexes, profiles, and helpers")
+    _add_json_output_arguments(graph_schema_parser)
+    graph_query_helpers_parser = subparsers.add_parser("graph-query-helpers", help="Return named read-only graph query helpers")
+    _add_json_output_arguments(graph_query_helpers_parser)
 
     graph_architecture_parser = subparsers.add_parser(
         "graph-architecture-queries",
         help="Return the architecture-discovery query catalog",
     )
     graph_architecture_parser.add_argument("--group", default=None, help="Optional architecture query group")
+    _add_json_output_arguments(graph_architecture_parser)
 
     graph_query_parser = subparsers.add_parser("graph-query", help="Execute a restricted read-only graph query")
     graph_query_parser.add_argument("statement", help="Read-only graph query statement")
     graph_query_parser.add_argument("--parameters", default="{}", help="JSON object with query parameters")
     graph_query_parser.add_argument("--limit", type=int, default=100, help="Maximum rows to return")
     _add_runtime_arguments(graph_query_parser)
+    _add_json_output_arguments(graph_query_parser)
 
     setup_parser = subparsers.add_parser("setup", help="Bootstrap codebaseGraph state for a repository")
     setup_parser.add_argument("--repo-root", default=".", help="Repository root to configure")
@@ -80,6 +86,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     setup_parser.add_argument("--mode", choices=("full", "changed"), default="changed", help="Materialization mode")
     setup_parser.add_argument("--json", action="store_true", help="Emit JSON output")
+    _add_json_output_arguments(setup_parser)
 
     mcp_parser = subparsers.add_parser("mcp", help="Run or inspect the MCP server")
     mcp_subparsers = mcp_parser.add_subparsers(dest="mcp_command", required=True)
@@ -92,6 +99,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     install_parser.add_argument("--dry-run", action="store_true", help="Show the install action without writing or invoking CLIs")
     install_parser.add_argument("--verify", action="store_true", help="Run direct MCP smoke checks after installation")
     install_parser.add_argument("--json", action="store_true", help="Emit JSON output")
+    _add_json_output_arguments(install_parser)
 
     serve_parser = mcp_subparsers.add_parser("serve", help="Serve graph tools over MCP stdio")
     serve_parser.add_argument("--repo-root", default=".", help="Repository root containing .codebaseGraph/config.json")
@@ -119,7 +127,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = materializer.materialize(mode=args.mode)
         finally:
             materializer.close()
-        print(json.dumps(_result_payload(result), indent=2, sort_keys=True))
+        _print_json(_result_payload(result), args)
         return 0
     if args.command in {"search", "context"}:
         request = SearchRequest(
@@ -128,6 +136,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             profile=args.profile,
             budget=args.budget,
             max_depth=args.max_depth,
+            context_limit=args.context_limit,
+            detail=args.detail,
         )
         try:
             request.validate()
@@ -148,7 +158,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 payload = SearchService(materializer.store).search(request)
             finally:
                 materializer.close()
-        print(json.dumps(payload.as_dict(), indent=2, sort_keys=True))
+        _print_json(payload.as_dict(detail=args.detail), args)
         return 0
     if args.command == "graph-health":
         return _print_tool_payload(parser, "graph_health", {}, args)
@@ -165,17 +175,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             payload["node_type"] = args.node_type
         return _print_tool_payload(parser, "graph_context", payload, args)
     if args.command == "graph-schema":
-        print(json.dumps(schema_payload(), indent=2, sort_keys=True))
+        _print_json(schema_payload(), args)
         return 0
     if args.command == "graph-query-helpers":
-        print(json.dumps({"query_helpers": [helper.as_dict() for helper in QUERY_HELPERS]}, indent=2, sort_keys=True))
+        _print_json({"query_helpers": [helper.as_dict() for helper in QUERY_HELPERS]}, args)
         return 0
     if args.command == "graph-architecture-queries":
         try:
             payload = architecture_query_catalog(group=args.group)
         except ValueError as exc:
             parser.error(str(exc))
-        print(json.dumps(payload, indent=2, sort_keys=True))
+        _print_json(payload, args)
         return 0
     if args.command == "graph-query":
         try:
@@ -205,7 +215,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         except SetupError as exc:
             parser.error(str(exc))
-        print(json.dumps(result.as_dict(), indent=2, sort_keys=True))
+        _print_json(result.as_dict(), args)
         return 0
     if args.command == "mcp" and args.mcp_command == "install":
         setup_config_path = (
@@ -232,7 +242,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             payload = results[0].as_dict()
         if args.json:
-            print(json.dumps(payload, indent=2, sort_keys=True))
+            _print_json(payload, args)
         else:
             _print_mcp_install_results(results)
         return 1 if any(result.action == "failed" for result in results) else 0
@@ -273,6 +283,9 @@ def _add_compact_context_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--profile", choices=sorted(CONTEXT_PROFILES), default="brief", help="Context profile")
     parser.add_argument("--budget", type=int, default=600, help="Approximate per-hit context character budget")
     parser.add_argument("--max-depth", type=int, default=None, help="Override the context profile depth")
+    parser.add_argument("--context-limit", type=int, default=3, help="Maximum context items per search hit")
+    parser.add_argument("--detail", choices=("standard", "slim"), default="standard", help="Output detail level")
+    _add_json_output_arguments(parser)
 
 
 def _add_runtime_arguments(parser: argparse.ArgumentParser) -> None:
@@ -301,6 +314,8 @@ def _search_arguments_payload(args: argparse.Namespace) -> dict[str, object]:
         "limit": args.limit,
         "profile": args.profile,
         "budget": args.budget,
+        "context_limit": args.context_limit,
+        "detail": args.detail,
     }
     if args.query:
         payload["query"] = args.query
@@ -319,8 +334,22 @@ def _print_tool_payload(
         payload = handle_tool_call(tool_name, arguments, runtime=_runtime(args))
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
-    print(json.dumps(payload, indent=2, sort_keys=True))
+    _print_json(payload, args)
     return 0
+
+
+def _add_json_output_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--pretty", action="store_true", help="Emit indented JSON output")
+
+
+def _print_json(payload: object, args: argparse.Namespace) -> None:
+    print(_json_dumps(payload, pretty=getattr(args, "pretty", False)))
+
+
+def _json_dumps(payload: object, *, pretty: bool) -> str:
+    if pretty:
+        return json.dumps(payload, indent=2, sort_keys=True)
+    return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
 
 def _result_payload(result: object) -> dict[str, object]:

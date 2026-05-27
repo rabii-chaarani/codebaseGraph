@@ -12,8 +12,8 @@ from codebase_graph.db import GraphNeighbor, SearchIndexRow
 from codebase_graph.ingest import GraphMaterializer
 from codebase_graph.mcp.runtime import GraphRuntimeConfig
 from codebase_graph.mcp.tools import handle_tool_call
-from codebase_graph.reasoning import CompactContextBuilder
-from codebase_graph.retrieval.search import SearchHit, SearchRequest, SearchService
+from codebase_graph.reasoning import CompactContextBuilder, ContextNode
+from codebase_graph.retrieval.search import CompactContextPayload, SearchHit, SearchRequest, SearchService
 
 
 class _Result:
@@ -243,9 +243,82 @@ def test_search_service_uses_query_adapter_for_fts() -> None:
     assert adapter.search_calls
 
 
+def test_search_request_rejects_invalid_context_limit_and_detail() -> None:
+    with pytest.raises(ValueError, match="Context limit must be zero or greater"):
+        SearchRequest("SampleService", context_limit=-1).validate()
+    with pytest.raises(ValueError, match="Unknown detail level"):
+        SearchRequest("SampleService", detail="debug").validate()
+
+
+def test_search_service_respects_zero_context_limit() -> None:
+    adapter = _Adapter()
+
+    payload = SearchService(_AdapterStore(adapter)).search(SearchRequest("SampleService", limit=1, context_limit=0))
+
+    data = payload.as_dict()
+    assert data["results"][0]["context"] == []
+    assert adapter.search_calls
+    assert adapter.neighbor_calls == []
+
+
 def test_search_request_rejects_invalid_profile() -> None:
     with pytest.raises(ValueError, match="Unknown context profile"):
         SearchRequest("SampleService", profile="missing").validate()
+
+
+def test_slim_payload_omits_diagnostics_and_duplicate_summaries() -> None:
+    payload = CompactContextPayload(
+        query="run",
+        profile="brief",
+        limit=1,
+        budget=600,
+        results=(
+            SearchHit(
+                id="Method:run",
+                type="Method",
+                label="run",
+                qualified_name="sample.Service.run",
+                path="sample/service.py",
+                span={"line_start": 4, "line_end": 8},
+                score=2.0,
+                rank_score=0.9,
+                score_components={"fts": 1.0},
+                summary="run",
+                context=[
+                    ContextNode("Defines", "incoming", "Module", "sample.service", "sample/service.py", summary="sample.service"),
+                    ContextNode("Documents", "outgoing", "DocumentationChunk", "Usage", "README.md", summary="Use run to start the service."),
+                ],
+            ),
+        ),
+    )
+
+    hit = payload.as_dict(detail="slim")["results"][0]
+
+    assert hit == {
+        "id": "Method:run",
+        "type": "Method",
+        "label": "run",
+        "rank_score": 0.9,
+        "path": "sample/service.py",
+        "span": {"line_start": 4, "line_end": 8},
+        "context": [
+            {
+                "relation": "Defines",
+                "direction": "incoming",
+                "type": "Module",
+                "label": "sample.service",
+                "path": "sample/service.py",
+            },
+            {
+                "relation": "Documents",
+                "direction": "outgoing",
+                "type": "DocumentationChunk",
+                "label": "Usage",
+                "path": "README.md",
+                "summary": "Use run to start the service.",
+            },
+        ],
+    }
 
 
 def test_search_service_returns_sample_class_with_compact_context(tmp_path: Path) -> None:
@@ -394,7 +467,14 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
     ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_health", {}, runtime=runtime)
 
-    search_args = {"query": "SampleService", "limit": 2, "profile": "brief", "budget": 600}
+    search_args = {
+        "query": "SampleService",
+        "limit": 2,
+        "profile": "brief",
+        "budget": 600,
+        "context_limit": 1,
+        "detail": "slim",
+    }
     assert cli_main([
         "graph-search",
         "SampleService",
@@ -406,11 +486,17 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         manifest_path.as_posix(),
         "--limit",
         "2",
+        "--context-limit",
+        "1",
+        "--detail",
+        "slim",
         "--no-refresh",
         "--json",
     ]) == 0
     search_payload = json.loads(capsys.readouterr().out)
     assert search_payload == handle_tool_call("graph_search", search_args, runtime=runtime)
+    assert "score" not in search_payload["results"][0]
+    assert len(search_payload["results"][0].get("context", [])) <= 1
 
     hit = next(item for item in search_payload["results"] if item["label"] == "SampleService")
     context_args = {
@@ -419,6 +505,8 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         "limit": 1,
         "profile": "definitions",
         "budget": 600,
+        "context_limit": 3,
+        "detail": "slim",
     }
     assert cli_main([
         "graph-context",
@@ -436,6 +524,8 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         "definitions",
         "--limit",
         "1",
+        "--detail",
+        "slim",
     ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_context", context_args, runtime=runtime)
 
@@ -458,9 +548,16 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
 
 def test_cli_graph_metadata_commands_do_not_open_graph_db(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli_main(["graph-schema"]) == 0
-    schema = json.loads(capsys.readouterr().out)
+    schema_output = capsys.readouterr().out
+    assert "\n  " not in schema_output
+    schema = json.loads(schema_output)
     assert schema["ontology"]
     assert schema["context_profiles"]
+
+    assert cli_main(["graph-schema", "--pretty"]) == 0
+    pretty_schema_output = capsys.readouterr().out
+    assert "\n  " in pretty_schema_output
+    assert json.loads(pretty_schema_output)["ontology"]
 
     assert cli_main(["graph-query-helpers"]) == 0
     helpers = json.loads(capsys.readouterr().out)

@@ -7,7 +7,7 @@ from typing import Any
 from codebase_graph.db import LadybugCodeGraphStore
 from codebase_graph.ontology import QUERY_HELPERS, schema_payload
 from codebase_graph.reasoning import CompactContextBuilder, architecture_query_catalog
-from codebase_graph.retrieval import SearchRequest, SearchService
+from codebase_graph.retrieval import DETAIL_LEVELS, SearchRequest, SearchService
 
 from .runtime import GraphRuntimeConfig, open_graph_store
 
@@ -33,7 +33,7 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
     if name == "graph_search":
         with open_graph_store(runtime) as store:
             request = _search_request(arguments)
-            return SearchService(store).search(request).as_dict()
+            return SearchService(store).search(request).as_dict(detail=request.detail)
     if name == "graph_context":
         with open_graph_store(runtime) as store:
             return _context_payload(store, arguments)
@@ -55,7 +55,7 @@ def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
 
 def tool_result(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "content": [{"type": "text", "text": json.dumps(payload, indent=2, sort_keys=True)}],
+        "content": [{"type": "text", "text": json.dumps(payload, separators=(",", ":"), sort_keys=True)}],
         "structuredContent": payload,
         "isError": False,
     }
@@ -150,6 +150,8 @@ def _search_request(arguments: dict[str, Any]) -> SearchRequest:
         profile=str(arguments.get("profile", "brief")),
         budget=int(arguments.get("budget", 600)),
         max_depth=_optional_int(arguments.get("max_depth")),
+        context_limit=int(arguments.get("context_limit", 3)),
+        detail=_detail(arguments),
     )
     request.validate()
     return request
@@ -160,6 +162,7 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
     node_type = str(arguments.get("node_type") or "")
     if node_id and node_type:
         profile = str(arguments.get("profile", "brief"))
+        detail = _detail(arguments)
         context = CompactContextBuilder(store).build(
             node_id,
             node_type,
@@ -172,9 +175,10 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
             "node_id": node_id,
             "node_type": node_type,
             "profile": profile,
-            "context": [node.as_dict() for node in context],
+            "context": [node.as_dict(detail=detail) for node in context],
         }
-    return SearchService(store).search(_search_request(arguments)).as_dict()
+    request = _search_request(arguments)
+    return SearchService(store).search(request).as_dict(detail=request.detail)
 
 
 def _query_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -230,6 +234,8 @@ def _search_schema(*, required: tuple[str, ...]) -> dict[str, Any]:
             "profile": {"type": "string"},
             "budget": {"type": "integer", "minimum": 0},
             "max_depth": {"type": "integer", "minimum": 0},
+            "context_limit": {"type": "integer", "minimum": 0},
+            "detail": {"type": "string", "enum": sorted(DETAIL_LEVELS)},
             "node_id": {"type": "string"},
             "node_type": {"type": "string"},
         },
@@ -248,3 +254,11 @@ def _optional_str(value: Any) -> str | None:
     if value is None or value == "":
         return None
     return str(value)
+
+
+def _detail(arguments: dict[str, Any]) -> str:
+    detail = str(arguments.get("detail", "standard"))
+    if detail not in DETAIL_LEVELS:
+        valid = ", ".join(sorted(DETAIL_LEVELS))
+        raise ValueError(f"Unknown detail level: {detail}. Valid levels: {valid}")
+    return detail

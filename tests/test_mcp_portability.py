@@ -181,8 +181,12 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
 
     assert initialized["result"]["protocolVersion"] == "2025-11-25"
     assert {tool["name"] for tool in listed["result"]["tools"]} >= {"graph_health", "graph_search", "graph_query"}
+    graph_search_tool = next(tool for tool in listed["result"]["tools"] if tool["name"] == "graph_search")
+    assert "context_limit" in graph_search_tool["inputSchema"]["properties"]
+    assert graph_search_tool["inputSchema"]["properties"]["detail"]["enum"] == ["slim", "standard"]
     assert health["result"]["structuredContent"]["ok"] is True
     assert search["result"]["structuredContent"]["results"]
+    assert "\n  " not in search["result"]["content"][0]["text"]
     assert "error" not in failure
     assert failure["result"]["isError"] is True
     assert failure["result"]["structuredContent"]["error"]["type"] == "ValueError"
