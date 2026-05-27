@@ -1,1 +1,2 @@
 include SECURITY.md
+include scripts/check_release_gate.py

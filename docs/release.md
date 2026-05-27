@@ -42,6 +42,19 @@ Before publishing a production release, confirm:
 - The PyPI Trusted Publisher, `pypi` GitHub environment, and release-please token posture have been verified in GitHub/PyPI settings.
 - Conda-forge submission is either explicitly out of scope for the release or the recipe placeholders have been replaced with the release version, source-distribution SHA256, and chosen SPDX license.
 
+Run the local release-gate checker before publishing:
+
+```bash
+python scripts/check_release_gate.py
+python scripts/check_release_gate.py --production \
+  --confirm trusted-publisher \
+  --confirm pypi-environment \
+  --confirm hosted-ci-green \
+  --confirm private-vulnerability-reporting
+```
+
+Add `--require-conda` when conda-forge submission is in scope for the release.
+
 Vulnerability advisory scans require an external advisory service. Hosted CI and release workflows run those scans and
 fail on known vulnerable dependencies. Local setup stays offline-safe and must not call external advisory APIs
 implicitly; run local advisory scans explicitly when that disclosure is acceptable.

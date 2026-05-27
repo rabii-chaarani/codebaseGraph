@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from scripts.check_release_gate import _jobs_missing_timeout, run_checks
+
 
 WORKFLOWS = (
     Path(".github/workflows/ci.yml"),
@@ -54,30 +56,15 @@ def test_workflow_jobs_have_timeouts() -> None:
         assert missing == []
 
 
-def _jobs_missing_timeout(text: str) -> list[str]:
-    missing: list[str] = []
-    in_jobs = False
-    current_job: str | None = None
-    current_has_timeout = False
+def test_local_release_gate_passes() -> None:
+    assert run_checks(production=False, require_conda=False, confirmations=set()) == []
 
-    for line in text.splitlines():
-        if line == "jobs:":
-            in_jobs = True
-            continue
-        if not in_jobs:
-            continue
-        if line and not line.startswith(" "):
-            break
-        job_match = re.match(r"^  ([A-Za-z0-9_-]+):\s*$", line)
-        if job_match is not None:
-            if current_job is not None and not current_has_timeout:
-                missing.append(current_job)
-            current_job = job_match.group(1)
-            current_has_timeout = False
-            continue
-        if current_job is not None and re.match(r"^    timeout-minutes:\s*\d+\s*$", line):
-            current_has_timeout = True
 
-    if current_job is not None and not current_has_timeout:
-        missing.append(current_job)
-    return missing
+def test_production_release_gate_reports_owner_controlled_blockers() -> None:
+    issues = run_checks(production=True, require_conda=True, confirmations=set())
+    codes = {issue.code for issue in issues}
+
+    assert "license-metadata-missing" in codes
+    assert "license-file-missing" in codes
+    assert "external-confirmation-missing" in codes
+    assert "conda-placeholder" in codes
