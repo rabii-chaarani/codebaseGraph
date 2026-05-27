@@ -243,6 +243,33 @@ def test_mcp_install_cli_dry_run_json(
     assert output["server_name"] == default_server_name("fresh_repo")
 
 
+def test_mcp_install_cli_accepts_client_config_path(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    config_path = _write_setup_config(tmp_path / "fresh_repo")
+    client_config_path = tmp_path / "client" / "mcp.json"
+
+    exit_code = cli_main(
+        [
+            "mcp",
+            "install",
+            "--client",
+            "generic",
+            "--config-path",
+            config_path.as_posix(),
+            "--client-config-path",
+            client_config_path.as_posix(),
+            "--json",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert output["path"] == client_config_path.as_posix()
+    assert client_config_path.exists()
+
+
 def _write_setup_config(repo_root: Path) -> Path:
     repo_root.mkdir(parents=True)
     paths = derive_setup_paths(repo_root)

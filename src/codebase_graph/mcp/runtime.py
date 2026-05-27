@@ -28,6 +28,7 @@ def runtime_config(
     payload: dict[str, Any] = {}
     if config.exists():
         payload = load_setup_config(config)
+        root = Path(str(payload["repo_root"])).expanduser().resolve()
     elif db_path is None:
         raise FileNotFoundError(f"codebaseGraph setup config is missing: {config}")
     resolved_db = Path(db_path or payload["database_path"]).expanduser().resolve()

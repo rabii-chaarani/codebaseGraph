@@ -96,6 +96,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     install_parser.add_argument("--scope", choices=("local", "user", "project"), default="local")
     install_parser.add_argument("--name", default=None, help="MCP server name; defaults to codebase_graph-<repo>")
     install_parser.add_argument("--config-path", default=None, help="Path to .codebaseGraph/config.json")
+    install_parser.add_argument("--client-config-path", default=None, help="Override the target MCP client config path")
     install_parser.add_argument("--repo-root", default=".", help="Repository root used to find .codebaseGraph/config.json")
     install_parser.add_argument("--dry-run", action="store_true", help="Show the install action without writing or invoking CLIs")
     install_parser.add_argument("--verify", action="store_true", help="Run direct MCP smoke checks after installation")
@@ -242,6 +243,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     scope=args.scope,
                     setup_config_path=setup_config_path,
                     server_name=args.name,
+                    client_config_path=args.client_config_path,
                     dry_run=args.dry_run,
                     verify=args.verify,
                 )

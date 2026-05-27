@@ -51,12 +51,39 @@ def main(argv: list[str]) -> int:
         if not search.get("results"):
             raise AssertionError(f"graph-search returned no results: {search}")
 
+        _install_verify_smoke(executable, config_path, Path(tmp_dir) / "mcp.json")
         _mcp_smoke([executable.as_posix(), "mcp", "serve", "--config", config_path.as_posix()])
     return 0
 
 
 def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, capture_output=True, text=True, check=True)
+
+
+def _install_verify_smoke(executable: Path, config_path: Path, client_config_path: Path) -> None:
+    verify = json.loads(
+        _run(
+            [
+                executable.as_posix(),
+                "mcp",
+                "install",
+                "--client",
+                "generic",
+                "--config-path",
+                config_path.as_posix(),
+                "--client-config-path",
+                client_config_path.as_posix(),
+                "--verify",
+                "--json",
+            ]
+        ).stdout
+    )
+    verification = verify.get("verification") or {}
+    stdio = verification.get("stdio") or {}
+    checks = stdio.get("checks") or {}
+    required_checks = ("initialize", "tools_list", "graph_health", "graph_search", "tool_error_result")
+    if verification.get("ok") is not True or not all(checks.get(check) is True for check in required_checks):
+        raise AssertionError(f"mcp install --verify failed readiness smoke: {verify}")
 
 
 def _sample_repo(repo_root: Path) -> Path:

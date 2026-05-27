@@ -13,7 +13,10 @@ from codebase_graph.retrieval import DETAIL_LEVELS, SearchRequest, SearchService
 from .runtime import GraphRuntimeConfig, open_graph_store
 
 READ_ONLY_DENY_RE = re.compile(
-    r"\b(CALL|CREATE|DELETE|SET|MERGE|DROP|COPY|INSERT|LOAD|INSTALL|DETACH|REMOVE|ALTER|RENAME)\b",
+    r"\b("
+    r"ALTER|ATTACH|CALL|COPY|CREATE|DELETE|DETACH|DROP|EXPORT|IMPORT|INSERT|INSTALL|LOAD|MERGE|REMOVE|RENAME|SET|"
+    r"TRUNCATE|UPDATE|USE"
+    r")\b",
     re.IGNORECASE,
 )
 MAX_GRAPH_QUERY_LIMIT = 1000

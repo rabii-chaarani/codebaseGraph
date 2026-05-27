@@ -13,10 +13,12 @@ import pytest
 
 from codebase_graph.cli import main as cli_main
 from codebase_graph.db import LadybugUnavailableError
+from codebase_graph.mcp.runtime import runtime_config
 from codebase_graph.mcp.server import McpGraphServer, handle_tool_call
 from codebase_graph.setup import SetupError, SetupOptions, run_setup
 from codebase_graph.setup.instructions import END_MARKER, START_MARKER
 from codebase_graph.setup.mcp_config import configure_mcp_client, server_entry
+from codebase_graph.setup.state import build_setup_config, derive_setup_paths, load_setup_config, write_setup_config
 
 
 def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
@@ -249,6 +251,35 @@ def test_setup_invalid_repo_root_exits_nonzero(tmp_path: Path) -> None:
         cli_main(["setup", "--repo-root", missing.as_posix(), "--mcp-client", "none"])
 
     assert exc_info.value.code == 2
+
+
+def test_runtime_config_uses_repo_root_from_setup_config(tmp_path: Path) -> None:
+    repo_root = _fresh_repo(tmp_path)
+    paths = derive_setup_paths(repo_root)
+    payload = build_setup_config(paths, mcp_command=["codebase-graph", "mcp", "serve", "--config", paths.config_path.as_posix()])
+    write_setup_config(paths.config_path, payload)
+    paths.db_path.write_text("", encoding="utf-8")
+    paths.manifest_path.write_text("{}", encoding="utf-8")
+    other_root = tmp_path / "other_repo"
+    other_root.mkdir()
+
+    runtime = runtime_config(repo_root=other_root, config_path=paths.config_path, db_path=None, manifest_path=None)
+
+    assert runtime.repo_root == repo_root.resolve()
+    assert runtime.db_path == paths.db_path
+    assert runtime.manifest_path == paths.manifest_path
+
+
+def test_setup_config_rejects_database_path_outside_state_dir(tmp_path: Path) -> None:
+    repo_root = _fresh_repo(tmp_path)
+    paths = derive_setup_paths(repo_root)
+    payload = build_setup_config(paths, mcp_command=["codebase-graph", "mcp", "serve", "--config", paths.config_path.as_posix()])
+    payload["database_path"] = (tmp_path / "other.ldb").as_posix()
+    paths.config_path.parent.mkdir(parents=True)
+    paths.config_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="database_path must be"):
+        load_setup_config(paths.config_path)
 
 
 def test_packaging_requires_ladybug_and_namespaced_package_discovery() -> None:

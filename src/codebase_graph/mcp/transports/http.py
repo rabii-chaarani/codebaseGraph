@@ -20,7 +20,7 @@ class McpHttpServer(ThreadingHTTPServer):
     def __init__(self, server_address: tuple[str, int], handler: type[BaseHTTPRequestHandler]) -> None:
         super().__init__(server_address, handler)
         self.mcp_runtime: GraphRuntimeConfig
-        self.mcp_server: McpGraphServer
+        self.mcp_sessions: dict[str, McpGraphServer]
         self.endpoint_path: str
         self.auth_token: str | None
 
@@ -53,7 +53,7 @@ def build_http_server(
     )
     httpd = McpHttpServer((host, port), _McpHttpHandler)
     httpd.mcp_runtime = graph_runtime
-    httpd.mcp_server = McpGraphServer(graph_runtime)
+    httpd.mcp_sessions = {}
     httpd.endpoint_path = endpoint_path
     httpd.auth_token = auth_token
     return httpd
@@ -108,12 +108,16 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         if not isinstance(message, dict):
             self._send_json(rpc_error(None, -32600, "JSON-RPC payload must be an object"), status=HTTPStatus.BAD_REQUEST)
             return
-        response = self.server.mcp_server.handle_json_rpc(message)
+        session_id, server = self._resolve_session(message)
+        if server is None:
+            return
+        response = server.handle_json_rpc(message)
         if response is None:
             self.send_response(HTTPStatus.ACCEPTED)
             self.end_headers()
             return
-        self._send_json(response)
+        headers = {"Mcp-Session-Id": session_id} if str(message.get("method", "")) == "initialize" else None
+        self._send_json(response, headers=headers)
 
     def do_GET(self) -> None:
         if not self._request_path_matches() or not self._valid_origin() or not self._valid_auth():
@@ -124,6 +128,25 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
 
     def log_message(self, format: str, *args: Any) -> None:
         return
+
+    def _resolve_session(self, message: dict[str, Any]) -> tuple[str, McpGraphServer] | tuple[None, None]:
+        method = str(message.get("method", ""))
+        request_id = message.get("id")
+        session_id = self.headers.get("Mcp-Session-Id")
+        if method == "initialize":
+            if session_id and session_id in self.server.mcp_sessions:
+                return session_id, self.server.mcp_sessions[session_id]
+            session_id = secrets.token_urlsafe(32)
+            server = McpGraphServer(self.server.mcp_runtime)
+            self.server.mcp_sessions[session_id] = server
+            return session_id, server
+        if not session_id or session_id not in self.server.mcp_sessions:
+            self._send_json(
+                rpc_error(request_id, -32002, "MCP session is not initialized"),
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return None, None
+        return session_id, self.server.mcp_sessions[session_id]
 
     def _request_path_matches(self) -> bool:
         if urlparse(self.path).path == self.server.endpoint_path:

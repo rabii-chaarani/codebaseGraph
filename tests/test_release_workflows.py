@@ -4,7 +4,12 @@ import re
 from pathlib import Path
 
 from scripts import check_release_gate
-from scripts.check_release_gate import _jobs_missing_timeout, _workflow_action_pin_issues, run_checks
+from scripts.check_release_gate import (
+    PYPI_CONFIRMATION_FLAGS,
+    _jobs_missing_timeout,
+    _workflow_action_pin_issues,
+    run_checks,
+)
 
 
 WORKFLOWS = (
@@ -74,6 +79,17 @@ def test_security_policy_exists() -> None:
     assert "Reporting a Vulnerability" in text
     assert "graph_query" in text
     assert "--allow-remote" in text
+
+
+def test_release_docs_list_production_confirmation_flags() -> None:
+    text = Path("docs/release.md").read_text(encoding="utf-8")
+
+    for flag in PYPI_CONFIRMATION_FLAGS:
+        env_var = f"CODEBASE_GRAPH_CONFIRM_{flag.upper().replace('-', '_')}"
+        assert env_var in text
+        assert f"--confirm {flag}" in text
+    assert "CODEBASE_GRAPH_REQUIRE_CONDA" in text
+    assert "--require-conda" in text
 
 
 def test_workflow_jobs_have_timeouts() -> None:

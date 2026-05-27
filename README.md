@@ -155,6 +155,9 @@ codebase-graph mcp http --config .codebaseGraph/config.json --host 0.0.0.0 --all
 Clients must send `Authorization: Bearer <token>`. The token gate does not add TLS, rate limiting, authorization scopes, or
 a multi-user session model; put remote HTTP behind a trusted network boundary and TLS-terminating proxy.
 
+HTTP clients must start with JSON-RPC `initialize`, then send the returned `Mcp-Session-Id` response header on later
+requests. Requests without a known session id are rejected before tool dispatch.
+
 Available MCP tools:
 
 - `graph_health`

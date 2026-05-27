@@ -635,6 +635,24 @@ def test_graph_query_rejects_procedure_calls() -> None:
         _query_payload(store, {"statement": "CALL CREATE_FTS_INDEX('File', 'label')"})
 
 
+@pytest.mark.parametrize(
+    ("statement", "keyword"),
+    [
+        ("EXPORT DATABASE '/tmp/graph-export'", "EXPORT"),
+        ("IMPORT DATABASE '/tmp/graph-export'", "IMPORT"),
+        ("ATTACH '/tmp/other.ldb' AS other", "ATTACH"),
+        ("USE other", "USE"),
+        ("TRUNCATE TABLE File", "TRUNCATE"),
+        ("UPDATE File SET label = 'x'", "UPDATE"),
+    ],
+)
+def test_graph_query_rejects_database_administration_statements(statement: str, keyword: str) -> None:
+    store = _RecordingStore([[1]])
+
+    with pytest.raises(ValueError, match=f"blocked keyword: {keyword}"):
+        _query_payload(store, {"statement": statement})
+
+
 def _require_graph_runtime() -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")

@@ -87,8 +87,28 @@ def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
 
 
 def _validate_setup_config(payload: dict[str, Any], path: Path) -> None:
-    required = ("repo_root", "repo_name", "database_path", "manifest_path")
+    required = ("repo_root", "repo_name", "state_dir", "database_path", "manifest_path")
     missing = [key for key in required if not payload.get(key)]
     if missing:
         joined = ", ".join(missing)
         raise ValueError(f"Invalid codebaseGraph setup config at {path}: missing {joined}")
+
+    repo_root = Path(str(payload["repo_root"])).expanduser().resolve()
+    repo_name = str(payload["repo_name"])
+    state_dir = Path(str(payload["state_dir"])).expanduser().resolve()
+    database_path = Path(str(payload["database_path"])).expanduser().resolve()
+    manifest_path = Path(str(payload["manifest_path"])).expanduser().resolve()
+    expected_state_dir = repo_root / DEFAULT_STATE_DIR
+    expected_database_path = state_dir / f"{repo_name}_graph.ldb"
+    expected_manifest_path = state_dir / MANIFEST_NAME
+
+    if DEFAULT_STATE_DIR in repo_root.parts:
+        raise ValueError(f"Invalid codebaseGraph setup config at {path}: repo_root may not be inside {DEFAULT_STATE_DIR}")
+    if state_dir != expected_state_dir:
+        raise ValueError(f"Invalid codebaseGraph setup config at {path}: state_dir must be {expected_state_dir}")
+    if path.parent.resolve() != state_dir:
+        raise ValueError(f"Invalid codebaseGraph setup config at {path}: config must live under {state_dir}")
+    if database_path != expected_database_path:
+        raise ValueError(f"Invalid codebaseGraph setup config at {path}: database_path must be {expected_database_path}")
+    if manifest_path != expected_manifest_path:
+        raise ValueError(f"Invalid codebaseGraph setup config at {path}: manifest_path must be {expected_manifest_path}")

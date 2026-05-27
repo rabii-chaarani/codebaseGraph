@@ -280,9 +280,17 @@ def test_http_mcp_transport_handles_initialize_list_and_call(tmp_path: Path) -> 
     thread.start()
     host, port = httpd.server_address
     try:
-        initialize = _http_rpc(host, port, "initialize", {"protocolVersion": "2025-11-25"})
-        listed = _http_rpc(host, port, "tools/list", {})
-        health = _http_rpc(host, port, "tools/call", {"name": "graph_health", "arguments": {}})
+        initialize, session_id = _http_rpc_with_session(host, port, "initialize", {"protocolVersion": "2025-11-25"})
+        with pytest.raises(urllib.error.HTTPError) as missing_session:
+            _http_rpc(host, port, "tools/list", {})
+        listed = _http_rpc(host, port, "tools/list", {}, session_id=session_id)
+        health = _http_rpc(
+            host,
+            port,
+            "tools/call",
+            {"name": "graph_health", "arguments": {}},
+            session_id=session_id,
+        )
         with pytest.raises(urllib.error.HTTPError) as exc_info:
             _http_rpc(host, port, "ping", {}, protocol_version="1900-01-01")
     finally:
@@ -291,6 +299,7 @@ def test_http_mcp_transport_handles_initialize_list_and_call(tmp_path: Path) -> 
         thread.join(timeout=10)
 
     assert initialize["result"]["protocolVersion"] == "2025-11-25"
+    assert missing_session.value.code == 400
     assert any(tool["name"] == "graph_context" for tool in listed["result"]["tools"])
     assert health["result"]["structuredContent"]["ok"] is True
     assert exc_info.value.code == 400
@@ -388,7 +397,57 @@ def _http_rpc(
     protocol_version: str = "2025-11-25",
     auth_token: str | None = None,
     origin: str | None = None,
+    session_id: str | None = None,
 ) -> dict[str, Any]:
+    return _http_rpc_with_headers(
+        host,
+        port,
+        method,
+        params,
+        protocol_version=protocol_version,
+        auth_token=auth_token,
+        origin=origin,
+        session_id=session_id,
+    )[0]
+
+
+def _http_rpc_with_session(
+    host: str,
+    port: int,
+    method: str,
+    params: dict[str, Any],
+    *,
+    protocol_version: str = "2025-11-25",
+    auth_token: str | None = None,
+    origin: str | None = None,
+    session_id: str | None = None,
+) -> tuple[dict[str, Any], str]:
+    payload, headers = _http_rpc_with_headers(
+        host,
+        port,
+        method,
+        params,
+        protocol_version=protocol_version,
+        auth_token=auth_token,
+        origin=origin,
+        session_id=session_id,
+    )
+    resolved_session_id = headers.get("Mcp-Session-Id")
+    assert resolved_session_id
+    return payload, resolved_session_id
+
+
+def _http_rpc_with_headers(
+    host: str,
+    port: int,
+    method: str,
+    params: dict[str, Any],
+    *,
+    protocol_version: str = "2025-11-25",
+    auth_token: str | None = None,
+    origin: str | None = None,
+    session_id: str | None = None,
+) -> tuple[dict[str, Any], Any]:
     payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode("utf-8")
     headers = {
         "Accept": "application/json, text/event-stream",
@@ -398,6 +457,8 @@ def _http_rpc(
     }
     if auth_token is not None:
         headers["Authorization"] = f"Bearer {auth_token}"
+    if session_id is not None:
+        headers["Mcp-Session-Id"] = session_id
     request = urllib.request.Request(
         f"http://{host}:{port}/mcp",
         data=payload,
@@ -405,7 +466,7 @@ def _http_rpc(
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=10) as response:
-        return json.loads(response.read().decode("utf-8"))
+        return json.loads(response.read().decode("utf-8")), response.headers
 
 
 def _fresh_repo(tmp_path: Path) -> Path:
