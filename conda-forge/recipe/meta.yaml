@@ -1,6 +1,6 @@
 {% set name = "codebase-graph" %}
 {% set pypi_name = "codebase_graph" %}
-{% set version = "0.1.0" %}
+{% set version = "PUT_RELEASE_VERSION_HERE" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -28,10 +28,10 @@ requirements:
     - wheel
   run:
     - python >={{ python_min }}
-    - real-ladybug
-    - tomli  # [py<311]
-    - tree-sitter
-    - tree-sitter-python
+    - real-ladybug >=0.15.3,<0.16
+    - tomli >=2.0.1  # [py<311]
+    - tree-sitter >=0.25.2,<0.26
+    - tree-sitter-python >=0.25.0,<0.26
 
 test:
   imports:

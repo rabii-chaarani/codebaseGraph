@@ -51,6 +51,15 @@ def test_release_workflow_enforces_production_gate_before_build() -> None:
     assert "build:\n    name: build release distributions\n    needs:\n      - release-please\n      - production-gate" in text
 
 
+def test_conda_recipe_uses_bounded_runtime_dependencies() -> None:
+    text = Path("conda-forge/recipe/meta.yaml").read_text(encoding="utf-8")
+
+    assert "real-ladybug >=0.15.3,<0.16" in text
+    assert "tomli >=2.0.1" in text
+    assert "tree-sitter >=0.25.2,<0.26" in text
+    assert "tree-sitter-python >=0.25.0,<0.26" in text
+
+
 def test_hosted_workflows_run_real_vulnerability_scans() -> None:
     for path in WORKFLOWS:
         text = path.read_text(encoding="utf-8")
@@ -80,8 +89,10 @@ def test_local_release_gate_passes() -> None:
 def test_production_release_gate_reports_owner_controlled_blockers() -> None:
     issues = run_checks(production=True, require_conda=True, confirmations=set())
     codes = {issue.code for issue in issues}
+    messages = {issue.message for issue in issues}
 
     assert "license-metadata-missing" in codes
     assert "license-file-missing" in codes
     assert "external-confirmation-missing" in codes
     assert "conda-placeholder" in codes
+    assert "conda recipe still contains PUT_RELEASE_VERSION_HERE." in messages

@@ -209,7 +209,7 @@ def _check_external_confirmations(confirmations: set[str]) -> list[GateIssue]:
 def _check_conda_recipe() -> list[GateIssue]:
     recipe = (REPO_ROOT / "conda-forge/recipe/meta.yaml").read_text(encoding="utf-8")
     issues: list[GateIssue] = []
-    for placeholder in ("PUT_RELEASE_SDIST_SHA256_HERE", "PUT_SPDX_LICENSE_ID_HERE"):
+    for placeholder in ("PUT_RELEASE_VERSION_HERE", "PUT_RELEASE_SDIST_SHA256_HERE", "PUT_SPDX_LICENSE_ID_HERE"):
         if placeholder in recipe:
             issues.append(GateIssue("FAIL", "conda-placeholder", f"conda recipe still contains {placeholder}."))
     return issues
