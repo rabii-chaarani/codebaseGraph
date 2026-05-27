@@ -34,6 +34,12 @@ dev = ["pytest", "ruff"]
 codebase-graph = "codebase_graph.cli:main"
 codebase-graph-mcp = "codebase_graph.mcp.server:main"
 
+[project.urls]
+Homepage = "https://github.com/rabii-chaarani/codebaseGraph"
+Repository = "https://github.com/rabii-chaarani/codebaseGraph"
+Issues = "https://github.com/rabii-chaarani/codebaseGraph/issues"
+Changelog = "https://github.com/rabii-chaarani/codebaseGraph/blob/main/CHANGELOG.md"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["codebase_graph*"]

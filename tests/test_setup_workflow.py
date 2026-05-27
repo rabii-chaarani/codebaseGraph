@@ -260,6 +260,8 @@ def test_packaging_requires_ladybug_and_namespaced_package_discovery() -> None:
     assert "tree-sitter-python>=0.25.0,<0.26" in dependencies
     assert payload["project"]["scripts"]["codebase-graph"] == "codebase_graph.cli:main"
     assert payload["project"]["scripts"]["codebase-graph-mcp"] == "codebase_graph.mcp.server:main"
+    assert payload["project"]["urls"]["Repository"] == "https://github.com/rabii-chaarani/codebaseGraph"
+    assert payload["project"]["urls"]["Issues"] == "https://github.com/rabii-chaarani/codebaseGraph/issues"
     assert payload["tool"]["setuptools"]["packages"]["find"]["include"] == ["codebase_graph*"]
 
 
