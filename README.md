@@ -184,7 +184,7 @@ ruff check .
 
 ## CI and releases
 
-GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff and package-build validation. Releases are driven by `vX.Y.Z` tags, use tag-derived package versions, and publish to PyPI through Trusted Publishing.
+GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff and package-build validation. Releases are managed by release-please, use tag-derived package versions, create GitHub Releases with distribution assets, and publish to PyPI through Trusted Publishing.
 
 Conda distribution uses the conda-forge staged-recipes path rather than direct Anaconda.org uploads. See [docs/release.md](docs/release.md) for the release workflow and conda-forge submission checklist.
 

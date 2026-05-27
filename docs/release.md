@@ -1,6 +1,6 @@
 # Release Process
 
-`codebaseGraph` releases are tag-driven. The GitHub release workflow builds the source distribution and wheel from a `vX.Y.Z` tag, verifies that the package metadata version matches the tag, and publishes to PyPI with Trusted Publishing.
+`codebaseGraph` releases are managed by release-please. The release workflow opens and maintains a release pull request from Conventional Commit history. When that release pull request is merged, release-please creates the `vX.Y.Z` tag and GitHub Release, then the same workflow builds the source distribution and wheel from that tag, verifies that the package metadata version matches the tag, attaches the distributions to the GitHub Release, and publishes to PyPI with Trusted Publishing.
 
 ## One-time PyPI setup
 
@@ -21,19 +21,18 @@ Pull requests and pushes to `main` or `codex/**` run:
 - `ruff check .` on Linux.
 - A package build on Linux with `python -m build`, `twine check`, and console-script smoke tests from the built wheel.
 
-## PyPI release
+## Release flow
 
-1. Confirm the release branch is green in CI.
-2. Create an intentional release tag:
+1. Merge normal pull requests into `main` with Conventional Commit-style titles or squash commit messages such as `feat: add graph query helpers` or `fix: preserve MCP config`.
+2. The `Release` workflow opens or updates a release pull request that updates `CHANGELOG.md` and `.release-please-manifest.json`.
+3. Review and merge the release pull request when ready to publish.
+4. The `Release` workflow creates the `vX.Y.Z` tag and GitHub Release, builds the distributions from that tag, verifies `Version: X.Y.Z`, uploads the distributions to the GitHub Release, and publishes to PyPI from the protected `pypi` environment.
 
-   ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
+The package version remains tag-derived through `setuptools_scm`; do not add a static `project.version` field to `pyproject.toml` just for release-please.
 
-3. The `Release` workflow checks out that tag, builds the distributions, verifies `Version: X.Y.Z`, and publishes to PyPI from the protected `pypi` environment.
+To force a specific next version, merge a commit whose body contains a `Release-As: X.Y.Z` trailer.
 
-For manual reruns, use the `Release` workflow dispatch input with an existing `vX.Y.Z` tag.
+For manual maintenance, rerun or dispatch the `Release` workflow. If CI checks must run on release-please pull requests, configure a `RELEASE_PLEASE_TOKEN` secret backed by a personal access token or GitHub App token; the default `GITHUB_TOKEN` can create the pull request but does not trigger follow-up workflows from its own events.
 
 ## Conda-forge release path
 
