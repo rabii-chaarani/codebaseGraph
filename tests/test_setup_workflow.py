@@ -54,7 +54,12 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     agents_text = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
     assert agents_text.count(START_MARKER) == 1
     assert agents_text.count(END_MARKER) == 1
-    assert "graph_architecture_queries" in agents_text
+    assert "graph-search" in agents_text
+    assert "graph-context" in agents_text
+    assert "graph-architecture-queries" in agents_text
+    assert "MCP server" not in agents_text
+    assert "graph_architecture_queries" not in agents_text
+    assert "graph_query" not in agents_text
     mcp_payload = tomllib.loads(mcp_config_path.read_text(encoding="utf-8"))
     assert "otherServer" not in mcp_payload.get("mcp_servers", {})
     assert mcp_payload["mcp_servers"]["codebase_graph"]["args"] == [

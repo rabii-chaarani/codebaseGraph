@@ -70,12 +70,12 @@ def _instruction_block(*, server_name: str, config_path: Path, setup_command: st
     return (
         f"{START_MARKER}\n"
         "## codebaseGraph workflow\n"
-        f"- Treat the `{server_name}` MCP server knowledge graph as the project operating source of truth.\n"
-        f"- Use the `{server_name}` MCP server for repository graph search, schema, and compact context before answering repo-structure questions or performing coding tasks.\n"
-        "- Prefer `graph_search` for symbols, paths, docs, and setup instructions; follow with `graph_context` when relationships or nearby evidence matter.\n"
-        "- For coding tasks that requires architecture orientation, call `graph_architecture_queries` first, then execute selected statements through `graph_query` that relevant to your task.\n"
-        "- Use `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.\n"
-        f"- Refresh the graph with `{setup_command} setup --repo-root . --mcp-client none` when files change materially; install or update MCP with `{setup_command} mcp install --client codex`. Setup config: `{config_path.as_posix()}`.\n"
+        "- Treat the repo-local `.codebaseGraph` graph as the project operating source of truth.\n"
+        f"- Use `{setup_command} graph-search <query> --repo-root . --no-refresh --json` before answering repo-structure questions or performing coding tasks.\n"
+        f"- Use `{setup_command} graph-context <query> --repo-root . --profile <profile> --no-refresh --json` when relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.\n"
+        f"- For architecture orientation, run `{setup_command} graph-architecture-queries`, then execute selected read-only statements with `{setup_command} graph-query \"<statement>\" --repo-root .`.\n"
+        f"- Use `{setup_command} graph-schema` or `{setup_command} graph-query-helpers` before writing raw graph queries, and keep `graph-query` read-only.\n"
+        f"- Refresh the graph with `{setup_command} setup --repo-root . --mcp-client none` when files change materially. Setup config: `{config_path.as_posix()}`.\n"
         f"{END_MARKER}\n"
     )
 

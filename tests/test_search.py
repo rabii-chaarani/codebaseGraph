@@ -10,6 +10,8 @@ import pytest
 from codebase_graph.cli import main as cli_main
 from codebase_graph.db import GraphNeighbor, SearchIndexRow
 from codebase_graph.ingest import GraphMaterializer
+from codebase_graph.mcp.runtime import GraphRuntimeConfig
+from codebase_graph.mcp.tools import handle_tool_call
 from codebase_graph.reasoning import CompactContextBuilder
 from codebase_graph.retrieval.search import SearchHit, SearchRequest, SearchService
 
@@ -359,6 +361,140 @@ def test_cli_search_and_context_return_compact_json_without_refresh(tmp_path: Pa
     context_payload = json.loads(capsys.readouterr().out)
     assert context_payload["results"]
     assert any(hit["label"] == "helper" and hit["context"] for hit in context_payload["results"])
+
+
+def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _require_graph_runtime()
+    source_root = _copy_fixture(tmp_path)
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+
+    assert cli_main([
+        "materialize",
+        "--source-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--mode",
+        "full",
+    ]) == 0
+    capsys.readouterr()
+    runtime = GraphRuntimeConfig(repo_root=source_root, db_path=db_path, manifest_path=manifest_path)
+
+    assert cli_main([
+        "graph-health",
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+    ]) == 0
+    assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_health", {}, runtime=runtime)
+
+    search_args = {"query": "SampleService", "limit": 2, "profile": "brief", "budget": 600}
+    assert cli_main([
+        "graph-search",
+        "SampleService",
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--limit",
+        "2",
+        "--no-refresh",
+        "--json",
+    ]) == 0
+    search_payload = json.loads(capsys.readouterr().out)
+    assert search_payload == handle_tool_call("graph_search", search_args, runtime=runtime)
+
+    hit = next(item for item in search_payload["results"] if item["label"] == "SampleService")
+    context_args = {
+        "node_id": hit["id"],
+        "node_type": hit["type"],
+        "limit": 1,
+        "profile": "definitions",
+        "budget": 600,
+    }
+    assert cli_main([
+        "graph-context",
+        "--node-id",
+        hit["id"],
+        "--node-type",
+        hit["type"],
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--profile",
+        "definitions",
+        "--limit",
+        "1",
+    ]) == 0
+    assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_context", context_args, runtime=runtime)
+
+    statement = "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1"
+    query_args = {"statement": statement, "parameters": {}, "limit": 5}
+    assert cli_main([
+        "graph-query",
+        statement,
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--limit",
+        "5",
+    ]) == 0
+    assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_query", query_args, runtime=runtime)
+
+
+def test_cli_graph_metadata_commands_do_not_open_graph_db(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli_main(["graph-schema"]) == 0
+    schema = json.loads(capsys.readouterr().out)
+    assert schema["ontology"]
+    assert schema["context_profiles"]
+
+    assert cli_main(["graph-query-helpers"]) == 0
+    helpers = json.loads(capsys.readouterr().out)
+    assert any(helper["name"] == "repository_overview" for helper in helpers["query_helpers"])
+
+    assert cli_main(["graph-architecture-queries", "--group", "overview"]) == 0
+    architecture = json.loads(capsys.readouterr().out)
+    assert [group["name"] for group in architecture["groups"]] == ["overview"]
+
+
+def test_cli_graph_query_rejects_write_like_statements(tmp_path: Path) -> None:
+    _require_graph_runtime()
+    source_root = _copy_fixture(tmp_path)
+    db_path = tmp_path / "graph.lbug"
+    manifest_path = tmp_path / "manifest.json"
+    materializer = GraphMaterializer(source_root, db_path=db_path, manifest_path=manifest_path)
+    try:
+        materializer.materialize(mode="full")
+    finally:
+        materializer.close()
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli_main([
+            "graph-query",
+            "MATCH (n) DELETE n",
+            "--repo-root",
+            source_root.as_posix(),
+            "--db",
+            db_path.as_posix(),
+            "--manifest",
+            manifest_path.as_posix(),
+        ])
+
+    assert exc_info.value.code == 2
 
 
 def _require_graph_runtime() -> None:

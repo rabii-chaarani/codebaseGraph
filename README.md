@@ -158,9 +158,21 @@ Available MCP tools:
 
 For coding-task architecture orientation, call `graph_architecture_queries` first to fetch the grouped read-only Cypher catalog, then run selected statements with `graph_query`.
 
-## CLI search
+## CLI graph workflow
 
-The legacy materializer/search commands are still available. Setup reports the explicit database and manifest paths to use with them:
+The CLI exposes the same graph workflow as the MCP tools, which is useful in clients that do not surface MCP tools directly:
+
+```bash
+codebase-graph graph-health --repo-root .
+codebase-graph graph-search SampleService --repo-root . --no-refresh --json
+codebase-graph graph-context SampleService --repo-root . --profile definitions --no-refresh --json
+codebase-graph graph-schema
+codebase-graph graph-query-helpers
+codebase-graph graph-architecture-queries --group overview
+codebase-graph graph-query "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" --repo-root .
+```
+
+`graph-query` blocks write-like statements and should be used read-only. The older `search` and `context` commands remain available. Setup reports the explicit database and manifest paths to use with them when needed:
 
 ```bash
 codebase-graph search SampleService \
