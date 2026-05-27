@@ -253,8 +253,11 @@ def test_setup_invalid_repo_root_exits_nonzero(tmp_path: Path) -> None:
 
 def test_packaging_requires_ladybug_and_namespaced_package_discovery() -> None:
     payload = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    dependencies = "\n".join(payload["project"]["dependencies"])
 
-    assert "real_ladybug" in payload["project"]["dependencies"]
+    assert "real_ladybug>=0.15.3,<0.16" in dependencies
+    assert "tree-sitter>=0.25.2,<0.26" in dependencies
+    assert "tree-sitter-python>=0.25.0,<0.26" in dependencies
     assert payload["project"]["scripts"]["codebase-graph"] == "codebase_graph.cli:main"
     assert payload["project"]["scripts"]["codebase-graph-mcp"] == "codebase_graph.mcp.server:main"
     assert payload["tool"]["setuptools"]["packages"]["find"]["include"] == ["codebase_graph*"]

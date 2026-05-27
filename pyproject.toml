@@ -10,10 +10,10 @@ readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Rabii Chaarani" }]
 dependencies = [
-  "real_ladybug",
-  "tomli; python_version < '3.11'",
-  "tree-sitter",
-  "tree-sitter-python",
+  "real_ladybug>=0.15.3,<0.16",
+  "tomli>=2.0.1; python_version < '3.11'",
+  "tree-sitter>=0.25.2,<0.26",
+  "tree-sitter-python>=0.25.0,<0.26",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
