@@ -20,6 +20,7 @@ class McpHttpServer(ThreadingHTTPServer):
     def __init__(self, server_address: tuple[str, int], handler: type[BaseHTTPRequestHandler]) -> None:
         super().__init__(server_address, handler)
         self.mcp_runtime: GraphRuntimeConfig
+        self.mcp_server: McpGraphServer
         self.endpoint_path: str
         self.auth_token: str | None
 
@@ -52,6 +53,7 @@ def build_http_server(
     )
     httpd = McpHttpServer((host, port), _McpHttpHandler)
     httpd.mcp_runtime = graph_runtime
+    httpd.mcp_server = McpGraphServer(graph_runtime)
     httpd.endpoint_path = endpoint_path
     httpd.auth_token = auth_token
     return httpd
@@ -106,7 +108,7 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         if not isinstance(message, dict):
             self._send_json(rpc_error(None, -32600, "JSON-RPC payload must be an object"), status=HTTPStatus.BAD_REQUEST)
             return
-        response = McpGraphServer(self.server.mcp_runtime).handle_json_rpc(message)
+        response = self.server.mcp_server.handle_json_rpc(message)
         if response is None:
             self.send_response(HTTPStatus.ACCEPTED)
             self.end_headers()

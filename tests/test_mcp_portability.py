@@ -49,6 +49,7 @@ def test_architecture_query_catalog_is_available_over_mcp_without_opening_graph(
     db_path.write_text("", encoding="utf-8")
     server = McpGraphServer(GraphRuntimeConfig(repo_root=tmp_path, db_path=db_path))
 
+    server.handle_json_rpc({"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {}})
     listed = server.handle_json_rpc({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})
     all_queries = server.handle_json_rpc(
         {
@@ -85,6 +86,22 @@ def test_architecture_query_catalog_is_available_over_mcp_without_opening_graph(
     assert [group["name"] for group in filtered["result"]["structuredContent"]["groups"]] == ["overview"]
     assert invalid["result"]["isError"] is True
     assert invalid["result"]["structuredContent"]["error"]["type"] == "ValueError"
+
+
+def test_mcp_rejects_tools_before_initialize(tmp_path: Path) -> None:
+    db_path = tmp_path / "graph.ldb"
+    db_path.write_text("", encoding="utf-8")
+    server = McpGraphServer(GraphRuntimeConfig(repo_root=tmp_path, db_path=db_path))
+
+    listed = server.handle_json_rpc({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})
+    called = server.handle_json_rpc(
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "graph_health", "arguments": {}}}
+    )
+
+    assert listed is not None
+    assert called is not None
+    assert listed["error"]["code"] == -32002
+    assert called["error"]["code"] == -32002
 
 
 def test_descriptor_prefers_current_environment_script(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

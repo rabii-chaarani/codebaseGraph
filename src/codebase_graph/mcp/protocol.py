@@ -50,6 +50,8 @@ class McpGraphServer:
             return None
         if method.startswith("notifications/"):
             return None
+        if method in {"tools/list", "tools/call"} and self.session.protocol_version is None:
+            return rpc_error(request_id, -32002, "MCP session is not initialized")
         try:
             if method == "initialize":
                 result = self._initialize(dict(message.get("params") or {}))
