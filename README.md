@@ -182,6 +182,7 @@ Examples of emitted events include:
 - `mcp.stdio_parse_error`
 - `mcp.http_forbidden_origin`
 - `materializer.lock_exists`
+- `materializer.stale_lock_removed`
 
 ## CLI graph workflow
 
@@ -243,4 +244,4 @@ Report suspected vulnerabilities privately. See [SECURITY.md](SECURITY.md) for s
 - PATH or executable issues: run setup from the virtual environment that contains `codebase-graph`; the descriptor prefers that absolute executable path.
 - Direct smoke test: run `codebase-graph mcp serve --config .codebaseGraph/config.json` and send MCP `initialize`, `tools/list`, and `tools/call` JSON-RPC messages over stdio.
 - Unsupported files: binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, and `.codebaseGraph` paths are skipped.
-- Lock/contention errors: stop other graph materialization or setup processes using the same `.codebaseGraph/<repositoryName>_graph.ldb`. If no writer is running, remove the stale `.ldb.lock` file named in the error, then rerun setup.
+- Lock/contention errors: stop other graph materialization or setup processes using the same `.codebaseGraph/<repositoryName>_graph.ldb`. Stale locks with dead writer PIDs are removed automatically; if the error remains, inspect the `.ldb.lock` file before removing it manually.

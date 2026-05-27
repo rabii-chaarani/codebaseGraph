@@ -527,19 +527,30 @@ def _temporary_sibling(path: Path, *, suffix: str) -> Path:
 def _acquire_materialization_lock(db_path: Path) -> tuple[int, Path]:
     lock_path = Path(f"{db_path}.lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError as exc:
-        log_event(
-            "materializer.lock_exists",
-            level="WARNING",
-            db_path=db_path.as_posix(),
-            lock_path=lock_path.as_posix(),
-        )
-        raise RuntimeError(
-            f"codebaseGraph materialization is already in progress for {db_path}. "
-            f"If no materializer is running, remove the stale lock file: {lock_path}"
-        ) from exc
+    while True:
+        try:
+            descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            break
+        except FileExistsError as exc:
+            if _materialization_lock_is_stale(lock_path):
+                _unlink_if_exists(lock_path)
+                log_event(
+                    "materializer.stale_lock_removed",
+                    level="WARNING",
+                    db_path=db_path.as_posix(),
+                    lock_path=lock_path.as_posix(),
+                )
+                continue
+            log_event(
+                "materializer.lock_exists",
+                level="WARNING",
+                db_path=db_path.as_posix(),
+                lock_path=lock_path.as_posix(),
+            )
+            raise RuntimeError(
+                f"codebaseGraph materialization is already in progress for {db_path}. "
+                f"If no materializer is running, inspect the lock file before removing it: {lock_path}"
+            ) from exc
     payload = {
         "created_at": datetime.now(timezone.utc).isoformat(),
         "pid": os.getpid(),
@@ -552,6 +563,27 @@ def _acquire_materialization_lock(db_path: Path) -> tuple[int, Path]:
         _unlink_if_exists(lock_path)
         raise
     return descriptor, lock_path
+
+
+def _materialization_lock_is_stale(lock_path: Path) -> bool:
+    try:
+        payload = json.loads(lock_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    pid = payload.get("pid") if isinstance(payload, dict) else None
+    if not isinstance(pid, int) or pid <= 0 or pid == os.getpid():
+        return False
+    return not _process_is_running(pid)
+
+
+def _process_is_running(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
 
 
 def _release_materialization_lock(descriptor: int, lock_path: Path) -> None:
