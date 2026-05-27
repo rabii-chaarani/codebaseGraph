@@ -37,6 +37,7 @@ Pull requests and pushes to `main` or `codex/**` run:
 Before publishing a production release, confirm:
 
 - Hosted CI is green for tests, ruff, package build, supply-chain, wheel smoke, and source-distribution smoke.
+- `SECURITY.md` is present and vulnerability reporting expectations are current.
 - The project owner has selected an SPDX license, added package license metadata, and included the corresponding license file.
 - The PyPI Trusted Publisher, `pypi` GitHub environment, and release-please token posture have been verified in GitHub/PyPI settings.
 - Conda-forge submission is either explicitly out of scope for the release or the recipe placeholders have been replaced with the release version, source-distribution SHA256, and chosen SPDX license.

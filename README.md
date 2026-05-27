@@ -219,6 +219,10 @@ GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 thro
 
 Conda distribution uses the conda-forge staged-recipes path rather than direct Anaconda.org uploads. See [docs/release.md](docs/release.md) for the release workflow and conda-forge submission checklist.
 
+## Security
+
+Report suspected vulnerabilities privately. See [SECURITY.md](SECURITY.md) for supported versions, reporting expectations, and the local-first MCP security boundary.
+
 ## Troubleshooting
 
 - Missing LadyBugDB: install a package build that includes `real_ladybug`; setup will fail before creating `.codebaseGraph`.
