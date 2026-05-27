@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from scripts.check_release_gate import _jobs_missing_timeout, run_checks
+from scripts.check_release_gate import _jobs_missing_timeout, _workflow_action_pin_issues, run_checks
 
 
 WORKFLOWS = (
@@ -13,18 +13,26 @@ WORKFLOWS = (
 
 
 def test_github_actions_are_pinned_to_immutable_commits() -> None:
-    mutable_refs: list[str] = []
-    uses_pattern = re.compile(r"^\s*uses:\s*(?P<action>[^@\s]+)@(?P<ref>[0-9a-f]{40}|[^\s#]+)")
-
     for path in WORKFLOWS:
-        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-            match = uses_pattern.match(line)
-            if match is None:
-                continue
-            if not re.fullmatch(r"[0-9a-f]{40}", match.group("ref")):
-                mutable_refs.append(f"{path}:{line_number}: {match.group('action')}@{match.group('ref')}")
+        mutable_refs = _workflow_action_pin_issues(path, path.read_text(encoding="utf-8"))
 
-    assert mutable_refs == []
+        assert mutable_refs == []
+
+
+def test_action_pin_checker_rejects_bare_external_actions() -> None:
+    text = """
+jobs:
+  lint:
+    steps:
+      - uses: actions/checkout
+      - uses: ./.github/actions/local-smoke
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+"""
+
+    issues = _workflow_action_pin_issues(Path(".github/workflows/example.yml"), text)
+
+    assert [issue.code for issue in issues] == ["workflow-action-not-pinned"]
+    assert "actions/checkout" in issues[0].message
 
 
 def test_release_workflows_smoke_test_wheel_and_sdist() -> None:
@@ -32,6 +40,15 @@ def test_release_workflows_smoke_test_wheel_and_sdist() -> None:
         text = path.read_text(encoding="utf-8")
         assert "pip install dist/*.whl" in text
         assert "pip install dist/*.tar.gz" in text
+
+
+def test_release_workflow_enforces_production_gate_before_build() -> None:
+    text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    assert "production-gate:" in text
+    assert "python scripts/check_release_gate.py" in text
+    assert "--production" in text
+    assert "build:\n    name: build release distributions\n    needs:\n      - release-please\n      - production-gate" in text
 
 
 def test_hosted_workflows_run_real_vulnerability_scans() -> None:

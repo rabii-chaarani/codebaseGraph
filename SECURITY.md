@@ -24,7 +24,7 @@ The production security boundary is local-first:
 
 - The stdio MCP transport is intended for local MCP clients.
 - The HTTP MCP transport binds to localhost by default.
-- `--allow-remote` only permits a non-local bind address; it does not add authentication, TLS, rate limiting, authorization, or a multi-user session model.
+- `--allow-remote` requires a bearer token. It does not add TLS, rate limiting, authorization scopes, or a multi-user session model.
 - `graph_query` is intended to remain read-only. Do not relax query restrictions without a parser-level read-only proof or an explicit safe-procedure allowlist.
 
 Dependency vulnerability scanning runs in hosted CI and release workflows. Local setup commands must not call external advisory services implicitly.

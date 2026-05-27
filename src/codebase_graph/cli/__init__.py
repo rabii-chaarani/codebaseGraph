@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -117,8 +118,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     http_parser.add_argument(
         "--allow-remote",
         action="store_true",
-        help="Allow binding MCP HTTP to a non-local host; no authentication is provided",
+        help="Allow binding MCP HTTP to a non-local host; requires an auth token",
     )
+    http_parser.add_argument(
+        "--auth-token",
+        default=None,
+        help="Bearer token required for HTTP requests; prefer --auth-token-env to avoid shell history exposure",
+    )
+    http_parser.add_argument("--auth-token-env", default=None, help="Environment variable containing the HTTP bearer token")
 
     args = parser.parse_args(argv)
     if args.command == "materialize":
@@ -259,6 +266,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "mcp" and args.mcp_command == "http":
         from codebase_graph.mcp.server import serve_http
 
+        auth_token = _http_auth_token(args, parser)
         serve_http(
             repo_root=args.repo_root,
             config_path=args.config,
@@ -268,6 +276,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             port=args.port,
             endpoint_path=args.path,
             allow_remote=args.allow_remote,
+            auth_token=auth_token,
         )
         return 0
     parser.error(f"Unknown command: {args.command}")
@@ -383,6 +392,17 @@ def _print_mcp_install_results(results: Sequence[object]) -> None:
         target = getattr(result, "path") or " ".join(getattr(result, "command") or [])
         suffix = f" -> {target}" if target else ""
         print(f"{client}: {action} {server_name} via {method}{suffix}")
+
+
+def _http_auth_token(args: argparse.Namespace, parser: argparse.ArgumentParser) -> str | None:
+    if args.auth_token and args.auth_token_env:
+        parser.error("mcp http accepts either --auth-token or --auth-token-env, not both")
+    if args.auth_token_env:
+        value = os.environ.get(args.auth_token_env)
+        if not value:
+            parser.error(f"Environment variable {args.auth_token_env!r} must contain the HTTP bearer token")
+        return value
+    return args.auth_token
 
 
 __all__ = ["main"]

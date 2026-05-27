@@ -220,6 +220,35 @@ def test_http_mcp_rejects_remote_bind_without_explicit_opt_in(tmp_path: Path) ->
         build_http_server(repo_root=tmp_path, db_path=tmp_path / "missing.ldb", host="0.0.0.0", port=0)
 
 
+def test_http_mcp_rejects_remote_bind_without_auth_token(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="auth token"):
+        build_http_server(
+            repo_root=tmp_path,
+            db_path=tmp_path / "missing.ldb",
+            host="0.0.0.0",
+            port=0,
+            allow_remote=True,
+        )
+
+
+def test_http_mcp_accepts_remote_bind_with_auth_token(tmp_path: Path) -> None:
+    db_path = tmp_path / "graph.ldb"
+    db_path.write_text("", encoding="utf-8")
+    try:
+        httpd = build_http_server(
+            repo_root=tmp_path,
+            db_path=db_path,
+            host="0.0.0.0",
+            port=0,
+            allow_remote=True,
+            auth_token="secret-token",
+        )
+    except PermissionError as exc:
+        pytest.skip(f"remote socket bind is unavailable in this environment: {exc}")
+
+    httpd.server_close()
+
+
 def test_http_mcp_transport_handles_initialize_list_and_call(tmp_path: Path) -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")
@@ -248,6 +277,49 @@ def test_http_mcp_transport_handles_initialize_list_and_call(tmp_path: Path) -> 
     assert any(tool["name"] == "graph_context" for tool in listed["result"]["tools"])
     assert health["result"]["structuredContent"]["ok"] is True
     assert exc_info.value.code == 400
+
+
+def test_http_mcp_transport_enforces_bearer_token_when_configured(tmp_path: Path) -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    pytest.importorskip("real_ladybug")
+    repo_root = _fresh_repo(tmp_path)
+    result = run_setup(SetupOptions(repo_root=repo_root, mcp_client="none", instructions_target="skip"))
+    try:
+        httpd = build_http_server(config_path=result.paths.config_path, host="127.0.0.1", port=0, auth_token="secret")
+    except PermissionError as exc:
+        pytest.skip(f"local socket bind is unavailable in this environment: {exc}")
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    host, port = httpd.server_address
+    try:
+        with pytest.raises(urllib.error.HTTPError) as missing_exc:
+            _http_rpc(host, port, "initialize", {"protocolVersion": "2025-11-25"}, origin=f"http://{host}:{port}")
+        with pytest.raises(urllib.error.HTTPError) as wrong_exc:
+            _http_rpc(
+                host,
+                port,
+                "initialize",
+                {"protocolVersion": "2025-11-25"},
+                auth_token="wrong",
+                origin=f"http://{host}:{port}",
+            )
+        initialized = _http_rpc(
+            host,
+            port,
+            "initialize",
+            {"protocolVersion": "2025-11-25"},
+            auth_token="secret",
+            origin=f"http://{host}:{port}",
+        )
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=10)
+
+    assert missing_exc.value.code == 401
+    assert wrong_exc.value.code == 401
+    assert initialized["result"]["protocolVersion"] == "2025-11-25"
 
 
 def _rpc(stdin: BinaryIO, stdout: BinaryIO, method: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -297,17 +369,22 @@ def _http_rpc(
     params: dict[str, Any],
     *,
     protocol_version: str = "2025-11-25",
+    auth_token: str | None = None,
+    origin: str | None = None,
 ) -> dict[str, Any]:
     payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode("utf-8")
+    headers = {
+        "Accept": "application/json, text/event-stream",
+        "Content-Type": "application/json",
+        "MCP-Protocol-Version": protocol_version,
+        "Origin": origin or f"http://{host}:{port}",
+    }
+    if auth_token is not None:
+        headers["Authorization"] = f"Bearer {auth_token}"
     request = urllib.request.Request(
         f"http://{host}:{port}/mcp",
         data=payload,
-        headers={
-            "Accept": "application/json, text/event-stream",
-            "Content-Type": "application/json",
-            "MCP-Protocol-Version": protocol_version,
-            "Origin": f"http://{host}:{port}",
-        },
+        headers=headers,
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=10) as response:

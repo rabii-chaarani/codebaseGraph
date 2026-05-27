@@ -95,6 +95,9 @@ def _check_workflows() -> list[GateIssue]:
     issues: list[GateIssue] = []
     for relative_path in WORKFLOWS:
         path = REPO_ROOT / relative_path
+        if not path.exists():
+            issues.append(GateIssue("FAIL", "workflow-missing", f"{relative_path} is required."))
+            continue
         text = path.read_text(encoding="utf-8")
         issues.extend(_workflow_action_pin_issues(relative_path, text))
         for job in _jobs_missing_timeout(text):
@@ -110,14 +113,22 @@ def _check_workflows() -> list[GateIssue]:
 
 def _workflow_action_pin_issues(relative_path: Path, text: str) -> list[GateIssue]:
     issues: list[GateIssue] = []
-    uses_pattern = re.compile(r"^\s*uses:\s*(?P<action>[^@\s]+)@(?P<ref>[0-9a-f]{40}|[^\s#]+)")
+    uses_pattern = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<target>[^\s#]+)")
     for line_number, line in enumerate(text.splitlines(), start=1):
         match = uses_pattern.match(line)
         if match is None:
             continue
-        if not re.fullmatch(r"[0-9a-f]{40}", match.group("ref")):
-            target = f"{relative_path}:{line_number}: {match.group('action')}@{match.group('ref')}"
-            issues.append(GateIssue("FAIL", "workflow-action-not-pinned", target))
+        target = match.group("target").strip("'\"")
+        if target.startswith(("./", "../")):
+            continue
+        if "@" not in target:
+            issues.append(GateIssue("FAIL", "workflow-action-not-pinned", f"{relative_path}:{line_number}: {target}"))
+            continue
+        action, ref = target.rsplit("@", 1)
+        if not re.fullmatch(r"[0-9a-fA-F]{40}", ref):
+            issues.append(
+                GateIssue("FAIL", "workflow-action-not-pinned", f"{relative_path}:{line_number}: {action}@{ref}")
+            )
     return issues
 
 
@@ -153,6 +164,19 @@ def _jobs_missing_timeout(text: str) -> list[str]:
 def _check_release_workflow_permissions() -> list[GateIssue]:
     text = (REPO_ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
     issues: list[GateIssue] = []
+    if (
+        "production-gate:" not in text
+        or "python scripts/check_release_gate.py" not in text
+        or "--production" not in text
+        or "- production-gate" not in text
+    ):
+        issues.append(
+            GateIssue(
+                "FAIL",
+                "release-production-gate-missing",
+                "release workflow must run the production release gate before build/publish.",
+            )
+        )
     if "environment:" not in text or "name: pypi" not in text:
         issues.append(GateIssue("FAIL", "pypi-environment-missing", "release workflow must publish through pypi environment."))
     if "id-token: write" not in text:

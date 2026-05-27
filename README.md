@@ -145,7 +145,15 @@ codebase-graph mcp http --config .codebaseGraph/config.json --host 127.0.0.1 --p
 ```
 
 The HTTP transport rejects non-local bind hosts unless `--allow-remote` is passed. Keep it bound to `127.0.0.1`
-for normal use; `--allow-remote` does not add authentication, TLS, rate limiting, or a multi-user session model.
+for normal use. Remote binding requires a bearer token:
+
+```bash
+CODEBASE_GRAPH_MCP_TOKEN="$(openssl rand -hex 32)"
+codebase-graph mcp http --config .codebaseGraph/config.json --host 0.0.0.0 --allow-remote --auth-token-env CODEBASE_GRAPH_MCP_TOKEN
+```
+
+Clients must send `Authorization: Bearer <token>`. The token gate does not add TLS, rate limiting, authorization scopes, or
+a multi-user session model; put remote HTTP behind a trusted network boundary and TLS-terminating proxy.
 
 Available MCP tools:
 

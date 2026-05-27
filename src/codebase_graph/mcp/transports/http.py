@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -20,6 +21,7 @@ class McpHttpServer(ThreadingHTTPServer):
         super().__init__(server_address, handler)
         self.mcp_runtime: GraphRuntimeConfig
         self.endpoint_path: str
+        self.auth_token: str | None
 
 
 def build_http_server(
@@ -32,7 +34,13 @@ def build_http_server(
     port: int = 8765,
     endpoint_path: str = "/mcp",
     allow_remote: bool = False,
+    auth_token: str | None = None,
 ) -> McpHttpServer:
+    if auth_token is not None and not auth_token.strip():
+        raise ValueError("MCP HTTP auth token must not be blank")
+    if allow_remote and auth_token is None:
+        log_event("mcp.http_remote_bind_rejected", level="WARNING", host=host, port=port)
+        raise ValueError("MCP HTTP remote bind requires an auth token")
     if not allow_remote and host not in LOCAL_ORIGINS:
         log_event("mcp.http_remote_bind_rejected", level="WARNING", host=host, port=port)
         raise ValueError("MCP HTTP transport may only bind to localhost unless allow_remote is enabled")
@@ -45,6 +53,7 @@ def build_http_server(
     httpd = McpHttpServer((host, port), _McpHttpHandler)
     httpd.mcp_runtime = graph_runtime
     httpd.endpoint_path = endpoint_path
+    httpd.auth_token = auth_token
     return httpd
 
 
@@ -58,6 +67,7 @@ def serve_http(
     port: int = 8765,
     endpoint_path: str = "/mcp",
     allow_remote: bool = False,
+    auth_token: str | None = None,
 ) -> None:
     server = build_http_server(
         repo_root=repo_root,
@@ -68,6 +78,7 @@ def serve_http(
         port=port,
         endpoint_path=endpoint_path,
         allow_remote=allow_remote,
+        auth_token=auth_token,
     )
     try:
         server.serve_forever()
@@ -79,7 +90,7 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
     server: McpHttpServer
 
     def do_POST(self) -> None:
-        if not self._request_path_matches() or not self._valid_origin():
+        if not self._request_path_matches() or not self._valid_origin() or not self._valid_auth():
             return
         if not self._valid_protocol_header():
             return
@@ -103,7 +114,7 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         self._send_json(response)
 
     def do_GET(self) -> None:
-        if not self._request_path_matches() or not self._valid_origin():
+        if not self._request_path_matches() or not self._valid_origin() or not self._valid_auth():
             return
         self.send_response(HTTPStatus.METHOD_NOT_ALLOWED)
         self.send_header("Allow", "POST")
@@ -132,6 +143,25 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
             client_address=self.client_address[0],
         )
         self._send_json(rpc_error(None, -32000, "Forbidden origin"), status=HTTPStatus.FORBIDDEN)
+        return False
+
+    def _valid_auth(self) -> bool:
+        if self.server.auth_token is None:
+            return True
+        authorization = self.headers.get("Authorization", "")
+        prefix = "Bearer "
+        if authorization.startswith(prefix) and secrets.compare_digest(authorization[len(prefix) :], self.server.auth_token):
+            return True
+        log_event(
+            "mcp.http_unauthorized",
+            level="WARNING",
+            client_address=self.client_address[0],
+        )
+        self._send_json(
+            rpc_error(None, -32000, "Unauthorized"),
+            status=HTTPStatus.UNAUTHORIZED,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
         return False
 
     def _valid_protocol_header(self) -> bool:
@@ -193,10 +223,18 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
             return None
         return length
 
-    def _send_json(self, payload: dict[str, Any], *, status: HTTPStatus = HTTPStatus.OK) -> None:
+    def _send_json(
+        self,
+        payload: dict[str, Any],
+        *,
+        status: HTTPStatus = HTTPStatus.OK,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)

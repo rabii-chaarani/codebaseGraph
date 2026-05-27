@@ -13,6 +13,18 @@ Configure a PyPI Trusted Publisher for:
 
 Create the `pypi` GitHub environment before the first release. Use required reviewers on that environment when release approval should be manual.
 
+Set these `pypi` environment variables to `true` only after the corresponding owner-controlled gate is verified:
+
+- `CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER`
+- `CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT`
+- `CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN`
+- `CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING`
+- `CODEBASE_GRAPH_REQUIRE_CONDA`, only when conda-forge publication is part of the release
+
+The release workflow runs `scripts/check_release_gate.py --production` in the protected `pypi` environment before building
+or publishing release distributions. If one of these variables is missing or the repository-local gates fail, the release
+stops before any package is uploaded.
+
 ## CI
 
 Pull requests and pushes to `main` or `codex/**` run:
