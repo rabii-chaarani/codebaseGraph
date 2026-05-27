@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from scripts import check_release_gate
 from scripts.check_release_gate import _jobs_missing_timeout, _workflow_action_pin_issues, run_checks
 
 
@@ -96,3 +97,21 @@ def test_production_release_gate_reports_owner_controlled_blockers() -> None:
     assert "external-confirmation-missing" in codes
     assert "conda-placeholder" in codes
     assert "conda recipe still contains PUT_RELEASE_VERSION_HERE." in messages
+
+
+def test_release_gate_reports_missing_release_workflow(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(check_release_gate, "REPO_ROOT", tmp_path)
+
+    issues = check_release_gate._check_release_workflow_permissions()
+
+    assert [issue.code for issue in issues] == ["workflow-missing"]
+    assert ".github/workflows/release.yml is required." in issues[0].message
+
+
+def test_release_gate_reports_missing_conda_recipe(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(check_release_gate, "REPO_ROOT", tmp_path)
+
+    issues = check_release_gate._check_conda_recipe()
+
+    assert [issue.code for issue in issues] == ["conda-recipe-missing"]
+    assert "conda-forge/recipe/meta.yaml is required." in issues[0].message

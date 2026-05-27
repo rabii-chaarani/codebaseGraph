@@ -162,8 +162,12 @@ def _jobs_missing_timeout(text: str) -> list[str]:
 
 
 def _check_release_workflow_permissions() -> list[GateIssue]:
-    text = (REPO_ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    workflow = REPO_ROOT / ".github/workflows/release.yml"
     issues: list[GateIssue] = []
+    if not workflow.exists():
+        return [GateIssue("FAIL", "workflow-missing", ".github/workflows/release.yml is required.")]
+
+    text = workflow.read_text(encoding="utf-8")
     if (
         "production-gate:" not in text
         or "python scripts/check_release_gate.py" not in text
@@ -207,8 +211,12 @@ def _check_external_confirmations(confirmations: set[str]) -> list[GateIssue]:
 
 
 def _check_conda_recipe() -> list[GateIssue]:
-    recipe = (REPO_ROOT / "conda-forge/recipe/meta.yaml").read_text(encoding="utf-8")
+    recipe_path = REPO_ROOT / "conda-forge/recipe/meta.yaml"
     issues: list[GateIssue] = []
+    if not recipe_path.exists():
+        return [GateIssue("FAIL", "conda-recipe-missing", "conda-forge/recipe/meta.yaml is required.")]
+
+    recipe = recipe_path.read_text(encoding="utf-8")
     for placeholder in ("PUT_RELEASE_VERSION_HERE", "PUT_RELEASE_SDIST_SHA256_HERE", "PUT_SPDX_LICENSE_ID_HERE"):
         if placeholder in recipe:
             issues.append(GateIssue("FAIL", "conda-placeholder", f"conda recipe still contains {placeholder}."))
