@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from codebase_graph.diagnostics import log_event
 from codebase_graph.mcp.protocol import SUPPORTED_PROTOCOL_VERSIONS, McpGraphServer, rpc_error
 
 LOCAL_ORIGINS = {"localhost", "127.0.0.1", "::1"}
@@ -32,6 +33,7 @@ def build_http_server(
     allow_remote: bool = False,
 ) -> McpHttpServer:
     if not allow_remote and host not in LOCAL_ORIGINS:
+        log_event("mcp.http_remote_bind_rejected", level="WARNING", host=host, port=port)
         raise ValueError("MCP HTTP transport may only bind to localhost unless allow_remote is enabled")
     graph_server = McpGraphServer.from_paths(
         repo_root=repo_root,
@@ -86,6 +88,7 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         try:
             message = json.loads(self.rfile.read(length).decode("utf-8"))
         except Exception as exc:
+            log_event("mcp.http_parse_error", level="WARNING", message=str(exc), client_address=self.client_address[0])
             self._send_json(rpc_error(None, -32700, f"Invalid JSON-RPC payload: {exc}"), status=HTTPStatus.BAD_REQUEST)
             return
         if not isinstance(message, dict):
@@ -121,6 +124,12 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         hostname = urlparse(origin).hostname
         if hostname in LOCAL_ORIGINS:
             return True
+        log_event(
+            "mcp.http_forbidden_origin",
+            level="WARNING",
+            origin=origin,
+            client_address=self.client_address[0],
+        )
         self._send_json(rpc_error(None, -32000, "Forbidden origin"), status=HTTPStatus.FORBIDDEN)
         return False
 
@@ -130,6 +139,12 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
             return True
         if requested in SUPPORTED_PROTOCOL_VERSIONS:
             return True
+        log_event(
+            "mcp.http_unsupported_protocol",
+            level="WARNING",
+            requested=requested,
+            client_address=self.client_address[0],
+        )
         self._send_json(
             rpc_error(
                 None,
@@ -146,12 +161,30 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         try:
             length = int(raw_length)
         except ValueError:
+            log_event(
+                "mcp.http_invalid_content_length",
+                level="WARNING",
+                content_length=raw_length,
+                client_address=self.client_address[0],
+            )
             self._send_json(rpc_error(None, -32600, "Content-Length must be an integer"), status=HTTPStatus.BAD_REQUEST)
             return None
         if length < 0:
+            log_event(
+                "mcp.http_invalid_content_length",
+                level="WARNING",
+                content_length=raw_length,
+                client_address=self.client_address[0],
+            )
             self._send_json(rpc_error(None, -32600, "Content-Length must be non-negative"), status=HTTPStatus.BAD_REQUEST)
             return None
         if length > MAX_HTTP_BODY_BYTES:
+            log_event(
+                "mcp.http_body_too_large",
+                level="WARNING",
+                content_length=length,
+                client_address=self.client_address[0],
+            )
             self._send_json(
                 rpc_error(None, -32000, "MCP request body is too large", {"max_bytes": MAX_HTTP_BODY_BYTES}),
                 status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,

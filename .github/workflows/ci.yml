@@ -75,6 +75,50 @@ jobs:
       - name: Run ruff
         run: ruff check .
 
+  supply-chain:
+    name: supply chain
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package and supply-chain tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m pip install cyclonedx-bom pip-audit
+
+      - name: Check installed dependency consistency
+        run: python -m pip check
+
+      - name: Validate audit dependency collection
+        run: python -m pip_audit --strict --dry-run --skip-editable --progress-spinner off --cache-dir .pip-audit-cache
+
+      - name: Generate CycloneDX SBOM
+        run: |
+          cyclonedx-py environment "$(which python)" \
+            --pyproject pyproject.toml \
+            --mc-type library \
+            --output-reproducible \
+            --of JSON \
+            -o codebase-graph-sbom.cdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: codebase-graph-sbom
+          path: codebase-graph-sbom.cdx.json
+          if-no-files-found: error
+
   package:
     name: package
     runs-on: ubuntu-latest

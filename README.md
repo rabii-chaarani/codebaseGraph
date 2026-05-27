@@ -162,6 +162,19 @@ truncated. Add a narrower `MATCH` pattern or a query-side `LIMIT` for broader gr
 
 For coding-task architecture orientation, call `graph_architecture_queries` first to fetch the grouped read-only Cypher catalog, then run selected statements with `graph_query`.
 
+## Operational diagnostics
+
+Runtime warning and error paths emit structured JSON events to stderr. Set `CODEBASE_GRAPH_LOG_LEVEL=INFO` to include
+setup start/completion diagnostics; the default level is `WARNING`.
+
+Examples of emitted events include:
+
+- `setup.failed`
+- `mcp.tool_error`
+- `mcp.stdio_parse_error`
+- `mcp.http_forbidden_origin`
+- `materializer.lock_exists`
+
 ## CLI graph workflow
 
 The CLI exposes the same graph workflow as the MCP tools, which is useful in clients that do not surface MCP tools directly:
@@ -202,7 +215,7 @@ ruff check .
 
 ## CI and releases
 
-GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff and package-build validation. Built wheels are smoke-tested with `setup`, `graph-health`, `graph-search`, and a stdio MCP handshake before release. Releases are managed by release-please, use tag-derived package versions, create GitHub Releases with distribution assets, and publish to PyPI through Trusted Publishing.
+GitHub Actions runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff, supply-chain, and package-build validation. Supply-chain checks include dependency consistency, audit dependency collection, Dependabot update coverage, and CycloneDX SBOM generation. Built wheels are smoke-tested with `setup`, `graph-health`, `graph-search`, and a stdio MCP handshake before release. Releases are managed by release-please, use tag-derived package versions, create GitHub Releases with distribution assets and SBOMs, and publish to PyPI through Trusted Publishing.
 
 Conda distribution uses the conda-forge staged-recipes path rather than direct Anaconda.org uploads. See [docs/release.md](docs/release.md) for the release workflow and conda-forge submission checklist.
 

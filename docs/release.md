@@ -19,15 +19,21 @@ Pull requests and pushes to `main` or `codex/**` run:
 
 - `pytest` on Linux, macOS, and Windows for Python 3.10 through 3.14.
 - `ruff check .` on Linux.
+- Supply-chain checks on Linux with `pip check`, `pip-audit --dry-run --strict` dependency collection, and CycloneDX
+  SBOM generation.
 - A package build on Linux with `python -m build`, `twine check`, console-script smoke tests from the built wheel,
-  and a packaged runtime smoke that runs `setup`, `graph-health`, `graph-search`, and stdio MCP handshake checks.
+  packaged runtime smoke that runs `setup`, `graph-health`, `graph-search`, and stdio MCP handshake checks, and release
+  SBOM generation.
 
 ## Release flow
 
 1. Merge normal pull requests into `main` with Conventional Commit-style titles or squash commit messages such as `feat: add graph query helpers` or `fix: preserve MCP config`.
 2. The `Release` workflow opens or updates a release pull request that updates `CHANGELOG.md` and `.release-please-manifest.json`.
 3. Review and merge the release pull request when ready to publish.
-4. The `Release` workflow creates the `vX.Y.Z` tag and GitHub Release, builds the distributions from that tag, verifies `Version: X.Y.Z`, uploads the distributions to the GitHub Release, and publishes to PyPI from the protected `pypi` environment.
+4. The `Release` workflow creates the `vX.Y.Z` tag and GitHub Release, builds the distributions from that tag, verifies `Version: X.Y.Z`, uploads the distributions and SBOM to the GitHub Release, and publishes to PyPI from the protected `pypi` environment.
+
+Vulnerability advisory scans require an external advisory service. Keep them in the hosted CI/release environment or
+run them explicitly from a development machine; do not make local setup call external advisory APIs implicitly.
 
 The package version remains tag-derived through `setuptools_scm`; do not add a static `project.version` field to `pyproject.toml` just for release-please.
 

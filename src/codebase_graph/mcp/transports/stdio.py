@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Any, BinaryIO
 
+from codebase_graph.diagnostics import log_event
 from codebase_graph.mcp.protocol import McpGraphServer, rpc_error
 
 
@@ -29,6 +30,7 @@ def serve_stdio(
         try:
             message = read_message(sys.stdin.buffer)
         except StdioMessageError as exc:
+            log_event("mcp.stdio_parse_error", level="WARNING", message=str(exc))
             write_message(sys.stdout.buffer, rpc_error(None, -32700, f"Invalid JSON-RPC payload: {exc}"))
             continue
         if message is None:

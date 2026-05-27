@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from codebase_graph.diagnostics import log_event
 from codebase_graph.ingest import GraphMaterializer
 
 from .instructions import InstructionResult, upsert_instruction_block
@@ -49,6 +50,13 @@ class SetupResult:
 
 def run_setup(options: SetupOptions) -> SetupResult:
     try:
+        log_event(
+            "setup.start",
+            level="INFO",
+            repo_root=str(options.repo_root),
+            mcp_client=options.mcp_client,
+            dry_run=options.dry_run,
+        )
         paths = derive_setup_paths(options.repo_root)
         validate_ladybug_runtime()
         paths.state_dir.mkdir(parents=True, exist_ok=True)
@@ -81,9 +89,25 @@ def run_setup(options: SetupOptions) -> SetupResult:
             skip=options.skip_mcp_config,
         )
     except Exception as exc:
+        log_event(
+            "setup.failed",
+            level="ERROR",
+            repo_root=str(options.repo_root),
+            error_type=exc.__class__.__name__,
+            message=str(exc),
+        )
         if isinstance(exc, SetupError):
             raise
         raise SetupError(str(exc)) from exc
+    log_event(
+        "setup.completed",
+        level="INFO",
+        repo_root=paths.repo_root.as_posix(),
+        config_action=config_action,
+        rebuilt=getattr(materialization, "rebuilt"),
+        deleted=getattr(materialization, "deleted"),
+        mcp_action=mcp_result.action,
+    )
     return SetupResult(
         paths=paths,
         config_action=config_action,

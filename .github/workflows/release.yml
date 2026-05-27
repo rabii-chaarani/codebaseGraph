@@ -108,9 +108,18 @@ jobs:
           python -m venv /tmp/codebase-graph-wheel
           /tmp/codebase-graph-wheel/bin/python -m pip install --upgrade pip
           /tmp/codebase-graph-wheel/bin/python -m pip install dist/*.whl
+          /tmp/codebase-graph-wheel/bin/python -m pip install cyclonedx-bom pip-audit
           /tmp/codebase-graph-wheel/bin/codebase-graph --help
           /tmp/codebase-graph-wheel/bin/codebase-graph-mcp --help
           /tmp/codebase-graph-wheel/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-wheel/bin/codebase-graph
+          /tmp/codebase-graph-wheel/bin/python -m pip check
+          /tmp/codebase-graph-wheel/bin/python -m pip_audit --strict --dry-run --skip-editable --progress-spinner off --cache-dir /tmp/pip-audit-cache
+          /tmp/codebase-graph-wheel/bin/cyclonedx-py environment /tmp/codebase-graph-wheel/bin/python \
+            --pyproject pyproject.toml \
+            --mc-type library \
+            --output-reproducible \
+            --of JSON \
+            -o codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom.cdx.json
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
@@ -119,10 +128,17 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom
+          path: codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom.cdx.json
+          if-no-files-found: error
+
       - name: Upload distributions to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$RELEASE_TAG" dist/* --clobber
+        run: gh release upload "$RELEASE_TAG" dist/* codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom.cdx.json --clobber
 
   publish-pypi:
     name: publish to PyPI

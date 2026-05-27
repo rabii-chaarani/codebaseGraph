@@ -210,7 +210,8 @@ def test_stdio_mcp_malformed_frame_returns_parse_error(tmp_path: Path) -> None:
 
     responses = _stdio_messages(completed.stdout)
     assert completed.returncode == 0
-    assert completed.stderr == b""
+    stderr_events = [json.loads(line) for line in completed.stderr.decode("utf-8").splitlines()]
+    assert stderr_events[0]["event"] == "mcp.stdio_parse_error"
     assert responses[0]["error"]["code"] == -32700
 
 

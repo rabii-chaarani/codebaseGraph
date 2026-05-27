@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 from codebase_graph.core import CodeGraph
 from codebase_graph.db import LadybugCodeGraphStore, create_ladybug_database
+from codebase_graph.diagnostics import log_event
 from codebase_graph.extract import GraphBuilder
 from codebase_graph.ontology import ONTOLOGY_NAME
 from codebase_graph.paths import DEFAULT_STATE_DIR, derive_graph_state_paths
@@ -509,6 +510,12 @@ def _acquire_materialization_lock(db_path: Path) -> tuple[int, Path]:
     try:
         descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError as exc:
+        log_event(
+            "materializer.lock_exists",
+            level="WARNING",
+            db_path=db_path.as_posix(),
+            lock_path=lock_path.as_posix(),
+        )
         raise RuntimeError(
             f"codebaseGraph materialization is already in progress for {db_path}. "
             f"If no materializer is running, remove the stale lock file: {lock_path}"

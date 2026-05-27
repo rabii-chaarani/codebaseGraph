@@ -5,6 +5,7 @@ import re
 from typing import Any
 
 from codebase_graph.db import LadybugCodeGraphStore
+from codebase_graph.diagnostics import log_event
 from codebase_graph.ontology import QUERY_HELPERS, schema_payload
 from codebase_graph.reasoning import CompactContextBuilder, architecture_query_catalog
 from codebase_graph.retrieval import DETAIL_LEVELS, SearchRequest, SearchService
@@ -63,6 +64,13 @@ def tool_result(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
+    log_event(
+        "mcp.tool_error",
+        level="WARNING",
+        tool=name,
+        error_type=exc.__class__.__name__,
+        message=str(exc),
+    )
     payload = {
         "error": {
             "tool": name,
@@ -152,6 +160,13 @@ def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
     except Exception as exc:
         payload["graph_readable"] = False
         payload["error"] = {"type": exc.__class__.__name__, "message": str(exc)}
+        log_event(
+            "mcp.graph_health_failed",
+            level="WARNING",
+            database_path=runtime.db_path.as_posix(),
+            error_type=exc.__class__.__name__,
+            message=str(exc),
+        )
         return payload
     payload["ok"] = True
     payload["graph_readable"] = True
