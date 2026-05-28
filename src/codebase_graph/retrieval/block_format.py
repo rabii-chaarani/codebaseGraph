@@ -11,8 +11,8 @@ SPAN_RE = re.compile(r"^L(?P<start>\d+)-L(?P<end>\d+)$")
 ONTOLOGY_TERMS = {"Class", "Method", "Scope", "Contains", "outgoing", "path", "span", "id", "label", "rank_score"}
 
 
-def serialize_search_block(payload: Mapping[str, Any]) -> str:
-    """Serialize graph-search JSON into a readable ontology-preserving block format."""
+def serialize_parseable_search_block(payload: Mapping[str, Any]) -> str:
+    """Serialize graph-search JSON into a parseable debug block format."""
     lines = [
         " | ".join(
             [
@@ -73,7 +73,7 @@ def serialize_search_block(payload: Mapping[str, Any]) -> str:
 
 
 def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
-    """Serialize graph-search JSON into a more aggressive display-only agent block."""
+    """Serialize graph-search JSON into the compact runtime block format."""
     lines = [f"q {_format_value(str(payload.get('query', '')))}"]
     current_path: str | None = None
     result_keys = {_record_key(result) for result in payload.get("results", [])}
@@ -157,6 +157,11 @@ def serialize_graph_block(payload: Mapping[str, Any]) -> str:
     if "context" in payload and "node_id" in payload and "node_type" in payload:
         return serialize_context_block(payload)
     raise ValueError("Block format is only supported for graph-search and graph-context payloads")
+
+
+def serialize_search_block(payload: Mapping[str, Any]) -> str:
+    """Backward-compatible alias for the parseable debug block format."""
+    return serialize_parseable_search_block(payload)
 
 
 def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -357,5 +362,6 @@ __all__ = [
     "serialize_context_block",
     "serialize_agent_search_block",
     "serialize_graph_block",
+    "serialize_parseable_search_block",
     "serialize_search_block",
 ]

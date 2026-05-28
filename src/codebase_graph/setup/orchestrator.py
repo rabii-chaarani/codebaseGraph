@@ -151,19 +151,10 @@ def run_setup(options: SetupOptions) -> SetupResult:
 
 
 def _materialization_payload(result: Any) -> dict[str, Any]:
-    return {
-        "mode": getattr(result, "mode"),
-        "scanned": getattr(result, "scanned"),
-        "rebuilt": getattr(result, "rebuilt"),
-        "skipped": getattr(result, "skipped"),
-        "deleted": getattr(result, "deleted"),
-        "diagnostics": list(getattr(result, "diagnostics")),
-        "manifest_path": getattr(result, "manifest_path"),
-        "rebuilt_paths": list(getattr(result, "rebuilt_paths")),
-        "skipped_paths": list(getattr(result, "skipped_paths")),
-        "deleted_paths": list(getattr(result, "deleted_paths")),
-        "graph_summary": dict(getattr(result, "graph_summary")),
-    }
+    as_dict = getattr(result, "as_dict", None)
+    if callable(as_dict):
+        return as_dict()
+    raise TypeError(f"Unsupported materialization result: {type(result).__name__}")
 
 
 def _dry_run_materialization(paths: SetupPaths) -> Any:
@@ -201,6 +192,21 @@ class _DryRunMaterialization:
     rebuilt_paths: tuple[str, ...] = ()
     deleted_paths: tuple[str, ...] = ()
     graph_summary: dict[str, Any] = field(default_factory=dict)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "mode": self.mode,
+            "scanned": self.scanned,
+            "rebuilt": self.rebuilt,
+            "skipped": self.skipped,
+            "deleted": self.deleted,
+            "diagnostics": list(self.diagnostics),
+            "manifest_path": self.manifest_path,
+            "rebuilt_paths": list(self.rebuilt_paths),
+            "skipped_paths": list(self.skipped_paths),
+            "deleted_paths": list(self.deleted_paths),
+            "graph_summary": dict(self.graph_summary),
+        }
 
 
 def _config_would_change(path: Path, payload: dict[str, Any]) -> bool:

@@ -7,6 +7,7 @@ from .block_format import (
     serialize_agent_search_block,
     serialize_context_block,
     serialize_graph_block,
+    serialize_parseable_search_block,
     serialize_search_block,
 )
 from .search import DETAIL_LEVELS, CompactContextPayload, SearchHit, SearchRequest, SearchService
@@ -23,5 +24,6 @@ __all__ = [
     "serialize_agent_search_block",
     "serialize_context_block",
     "serialize_graph_block",
+    "serialize_parseable_search_block",
     "serialize_search_block",
 ]

@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from codebase_graph.mcp.protocol import LATEST_PROTOCOL_VERSION
 
@@ -15,14 +15,9 @@ from .clients import get_client_adapter
 from .descriptor import McpServerDescriptor, build_server_descriptor
 from .state import MCP_SERVER_NAME, load_setup_config
 
-INSTALL_CLIENTS = ("codex", "claude", "claude-project", "lmstudio", "hermes", "openclaw", "generic")
 SCOPES = ("local", "user", "project")
-NATIVE_EXECUTABLES = {
-    "codex": "codex",
-    "claude": "claude",
-    "claude-project": "claude",
-    "openclaw": "openclaw",
-}
+NativeCommandBuilder = Callable[[McpServerDescriptor, str], list[str]]
+VisibilityCommandBuilder = Callable[[], list[str]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +79,94 @@ class McpInstallResult:
         return payload
 
 
+@dataclass(frozen=True, slots=True)
+class InstallClientStrategy:
+    client_id: str
+    adapter_id: str | None = None
+    project_adapter_id: str | None = None
+    forced_scope: str | None = None
+    native_executable: str | None = None
+    native_command_builder: NativeCommandBuilder | None = None
+    visibility_command_builder: VisibilityCommandBuilder | None = None
+
+    def install_scope(self, scope: str) -> str:
+        return self.forced_scope or scope
+
+    def adapter_client_id(self, scope: str) -> str:
+        if self.project_adapter_id is not None and self.install_scope(scope) == "project":
+            return self.project_adapter_id
+        return self.adapter_id or self.client_id
+
+    def native_command(self, descriptor: McpServerDescriptor, *, scope: str) -> list[str] | None:
+        if self.native_command_builder is None:
+            return None
+        return self.native_command_builder(descriptor, self.install_scope(scope))
+
+    def visibility_command(self) -> list[str] | None:
+        if self.visibility_command_builder is None:
+            return None
+        return self.visibility_command_builder()
+
+
+def _codex_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    return ["codex", "mcp", "add", descriptor.name, "--", descriptor.command, *descriptor.args]
+
+
+def _claude_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    return [
+        "claude",
+        "mcp",
+        "add",
+        "--transport",
+        "stdio",
+        "--scope",
+        scope,
+        descriptor.name,
+        "--",
+        descriptor.command,
+        *descriptor.args,
+    ]
+
+
+def _openclaw_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    entry = descriptor.stdio_entry(include_type=True)
+    return ["openclaw", "mcp", "set", descriptor.name, json.dumps(entry, separators=(",", ":"), sort_keys=True)]
+
+
+INSTALL_STRATEGIES: dict[str, InstallClientStrategy] = {
+    "codex": InstallClientStrategy(
+        client_id="codex",
+        native_executable="codex",
+        native_command_builder=_codex_native_command,
+        visibility_command_builder=lambda: ["codex", "mcp", "list"],
+    ),
+    "claude": InstallClientStrategy(
+        client_id="claude",
+        project_adapter_id="claude-project",
+        native_executable="claude",
+        native_command_builder=_claude_native_command,
+        visibility_command_builder=lambda: ["claude", "mcp", "list"],
+    ),
+    "claude-project": InstallClientStrategy(
+        client_id="claude-project",
+        forced_scope="project",
+        native_executable="claude",
+        native_command_builder=_claude_native_command,
+        visibility_command_builder=lambda: ["claude", "mcp", "list"],
+    ),
+    "lmstudio": InstallClientStrategy(client_id="lmstudio"),
+    "hermes": InstallClientStrategy(client_id="hermes"),
+    "openclaw": InstallClientStrategy(
+        client_id="openclaw",
+        native_executable="openclaw",
+        native_command_builder=_openclaw_native_command,
+        visibility_command_builder=lambda: ["openclaw", "mcp", "list"],
+    ),
+    "generic": InstallClientStrategy(client_id="generic"),
+}
+INSTALL_CLIENTS = tuple(INSTALL_STRATEGIES)
+
+
 def supported_install_client_ids(*, include_all: bool = False) -> tuple[str, ...]:
     values = [*INSTALL_CLIENTS]
     if include_all:
@@ -104,6 +187,7 @@ def install_mcp_clients(options: McpInstallOptions) -> list[McpInstallResult]:
 
 def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
     _validate_options(options)
+    strategy = _client_strategy(options.client)
     descriptor = _build_descriptor(options)
     entry = descriptor.stdio_entry()
     if options.skip or options.client == "none":
@@ -119,12 +203,13 @@ def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
             entry=entry,
         )
 
-    native_command = _native_command(options.client, descriptor, scope=options.scope)
+    native_command = strategy.native_command(descriptor, scope=options.scope)
     use_native = (
         options.prefer_native
         and options.client_config_path is None
         and native_command is not None
-        and shutil.which(_native_executable(options.client))
+        and strategy.native_executable is not None
+        and shutil.which(strategy.native_executable)
     )
     if options.dry_run:
         if use_native:
@@ -156,14 +241,14 @@ def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
         descriptor,
         dry_run=False,
         native_command=native_command,
-        native_error=_missing_native_error(options.client) if native_command is not None else None,
+        native_error=_missing_native_error(strategy) if native_command is not None else None,
     )
 
 
 def _install_with_failure_result(options: McpInstallOptions, client: str) -> McpInstallResult:
     client_options = McpInstallOptions(
         client=client,
-        scope=_scope_for_client(client, options.scope),
+        scope=_client_strategy(client).install_scope(options.scope),
         setup_config_path=options.setup_config_path,
         server_name=options.server_name,
         client_config_path=options.client_config_path,
@@ -207,7 +292,7 @@ def _file_adapter_result(
     native_command: list[str] | None = None,
     native_error: str | None = None,
 ) -> McpInstallResult:
-    adapter = get_client_adapter(_adapter_client_id(options.client, options.scope))
+    adapter = get_client_adapter(_client_strategy(options.client).adapter_client_id(options.scope))
     path = (
         Path(options.client_config_path).expanduser().resolve()
         if options.client_config_path is not None
@@ -348,7 +433,7 @@ def _verify_stdio(descriptor: McpServerDescriptor, *, timeout: int) -> dict[str,
 
 
 def _verify_client_visibility(client: str, server_name: str, *, timeout: int) -> dict[str, Any]:
-    command = _visibility_command(client)
+    command = _client_strategy(client).visibility_command()
     if command is None:
         return {"ok": True, "skipped": True, "reason": f"{client} has no CLI visibility check"}
     executable = command[0]
@@ -418,39 +503,6 @@ def _frame_json_rpc(method: str, params: dict[str, Any], *, request_id: int) -> 
     return f"Content-Length: {len(body)}\r\n\r\n".encode("ascii") + body
 
 
-def _native_command(client: str, descriptor: McpServerDescriptor, *, scope: str) -> list[str] | None:
-    if client == "codex":
-        return ["codex", "mcp", "add", descriptor.name, "--", descriptor.command, *descriptor.args]
-    if client in {"claude", "claude-project"}:
-        return [
-            "claude",
-            "mcp",
-            "add",
-            "--transport",
-            "stdio",
-            "--scope",
-            _scope_for_client(client, scope),
-            descriptor.name,
-            "--",
-            descriptor.command,
-            *descriptor.args,
-        ]
-    if client == "openclaw":
-        entry = descriptor.stdio_entry(include_type=True)
-        return ["openclaw", "mcp", "set", descriptor.name, json.dumps(entry, separators=(",", ":"), sort_keys=True)]
-    return None
-
-
-def _visibility_command(client: str) -> list[str] | None:
-    if client == "codex":
-        return ["codex", "mcp", "list"]
-    if client in {"claude", "claude-project"}:
-        return ["claude", "mcp", "list"]
-    if client == "openclaw":
-        return ["openclaw", "mcp", "list"]
-    return None
-
-
 def _build_descriptor(options: McpInstallOptions) -> McpServerDescriptor:
     config_path = Path(options.setup_config_path).expanduser().resolve()
     repo_root: Path | None = None
@@ -476,27 +528,16 @@ def _validate_options(options: McpInstallOptions) -> None:
         raise ValueError(f"Unsupported MCP install scope: {options.scope}. Supported scopes: {', '.join(SCOPES)}")
 
 
-def _native_executable(client: str) -> str:
-    return NATIVE_EXECUTABLES[client]
+def _client_strategy(client: str) -> InstallClientStrategy:
+    if client == "none":
+        return InstallClientStrategy(client_id="none")
+    return INSTALL_STRATEGIES[client]
 
 
-def _adapter_client_id(client: str, scope: str) -> str:
-    if client == "claude" and scope == "project":
-        return "claude-project"
-    return client
-
-
-def _scope_for_client(client: str, scope: str) -> str:
-    if client == "claude-project":
-        return "project"
-    return scope
-
-
-def _missing_native_error(client: str) -> str | None:
-    executable = NATIVE_EXECUTABLES.get(client)
-    if executable is None:
+def _missing_native_error(strategy: InstallClientStrategy) -> str | None:
+    if strategy.native_executable is None:
         return None
-    return f"{executable} executable not found"
+    return f"{strategy.native_executable} executable not found"
 
 
 def _subprocess_error(completed: subprocess.CompletedProcess[str]) -> str:

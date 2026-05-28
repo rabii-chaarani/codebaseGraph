@@ -10,6 +10,7 @@ from codebase_graph.ontology import QUERY_HELPERS, schema_payload
 from codebase_graph.reasoning import CompactContextBuilder, architecture_query_catalog
 from codebase_graph.retrieval import DETAIL_LEVELS, SearchRequest, SearchService, serialize_graph_block
 
+from .graph_commands import MAX_GRAPH_QUERY_LIMIT, graph_tool_specs
 from .runtime import GraphRuntimeConfig, open_graph_store
 
 READ_ONLY_DENY_RE = re.compile(
@@ -19,14 +20,13 @@ READ_ONLY_DENY_RE = re.compile(
     r")\b",
     re.IGNORECASE,
 )
-MAX_GRAPH_QUERY_LIMIT = 1000
 
 
 class UnknownToolError(ValueError):
     pass
 
 
-def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRuntimeConfig) -> dict[str, Any]:
+def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRuntimeConfig | None) -> dict[str, Any]:
     if name == "graph_health":
         return _health(runtime)
     if name == "graph_schema":
@@ -36,14 +36,14 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
     if name == "graph_architecture_queries":
         return architecture_query_catalog(group=_optional_str(arguments.get("group")))
     if name == "graph_search":
-        with open_graph_store(runtime) as store:
+        with open_graph_store(_require_runtime(runtime, name)) as store:
             request = _search_request(arguments)
             return SearchService(store).search(request).as_dict(detail=request.detail)
     if name == "graph_context":
-        with open_graph_store(runtime) as store:
+        with open_graph_store(_require_runtime(runtime, name)) as store:
             return _context_payload(store, arguments)
     if name == "graph_query":
-        with open_graph_store(runtime) as store:
+        with open_graph_store(_require_runtime(runtime, name)) as store:
             return _query_payload(store, arguments)
     raise UnknownToolError(f"Unknown codebaseGraph MCP tool: {name}")
 
@@ -56,6 +56,12 @@ def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
         raise
     except Exception as exc:
         return tool_error_result(name, exc)
+
+
+def _require_runtime(runtime: GraphRuntimeConfig | None, tool_name: str) -> GraphRuntimeConfig:
+    if runtime is None:
+        raise ValueError(f"{tool_name} requires a graph runtime")
+    return runtime
 
 
 def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -92,61 +98,7 @@ def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
 
 
 def tool_specs() -> list[dict[str, Any]]:
-    return [
-        {
-            "name": "graph_health",
-            "description": "Check the configured codebaseGraph database path and manifest path.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "graph_search",
-            "description": "Search code, documentation, paths, and dependencies with compact graph context.",
-            "inputSchema": _search_schema(required=("query",)),
-        },
-        {
-            "name": "graph_context",
-            "description": "Return compact context for a search query or explicit node_id/node_type pair.",
-            "inputSchema": _search_schema(required=()),
-        },
-        {
-            "name": "graph_schema",
-            "description": "Return ontology schema, search indexes, context profiles, and query helper metadata.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "graph_query_helpers",
-            "description": "Return named read-only query helpers for common graph exploration tasks.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "graph_architecture_queries",
-            "description": "Return the grouped architecture-discovery Cypher catalog for coding-agent first-step orientation.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "group": {
-                        "type": "string",
-                        "description": "Optional architecture query group to return.",
-                    },
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "graph_query",
-            "description": "Execute a restricted read-only graph query against the configured database.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "statement": {"type": "string"},
-                    "parameters": {"type": "object"},
-                    "limit": {"type": "integer", "minimum": 1, "maximum": MAX_GRAPH_QUERY_LIMIT},
-                },
-                "required": ["statement"],
-                "additionalProperties": False,
-            },
-        },
-    ]
+    return graph_tool_specs()
 
 
 def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
@@ -276,26 +228,6 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, dict):
         return {str(key): _json_safe(item) for key, item in value.items()}
     return str(value)
-
-
-def _search_schema(*, required: tuple[str, ...]) -> dict[str, Any]:
-    return {
-        "type": "object",
-        "properties": {
-            "query": {"type": "string"},
-            "limit": {"type": "integer", "minimum": 1},
-            "profile": {"type": "string"},
-            "budget": {"type": "integer", "minimum": 0},
-            "max_depth": {"type": "integer", "minimum": 0},
-            "context_limit": {"type": "integer", "minimum": 0},
-            "detail": {"type": "string", "enum": sorted(DETAIL_LEVELS)},
-            "output_format": {"type": "string", "enum": ["json", "block"]},
-            "node_id": {"type": "string"},
-            "node_type": {"type": "string"},
-        },
-        "required": list(required),
-        "additionalProperties": False,
-    }
 
 
 def _optional_int(value: Any) -> int | None:

@@ -12,6 +12,7 @@ from codebase_graph.retrieval.block_format import (
     parse_search_block,
     serialize_agent_search_block,
     serialize_context_block,
+    serialize_parseable_search_block,
     serialize_search_block,
 )
 
@@ -33,9 +34,10 @@ def test_token_counting_uses_encoded_text_length() -> None:
 
 def test_raw_vs_block_comparison_preserves_search_service_fixture() -> None:
     payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
-    block = serialize_search_block(payload)
+    block = serialize_parseable_search_block(payload)
 
     assert parse_search_block(block) == canonicalize_search_payload(payload)
+    assert serialize_search_block(payload) == block
 
 
 def test_l_same_is_only_emitted_for_matching_context_spans() -> None:

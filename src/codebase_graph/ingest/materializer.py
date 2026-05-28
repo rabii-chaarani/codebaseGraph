@@ -206,6 +206,21 @@ class MaterializationResult:
     deleted_paths: tuple[str, ...]
     graph_summary: Mapping[str, Any]
 
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "mode": self.mode,
+            "scanned": self.scanned,
+            "rebuilt": self.rebuilt,
+            "skipped": self.skipped,
+            "deleted": self.deleted,
+            "diagnostics": list(self.diagnostics),
+            "manifest_path": self.manifest_path,
+            "rebuilt_paths": list(self.rebuilt_paths),
+            "skipped_paths": list(self.skipped_paths),
+            "deleted_paths": list(self.deleted_paths),
+            "graph_summary": dict(self.graph_summary),
+        }
+
 
 class GraphMaterializer:
     def __init__(
