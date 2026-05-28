@@ -1,6 +1,6 @@
 <!-- codebaseGraph:start -->
 ## codebaseGraph workflow
-- Treat the repo-local `.codebaseGraph` graph as the project operating source of truth.
+- Treat the repo-local `.codebaseGraph` graph as the project operating source of truth. It is prohibited to read the code source before you find the target files using the graph.
 - AI agents must use block format for `graph-search` and `graph-context`; reserve `--json` for tests, APIs, or explicit structured-payload debugging.
 - Use `/Users/rabii/Projects/Repositories/codebaseGraph/.venv/bin/codebase-graph graph-search <query> --repo-root . --no-refresh --detail slim --context-limit 1 --format block` before answering repo-structure questions or performing coding tasks.
 - Use `/Users/rabii/Projects/Repositories/codebaseGraph/.venv/bin/codebase-graph graph-context <query> --repo-root . --profile <profile> --no-refresh --detail slim --context-limit 2 --format block` when relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.
