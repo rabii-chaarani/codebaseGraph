@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "setuptools-scm>=8", "wheel"]
+requires = ["setuptools>=77", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,6 +9,8 @@ description = "Generic codebase knowledge graph engine for Python projects."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Rabii Chaarani" }]
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
   "real_ladybug>=0.15.3,<0.16",
   "tomli>=2.0.1; python_version < '3.11'",

@@ -60,10 +60,13 @@ def test_release_workflow_enforces_production_gate_before_build() -> None:
 def test_conda_recipe_uses_bounded_runtime_dependencies() -> None:
     text = Path("conda-forge/recipe/meta.yaml").read_text(encoding="utf-8")
 
+    assert "setuptools >=77" in text
     assert "real-ladybug >=0.15.3,<0.16" in text
     assert "tomli >=2.0.1" in text
     assert "tree-sitter >=0.25.2,<0.26" in text
     assert "tree-sitter-python >=0.25.0,<0.26" in text
+    assert "license: MIT" in text
+    assert "PUT_SPDX_LICENSE_ID_HERE" not in text
 
 
 def test_hosted_workflows_run_real_vulnerability_scans() -> None:
@@ -108,11 +111,13 @@ def test_production_release_gate_reports_owner_controlled_blockers() -> None:
     codes = {issue.code for issue in issues}
     messages = {issue.message for issue in issues}
 
-    assert "license-metadata-missing" in codes
-    assert "license-file-missing" in codes
+    assert "license-metadata-missing" not in codes
+    assert "license-file-missing" not in codes
     assert "external-confirmation-missing" in codes
     assert "conda-placeholder" in codes
     assert "conda recipe still contains PUT_RELEASE_VERSION_HERE." in messages
+    assert "conda recipe still contains PUT_RELEASE_SDIST_SHA256_HERE." in messages
+    assert "conda recipe still contains PUT_SPDX_LICENSE_ID_HERE." not in messages
 
 
 def test_release_gate_reports_missing_release_workflow(monkeypatch, tmp_path) -> None:

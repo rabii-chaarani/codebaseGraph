@@ -23,7 +23,7 @@ requirements:
   host:
     - python {{ python_min }}
     - pip
-    - setuptools >=68
+    - setuptools >=77
     - setuptools-scm >=8
     - wheel
   run:
@@ -45,7 +45,7 @@ test:
 about:
   home: https://github.com/rabii-chaarani/codebaseGraph
   summary: Generic codebase knowledge graph engine for Python projects.
-  license: PUT_SPDX_LICENSE_ID_HERE
+  license: MIT
 
 extra:
   recipe-maintainers:

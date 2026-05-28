@@ -289,6 +289,9 @@ def test_packaging_requires_ladybug_and_namespaced_package_discovery() -> None:
     assert "real_ladybug>=0.15.3,<0.16" in dependencies
     assert "tree-sitter>=0.25.2,<0.26" in dependencies
     assert "tree-sitter-python>=0.25.0,<0.26" in dependencies
+    assert "setuptools>=77" in payload["build-system"]["requires"]
+    assert payload["project"]["license"] == "MIT"
+    assert payload["project"]["license-files"] == ["LICENSE"]
     assert payload["project"]["scripts"]["codebase-graph"] == "codebase_graph.cli:main"
     assert payload["project"]["scripts"]["codebase-graph-mcp"] == "codebase_graph.mcp.server:main"
     assert payload["project"]["urls"]["Repository"] == "https://github.com/rabii-chaarani/codebaseGraph"
