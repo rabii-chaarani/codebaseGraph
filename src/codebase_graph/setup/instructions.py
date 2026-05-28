@@ -76,7 +76,7 @@ def _instruction_block(*, server_name: str, config_path: Path, setup_command: st
     return (
         f"{START_MARKER}\n"
         "## codebaseGraph workflow\n"
-        "- Treat the repo-local `.codebaseGraph` graph as the project operating source of truth.\n"
+        "- Treat the repo-local `.codebaseGraph` graph as the project operating source of truth. It is prohibited to read the code source before you find the target file using the graph.\n"
         "- AI agents must use block format for `graph-search` and `graph-context`; reserve `--json` for tests, APIs, or explicit structured-payload debugging.\n"
         f"- Use `{setup_command} graph-search <query> --repo-root . --no-refresh --detail slim --context-limit 1 --format block` before answering repo-structure questions or performing coding tasks.\n"
         f"- Use `{setup_command} graph-context <query> --repo-root . --profile <profile> --no-refresh --detail slim --context-limit 2 --format block` when relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.\n"
