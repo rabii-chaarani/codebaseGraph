@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codebase-graph"
+name = "cbasegraph"
 dynamic = ["version"]
 description = "Generic codebase knowledge graph engine for Python projects."
 readme = "README.md"

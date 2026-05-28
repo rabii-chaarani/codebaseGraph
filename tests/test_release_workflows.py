@@ -60,6 +60,7 @@ def test_release_workflow_enforces_production_gate_before_build() -> None:
 def test_conda_recipe_uses_bounded_runtime_dependencies() -> None:
     text = Path("conda-forge/recipe/meta.yaml").read_text(encoding="utf-8")
 
+    assert '{% set pypi_name = "cbasegraph" %}' in text
     assert "setuptools >=77" in text
     assert "real-ladybug >=0.15.3,<0.16" in text
     assert "tomli >=2.0.1" in text
@@ -73,7 +74,26 @@ def test_hosted_workflows_run_real_vulnerability_scans() -> None:
     for path in WORKFLOWS:
         text = path.read_text(encoding="utf-8")
         assert "pip_audit --strict" in text
+        assert "pip_audit --strict ." in text
+        assert "--skip-editable" not in text
         assert re.search(r"pip_audit\b[^\n]*--dry-run", text) is None
+
+
+def test_supply_chain_workflow_audits_project_dependencies() -> None:
+    text = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    match = re.search(r"  supply-chain:\n(?P<body>.*?)(?=\n  [A-Za-z0-9_-]+:|\Z)", text, re.DOTALL)
+
+    assert match is not None
+    body = match.group("body")
+    assert 'python -m pip install ".[dev]"' in body
+    assert 'python -m pip install -e ".[dev]"' not in body
+    assert "python -m pip_audit --strict ." in body
+
+
+def test_project_metadata_uses_published_pypi_name() -> None:
+    text = Path("pyproject.toml").read_text(encoding="utf-8")
+
+    assert 'name = "cbasegraph"' in text
 
 
 def test_security_policy_exists() -> None:
@@ -87,6 +107,7 @@ def test_security_policy_exists() -> None:
 def test_release_docs_list_production_confirmation_flags() -> None:
     text = Path("docs/release.md").read_text(encoding="utf-8")
 
+    assert "PyPI project: `cbasegraph`" in text
     for flag in PYPI_CONFIRMATION_FLAGS:
         env_var = f"CODEBASE_GRAPH_CONFIRM_{flag.upper().replace('-', '_')}"
         assert env_var in text

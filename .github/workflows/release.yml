@@ -164,7 +164,7 @@ jobs:
           /tmp/codebase-graph-wheel/bin/codebase-graph-mcp --help
           /tmp/codebase-graph-wheel/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-wheel/bin/codebase-graph
           /tmp/codebase-graph-wheel/bin/python -m pip check
-          /tmp/codebase-graph-wheel/bin/python -m pip_audit --strict --skip-editable --progress-spinner off --cache-dir /tmp/pip-audit-cache
+          /tmp/codebase-graph-wheel/bin/python -m pip_audit --strict . --progress-spinner off --cache-dir /tmp/pip-audit-cache
           /tmp/codebase-graph-wheel/bin/cyclonedx-py environment /tmp/codebase-graph-wheel/bin/python \
             --pyproject pyproject.toml \
             --mc-type library \

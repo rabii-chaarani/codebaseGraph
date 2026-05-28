@@ -6,7 +6,7 @@
 
 Configure a PyPI Trusted Publisher for:
 
-- PyPI project: `codebase-graph`
+- PyPI project: `cbasegraph`
 - Owner/repository: `rabii-chaarani/codebaseGraph`
 - Workflow: `release.yml`
 - Environment: `pypi`

@@ -7,7 +7,7 @@ LadyBugDB is a required runtime dependency. A normal production install must inc
 ## Production install
 
 ```bash
-python -m pip install codebase-graph
+python -m pip install cbasegraph
 ```
 
 From a repository root, run:

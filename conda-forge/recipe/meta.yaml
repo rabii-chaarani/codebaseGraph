@@ -1,5 +1,5 @@
 {% set name = "codebase-graph" %}
-{% set pypi_name = "codebase_graph" %}
+{% set pypi_name = "cbasegraph" %}
 {% set version = "PUT_RELEASE_VERSION_HERE" %}
 {% set python_min = "3.10" %}
 
@@ -8,7 +8,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ pypi_name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ pypi_name[0] }}/{{ pypi_name }}/{{ pypi_name }}-{{ version }}.tar.gz
   sha256: PUT_RELEASE_SDIST_SHA256_HERE
 
 build:
