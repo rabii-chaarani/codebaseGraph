@@ -149,10 +149,18 @@ def test_release_workflow_downloads_distributions_from_github_release() -> None:
     assert "release {artifacts=} does not include a source distribution" in text
 
 
-def test_ci_avoids_duplicate_pip_cache_reservation_warnings() -> None:
+def test_workflows_avoid_hosted_cache_warning_annotations() -> None:
+    for path in WORKFLOWS:
+        text = path.read_text(encoding="utf-8")
+
+        assert "cache: pip" not in text
+
+
+def test_ci_uses_explicit_windows_runner_label() -> None:
     text = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
 
-    assert text.count("cache: pip") == 1
+    assert "windows-2022" in text
+    assert "windows-latest" not in text
 
 
 def test_local_release_gate_passes() -> None:
