@@ -153,6 +153,7 @@ def test_workflows_avoid_hosted_cache_warning_annotations() -> None:
     for path in WORKFLOWS:
         text = path.read_text(encoding="utf-8")
 
+        assert 'PIP_NO_CACHE_DIR: "1"' in text
         assert "cache: pip" not in text
 
 
