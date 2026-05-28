@@ -121,6 +121,44 @@ def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def serialize_context_block(payload: Mapping[str, Any]) -> str:
+    """Serialize an explicit graph-context payload into a readable block."""
+    header = [
+        f"context {payload.get('node_type', '')}",
+        f"id={_format_value(str(payload.get('node_id', '')))}",
+        f"profile={_format_value(str(payload.get('profile', '')))}",
+    ]
+    lines = [" ".join(header)]
+    current_path: str | None = None
+    for context in payload.get("context", []):
+        context_path = str(context.get("path", ""))
+        if context_path != current_path:
+            if len(lines) > 1:
+                lines.append("")
+            lines.append(f"file path {_format_value(context_path)}")
+            current_path = context_path
+        context_parts = [
+            f"  {context.get('direction', '')}",
+            str(context.get("relation", "")),
+            str(context.get("type", "")),
+            _format_value(str(context.get("label", ""))),
+            _format_span(_span(context.get("span", {}))),
+        ]
+        context_summary = _meaningful_summary(context)
+        if context_summary:
+            context_parts.append(f"summary={_format_value(context_summary)}")
+        lines.append(" ".join(context_parts))
+    return "\n".join(lines) + "\n"
+
+
+def serialize_graph_block(payload: Mapping[str, Any]) -> str:
+    if "results" in payload:
+        return serialize_agent_search_block(payload)
+    if "context" in payload and "node_id" in payload and "node_type" in payload:
+        return serialize_context_block(payload)
+    raise ValueError("Block format is only supported for graph-search and graph-context payloads")
+
+
 def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     for result in payload.get("results", []):
@@ -316,6 +354,8 @@ __all__ = [
     "canonicalize_search_payload",
     "intentional_summary_omissions",
     "parse_search_block",
+    "serialize_context_block",
     "serialize_agent_search_block",
+    "serialize_graph_block",
     "serialize_search_block",
 ]

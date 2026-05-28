@@ -5,6 +5,8 @@ from .block_format import (
     intentional_summary_omissions,
     parse_search_block,
     serialize_agent_search_block,
+    serialize_context_block,
+    serialize_graph_block,
     serialize_search_block,
 )
 from .search import DETAIL_LEVELS, CompactContextPayload, SearchHit, SearchRequest, SearchService
@@ -19,5 +21,7 @@ __all__ = [
     "intentional_summary_omissions",
     "parse_search_block",
     "serialize_agent_search_block",
+    "serialize_context_block",
+    "serialize_graph_block",
     "serialize_search_block",
 ]

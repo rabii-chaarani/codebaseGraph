@@ -12,7 +12,7 @@ from codebase_graph.mcp.runtime import runtime_config
 from codebase_graph.mcp.tools import handle_tool_call
 from codebase_graph.ontology import CONTEXT_PROFILES, QUERY_HELPERS, schema_payload
 from codebase_graph.reasoning import architecture_query_catalog
-from codebase_graph.retrieval import SearchRequest, SearchService
+from codebase_graph.retrieval import SearchRequest, SearchService, serialize_graph_block
 from codebase_graph.setup import SetupError, SetupOptions, run_setup
 from codebase_graph.setup.clients import supported_client_ids
 from codebase_graph.setup.installer import McpInstallOptions, install_mcp_clients, supported_install_client_ids
@@ -171,7 +171,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 payload = SearchService(materializer.store).search(request)
             finally:
                 materializer.close()
-        _print_json(payload.as_dict(detail=args.detail), args)
+        _print_payload(payload.as_dict(detail=args.detail), args)
         return 0
     if args.command == "graph-health":
         return _print_tool_payload(parser, "graph_health", {}, args)
@@ -302,6 +302,7 @@ def _add_compact_context_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--max-depth", type=int, default=None, help="Override the context profile depth")
     parser.add_argument("--context-limit", type=int, default=3, help="Maximum context items per search hit")
     parser.add_argument("--detail", choices=("standard", "slim"), default="standard", help="Output detail level")
+    parser.add_argument("--format", choices=("json", "block"), default="json", help="Output format")
     _add_json_output_arguments(parser)
 
 
@@ -314,7 +315,7 @@ def _add_runtime_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _add_graph_compatibility_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--no-refresh", action="store_true", help="Accepted for search/context command parity")
-    parser.add_argument("--json", action="store_true", help="Accepted for search/context command parity")
+    parser.add_argument("--json", action="store_true", help="Accepted for search/context command parity; same as --format json")
 
 
 def _runtime(args: argparse.Namespace) -> object:
@@ -351,7 +352,7 @@ def _print_tool_payload(
         payload = handle_tool_call(tool_name, arguments, runtime=_runtime(args))
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
-    _print_json(payload, args)
+    _print_payload(payload, args)
     return 0
 
 
@@ -361,6 +362,16 @@ def _add_json_output_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _print_json(payload: object, args: argparse.Namespace) -> None:
     print(_json_dumps(payload, pretty=getattr(args, "pretty", False)))
+
+
+def _print_payload(payload: dict[str, object], args: argparse.Namespace) -> None:
+    if getattr(args, "json", False):
+        _print_json(payload, args)
+        return
+    if getattr(args, "format", "json") == "block":
+        print(serialize_graph_block(payload), end="")
+        return
+    _print_json(payload, args)
 
 
 def _json_dumps(payload: object, *, pretty: bool) -> str:

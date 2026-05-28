@@ -508,6 +508,31 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
     assert "score" not in search_payload["results"][0]
     assert len(search_payload["results"][0].get("context", [])) <= 1
 
+    assert cli_main([
+        "graph-search",
+        "SampleService",
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--limit",
+        "2",
+        "--context-limit",
+        "1",
+        "--detail",
+        "slim",
+        "--no-refresh",
+        "--format",
+        "block",
+    ]) == 0
+    block_output = capsys.readouterr().out
+    assert block_output.startswith("q SampleService\n")
+    assert "file path sample_project/service.py" in block_output
+    assert "id=Class:" in block_output
+    assert not block_output.lstrip().startswith("{")
+
     hit = next(item for item in search_payload["results"] if item["label"] == "SampleService")
     context_args = {
         "node_id": hit["id"],
@@ -538,6 +563,31 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         "slim",
     ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_context", context_args, runtime=runtime)
+
+    assert cli_main([
+        "graph-context",
+        "--node-id",
+        hit["id"],
+        "--node-type",
+        hit["type"],
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--profile",
+        "definitions",
+        "--limit",
+        "1",
+        "--detail",
+        "slim",
+        "--format",
+        "block",
+    ]) == 0
+    context_block = capsys.readouterr().out
+    assert context_block.startswith(f"context {hit['type']} id={hit['id']} profile=definitions\n")
+    assert "file path " in context_block
 
     statement = "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1"
     query_args = {"statement": statement, "parameters": {}, "limit": 5}

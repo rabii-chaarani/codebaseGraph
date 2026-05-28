@@ -8,7 +8,7 @@ from codebase_graph.db import LadybugCodeGraphStore
 from codebase_graph.diagnostics import log_event
 from codebase_graph.ontology import QUERY_HELPERS, schema_payload
 from codebase_graph.reasoning import CompactContextBuilder, architecture_query_catalog
-from codebase_graph.retrieval import DETAIL_LEVELS, SearchRequest, SearchService
+from codebase_graph.retrieval import DETAIL_LEVELS, SearchRequest, SearchService, serialize_graph_block
 
 from .runtime import GraphRuntimeConfig, open_graph_store
 
@@ -51,16 +51,19 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
 def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRuntimeConfig) -> dict[str, Any]:
     try:
         payload = handle_tool_call(name, arguments, runtime=runtime)
+        return tool_result(name, payload, arguments)
     except UnknownToolError:
         raise
     except Exception as exc:
         return tool_error_result(name, exc)
-    return tool_result(payload)
 
 
-def tool_result(payload: dict[str, Any]) -> dict[str, Any]:
+def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | None = None) -> dict[str, Any]:
+    text = json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    if name in {"graph_search", "graph_context"} and _output_format(arguments or {}) == "block":
+        text = serialize_graph_block(payload)
     return {
-        "content": [{"type": "text", "text": json.dumps(payload, separators=(",", ":"), sort_keys=True)}],
+        "content": [{"type": "text", "text": text}],
         "structuredContent": payload,
         "isError": False,
     }
@@ -286,6 +289,7 @@ def _search_schema(*, required: tuple[str, ...]) -> dict[str, Any]:
             "max_depth": {"type": "integer", "minimum": 0},
             "context_limit": {"type": "integer", "minimum": 0},
             "detail": {"type": "string", "enum": sorted(DETAIL_LEVELS)},
+            "output_format": {"type": "string", "enum": ["json", "block"]},
             "node_id": {"type": "string"},
             "node_type": {"type": "string"},
         },
@@ -312,3 +316,10 @@ def _detail(arguments: dict[str, Any]) -> str:
         valid = ", ".join(sorted(DETAIL_LEVELS))
         raise ValueError(f"Unknown detail level: {detail}. Valid levels: {valid}")
     return detail
+
+
+def _output_format(arguments: dict[str, Any]) -> str:
+    output_format = str(arguments.get("output_format", "json"))
+    if output_format not in {"json", "block"}:
+        raise ValueError(f"Unknown output format: {output_format}. Valid formats: block, json")
+    return output_format

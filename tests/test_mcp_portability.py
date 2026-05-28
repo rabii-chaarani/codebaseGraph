@@ -186,6 +186,12 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
             "tools/call",
             {"name": "graph_search", "arguments": {"query": "SampleService", "limit": 2}},
         )
+        block_search = _rpc(
+            proc.stdin,
+            proc.stdout,
+            "tools/call",
+            {"name": "graph_search", "arguments": {"query": "SampleService", "limit": 2, "output_format": "block"}},
+        )
         failure = _rpc(
             proc.stdin,
             proc.stdout,
@@ -201,9 +207,13 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
     graph_search_tool = next(tool for tool in listed["result"]["tools"] if tool["name"] == "graph_search")
     assert "context_limit" in graph_search_tool["inputSchema"]["properties"]
     assert graph_search_tool["inputSchema"]["properties"]["detail"]["enum"] == ["slim", "standard"]
+    assert graph_search_tool["inputSchema"]["properties"]["output_format"]["enum"] == ["json", "block"]
     assert health["result"]["structuredContent"]["ok"] is True
     assert search["result"]["structuredContent"]["results"]
     assert "\n  " not in search["result"]["content"][0]["text"]
+    assert block_search["result"]["structuredContent"] == search["result"]["structuredContent"]
+    assert block_search["result"]["content"][0]["text"].startswith("q SampleService\n")
+    assert "id=Class:" in block_search["result"]["content"][0]["text"]
     assert "error" not in failure
     assert failure["result"]["isError"] is True
     assert failure["result"]["structuredContent"]["error"]["type"] == "ValueError"
