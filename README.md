@@ -4,12 +4,11 @@
 `CLAUDE.md`, Markdown, and MDX files into a LadyBugDB-backed graph, then exposes search, compact context, schema, query
 helpers, and read-only MCP tools.
 
-With the graph in place, agents can search symbols and docs, pull compact context for definitions, dependencies, call
-graphs, runtime surfaces, and change-impact questions, inspect schema and architecture-query helpers, and run bounded
-read-only graph queries through either the CLI or MCP. Setup also keeps repo-local graph state and agent instructions
-aligned so assistants can use graph evidence before opening source files.
+Using codebaseGraph helps agents orient faster, reduce guesswork, keep prompts focused, and make changes faster with better
+impact awareness. Because the graph stores local source, documentation, spans, and relationships together, it gives
+AI agents a compact evidence layer for safer edits, architecture review, dependency tracing, and onboarding while reducing token consumption and tool calling.
 
-Requires Python 3.10+ and a package build that includes `real_ladybug`.
+Requires Python 3.10+
 
 ## Quick start
 
