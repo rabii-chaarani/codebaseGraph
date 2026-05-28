@@ -1,0 +1,117 @@
+{
+  "budget": 600,
+  "limit": 3,
+  "profile": "brief",
+  "query": "SearchService",
+  "results": [
+    {
+      "context": [
+        {
+          "direction": "outgoing",
+          "label": "SearchService scope",
+          "path": "src/codebase_graph/retrieval/search.py",
+          "relation": "Contains",
+          "span": {
+            "line_end": 173,
+            "line_start": 117
+          },
+          "summary": "Scope for SearchService",
+          "type": "Scope"
+        },
+        {
+          "direction": "outgoing",
+          "label": "__init__",
+          "path": "src/codebase_graph/retrieval/search.py",
+          "relation": "Contains",
+          "span": {
+            "line_end": 121,
+            "line_start": 118
+          },
+          "type": "Method"
+        }
+      ],
+      "id": "Class:943d6556d328f1c7ca67",
+      "label": "SearchService",
+      "path": "src/codebase_graph/retrieval/search.py",
+      "rank_score": 1.351608,
+      "span": {
+        "line_end": 173,
+        "line_start": 117
+      },
+      "type": "Class"
+    },
+    {
+      "context": [
+        {
+          "direction": "outgoing",
+          "label": "__init__ scope",
+          "path": "src/codebase_graph/retrieval/search.py",
+          "relation": "Contains",
+          "span": {
+            "line_end": 121,
+            "line_start": 118
+          },
+          "summary": "Scope for __init__",
+          "type": "Scope"
+        },
+        {
+          "direction": "outgoing",
+          "label": "self.store",
+          "path": "src/codebase_graph/retrieval/search.py",
+          "relation": "Contains",
+          "span": {
+            "line_end": 119,
+            "line_start": 119
+          },
+          "summary": "Stores the graph backend for later search calls.",
+          "type": "InstanceAttribute"
+        }
+      ],
+      "id": "Method:3c775c9656a4d6b85843",
+      "label": "__init__",
+      "path": "src/codebase_graph/retrieval/search.py",
+      "rank_score": 1.047561,
+      "span": {
+        "line_end": 121,
+        "line_start": 118
+      },
+      "type": "Method"
+    },
+    {
+      "context": [
+        {
+          "direction": "outgoing",
+          "label": "search scope",
+          "path": "src/codebase_graph/retrieval/search.py",
+          "relation": "Contains",
+          "span": {
+            "line_end": 149,
+            "line_start": 123
+          },
+          "summary": "Scope for search",
+          "type": "Scope"
+        },
+        {
+          "direction": "outgoing",
+          "label": "list[SearchHit]",
+          "path": "src/codebase_graph/retrieval/search.py",
+          "relation": "Contains",
+          "span": {
+            "line_end": 132,
+            "line_start": 132
+          },
+          "type": "TypeAnnotation"
+        }
+      ],
+      "id": "Method:9a6ff8b159b17320c004",
+      "label": "search",
+      "path": "src/codebase_graph/retrieval/search.py",
+      "rank_score": 1.047561,
+      "span": {
+        "line_end": 149,
+        "line_start": 123
+      },
+      "type": "Method"
+    }
+  ]
+}

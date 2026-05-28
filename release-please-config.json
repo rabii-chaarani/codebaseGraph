@@ -1,0 +1,10 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "codebase-graph",
+      "include-v-in-tag": true,
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}
