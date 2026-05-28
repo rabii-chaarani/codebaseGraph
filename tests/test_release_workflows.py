@@ -57,6 +57,25 @@ def test_release_workflow_enforces_production_gate_before_build() -> None:
     assert "build:\n    name: build release distributions\n    needs:\n      - release-please\n      - production-gate" in text
 
 
+def test_release_workflow_can_smoke_test_pypi_environment_without_publishing() -> None:
+    text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    assert "pypi-environment-smoke:" in text
+    assert "github.event_name == 'workflow_dispatch' && inputs.pypi-environment-smoke" in text
+    assert "name: pypi" in text
+    assert "id-token: write" in text
+    assert "audience=pypi" in text
+    assert '"environment": "pypi"' in text
+    assert ".github/workflows/release.yml@" in text
+    assert "pypi environment OIDC claims verified" in text
+
+
+def test_release_please_is_skipped_during_pypi_environment_smoke() -> None:
+    text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    assert "release-please:\n    name: release please\n    if: ${{ !inputs.pypi-environment-smoke }}" in text
+
+
 def test_conda_recipe_uses_bounded_runtime_dependencies() -> None:
     text = Path("conda-forge/recipe/meta.yaml").read_text(encoding="utf-8")
 

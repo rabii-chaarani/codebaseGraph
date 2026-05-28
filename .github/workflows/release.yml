@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      pypi-environment-smoke:
+        description: Verify the pypi environment and OIDC claims without publishing.
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -13,8 +19,66 @@ env:
   PIP_NO_CACHE_DIR: "1"
 
 jobs:
+  pypi-environment-smoke:
+    name: pypi environment smoke
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.pypi-environment-smoke }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Verify PyPI environment OIDC claims
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64
+          import json
+          import os
+          import urllib.request
+
+          request_url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
+          separator = "&" if "?" in request_url else "?"
+          request = urllib.request.Request(
+              f"{request_url}{separator}audience=pypi",
+              headers={"Authorization": f"bearer {os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']}"},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              token = json.load(response)["value"]
+
+          payload = token.split(".")[1]
+          payload += "=" * (-len(payload) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(payload))
+
+          expected_claims = {
+              "aud": "pypi",
+              "environment": "pypi",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "repository_owner": os.environ["GITHUB_REPOSITORY_OWNER"],
+              "workflow": "Release",
+          }
+          for claim, expected in expected_claims.items():
+              actual = claims.get(claim)
+              if actual != expected:
+                  raise SystemExit(f"OIDC claim {claim!r} expected {expected!r}, got {actual!r}")
+
+          expected_workflow_ref_prefix = f"{os.environ['GITHUB_REPOSITORY']}/.github/workflows/release.yml@"
+          workflow_ref = claims.get("workflow_ref")
+          if not isinstance(workflow_ref, str) or not workflow_ref.startswith(expected_workflow_ref_prefix):
+              raise SystemExit(
+                  f"OIDC claim 'workflow_ref' expected to start with {expected_workflow_ref_prefix!r}, "
+                  f"got {workflow_ref!r}"
+              )
+
+          print("pypi environment OIDC claims verified")
+          PY
+
   release-please:
     name: release please
+    if: ${{ !inputs.pypi-environment-smoke }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
