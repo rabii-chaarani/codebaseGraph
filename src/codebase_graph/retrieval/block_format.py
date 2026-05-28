@@ -72,6 +72,53 @@ def serialize_search_block(payload: Mapping[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
+    """Serialize graph-search JSON into a more aggressive display-only agent block."""
+    lines = [f"q {_format_value(str(payload.get('query', '')))}"]
+    current_path: str | None = None
+    result_keys = {_record_key(result) for result in payload.get("results", [])}
+    for result in payload.get("results", []):
+        result_path = str(result.get("path", ""))
+        if result_path != current_path:
+            if len(lines) > 1:
+                lines.append("")
+            lines.append(f"file path {_format_value(result_path)}")
+            current_path = result_path
+
+        result_span = _span(result.get("span", {}))
+        result_parts = [
+            f"- {result.get('type', '')}",
+            _format_value(str(result.get("label", ""))),
+            _format_span(result_span),
+        ]
+        if "rank_score" in result:
+            result_parts.append(f"rank_score={float(result['rank_score']):.2f}")
+        summary = _meaningful_summary(result)
+        if summary:
+            result_parts.append(f"summary={_format_value(summary)}")
+        lines.append(" ".join(result_parts))
+
+        for context in result.get("context", []):
+            if _omit_agent_context(context, parent_span=result_span, result_keys=result_keys):
+                continue
+            context_path = str(context.get("path", ""))
+            context_span = _span(context.get("span", {}))
+            context_parts = [
+                f"  {context.get('direction', '')}",
+                str(context.get("relation", "")),
+                str(context.get("type", "")),
+                _format_value(str(context.get("label", ""))),
+                _format_span(context_span),
+            ]
+            if context_path and context_path != current_path:
+                context_parts.append(f"path={_format_value(context_path)}")
+            context_summary = _meaningful_summary(context)
+            if context_summary:
+                context_parts.append(f"summary={_format_value(context_summary)}")
+            lines.append(" ".join(context_parts))
+    return "\n".join(lines) + "\n"
+
+
 def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     for result in payload.get("results", []):
@@ -239,10 +286,34 @@ def _is_boilerplate_summary(record: Mapping[str, Any]) -> bool:
     return False
 
 
+def _omit_agent_context(
+    context: Mapping[str, Any],
+    *,
+    parent_span: Mapping[str, int],
+    result_keys: set[tuple[str, str, str, tuple[tuple[str, int], ...]]],
+) -> bool:
+    context_span = _span(context.get("span", {}))
+    if _is_boilerplate_summary(context) and context_span == dict(parent_span):
+        return True
+    if _record_key(context) in result_keys:
+        return True
+    return context.get("type") == "TypeAnnotation"
+
+
+def _record_key(record: Mapping[str, Any]) -> tuple[str, str, str, tuple[tuple[str, int], ...]]:
+    return (
+        str(record.get("type", "")),
+        str(record.get("label", "")),
+        str(record.get("path", "")),
+        tuple(sorted(_span(record.get("span", {})).items())),
+    )
+
+
 __all__ = [
     "ONTOLOGY_TERMS",
     "canonicalize_search_payload",
     "intentional_summary_omissions",
     "parse_search_block",
+    "serialize_agent_search_block",
     "serialize_search_block",
 ]

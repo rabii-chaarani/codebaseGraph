@@ -10,6 +10,7 @@ from codebase_graph.retrieval.block_format import (
     ONTOLOGY_TERMS,
     canonicalize_search_payload,
     parse_search_block,
+    serialize_agent_search_block,
     serialize_search_block,
 )
 
@@ -97,6 +98,27 @@ def test_block_format_keeps_ontology_terms_literal() -> None:
     assert "label=" in block
     assert "span=" in block
     assert "path " in block
+
+
+def test_agent_block_reduces_display_only_boilerplate() -> None:
+    payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+    block = serialize_agent_search_block(payload)
+
+    assert "q SearchService\n" in block
+    assert "budget" not in block
+    assert "limit" not in block
+    assert "profile" not in block
+    assert "id=" not in block
+    assert "rank_score=1.35" in block
+    assert "rank_score=1.351608" not in block
+    assert "SearchService scope" not in block
+    assert "search scope" not in block
+    assert "outgoing Contains Method __init__" not in block
+    assert "TypeAnnotation" not in block
+    assert (
+        'outgoing Contains InstanceAttribute self.store L119-L119 '
+        'summary="Stores the graph backend for later search calls."'
+    ) in block
 
 
 def _load_benchmark_script() -> Any:

@@ -20,6 +20,7 @@ from codebase_graph.retrieval.block_format import (  # noqa: E402
     canonicalize_search_payload,
     intentional_summary_omissions,
     parse_search_block,
+    serialize_agent_search_block,
     serialize_search_block,
 )
 
@@ -40,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     tokenizer = resolve_tokenizer(model=args.model, encoding_name=args.encoding)
     samples = _load_samples(args)
-    rows = [_compare_sample(sample, tokenizer) for sample in samples]
+    rows = [_compare_sample(sample, tokenizer, block_format=args.block_format) for sample in samples]
     aggregate = _aggregate(rows)
     _write_report(args.output, rows, aggregate, tokenizer)
     _print_summary(rows, aggregate, tokenizer, args.output)
@@ -95,6 +96,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--manifest", type=Path, default=None, help="Optional codebaseGraph manifest path")
     parser.add_argument("--context-limit", type=int, default=2, help="Context items per result for live queries")
     parser.add_argument("--detail", choices=("standard", "slim"), default="slim", help="Raw graph-search detail level")
+    parser.add_argument(
+        "--block-format",
+        choices=("ontology", "agent"),
+        default="ontology",
+        help="Block serializer to compare against raw JSON",
+    )
     return parser
 
 
@@ -140,18 +147,21 @@ def _fixture_sample(payload: dict[str, Any], fixture_path: Path) -> dict[str, An
     return {"name": str(payload.get("query") or fixture_path.stem), "payload": payload, "source": fixture_path.as_posix()}
 
 
-def _compare_sample(sample: dict[str, Any], tokenizer: Tokenizer) -> dict[str, Any]:
+def _compare_sample(sample: dict[str, Any], tokenizer: Tokenizer, *, block_format: str) -> dict[str, Any]:
     payload = sample["payload"]
     raw_text = _raw_json(payload)
-    block_text = serialize_search_block(payload)
-    raw_canonical = canonicalize_search_payload(payload)
-    block_canonical = parse_search_block(block_text)
-    if raw_canonical != block_canonical:
-        raise AssertionError(
-            f"Block output is not semantically equivalent for {sample['name']}:\n"
-            f"raw={json.dumps(raw_canonical, sort_keys=True)}\n"
-            f"block={json.dumps(block_canonical, sort_keys=True)}"
-        )
+    if block_format == "agent":
+        block_text = serialize_agent_search_block(payload)
+    else:
+        block_text = serialize_search_block(payload)
+        raw_canonical = canonicalize_search_payload(payload)
+        block_canonical = parse_search_block(block_text)
+        if raw_canonical != block_canonical:
+            raise AssertionError(
+                f"Block output is not semantically equivalent for {sample['name']}:\n"
+                f"raw={json.dumps(raw_canonical, sort_keys=True)}\n"
+                f"block={json.dumps(block_canonical, sort_keys=True)}"
+            )
     raw_tokens = count_tokens(raw_text, tokenizer.encoding)
     block_tokens = count_tokens(block_text, tokenizer.encoding)
     raw_chars = len(raw_text)
@@ -174,6 +184,7 @@ def _compare_sample(sample: dict[str, Any], tokenizer: Tokenizer) -> dict[str, A
         "context_edges": context_edges,
         "tokenizer": tokenizer.encoding_name,
         "model": tokenizer.model_name or "",
+        "block_format": block_format,
         "intentional_omissions": intentional_summary_omissions(payload),
     }
 
@@ -208,6 +219,7 @@ def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def _write_report(path: Path, rows: list[dict[str, Any]], aggregate: dict[str, Any], tokenizer: Tokenizer) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    block_format = rows[0].get("block_format", "ontology") if rows else "ontology"
     table_rows = "\n".join(
         "| {query} | {results} | {context_edges} | {raw_tokens:,} | {block_tokens:,} | {token_delta:,} | "
         "{token_reduction_pct:.1f}% |".format(**row)
@@ -221,6 +233,28 @@ def _write_report(path: Path, rows: list[dict[str, Any]], aggregate: dict[str, A
         if aggregate["p90_raw_tokens"] is not None
         else "- p90 raw/block tokens: not reported because fewer than 10 samples were compared\n"
     )
+    if block_format == "agent":
+        format_description = "- Reduced agent block format: grouped `file path` blocks with query settings, IDs, boilerplate same-span scope context, duplicate child-result edges, low-value type annotations, and excess score precision removed."
+        preservation_text = (
+            "This reduced display mode intentionally does not preserve every raw JSON field. It keeps the fields most useful "
+            "for code navigation and follow-up inspection: file path, ordered result type/label/span, rounded `rank_score`, "
+            "and non-boilerplate context with summaries. Use `--block-format ontology` when exact canonical equivalence is required."
+        )
+        recommendation = (
+            "Use the reduced agent block when the consumer is an interactive coding agent optimizing for quick navigation. "
+            "Use the ontology-preserving block or raw JSON when stable IDs, exact scores, or complete context records are required."
+        )
+    else:
+        format_description = "- Ontology-preserving block format: grouped `file path` blocks with readable `Class`, `Method`, `Scope`, relation, `label`, `span`, `id`, and `rank_score` terms left literal."
+        preservation_text = (
+            "The validator normalizes raw JSON and block output into canonical result records preserving `type`, `label`, "
+            "`path`, `span`, `id`, `rank_score`, and ordered context records with `direction`, `relation`, `type`, "
+            "`label`, `path`, `span`, and non-boilerplate `summary`."
+        )
+        recommendation = (
+            "Use the ontology-preserving block format by default for agent-facing graph-search output when consumers need "
+            "readable context. Keep JSON available for machine APIs and tests that require strict structured payloads."
+        )
     path.write_text(
         "\n".join(
             [
@@ -228,7 +262,7 @@ def _write_report(path: Path, rows: list[dict[str, Any]], aggregate: dict[str, A
                 "",
                 "## Method",
                 "- Raw format: compact JSON emitted by the current graph-search payload serializer, counted from the exact serialized JSON text with sorted keys and compact separators.",
-                "- Ontology-preserving block format: grouped `file path` blocks with readable `Class`, `Method`, `Scope`, relation, `label`, `span`, `id`, and `rank_score` terms left literal.",
+                format_description,
                 f"- Tokenizer/model: encoding `{tokenizer.encoding_name}`"
                 + (f" resolved from model `{tokenizer.model_name}`." if tokenizer.model_name else ".")
                 + fallback,
@@ -252,7 +286,7 @@ def _write_report(path: Path, rows: list[dict[str, Any]], aggregate: dict[str, A
                 p90.rstrip(),
                 "",
                 "## Ontology Preservation",
-                "The validator normalizes raw JSON and block output into canonical result records preserving `type`, `label`, `path`, `span`, `id`, `rank_score`, and ordered context records with `direction`, `relation`, `type`, `label`, `path`, `span`, and non-boilerplate `summary`.",
+                preservation_text,
                 "",
                 "Intentional omissions:",
                 omissions,
@@ -260,7 +294,7 @@ def _write_report(path: Path, rows: list[dict[str, Any]], aggregate: dict[str, A
                 "Known limitations: the block parser validates the supported graph-search fixture shape and live graph-search output shape; it is not a general-purpose parser for hand-written variants.",
                 "",
                 "## Recommendation",
-                "Use the ontology-preserving block format by default for agent-facing graph-search output when consumers need readable context. Keep JSON available for machine APIs and tests that require strict structured payloads.",
+                recommendation,
                 "",
             ]
         ),
