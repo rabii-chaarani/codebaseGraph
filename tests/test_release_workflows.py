@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -74,6 +75,16 @@ def test_release_please_is_skipped_during_pypi_environment_smoke() -> None:
     text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
 
     assert "release-please:\n    name: release please\n    if: ${{ !inputs.pypi-environment-smoke }}" in text
+
+
+def test_release_please_uses_strict_semver_tags() -> None:
+    config = json.loads(Path("release-please-config.json").read_text(encoding="utf-8"))
+    root_package = config["packages"]["."]
+
+    assert root_package["include-v-in-tag"] is True
+    assert root_package["include-component-in-tag"] is False
+    assert "release tag must match vX.Y.Z" in Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+    assert "component-prefixed tags" in Path("docs/release.md").read_text(encoding="utf-8")
 
 
 def test_conda_recipe_uses_bounded_runtime_dependencies() -> None:

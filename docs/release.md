@@ -1,6 +1,6 @@
 # Release Process
 
-`codebaseGraph` releases are managed by release-please. The release workflow opens and maintains a release pull request from Conventional Commit history. When that release pull request is merged, release-please creates the `vX.Y.Z` tag and GitHub Release, then the same workflow builds the source distribution and wheel from that tag, verifies that the package metadata version matches the tag, attaches the distributions to the GitHub Release, and publishes to PyPI with Trusted Publishing.
+`codebaseGraph` releases are managed by release-please. The release workflow opens and maintains a release pull request from Conventional Commit history. When that release pull request is merged, release-please creates the strict `vX.Y.Z` tag and GitHub Release, then the same workflow builds the source distribution and wheel from that tag, verifies that the package metadata version matches the tag, attaches the distributions to the GitHub Release, and publishes to PyPI with Trusted Publishing.
 
 ## One-time PyPI setup
 
@@ -72,6 +72,7 @@ fail on known vulnerable dependencies. Local setup stays offline-safe and must n
 implicitly; run local advisory scans explicitly when that disclosure is acceptable.
 
 The package version remains tag-derived through `setuptools_scm`; do not add a static `project.version` field to `pyproject.toml` just for release-please.
+The release-please config intentionally disables component-prefixed tags so production releases stay in strict `vX.Y.Z` format.
 
 To force a specific next version, merge a commit whose body contains a `Release-As: X.Y.Z` trailer.
 
