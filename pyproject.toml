@@ -30,7 +30,7 @@ classifiers = [
 [project.optional-dependencies]
 ladybug = []
 parquet = ["pyarrow"]
-dev = ["pytest", "ruff"]
+dev = ["pytest", "ruff", "tiktoken"]
 
 [project.scripts]
 codebase-graph = "codebase_graph.cli:main"
@@ -56,5 +56,5 @@ line-length = 120
 target-version = "py310"
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
