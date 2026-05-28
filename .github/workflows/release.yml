@@ -9,9 +9,6 @@ on:
 permissions:
   contents: read
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   release-please:
     name: release please
@@ -28,7 +25,7 @@ jobs:
     steps:
       - name: Create release pull request or GitHub release
         id: release
-        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
@@ -55,7 +52,7 @@ jobs:
 
     steps:
       - name: Check out release tag
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
@@ -99,13 +96,13 @@ jobs:
 
     steps:
       - name: Check out release tag
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.12"
           cache: pip
@@ -185,20 +182,6 @@ jobs:
           /tmp/codebase-graph-sdist/bin/codebase-graph-mcp --help
           /tmp/codebase-graph-sdist/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-sdist/bin/codebase-graph
 
-      - name: Upload distributions
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: codebase-graph-${{ steps.verify-version.outputs.package-version }}-dist
-          path: dist/*
-          if-no-files-found: error
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom
-          path: codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom.cdx.json
-          if-no-files-found: error
-
       - name: Upload distributions to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -216,14 +199,27 @@ jobs:
       name: pypi
       url: https://pypi.org/p/cbasegraph
     permissions:
+      contents: read
       id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
 
     steps:
-      - name: Download distributions
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: codebase-graph-${{ needs.build.outputs.package-version }}-dist
-          path: dist
+      - name: Download distributions from GitHub release
+        shell: bash
+        run: |
+          mkdir -p dist
+          gh release download "$RELEASE_TAG" --dir dist --pattern "*.whl" --pattern "*.tar.gz"
+          python - <<'PY'
+          from pathlib import Path
+
+          artifacts = sorted(path.name for path in Path("dist").iterdir())
+          if not any(name.endswith(".whl") for name in artifacts):
+              raise SystemExit(f"release {artifacts=} does not include a wheel")
+          if not any(name.endswith(".tar.gz") for name in artifacts):
+              raise SystemExit(f"release {artifacts=} does not include a source distribution")
+          PY
 
       - name: Publish distributions to PyPI
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1

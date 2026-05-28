@@ -123,11 +123,30 @@ def test_workflow_jobs_have_timeouts() -> None:
         assert missing == []
 
 
-def test_workflows_opt_javascript_actions_into_node24() -> None:
+def test_workflows_pin_node24_capable_first_party_actions() -> None:
     for path in WORKFLOWS:
         text = path.read_text(encoding="utf-8")
 
-        assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in text
+        assert "actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd" in text
+        assert "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" in text
+        assert "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" not in text
+        assert "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065" not in text
+
+
+def test_workflows_avoid_node20_artifact_actions() -> None:
+    for path in WORKFLOWS:
+        text = path.read_text(encoding="utf-8")
+
+        assert "actions/upload-artifact@" not in text
+        assert "actions/download-artifact@" not in text
+
+
+def test_release_workflow_downloads_distributions_from_github_release() -> None:
+    text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    assert 'gh release download "$RELEASE_TAG" --dir dist' in text
+    assert "release {artifacts=} does not include a wheel" in text
+    assert "release {artifacts=} does not include a source distribution" in text
 
 
 def test_ci_avoids_duplicate_pip_cache_reservation_warnings() -> None:
