@@ -4,7 +4,7 @@
 `CLAUDE.md`, Markdown, and MDX files into a LadyBugDB-backed graph, then exposes search, compact context, schema, query
 helpers, and read-only MCP tools.
 
-Using codebaseGraph helps agents orient faster, reduce guesswork, keep prompts focused, and make changes faster with better
+Using `codebaseGraph` helps agents orient and reason faster, reduce guesswork, keep prompts focused, and make changes with better
 impact awareness. Because the graph stores local source, documentation, spans, and relationships together, it gives
 AI agents a compact evidence layer for safer edits, architecture review, dependency tracing, and onboarding while reducing token consumption and tool calling.
 
