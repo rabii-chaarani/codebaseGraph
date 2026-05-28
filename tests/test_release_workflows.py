@@ -175,7 +175,7 @@ def test_workflows_avoid_node20_artifact_actions() -> None:
 def test_release_workflow_downloads_distributions_from_github_release() -> None:
     text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
 
-    assert 'gh release download "$RELEASE_TAG" --dir dist' in text
+    assert 'gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist' in text
     assert "release {artifacts=} does not include a wheel" in text
     assert "release {artifacts=} does not include a source distribution" in text
 

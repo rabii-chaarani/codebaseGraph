@@ -276,7 +276,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          gh release download "$RELEASE_TAG" --dir dist --pattern "*.whl" --pattern "*.tar.gz"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist --pattern "*.whl" --pattern "*.tar.gz"
           python - <<'PY'
           from pathlib import Path
 
