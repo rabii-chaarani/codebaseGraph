@@ -76,6 +76,14 @@ def test_release_please_is_skipped_during_pypi_environment_smoke() -> None:
     assert "release-please:\n    name: release please\n    if: ${{ !inputs.pypi-environment-smoke }}" in text
 
 
+def test_release_please_can_create_pull_requests_with_github_token() -> None:
+    text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    assert "pull-requests: write" in text
+    assert "token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}" in text
+    assert "skip-github-pull-request" not in text
+
+
 def test_conda_recipe_uses_bounded_runtime_dependencies() -> None:
     text = Path("conda-forge/recipe/meta.yaml").read_text(encoding="utf-8")
 
@@ -127,6 +135,8 @@ def test_release_docs_list_production_confirmation_flags() -> None:
     text = Path("docs/release.md").read_text(encoding="utf-8")
 
     assert "PyPI project: `cbasegraph`" in text
+    assert "RELEASE_PLEASE_TOKEN" in text
+    assert "Allow GitHub Actions to create and approve pull requests" in text
     for flag in PYPI_CONFIRMATION_FLAGS:
         env_var = f"CODEBASE_GRAPH_CONFIRM_{flag.upper().replace('-', '_')}"
         assert env_var in text
@@ -208,6 +218,73 @@ def test_release_gate_reports_missing_release_workflow(monkeypatch, tmp_path) ->
 
     assert [issue.code for issue in issues] == ["workflow-missing"]
     assert ".github/workflows/release.yml is required." in issues[0].message
+
+
+def test_release_gate_reports_disabled_release_please_pr_creation(monkeypatch, tmp_path) -> None:
+    workflow = tmp_path / ".github/workflows/release.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        """
+jobs:
+  release-please:
+    name: release please
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          skip-github-pull-request: true
+  production-gate:
+    needs:
+      - release-please
+      - production-gate
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    steps:
+      - run: python scripts/check_release_gate.py --production
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_release_gate, "REPO_ROOT", tmp_path)
+
+    issues = check_release_gate._check_release_workflow_permissions()
+
+    assert [issue.code for issue in issues] == ["release-pr-creation-disabled"]
+
+
+def test_release_gate_reports_missing_release_please_pr_permission(monkeypatch, tmp_path) -> None:
+    workflow = tmp_path / ".github/workflows/release.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        """
+jobs:
+  release-please:
+    name: release please
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+  production-gate:
+    needs:
+      - release-please
+      - production-gate
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    steps:
+      - run: python scripts/check_release_gate.py --production
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_release_gate, "REPO_ROOT", tmp_path)
+
+    issues = check_release_gate._check_release_workflow_permissions()
+
+    assert [issue.code for issue in issues] == ["release-pr-permission-missing"]
 
 
 def test_release_gate_reports_missing_conda_recipe(monkeypatch, tmp_path) -> None:

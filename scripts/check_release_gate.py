@@ -185,6 +185,22 @@ def _check_release_workflow_permissions() -> list[GateIssue]:
         issues.append(GateIssue("FAIL", "pypi-environment-missing", "release workflow must publish through pypi environment."))
     if "id-token: write" not in text:
         issues.append(GateIssue("FAIL", "pypi-oidc-missing", "release workflow must grant id-token: write."))
+    if "pull-requests: write" not in text:
+        issues.append(
+            GateIssue(
+                "FAIL",
+                "release-pr-permission-missing",
+                "release workflow must grant pull-requests: write for release-please PR creation.",
+            )
+        )
+    if "skip-github-pull-request" in text:
+        issues.append(
+            GateIssue(
+                "FAIL",
+                "release-pr-creation-disabled",
+                "release workflow must not disable release-please pull request creation.",
+            )
+        )
     return issues
 
 

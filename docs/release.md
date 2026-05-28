@@ -75,7 +75,12 @@ The package version remains tag-derived through `setuptools_scm`; do not add a s
 
 To force a specific next version, merge a commit whose body contains a `Release-As: X.Y.Z` trailer.
 
-For manual maintenance, rerun or dispatch the `Release` workflow. If CI checks must run on release-please pull requests, configure a `RELEASE_PLEASE_TOKEN` secret backed by a personal access token or GitHub App token; the default `GITHUB_TOKEN` can create the pull request but does not trigger follow-up workflows from its own events.
+For automatic release pull requests, keep GitHub's `Allow GitHub Actions to create and approve pull requests` workflow
+permission enabled for this repository. The release workflow grants `pull-requests: write` and can use the default
+`GITHUB_TOKEN` to open the release pull request. If CI checks must run on release-please pull requests, configure a
+`RELEASE_PLEASE_TOKEN` secret backed by a personal access token or GitHub App token with repository contents and
+pull-request write access; pull requests created by the default `GITHUB_TOKEN` do not trigger follow-up workflows from
+their own events.
 
 ## Conda-forge release path
 
