@@ -123,6 +123,19 @@ def test_workflow_jobs_have_timeouts() -> None:
         assert missing == []
 
 
+def test_workflows_opt_javascript_actions_into_node24() -> None:
+    for path in WORKFLOWS:
+        text = path.read_text(encoding="utf-8")
+
+        assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in text
+
+
+def test_ci_avoids_duplicate_pip_cache_reservation_warnings() -> None:
+    text = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    assert text.count("cache: pip") == 1
+
+
 def test_local_release_gate_passes() -> None:
     assert run_checks(production=False, require_conda=False, confirmations=set()) == []
 
