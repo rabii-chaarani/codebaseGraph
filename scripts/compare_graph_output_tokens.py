@@ -234,10 +234,10 @@ def _write_report(path: Path, rows: list[dict[str, Any]], aggregate: dict[str, A
         else "- p90 raw/block tokens: not reported because fewer than 10 samples were compared\n"
     )
     if block_format == "agent":
-        format_description = "- Reduced agent block format: grouped `file path` blocks with query settings, IDs, boilerplate same-span scope context, duplicate child-result edges, low-value type annotations, and excess score precision removed."
+        format_description = "- Reduced agent block format: grouped `file path` blocks with stable result IDs retained and query settings, boilerplate same-span scope context, duplicate child-result edges, low-value type annotations, and excess score precision removed."
         preservation_text = (
             "This reduced display mode intentionally does not preserve every raw JSON field. It keeps the fields most useful "
-            "for code navigation and follow-up inspection: file path, ordered result type/label/span, rounded `rank_score`, "
+            "for code navigation and follow-up inspection: file path, stable result `id`, ordered result type/label/span, rounded `rank_score`, "
             "and non-boilerplate context with summaries. Use `--block-format ontology` when exact canonical equivalence is required."
         )
         recommendation = (

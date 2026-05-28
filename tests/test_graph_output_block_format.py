@@ -108,7 +108,8 @@ def test_agent_block_reduces_display_only_boilerplate() -> None:
     assert "budget" not in block
     assert "limit" not in block
     assert "profile" not in block
-    assert "id=" not in block
+    assert "id=Class:943d6556d328f1c7ca67" in block
+    assert "id=Method:3c775c9656a4d6b85843" in block
     assert "rank_score=1.35" in block
     assert "rank_score=1.351608" not in block
     assert "SearchService scope" not in block

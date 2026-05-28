@@ -93,6 +93,8 @@ def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
         ]
         if "rank_score" in result:
             result_parts.append(f"rank_score={float(result['rank_score']):.2f}")
+        if "id" in result:
+            result_parts.append(f"id={_format_value(str(result['id']))}")
         summary = _meaningful_summary(result)
         if summary:
             result_parts.append(f"summary={_format_value(summary)}")
