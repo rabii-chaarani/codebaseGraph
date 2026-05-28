@@ -11,6 +11,8 @@ from codebase_graph.retrieval.block_format import (
     canonicalize_search_payload,
     parse_search_block,
     serialize_agent_search_block,
+    serialize_context_block,
+    serialize_parseable_search_block,
     serialize_search_block,
 )
 
@@ -32,9 +34,10 @@ def test_token_counting_uses_encoded_text_length() -> None:
 
 def test_raw_vs_block_comparison_preserves_search_service_fixture() -> None:
     payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
-    block = serialize_search_block(payload)
+    block = serialize_parseable_search_block(payload)
 
     assert parse_search_block(block) == canonicalize_search_payload(payload)
+    assert serialize_search_block(payload) == block
 
 
 def test_l_same_is_only_emitted_for_matching_context_spans() -> None:
@@ -120,6 +123,30 @@ def test_agent_block_reduces_display_only_boilerplate() -> None:
         'outgoing Contains InstanceAttribute self.store L119-L119 '
         'summary="Stores the graph backend for later search calls."'
     ) in block
+
+
+def test_context_block_serializes_explicit_node_context() -> None:
+    block = serialize_context_block(
+        {
+            "node_id": "Class:943d6556d328f1c7ca67",
+            "node_type": "Class",
+            "profile": "definitions",
+            "context": [
+                {
+                    "direction": "outgoing",
+                    "relation": "Contains",
+                    "type": "Method",
+                    "label": "search",
+                    "path": "src/codebase_graph/retrieval/search.py",
+                    "span": {"line_start": 123, "line_end": 149},
+                }
+            ],
+        }
+    )
+
+    assert block.startswith("context Class id=Class:943d6556d328f1c7ca67 profile=definitions")
+    assert "file path src/codebase_graph/retrieval/search.py" in block
+    assert "outgoing Contains Method search L123-L149" in block
 
 
 def _load_benchmark_script() -> Any:

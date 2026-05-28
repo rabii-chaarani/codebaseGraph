@@ -7,11 +7,12 @@ from typing import Any
 
 import pytest
 
-from codebase_graph.cli import main as cli_main
+from codebase_graph.cli import _build_parser, main as cli_main
 from codebase_graph.db import GraphNeighbor, SearchIndexRow
 from codebase_graph.ingest import GraphMaterializer
+from codebase_graph.mcp.graph_commands import graph_command_spec, graph_tool_specs
 from codebase_graph.mcp.runtime import GraphRuntimeConfig
-from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _query_payload, handle_tool_call
+from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _query_payload, handle_tool_call, tool_specs
 from codebase_graph.reasoning import CompactContextBuilder, ContextNode
 from codebase_graph.retrieval.search import CompactContextPayload, SearchHit, SearchRequest, SearchService
 
@@ -508,6 +509,31 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
     assert "score" not in search_payload["results"][0]
     assert len(search_payload["results"][0].get("context", [])) <= 1
 
+    assert cli_main([
+        "graph-search",
+        "SampleService",
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--limit",
+        "2",
+        "--context-limit",
+        "1",
+        "--detail",
+        "slim",
+        "--no-refresh",
+        "--format",
+        "block",
+    ]) == 0
+    block_output = capsys.readouterr().out
+    assert block_output.startswith("q SampleService\n")
+    assert "file path sample_project/service.py" in block_output
+    assert "id=Class:" in block_output
+    assert not block_output.lstrip().startswith("{")
+
     hit = next(item for item in search_payload["results"] if item["label"] == "SampleService")
     context_args = {
         "node_id": hit["id"],
@@ -539,6 +565,31 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
     ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_context", context_args, runtime=runtime)
 
+    assert cli_main([
+        "graph-context",
+        "--node-id",
+        hit["id"],
+        "--node-type",
+        hit["type"],
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--profile",
+        "definitions",
+        "--limit",
+        "1",
+        "--detail",
+        "slim",
+        "--format",
+        "block",
+    ]) == 0
+    context_block = capsys.readouterr().out
+    assert context_block.startswith(f"context {hit['type']} id={hit['id']} profile=definitions\n")
+    assert "file path " in context_block
+
     statement = "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1"
     query_args = {"statement": statement, "parameters": {}, "limit": 5}
     assert cli_main([
@@ -554,6 +605,80 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         "5",
     ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_query", query_args, runtime=runtime)
+
+
+def test_graph_command_specs_drive_mcp_tool_specs() -> None:
+    assert tool_specs() == graph_tool_specs()
+
+
+def test_graph_command_specs_build_cli_payloads() -> None:
+    parser = _build_parser()
+    cases = [
+        (
+            [
+                "graph-search",
+                "SampleService",
+                "--limit",
+                "2",
+                "--context-limit",
+                "1",
+                "--detail",
+                "slim",
+            ],
+            "graph_search",
+            {
+                "query": "SampleService",
+                "limit": 2,
+                "profile": "brief",
+                "budget": 600,
+                "context_limit": 1,
+                "detail": "slim",
+            },
+        ),
+        (
+            [
+                "graph-context",
+                "--node-id",
+                "Class:1",
+                "--node-type",
+                "Class",
+                "--profile",
+                "definitions",
+                "--limit",
+                "1",
+                "--detail",
+                "slim",
+            ],
+            "graph_context",
+            {
+                "node_id": "Class:1",
+                "node_type": "Class",
+                "limit": 1,
+                "profile": "definitions",
+                "budget": 600,
+                "context_limit": 3,
+                "detail": "slim",
+            },
+        ),
+        (
+            [
+                "graph-query",
+                "MATCH (n) RETURN n",
+                "--parameters",
+                '{"limit": 1}',
+                "--limit",
+                "5",
+            ],
+            "graph_query",
+            {"statement": "MATCH (n) RETURN n", "parameters": {"limit": 1}, "limit": 5},
+        ),
+    ]
+    for argv, tool_name, expected_payload in cases:
+        args = parser.parse_args(argv)
+        spec = graph_command_spec(args.command)
+
+        assert spec.tool_name == tool_name
+        assert spec.payload_from_args(args) == expected_payload
 
 
 def test_cli_graph_metadata_commands_do_not_open_graph_db(capsys: pytest.CaptureFixture[str]) -> None:

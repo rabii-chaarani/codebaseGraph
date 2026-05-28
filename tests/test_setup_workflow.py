@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -16,7 +17,7 @@ from codebase_graph.db import LadybugUnavailableError
 from codebase_graph.mcp.runtime import runtime_config
 from codebase_graph.mcp.server import McpGraphServer, handle_tool_call
 from codebase_graph.setup import SetupError, SetupOptions, run_setup
-from codebase_graph.setup.instructions import END_MARKER, START_MARKER
+from codebase_graph.setup.instructions import END_MARKER, START_MARKER, upsert_instruction_block
 from codebase_graph.setup.mcp_config import configure_mcp_client, server_entry
 from codebase_graph.setup.state import build_setup_config, derive_setup_paths, load_setup_config, write_setup_config
 
@@ -58,10 +59,18 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     assert agents_text.count(END_MARKER) == 1
     assert "graph-search" in agents_text
     assert "graph-context" in agents_text
+    assert "--format block" in agents_text
+    assert re.search(r"graph-search .*--json", agents_text) is None
+    assert re.search(r"graph-context .*--json", agents_text) is None
+    assert "AI agents must use block format" in agents_text
     assert "graph-architecture-queries" in agents_text
     assert "MCP server" not in agents_text
     assert "graph_architecture_queries" not in agents_text
     assert "graph_query" not in agents_text
+    assert (
+        "It is prohibited to read the code source before you find the target files using the graph."
+        in agents_text
+    )
     mcp_payload = tomllib.loads(mcp_config_path.read_text(encoding="utf-8"))
     assert "otherServer" not in mcp_payload.get("mcp_servers", {})
     assert mcp_payload["mcp_servers"]["codebase_graph"]["args"] == [
@@ -106,6 +115,26 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     assert health_payload["total_nodes"] > 0
     assert any(hit["path"] == "AGENTS.md" for hit in docs_payload["results"])
     assert any(hit["label"] == "SampleService" for hit in symbol_payload["results"])
+
+
+def test_claude_instruction_target_uses_block_format(tmp_path: Path) -> None:
+    repo_root = tmp_path / "fresh_repo"
+    repo_root.mkdir()
+
+    result = upsert_instruction_block(
+        repo_root,
+        target="claude",
+        server_name="codebase_graph",
+        config_path=repo_root / ".codebaseGraph" / "config.json",
+    )
+    claude_text = (repo_root / "CLAUDE.md").read_text(encoding="utf-8")
+
+    assert result.action == "created"
+    assert result.path == (repo_root / "CLAUDE.md").as_posix()
+    assert not (repo_root / "AGENTS.md").exists()
+    assert "--format block" in claude_text
+    assert re.search(r"graph-search .*--json", claude_text) is None
+    assert re.search(r"graph-context .*--json", claude_text) is None
 
 
 def test_mcp_config_dry_run_preserves_existing_json_servers(tmp_path: Path) -> None:

@@ -10,6 +10,8 @@ from codebase_graph.cli import main as cli_main
 from codebase_graph.setup.clients import get_client_adapter
 from codebase_graph.setup.descriptor import build_server_descriptor
 from codebase_graph.setup.installer import (
+    INSTALL_CLIENTS,
+    INSTALL_STRATEGIES,
     McpInstallOptions,
     default_server_name,
     install_mcp_clients,
@@ -20,6 +22,18 @@ from codebase_graph.setup.state import build_setup_config, derive_setup_paths, w
 
 def test_default_server_name_is_namespace_safe() -> None:
     assert default_server_name("My Service") == "codebase_graph_my_service"
+
+
+def test_install_strategy_registry_covers_advertised_clients() -> None:
+    assert set(INSTALL_CLIENTS) == set(INSTALL_STRATEGIES)
+    for client, strategy in INSTALL_STRATEGIES.items():
+        assert strategy.adapter_client_id("local")
+        if strategy.native_command_builder is not None:
+            assert strategy.native_executable
+        if client == "claude":
+            assert strategy.adapter_client_id("project") == "claude-project"
+        if client == "claude-project":
+            assert strategy.install_scope("local") == "project"
 
 
 def test_codex_native_command_generation_uses_repo_server_name(
