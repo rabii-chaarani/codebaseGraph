@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.0...v0.2.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* **release:** download release assets without git checkout ([#7](https://github.com/rabii-chaarani/codebaseGraph/issues/7)) ([05d046d](https://github.com/rabii-chaarani/codebaseGraph/commit/05d046dbabccb391e66ae8ec40371613e5b59568))
+
 ## [0.2.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.1.0...v0.2.0) (2026-05-28)
 
 
