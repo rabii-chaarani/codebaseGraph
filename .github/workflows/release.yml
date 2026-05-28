@@ -11,6 +11,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish-existing-tag:
+        description: Publish an existing GitHub release tag to PyPI without creating a new release.
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -78,7 +83,7 @@ jobs:
 
   release-please:
     name: release please
-    if: ${{ !inputs.pypi-environment-smoke }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.pypi-environment-smoke && inputs.publish-existing-tag == '') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -270,6 +275,99 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
+
+    steps:
+      - name: Download distributions from GitHub release
+        shell: bash
+        run: |
+          mkdir -p dist
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist --pattern "*.whl" --pattern "*.tar.gz"
+          python - <<'PY'
+          from pathlib import Path
+
+          artifacts = sorted(path.name for path in Path("dist").iterdir())
+          if not any(name.endswith(".whl") for name in artifacts):
+              raise SystemExit(f"release {artifacts=} does not include a wheel")
+          if not any(name.endswith(".tar.gz") for name in artifacts):
+              raise SystemExit(f"release {artifacts=} does not include a source distribution")
+          PY
+
+      - name: Publish distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+
+  publish-existing-release-gate:
+    name: existing release gate
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.pypi-environment-smoke && inputs.publish-existing-tag != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+    permissions:
+      contents: read
+
+    env:
+      RELEASE_TAG: ${{ inputs.publish-existing-tag }}
+      CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER: ${{ vars.CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER }}
+      CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT: ${{ vars.CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT }}
+      CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN: ${{ vars.CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN }}
+      CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING: ${{ vars.CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING }}
+      CODEBASE_GRAPH_REQUIRE_CONDA: ${{ vars.CODEBASE_GRAPH_REQUIRE_CONDA }}
+
+    steps:
+      - name: Validate release tag
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import re
+
+          tag = os.environ["RELEASE_TAG"]
+          if re.fullmatch(r"v\d+\.\d+\.\d+", tag) is None:
+              raise SystemExit(f"release tag must match vX.Y.Z, got {tag!r}")
+          PY
+
+      - name: Check out release tag
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+
+      - name: Run production release gate
+        shell: bash
+        run: |
+          args=(--production)
+          if [[ "${CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER}" == "true" ]]; then
+            args+=(--confirm trusted-publisher)
+          fi
+          if [[ "${CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT}" == "true" ]]; then
+            args+=(--confirm pypi-environment)
+          fi
+          if [[ "${CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN}" == "true" ]]; then
+            args+=(--confirm hosted-ci-green)
+          fi
+          if [[ "${CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING}" == "true" ]]; then
+            args+=(--confirm private-vulnerability-reporting)
+          fi
+          if [[ "${CODEBASE_GRAPH_REQUIRE_CONDA}" == "true" ]]; then
+            args+=(--require-conda)
+          fi
+          python scripts/check_release_gate.py "${args[@]}"
+
+  publish-existing-pypi:
+    name: publish existing release to PyPI
+    needs: publish-existing-release-gate
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.pypi-environment-smoke && inputs.publish-existing-tag != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cbasegraph
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.publish-existing-tag }}
 
     steps:
       - name: Download distributions from GitHub release

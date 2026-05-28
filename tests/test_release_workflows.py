@@ -74,7 +74,21 @@ def test_release_workflow_can_smoke_test_pypi_environment_without_publishing() -
 def test_release_please_is_skipped_during_pypi_environment_smoke() -> None:
     text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
 
-    assert "release-please:\n    name: release please\n    if: ${{ !inputs.pypi-environment-smoke }}" in text
+    assert "release-please:\n    name: release please" in text
+    assert "!inputs.pypi-environment-smoke" in text
+    assert "inputs.publish-existing-tag == ''" in text
+
+
+def test_release_workflow_can_publish_existing_release_tag() -> None:
+    text = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    assert "publish-existing-tag:" in text
+    assert "existing release gate" in text
+    assert "publish existing release to PyPI" in text
+    assert "inputs.publish-existing-tag != ''" in text
+    assert 'RELEASE_TAG: ${{ inputs.publish-existing-tag }}' in text
+    assert 'gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist' in text
+    assert "release tag must match vX.Y.Z" in text
 
 
 def test_release_please_uses_strict_semver_tags() -> None:
