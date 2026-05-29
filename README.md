@@ -1,7 +1,6 @@
 # codebaseGraph
 
-`codebaseGraph` builds a repo-local knowledge graph for coding agents. It materializes Python source, `AGENTS.md`,
-`CLAUDE.md`, Markdown, and MDX files into a LadyBugDB-backed graph, then exposes search, compact context, schema, query
+`codebaseGraph` is alocal knowledge graph for AI coding agents. It builds a graph from Python source code, Markdown, and MDX files into a LadyBugDB-backed graph, then exposes search, compact context, schema, query
 helpers, and read-only MCP tools.
 
 Using `codebaseGraph` helps agents orient and reason faster, reduce guesswork, keep prompts focused, and make changes with better
