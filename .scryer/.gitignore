@@ -1,0 +1,4 @@
+*.baseline.scry
+.implementing
+.sync
+.tmp.*
