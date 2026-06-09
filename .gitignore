@@ -220,3 +220,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.codex/config.toml
+.mcp.json
+.scryer/model.scry
+.scryer/model.scry
