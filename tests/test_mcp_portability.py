@@ -229,7 +229,7 @@ def test_stdio_mcp_malformed_frame_returns_parse_error(tmp_path: Path) -> None:
 
     completed = subprocess.run(
         setup_payload["mcp"]["command"],
-        input=b"Content-Length: 1\r\n\r\n{",
+        input=b"{\n",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
@@ -362,7 +362,7 @@ def _rpc(stdin: BinaryIO, stdout: BinaryIO, method: str, params: dict[str, Any])
     request_id = _rpc.counter
     _rpc.counter += 1
     payload = json.dumps({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}).encode("utf-8")
-    stdin.write(f"Content-Length: {len(payload)}\r\n\r\n".encode("ascii") + payload)
+    stdin.write(payload + b"\n")
     stdin.flush()
     return _read_stdio_response(stdout)
 
@@ -371,31 +371,15 @@ _rpc.counter = 1  # type: ignore[attr-defined]
 
 
 def _read_stdio_response(stdout: BinaryIO) -> dict[str, Any]:
-    header = stdout.readline()
-    assert header.lower().startswith(b"content-length:")
-    length = int(header.split(b":", 1)[1].strip())
-    assert stdout.readline() in {b"\r\n", b"\n"}
-    return json.loads(stdout.read(length).decode("utf-8"))
+    line = stdout.readline()
+    assert line
+    assert not line.lower().startswith(b"content-length:")
+    return json.loads(line.decode("utf-8"))
 
 
 def _stdio_messages(data: bytes) -> list[dict[str, Any]]:
-    messages: list[dict[str, Any]] = []
-    cursor = 0
-    while cursor < len(data):
-        header_end = data.find(b"\r\n\r\n", cursor)
-        assert header_end != -1
-        header = data[cursor:header_end].decode("ascii")
-        length = None
-        for line in header.splitlines():
-            if line.lower().startswith("content-length:"):
-                length = int(line.split(":", 1)[1].strip())
-                break
-        assert length is not None
-        body_start = header_end + 4
-        body_end = body_start + length
-        messages.append(json.loads(data[body_start:body_end].decode("utf-8")))
-        cursor = body_end
-    return messages
+    assert b"content-length:" not in data.lower()
+    return [json.loads(line.decode("utf-8")) for line in data.splitlines() if line]
 
 
 def _http_rpc(

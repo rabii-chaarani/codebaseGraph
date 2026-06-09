@@ -393,7 +393,7 @@ def verify_mcp_install(
 def _verify_stdio(descriptor: McpServerDescriptor, *, timeout: int) -> dict[str, Any]:
     command = [descriptor.command, *descriptor.args]
     payload = b"".join(
-        _frame_json_rpc(method, params, request_id=index)
+        _stdio_json_rpc_message(method, params, request_id=index)
         for index, (method, params) in enumerate(
             (
                 ("initialize", {"protocolVersion": LATEST_PROTOCOL_VERSION}),
@@ -413,7 +413,7 @@ def _verify_stdio(descriptor: McpServerDescriptor, *, timeout: int) -> dict[str,
         return {"ok": False, "command": command, "error": f"stdio smoke timed out after {timeout}s"}
     except OSError as exc:
         return {"ok": False, "command": command, "error": str(exc)}
-    responses = _parse_stdio_frames(stdout)
+    responses = _parse_stdio_messages(stdout)
     if process.returncode != 0:
         return {
             "ok": False,
@@ -468,39 +468,22 @@ def _stdio_checks(responses: list[dict[str, Any]]) -> dict[str, bool]:
     }
 
 
-def _parse_stdio_frames(data: bytes) -> list[dict[str, Any]]:
+def _parse_stdio_messages(data: bytes) -> list[dict[str, Any]]:
     messages: list[dict[str, Any]] = []
-    cursor = 0
-    while cursor < len(data):
-        header_end = data.find(b"\r\n\r\n", cursor)
-        delimiter_length = 4
-        if header_end == -1:
-            header_end = data.find(b"\n\n", cursor)
-            delimiter_length = 2
-        if header_end == -1:
-            break
-        header = data[cursor:header_end].decode("ascii", errors="replace")
-        length = None
-        for line in header.splitlines():
-            if line.lower().startswith("content-length:"):
-                length = int(line.split(":", 1)[1].strip())
-                break
-        if length is None:
-            break
-        body_start = header_end + delimiter_length
-        body_end = body_start + length
-        messages.append(json.loads(data[body_start:body_end].decode("utf-8")))
-        cursor = body_end
+    for line in data.splitlines():
+        if not line:
+            continue
+        messages.append(json.loads(line.decode("utf-8")))
     return messages
 
 
-def _frame_json_rpc(method: str, params: dict[str, Any], *, request_id: int) -> bytes:
+def _stdio_json_rpc_message(method: str, params: dict[str, Any], *, request_id: int) -> bytes:
     body = json.dumps(
         {"jsonrpc": "2.0", "id": request_id, "method": method, "params": params},
         separators=(",", ":"),
         sort_keys=True,
     ).encode("utf-8")
-    return f"Content-Length: {len(body)}\r\n\r\n".encode("ascii") + body
+    return body + b"\n"
 
 
 def _build_descriptor(options: McpInstallOptions) -> McpServerDescriptor:
