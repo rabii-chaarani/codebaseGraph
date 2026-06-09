@@ -130,7 +130,7 @@ def _rpc(stdin: BinaryIO, stdout: BinaryIO, method: str, params: dict[str, Any])
     request_id = _rpc.counter
     _rpc.counter += 1
     body = json.dumps({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}).encode("utf-8")
-    stdin.write(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii") + body)
+    stdin.write(body + b"\n")
     stdin.flush()
     return _read_response(stdout)
 
@@ -139,14 +139,12 @@ _rpc.counter = 1  # type: ignore[attr-defined]
 
 
 def _read_response(stdout: BinaryIO) -> dict[str, Any]:
-    header = stdout.readline()
-    if not header.lower().startswith(b"content-length:"):
-        raise AssertionError(f"unexpected MCP header: {header!r}")
-    length = int(header.split(b":", 1)[1].strip())
-    separator = stdout.readline()
-    if separator not in {b"\r\n", b"\n"}:
-        raise AssertionError(f"unexpected MCP header separator: {separator!r}")
-    return json.loads(stdout.read(length).decode("utf-8"))
+    line = stdout.readline()
+    if not line:
+        raise AssertionError("missing MCP response")
+    if line.lower().startswith(b"content-length:"):
+        raise AssertionError(f"unexpected MCP header: {line!r}")
+    return json.loads(line.decode("utf-8"))
 
 
 if __name__ == "__main__":
