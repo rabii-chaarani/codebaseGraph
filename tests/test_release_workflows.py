@@ -171,7 +171,7 @@ def test_workflows_pin_node24_capable_first_party_actions() -> None:
     for path in WORKFLOWS:
         text = path.read_text(encoding="utf-8")
 
-        assert "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" in text
+        assert "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" in text
         assert "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" in text
         assert "actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd" not in text
         assert "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" not in text
