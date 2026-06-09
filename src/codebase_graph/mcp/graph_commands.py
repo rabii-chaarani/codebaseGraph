@@ -106,14 +106,14 @@ def add_json_output_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--pretty", action="store_true", help="Emit indented JSON output")
 
 
-def add_compact_context_arguments(parser: argparse.ArgumentParser) -> None:
+def add_compact_context_arguments(parser: argparse.ArgumentParser, *, default_format: str = "json") -> None:
     parser.add_argument("--limit", type=int, default=3, help="Maximum search hits to return")
     parser.add_argument("--profile", choices=sorted(CONTEXT_PROFILES), default="brief", help="Context profile")
     parser.add_argument("--budget", type=int, default=600, help="Approximate per-hit context character budget")
     parser.add_argument("--max-depth", type=int, default=None, help="Override the context profile depth")
     parser.add_argument("--context-limit", type=int, default=3, help="Maximum context items per search hit")
     parser.add_argument("--detail", choices=sorted(DETAIL_LEVELS), default="standard", help="Output detail level")
-    parser.add_argument("--format", choices=("json", "block"), default="json", help="Output format")
+    parser.add_argument("--format", choices=("json", "block"), default=default_format, help="Output format")
     add_json_output_arguments(parser)
 
 
@@ -136,7 +136,7 @@ def _add_graph_health_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _add_graph_search_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("query", help="Search query")
-    add_compact_context_arguments(parser)
+    add_compact_context_arguments(parser, default_format="block")
     add_runtime_arguments(parser)
     add_graph_compatibility_arguments(parser)
 
@@ -145,7 +145,7 @@ def _add_graph_context_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("query", nargs="?", help="Search query")
     parser.add_argument("--node-id", default=None, help="Explicit graph node id")
     parser.add_argument("--node-type", default=None, help="Explicit graph node type")
-    add_compact_context_arguments(parser)
+    add_compact_context_arguments(parser, default_format="block")
     add_runtime_arguments(parser)
     add_graph_compatibility_arguments(parser)
 
@@ -188,7 +188,12 @@ def _search_schema(*, required: Sequence[str]) -> dict[str, Any]:
             "max_depth": {"type": "integer", "minimum": 0},
             "context_limit": {"type": "integer", "minimum": 0},
             "detail": {"type": "string", "enum": sorted(DETAIL_LEVELS)},
-            "output_format": {"type": "string", "enum": ["json", "block"]},
+            "output_format": {"type": "string", "enum": ["json", "block"], "default": "block"},
+            "include_structured_content": {
+                "type": "boolean",
+                "default": False,
+                "description": "Include the MCP structuredContent payload alongside the text result.",
+            },
             "node_id": {"type": "string"},
             "node_type": {"type": "string"},
         },
@@ -278,4 +283,3 @@ GRAPH_COMMAND_SPECS = (
         payload_from_args=_query_payload,
     ),
 )
-

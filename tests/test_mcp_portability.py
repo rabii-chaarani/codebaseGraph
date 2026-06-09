@@ -186,11 +186,24 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
             "tools/call",
             {"name": "graph_search", "arguments": {"query": "SampleService", "limit": 2}},
         )
-        block_search = _rpc(
+        json_search = _rpc(
             proc.stdin,
             proc.stdout,
             "tools/call",
-            {"name": "graph_search", "arguments": {"query": "SampleService", "limit": 2, "output_format": "block"}},
+            {"name": "graph_search", "arguments": {"query": "SampleService", "limit": 2, "output_format": "json"}},
+        )
+        structured_search = _rpc(
+            proc.stdin,
+            proc.stdout,
+            "tools/call",
+            {
+                "name": "graph_search",
+                "arguments": {
+                    "query": "SampleService",
+                    "limit": 2,
+                    "include_structured_content": True,
+                },
+            },
         )
         failure = _rpc(
             proc.stdin,
@@ -208,12 +221,17 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
     assert "context_limit" in graph_search_tool["inputSchema"]["properties"]
     assert graph_search_tool["inputSchema"]["properties"]["detail"]["enum"] == ["slim", "standard"]
     assert graph_search_tool["inputSchema"]["properties"]["output_format"]["enum"] == ["json", "block"]
+    assert graph_search_tool["inputSchema"]["properties"]["output_format"]["default"] == "block"
+    assert graph_search_tool["inputSchema"]["properties"]["include_structured_content"]["default"] is False
     assert health["result"]["structuredContent"]["ok"] is True
-    assert search["result"]["structuredContent"]["results"]
-    assert "\n  " not in search["result"]["content"][0]["text"]
-    assert block_search["result"]["structuredContent"] == search["result"]["structuredContent"]
-    assert block_search["result"]["content"][0]["text"].startswith("q SampleService\n")
-    assert "id=Class:" in block_search["result"]["content"][0]["text"]
+    assert "structuredContent" not in search["result"]
+    assert search["result"]["content"][0]["text"].startswith("q SampleService\n")
+    assert "id=Class:" in search["result"]["content"][0]["text"]
+    assert "structuredContent" not in json_search["result"]
+    json_payload = json.loads(json_search["result"]["content"][0]["text"])
+    assert json_payload["results"]
+    assert structured_search["result"]["structuredContent"] == json_payload
+    assert structured_search["result"]["content"][0]["text"].startswith("q SampleService\n")
     assert "error" not in failure
     assert failure["result"]["isError"] is True
     assert failure["result"]["structuredContent"]["error"]["type"] == "ValueError"

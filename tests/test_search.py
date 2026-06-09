@@ -562,6 +562,7 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         "1",
         "--detail",
         "slim",
+        "--json",
     ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_context", context_args, runtime=runtime)
 
@@ -589,6 +590,27 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
     context_block = capsys.readouterr().out
     assert context_block.startswith(f"context {hit['type']} id={hit['id']} profile=definitions\n")
     assert "file path " in context_block
+
+    assert cli_main([
+        "graph-search",
+        "SampleService",
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--limit",
+        "2",
+        "--context-limit",
+        "1",
+        "--detail",
+        "slim",
+        "--no-refresh",
+    ]) == 0
+    default_block = capsys.readouterr().out
+    assert default_block.startswith("q SampleService\n")
+    assert not default_block.lstrip().startswith("{")
 
     statement = "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1"
     query_args = {"statement": statement, "parameters": {}, "limit": 5}

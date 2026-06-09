@@ -65,14 +65,20 @@ def _require_runtime(runtime: GraphRuntimeConfig | None, tool_name: str) -> Grap
 
 
 def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | None = None) -> dict[str, Any]:
+    arguments = arguments or {}
     text = json.dumps(payload, separators=(",", ":"), sort_keys=True)
-    if name in {"graph_search", "graph_context"} and _output_format(arguments or {}) == "block":
-        text = serialize_graph_block(payload)
-    return {
+    include_structured_content = True
+    if name in {"graph_search", "graph_context"}:
+        include_structured_content = _include_structured_content(arguments)
+        if _output_format(arguments) == "block":
+            text = serialize_graph_block(payload)
+    result: dict[str, Any] = {
         "content": [{"type": "text", "text": text}],
-        "structuredContent": payload,
         "isError": False,
     }
+    if include_structured_content:
+        result["structuredContent"] = payload
+    return result
 
 
 def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
@@ -251,7 +257,16 @@ def _detail(arguments: dict[str, Any]) -> str:
 
 
 def _output_format(arguments: dict[str, Any]) -> str:
-    output_format = str(arguments.get("output_format", "json"))
+    output_format = str(arguments.get("output_format", "block"))
     if output_format not in {"json", "block"}:
         raise ValueError(f"Unknown output format: {output_format}. Valid formats: block, json")
     return output_format
+
+
+def _include_structured_content(arguments: dict[str, Any]) -> bool:
+    value = arguments.get("include_structured_content", False)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes"}
+    return bool(value)
