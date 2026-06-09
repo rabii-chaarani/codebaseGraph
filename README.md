@@ -14,7 +14,7 @@ Requires Python 3.10+
 ```bash
 python -m pip install cbasegraph
 codebase-graph setup --repo-root .
-codebase-graph graph-search SampleService --repo-root . --no-refresh --format block
+codebase-graph graph-search SampleService --repo-root . --no-refresh
 ```
 
 Setup creates:
@@ -106,12 +106,12 @@ The CLI mirrors the MCP tools for clients that do not surface MCP directly:
 
 ```bash
 codebase-graph graph-health --repo-root .
-codebase-graph graph-context SampleService --repo-root . --profile definitions --format block
+codebase-graph graph-context SampleService --repo-root . --profile definitions
 codebase-graph graph-query "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" --repo-root .
 ```
 
-Use `--format block` for agent-facing output and `--json --pretty` for structured inspection. Retrieval commands also
-support `--detail standard|slim`; `slim` drops score diagnostics and duplicate or empty summary fields.
+Retrieval commands emit block format by default for agent-facing output. Use `--json --pretty` or `--format json` for structured inspection. MCP callers can request the typed payload with `include_structured_content: true`.
+Retrieval commands also support `--detail standard|slim`; `slim` drops score diagnostics and duplicate or empty summary fields.
 
 For coding-task architecture orientation, call `graph_architecture_queries` first, then run selected statements with
 `graph_query`.

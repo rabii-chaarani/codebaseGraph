@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import io
 import json
 import re
 from pathlib import Path
 
+from scripts import smoke_built_wheel
 from scripts import check_release_gate
 from scripts.check_release_gate import (
     PYPI_CONFIRMATION_FLAGS,
@@ -47,6 +49,17 @@ def test_release_workflows_smoke_test_wheel_and_sdist() -> None:
         text = path.read_text(encoding="utf-8")
         assert "pip install dist/*.whl" in text
         assert "pip install dist/*.tar.gz" in text
+
+
+def test_package_smoke_uses_newline_delimited_mcp_stdio() -> None:
+    stdout = io.BytesIO(b'{"id":1,"jsonrpc":"2.0","result":{}}\n')
+    stdin = io.BytesIO()
+
+    response = smoke_built_wheel._rpc(stdin, stdout, "initialize", {"protocolVersion": "2025-11-25"})
+
+    assert response == {"id": 1, "jsonrpc": "2.0", "result": {}}
+    assert stdin.getvalue().endswith(b"\n")
+    assert b"Content-Length" not in stdin.getvalue()
 
 
 def test_release_workflow_enforces_production_gate_before_build() -> None:

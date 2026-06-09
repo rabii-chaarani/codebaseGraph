@@ -1,0 +1,4089 @@
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "type": "c4",
+      "position": {
+        "x": 6.613092715395708e-14,
+        "y": -648.0
+      },
+      "data": {
+        "name": "Developer or Coding Agent",
+        "description": "Runs local commands and consumes graph-backed context while working in a repository.",
+        "kind": "person"
+      }
+    },
+    {
+      "id": "node-2",
+      "type": "c4",
+      "position": {
+        "x": 3.306546357697854e-14,
+        "y": -324.0
+      },
+      "data": {
+        "name": "codebaseGraph",
+        "description": "Builds and exposes repo-local code knowledge graphs for coding-agent orientation and safer edits.",
+        "kind": "system",
+        "technology": "Python package",
+        "sources": [
+          {
+            "pattern": "README.md",
+            "comment": "Product purpose, setup flow, CLI and MCP usage."
+          },
+          {
+            "pattern": "pyproject.toml",
+            "comment": "Package metadata, dependencies, and console script entrypoints."
+          },
+          {
+            "pattern": "src/codebase_graph/**/*.py",
+            "comment": "Owned Python implementation."
+          }
+        ],
+        "status": "verified",
+        "notes": [
+          "Installed as the cbasegraph Python package with codebase-graph and codebase-graph-mcp console scripts.",
+          "Graph artifacts are repo-local under .codebaseGraph and are refreshed by setup/materialization commands."
+        ]
+      }
+    },
+    {
+      "id": "node-3",
+      "type": "c4",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "Local MCP Clients",
+        "description": "Agent clients such as Codex, Claude, LM Studio, Hermes, OpenClaw, or generic MCP hosts.",
+        "kind": "system",
+        "technology": "MCP clients",
+        "external": true,
+        "notes": [
+          "The installer can patch supported native or file-based client configurations."
+        ]
+      }
+    },
+    {
+      "id": "node-4",
+      "type": "c4",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "Target Repository Files",
+        "description": "Source, documentation, and instruction files from the repository being indexed.",
+        "kind": "system",
+        "technology": "Git workspace",
+        "external": true,
+        "notes": [
+          "For this modeling task, the target repository is the codebaseGraph workspace itself."
+        ]
+      }
+    },
+    {
+      "id": "node-5",
+      "type": "c4",
+      "position": {
+        "x": -20.917688165856795,
+        "y": -596.5977469634714
+      },
+      "data": {
+        "name": "Command Line Interface",
+        "description": "Console application for setup, graph retrieval, graph queries, architecture queries, and MCP install commands.",
+        "kind": "container",
+        "technology": "Python argparse",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/cli/**/*.py",
+            "comment": "CLI parser, command routing, output formatting, and command entrypoint."
+          },
+          {
+            "pattern": "src/codebase_graph/mcp/graph_commands.py",
+            "comment": "Shared graph command specifications used by CLI and MCP tools."
+          }
+        ],
+        "status": "verified",
+        "notes": [
+          "Exposed by the codebase-graph console script."
+        ]
+      },
+      "parentId": "node-2"
+    },
+    {
+      "id": "node-6",
+      "type": "c4",
+      "position": {
+        "x": -132.47952812685787,
+        "y": -55.5531415687158
+      },
+      "data": {
+        "name": "MCP Server",
+        "description": "Local stdio or HTTP server exposing graph search, context, schema, helper, architecture, and query tools.",
+        "kind": "container",
+        "technology": "Python MCP",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/mcp/**/*.py",
+            "comment": "MCP protocol, tools, runtime configuration, server entrypoint, and transports."
+          }
+        ],
+        "status": "verified",
+        "notes": [
+          "Exposed by codebase-graph-mcp and codebase-graph mcp serve/http commands.",
+          "HTTP transport is local-first and remote binding requires explicit bearer-token configuration."
+        ]
+      },
+      "parentId": "node-2"
+    },
+    {
+      "id": "node-7",
+      "type": "c4",
+      "position": {
+        "x": -20.917688165856795,
+        "y": 717.3663076899657
+      },
+      "data": {
+        "name": "Graph Materialization Job",
+        "description": "Batch indexing workflow that parses repository files and materializes semantic nodes, edges, docs, and search rows.",
+        "kind": "container",
+        "technology": "Python + tree-sitter",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/ingest/**/*.py",
+            "comment": "Materialization orchestration, document parsing, parser registry, and file ingestion."
+          },
+          {
+            "pattern": "src/codebase_graph/extract/**/*.py",
+            "comment": "Graph builder and capture-table translation into graph records."
+          },
+          {
+            "pattern": "src/codebase_graph/ontology/**/*.py",
+            "comment": "Graph ontology definitions used during extraction and storage."
+          }
+        ],
+        "status": "verified",
+        "notes": [
+          "Launched by setup and graph refresh workflows rather than as a long-running service."
+        ]
+      },
+      "parentId": "node-2"
+    },
+    {
+      "id": "node-8",
+      "type": "c4",
+      "position": {
+        "x": -969.1895639904242,
+        "y": 388.8752940266065
+      },
+      "data": {
+        "name": "Project Graph Store",
+        "description": "Repo-local graph database and metadata files that persist indexed code, docs, spans, relationships, and setup state.",
+        "kind": "container",
+        "technology": "LadyBugDB + JSON",
+        "shape": "cylinder",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/db/**/*.py",
+            "comment": "Graph database schema, storage, query adapter, and LadyBugDB integration."
+          },
+          {
+            "pattern": "src/codebase_graph/paths.py",
+            "comment": "Repository-local path conventions for graph artifacts."
+          }
+        ],
+        "status": "verified",
+        "notes": [
+          "Runtime artifacts live under .codebaseGraph, including config.json, manifest.json, and <repositoryName>_graph.ldb."
+        ]
+      },
+      "parentId": "node-2"
+    },
+    {
+      "id": "node-9",
+      "type": "c4",
+      "position": {
+        "x": 927.3541876587104,
+        "y": -268.10673330011224
+      },
+      "data": {
+        "name": "Setup Installer",
+        "description": "Workflow that validates runtime prerequisites, builds graph artifacts, updates guidance, and installs MCP client configs.",
+        "kind": "container",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/setup/**/*.py",
+            "comment": "Setup orchestration, installer adapters, server descriptors, instructions, and state files."
+          }
+        ],
+        "status": "verified",
+        "notes": [
+          "Runs through codebase-graph setup and codebase-graph mcp install command paths."
+        ]
+      },
+      "parentId": "node-2"
+    },
+    {
+      "id": "node-10",
+      "type": "c4",
+      "position": {
+        "x": -969.1895639904244,
+        "y": -268.1067333001123
+      },
+      "data": {
+        "name": "Retrieval and Reasoning API",
+        "description": "In-process query layer that formats graph search, compact context, schema helpers, and architecture query payloads.",
+        "kind": "container",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/retrieval/**/*.py",
+            "comment": "Search service, detail levels, compact payloads, and block-format rendering."
+          },
+          {
+            "pattern": "src/codebase_graph/reasoning/**/*.py",
+            "comment": "Architecture query catalog and compact context assembly."
+          },
+          {
+            "pattern": "src/codebase_graph/core/**/*.py",
+            "comment": "Core graph model types shared across ingestion and storage."
+          }
+        ],
+        "status": "verified",
+        "notes": [
+          "A packaged in-process library boundary used by both console and MCP surfaces."
+        ]
+      },
+      "parentId": "node-2"
+    },
+    {
+      "id": "node-100",
+      "type": "c4",
+      "position": {
+        "x": 2.7554552980815446e-14,
+        "y": -360.0
+      },
+      "data": {
+        "name": "Command Dispatcher",
+        "description": "Routes parsed console commands to materialization, setup, MCP serving, and graph retrieval handlers.",
+        "kind": "component",
+        "technology": "argparse",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/cli/__init__.py",
+            "comment": "Main CLI entrypoint and command branch routing."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-5"
+    },
+    {
+      "id": "node-101",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "main",
+        "description": "Parses argv and dispatches the selected codebase-graph command.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-100"
+    },
+    {
+      "id": "node-102",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build_parser",
+        "description": "Builds argparse subcommands and shared command flags.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-100"
+    },
+    {
+      "id": "node-103",
+      "type": "process",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "execute_cli_command",
+        "description": "Coordinates argument parsing, command routing, result formatting, and exit status selection.",
+        "kind": "process",
+        "status": "verified"
+      },
+      "parentId": "node-100"
+    },
+    {
+      "id": "node-104",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "CliArguments",
+        "description": "Parsed command options consumed by CLI command branches.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "command",
+            "description": "Top-level subcommand selected by the caller."
+          },
+          {
+            "label": "repo_root",
+            "description": "Repository root used by setup, graph commands, or MCP serving."
+          },
+          {
+            "label": "json",
+            "description": "Whether output should be emitted as JSON."
+          },
+          {
+            "label": "format",
+            "description": "Output format used by graph retrieval commands."
+          }
+        ]
+      },
+      "parentId": "node-100"
+    },
+    {
+      "id": "node-105",
+      "type": "c4",
+      "position": {
+        "x": 600.0,
+        "y": -9.992007221626407e-15
+      },
+      "data": {
+        "name": "Graph Command Bridge",
+        "description": "Adapts shared graph command specs into CLI arguments and MCP tool calls.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/cli/__init__.py",
+            "comment": "Graph command dispatch and runtime argument conversion."
+          },
+          {
+            "pattern": "src/codebase_graph/mcp/graph_commands.py",
+            "comment": "Shared graph command specifications and payload builders."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-5"
+    },
+    {
+      "id": "node-106",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "run_graph_command",
+        "description": "Builds tool arguments from CLI args and invokes the shared MCP tool handler.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-105"
+    },
+    {
+      "id": "node-107",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "runtime",
+        "description": "Creates runtime configuration for graph-backed CLI commands.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-105"
+    },
+    {
+      "id": "node-108",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "GraphCommandInvocation",
+        "description": "Command request forwarded from CLI parsing into graph tool execution.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "tool_name",
+            "description": "Graph MCP tool selected by the command spec."
+          },
+          {
+            "label": "arguments",
+            "description": "Structured arguments derived from parsed CLI flags."
+          },
+          {
+            "label": "runtime",
+            "description": "Graph runtime configuration for commands that need the local store."
+          }
+        ]
+      },
+      "parentId": "node-105"
+    },
+    {
+      "id": "node-109",
+      "type": "c4",
+      "position": {
+        "x": -600.0,
+        "y": 3.4095277547678314e-14
+      },
+      "data": {
+        "name": "Legacy Search Runner",
+        "description": "Implements legacy search and context commands with optional graph refresh.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/cli/__init__.py",
+            "comment": "Legacy search/context command handling."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-5"
+    },
+    {
+      "id": "node-110",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "run_legacy_search_command",
+        "description": "Runs legacy search/context commands against a refreshed or read-only graph store.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-109"
+    },
+    {
+      "id": "node-111",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "search_request_from_args",
+        "description": "Builds and validates a SearchRequest from parsed search flags.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-109"
+    },
+    {
+      "id": "node-112",
+      "type": "process",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "legacy_search_workflow",
+        "description": "Materializes changed files when allowed, queries search service, and emits compact results.",
+        "kind": "process",
+        "status": "verified"
+      },
+      "parentId": "node-109"
+    },
+    {
+      "id": "node-113",
+      "type": "c4",
+      "position": {
+        "x": 386.93955887479666,
+        "y": -586.0
+      },
+      "data": {
+        "name": "Output Renderer",
+        "description": "Serializes CLI results as compact graph blocks or JSON payloads.",
+        "kind": "component",
+        "technology": "Python JSON",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/cli/__init__.py",
+            "comment": "CLI JSON and block output helpers."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-5"
+    },
+    {
+      "id": "node-114",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "print_payload",
+        "description": "Chooses block or JSON output for graph command payloads.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-113"
+    },
+    {
+      "id": "node-115",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "json_dumps",
+        "description": "Serializes command payloads with stable JSON formatting.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-113"
+    },
+    {
+      "id": "node-120",
+      "type": "c4",
+      "position": {
+        "x": -1139.518463483906,
+        "y": 13.67983631435512
+      },
+      "data": {
+        "name": "Server Entrypoint",
+        "description": "Starts the MCP server process and selects the stdio transport for console execution.",
+        "kind": "component",
+        "technology": "argparse",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/mcp/server.py",
+            "comment": "MCP console entrypoint and public exports."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-6"
+    },
+    {
+      "id": "node-121",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "main",
+        "description": "Parses MCP server paths and starts stdio serving.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-120"
+    },
+    {
+      "id": "node-122",
+      "type": "process",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "start_mcp_server",
+        "description": "Reads server options, builds runtime configuration, and hands control to a transport.",
+        "kind": "process",
+        "status": "verified"
+      },
+      "parentId": "node-120"
+    },
+    {
+      "id": "node-123",
+      "type": "c4",
+      "position": {
+        "x": 2.7554552980815446e-14,
+        "y": -360.0
+      },
+      "data": {
+        "name": "Protocol Dispatcher",
+        "description": "Implements MCP JSON-RPC session state, initialization, tool listing, and tool calls.",
+        "kind": "component",
+        "technology": "JSON-RPC",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/mcp/protocol.py",
+            "comment": "Protocol session state and JSON-RPC dispatch."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-6"
+    },
+    {
+      "id": "node-124",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "handle_json_rpc",
+        "description": "Routes initialize, ping, tools/list, and tools/call JSON-RPC messages.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-123"
+    },
+    {
+      "id": "node-125",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "negotiate_protocol_version",
+        "description": "Selects a supported MCP protocol version for initialization.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-123"
+    },
+    {
+      "id": "node-126",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "ProtocolSession",
+        "description": "Tracks negotiated MCP protocol version and initialization state.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "protocol_version",
+            "description": "Negotiated MCP protocol version for the session."
+          },
+          {
+            "label": "initialized",
+            "description": "Whether the client has completed initialization."
+          }
+        ]
+      },
+      "parentId": "node-123"
+    },
+    {
+      "id": "node-127",
+      "type": "process",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "handle_mcp_request",
+        "description": "Validates session state, dispatches supported methods, and returns JSON-RPC results or errors.",
+        "kind": "process",
+        "status": "verified"
+      },
+      "parentId": "node-123"
+    },
+    {
+      "id": "node-128",
+      "type": "c4",
+      "position": {
+        "x": 6.0620016557794e-14,
+        "y": -684.0
+      },
+      "data": {
+        "name": "Tool Controller",
+        "description": "Executes codebaseGraph MCP tools and normalizes tool results, errors, and read-only query enforcement.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/mcp/tools.py",
+            "comment": "MCP tool routing, payload building, errors, and read-only graph_query guard."
+          },
+          {
+            "pattern": "src/codebase_graph/mcp/graph_commands.py",
+            "comment": "Tool and command specification metadata."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-6"
+    },
+    {
+      "id": "node-129",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "handle_tool_call",
+        "description": "Routes graph_health, graph_search, graph_context, graph_query, schema, helper, and architecture tools.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-128"
+    },
+    {
+      "id": "node-130",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "validate_read_only_statement",
+        "description": "Blocks write-like graph_query statements before store execution.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-128"
+    },
+    {
+      "id": "node-131",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "ToolResult",
+        "description": "MCP tool response envelope returned to clients.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "content",
+            "description": "Text content returned through MCP."
+          },
+          {
+            "label": "structuredContent",
+            "description": "Structured JSON payload for tool consumers."
+          },
+          {
+            "label": "isError",
+            "description": "Whether the response represents a handled tool error."
+          }
+        ]
+      },
+      "parentId": "node-128"
+    },
+    {
+      "id": "node-132",
+      "type": "c4",
+      "position": {
+        "x": 317.40403623793554,
+        "y": -946.1215061774828
+      },
+      "data": {
+        "name": "Runtime Configuration",
+        "description": "Resolves repo root, setup config, graph database path, manifest path, and package version.",
+        "kind": "component",
+        "technology": "Python pathlib",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/mcp/runtime.py",
+            "comment": "Runtime config resolution and store opening."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-6"
+    },
+    {
+      "id": "node-133",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "runtime_config",
+        "description": "Builds graph runtime paths from explicit args or setup config.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-132"
+    },
+    {
+      "id": "node-134",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "open_graph_store",
+        "description": "Opens the configured graph store in read-only mode.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-132"
+    },
+    {
+      "id": "node-135",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "GraphRuntimeConfig",
+        "description": "Runtime paths required by graph-backed MCP tools.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "repo_root",
+            "description": "Repository root for the configured graph."
+          },
+          {
+            "label": "db_path",
+            "description": "LadyBugDB graph database path."
+          },
+          {
+            "label": "manifest_path",
+            "description": "Manifest path for materialized files."
+          }
+        ]
+      },
+      "parentId": "node-132"
+    },
+    {
+      "id": "node-136",
+      "type": "c4",
+      "position": {
+        "x": 600.0,
+        "y": -9.992007221626407e-15
+      },
+      "data": {
+        "name": "HTTP Transport",
+        "description": "Hosts Streamable HTTP requests with local binding checks, bearer auth, sessions, and JSON responses.",
+        "kind": "component",
+        "technology": "http.server",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/mcp/transports/http.py",
+            "comment": "HTTP server builder, serving loop, request handler, auth, and session handling."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-6"
+    },
+    {
+      "id": "node-137",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build_http_server",
+        "description": "Creates a configured HTTP MCP server and enforces local/remote auth constraints.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-136"
+    },
+    {
+      "id": "node-138",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "serve_http",
+        "description": "Runs the HTTP MCP server until shutdown.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-136"
+    },
+    {
+      "id": "node-139",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "McpHttpServer",
+        "description": "Threading HTTP server carrying runtime, session map, endpoint, and auth token state.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "mcp_runtime",
+            "description": "Runtime configuration shared by sessions."
+          },
+          {
+            "label": "mcp_sessions",
+            "description": "Session-id keyed protocol dispatchers."
+          },
+          {
+            "label": "endpoint_path",
+            "description": "HTTP path accepted for MCP requests."
+          },
+          {
+            "label": "auth_token",
+            "description": "Optional bearer token for request authorization."
+          }
+        ]
+      },
+      "parentId": "node-136"
+    },
+    {
+      "id": "node-140",
+      "type": "c4",
+      "position": {
+        "x": -600.0,
+        "y": 3.4095277547678314e-14
+      },
+      "data": {
+        "name": "Stdio Transport",
+        "description": "Reads and writes MCP JSON-RPC messages over stdio with Content-Length framing.",
+        "kind": "component",
+        "technology": "stdio",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/mcp/transports/stdio.py",
+            "comment": "Stdio serving loop and frame parsing/writing."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-6"
+    },
+    {
+      "id": "node-141",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "serve_stdio",
+        "description": "Runs the stdio serving loop and delegates messages to the protocol dispatcher.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-140"
+    },
+    {
+      "id": "node-142",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "read_message",
+        "description": "Reads one JSON-RPC message from line JSON or Content-Length framed stdio input.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-140"
+    },
+    {
+      "id": "node-143",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "write_message",
+        "description": "Writes a JSON-RPC response with MCP Content-Length framing.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-140"
+    },
+    {
+      "id": "node-150",
+      "type": "c4",
+      "position": {
+        "x": 519.6152422706632,
+        "y": 179.99999999999991
+      },
+      "data": {
+        "name": "Materializer Orchestrator",
+        "description": "Scans files, computes manifest diffs, coordinates rebuilds, and persists materialization results.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/ingest/materializer.py",
+            "comment": "GraphMaterializer, manifests, snapshots, locks, and rebuild logic."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-7"
+    },
+    {
+      "id": "node-151",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "materialize",
+        "description": "Chooses full or changed materialization and writes rebuilt graph partitions.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-150"
+    },
+    {
+      "id": "node-152",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "materialize_full_atomic",
+        "description": "Builds replacement graph artifacts in temporary files before atomically swapping them into place.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-150"
+    },
+    {
+      "id": "node-153",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "scan_source_files",
+        "description": "Walks the repository, excludes ignored directories, and snapshots supported files.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-150"
+    },
+    {
+      "id": "node-154",
+      "type": "process",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "materialize_repository",
+        "description": "Scans sources, diffs the manifest, parses changed files, writes graph rows, and updates the manifest.",
+        "kind": "process",
+        "status": "verified"
+      },
+      "parentId": "node-150"
+    },
+    {
+      "id": "node-155",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "MaterializationManifest",
+        "description": "Persistent manifest of file hashes, parser versions, node ids, and edge ids.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "schema_version",
+            "description": "Manifest schema version."
+          },
+          {
+            "label": "ontology",
+            "description": "Ontology name used to build graph rows."
+          },
+          {
+            "label": "parser_version",
+            "description": "Parser version string for compatibility checks."
+          },
+          {
+            "label": "files",
+            "description": "File path to manifest entry mapping."
+          }
+        ]
+      },
+      "parentId": "node-150"
+    },
+    {
+      "id": "node-156",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "MaterializationResult",
+        "description": "Summary returned after a materialization run.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "mode",
+            "description": "Full, changed, or dry-run mode."
+          },
+          {
+            "label": "scanned",
+            "description": "Number of files scanned."
+          },
+          {
+            "label": "rebuilt",
+            "description": "Number of files rebuilt."
+          },
+          {
+            "label": "graph_summary",
+            "description": "Node and edge summary for the resulting graph."
+          }
+        ]
+      },
+      "parentId": "node-150"
+    },
+    {
+      "id": "node-157",
+      "type": "c4",
+      "position": {
+        "x": 519.6152422706632,
+        "y": -144.00000000000009
+      },
+      "data": {
+        "name": "Parser Registry",
+        "description": "Maps file suffixes to language parsers and reports combined parser versions.",
+        "kind": "component",
+        "technology": "Python Protocols",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/ingest/tree_sitter_parser.py",
+            "comment": "Parser registry, parser protocol, Python parser, and parser factories."
+          },
+          {
+            "pattern": "src/codebase_graph/ingest/document_parser.py",
+            "comment": "Markdown parser implementation."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-7"
+    },
+    {
+      "id": "node-158",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "default_parser_registry",
+        "description": "Registers Python and Markdown parsers for materialization.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-157"
+    },
+    {
+      "id": "node-159",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "parser_for_language",
+        "description": "Returns a parser implementation for a supported language.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-157"
+    },
+    {
+      "id": "node-160",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "ParserRegistration",
+        "description": "Language parser registration with suffixes, factory, and version.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "language",
+            "description": "Language key used by the materializer."
+          },
+          {
+            "label": "suffixes",
+            "description": "File suffixes mapped to the language."
+          },
+          {
+            "label": "parser_factory",
+            "description": "Factory that creates the parser."
+          },
+          {
+            "label": "parser_version",
+            "description": "Version string for manifest compatibility."
+          }
+        ]
+      },
+      "parentId": "node-157"
+    },
+    {
+      "id": "node-161",
+      "type": "c4",
+      "position": {
+        "x": 991.2573188690384,
+        "y": -301.7826054085497
+      },
+      "data": {
+        "name": "Python Source Parser",
+        "description": "Converts Python files into tree-sitter-shaped parse bundles with semantic child fields.",
+        "kind": "component",
+        "technology": "tree-sitter",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/ingest/tree_sitter_parser.py",
+            "comment": "TreeSitterPythonParser and Python node conversion helpers."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-7"
+    },
+    {
+      "id": "node-162",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "parse_file",
+        "description": "Reads a Python file and returns a parse bundle for graph building.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-161"
+    },
+    {
+      "id": "node-163",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "convert_node",
+        "description": "Normalizes tree-sitter nodes into dictionaries consumed by the graph builder.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-161"
+    },
+    {
+      "id": "node-164",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "ParseBundle",
+        "description": "Parser output package consumed by the graph builder.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "language",
+            "description": "Language parsed from the source file."
+          },
+          {
+            "label": "path",
+            "description": "Repository-relative source path."
+          },
+          {
+            "label": "source_text",
+            "description": "Raw source text for the parsed file."
+          },
+          {
+            "label": "tree",
+            "description": "Normalized parse tree for syntax-derived graph building."
+          }
+        ]
+      },
+      "parentId": "node-161"
+    },
+    {
+      "id": "node-165",
+      "type": "c4",
+      "position": {
+        "x": 415.2603674821384,
+        "y": -461.89246867271606
+      },
+      "data": {
+        "name": "Markdown Document Parser",
+        "description": "Splits Markdown and MDX files into documentation source and chunk captures.",
+        "kind": "component",
+        "technology": "regex parser",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/ingest/document_parser.py",
+            "comment": "Markdown heading section extraction and documentation capture generation."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-7"
+    },
+    {
+      "id": "node-166",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "document_captures",
+        "description": "Builds documentation source and chunk captures from Markdown text.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-165"
+    },
+    {
+      "id": "node-167",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "MarkdownSection",
+        "description": "Extracted Markdown section with heading and line span.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "heading",
+            "description": "Section heading text."
+          },
+          {
+            "label": "level",
+            "description": "Markdown heading level."
+          },
+          {
+            "label": "line_start",
+            "description": "First source line in the section."
+          },
+          {
+            "label": "line_end",
+            "description": "Last source line in the section."
+          }
+        ]
+      },
+      "parentId": "node-165"
+    },
+    {
+      "id": "node-168",
+      "type": "c4",
+      "position": {
+        "x": -519.6152422706632,
+        "y": 180.0000000000001
+      },
+      "data": {
+        "name": "Graph Builder",
+        "description": "Transforms parser captures into typed ontology graph nodes, edges, scopes, and references.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/extract/graph_builder.py",
+            "comment": "Capture registry, parser node normalization, and graph-building logic."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-7"
+    },
+    {
+      "id": "node-169",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build_file_graph",
+        "description": "Builds a CodeGraph from either captures or a normalized parse tree.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-168"
+    },
+    {
+      "id": "node-170",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build_from_captures",
+        "description": "Converts explicit captures into a graph-building root and builds the graph.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-168"
+    },
+    {
+      "id": "node-171",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "GraphBuildResult",
+        "description": "Graph-building result with nodes, edges, diagnostics, unresolved symbols, and summary.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "nodes",
+            "description": "Serialized graph node rows."
+          },
+          {
+            "label": "edges",
+            "description": "Serialized graph edge rows."
+          },
+          {
+            "label": "diagnostics",
+            "description": "Builder diagnostics."
+          },
+          {
+            "label": "graph",
+            "description": "In-memory CodeGraph output."
+          }
+        ]
+      },
+      "parentId": "node-168"
+    },
+    {
+      "id": "node-180",
+      "type": "c4",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "LadyBug Store Adapter",
+        "description": "Owns LadyBugDB connections, schema setup, graph clearing, partition replacement, and partition deletion.",
+        "kind": "component",
+        "technology": "real_ladybug",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/db/store.py",
+            "comment": "LadyBugCodeGraphStore and database lifecycle methods."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-8"
+    },
+    {
+      "id": "node-181",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "create_ladybug_database",
+        "description": "Creates a store and ensures or loads the graph schema.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-180"
+    },
+    {
+      "id": "node-182",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "delete_partition",
+        "description": "Deletes graph rows for a manifest partition while preserving retained shared nodes and edges.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-180"
+    },
+    {
+      "id": "node-183",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "BulkLoadStats",
+        "description": "Counts node, edge, connector, and copy operations performed by a bulk insert.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "node_rows",
+            "description": "Number of node rows staged."
+          },
+          {
+            "label": "edge_rows",
+            "description": "Number of edge rows staged."
+          },
+          {
+            "label": "connector_rows",
+            "description": "Number of relationship connector rows staged."
+          },
+          {
+            "label": "copy_calls",
+            "description": "Number of LadyBugDB COPY statements executed."
+          }
+        ]
+      },
+      "parentId": "node-180"
+    },
+    {
+      "id": "node-184",
+      "type": "c4",
+      "position": {
+        "x": 210.00000000000003,
+        "y": 304.19090885900994
+      },
+      "data": {
+        "name": "Bulk Loader",
+        "description": "Stages graph nodes, edge records, and connector tables for efficient LadyBugDB COPY loading.",
+        "kind": "component",
+        "technology": "JSON + CSV staging",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/db/store.py",
+            "comment": "Bulk staging tables, JSON/CSV staging, merge rules, and copy statement generation."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-8"
+    },
+    {
+      "id": "node-185",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "insert_graphs_bulk",
+        "description": "Writes one or more CodeGraph instances through staging tables and COPY statements.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-184"
+    },
+    {
+      "id": "node-186",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build_bulk_staging_tables",
+        "description": "Converts graph nodes and edges into typed node, edge, and connector staging rows.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-184"
+    },
+    {
+      "id": "node-187",
+      "type": "process",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "bulk_load_graphs",
+        "description": "Stages graph rows to temporary files, executes COPY statements, and returns load statistics.",
+        "kind": "process",
+        "status": "verified"
+      },
+      "parentId": "node-184"
+    },
+    {
+      "id": "node-188",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "BulkStagingTables",
+        "description": "In-memory representation of staged node rows, edge rows, and relationship connector rows.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "nodes",
+            "description": "Rows keyed by node type and id."
+          },
+          {
+            "label": "edges",
+            "description": "Rows keyed by relation type and id."
+          },
+          {
+            "label": "connectors",
+            "description": "Rows for FROM_* and TO_* connector tables."
+          }
+        ]
+      },
+      "parentId": "node-184"
+    },
+    {
+      "id": "node-189",
+      "type": "c4",
+      "position": {
+        "x": -209.99999999999991,
+        "y": 304.19090885900994
+      },
+      "data": {
+        "name": "Schema Builder",
+        "description": "Generates LadyBugDB node, relation, connector, JSON, and FTS schema statements from ontology metadata.",
+        "kind": "component",
+        "technology": "Cypher DDL",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/db/schema.py",
+            "comment": "LadyBugDB schema SQL generation."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-8"
+    },
+    {
+      "id": "node-190",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build_ladybug_schema_statements",
+        "description": "Builds ordered setup statements for extensions, node tables, relation tables, and FTS indexes.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-189"
+    },
+    {
+      "id": "node-191",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "quote_identifier",
+        "description": "Escapes graph identifiers for LadyBugDB query strings.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-189"
+    },
+    {
+      "id": "node-192",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "SchemaStatement",
+        "description": "Generated LadyBugDB DDL statement emitted from ontology specifications.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "table_name",
+            "description": "Target node or relation table name."
+          },
+          {
+            "label": "columns",
+            "description": "Ontology fields or relation endpoints used by the statement."
+          },
+          {
+            "label": "include_fts",
+            "description": "Whether FTS extension and index statements are included."
+          }
+        ]
+      },
+      "parentId": "node-189"
+    },
+    {
+      "id": "node-193",
+      "type": "c4",
+      "position": {
+        "x": -209.99999999999991,
+        "y": -304.19090885900994
+      },
+      "data": {
+        "name": "Graph Query Adapter",
+        "description": "Wraps store execution for FTS searches and relation-neighbor lookups used by retrieval.",
+        "kind": "component",
+        "technology": "Cypher queries",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/db/query.py",
+            "comment": "Search index and neighbor query adapter."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-8"
+    },
+    {
+      "id": "node-194",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "search_index",
+        "description": "Queries a configured FTS index and maps rows into search index records.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-193"
+    },
+    {
+      "id": "node-195",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "neighbors",
+        "description": "Traverses configured ontology relations in incoming or outgoing directions.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-193"
+    },
+    {
+      "id": "node-196",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "SearchIndexRow",
+        "description": "Normalized full-text search result row from the graph store.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "id",
+            "description": "Graph node id."
+          },
+          {
+            "label": "node_type",
+            "description": "Ontology node type."
+          },
+          {
+            "label": "label",
+            "description": "Display label."
+          },
+          {
+            "label": "score",
+            "description": "FTS score returned by the index."
+          }
+        ]
+      },
+      "parentId": "node-193"
+    },
+    {
+      "id": "node-197",
+      "type": "c4",
+      "position": {
+        "x": 416.6490534771486,
+        "y": 603.5278773926668
+      },
+      "data": {
+        "name": "Core Graph Model",
+        "description": "In-memory node and edge model used before graph rows are persisted.",
+        "kind": "component",
+        "technology": "dataclasses",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/core/graph.py",
+            "comment": "GraphNode, GraphEdge, and CodeGraph dataclasses."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-8"
+    },
+    {
+      "id": "node-198",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "add_node",
+        "description": "Adds or merges an in-memory graph node by id.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-197"
+    },
+    {
+      "id": "node-199",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "validate_schema",
+        "description": "Validates in-memory graph edges against ontology source and target constraints.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-197"
+    },
+    {
+      "id": "node-200",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "CodeGraph",
+        "description": "In-memory graph containing typed graph nodes, typed graph edges, ontology name, and metadata.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "nodes",
+            "description": "Graph nodes keyed by id."
+          },
+          {
+            "label": "edges",
+            "description": "Graph edges keyed by id."
+          },
+          {
+            "label": "ontology",
+            "description": "Ontology name used by the graph."
+          },
+          {
+            "label": "metadata",
+            "description": "Source-level metadata for the graph."
+          }
+        ]
+      },
+      "parentId": "node-197"
+    },
+    {
+      "id": "node-201",
+      "type": "c4",
+      "position": {
+        "x": 210.00000000000003,
+        "y": -304.19090885900994
+      },
+      "data": {
+        "name": "State Path Resolver",
+        "description": "Derives repo-local state, config, database, and manifest paths.",
+        "kind": "component",
+        "technology": "pathlib",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/paths.py",
+            "comment": "Repo-local graph state path derivation."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-8"
+    },
+    {
+      "id": "node-202",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "derive_graph_state_paths",
+        "description": "Builds all repo-local .codebaseGraph artifact paths from a repository root.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-201"
+    },
+    {
+      "id": "node-203",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "GraphStatePaths",
+        "description": "Path bundle for repo root, state directory, database, manifest, and setup config.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "repo_root",
+            "description": "Resolved repository root."
+          },
+          {
+            "label": "state_dir",
+            "description": "Repo-local .codebaseGraph directory."
+          },
+          {
+            "label": "db_path",
+            "description": "LadyBugDB path."
+          },
+          {
+            "label": "manifest_path",
+            "description": "Materialization manifest path."
+          }
+        ]
+      },
+      "parentId": "node-201"
+    },
+    {
+      "id": "node-210",
+      "type": "c4",
+      "position": {
+        "x": 3.673940397442059e-14,
+        "y": -360.0
+      },
+      "data": {
+        "name": "Setup Orchestrator",
+        "description": "Coordinates runtime validation, setup config writing, instruction updates, materialization, and MCP client configuration.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/setup/orchestrator.py",
+            "comment": "Top-level setup workflow and rollback handling."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-9"
+    },
+    {
+      "id": "node-211",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "run_setup",
+        "description": "Runs the repository bootstrap workflow and returns setup output.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-210"
+    },
+    {
+      "id": "node-212",
+      "type": "process",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "bootstrap_repository",
+        "description": "Derives paths, validates runtime, writes setup files, materializes the graph, and configures MCP clients.",
+        "kind": "process",
+        "status": "verified"
+      },
+      "parentId": "node-210"
+    },
+    {
+      "id": "node-213",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "SetupOptions",
+        "description": "Options accepted by the setup workflow.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "repo_root",
+            "description": "Repository root to configure."
+          },
+          {
+            "label": "mcp_client",
+            "description": "MCP client to configure."
+          },
+          {
+            "label": "dry_run",
+            "description": "Whether setup should avoid writes."
+          },
+          {
+            "label": "mode",
+            "description": "Materialization mode."
+          }
+        ]
+      },
+      "parentId": "node-210"
+    },
+    {
+      "id": "node-214",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "SetupResult",
+        "description": "Structured result returned by setup.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "paths",
+            "description": "Derived graph state paths."
+          },
+          {
+            "label": "materialization",
+            "description": "Materialization result payload."
+          },
+          {
+            "label": "mcp_config",
+            "description": "MCP config result payload."
+          },
+          {
+            "label": "instructions",
+            "description": "Instruction update result."
+          }
+        ]
+      },
+      "parentId": "node-210"
+    },
+    {
+      "id": "node-215",
+      "type": "c4",
+      "position": {
+        "x": 498.8949475560949,
+        "y": -483.9894320862891
+      },
+      "data": {
+        "name": "Setup State Manager",
+        "description": "Derives setup paths, builds setup config JSON, validates existing config, and writes config atomically.",
+        "kind": "component",
+        "technology": "JSON + pathlib",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/setup/state.py",
+            "comment": "Setup path validation and setup config read/write logic."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-9"
+    },
+    {
+      "id": "node-216",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "derive_setup_paths",
+        "description": "Validates repository root and returns repo-local graph state paths.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-215"
+    },
+    {
+      "id": "node-217",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build_setup_config",
+        "description": "Builds the .codebaseGraph/config.json payload.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-215"
+    },
+    {
+      "id": "node-218",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "SetupConfig",
+        "description": "Repo-local setup config consumed by CLI and MCP server descriptors.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "repo_root",
+            "description": "Configured repository root."
+          },
+          {
+            "label": "database_path",
+            "description": "Graph database path."
+          },
+          {
+            "label": "manifest_path",
+            "description": "Manifest path."
+          },
+          {
+            "label": "mcp",
+            "description": "MCP server command configuration."
+          }
+        ]
+      },
+      "parentId": "node-215"
+    },
+    {
+      "id": "node-219",
+      "type": "c4",
+      "position": {
+        "x": 519.6152422706632,
+        "y": -900.0
+      },
+      "data": {
+        "name": "Server Descriptor Builder",
+        "description": "Builds portable MCP stdio descriptors from setup config paths and executable discovery.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/setup/descriptor.py",
+            "comment": "MCP server descriptor model and command resolution."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-9"
+    },
+    {
+      "id": "node-220",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build_server_descriptor",
+        "description": "Builds a server descriptor pointing at codebase-graph mcp serve.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-219"
+    },
+    {
+      "id": "node-221",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "resolve_server_command",
+        "description": "Finds the codebase-graph executable near the current Python environment or PATH.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-219"
+    },
+    {
+      "id": "node-222",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "McpServerDescriptor",
+        "description": "Portable MCP server descriptor used by native CLIs and file adapters.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "name",
+            "description": "Configured MCP server name."
+          },
+          {
+            "label": "transport",
+            "description": "Transport type, currently stdio."
+          },
+          {
+            "label": "command",
+            "description": "Executable command."
+          },
+          {
+            "label": "args",
+            "description": "Command arguments for serving the configured graph."
+          }
+        ]
+      },
+      "parentId": "node-219"
+    },
+    {
+      "id": "node-223",
+      "type": "c4",
+      "position": {
+        "x": -519.6152422706632,
+        "y": -900.0
+      },
+      "data": {
+        "name": "Client Installer",
+        "description": "Installs MCP server descriptors through native client CLIs or file adapter fallbacks and optional verification.",
+        "kind": "component",
+        "technology": "subprocess",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/setup/installer.py",
+            "comment": "MCP install strategies, native CLI execution, file fallback, and verification."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-9"
+    },
+    {
+      "id": "node-224",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "install_mcp_server",
+        "description": "Installs one MCP server entry for a selected client and scope.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-223"
+    },
+    {
+      "id": "node-225",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "verify_mcp_install",
+        "description": "Runs stdio and client visibility smoke checks for an installed MCP server.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-223"
+    },
+    {
+      "id": "node-226",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "McpInstallOptions",
+        "description": "Options for MCP client installation.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "client",
+            "description": "Target MCP client id."
+          },
+          {
+            "label": "scope",
+            "description": "Install scope."
+          },
+          {
+            "label": "setup_config_path",
+            "description": "Path to codebaseGraph setup config."
+          },
+          {
+            "label": "verify",
+            "description": "Whether verification should run after install."
+          }
+        ]
+      },
+      "parentId": "node-223"
+    },
+    {
+      "id": "node-227",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "McpInstallResult",
+        "description": "Structured result for a client installation attempt.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "action",
+            "description": "Install action outcome."
+          },
+          {
+            "label": "client",
+            "description": "Target client id."
+          },
+          {
+            "label": "method",
+            "description": "native_cli or file_adapter."
+          },
+          {
+            "label": "verification",
+            "description": "Optional smoke-check result."
+          }
+        ]
+      },
+      "parentId": "node-223"
+    },
+    {
+      "id": "node-228",
+      "type": "c4",
+      "position": {
+        "x": -439.3980780450309,
+        "y": -1220.4051721849935
+      },
+      "data": {
+        "name": "Client Config Adapters",
+        "description": "Renders Codex TOML, Hermes YAML, JSON MCP configs, and client-specific config paths.",
+        "kind": "component",
+        "technology": "TOML/YAML/JSON",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/setup/clients/**/*.py",
+            "comment": "Client adapter registry and config renderers."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-9"
+    },
+    {
+      "id": "node-229",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "get_client_adapter",
+        "description": "Returns a renderer for a supported MCP client config format.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-228"
+    },
+    {
+      "id": "node-230",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "RenderedClientConfig",
+        "description": "Rendered client config text and patch metadata.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "text",
+            "description": "Full config file contents to write."
+          },
+          {
+            "label": "action",
+            "description": "created, updated, or unchanged."
+          },
+          {
+            "label": "entry",
+            "description": "MCP server entry inserted into the config."
+          },
+          {
+            "label": "patch",
+            "description": "Rendered patch or payload."
+          }
+        ]
+      },
+      "parentId": "node-228"
+    },
+    {
+      "id": "node-231",
+      "type": "c4",
+      "position": {
+        "x": 600.0,
+        "y": -1.1021821192326179e-14
+      },
+      "data": {
+        "name": "Instruction Updater",
+        "description": "Maintains the marked codebaseGraph guidance block in AGENTS.md or CLAUDE.md.",
+        "kind": "component",
+        "technology": "Markdown",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/setup/instructions.py",
+            "comment": "Instruction block selection, rendering, upsert, and removal."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-9"
+    },
+    {
+      "id": "node-232",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "upsert_instruction_block",
+        "description": "Creates or updates the repo instruction block for graph-first agent workflows.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-231"
+    },
+    {
+      "id": "node-233",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "InstructionResult",
+        "description": "Result of updating, creating, skipping, or removing the instruction block.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "action",
+            "description": "Action performed on the instruction target."
+          },
+          {
+            "label": "path",
+            "description": "Instruction file path, when applicable."
+          }
+        ]
+      },
+      "parentId": "node-231"
+    },
+    {
+      "id": "node-240",
+      "type": "c4",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "Search Service",
+        "description": "Queries FTS indexes, deduplicates hits, ranks results, and attaches compact context.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/retrieval/search.py",
+            "comment": "Search request, hit ranking, FTS fan-out, and result payload models."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-10"
+    },
+    {
+      "id": "node-241",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "search",
+        "description": "Executes ranked graph search and attaches compact context for each returned hit.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-240"
+    },
+    {
+      "id": "node-242",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "assign_rank_scores",
+        "description": "Combines FTS, lexical, type, and generic penalties into ranking scores.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-240"
+    },
+    {
+      "id": "node-243",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "SearchRequest",
+        "description": "Validated graph search request accepted by CLI and MCP tools.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "query",
+            "description": "Search text."
+          },
+          {
+            "label": "limit",
+            "description": "Maximum number of search hits."
+          },
+          {
+            "label": "profile",
+            "description": "Context profile to use."
+          },
+          {
+            "label": "detail",
+            "description": "standard or slim output detail."
+          }
+        ]
+      },
+      "parentId": "node-240"
+    },
+    {
+      "id": "node-244",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "SearchHit",
+        "description": "Ranked graph search result with source span and optional context.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "id",
+            "description": "Graph node id."
+          },
+          {
+            "label": "type",
+            "description": "Ontology node type."
+          },
+          {
+            "label": "label",
+            "description": "Display label."
+          },
+          {
+            "label": "rank_score",
+            "description": "Final ranking score."
+          }
+        ]
+      },
+      "parentId": "node-240"
+    },
+    {
+      "id": "node-245",
+      "type": "c4",
+      "position": {
+        "x": -234.29721912348137,
+        "y": 291.91391320038383
+      },
+      "data": {
+        "name": "Context Builder",
+        "description": "Traverses configured ontology relations to build bounded neighboring context for graph hits.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/reasoning/context_builder.py",
+            "comment": "Compact context traversal, budgeting, and payload nodes."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-10"
+    },
+    {
+      "id": "node-246",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "build",
+        "description": "Builds compact context from a starting node, profile, limit, budget, and depth.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-245"
+    },
+    {
+      "id": "node-247",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "fit_to_budget",
+        "description": "Truncates context summaries to fit the remaining context budget.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-245"
+    },
+    {
+      "id": "node-248",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "ContextNode",
+        "description": "One compact neighboring node returned as search context.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "relation",
+            "description": "Ontology relation connecting the neighbor."
+          },
+          {
+            "label": "direction",
+            "description": "incoming or outgoing traversal direction."
+          },
+          {
+            "label": "type",
+            "description": "Neighbor ontology node type."
+          },
+          {
+            "label": "label",
+            "description": "Neighbor display label."
+          }
+        ]
+      },
+      "parentId": "node-245"
+    },
+    {
+      "id": "node-249",
+      "type": "c4",
+      "position": {
+        "x": 234.29721912348143,
+        "y": 291.91391320038383
+      },
+      "data": {
+        "name": "Block Formatter",
+        "description": "Serializes and parses compact agent-facing graph search and context block formats.",
+        "kind": "component",
+        "technology": "text formatting",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/retrieval/block_format.py",
+            "comment": "Block serializers, parser, span formatting, and canonicalization helpers."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-10"
+    },
+    {
+      "id": "node-250",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "serialize_graph_block",
+        "description": "Chooses search or context block serialization based on payload shape.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-249"
+    },
+    {
+      "id": "node-251",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "parse_search_block",
+        "description": "Parses block-form search output back into structured result records.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-249"
+    },
+    {
+      "id": "node-252",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "SearchBlockRecord",
+        "description": "Parseable text representation of a search hit and context lines.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "type",
+            "description": "Graph node type."
+          },
+          {
+            "label": "label",
+            "description": "Graph node label."
+          },
+          {
+            "label": "path",
+            "description": "Source path."
+          },
+          {
+            "label": "span",
+            "description": "Source line span."
+          }
+        ]
+      },
+      "parentId": "node-249"
+    },
+    {
+      "id": "node-253",
+      "type": "c4",
+      "position": {
+        "x": 317.4040362379355,
+        "y": -586.1215061774831
+      },
+      "data": {
+        "name": "Architecture Query Catalog",
+        "description": "Publishes canned read-only graph queries for architecture discovery workflows.",
+        "kind": "component",
+        "technology": "query catalog",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/reasoning/architecture_queries.py",
+            "comment": "Architecture query groups and catalog payload builder."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-10"
+    },
+    {
+      "id": "node-254",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "architecture_query_catalog",
+        "description": "Returns architecture query groups and recommended execution order.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-253"
+    },
+    {
+      "id": "node-255",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "ArchitectureQuerySpec",
+        "description": "One read-only graph query specification with metadata and return fields.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "name",
+            "description": "Query identifier."
+          },
+          {
+            "label": "description",
+            "description": "Human-readable purpose."
+          },
+          {
+            "label": "statement",
+            "description": "Read-only graph query statement."
+          },
+          {
+            "label": "returns",
+            "description": "Expected result columns."
+          }
+        ]
+      },
+      "parentId": "node-253"
+    },
+    {
+      "id": "node-256",
+      "type": "c4",
+      "position": {
+        "x": -317.40403623793543,
+        "y": -586.1215061774831
+      },
+      "data": {
+        "name": "Ontology Metadata API",
+        "description": "Exposes ontology node types, relation types, search indexes, context profiles, schema, and query helpers.",
+        "kind": "component",
+        "technology": "Python constants",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/ontology/**/*.py",
+            "comment": "Ontology specs, relation specs, search indexes, context profiles, and schema payload."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-10"
+    },
+    {
+      "id": "node-257",
+      "type": "operation",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "schema_payload",
+        "description": "Returns ontology schema details for graph_schema callers.",
+        "kind": "operation",
+        "status": "verified"
+      },
+      "parentId": "node-256"
+    },
+    {
+      "id": "node-258",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "NodeTypeSpec",
+        "description": "Ontology node type definition consumed by schema and store generation.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "name",
+            "description": "Node table name."
+          },
+          {
+            "label": "description",
+            "description": "Node type purpose."
+          },
+          {
+            "label": "fields",
+            "description": "Typed fields stored for the node type."
+          }
+        ]
+      },
+      "parentId": "node-256"
+    },
+    {
+      "id": "node-259",
+      "type": "model",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "RelationTypeSpec",
+        "description": "Ontology relation type definition consumed by schema and graph validation.",
+        "kind": "model",
+        "status": "verified",
+        "properties": [
+          {
+            "label": "name",
+            "description": "Relation table name."
+          },
+          {
+            "label": "source_types",
+            "description": "Allowed source node types."
+          },
+          {
+            "label": "target_types",
+            "description": "Allowed target node types."
+          },
+          {
+            "label": "description",
+            "description": "Relation purpose."
+          }
+        ]
+      },
+      "parentId": "node-256"
+    },
+    {
+      "id": "node-260",
+      "type": "c4",
+      "position": {
+        "x": 3.306546357697854e-14,
+        "y": -324.0
+      },
+      "data": {
+        "name": "Graph Tool Facade",
+        "description": "Packages retrieval, schema, helper, architecture, and read-only query payloads for CLI and MCP callers.",
+        "kind": "component",
+        "technology": "Python",
+        "sources": [
+          {
+            "pattern": "src/codebase_graph/mcp/tools.py",
+            "comment": "MCP tool payload routing that fronts retrieval and reasoning APIs."
+          }
+        ],
+        "status": "verified"
+      },
+      "parentId": "node-10"
+    },
+    {
+      "id": "node-261",
+      "type": "process",
+      "position": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "data": {
+        "name": "serve_graph_tool_payload",
+        "description": "Validates tool arguments, invokes retrieval or ontology services, and returns structured payloads.",
+        "kind": "process",
+        "status": "verified"
+      },
+      "parentId": "node-260"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-node-1-node-2",
+      "source": "node-1",
+      "target": "node-2",
+      "data": {
+        "label": "runs commands"
+      }
+    },
+    {
+      "id": "edge-node-3-node-2",
+      "source": "node-3",
+      "target": "node-2",
+      "data": {
+        "label": "calls tools",
+        "method": "MCP"
+      }
+    },
+    {
+      "id": "edge-node-2-node-4",
+      "source": "node-2",
+      "target": "node-4",
+      "data": {
+        "label": "indexes files"
+      }
+    },
+    {
+      "id": "edge-node-1-node-5",
+      "source": "node-1",
+      "target": "node-5",
+      "data": {
+        "label": "runs"
+      }
+    },
+    {
+      "id": "edge-node-3-node-6",
+      "source": "node-3",
+      "target": "node-6",
+      "data": {
+        "label": "calls tools",
+        "method": "MCP"
+      }
+    },
+    {
+      "id": "edge-node-5-node-9",
+      "source": "node-5",
+      "target": "node-9",
+      "data": {
+        "label": "runs setup"
+      }
+    },
+    {
+      "id": "edge-node-5-node-10",
+      "source": "node-5",
+      "target": "node-10",
+      "data": {
+        "label": "runs queries"
+      }
+    },
+    {
+      "id": "edge-node-9-node-7",
+      "source": "node-9",
+      "target": "node-7",
+      "data": {
+        "label": "starts indexing"
+      }
+    },
+    {
+      "id": "edge-node-9-node-3",
+      "source": "node-9",
+      "target": "node-3",
+      "data": {
+        "label": "installs config"
+      }
+    },
+    {
+      "id": "edge-node-9-node-4",
+      "source": "node-9",
+      "target": "node-4",
+      "data": {
+        "label": "updates guidance"
+      }
+    },
+    {
+      "id": "edge-node-7-node-4",
+      "source": "node-7",
+      "target": "node-4",
+      "data": {
+        "label": "parses files"
+      }
+    },
+    {
+      "id": "edge-node-7-node-8",
+      "source": "node-7",
+      "target": "node-8",
+      "data": {
+        "label": "writes graph"
+      }
+    },
+    {
+      "id": "edge-node-10-node-8",
+      "source": "node-10",
+      "target": "node-8",
+      "data": {
+        "label": "queries graph"
+      }
+    },
+    {
+      "id": "edge-node-6-node-10",
+      "source": "node-6",
+      "target": "node-10",
+      "data": {
+        "label": "runs tools"
+      }
+    },
+    {
+      "id": "edge-node-1-node-100",
+      "source": "node-1",
+      "target": "node-100",
+      "data": {
+        "label": "runs"
+      }
+    },
+    {
+      "id": "edge-node-100-node-105",
+      "source": "node-100",
+      "target": "node-105",
+      "data": {
+        "label": "dispatches graph"
+      }
+    },
+    {
+      "id": "edge-node-100-node-109",
+      "source": "node-100",
+      "target": "node-109",
+      "data": {
+        "label": "dispatches search"
+      }
+    },
+    {
+      "id": "edge-node-100-node-113",
+      "source": "node-100",
+      "target": "node-113",
+      "data": {
+        "label": "renders result"
+      }
+    },
+    {
+      "id": "edge-node-100-node-7",
+      "source": "node-100",
+      "target": "node-7",
+      "data": {
+        "label": "starts indexing"
+      }
+    },
+    {
+      "id": "edge-node-100-node-9",
+      "source": "node-100",
+      "target": "node-9",
+      "data": {
+        "label": "runs setup"
+      }
+    },
+    {
+      "id": "edge-node-100-node-6",
+      "source": "node-100",
+      "target": "node-6",
+      "data": {
+        "label": "starts server"
+      }
+    },
+    {
+      "id": "edge-node-105-node-10",
+      "source": "node-105",
+      "target": "node-10",
+      "data": {
+        "label": "runs tools"
+      }
+    },
+    {
+      "id": "edge-node-109-node-7",
+      "source": "node-109",
+      "target": "node-7",
+      "data": {
+        "label": "refreshes graph"
+      }
+    },
+    {
+      "id": "edge-node-109-node-8",
+      "source": "node-109",
+      "target": "node-8",
+      "data": {
+        "label": "opens store"
+      }
+    },
+    {
+      "id": "edge-node-109-node-10",
+      "source": "node-109",
+      "target": "node-10",
+      "data": {
+        "label": "runs search"
+      }
+    },
+    {
+      "id": "edge-node-3-node-136",
+      "source": "node-3",
+      "target": "node-136",
+      "data": {
+        "label": "posts requests",
+        "method": "HTTP"
+      }
+    },
+    {
+      "id": "edge-node-3-node-140",
+      "source": "node-3",
+      "target": "node-140",
+      "data": {
+        "label": "sends frames",
+        "method": "stdio"
+      }
+    },
+    {
+      "id": "edge-node-120-node-140",
+      "source": "node-120",
+      "target": "node-140",
+      "data": {
+        "label": "starts"
+      }
+    },
+    {
+      "id": "edge-node-136-node-123",
+      "source": "node-136",
+      "target": "node-123",
+      "data": {
+        "label": "dispatches"
+      }
+    },
+    {
+      "id": "edge-node-140-node-123",
+      "source": "node-140",
+      "target": "node-123",
+      "data": {
+        "label": "dispatches"
+      }
+    },
+    {
+      "id": "edge-node-123-node-128",
+      "source": "node-123",
+      "target": "node-128",
+      "data": {
+        "label": "calls tools"
+      }
+    },
+    {
+      "id": "edge-node-128-node-132",
+      "source": "node-128",
+      "target": "node-132",
+      "data": {
+        "label": "opens runtime"
+      }
+    },
+    {
+      "id": "edge-node-132-node-8",
+      "source": "node-132",
+      "target": "node-8",
+      "data": {
+        "label": "opens store"
+      }
+    },
+    {
+      "id": "edge-node-128-node-10",
+      "source": "node-128",
+      "target": "node-10",
+      "data": {
+        "label": "runs retrieval"
+      }
+    },
+    {
+      "id": "edge-node-9-node-150",
+      "source": "node-9",
+      "target": "node-150",
+      "data": {
+        "label": "starts indexing"
+      }
+    },
+    {
+      "id": "edge-node-150-node-4",
+      "source": "node-150",
+      "target": "node-4",
+      "data": {
+        "label": "scans files"
+      }
+    },
+    {
+      "id": "edge-node-150-node-157",
+      "source": "node-150",
+      "target": "node-157",
+      "data": {
+        "label": "gets parsers"
+      }
+    },
+    {
+      "id": "edge-node-157-node-161",
+      "source": "node-157",
+      "target": "node-161",
+      "data": {
+        "label": "creates parser"
+      }
+    },
+    {
+      "id": "edge-node-157-node-165",
+      "source": "node-157",
+      "target": "node-165",
+      "data": {
+        "label": "creates parser"
+      }
+    },
+    {
+      "id": "edge-node-150-node-168",
+      "source": "node-150",
+      "target": "node-168",
+      "data": {
+        "label": "builds graph"
+      }
+    },
+    {
+      "id": "edge-node-168-node-8",
+      "source": "node-168",
+      "target": "node-8",
+      "data": {
+        "label": "emits graph"
+      }
+    },
+    {
+      "id": "edge-node-150-node-8",
+      "source": "node-150",
+      "target": "node-8",
+      "data": {
+        "label": "writes manifest"
+      }
+    },
+    {
+      "id": "edge-node-180-node-189",
+      "source": "node-180",
+      "target": "node-189",
+      "data": {
+        "label": "ensures schema"
+      }
+    },
+    {
+      "id": "edge-node-180-node-184",
+      "source": "node-180",
+      "target": "node-184",
+      "data": {
+        "label": "bulk loads"
+      }
+    },
+    {
+      "id": "edge-node-184-node-197",
+      "source": "node-184",
+      "target": "node-197",
+      "data": {
+        "label": "reads graph"
+      }
+    },
+    {
+      "id": "edge-node-193-node-180",
+      "source": "node-193",
+      "target": "node-180",
+      "data": {
+        "label": "executes query"
+      }
+    },
+    {
+      "id": "edge-node-201-node-180",
+      "source": "node-201",
+      "target": "node-180",
+      "data": {
+        "label": "provides paths"
+      }
+    },
+    {
+      "id": "edge-node-10-node-193",
+      "source": "node-10",
+      "target": "node-193",
+      "data": {
+        "label": "queries graph"
+      }
+    },
+    {
+      "id": "edge-node-7-node-180",
+      "source": "node-7",
+      "target": "node-180",
+      "data": {
+        "label": "writes graph"
+      }
+    },
+    {
+      "id": "edge-node-6-node-180",
+      "source": "node-6",
+      "target": "node-180",
+      "data": {
+        "label": "opens store"
+      }
+    },
+    {
+      "id": "edge-node-210-node-215",
+      "source": "node-210",
+      "target": "node-215",
+      "data": {
+        "label": "writes config"
+      }
+    },
+    {
+      "id": "edge-node-210-node-231",
+      "source": "node-210",
+      "target": "node-231",
+      "data": {
+        "label": "updates guidance"
+      }
+    },
+    {
+      "id": "edge-node-210-node-7",
+      "source": "node-210",
+      "target": "node-7",
+      "data": {
+        "label": "starts indexing"
+      }
+    },
+    {
+      "id": "edge-node-210-node-223",
+      "source": "node-210",
+      "target": "node-223",
+      "data": {
+        "label": "installs client"
+      }
+    },
+    {
+      "id": "edge-node-210-node-219",
+      "source": "node-210",
+      "target": "node-219",
+      "data": {
+        "label": "builds descriptor"
+      }
+    },
+    {
+      "id": "edge-node-223-node-219",
+      "source": "node-223",
+      "target": "node-219",
+      "data": {
+        "label": "uses descriptor"
+      }
+    },
+    {
+      "id": "edge-node-223-node-228",
+      "source": "node-223",
+      "target": "node-228",
+      "data": {
+        "label": "renders config"
+      }
+    },
+    {
+      "id": "edge-node-223-node-3",
+      "source": "node-223",
+      "target": "node-3",
+      "data": {
+        "label": "installs config"
+      }
+    },
+    {
+      "id": "edge-node-231-node-4",
+      "source": "node-231",
+      "target": "node-4",
+      "data": {
+        "label": "updates guidance"
+      }
+    },
+    {
+      "id": "edge-node-260-node-240",
+      "source": "node-260",
+      "target": "node-240",
+      "data": {
+        "label": "runs search"
+      }
+    },
+    {
+      "id": "edge-node-260-node-253",
+      "source": "node-260",
+      "target": "node-253",
+      "data": {
+        "label": "gets catalog"
+      }
+    },
+    {
+      "id": "edge-node-260-node-256",
+      "source": "node-260",
+      "target": "node-256",
+      "data": {
+        "label": "gets schema"
+      }
+    },
+    {
+      "id": "edge-node-240-node-245",
+      "source": "node-240",
+      "target": "node-245",
+      "data": {
+        "label": "builds context"
+      }
+    },
+    {
+      "id": "edge-node-240-node-249",
+      "source": "node-240",
+      "target": "node-249",
+      "data": {
+        "label": "formats blocks"
+      }
+    },
+    {
+      "id": "edge-node-240-node-8",
+      "source": "node-240",
+      "target": "node-8",
+      "data": {
+        "label": "queries index"
+      }
+    },
+    {
+      "id": "edge-node-245-node-8",
+      "source": "node-245",
+      "target": "node-8",
+      "data": {
+        "label": "queries neighbors"
+      }
+    },
+    {
+      "id": "edge-node-5-node-210",
+      "source": "node-5",
+      "target": "node-210",
+      "data": {
+        "label": "runs setup"
+      }
+    },
+    {
+      "id": "edge-node-5-node-260",
+      "source": "node-5",
+      "target": "node-260",
+      "data": {
+        "label": "runs tools"
+      }
+    },
+    {
+      "id": "edge-node-6-node-260",
+      "source": "node-6",
+      "target": "node-260",
+      "data": {
+        "label": "runs tools"
+      }
+    }
+  ],
+  "startingLevel": "container",
+  "sourceMap": {
+    "node-198": [
+      {
+        "pattern": "src/codebase_graph/core/graph.py",
+        "line": 86,
+        "endLine": 92
+      }
+    ],
+    "node-186": [
+      {
+        "pattern": "src/codebase_graph/db/store.py",
+        "line": 310,
+        "endLine": 360
+      }
+    ],
+    "node-181": [
+      {
+        "pattern": "src/codebase_graph/db/store.py",
+        "line": 215,
+        "endLine": 223
+      }
+    ],
+    "node-194": [
+      {
+        "pattern": "src/codebase_graph/db/query.py",
+        "line": 57,
+        "endLine": 74
+      }
+    ],
+    "node-137": [
+      {
+        "pattern": "src/codebase_graph/mcp/transports/http.py",
+        "line": 28,
+        "endLine": 59
+      }
+    ],
+    "node-124": [
+      {
+        "pattern": "src/codebase_graph/mcp/protocol.py",
+        "line": 35,
+        "endLine": 68
+      }
+    ],
+    "node-217": [
+      {
+        "pattern": "src/codebase_graph/setup/state.py",
+        "line": 34,
+        "endLine": 48
+      }
+    ],
+    "node-242": [
+      {
+        "pattern": "src/codebase_graph/retrieval/search.py",
+        "line": 201,
+        "endLine": 224
+      }
+    ],
+    "node-101": [
+      {
+        "pattern": "src/codebase_graph/cli/__init__.py",
+        "line": 26,
+        "endLine": 115
+      }
+    ],
+    "node-247": [
+      {
+        "pattern": "src/codebase_graph/reasoning/context_builder.py",
+        "line": 154,
+        "endLine": 164
+      }
+    ],
+    "node-107": [
+      {
+        "pattern": "src/codebase_graph/cli/__init__.py",
+        "line": 207,
+        "endLine": 213
+      }
+    ],
+    "node-221": [
+      {
+        "pattern": "src/codebase_graph/setup/descriptor.py",
+        "line": 77,
+        "endLine": 81
+      }
+    ],
+    "node-251": [
+      {
+        "pattern": "src/codebase_graph/retrieval/block_format.py",
+        "line": 199,
+        "endLine": 245
+      }
+    ],
+    "node-158": [
+      {
+        "pattern": "src/codebase_graph/ingest/tree_sitter_parser.py",
+        "line": 114,
+        "endLine": 128
+      }
+    ],
+    "node-170": [
+      {
+        "pattern": "src/codebase_graph/extract/graph_builder.py",
+        "line": 262,
+        "endLine": 286
+      }
+    ],
+    "node-151": [
+      {
+        "pattern": "src/codebase_graph/ingest/materializer.py",
+        "line": 265,
+        "endLine": 374
+      }
+    ],
+    "node-130": [
+      {
+        "pattern": "src/codebase_graph/mcp/tools.py",
+        "line": 198,
+        "endLine": 204
+      }
+    ],
+    "node-138": [
+      {
+        "pattern": "src/codebase_graph/mcp/transports/http.py",
+        "line": 62,
+        "endLine": 88
+      }
+    ],
+    "node-141": [
+      {
+        "pattern": "src/codebase_graph/mcp/transports/stdio.py",
+        "line": 16,
+        "endLine": 40
+      }
+    ],
+    "node-106": [
+      {
+        "pattern": "src/codebase_graph/cli/__init__.py",
+        "line": 254,
+        "endLine": 263
+      }
+    ],
+    "node-216": [
+      {
+        "pattern": "src/codebase_graph/setup/state.py",
+        "line": 21,
+        "endLine": 31
+      }
+    ],
+    "node-166": [
+      {
+        "pattern": "src/codebase_graph/ingest/document_parser.py",
+        "line": 39,
+        "endLine": 70
+      }
+    ],
+    "node-250": [
+      {
+        "pattern": "src/codebase_graph/retrieval/block_format.py",
+        "line": 154,
+        "endLine": 159
+      }
+    ],
+    "node-162": [
+      {
+        "pattern": "src/codebase_graph/ingest/tree_sitter_parser.py",
+        "line": 87,
+        "endLine": 105
+      }
+    ],
+    "node-195": [
+      {
+        "pattern": "src/codebase_graph/db/query.py",
+        "line": 77,
+        "endLine": 118
+      }
+    ],
+    "node-110": [
+      {
+        "pattern": "src/codebase_graph/cli/__init__.py",
+        "line": 216,
+        "endLine": 237
+      }
+    ],
+    "node-133": [
+      {
+        "pattern": "src/codebase_graph/mcp/runtime.py",
+        "line": 19,
+        "endLine": 42
+      }
+    ],
+    "node-159": [
+      {
+        "pattern": "src/codebase_graph/ingest/tree_sitter_parser.py",
+        "line": 131,
+        "endLine": 132
+      }
+    ],
+    "node-125": [
+      {
+        "pattern": "src/codebase_graph/mcp/protocol.py",
+        "line": 92,
+        "endLine": 95
+      }
+    ],
+    "node-202": [
+      {
+        "pattern": "src/codebase_graph/paths.py",
+        "line": 32,
+        "endLine": 44
+      }
+    ],
+    "node-220": [
+      {
+        "pattern": "src/codebase_graph/setup/descriptor.py",
+        "line": 55,
+        "endLine": 74
+      }
+    ],
+    "node-224": [
+      {
+        "pattern": "src/codebase_graph/setup/installer.py",
+        "line": 188,
+        "endLine": 245
+      }
+    ],
+    "node-111": [
+      {
+        "pattern": "src/codebase_graph/cli/__init__.py",
+        "line": 240,
+        "endLine": 251
+      }
+    ],
+    "node-142": [
+      {
+        "pattern": "src/codebase_graph/mcp/transports/stdio.py",
+        "line": 43,
+        "endLine": 62
+      }
+    ],
+    "node-134": [
+      {
+        "pattern": "src/codebase_graph/mcp/runtime.py",
+        "line": 45,
+        "endLine": 46
+      }
+    ],
+    "node-169": [
+      {
+        "pattern": "src/codebase_graph/extract/graph_builder.py",
+        "line": 180,
+        "endLine": 209
+      }
+    ],
+    "node-257": [
+      {
+        "pattern": "src/codebase_graph/ontology/ontology.py",
+        "line": 790,
+        "endLine": 801
+      }
+    ],
+    "node-143": [
+      {
+        "pattern": "src/codebase_graph/mcp/transports/stdio.py",
+        "line": 65,
+        "endLine": 69
+      }
+    ],
+    "node-232": [
+      {
+        "pattern": "src/codebase_graph/setup/instructions.py",
+        "line": 19,
+        "endLine": 36
+      }
+    ],
+    "node-254": [
+      {
+        "pattern": "src/codebase_graph/reasoning/architecture_queries.py",
+        "line": 344,
+        "endLine": 351
+      }
+    ],
+    "node-185": [
+      {
+        "pattern": "src/codebase_graph/db/store.py",
+        "line": 115,
+        "endLine": 139
+      }
+    ],
+    "node-114": [
+      {
+        "pattern": "src/codebase_graph/cli/__init__.py",
+        "line": 274,
+        "endLine": 281
+      }
+    ],
+    "node-163": [
+      {
+        "pattern": "src/codebase_graph/ingest/tree_sitter_parser.py",
+        "line": 158,
+        "endLine": 198
+      }
+    ],
+    "node-102": [
+      {
+        "pattern": "src/codebase_graph/cli/__init__.py",
+        "line": 118,
+        "endLine": 194
+      }
+    ],
+    "node-211": [
+      {
+        "pattern": "src/codebase_graph/setup/orchestrator.py",
+        "line": 52,
+        "endLine": 150
+      }
+    ],
+    "node-229": [
+      {
+        "pattern": "src/codebase_graph/setup/clients/__init__.py",
+        "line": 22,
+        "endLine": 27
+      }
+    ],
+    "node-190": [
+      {
+        "pattern": "src/codebase_graph/db/schema.py",
+        "line": 31,
+        "endLine": 44
+      }
+    ],
+    "node-241": [
+      {
+        "pattern": "src/codebase_graph/retrieval/search.py",
+        "line": 123,
+        "endLine": 149
+      }
+    ],
+    "node-182": [
+      {
+        "pattern": "src/codebase_graph/db/store.py",
+        "line": 141,
+        "endLine": 168
+      }
+    ],
+    "node-121": [
+      {
+        "pattern": "src/codebase_graph/mcp/server.py",
+        "line": 10,
+        "endLine": 20
+      }
+    ],
+    "node-152": [
+      {
+        "pattern": "src/codebase_graph/ingest/materializer.py",
+        "line": 376,
+        "endLine": 436
+      }
+    ],
+    "node-129": [
+      {
+        "pattern": "src/codebase_graph/mcp/tools.py",
+        "line": 29,
+        "endLine": 48
+      }
+    ],
+    "node-191": [
+      {
+        "pattern": "src/codebase_graph/db/schema.py",
+        "line": 16,
+        "endLine": 17
+      }
+    ],
+    "node-115": [
+      {
+        "pattern": "src/codebase_graph/cli/__init__.py",
+        "line": 284,
+        "endLine": 287
+      }
+    ],
+    "node-199": [
+      {
+        "pattern": "src/codebase_graph/core/graph.py",
+        "line": 133,
+        "endLine": 146
+      }
+    ],
+    "node-246": [
+      {
+        "pattern": "src/codebase_graph/reasoning/context_builder.py",
+        "line": 59,
+        "endLine": 112
+      }
+    ],
+    "node-153": [
+      {
+        "pattern": "src/codebase_graph/ingest/materializer.py",
+        "line": 467,
+        "endLine": 494
+      }
+    ],
+    "node-225": [
+      {
+        "pattern": "src/codebase_graph/setup/installer.py",
+        "line": 377,
+        "endLine": 390
+      }
+    ]
+  },
+  "projectPath": "/Users/rabii/Projects/Repositories/codebaseGraph",
+  "refPositions": {
+    "node-10/node-8": {
+      "x": 0.0,
+      "y": 1011.9139132003838
+    },
+    "node-5/node-9": {
+      "x": 6.0620016557794e-14,
+      "y": -684.0
+    },
+    "node-9/node-4": {
+      "x": 3.673940397442059e-14,
+      "y": 360.0
+    },
+    "node-9/node-3": {
+      "x": -1002.6991533863912,
+      "y": -1044.785277344098
+    },
+    "node-7/node-9": {
+      "x": 1558.8457268119894,
+      "y": 179.99999999999983
+    },
+    "node-10/node-6": {
+      "x": 300.0,
+      "y": 651.9139132003838
+    },
+    "node-9/node-7": {
+      "x": -600.0,
+      "y": 3.3065463576978534e-14
+    },
+    "node-9/node-5": {
+      "x": 0.0,
+      "y": 720.0
+    },
+    "node-6/node-10": {
+      "x": -317.4040362379354,
+      "y": -946.1215061774828
+    },
+    "node-5/node-10": {
+      "x": 2.7554552980815446e-14,
+      "y": 360.0
+    },
+    "node-7/node-4": {
+      "x": 1039.2304845413266,
+      "y": 719.9999999999999
+    },
+    "node-10/node-5": {
+      "x": 0.0,
+      "y": 651.9139132003838
+    },
+    "node-8/node-7": {
+      "x": 0.0,
+      "y": 963.5278773926668
+    },
+    "node-6/node-3": {
+      "x": 2.7554552980815446e-14,
+      "y": 360.0
+    },
+    "node-5/node-1": {
+      "x": -386.9395588747966,
+      "y": -586.0
+    },
+    "node-2/node-1": {
+      "x": -32.27514271379053,
+      "y": -920.5260769400712
+    },
+    "node-7/node-8": {
+      "x": -2.9873977503088804e-14,
+      "y": -360.0
+    },
+    "node-2/node-3": {
+      "x": 257.9856571219986,
+      "y": -306.75254061076646
+    },
+    "node-2/node-4": {
+      "x": 927.3541876587108,
+      "y": 388.87529402660624
+    },
+    "node-8/node-10": {
+      "x": -416.64905347714847,
+      "y": -603.5278773926668
+    }
+  }
+}

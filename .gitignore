@@ -208,7 +208,6 @@ tempCodeRunnerFile.py
 
 # codebaseGraph local graph state
 .codebaseGraph/
-.codebase_graph/
 
 # PyPI configuration file
 .pypirc
@@ -220,3 +219,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.codex/config.toml
+.mcp.json
+.scryer/

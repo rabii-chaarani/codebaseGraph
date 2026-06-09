@@ -57,16 +57,24 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     agents_text = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
     assert agents_text.count(START_MARKER) == 1
     assert agents_text.count(END_MARKER) == 1
+    assert "Prefer the `codebase_graph` MCP server tools" in agents_text
+    assert "MCP `graph_search`" in agents_text
+    assert "MCP `graph_context`" in agents_text
+    assert "MCP `graph_architecture_queries`" in agents_text
+    assert "MCP `graph_query`" in agents_text
+    assert "MCP `graph_schema`" in agents_text
+    assert "`graph_query_helpers`" in agents_text
+    assert "If MCP tools are unavailable, fall back to CLI" in agents_text
     assert "graph-search" in agents_text
     assert "graph-context" in agents_text
-    assert "--format block" in agents_text
+    assert "--format block" not in agents_text
     assert re.search(r"graph-search .*--json", agents_text) is None
     assert re.search(r"graph-context .*--json", agents_text) is None
-    assert "AI agents must use block format" in agents_text
+    assert 'output_format: "block"' not in agents_text
+    assert 'output_format: "json"' in agents_text
+    assert "include_structured_content: true" in agents_text
+    assert "AI agents receive block output by default" in agents_text
     assert "graph-architecture-queries" in agents_text
-    assert "MCP server" not in agents_text
-    assert "graph_architecture_queries" not in agents_text
-    assert "graph_query" not in agents_text
     assert (
         "It is prohibited to read the code source before you find the target files using the graph."
         in agents_text
@@ -132,7 +140,13 @@ def test_claude_instruction_target_uses_block_format(tmp_path: Path) -> None:
     assert result.action == "created"
     assert result.path == (repo_root / "CLAUDE.md").as_posix()
     assert not (repo_root / "AGENTS.md").exists()
-    assert "--format block" in claude_text
+    assert "Prefer the `codebase_graph` MCP server tools" in claude_text
+    assert "MCP `graph_search`" in claude_text
+    assert "If MCP tools are unavailable, fall back to CLI" in claude_text
+    assert 'output_format: "block"' not in claude_text
+    assert 'output_format: "json"' in claude_text
+    assert "include_structured_content: true" in claude_text
+    assert "--format block" not in claude_text
     assert re.search(r"graph-search .*--json", claude_text) is None
     assert re.search(r"graph-context .*--json", claude_text) is None
 
