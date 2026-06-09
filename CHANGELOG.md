@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.1...v0.2.2) (2026-06-09)
+
+
+### Bug Fixes
+
+* [codex] mcp tools exposed ([#10](https://github.com/rabii-chaarani/codebaseGraph/issues/10)) ([2f3c793](https://github.com/rabii-chaarani/codebaseGraph/commit/2f3c7936a4fad97ceba9d17d5e77e616de5f73ef))
+
 ## [0.2.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.0...v0.2.1) (2026-05-28)
 
 
