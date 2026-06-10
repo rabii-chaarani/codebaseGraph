@@ -8,6 +8,11 @@ from .transports.stdio import serve_stdio
 
 
 def main() -> int:
+    """Run the command-line entrypoint and return a process exit status.
+
+    Returns:
+        Integer count, status code, or index used by the caller.
+    """
     import argparse
 
     parser = argparse.ArgumentParser(prog="codebase-graph-mcp")

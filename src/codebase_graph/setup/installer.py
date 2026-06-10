@@ -22,6 +22,11 @@ VisibilityCommandBuilder = Callable[[], list[str]]
 
 @dataclass(frozen=True, slots=True)
 class McpInstallOptions:
+    """Collect caller options for MCP install workflows.
+
+    The class belongs to MCP client installation workflow across native CLIs and file-adapter
+    fallbacks.
+    """
     client: str = "codex"
     scope: str = "local"
     setup_config_path: str | Path = ".codebaseGraph/config.json"
@@ -36,6 +41,11 @@ class McpInstallOptions:
 
 @dataclass(frozen=True, slots=True)
 class McpInstallResult:
+    """Carry the observable outcome of MCP install workflows.
+
+    The class belongs to MCP client installation workflow across native CLIs and file-adapter
+    fallbacks.
+    """
     action: str
     client: str
     scope: str
@@ -53,6 +63,12 @@ class McpInstallResult:
     native_error: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the setup workflow and client configuration
+            response contract.
+        """
         payload: dict[str, Any] = {
             "action": self.action,
             "client": self.client,
@@ -81,6 +97,11 @@ class McpInstallResult:
 
 @dataclass(frozen=True, slots=True)
 class InstallClientStrategy:
+    """Represent install client strategy data used by setup workflow and client configuration.
+
+    The class belongs to MCP client installation workflow across native CLIs and file-adapter
+    fallbacks.
+    """
     client_id: str
     adapter_id: str | None = None
     project_adapter_id: str | None = None
@@ -90,29 +111,80 @@ class InstallClientStrategy:
     visibility_command_builder: VisibilityCommandBuilder | None = None
 
     def install_scope(self, scope: str) -> str:
+        """Install scope for setup workflow and client configuration.
+
+        This may spawn a native client command or write a client config file.
+
+        Args:
+            scope: Client-specific install scope.
+
+        Returns:
+            Formatted text returned to the caller.
+        """
         return self.forced_scope or scope
 
     def adapter_client_id(self, scope: str) -> str:
+        """Manage client identifier within setup workflow and client configuration.
+
+        Args:
+            scope: Client-specific install scope.
+
+        Returns:
+            Formatted text returned to the caller.
+        """
         if self.project_adapter_id is not None and self.install_scope(scope) == "project":
             return self.project_adapter_id
         return self.adapter_id or self.client_id
 
     def native_command(self, descriptor: McpServerDescriptor, *, scope: str) -> list[str] | None:
+        """Build command for setup workflow and client configuration.
+
+        Args:
+            descriptor: MCP server descriptor that will be rendered into client
+            configuration.
+            scope: Client-specific install scope.
+
+        Returns:
+            Ordered results returned to the setup workflow and client configuration caller.
+        """
         if self.native_command_builder is None:
             return None
         return self.native_command_builder(descriptor, self.install_scope(scope))
 
     def visibility_command(self) -> list[str] | None:
+        """Manage command within setup workflow and client configuration.
+
+        Returns:
+            Ordered results returned to the setup workflow and client configuration caller.
+        """
         if self.visibility_command_builder is None:
             return None
         return self.visibility_command_builder()
 
 
 def _codex_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    """Manage native command within setup workflow and client configuration.
+
+    Args:
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        scope: Client-specific install scope.
+
+    Returns:
+        Ordered results returned to the setup workflow and client configuration caller.
+    """
     return ["codex", "mcp", "add", descriptor.name, "--", descriptor.command, *descriptor.args]
 
 
 def _claude_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    """Manage native command within setup workflow and client configuration.
+
+    Args:
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        scope: Client-specific install scope.
+
+    Returns:
+        Ordered results returned to the setup workflow and client configuration caller.
+    """
     return [
         "claude",
         "mcp",
@@ -129,6 +201,15 @@ def _claude_native_command(descriptor: McpServerDescriptor, scope: str) -> list[
 
 
 def _openclaw_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    """Manage native command within setup workflow and client configuration.
+
+    Args:
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        scope: Client-specific install scope.
+
+    Returns:
+        Ordered results returned to the setup workflow and client configuration caller.
+    """
     entry = descriptor.stdio_entry(include_type=True)
     return ["openclaw", "mcp", "set", descriptor.name, json.dumps(entry, separators=(",", ":"), sort_keys=True)]
 
@@ -168,6 +249,18 @@ INSTALL_CLIENTS = tuple(INSTALL_STRATEGIES)
 
 
 def supported_install_client_ids(*, include_all: bool = False) -> tuple[str, ...]:
+    """Return install client identifiers for setup workflow and client configuration.
+
+    This may spawn a native client command or write a client config file.
+
+    Args:
+        include_all: Include all used by the setup workflow and client configuration
+        workflow.
+
+    Returns:
+        Tuple of stable results returned to the setup workflow and client configuration
+        caller.
+    """
     values = [*INSTALL_CLIENTS]
     if include_all:
         values.append("all")
@@ -175,17 +268,46 @@ def supported_install_client_ids(*, include_all: bool = False) -> tuple[str, ...
 
 
 def default_server_name(repo_name: str | None) -> str:
+    """Create a namespace-safe MCP server name for a repository.
+
+    Args:
+        repo_name: Repository name that should appear in the generated MCP server key.
+
+    Returns:
+        Stable server name safe for supported client configuration formats.
+    """
     safe_repo_name = _safe_name(repo_name or "repository")
     return f"{MCP_SERVER_NAME}_{safe_repo_name}"
 
 
 def install_mcp_clients(options: McpInstallOptions) -> list[McpInstallResult]:
+    """Install MCP clients for setup workflow and client configuration.
+
+    This may spawn a native client command or write a client config file.
+
+    Args:
+        options: Caller-selected setup or install options.
+
+    Returns:
+        Ordered results returned to the setup workflow and client configuration caller.
+    """
     if options.client == "all":
         return [_install_with_failure_result(options, client) for client in INSTALL_CLIENTS]
     return [install_mcp_server(options)]
 
 
 def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
+    """Install one MCP client using a native CLI when available or a file-adapter fallback.
+
+    This may spawn a native client command or write a client config file.
+
+    Args:
+        options: Caller-selected setup or install options.
+
+    Returns:
+        McpInstallResult instance populated with data from the setup workflow and client
+        configuration workflow.
+    """
     _validate_options(options)
     strategy = _client_strategy(options.client)
     descriptor = _build_descriptor(options)
@@ -211,6 +333,8 @@ def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
         and strategy.native_executable is not None
         and shutil.which(strategy.native_executable)
     )
+    # Native CLIs are preferred when available because they preserve client-
+    # specific behavior; file adapters remain the fallback for portability and CI.
     if options.dry_run:
         if use_native:
             return _native_result("dry_run", options, descriptor, native_command, verification=None)
@@ -228,6 +352,8 @@ def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
                 result = _native_result("updated", options, descriptor, native_command, verification=None)
                 return _with_verification(result, descriptor, options.verify)
             native_error = _subprocess_error(completed)
+        # If the native command is unavailable or fails, fall back to rendering
+        # the client config file directly and surface the native error in result.
         return _file_adapter_result(
             options,
             descriptor,
@@ -246,6 +372,18 @@ def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
 
 
 def _install_with_failure_result(options: McpInstallOptions, client: str) -> McpInstallResult:
+    """Install with failure result for setup workflow and client configuration.
+
+    This may spawn a native client command or write a client config file.
+
+    Args:
+        options: Caller-selected setup or install options.
+        client: MCP client identifier selected by setup or install commands.
+
+    Returns:
+        McpInstallResult instance populated with data from the setup workflow and client
+        configuration workflow.
+    """
     client_options = McpInstallOptions(
         client=client,
         scope=_client_strategy(client).install_scope(options.scope),
@@ -292,6 +430,19 @@ def _file_adapter_result(
     native_command: list[str] | None = None,
     native_error: str | None = None,
 ) -> McpInstallResult:
+    """Manage adapter result within setup workflow and client configuration.
+
+    Args:
+        options: Caller-selected setup or install options.
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        dry_run: Whether the operation should report changes without writing files.
+        native_command: Client CLI command used for native MCP installation.
+        native_error: Error captured from a failed native install attempt.
+
+    Returns:
+        McpInstallResult instance populated with data from the setup workflow and client
+        configuration workflow.
+    """
     adapter = get_client_adapter(_client_strategy(options.client).adapter_client_id(options.scope))
     path = (
         Path(options.client_config_path).expanduser().resolve()
@@ -302,6 +453,8 @@ def _file_adapter_result(
     rendered = adapter.render(existing_text, descriptor)
     action = "dry_run" if dry_run else rendered.action
     if not dry_run:
+        # Write through a sibling temp file so interrupted installs do not corrupt
+        # an existing client configuration.
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = path.with_suffix(path.suffix + ".tmp")
         with tmp_path.open("w", encoding="utf-8") as handle:
@@ -333,6 +486,20 @@ def _native_result(
     *,
     verification: dict[str, Any] | None,
 ) -> McpInstallResult:
+    """Build result for setup workflow and client configuration.
+
+    Args:
+        action: Action used by the setup workflow and client configuration workflow.
+        options: Caller-selected setup or install options.
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        command: Command used by the setup workflow and client configuration workflow.
+        verification: Verification used by the setup workflow and client configuration
+        workflow.
+
+    Returns:
+        McpInstallResult instance populated with data from the setup workflow and client
+        configuration workflow.
+    """
     return McpInstallResult(
         action=action,
         client=options.client,
@@ -352,6 +519,17 @@ def _with_verification(
     descriptor: McpServerDescriptor,
     enabled: bool,
 ) -> McpInstallResult:
+    """Attach verification for setup workflow and client configuration.
+
+    Args:
+        result: Result used by the setup workflow and client configuration workflow.
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        enabled: Enabled used by the setup workflow and client configuration workflow.
+
+    Returns:
+        McpInstallResult instance populated with data from the setup workflow and client
+        configuration workflow.
+    """
     if not enabled:
         return result
     verification = verify_mcp_install(descriptor, client=result.client, server_name=result.server_name)
@@ -381,6 +559,20 @@ def verify_mcp_install(
     server_name: str,
     timeout: int = 10,
 ) -> dict[str, Any]:
+    """Verify MCP install for setup workflow and client configuration.
+
+    This may spawn a native client command or write a client config file.
+
+    Args:
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        client: MCP client identifier selected by setup or install commands.
+        server_name: MCP server name used as a stable client config key.
+        timeout: Subprocess or server timeout in seconds.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     stdio = _verify_stdio(descriptor, timeout=timeout)
     visibility = _verify_client_visibility(client, server_name, timeout=timeout)
     return {
@@ -391,6 +583,16 @@ def verify_mcp_install(
 
 
 def _verify_stdio(descriptor: McpServerDescriptor, *, timeout: int) -> dict[str, Any]:
+    """Verify stdio for setup workflow and client configuration.
+
+    Args:
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        timeout: Subprocess or server timeout in seconds.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     command = [descriptor.command, *descriptor.args]
     payload = b"".join(
         _stdio_json_rpc_message(method, params, request_id=index)
@@ -433,6 +635,17 @@ def _verify_stdio(descriptor: McpServerDescriptor, *, timeout: int) -> dict[str,
 
 
 def _verify_client_visibility(client: str, server_name: str, *, timeout: int) -> dict[str, Any]:
+    """Verify client visibility for setup workflow and client configuration.
+
+    Args:
+        client: MCP client identifier selected by setup or install commands.
+        server_name: MCP server name used as a stable client config key.
+        timeout: Subprocess or server timeout in seconds.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     command = _client_strategy(client).visibility_command()
     if command is None:
         return {"ok": True, "skipped": True, "reason": f"{client} has no CLI visibility check"}
@@ -452,6 +665,16 @@ def _verify_client_visibility(client: str, server_name: str, *, timeout: int) ->
 
 
 def _stdio_checks(responses: list[dict[str, Any]]) -> dict[str, bool]:
+    """Build checks for setup workflow and client configuration.
+
+    Args:
+        responses: Responses used by the setup workflow and client configuration
+        workflow.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     by_id = {response.get("id"): response for response in responses}
     initialized = by_id.get(1, {}).get("result", {}).get("protocolVersion") == LATEST_PROTOCOL_VERSION
     tools = by_id.get(2, {}).get("result", {}).get("tools", [])
@@ -469,6 +692,15 @@ def _stdio_checks(responses: list[dict[str, Any]]) -> dict[str, bool]:
 
 
 def _parse_stdio_messages(data: bytes) -> list[dict[str, Any]]:
+    """Parse stdio messages for setup workflow and client configuration.
+
+    Args:
+        data: Raw bytes received from a transport.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     messages: list[dict[str, Any]] = []
     for line in data.splitlines():
         if not line:
@@ -478,6 +710,17 @@ def _parse_stdio_messages(data: bytes) -> list[dict[str, Any]]:
 
 
 def _stdio_json_rpc_message(method: str, params: dict[str, Any], *, request_id: int) -> bytes:
+    """Build JSON RPC message for setup workflow and client configuration.
+
+    Args:
+        method: Method used by the setup workflow and client configuration workflow.
+        params: Params used by the setup workflow and client configuration workflow.
+        request_id: Identifier for the request graph object.
+
+    Returns:
+        bytes instance populated with data from the setup workflow and client configuration
+        workflow.
+    """
     body = json.dumps(
         {"jsonrpc": "2.0", "id": request_id, "method": method, "params": params},
         separators=(",", ":"),
@@ -487,6 +730,18 @@ def _stdio_json_rpc_message(method: str, params: dict[str, Any], *, request_id: 
 
 
 def _build_descriptor(options: McpInstallOptions) -> McpServerDescriptor:
+    """Build descriptor for setup workflow and client configuration.
+
+    Args:
+        options: Caller-selected setup or install options.
+
+    Returns:
+        McpServerDescriptor instance populated with data from the setup workflow and client
+        configuration workflow.
+
+    Raises:
+        FileNotFoundError: Raised when validation or runtime preconditions fail.
+    """
     config_path = Path(options.setup_config_path).expanduser().resolve()
     repo_root: Path | None = None
     repo_name: str | None = None
@@ -504,6 +759,14 @@ def _build_descriptor(options: McpInstallOptions) -> McpServerDescriptor:
 
 
 def _validate_options(options: McpInstallOptions) -> None:
+    """Validate options for setup workflow and client configuration.
+
+    Args:
+        options: Caller-selected setup or install options.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
+    """
     if options.client not in {*INSTALL_CLIENTS, "none"}:
         supported = ", ".join(sorted([*INSTALL_CLIENTS, "all", "none"]))
         raise ValueError(f"Unsupported MCP client: {options.client}. Supported clients: {supported}")
@@ -512,18 +775,46 @@ def _validate_options(options: McpInstallOptions) -> None:
 
 
 def _client_strategy(client: str) -> InstallClientStrategy:
+    """Manage strategy within setup workflow and client configuration.
+
+    Args:
+        client: MCP client identifier selected by setup or install commands.
+
+    Returns:
+        InstallClientStrategy instance populated with data from the setup workflow and
+        client configuration workflow.
+    """
     if client == "none":
         return InstallClientStrategy(client_id="none")
     return INSTALL_STRATEGIES[client]
 
 
 def _missing_native_error(strategy: InstallClientStrategy) -> str | None:
+    """Manage native error within setup workflow and client configuration.
+
+    Args:
+        strategy: Strategy used by the setup workflow and client configuration
+        workflow.
+
+    Returns:
+        str | None instance populated with data from the setup workflow and client
+        configuration workflow.
+    """
     if strategy.native_executable is None:
         return None
     return f"{strategy.native_executable} executable not found"
 
 
 def _subprocess_error(completed: subprocess.CompletedProcess[str]) -> str:
+    """Summarize error for setup workflow and client configuration.
+
+    Args:
+        completed: Completed used by the setup workflow and client configuration
+        workflow.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     output = "\n".join(part for part in (completed.stdout.strip(), completed.stderr.strip()) if part)
     if output:
         return f"exit {completed.returncode}: {output}"
@@ -531,5 +822,13 @@ def _subprocess_error(completed: subprocess.CompletedProcess[str]) -> str:
 
 
 def _safe_name(value: str) -> str:
+    """Sanitize name for setup workflow and client configuration.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     normalized = re.sub(r"[^A-Za-z0-9_-]+", "_", value.strip())
     return normalized.strip("._-").lower() or "repository"

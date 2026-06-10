@@ -9,12 +9,18 @@ ONTOLOGY_VERSION = "1.0.0"
 
 @dataclass(frozen=True, slots=True)
 class FieldSpec:
+    """Describe a declared field used by ontology and schema metadata."""
     name: str
     value_type: str
     description: str
     required: bool = False
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the ontology and schema metadata response contract.
+        """
         return {
             "name": self.name,
             "type": self.value_type,
@@ -25,6 +31,11 @@ class FieldSpec:
 
 @dataclass(frozen=True, slots=True)
 class NodeTypeSpec:
+    """Describe a declared node type used by ontology and schema metadata.
+
+    The class belongs to Canonical ontology declarations for node types, relation types, parser
+    mappings, and query helpers.
+    """
     name: str
     description: str
     fields: tuple[FieldSpec, ...] = ()
@@ -32,6 +43,11 @@ class NodeTypeSpec:
     constraints: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the ontology and schema metadata response contract.
+        """
         return {
             "name": self.name,
             "description": self.description,
@@ -43,6 +59,11 @@ class NodeTypeSpec:
 
 @dataclass(frozen=True, slots=True)
 class RelationTypeSpec:
+    """Describe a declared relation type used by ontology and schema metadata.
+
+    The class belongs to Canonical ontology declarations for node types, relation types, parser
+    mappings, and query helpers.
+    """
     name: str
     source_types: tuple[str, ...]
     target_types: tuple[str, ...]
@@ -51,6 +72,11 @@ class RelationTypeSpec:
     constraints: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the ontology and schema metadata response contract.
+        """
         return {
             "name": self.name,
             "source_types": list(self.source_types),
@@ -63,6 +89,11 @@ class RelationTypeSpec:
 
 @dataclass(frozen=True, slots=True)
 class ParserNodeMappingSpec:
+    """Describe a declared parser node mapping used by ontology and schema metadata.
+
+    The class belongs to Canonical ontology declarations for node types, relation types, parser
+    mappings, and query helpers.
+    """
     name: str
     parser_node_types: tuple[str, ...]
     captures: tuple[str, ...]
@@ -72,6 +103,11 @@ class ParserNodeMappingSpec:
     context_rule: str = ""
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the ontology and schema metadata response contract.
+        """
         return {
             "name": self.name,
             "parser_node_types": list(self.parser_node_types),
@@ -85,6 +121,11 @@ class ParserNodeMappingSpec:
 
 @dataclass(frozen=True, slots=True)
 class QueryHelperSpec:
+    """Describe a declared query helper used by ontology and schema metadata.
+
+    The class belongs to Canonical ontology declarations for node types, relation types, parser
+    mappings, and query helpers.
+    """
     name: str
     description: str
     query: str
@@ -92,6 +133,11 @@ class QueryHelperSpec:
     returns: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the ontology and schema metadata response contract.
+        """
         return {
             "name": self.name,
             "description": self.description,
@@ -141,6 +187,20 @@ def _node(
     fields: tuple[FieldSpec, ...] = (),
     constraints: tuple[str, ...] = (),
 ) -> NodeTypeSpec:
+    """Manage ontology and schema metadata.
+
+    Args:
+        name: Name used by the ontology and schema metadata workflow.
+        description: Description used by the ontology and schema metadata workflow.
+        parser_node_types: Parser node types used by the ontology and schema metadata
+        workflow.
+        fields: Field mapping to read or serialize.
+        constraints: Constraints used by the ontology and schema metadata workflow.
+
+    Returns:
+        NodeTypeSpec instance populated with data from the ontology and schema metadata
+        workflow.
+    """
     return NodeTypeSpec(
         name=name,
         description=description,
@@ -255,6 +315,19 @@ def _relation(
     *,
     constraints: tuple[str, ...] = (),
 ) -> RelationTypeSpec:
+    """Return ontology and schema metadata for ontology and schema metadata.
+
+    Args:
+        name: Name used by the ontology and schema metadata workflow.
+        source_types: Source types used by the ontology and schema metadata workflow.
+        target_types: Target types used by the ontology and schema metadata workflow.
+        description: Description used by the ontology and schema metadata workflow.
+        constraints: Constraints used by the ontology and schema metadata workflow.
+
+    Returns:
+        RelationTypeSpec instance populated with data from the ontology and schema metadata
+        workflow.
+    """
     return RelationTypeSpec(
         name=name,
         source_types=source_types,
@@ -766,14 +839,36 @@ QUERY_HELPERS = (
 
 
 def node_type_names() -> tuple[str, ...]:
+    """Manage type names within ontology and schema metadata.
+
+    Returns:
+        Tuple of stable results returned to the ontology and schema metadata caller.
+    """
     return tuple(node.name for node in NODE_TYPES)
 
 
 def relation_type_names() -> tuple[str, ...]:
+    """Return type names for ontology and schema metadata.
+
+    Returns:
+        Tuple of stable results returned to the ontology and schema metadata caller.
+    """
     return tuple(relation.name for relation in RELATION_TYPES)
 
 
 def get_node_type(name: str) -> NodeTypeSpec:
+    """Return node type for ontology and schema metadata.
+
+    Args:
+        name: Name used by the ontology and schema metadata workflow.
+
+    Returns:
+        NodeTypeSpec instance populated with data from the ontology and schema metadata
+        workflow.
+
+    Raises:
+        KeyError: Raised when validation or runtime preconditions fail.
+    """
     for node_type in NODE_TYPES:
         if node_type.name == name:
             return node_type
@@ -781,6 +876,18 @@ def get_node_type(name: str) -> NodeTypeSpec:
 
 
 def get_relation_type(name: str) -> RelationTypeSpec:
+    """Return relation type for ontology and schema metadata.
+
+    Args:
+        name: Name used by the ontology and schema metadata workflow.
+
+    Returns:
+        RelationTypeSpec instance populated with data from the ontology and schema metadata
+        workflow.
+
+    Raises:
+        KeyError: Raised when validation or runtime preconditions fail.
+    """
     for relation_type in RELATION_TYPES:
         if relation_type.name == name:
             return relation_type
@@ -788,6 +895,11 @@ def get_relation_type(name: str) -> RelationTypeSpec:
 
 
 def schema_payload() -> dict[str, Any]:
+    """Build payload for ontology and schema metadata.
+
+    Returns:
+        Structured mapping that follows the ontology and schema metadata response contract.
+    """
     return {
         "ontology": ONTOLOGY_NAME,
         "version": ONTOLOGY_VERSION,

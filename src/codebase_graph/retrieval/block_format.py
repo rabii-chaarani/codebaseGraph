@@ -12,7 +12,14 @@ ONTOLOGY_TERMS = {"Class", "Method", "Scope", "Contains", "outgoing", "path", "s
 
 
 def serialize_parseable_search_block(payload: Mapping[str, Any]) -> str:
-    """Serialize graph-search JSON into a parseable debug block format."""
+    """Serialize parseable search block for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     lines = [
         " | ".join(
             [
@@ -73,7 +80,14 @@ def serialize_parseable_search_block(payload: Mapping[str, Any]) -> str:
 
 
 def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
-    """Serialize graph-search JSON into the compact runtime block format."""
+    """Serialize agent search block for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     lines = [f"q {_format_value(str(payload.get('query', '')))}"]
     current_path: str | None = None
     result_keys = {_record_key(result) for result in payload.get("results", [])}
@@ -122,7 +136,14 @@ def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
 
 
 def serialize_context_block(payload: Mapping[str, Any]) -> str:
-    """Serialize an explicit graph-context payload into a readable block."""
+    """Serialize context block for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     header = [
         f"context {payload.get('node_type', '')}",
         f"id={_format_value(str(payload.get('node_id', '')))}",
@@ -152,6 +173,17 @@ def serialize_context_block(payload: Mapping[str, Any]) -> str:
 
 
 def serialize_graph_block(payload: Mapping[str, Any]) -> str:
+    """Serialize graph block for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+
+    Returns:
+        Formatted text returned to the caller.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
+    """
     if "results" in payload:
         return serialize_agent_search_block(payload)
     if "context" in payload and "node_id" in payload and "node_type" in payload:
@@ -160,11 +192,27 @@ def serialize_graph_block(payload: Mapping[str, Any]) -> str:
 
 
 def serialize_search_block(payload: Mapping[str, Any]) -> str:
-    """Backward-compatible alias for the parseable debug block format."""
+    """Serialize search block for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     return serialize_parseable_search_block(payload)
 
 
 def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Canonicalize search payload for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+
+    Returns:
+        Structured mapping that follows the search, ranking, and block-format retrieval
+        response contract.
+    """
     records: list[dict[str, Any]] = []
     for result in payload.get("results", []):
         result_record = {
@@ -197,6 +245,18 @@ def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def parse_search_block(text: str) -> dict[str, Any]:
+    """Parse the compact search block format back into structured result records.
+
+    Args:
+        text: Text being parsed, formatted, or written.
+
+    Returns:
+        Structured mapping that follows the search, ranking, and block-format retrieval
+        response contract.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
+    """
     records: list[dict[str, Any]] = []
     current_path = ""
     current_result: dict[str, Any] | None = None
@@ -228,6 +288,7 @@ def parse_search_block(text: str) -> dict[str, Any]:
                 raise ValueError(f"Context line has no parent result: {raw_line}")
             tokens = shlex.split(raw_line.strip())
             fields = _keyed_fields(tokens[3:])
+            # L=same is a compact marker for context rows that share the result span.
             span = current_result["span"] if fields.get("span") == "L=same" else _parse_span(fields.get("span", ""))
             context_record = {
                 "direction": tokens[0],
@@ -246,6 +307,14 @@ def parse_search_block(text: str) -> dict[str, Any]:
 
 
 def intentional_summary_omissions(payload: Mapping[str, Any]) -> list[str]:
+    """Report summary omissions for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+
+    Returns:
+        Ordered results returned to the search, ranking, and block-format retrieval caller.
+    """
     omissions: list[str] = []
     for result_index, result in enumerate(payload.get("results", [])):
         if _is_boilerplate_summary(result):
@@ -257,6 +326,16 @@ def intentional_summary_omissions(payload: Mapping[str, Any]) -> list[str]:
 
 
 def _keyed_fields(tokens: list[str]) -> dict[str, str]:
+    """Manage fields within search, ranking, and block-format retrieval.
+
+    Args:
+        tokens: Tokens used by the search, ranking, and block-format retrieval
+        workflow.
+
+    Returns:
+        Structured mapping that follows the search, ranking, and block-format retrieval
+        response contract.
+    """
     fields: dict[str, str] = {}
     for token in tokens:
         if "=" not in token:
@@ -267,18 +346,43 @@ def _keyed_fields(tokens: list[str]) -> dict[str, str]:
 
 
 def _format_value(value: str) -> str:
+    """Format value for search, ranking, and block-format retrieval.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     if value and SIMPLE_VALUE_RE.match(value):
         return value
     return json.dumps(value, ensure_ascii=True)
 
 
 def _parse_value(value: str) -> str:
+    """Parse value for search, ranking, and block-format retrieval.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     if value.startswith('"'):
         return str(json.loads(value))
     return value
 
 
 def _span(value: Any) -> dict[str, int]:
+    """Manage search, ranking, and block-format retrieval within search, ranking, and block-format retrieval.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        Structured mapping that follows the search, ranking, and block-format retrieval
+        response contract.
+    """
     if not isinstance(value, Mapping):
         return {}
     span: dict[str, int] = {}
@@ -290,6 +394,14 @@ def _span(value: Any) -> dict[str, int]:
 
 
 def _format_span(span: Mapping[str, int]) -> str:
+    """Format span for search, ranking, and block-format retrieval.
+
+    Args:
+        span: Line-span mapping from graph output.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     start = span.get("line_start")
     end = span.get("line_end")
     if start is None or end is None:
@@ -298,6 +410,15 @@ def _format_span(span: Mapping[str, int]) -> str:
 
 
 def _parse_span(value: str) -> dict[str, int]:
+    """Parse span for search, ranking, and block-format retrieval.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        Structured mapping that follows the search, ranking, and block-format retrieval
+        response contract.
+    """
     match = SPAN_RE.match(value)
     if not match:
         return {}
@@ -305,6 +426,15 @@ def _parse_span(value: str) -> dict[str, int]:
 
 
 def _parse_number(value: str | None) -> int | float | None:
+    """Parse number for search, ranking, and block-format retrieval.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        int | float | None instance populated with data from the search, ranking, and block-
+        format retrieval workflow.
+    """
     if value is None:
         return None
     try:
@@ -315,11 +445,27 @@ def _parse_number(value: str | None) -> int | float | None:
 
 
 def _meaningful_summary(record: Mapping[str, Any]) -> str:
+    """Manage summary within search, ranking, and block-format retrieval.
+
+    Args:
+        record: Serialized search or context record.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     summary = str(record.get("summary", ""))
     return "" if _is_boilerplate_summary(record) else summary
 
 
 def _is_boilerplate_summary(record: Mapping[str, Any]) -> bool:
+    """Return whether boilerplate summary for search, ranking, and block-format retrieval.
+
+    Args:
+        record: Serialized search or context record.
+
+    Returns:
+        True when the requested condition is satisfied; otherwise False.
+    """
     summary = str(record.get("summary", ""))
     label = str(record.get("label", ""))
     node_type = str(record.get("type", ""))
@@ -337,6 +483,16 @@ def _omit_agent_context(
     parent_span: Mapping[str, int],
     result_keys: set[tuple[str, str, str, tuple[tuple[str, int], ...]]],
 ) -> bool:
+    """Decide whether to omit agent context for search, ranking, and block-format retrieval.
+
+    Args:
+        context: Context record attached to a search result.
+        parent_span: Source span inherited from the parent search result.
+        result_keys: Fields already emitted for the parent result.
+
+    Returns:
+        True when the requested condition is satisfied; otherwise False.
+    """
     context_span = _span(context.get("span", {}))
     if _is_boilerplate_summary(context) and context_span == dict(parent_span):
         return True
@@ -346,6 +502,15 @@ def _omit_agent_context(
 
 
 def _record_key(record: Mapping[str, Any]) -> tuple[str, str, str, tuple[tuple[str, int], ...]]:
+    """Build key for search, ranking, and block-format retrieval.
+
+    Args:
+        record: Serialized search or context record.
+
+    Returns:
+        Tuple of stable results returned to the search, ranking, and block-format retrieval
+        caller.
+    """
     return (
         str(record.get("type", "")),
         str(record.get("label", "")),

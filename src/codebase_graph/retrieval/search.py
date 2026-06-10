@@ -18,6 +18,10 @@ GENERIC_TYPES = {"Symbol", "Dependency"}
 
 @dataclass(frozen=True, slots=True)
 class SearchRequest:
+    """Represent search request data used by search, ranking, and block-format retrieval.
+
+    The class belongs to FTS-backed graph search with rank scoring and compact context assembly.
+    """
     query: str
     limit: int = DEFAULT_SEARCH_LIMIT
     profile: str = "brief"
@@ -27,6 +31,11 @@ class SearchRequest:
     detail: str = "standard"
 
     def validate(self) -> None:
+        """Validate search, ranking, and block-format retrieval for search, ranking, and block-format retrieval.
+
+        Raises:
+            ValueError: Raised when validation or runtime preconditions fail.
+        """
         if not self.query.strip():
             raise ValueError("Search query must not be empty")
         if self.limit <= 0:
@@ -45,6 +54,10 @@ class SearchRequest:
 
 @dataclass(slots=True)
 class SearchHit:
+    """Represent search hit data used by search, ranking, and block-format retrieval.
+
+    The class belongs to FTS-backed graph search with rank scoring and compact context assembly.
+    """
     id: str
     type: str
     label: str
@@ -59,6 +72,15 @@ class SearchHit:
     index_order: int = 0
 
     def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Args:
+            detail: Response detail level requested by CLI or MCP callers.
+
+        Returns:
+            Structured mapping that follows the search, ranking, and block-format
+            retrieval response contract.
+        """
         _validate_detail(detail)
         if detail == "slim":
             payload: dict[str, Any] = {
@@ -90,6 +112,10 @@ class SearchHit:
 
 @dataclass(frozen=True, slots=True)
 class CompactContextPayload:
+    """Represent compact context payload data used by search, ranking, and block-format retrieval.
+
+    The class belongs to FTS-backed graph search with rank scoring and compact context assembly.
+    """
     query: str
     profile: str
     limit: int
@@ -97,6 +123,15 @@ class CompactContextPayload:
     results: tuple[SearchHit, ...]
 
     def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Args:
+            detail: Response detail level requested by CLI or MCP callers.
+
+        Returns:
+            Structured mapping that follows the search, ranking, and block-format
+            retrieval response contract.
+        """
         _validate_detail(detail)
         return {
             "query": self.query,
@@ -109,18 +144,34 @@ class CompactContextPayload:
 
 @dataclass(frozen=True, slots=True)
 class FTSIndexSpec:
+    """Describe a declared f t s index used by search, ranking, and block-format retrieval."""
     node_type: str
     index_name: str
     order: int
 
 
 class SearchService:
+    """Manage FTS-backed search and compact context assembly."""
     def __init__(self, store: Any) -> None:
+        """Initialize search service with the collaborators and state it owns.
+
+        Args:
+            store: Graph store used for persistence or read-only queries.
+        """
         self.store = store
         self.query = graph_query_adapter(store)
         self.indexes = tuple(_fts_index_specs())
 
     def search(self, request: SearchRequest) -> CompactContextPayload:
+        """Run full-text search, rank deduplicated hits, and attach compact graph context.
+
+        Args:
+            request: Validated request object carrying query and context settings.
+
+        Returns:
+            CompactContextPayload instance populated with data from the search, ranking, and
+            block-format retrieval workflow.
+        """
         request.validate()
         candidate_limit = _candidate_limit(request.limit)
         hits = self._rank_hits(
@@ -131,6 +182,8 @@ class SearchService:
         context_builder = CompactContextBuilder(self.store)
         compact_hits: list[SearchHit] = []
         for hit in hits[: request.limit]:
+            # Context is attached only after ranking so expensive graph traversal
+            # runs for visible results, not every raw FTS candidate.
             hit.context = context_builder.build(
                 hit.id,
                 hit.type,
@@ -149,6 +202,16 @@ class SearchService:
         )
 
     def _query_fts(self, query: str, limit: int) -> list[SearchHit]:
+        """Build full-text search for search, ranking, and block-format retrieval.
+
+        Args:
+            query: User search text or read-only Cypher statement.
+            limit: Maximum number of rows or results requested.
+
+        Returns:
+            Ordered results returned to the search, ranking, and block-format retrieval
+            caller.
+        """
         hits: list[SearchHit] = []
         for spec in self.indexes:
             hits.extend(
@@ -163,17 +226,36 @@ class SearchService:
         return hits
 
     def _rank_hits(self, hits: list[SearchHit], *, query: str = "", profile: str = "brief") -> list[SearchHit]:
+        """Collapse duplicate FTS rows and apply domain-specific rank scoring.
+
+        Args:
+            hits: Hits used by the search, ranking, and block-format retrieval
+            workflow.
+            query: User search text or read-only Cypher statement.
+            profile: Context profile controlling graph-neighborhood traversal.
+
+        Returns:
+            Ordered results returned to the search, ranking, and block-format retrieval
+            caller.
+        """
         best_by_id: dict[str, SearchHit] = {}
         for hit in hits:
             previous = best_by_id.get(hit.id)
             if previous is None or _raw_hit_sort_key(hit) < _raw_hit_sort_key(previous):
                 best_by_id[hit.id] = hit
         deduped = list(best_by_id.values())
+        # A node can appear in several FTS indexes; score only the best raw hit so
+        # broad indexes cannot swamp more precise label/path matches.
         _assign_rank_scores(deduped, query=query, profile=profile)
         return sorted(deduped, key=_ranked_hit_sort_key)
 
 
 def _fts_index_specs() -> list[FTSIndexSpec]:
+    """Manage index specs within search, ranking, and block-format retrieval.
+
+    Returns:
+        Ordered results returned to the search, ranking, and block-format retrieval caller.
+    """
     specs: list[FTSIndexSpec] = []
     order = 0
     for index in SEARCH_INDEXES:
@@ -185,6 +267,16 @@ def _fts_index_specs() -> list[FTSIndexSpec]:
 
 
 def _hit_from_index_row(row: SearchIndexRow, spec: FTSIndexSpec) -> SearchHit:
+    """Manage from index row within search, ranking, and block-format retrieval.
+
+    Args:
+        row: Database row returned by Ladybug.
+        spec: Spec used by the search, ranking, and block-format retrieval workflow.
+
+    Returns:
+        SearchHit instance populated with data from the search, ranking, and block-format
+        retrieval workflow.
+    """
     return SearchHit(
         id=row.id,
         type=spec.node_type,
@@ -199,6 +291,13 @@ def _hit_from_index_row(row: SearchIndexRow, spec: FTSIndexSpec) -> SearchHit:
 
 
 def _assign_rank_scores(hits: list[SearchHit], *, query: str, profile: str) -> None:
+    """Manage rank scores within search, ranking, and block-format retrieval.
+
+    Args:
+        hits: Hits used by the search, ranking, and block-format retrieval workflow.
+        query: User search text or read-only Cypher statement.
+        profile: Context profile controlling graph-neighborhood traversal.
+    """
     if not hits:
         return
     max_score = max((hit.score for hit in hits), default=0.0)
@@ -225,10 +324,27 @@ def _assign_rank_scores(hits: list[SearchHit], *, query: str, profile: str) -> N
 
 
 def _candidate_limit(limit: int) -> int:
+    """Manage limit within search, ranking, and block-format retrieval.
+
+    Args:
+        limit: Maximum number of rows or results requested.
+
+    Returns:
+        Integer count, status code, or index used by the caller.
+    """
     return min(max(limit * 4, MIN_CANDIDATE_LIMIT), MAX_CANDIDATE_LIMIT)
 
 
 def _query_intent(query: str, profile: str) -> str:
+    """Build intent for search, ranking, and block-format retrieval.
+
+    Args:
+        query: User search text or read-only Cypher statement.
+        profile: Context profile controlling graph-neighborhood traversal.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     if profile in {"dependencies", "runtime", "docs"}:
         return profile
     if _looks_like_path(query):
@@ -239,6 +355,15 @@ def _query_intent(query: str, profile: str) -> str:
 
 
 def _lexical_score(query: str, hit: SearchHit) -> float:
+    """Manage score within search, ranking, and block-format retrieval.
+
+    Args:
+        query: User search text or read-only Cypher statement.
+        hit: Hit used by the search, ranking, and block-format retrieval workflow.
+
+    Returns:
+        Numeric score used for ranking or reporting.
+    """
     normalized_query = _normalize(query)
     if not normalized_query:
         return 0.0
@@ -264,6 +389,16 @@ def _lexical_score(query: str, hit: SearchHit) -> float:
 
 
 def _type_score(node_type: str, intent: str) -> float:
+    """Return score for search, ranking, and block-format retrieval.
+
+    Args:
+        node_type: Ontology node type used to choose a table or label.
+        intent: Intent used by the search, ranking, and block-format retrieval
+        workflow.
+
+    Returns:
+        Numeric score used for ranking or reporting.
+    """
     if intent == "definition":
         if node_type in {"Class", "Function", "Method"}:
             return 0.7
@@ -286,34 +421,96 @@ def _type_score(node_type: str, intent: str) -> float:
 
 
 def _generic_penalty(hit: SearchHit, concrete_labels: set[str]) -> float:
+    """Manage penalty within search, ranking, and block-format retrieval.
+
+    Args:
+        hit: Hit used by the search, ranking, and block-format retrieval workflow.
+        concrete_labels: Concrete labels used by the search, ranking, and block-format
+        retrieval workflow.
+
+    Returns:
+        Numeric score used for ranking or reporting.
+    """
     if hit.type in GENERIC_TYPES and _normalize(hit.label) in concrete_labels:
         return 0.45
     return 0.0
 
 
 def _looks_like_identifier(query: str) -> bool:
+    """Manage like identifier within search, ranking, and block-format retrieval.
+
+    Args:
+        query: User search text or read-only Cypher statement.
+
+    Returns:
+        True when the requested condition is satisfied; otherwise False.
+    """
     cleaned = query.strip()
     return cleaned.replace("_", "").isalnum() and not cleaned[0:1].isdigit()
 
 
 def _looks_like_path(query: str) -> bool:
+    """Manage like path within search, ranking, and block-format retrieval.
+
+    Args:
+        query: User search text or read-only Cypher statement.
+
+    Returns:
+        True when the requested condition is satisfied; otherwise False.
+    """
     cleaned = query.strip()
     return "/" in cleaned or "\\" in cleaned or cleaned.endswith((".py", ".toml", ".md", ".json", ".yaml", ".yml"))
 
 
 def _normalize(value: str) -> str:
+    """Normalize search, ranking, and block-format retrieval for search, ranking, and block-format retrieval.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     return value.strip().lower()
 
 
 def _ranked_hit_sort_key(hit: SearchHit) -> tuple[float, int, str, str, str]:
+    """Manage hit sort key within search, ranking, and block-format retrieval.
+
+    Args:
+        hit: Hit used by the search, ranking, and block-format retrieval workflow.
+
+    Returns:
+        Tuple of stable results returned to the search, ranking, and block-format retrieval
+        caller.
+    """
     return (-hit.rank_score, hit.index_order, hit.type, hit.path, hit.label)
 
 
 def _raw_hit_sort_key(hit: SearchHit) -> tuple[float, int, str, str, str]:
+    """Return hit sort key for search, ranking, and block-format retrieval.
+
+    Args:
+        hit: Hit used by the search, ranking, and block-format retrieval workflow.
+
+    Returns:
+        Tuple of stable results returned to the search, ranking, and block-format retrieval
+        caller.
+    """
     return (-hit.score, hit.index_order, hit.type, hit.path, hit.label)
 
 
 def _span(line_start: Any, line_end: Any) -> dict[str, int]:
+    """Manage search, ranking, and block-format retrieval within search, ranking, and block-format retrieval.
+
+    Args:
+        line_start: Start line from parser or database metadata.
+        line_end: End line from parser or database metadata.
+
+    Returns:
+        Structured mapping that follows the search, ranking, and block-format retrieval
+        response contract.
+    """
     span: dict[str, int] = {}
     if line_start is not None:
         span["line_start"] = int(line_start)
@@ -323,17 +520,40 @@ def _span(line_start: Any, line_end: Any) -> dict[str, int]:
 
 
 def _validate_detail(detail: str) -> None:
+    """Validate detail for search, ranking, and block-format retrieval.
+
+    Args:
+        detail: Response detail level requested by CLI or MCP callers.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
+    """
     if detail not in DETAIL_LEVELS:
         valid = ", ".join(sorted(DETAIL_LEVELS))
         raise ValueError(f"Unknown detail level: {detail}. Valid levels: {valid}")
 
 
 def _set_non_empty(payload: dict[str, Any], key: str, value: Any) -> None:
+    """Set non empty for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+        key: Key used by the search, ranking, and block-format retrieval workflow.
+        value: Input being normalized for serialization or validation.
+    """
     if value not in ("", None, [], {}):
         payload[key] = value
 
 
 def _set_meaningful_summary(payload: dict[str, Any], summary: str, label: str) -> None:
+    """Set meaningful summary for search, ranking, and block-format retrieval.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+        summary: Summary used by the search, ranking, and block-format retrieval
+        workflow.
+        label: Human-readable label stored on a graph node or edge.
+    """
     if summary and summary != label:
         payload["summary"] = summary
 

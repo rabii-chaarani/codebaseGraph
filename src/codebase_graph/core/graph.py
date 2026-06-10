@@ -8,6 +8,10 @@ from codebase_graph.ontology import ONTOLOGY_NAME, get_relation_type
 
 @dataclass(slots=True)
 class GraphNode:
+    """Represent one ontology node before it is written to the database.
+
+    The class belongs to In-memory graph primitives used before rows are persisted into Ladybug.
+    """
     id: str
     table: str
     label: str
@@ -26,6 +30,11 @@ class GraphNode:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the in-memory graph model response contract.
+        """
         return {
             "id": self.id,
             "table": self.table,
@@ -48,6 +57,10 @@ class GraphNode:
 
 @dataclass(slots=True)
 class GraphEdge:
+    """Represent one ontology relation between two graph nodes.
+
+    The class belongs to In-memory graph primitives used before rows are persisted into Ladybug.
+    """
     id: str
     type: str
     source_id: str
@@ -61,6 +74,11 @@ class GraphEdge:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the in-memory graph model response contract.
+        """
         return {
             "id": self.id,
             "type": self.type,
@@ -78,12 +96,24 @@ class GraphEdge:
 
 @dataclass(slots=True)
 class CodeGraph:
+    """Collect graph nodes and relation edges for validation, serialization, and persistence.
+
+    The class belongs to In-memory graph primitives used before rows are persisted into Ladybug.
+    """
     nodes: dict[str, GraphNode] = field(default_factory=dict)
     edges: dict[str, GraphEdge] = field(default_factory=dict)
     ontology: str = ONTOLOGY_NAME
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_node(self, node: GraphNode) -> GraphNode:
+        """Add node for in-memory graph model.
+
+        Args:
+            node: Parser or graph node being inspected.
+
+        Returns:
+            GraphNode instance populated with data from the in-memory graph model workflow.
+        """
         existing = self.nodes.get(node.id)
         if existing is None:
             self.nodes[node.id] = node
@@ -92,16 +122,45 @@ class CodeGraph:
         return existing
 
     def add_edge(self, edge: GraphEdge) -> GraphEdge:
+        """Add edge for in-memory graph model.
+
+        Args:
+            edge: Edge used by the in-memory graph model workflow.
+
+        Returns:
+            GraphEdge instance populated with data from the in-memory graph model workflow.
+        """
         self.edges.setdefault(edge.id, edge)
         return self.edges[edge.id]
 
     def nodes_by_type(self, table: str) -> list[GraphNode]:
+        """Manage by type within in-memory graph model.
+
+        Args:
+            table: Ontology table or node type targeted by the operation.
+
+        Returns:
+            Ordered results returned to the in-memory graph model caller.
+        """
         return [node for node in self.nodes.values() if node.table == table]
 
     def edges_by_type(self, edge_type: str) -> list[GraphEdge]:
+        """Manage by type within in-memory graph model.
+
+        Args:
+            edge_type: Ontology relation type used for the edge node and connector tables.
+
+        Returns:
+            Ordered results returned to the in-memory graph model caller.
+        """
         return [edge for edge in self.edges.values() if edge.type == edge_type]
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the in-memory graph model response contract.
+        """
         return {
             "ontology": self.ontology,
             "metadata": self.metadata,
@@ -116,6 +175,11 @@ class CodeGraph:
         }
 
     def summary(self) -> dict[str, Any]:
+        """Summarize in-memory graph model for in-memory graph model.
+
+        Returns:
+            Structured mapping that follows the in-memory graph model response contract.
+        """
         node_counts: dict[str, int] = {}
         edge_counts: dict[str, int] = {}
         for node in self.nodes.values():
@@ -131,6 +195,11 @@ class CodeGraph:
         }
 
     def validate_schema(self) -> None:
+        """Validate schema for in-memory graph model.
+
+        Raises:
+            ValueError: Raised when validation or runtime preconditions fail.
+        """
         node_tables = {node.id: node.table for node in self.nodes.values()}
         for edge in self.edges.values():
             if edge.source_id not in node_tables:
@@ -147,6 +216,12 @@ class CodeGraph:
 
 
 def _merge_node(existing: GraphNode, incoming: GraphNode) -> None:
+    """Merge node for in-memory graph model.
+
+    Args:
+        existing: Existing used by the in-memory graph model workflow.
+        incoming: Incoming used by the in-memory graph model workflow.
+    """
     for field_name in (
         "label",
         "kind",

@@ -19,6 +19,20 @@ SetupPaths = graph_paths.GraphStatePaths
 
 
 def derive_setup_paths(repo_root: str | Path) -> SetupPaths:
+    """Derive setup paths for setup workflow and client configuration.
+
+    Args:
+        repo_root: Repository root used to resolve graph state paths.
+
+    Returns:
+        SetupPaths instance populated with data from the setup workflow and client
+        configuration workflow.
+
+    Raises:
+        FileNotFoundError: Raised when validation or runtime preconditions fail.
+        NotADirectoryError: Raised when validation or runtime preconditions fail.
+        ValueError: Raised when validation or runtime preconditions fail.
+    """
     paths = derive_graph_state_paths(repo_root)
     if not paths.repo_root.exists():
         raise FileNotFoundError(f"Repository root does not exist: {paths.repo_root}")
@@ -32,6 +46,17 @@ def derive_setup_paths(repo_root: str | Path) -> SetupPaths:
 
 
 def build_setup_config(paths: SetupPaths, *, mcp_command: list[str]) -> dict[str, Any]:
+    """Build setup config for setup workflow and client configuration.
+
+    Args:
+        paths: Paths used by the setup workflow and client configuration workflow.
+        mcp_command: Mcp command used by the setup workflow and client configuration
+        workflow.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     return {
         "schema_version": 1,
         "repo_root": paths.repo_root.as_posix(),
@@ -49,6 +74,15 @@ def build_setup_config(paths: SetupPaths, *, mcp_command: list[str]) -> dict[str
 
 
 def load_setup_config(path: str | Path) -> dict[str, Any]:
+    """Load setup config for setup workflow and client configuration.
+
+    Args:
+        path: Filesystem path read from or written by this operation.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     config_path = Path(path).expanduser().resolve()
     with config_path.open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
@@ -57,6 +91,17 @@ def load_setup_config(path: str | Path) -> dict[str, Any]:
 
 
 def write_setup_config(path: Path, payload: dict[str, Any]) -> str:
+    """Write setup config for setup workflow and client configuration.
+
+    This writes to disk and should leave complete files on success.
+
+    Args:
+        path: Filesystem path read from or written by this operation.
+        payload: Structured payload being normalized or serialized.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     previous = _read_json_if_exists(path)
     action = "created"
     if previous == payload:
@@ -73,6 +118,11 @@ def write_setup_config(path: Path, payload: dict[str, Any]) -> str:
 
 
 def _package_version() -> str:
+    """Return version for setup workflow and client configuration.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     try:
         return version("codebase-graph")
     except PackageNotFoundError:
@@ -80,6 +130,15 @@ def _package_version() -> str:
 
 
 def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
+    """Read JSON if exists for setup workflow and client configuration.
+
+    Args:
+        path: Filesystem path read from or written by this operation.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     if not path.exists():
         return None
     with path.open("r", encoding="utf-8") as handle:
@@ -87,6 +146,15 @@ def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
 
 
 def _validate_setup_config(payload: dict[str, Any], path: Path) -> None:
+    """Validate setup config for setup workflow and client configuration.
+
+    Args:
+        payload: Structured payload being normalized or serialized.
+        path: Filesystem path read from or written by this operation.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
+    """
     required = ("repo_root", "repo_name", "state_dir", "database_path", "manifest_path")
     missing = [key for key in required if not payload.get(key)]
     if missing:

@@ -12,6 +12,8 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 
 @dataclass(frozen=True, slots=True)
 class MarkdownDocumentParser:
+    """Represent markdown document parser data used by source scanning and graph materialization.
+    """
     language: str = "markdown"
     parser_version: str = "markdown-docs-v1"
 
@@ -24,6 +26,21 @@ class MarkdownDocumentParser:
         repository_label: str,
         content_hash: str,
     ) -> ParseBundle:
+        """Parse file for source scanning and graph materialization.
+
+        Args:
+            path: Filesystem path read from or written by this operation.
+            relative_path: Repository-relative path stored in graph and manifest metadata.
+            source_root: Root directory scanned for source files.
+            repository_label: Repository label used by the source scanning and graph
+            materialization workflow.
+            content_hash: Content hash used by the source scanning and graph
+            materialization workflow.
+
+        Returns:
+            ParseBundle instance populated with data from the source scanning and graph
+            materialization workflow.
+        """
         source_text = path.read_text(encoding="utf-8")
         return ParseBundle(
             language=self.language,
@@ -37,6 +54,17 @@ class MarkdownDocumentParser:
 
 
 def _document_captures(path: str, source_text: str) -> tuple[dict[str, Any], ...]:
+    """Manage captures within source scanning and graph materialization.
+
+    Args:
+        path: Filesystem path read from or written by this operation.
+        source_text: Original source text used for labels, summaries, and byte-range
+        extraction.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     lines = source_text.splitlines()
     total_lines = max(len(lines), 1)
     captures: list[dict[str, Any]] = [
@@ -72,6 +100,7 @@ def _document_captures(path: str, source_text: str) -> tuple[dict[str, Any], ...
 
 @dataclass(frozen=True, slots=True)
 class _Section:
+    """Represent section data used by source scanning and graph materialization."""
     heading: str
     level: int
     line_start: int
@@ -80,6 +109,15 @@ class _Section:
 
 
 def _sections(lines: list[str]) -> tuple[_Section, ...]:
+    """Manage source scanning and graph materialization state.
+
+    Args:
+        lines: Lines used by the source scanning and graph materialization workflow.
+
+    Returns:
+        Tuple of stable results returned to the source scanning and graph materialization
+        caller.
+    """
     headings: list[tuple[int, int, str]] = []
     for line_number, line in enumerate(lines, start=1):
         match = HEADING_RE.match(line)
@@ -101,4 +139,12 @@ def _sections(lines: list[str]) -> tuple[_Section, ...]:
 
 
 def _summary(text: str) -> str:
+    """Summarize source scanning and graph materialization for source scanning and graph materialization.
+
+    Args:
+        text: Text being parsed, formatted, or written.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     return text.strip()[:2000]

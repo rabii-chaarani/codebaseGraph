@@ -17,6 +17,15 @@ _LEVELS = {
 
 
 def log_event(event: str, *, level: str = "INFO", **fields: Any) -> None:
+    """Write event for codebase graph runtime.
+
+    This appends structured diagnostic data when diagnostics are enabled.
+
+    Args:
+        event: Event used by the codebase graph runtime workflow.
+        level: Level used by the codebase graph runtime workflow.
+        fields: Field mapping to read or serialize.
+    """
     normalized_level = level.upper()
     if _LEVELS.get(normalized_level, 20) < _configured_level():
         return
@@ -30,11 +39,24 @@ def log_event(event: str, *, level: str = "INFO", **fields: Any) -> None:
 
 
 def _configured_level() -> int:
+    """Manage level within codebase graph runtime.
+
+    Returns:
+        Integer count, status code, or index used by the caller.
+    """
     configured = os.environ.get(LOG_LEVEL_ENV, "WARNING").upper()
     return _LEVELS.get(configured, _LEVELS["WARNING"])
 
 
 def _safe_fields(fields: dict[str, Any]) -> dict[str, Any]:
+    """Sanitize fields for codebase graph runtime.
+
+    Args:
+        fields: Field mapping to read or serialize.
+
+    Returns:
+        Structured mapping that follows the codebase graph runtime response contract.
+    """
     safe: dict[str, Any] = {}
     for key, value in fields.items():
         if value is None or isinstance(value, (str, int, float, bool)):
@@ -49,6 +71,14 @@ def _safe_fields(fields: dict[str, Any]) -> dict[str, Any]:
 
 
 def _safe_value(value: Any) -> Any:
+    """Sanitize value for codebase graph runtime.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        Any instance populated with data from the codebase graph runtime workflow.
+    """
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     if isinstance(value, (list, tuple)):

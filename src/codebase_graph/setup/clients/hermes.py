@@ -12,12 +12,34 @@ END_MARKER = "# codebaseGraph MCP server end"
 
 
 class HermesAdapter:
+    """Adapt hermes data to the codebaseGraph interface."""
     client_id = "hermes"
 
     def default_config_path(self, descriptor: McpServerDescriptor) -> Path:
+        """Create the default config path for setup workflow and client configuration.
+
+        Args:
+            descriptor: MCP server descriptor that will be rendered into client
+            configuration.
+
+        Returns:
+            Path instance populated with data from the setup workflow and client
+            configuration workflow.
+        """
         return Path.home() / ".hermes" / "config.yaml"
 
     def render(self, existing_text: str | None, descriptor: McpServerDescriptor) -> RenderedClientConfig:
+        """Render setup workflow and client configuration for setup workflow and client configuration.
+
+        Args:
+            existing_text: Existing client configuration text, if the file already exists.
+            descriptor: MCP server descriptor that will be rendered into client
+            configuration.
+
+        Returns:
+            RenderedClientConfig instance populated with data from the setup workflow and
+            client configuration workflow.
+        """
         entry = descriptor.stdio_entry(include_type=True)
         patch = _yaml_block(descriptor, entry)
         next_text, previous = _upsert_marked_block(existing_text or "", patch)
@@ -33,6 +55,17 @@ class HermesAdapter:
 
 
 def _upsert_marked_block(existing: str, block: str) -> tuple[str, str | None]:
+    """Upsert marked block for setup workflow and client configuration.
+
+    Args:
+        existing: Existing used by the setup workflow and client configuration
+        workflow.
+        block: Block used by the setup workflow and client configuration workflow.
+
+    Returns:
+        Tuple of stable results returned to the setup workflow and client configuration
+        caller.
+    """
     start = existing.find(START_MARKER)
     end = existing.find(END_MARKER)
     if start == -1 or end == -1 or end < start:
@@ -46,6 +79,15 @@ def _upsert_marked_block(existing: str, block: str) -> tuple[str, str | None]:
 
 
 def _yaml_block(descriptor: McpServerDescriptor, entry: dict[str, Any]) -> str:
+    """Render block for setup workflow and client configuration.
+
+    Args:
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        entry: Client-specific MCP server entry.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     lines = [
         START_MARKER,
         "mcp_servers:",
@@ -67,5 +109,13 @@ def _yaml_block(descriptor: McpServerDescriptor, entry: dict[str, Any]) -> str:
 
 
 def _yaml_scalar(value: str) -> str:
+    """Render scalar for setup workflow and client configuration.
+
+    Args:
+        value: Input being normalized for serialization or validation.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'

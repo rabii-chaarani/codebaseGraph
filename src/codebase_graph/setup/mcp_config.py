@@ -12,6 +12,11 @@ from .state import MCP_SERVER_NAME
 
 @dataclass(frozen=True, slots=True)
 class McpConfigResult:
+    """Carry the observable outcome of MCP config workflows.
+
+    The class belongs to Compatibility wrapper for configuring a single MCP client from setup
+    results.
+    """
     action: str
     client: str
     path: str | None
@@ -28,6 +33,12 @@ class McpConfigResult:
     native_error: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
+
+        Returns:
+            Structured mapping that follows the setup workflow and client configuration
+            response contract.
+        """
         payload = {
             "action": self.action,
             "client": self.client,
@@ -57,6 +68,18 @@ class McpConfigResult:
 
     @classmethod
     def from_install_result(cls, result: McpInstallResult) -> McpConfigResult:
+        """Manage install result within setup workflow and client configuration.
+
+        This may spawn a native client command or write a client config file.
+
+        Args:
+            result: Result used by the setup workflow and client configuration
+            workflow.
+
+        Returns:
+            McpConfigResult instance populated with data from the setup workflow and client
+            configuration workflow.
+        """
         return cls(
             action=result.action,
             client=result.client,
@@ -83,6 +106,19 @@ def configure_mcp_client(
     dry_run: bool = False,
     skip: bool = False,
 ) -> McpConfigResult:
+    """Configure MCP client for setup workflow and client configuration.
+
+    Args:
+        client: MCP client identifier selected by setup or install commands.
+        config_path: Setup configuration path used to resolve runtime state.
+        setup_config_path: Filesystem path for the setup config resource.
+        dry_run: Whether the operation should report changes without writing files.
+        skip: Whether setup should skip the client configuration step.
+
+    Returns:
+        McpConfigResult instance populated with data from the setup workflow and client
+        configuration workflow.
+    """
     result = install_mcp_server(
         McpInstallOptions(
             client=client,
@@ -99,9 +135,29 @@ def configure_mcp_client(
 
 
 def server_entry(setup_config_path: Path) -> dict[str, Any]:
+    """Build entry for setup workflow and client configuration.
+
+    This starts a transport loop and blocks until the server stops.
+
+    Args:
+        setup_config_path: Filesystem path for the setup config resource.
+
+    Returns:
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+    """
     return build_server_descriptor(setup_config_path).stdio_entry()
 
 
 def default_config_path(client: str) -> Path:
+    """Create the default config path for setup workflow and client configuration.
+
+    Args:
+        client: MCP client identifier selected by setup or install commands.
+
+    Returns:
+        Path instance populated with data from the setup workflow and client configuration
+        workflow.
+    """
     descriptor = build_server_descriptor(Path.cwd() / ".codebaseGraph" / "config.json")
     return get_client_adapter(client).default_config_path(descriptor)

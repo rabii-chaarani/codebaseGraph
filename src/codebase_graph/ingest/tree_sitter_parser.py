@@ -11,10 +11,12 @@ from .document_parser import MarkdownDocumentParser
 
 
 class ParserUnavailableError(RuntimeError):
+    """Signal failures raised by the source scanning and graph materialization subsystem."""
     pass
 
 
 class SourceParser(Protocol):
+    """Represent source parser data used by source scanning and graph materialization."""
     language: str
     parser_version: str
 
@@ -27,11 +29,27 @@ class SourceParser(Protocol):
         repository_label: str,
         content_hash: str,
     ) -> ParseBundle:
+        """Parse file for source scanning and graph materialization.
+
+        Args:
+            path: Filesystem path read from or written by this operation.
+            relative_path: Repository-relative path stored in graph and manifest metadata.
+            source_root: Root directory scanned for source files.
+            repository_label: Repository label used by the source scanning and graph
+            materialization workflow.
+            content_hash: Content hash used by the source scanning and graph
+            materialization workflow.
+
+        Returns:
+            ParseBundle instance populated with data from the source scanning and graph
+            materialization workflow.
+        """
         ...
 
 
 @dataclass(frozen=True, slots=True)
 class ParserRegistration:
+    """Represent parser registration data used by source scanning and graph materialization."""
     language: str
     suffixes: tuple[str, ...]
     parser_factory: Callable[[], SourceParser]
@@ -39,7 +57,18 @@ class ParserRegistration:
 
 
 class ParserRegistry:
+    """Represent parser registry data used by source scanning and graph materialization.
+
+    The class belongs to Tree-sitter Python parser adapter that normalizes syntax into
+    GraphBuilder input.
+    """
     def __init__(self, registrations: Mapping[str, ParserRegistration] | None = None) -> None:
+        """Initialize parser registry with the collaborators and state it owns.
+
+        Args:
+            registrations: Registrations used by the source scanning and graph
+            materialization workflow.
+        """
         self._registrations: dict[str, ParserRegistration] = dict(registrations or {})
         self._suffix_to_language: dict[str, str] = {}
         for registration in self._registrations.values():
@@ -47,6 +76,11 @@ class ParserRegistry:
 
     @property
     def parser_version(self) -> str:
+        """Return version for source scanning and graph materialization.
+
+        Returns:
+            Formatted text returned to the caller.
+        """
         return "+".join(
             registration.parser_version
             for registration in self._registrations.values()
@@ -60,14 +94,48 @@ class ParserRegistry:
         parser_factory: Callable[[], SourceParser],
         parser_version: str,
     ) -> None:
+        """Register source scanning and graph materialization for source scanning and graph materialization.
+
+        Args:
+            language: Language used by the source scanning and graph materialization
+            workflow.
+            suffixes: Suffixes used by the source scanning and graph materialization
+            workflow.
+            parser_factory: Parser factory used by the source scanning and graph
+            materialization workflow.
+            parser_version: Parser version used by the source scanning and graph
+            materialization workflow.
+        """
         registration = ParserRegistration(language, suffixes, parser_factory, parser_version)
         self._registrations[language] = registration
         self._register_suffixes(registration)
 
     def language_for_path(self, path: Path) -> str | None:
+        """Manage for path within source scanning and graph materialization.
+
+        Args:
+            path: Filesystem path read from or written by this operation.
+
+        Returns:
+            str | None instance populated with data from the source scanning and graph
+            materialization workflow.
+        """
         return self._suffix_to_language.get(path.suffix)
 
     def parser_for_language(self, language: str) -> SourceParser:
+        """Return the parser registered for a language.
+
+        Args:
+            language: Language used by the source scanning and graph materialization
+            workflow.
+
+        Returns:
+            SourceParser instance populated with data from the source scanning and graph
+            materialization workflow.
+
+        Raises:
+            ValueError: Raised when validation or runtime preconditions fail.
+        """
         try:
             registration = self._registrations[language]
         except KeyError as exc:
@@ -75,12 +143,20 @@ class ParserRegistry:
         return registration.parser_factory()
 
     def _register_suffixes(self, registration: ParserRegistration) -> None:
+        """Register suffixes for source scanning and graph materialization.
+
+        Args:
+            registration: Registration used by the source scanning and graph
+            materialization workflow.
+        """
         for suffix in registration.suffixes:
             self._suffix_to_language[suffix] = registration.language
 
 
 @dataclass(frozen=True, slots=True)
 class TreeSitterPythonParser:
+    """Represent tree sitter python parser data used by source scanning and graph materialization.
+    """
     language: str = "python"
     parser_version: str = "tree-sitter-python-v1"
 
@@ -93,6 +169,21 @@ class TreeSitterPythonParser:
         repository_label: str,
         content_hash: str,
     ) -> ParseBundle:
+        """Parse file for source scanning and graph materialization.
+
+        Args:
+            path: Filesystem path read from or written by this operation.
+            relative_path: Repository-relative path stored in graph and manifest metadata.
+            source_root: Root directory scanned for source files.
+            repository_label: Repository label used by the source scanning and graph
+            materialization workflow.
+            content_hash: Content hash used by the source scanning and graph
+            materialization workflow.
+
+        Returns:
+            ParseBundle instance populated with data from the source scanning and graph
+            materialization workflow.
+        """
         source_text = path.read_text(encoding="utf-8")
         return ParseBundle(
             language=self.language,
@@ -105,6 +196,16 @@ class TreeSitterPythonParser:
         )
 
     def parse_source(self, source_text: str) -> dict[str, Any]:
+        """Parse source for source scanning and graph materialization.
+
+        Args:
+            source_text: Original source text used for labels, summaries, and byte-range
+            extraction.
+
+        Returns:
+            Structured mapping that follows the source scanning and graph
+            materialization response contract.
+        """
         parser = _python_parser()
         source_bytes = source_text.encode("utf-8")
         tree = parser.parse(source_bytes)
@@ -112,6 +213,12 @@ class TreeSitterPythonParser:
 
 
 def default_parser_registry() -> ParserRegistry:
+    """Create the default parser registry for source scanning and graph materialization.
+
+    Returns:
+        ParserRegistry instance populated with data from the source scanning and graph
+        materialization workflow.
+    """
     registry = ParserRegistry()
     registry.register(
         "python",
@@ -129,10 +236,29 @@ def default_parser_registry() -> ParserRegistry:
 
 
 def parser_for_language(language: str) -> SourceParser:
+    """Return the parser registered for a language.
+
+    Args:
+        language: Language used by the source scanning and graph materialization
+        workflow.
+
+    Returns:
+        SourceParser instance populated with data from the source scanning and graph
+        materialization workflow.
+    """
     return default_parser_registry().parser_for_language(language)
 
 
 def _python_parser() -> Any:
+    """Manage parser within source scanning and graph materialization.
+
+    Returns:
+        Any instance populated with data from the source scanning and graph materialization
+        workflow.
+
+    Raises:
+        ParserUnavailableError: Raised when validation or runtime preconditions fail.
+    """
     try:
         from tree_sitter import Language, Parser
         import tree_sitter_python
@@ -156,7 +282,21 @@ def _python_parser() -> Any:
 
 
 def _convert_node(node: Any, source_bytes: bytes, decorators: tuple[dict[str, Any], ...] = ()) -> dict[str, Any]:
+    """Normalize a tree-sitter Python node into the mapping shape consumed by GraphBuilder.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+        decorators: Decorators used by the source scanning and graph materialization
+        workflow.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     if node.type == "decorated_definition":
+        # Tree-sitter wraps decorators around the real definition; flatten them
+        # onto the class/function node so the graph builder sees one declaration.
         converted_decorators = tuple(
             _convert_node(child, source_bytes)
             for child in _named_children(node)
@@ -194,6 +334,8 @@ def _convert_node(node: Any, source_bytes: bytes, decorators: tuple[dict[str, An
     elif node.type in {"string", "integer", "float", "true", "false", "none"}:
         converted["value"] = _literal_value(node, source_bytes)
 
+    # Unknown syntax is still traversed through semantic children so new Python
+    # grammar nodes do not hide nested definitions or calls from the graph.
     converted.setdefault("children", [_convert_node(child, source_bytes) for child in _semantic_children(node)])
     return converted
 
@@ -203,6 +345,18 @@ def _class_fields(
     source_bytes: bytes,
     decorators: tuple[dict[str, Any], ...],
 ) -> dict[str, Any]:
+    """Manage fields within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+        decorators: Decorators used by the source scanning and graph materialization
+        workflow.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     fields: dict[str, Any] = {"name": _field_text(node, "name", source_bytes)}
     if decorators:
         fields["decorator_list"] = list(decorators)
@@ -216,6 +370,18 @@ def _function_fields(
     source_bytes: bytes,
     decorators: tuple[dict[str, Any], ...],
 ) -> dict[str, Any]:
+    """Manage fields within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+        decorators: Decorators used by the source scanning and graph materialization
+        workflow.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     fields: dict[str, Any] = {"name": _field_text(node, "name", source_bytes)}
     parameters = node.child_by_field_name("parameters")
     if parameters is not None:
@@ -231,6 +397,16 @@ def _function_fields(
 
 
 def _parameter_node(node: Any, source_bytes: bytes) -> dict[str, Any]:
+    """Manage node within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     text = _node_text(node, source_bytes)
     name = text.split(":", 1)[0].split("=", 1)[0].strip().lstrip("*")
     parameter: dict[str, Any] = {
@@ -250,6 +426,16 @@ def _parameter_node(node: Any, source_bytes: bytes) -> dict[str, Any]:
 
 
 def _import_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
+    """Manage fields within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     text = _node_text(node, source_bytes).strip()
     if node.type == "import_from_statement":
         match = re.match(r"from\s+([.\w]+)\s+import\s+(.+)", text)
@@ -263,11 +449,30 @@ def _import_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
 
 
 def _import_alias(raw_name: str) -> dict[str, str]:
+    """Manage alias within source scanning and graph materialization.
+
+    Args:
+        raw_name: Name used to select or label raw data.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     name = raw_name.strip().split(" as ", 1)[0].strip()
     return {"type": "alias", "name": name}
 
 
 def _call_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
+    """Dispatch fields for source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     function = node.child_by_field_name("function")
     if function is not None:
         return {"func": _convert_node(function, source_bytes)}
@@ -276,6 +481,16 @@ def _call_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
 
 
 def _assignment_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
+    """Manage fields within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     left = node.child_by_field_name("left")
     right = node.child_by_field_name("right")
     fields: dict[str, Any] = {}
@@ -287,6 +502,16 @@ def _assignment_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
 
 
 def _attribute_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
+    """Manage fields within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+
+    Returns:
+        Structured mapping that follows the source scanning and graph materialization
+        response contract.
+    """
     text = _node_text(node, source_bytes)
     if "." not in text:
         return {"id": text}
@@ -295,38 +520,108 @@ def _attribute_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
 
 
 def _literal_value(node: Any, source_bytes: bytes) -> str:
+    """Manage value within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     return _node_text(node, source_bytes).strip("'\"")
 
 
 def _semantic_children(node: Any) -> tuple[Any, ...]:
+    """Return children for source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+
+    Returns:
+        Tuple of stable results returned to the source scanning and graph materialization
+        caller.
+    """
     ignored = {"identifier", "type_identifier", "parameters", "decorator", "block"}
     return tuple(child for child in _named_children(node) if child.type not in ignored)
 
 
 def _named_children(node: Any | None) -> tuple[Any, ...]:
+    """Manage children within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+
+    Returns:
+        Tuple of stable results returned to the source scanning and graph materialization
+        caller.
+    """
     if node is None:
         return ()
     return tuple(getattr(node, "named_children", ()) or ())
 
 
 def _field_text(node: Any, field_name: str, source_bytes: bytes) -> str:
+    """Read text for source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        field_name: Field name being extracted from a node or edge entry.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     child = node.child_by_field_name(field_name)
     return _node_text(child, source_bytes) if child is not None else ""
 
 
 def _node_text(node: Any, source_bytes: bytes) -> str:
+    """Manage text within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+        source_bytes: UTF-8 encoded source used to slice tree-sitter node text.
+
+    Returns:
+        Formatted text returned to the caller.
+    """
     return source_bytes[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
 
 
 def _line_start(node: Any) -> int:
+    """Manage start within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+
+    Returns:
+        Integer count, status code, or index used by the caller.
+    """
     return _point_row(node.start_point) + 1
 
 
 def _line_end(node: Any) -> int:
+    """Manage end within source scanning and graph materialization.
+
+    Args:
+        node: Parser or graph node being inspected.
+
+    Returns:
+        Integer count, status code, or index used by the caller.
+    """
     return _point_row(node.end_point) + 1
 
 
 def _point_row(point: Any) -> int:
+    """Manage row within source scanning and graph materialization.
+
+    Args:
+        point: Point used by the source scanning and graph materialization workflow.
+
+    Returns:
+        Integer count, status code, or index used by the caller.
+    """
     if hasattr(point, "row"):
         return int(point.row)
     return int(point[0])

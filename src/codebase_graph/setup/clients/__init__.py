@@ -20,6 +20,18 @@ ADAPTERS: dict[str, ClientConfigAdapter] = {
 
 
 def get_client_adapter(client_id: str) -> ClientConfigAdapter:
+    """Return client adapter for setup workflow and client configuration.
+
+    Args:
+        client_id: Identifier for the client graph object.
+
+    Returns:
+        ClientConfigAdapter instance populated with data from the setup workflow and client
+        configuration workflow.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
+    """
     try:
         return ADAPTERS[client_id]
     except KeyError as exc:
@@ -28,6 +40,12 @@ def get_client_adapter(client_id: str) -> ClientConfigAdapter:
 
 
 def supported_client_ids() -> tuple[str, ...]:
+    """Return client identifiers for setup workflow and client configuration.
+
+    Returns:
+        Tuple of stable results returned to the setup workflow and client configuration
+        caller.
+    """
     return tuple(sorted([*ADAPTERS, "none"]))
 
 

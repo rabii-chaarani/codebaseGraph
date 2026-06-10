@@ -46,6 +46,18 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    """Resolve lazy package exports without importing setup-only modules eagerly.
+
+    Args:
+        name: Name used by the setup workflow and client configuration workflow.
+
+    Returns:
+        Any instance populated with data from the setup workflow and client configuration
+        workflow.
+
+    Raises:
+        AttributeError: Raised when validation or runtime preconditions fail.
+    """
     if name not in _LAZY_EXPORTS:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     module_name, attribute_name = _LAZY_EXPORTS[name]
