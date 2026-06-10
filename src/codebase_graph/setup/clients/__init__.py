@@ -20,6 +20,14 @@ ADAPTERS: dict[str, ClientConfigAdapter] = {
 
 
 def get_client_adapter(client_id: str) -> ClientConfigAdapter:
+    """Return client adapter.
+
+    Args:
+        client_id: The client id to identify.
+
+    Returns:
+        The computed result.
+    """
     try:
         return ADAPTERS[client_id]
     except KeyError as exc:
@@ -28,6 +36,11 @@ def get_client_adapter(client_id: str) -> ClientConfigAdapter:
 
 
 def supported_client_ids() -> tuple[str, ...]:
+    """Return supported client ids.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     return tuple(sorted([*ADAPTERS, "none"]))
 
 

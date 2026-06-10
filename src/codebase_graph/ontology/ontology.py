@@ -9,12 +9,18 @@ ONTOLOGY_VERSION = "1.0.0"
 
 @dataclass(frozen=True, slots=True)
 class FieldSpec:
+    """Store field spec data."""
     name: str
     value_type: str
     description: str
     required: bool = False
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "name": self.name,
             "type": self.value_type,
@@ -25,6 +31,7 @@ class FieldSpec:
 
 @dataclass(frozen=True, slots=True)
 class NodeTypeSpec:
+    """Store node type spec data."""
     name: str
     description: str
     fields: tuple[FieldSpec, ...] = ()
@@ -32,6 +39,11 @@ class NodeTypeSpec:
     constraints: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "name": self.name,
             "description": self.description,
@@ -43,6 +55,7 @@ class NodeTypeSpec:
 
 @dataclass(frozen=True, slots=True)
 class RelationTypeSpec:
+    """Store relation type spec data."""
     name: str
     source_types: tuple[str, ...]
     target_types: tuple[str, ...]
@@ -51,6 +64,11 @@ class RelationTypeSpec:
     constraints: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "name": self.name,
             "source_types": list(self.source_types),
@@ -63,6 +81,7 @@ class RelationTypeSpec:
 
 @dataclass(frozen=True, slots=True)
 class ParserNodeMappingSpec:
+    """Store parser node mapping spec data."""
     name: str
     parser_node_types: tuple[str, ...]
     captures: tuple[str, ...]
@@ -72,6 +91,11 @@ class ParserNodeMappingSpec:
     context_rule: str = ""
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "name": self.name,
             "parser_node_types": list(self.parser_node_types),
@@ -85,6 +109,7 @@ class ParserNodeMappingSpec:
 
 @dataclass(frozen=True, slots=True)
 class QueryHelperSpec:
+    """Store query helper spec data."""
     name: str
     description: str
     query: str
@@ -92,6 +117,11 @@ class QueryHelperSpec:
     returns: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "name": self.name,
             "description": self.description,
@@ -141,6 +171,18 @@ def _node(
     fields: tuple[FieldSpec, ...] = (),
     constraints: tuple[str, ...] = (),
 ) -> NodeTypeSpec:
+    """Return node result.
+
+    Args:
+        name: Name value.
+        description: Description value.
+        parser_node_types: Parser node types value.
+        fields: Fields value.
+        constraints: Constraints value.
+
+    Returns:
+        The computed result.
+    """
     return NodeTypeSpec(
         name=name,
         description=description,
@@ -255,6 +297,18 @@ def _relation(
     *,
     constraints: tuple[str, ...] = (),
 ) -> RelationTypeSpec:
+    """Return relation result.
+
+    Args:
+        name: Name value.
+        source_types: Source types value.
+        target_types: Target types value.
+        description: Description value.
+        constraints: Constraints value.
+
+    Returns:
+        The computed result.
+    """
     return RelationTypeSpec(
         name=name,
         source_types=source_types,
@@ -766,14 +820,32 @@ QUERY_HELPERS = (
 
 
 def node_type_names() -> tuple[str, ...]:
+    """Return node type names.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     return tuple(node.name for node in NODE_TYPES)
 
 
 def relation_type_names() -> tuple[str, ...]:
+    """Return relation type names.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     return tuple(relation.name for relation in RELATION_TYPES)
 
 
 def get_node_type(name: str) -> NodeTypeSpec:
+    """Return node type.
+
+    Args:
+        name: Name value.
+
+    Returns:
+        The computed result.
+    """
     for node_type in NODE_TYPES:
         if node_type.name == name:
             return node_type
@@ -781,6 +853,14 @@ def get_node_type(name: str) -> NodeTypeSpec:
 
 
 def get_relation_type(name: str) -> RelationTypeSpec:
+    """Return relation type.
+
+    Args:
+        name: Name value.
+
+    Returns:
+        The computed result.
+    """
     for relation_type in RELATION_TYPES:
         if relation_type.name == name:
             return relation_type
@@ -788,6 +868,11 @@ def get_relation_type(name: str) -> RelationTypeSpec:
 
 
 def schema_payload() -> dict[str, Any]:
+    """Return schema payload.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     return {
         "ontology": ONTOLOGY_NAME,
         "version": ONTOLOGY_VERSION,

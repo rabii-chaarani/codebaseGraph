@@ -17,7 +17,14 @@ MAX_HTTP_BODY_BYTES = 1_000_000
 
 
 class McpHttpServer(ThreadingHTTPServer):
+    """Represent a MCP http server."""
     def __init__(self, server_address: tuple[str, int], handler: type[BaseHTTPRequestHandler]) -> None:
+        """Initialize the instance.
+
+        Args:
+            server_address: Server address value.
+            handler: Handler value.
+        """
         super().__init__(server_address, handler)
         self.mcp_runtime: GraphRuntimeConfig
         self.mcp_sessions: dict[str, McpGraphServer]
@@ -37,6 +44,22 @@ def build_http_server(
     allow_remote: bool = False,
     auth_token: str | None = None,
 ) -> McpHttpServer:
+    """Build http server.
+
+    Args:
+        repo_root: Repo root value.
+        config_path: The config path to read or write.
+        db_path: The db path to read or write.
+        manifest_path: The manifest path to read or write.
+        host: Host value.
+        port: Port value.
+        endpoint_path: The endpoint path to read or write.
+        allow_remote: Allow remote value.
+        auth_token: Auth token value.
+
+    Returns:
+        The computed result.
+    """
     if auth_token is not None and not auth_token.strip():
         raise ValueError("MCP HTTP auth token must not be blank")
     if allow_remote and auth_token is None:
@@ -71,6 +94,19 @@ def serve_http(
     allow_remote: bool = False,
     auth_token: str | None = None,
 ) -> None:
+    """Serve http.
+
+    Args:
+        repo_root: Repo root value.
+        config_path: The config path to read or write.
+        db_path: The db path to read or write.
+        manifest_path: The manifest path to read or write.
+        host: Host value.
+        port: Port value.
+        endpoint_path: The endpoint path to read or write.
+        allow_remote: Allow remote value.
+        auth_token: Auth token value.
+    """
     server = build_http_server(
         repo_root=repo_root,
         config_path=config_path,
@@ -89,9 +125,11 @@ def serve_http(
 
 
 class _McpHttpHandler(BaseHTTPRequestHandler):
+    """Represent a MCP http handler."""
     server: McpHttpServer
 
     def do_POST(self) -> None:
+        """Handle an HTTP T request."""
         if not self._request_path_matches() or not self._valid_origin() or not self._valid_auth():
             return
         if not self._valid_protocol_header():
@@ -120,6 +158,7 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         self._send_json(response, headers=headers)
 
     def do_GET(self) -> None:
+        """Handle an HTTP T request."""
         if not self._request_path_matches() or not self._valid_origin() or not self._valid_auth():
             return
         self.send_response(HTTPStatus.METHOD_NOT_ALLOWED)
@@ -127,9 +166,23 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format: str, *args: Any) -> None:
+        """Log message.
+
+        Args:
+            format: Format value.
+            args: Parsed command-line arguments.
+        """
         return
 
     def _resolve_session(self, message: dict[str, Any]) -> tuple[str, McpGraphServer] | tuple[None, None]:
+        """Resolve session.
+
+        Args:
+            message: The message payload to process.
+
+        Returns:
+            A tuple containing the computed values.
+        """
         method = str(message.get("method", ""))
         request_id = message.get("id")
         session_id = self.headers.get("Mcp-Session-Id")
@@ -149,12 +202,22 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return session_id, self.server.mcp_sessions[session_id]
 
     def _request_path_matches(self) -> bool:
+        """Process request path matches.
+
+        Returns:
+            Whether the check succeeds.
+        """
         if urlparse(self.path).path == self.server.endpoint_path:
             return True
         self._send_json(rpc_error(None, -32601, "MCP endpoint not found"), status=HTTPStatus.NOT_FOUND)
         return False
 
     def _valid_origin(self) -> bool:
+        """Return whether valid origin.
+
+        Returns:
+            Whether the check succeeds.
+        """
         origin = self.headers.get("Origin")
         if not origin:
             return True
@@ -171,6 +234,11 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return False
 
     def _valid_auth(self) -> bool:
+        """Return whether valid auth.
+
+        Returns:
+            Whether the check succeeds.
+        """
         if self.server.auth_token is None:
             return True
         authorization = self.headers.get("Authorization", "")
@@ -190,6 +258,11 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return False
 
     def _valid_protocol_header(self) -> bool:
+        """Return whether valid protocol header.
+
+        Returns:
+            Whether the check succeeds.
+        """
         requested = self.headers.get("MCP-Protocol-Version")
         if requested is None:
             return True
@@ -213,6 +286,11 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return False
 
     def _content_length(self) -> int | None:
+        """Process content length.
+
+        Returns:
+            The computed result.
+        """
         raw_length = self.headers.get("Content-Length", "0")
         try:
             length = int(raw_length)
@@ -255,6 +333,13 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         status: HTTPStatus = HTTPStatus.OK,
         headers: dict[str, str] | None = None,
     ) -> None:
+        """Send JSON.
+
+        Args:
+            payload: Payload to process.
+            status: Status value.
+            headers: Headers value.
+        """
         body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")

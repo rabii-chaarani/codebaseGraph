@@ -9,6 +9,7 @@ EXECUTION_TOOL = "graph_query"
 
 @dataclass(frozen=True, slots=True)
 class ArchitectureQuerySpec:
+    """Store architecture query spec data."""
     name: str
     description: str
     statement: str
@@ -16,6 +17,11 @@ class ArchitectureQuerySpec:
     returns: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "name": self.name,
             "description": self.description,
@@ -27,11 +33,17 @@ class ArchitectureQuerySpec:
 
 @dataclass(frozen=True, slots=True)
 class ArchitectureQueryGroup:
+    """Store architecture query group data."""
     name: str
     goal: str
     queries: tuple[ArchitectureQuerySpec, ...]
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "name": self.name,
             "goal": self.goal,
@@ -342,6 +354,14 @@ ARCHITECTURE_QUERY_GROUPS: dict[str, ArchitectureQueryGroup] = {
 
 
 def architecture_query_catalog(group: str | None = None) -> dict[str, Any]:
+    """Process architecture query catalog.
+
+    Args:
+        group: Group value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     groups = _selected_groups(group)
     return {
         "workflow": WORKFLOW_NAME,
@@ -352,6 +372,14 @@ def architecture_query_catalog(group: str | None = None) -> dict[str, Any]:
 
 
 def _selected_groups(group: str | None) -> tuple[ArchitectureQueryGroup, ...]:
+    """Process selected groups.
+
+    Args:
+        group: Group value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     if group is None or group == "":
         return tuple(ARCHITECTURE_QUERY_GROUPS[name] for name in ARCHITECTURE_QUERY_ORDER)
     try:

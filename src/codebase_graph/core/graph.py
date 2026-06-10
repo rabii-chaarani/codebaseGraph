@@ -8,6 +8,7 @@ from codebase_graph.ontology import ONTOLOGY_NAME, get_relation_type
 
 @dataclass(slots=True)
 class GraphNode:
+    """Store graph node data."""
     id: str
     table: str
     label: str
@@ -26,6 +27,11 @@ class GraphNode:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "id": self.id,
             "table": self.table,
@@ -48,6 +54,7 @@ class GraphNode:
 
 @dataclass(slots=True)
 class GraphEdge:
+    """Store graph edge data."""
     id: str
     type: str
     source_id: str
@@ -61,6 +68,11 @@ class GraphEdge:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "id": self.id,
             "type": self.type,
@@ -78,12 +90,21 @@ class GraphEdge:
 
 @dataclass(slots=True)
 class CodeGraph:
+    """Store code graph data."""
     nodes: dict[str, GraphNode] = field(default_factory=dict)
     edges: dict[str, GraphEdge] = field(default_factory=dict)
     ontology: str = ONTOLOGY_NAME
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_node(self, node: GraphNode) -> GraphNode:
+        """Add node.
+
+        Args:
+            node: Node value.
+
+        Returns:
+            The computed result.
+        """
         existing = self.nodes.get(node.id)
         if existing is None:
             self.nodes[node.id] = node
@@ -92,16 +113,45 @@ class CodeGraph:
         return existing
 
     def add_edge(self, edge: GraphEdge) -> GraphEdge:
+        """Add edge.
+
+        Args:
+            edge: Edge value.
+
+        Returns:
+            The computed result.
+        """
         self.edges.setdefault(edge.id, edge)
         return self.edges[edge.id]
 
     def nodes_by_type(self, table: str) -> list[GraphNode]:
+        """Process nodes by type.
+
+        Args:
+            table: Table value.
+
+        Returns:
+            A list containing the computed values.
+        """
         return [node for node in self.nodes.values() if node.table == table]
 
     def edges_by_type(self, edge_type: str) -> list[GraphEdge]:
+        """Process edges by type.
+
+        Args:
+            edge_type: Edge type value.
+
+        Returns:
+            A list containing the computed values.
+        """
         return [edge for edge in self.edges.values() if edge.type == edge_type]
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "ontology": self.ontology,
             "metadata": self.metadata,
@@ -116,6 +166,11 @@ class CodeGraph:
         }
 
     def summary(self) -> dict[str, Any]:
+        """Return summary for result.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         node_counts: dict[str, int] = {}
         edge_counts: dict[str, int] = {}
         for node in self.nodes.values():
@@ -131,6 +186,7 @@ class CodeGraph:
         }
 
     def validate_schema(self) -> None:
+        """Validate schema."""
         node_tables = {node.id: node.table for node in self.nodes.values()}
         for edge in self.edges.values():
             if edge.source_id not in node_tables:
@@ -147,6 +203,12 @@ class CodeGraph:
 
 
 def _merge_node(existing: GraphNode, incoming: GraphNode) -> None:
+    """Merge node.
+
+    Args:
+        existing: Existing value.
+        incoming: Incoming value.
+    """
     for field_name in (
         "label",
         "kind",

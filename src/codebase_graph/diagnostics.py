@@ -17,6 +17,13 @@ _LEVELS = {
 
 
 def log_event(event: str, *, level: str = "INFO", **fields: Any) -> None:
+    """Log event.
+
+    Args:
+        event: Event value.
+        level: Level value.
+        fields: Fields value.
+    """
     normalized_level = level.upper()
     if _LEVELS.get(normalized_level, 20) < _configured_level():
         return
@@ -30,11 +37,24 @@ def log_event(event: str, *, level: str = "INFO", **fields: Any) -> None:
 
 
 def _configured_level() -> int:
+    """Process configured level.
+
+    Returns:
+        The computed integer.
+    """
     configured = os.environ.get(LOG_LEVEL_ENV, "WARNING").upper()
     return _LEVELS.get(configured, _LEVELS["WARNING"])
 
 
 def _safe_fields(fields: dict[str, Any]) -> dict[str, Any]:
+    """Return safe fields.
+
+    Args:
+        fields: Fields value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     safe: dict[str, Any] = {}
     for key, value in fields.items():
         if value is None or isinstance(value, (str, int, float, bool)):
@@ -49,6 +69,14 @@ def _safe_fields(fields: dict[str, Any]) -> dict[str, Any]:
 
 
 def _safe_value(value: Any) -> Any:
+    """Return safe value.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed result.
+    """
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     if isinstance(value, (list, tuple)):

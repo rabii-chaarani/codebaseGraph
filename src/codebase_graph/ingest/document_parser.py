@@ -12,6 +12,7 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 
 @dataclass(frozen=True, slots=True)
 class MarkdownDocumentParser:
+    """Store markdown document parser data."""
     language: str = "markdown"
     parser_version: str = "markdown-docs-v1"
 
@@ -24,6 +25,18 @@ class MarkdownDocumentParser:
         repository_label: str,
         content_hash: str,
     ) -> ParseBundle:
+        """Parse file.
+
+        Args:
+            path: The path to read or write.
+            relative_path: The relative path to read or write.
+            source_root: Source root value.
+            repository_label: Repository label value.
+            content_hash: Content hash value.
+
+        Returns:
+            The computed result.
+        """
         source_text = path.read_text(encoding="utf-8")
         return ParseBundle(
             language=self.language,
@@ -37,6 +50,15 @@ class MarkdownDocumentParser:
 
 
 def _document_captures(path: str, source_text: str) -> tuple[dict[str, Any], ...]:
+    """Process document captures.
+
+    Args:
+        path: The path to read or write.
+        source_text: Source text value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     lines = source_text.splitlines()
     total_lines = max(len(lines), 1)
     captures: list[dict[str, Any]] = [
@@ -72,6 +94,7 @@ def _document_captures(path: str, source_text: str) -> tuple[dict[str, Any], ...
 
 @dataclass(frozen=True, slots=True)
 class _Section:
+    """Store section data."""
     heading: str
     level: int
     line_start: int
@@ -80,6 +103,14 @@ class _Section:
 
 
 def _sections(lines: list[str]) -> tuple[_Section, ...]:
+    """Process sections.
+
+    Args:
+        lines: Lines value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     headings: list[tuple[int, int, str]] = []
     for line_number, line in enumerate(lines, start=1):
         match = HEADING_RE.match(line)
@@ -101,4 +132,12 @@ def _sections(lines: list[str]) -> tuple[_Section, ...]:
 
 
 def _summary(text: str) -> str:
+    """Return summary for result.
+
+    Args:
+        text: Text value.
+
+    Returns:
+        The computed string.
+    """
     return text.strip()[:2000]

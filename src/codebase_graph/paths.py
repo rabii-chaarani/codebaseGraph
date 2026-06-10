@@ -11,6 +11,7 @@ MCP_SERVER_NAME = "codebase_graph"
 
 @dataclass(frozen=True, slots=True)
 class GraphStatePaths:
+    """Store graph state paths data."""
     repo_root: Path
     repo_name: str
     state_dir: Path
@@ -19,6 +20,11 @@ class GraphStatePaths:
     config_path: Path
 
     def as_dict(self) -> dict[str, str]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "repo_root": self.repo_root.as_posix(),
             "repo_name": self.repo_name,
@@ -30,6 +36,14 @@ class GraphStatePaths:
 
 
 def derive_graph_state_paths(repo_root: str | Path) -> GraphStatePaths:
+    """Derive graph state paths.
+
+    Args:
+        repo_root: Repo root value.
+
+    Returns:
+        The computed result.
+    """
     root = Path(repo_root).expanduser().resolve()
     repo_name = _repo_name(root)
     state_dir = root / DEFAULT_STATE_DIR
@@ -44,6 +58,14 @@ def derive_graph_state_paths(repo_root: str | Path) -> GraphStatePaths:
 
 
 def _repo_name(root: Path) -> str:
+    """Process repo name.
+
+    Args:
+        root: Root value.
+
+    Returns:
+        The computed string.
+    """
     name = root.name.strip()
     if name:
         return _safe_name(name)
@@ -51,5 +73,13 @@ def _repo_name(root: Path) -> str:
 
 
 def _safe_name(value: str) -> str:
+    """Return safe name.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     normalized = "".join(character if character.isalnum() or character in {"-", "_"} else "_" for character in value)
     return normalized.strip("._-") or "repository"

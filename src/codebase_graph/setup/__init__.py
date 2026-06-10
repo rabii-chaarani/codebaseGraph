@@ -46,6 +46,14 @@ __all__ = [
 
 
 def __getattr__(name: str) -> Any:
+    """Return lazily imported package attributes.
+
+    Args:
+        name: Name value.
+
+    Returns:
+        The computed result.
+    """
     if name not in _LAZY_EXPORTS:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     module_name, attribute_name = _LAZY_EXPORTS[name]

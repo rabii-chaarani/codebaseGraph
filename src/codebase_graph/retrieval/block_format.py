@@ -12,7 +12,7 @@ ONTOLOGY_TERMS = {"Class", "Method", "Scope", "Contains", "outgoing", "path", "s
 
 
 def serialize_parseable_search_block(payload: Mapping[str, Any]) -> str:
-    """Serialize graph-search JSON into a parseable debug block format."""
+    """Serialize parseable search block."""
     lines = [
         " | ".join(
             [
@@ -73,7 +73,7 @@ def serialize_parseable_search_block(payload: Mapping[str, Any]) -> str:
 
 
 def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
-    """Serialize graph-search JSON into the compact runtime block format."""
+    """Serialize agent search block."""
     lines = [f"q {_format_value(str(payload.get('query', '')))}"]
     current_path: str | None = None
     result_keys = {_record_key(result) for result in payload.get("results", [])}
@@ -152,6 +152,14 @@ def serialize_context_block(payload: Mapping[str, Any]) -> str:
 
 
 def serialize_graph_block(payload: Mapping[str, Any]) -> str:
+    """Serialize graph block.
+
+    Args:
+        payload: Payload to process.
+
+    Returns:
+        The computed string.
+    """
     if "results" in payload:
         return serialize_agent_search_block(payload)
     if "context" in payload and "node_id" in payload and "node_type" in payload:
@@ -165,6 +173,14 @@ def serialize_search_block(payload: Mapping[str, Any]) -> str:
 
 
 def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Canonicalize search payload.
+
+    Args:
+        payload: Payload to process.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     records: list[dict[str, Any]] = []
     for result in payload.get("results", []):
         result_record = {
@@ -197,6 +213,14 @@ def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def parse_search_block(text: str) -> dict[str, Any]:
+    """Parse the compact graph-search block format back into JSON.
+
+    Args:
+        text: Block-formatted graph-search response.
+
+    Returns:
+        A payload containing parsed search results and context rows.
+    """
     records: list[dict[str, Any]] = []
     current_path = ""
     current_result: dict[str, Any] | None = None
@@ -228,6 +252,7 @@ def parse_search_block(text: str) -> dict[str, Any]:
                 raise ValueError(f"Context line has no parent result: {raw_line}")
             tokens = shlex.split(raw_line.strip())
             fields = _keyed_fields(tokens[3:])
+            # L=same is a compact marker for context rows that share the result span.
             span = current_result["span"] if fields.get("span") == "L=same" else _parse_span(fields.get("span", ""))
             context_record = {
                 "direction": tokens[0],
@@ -246,6 +271,14 @@ def parse_search_block(text: str) -> dict[str, Any]:
 
 
 def intentional_summary_omissions(payload: Mapping[str, Any]) -> list[str]:
+    """Return intentional summary omissions.
+
+    Args:
+        payload: Payload to process.
+
+    Returns:
+        A list containing the computed values.
+    """
     omissions: list[str] = []
     for result_index, result in enumerate(payload.get("results", [])):
         if _is_boilerplate_summary(result):
@@ -257,6 +290,14 @@ def intentional_summary_omissions(payload: Mapping[str, Any]) -> list[str]:
 
 
 def _keyed_fields(tokens: list[str]) -> dict[str, str]:
+    """Process keyed fields.
+
+    Args:
+        tokens: Tokens value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     fields: dict[str, str] = {}
     for token in tokens:
         if "=" not in token:
@@ -267,18 +308,42 @@ def _keyed_fields(tokens: list[str]) -> dict[str, str]:
 
 
 def _format_value(value: str) -> str:
+    """Format value.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     if value and SIMPLE_VALUE_RE.match(value):
         return value
     return json.dumps(value, ensure_ascii=True)
 
 
 def _parse_value(value: str) -> str:
+    """Parse value.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     if value.startswith('"'):
         return str(json.loads(value))
     return value
 
 
 def _span(value: Any) -> dict[str, int]:
+    """Process span.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     if not isinstance(value, Mapping):
         return {}
     span: dict[str, int] = {}
@@ -290,6 +355,14 @@ def _span(value: Any) -> dict[str, int]:
 
 
 def _format_span(span: Mapping[str, int]) -> str:
+    """Format span.
+
+    Args:
+        span: Span value.
+
+    Returns:
+        The computed string.
+    """
     start = span.get("line_start")
     end = span.get("line_end")
     if start is None or end is None:
@@ -298,6 +371,14 @@ def _format_span(span: Mapping[str, int]) -> str:
 
 
 def _parse_span(value: str) -> dict[str, int]:
+    """Parse span.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     match = SPAN_RE.match(value)
     if not match:
         return {}
@@ -305,6 +386,14 @@ def _parse_span(value: str) -> dict[str, int]:
 
 
 def _parse_number(value: str | None) -> int | float | None:
+    """Parse number.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed result.
+    """
     if value is None:
         return None
     try:
@@ -315,11 +404,27 @@ def _parse_number(value: str | None) -> int | float | None:
 
 
 def _meaningful_summary(record: Mapping[str, Any]) -> str:
+    """Process meaningful summary.
+
+    Args:
+        record: Record value.
+
+    Returns:
+        The computed string.
+    """
     summary = str(record.get("summary", ""))
     return "" if _is_boilerplate_summary(record) else summary
 
 
 def _is_boilerplate_summary(record: Mapping[str, Any]) -> bool:
+    """Return whether boilerplate summary.
+
+    Args:
+        record: Record value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     summary = str(record.get("summary", ""))
     label = str(record.get("label", ""))
     node_type = str(record.get("type", ""))
@@ -337,6 +442,16 @@ def _omit_agent_context(
     parent_span: Mapping[str, int],
     result_keys: set[tuple[str, str, str, tuple[tuple[str, int], ...]]],
 ) -> bool:
+    """Return whether to omit agent context.
+
+    Args:
+        context: Context value.
+        parent_span: Parent span value.
+        result_keys: Result keys value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     context_span = _span(context.get("span", {}))
     if _is_boilerplate_summary(context) and context_span == dict(parent_span):
         return True
@@ -346,6 +461,14 @@ def _omit_agent_context(
 
 
 def _record_key(record: Mapping[str, Any]) -> tuple[str, str, str, tuple[tuple[str, int], ...]]:
+    """Return record key.
+
+    Args:
+        record: Record value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     return (
         str(record.get("type", "")),
         str(record.get("label", "")),

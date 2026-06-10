@@ -12,12 +12,14 @@ from codebase_graph.ontology import ONTOLOGY_NAME, get_relation_type, node_type_
 
 @dataclass(frozen=True, slots=True)
 class CaptureRecord:
+    """Store capture record data."""
     capture: str
     node: Any
 
 
 @dataclass(frozen=True, slots=True)
 class ParseBundle:
+    """Store parse bundle data."""
     language: str
     path: str
     source_text: str = ""
@@ -30,6 +32,7 @@ class ParseBundle:
 
 @dataclass(frozen=True, slots=True)
 class GraphBuildResult:
+    """Store the result of graph build operations."""
     nodes: list[dict[str, Any]]
     edges: list[dict[str, Any]]
     diagnostics: list[str]
@@ -37,6 +40,11 @@ class GraphBuildResult:
     graph: CodeGraph
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "nodes": self.nodes,
             "edges": self.edges,
@@ -48,6 +56,7 @@ class GraphBuildResult:
 
 @dataclass(frozen=True, slots=True)
 class ParserNode:
+    """Store parser node data."""
     node_type: str
     fields: Mapping[str, Any]
     children: tuple[Any, ...]
@@ -61,6 +70,7 @@ class ParserNode:
 
 @dataclass(frozen=True, slots=True)
 class BuildContext:
+    """Store build context data."""
     path: str
     language: str
     source_text: str
@@ -70,6 +80,7 @@ class BuildContext:
 
 @dataclass(frozen=True, slots=True)
 class ScopeFrame:
+    """Store scope frame data."""
     node_id: str
     table: str
     label: str
@@ -81,17 +92,40 @@ CaptureTableResolver = Callable[[str, ScopeFrame], str | None]
 
 
 class CaptureTableRegistry:
+    """Represent a capture table registry."""
     def __init__(self) -> None:
+        """Initialize the instance."""
         self._exact: dict[str, str | CaptureTableResolver] = {}
         self._prefix: list[tuple[str, str | CaptureTableResolver]] = []
 
     def register_exact(self, capture_name: str, table: str | CaptureTableResolver) -> None:
+        """Register exact.
+
+        Args:
+            capture_name: Capture name value.
+            table: Table value.
+        """
         self._exact[_normalize_capture_name(capture_name)] = table
 
     def register_prefix(self, prefix: str, table: str | CaptureTableResolver) -> None:
+        """Register prefix.
+
+        Args:
+            prefix: Prefix value.
+            table: Table value.
+        """
         self._prefix.append((_normalize_capture_name(prefix), table))
 
     def table_for(self, capture_name: str, owner: ScopeFrame) -> str | None:
+        """Return table for for.
+
+        Args:
+            capture_name: Capture name value.
+            owner: Owner value.
+
+        Returns:
+            The computed result.
+        """
         capture = _normalize_capture_name(capture_name)
         if not capture:
             return None
@@ -104,6 +138,11 @@ class CaptureTableRegistry:
 
 
 def default_capture_table_registry() -> CaptureTableRegistry:
+    """Create the default capture table registry.
+
+    Returns:
+        The computed result.
+    """
     registry = CaptureTableRegistry()
     for capture in ("definition.class", "definition.struct", "definition.interface"):
         registry.register_exact(capture, "Class")
@@ -163,6 +202,15 @@ class GraphBuilder:
         include_syntax_captures: bool = True,
         capture_table_registry: CaptureTableRegistry | None = None,
     ) -> None:
+        """Initialize the instance.
+
+        Args:
+            default_language: Default language value.
+            repository_label: Repository label value.
+            source_root: Source root value.
+            include_syntax_captures: Include syntax captures value.
+            capture_table_registry: Capture table registry value.
+        """
         self.default_language = default_language
         self.repository_label = repository_label
         self.source_root = Path(source_root).as_posix()
@@ -178,6 +226,14 @@ class GraphBuilder:
         self._unresolved: list[str] = []
 
     def build_file_graph(self, bundle: ParseBundle) -> GraphBuildResult:
+        """Build file graph.
+
+        Args:
+            bundle: Bundle value.
+
+        Returns:
+            The computed result.
+        """
         if bundle.captures:
             graph = self.build_from_captures(
                 bundle.captures,
@@ -218,6 +274,19 @@ class GraphBuilder:
         repository_label: str | None = None,
         source_root: str | Path | None = None,
     ) -> CodeGraph:
+        """Build a graph from a parser tree for one source file.
+
+        Args:
+            parse_tree: Parser output shaped as mappings, AST-like objects, or tree-sitter nodes.
+            source_path: Source file path represented by the graph.
+            language: Language identifier for parser-specific node handling.
+            source_text: Source text used to recover labels and snippets from parser byte ranges.
+            repository_label: Repository node label to use for this build.
+            source_root: Source root represented by the graph.
+
+        Returns:
+            A validated ontology graph for the source file.
+        """
         path = Path(source_path).as_posix()
         root = Path(source_root).as_posix() if source_root is not None else self.source_root
         repo_label = repository_label or self.repository_label
@@ -237,6 +306,8 @@ class GraphBuilder:
         self._diagnostics = []
         self._unresolved = []
 
+        # Every file graph starts with the same ownership spine so later semantic
+        # nodes can attach to a stable Repository -> SourceRoot -> File hierarchy.
         repository = self._support_node("Repository", repo_label, repo_label, path="")
         source = self._support_node("SourceRoot", root, root, path=root)
         file = self._support_node("File", path, Path(path).name, path=path)
@@ -269,6 +340,19 @@ class GraphBuilder:
         repository_label: str | None = None,
         source_root: str | Path | None = None,
     ) -> CodeGraph:
+        """Build a graph from explicit capture records.
+
+        Args:
+            captures: Capture records emitted by a parser query.
+            source_path: Source file path represented by the graph.
+            language: Language identifier for parser-specific node handling.
+            source_text: Source text used to recover labels and snippets from parser byte ranges.
+            repository_label: Repository node label to use for this build.
+            source_root: Source root represented by the graph.
+
+        Returns:
+            A validated ontology graph for the captured file.
+        """
         root = {
             "type": "Module",
             "children": [
@@ -286,6 +370,12 @@ class GraphBuilder:
         )
 
     def _traverse(self, raw_node: Any, owner: ScopeFrame) -> None:
+        """Walk parser nodes and emit semantic graph nodes.
+
+        Args:
+            raw_node: Raw parser node to normalize and inspect.
+            owner: Current lexical ownership frame for emitted semantic nodes.
+        """
         node = self._normalize(raw_node)
         syntax_id = self._syntax_capture(node)
         next_owner = owner
@@ -346,6 +436,8 @@ class GraphBuilder:
         elif node.node_type in EXCEPTION_FLOW_NODE_TYPES:
             self._emit_simple_semantic("ExceptionFlow", node, owner, syntax_id)
 
+        # Children inherit the nearest semantic declaration scope, not simply the
+        # syntactic parent, so nested functions/classes resolve names correctly.
         for child in self._semantic_children(node):
             self._traverse(child, next_owner)
 
@@ -356,6 +448,17 @@ class GraphBuilder:
         owner: ScopeFrame,
         syntax_id: str,
     ) -> GraphNode:
+        """Emit captured semantic.
+
+        Args:
+            table: Table value.
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+
+        Returns:
+            The computed result.
+        """
         if table == "ImportDeclaration":
             return self._emit_import(node, owner, syntax_id)
         if table == "ExportDeclaration":
@@ -369,6 +472,16 @@ class GraphBuilder:
         return self._emit_simple_semantic(table, node, owner, syntax_id)
 
     def _emit_import(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
+        """Emit import.
+
+        Args:
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+
+        Returns:
+            The computed result.
+        """
         imported = _import_label(node) or _label_for(node)
         semantic = self._semantic_node(
             "ImportDeclaration",
@@ -387,6 +500,17 @@ class GraphBuilder:
         return semantic
 
     def _emit_declaration(self, table: str, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
+        """Emit declaration.
+
+        Args:
+            table: Table value.
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+
+        Returns:
+            The computed result.
+        """
         semantic = self._semantic_node(table, node, owner_id=owner.node_id, owner_qualified_name=owner.qualified_name)
         self._connect_owner(owner, semantic)
         self._edge("Defines", owner.node_id, semantic.id, f"defines_{table.lower()}")
@@ -396,6 +520,16 @@ class GraphBuilder:
         return semantic
 
     def _emit_assignment(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
+        """Emit assignment.
+
+        Args:
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+
+        Returns:
+            The computed result.
+        """
         assignment = self._semantic_node("Assignment", node, owner_id=owner.node_id, owner_qualified_name=owner.qualified_name)
         self._connect_owner(owner, assignment)
         self._derived_from(assignment.id, syntax_id)
@@ -427,6 +561,16 @@ class GraphBuilder:
         return assignment
 
     def _emit_call(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
+        """Emit call.
+
+        Args:
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+
+        Returns:
+            The computed result.
+        """
         call = self._semantic_node(
             "CallExpression",
             node,
@@ -444,6 +588,16 @@ class GraphBuilder:
         return call
 
     def _emit_reference(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
+        """Emit reference.
+
+        Args:
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+
+        Returns:
+            The computed result.
+        """
         reference = self._semantic_node(
             "Reference",
             node,
@@ -457,6 +611,17 @@ class GraphBuilder:
         return reference
 
     def _emit_simple_semantic(self, table: str, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
+        """Emit simple semantic.
+
+        Args:
+            table: Table value.
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+
+        Returns:
+            The computed result.
+        """
         semantic = self._semantic_node(
             table,
             node,
@@ -470,6 +635,12 @@ class GraphBuilder:
         return semantic
 
     def _emit_parameters(self, node: ParserNode, callable_node: GraphNode) -> None:
+        """Emit parameters.
+
+        Args:
+            node: Node value.
+            callable_node: Callable node value.
+        """
         for index, parameter in enumerate(_parameters(node)):
             parser_node = self._normalize(parameter)
             syntax_id = self._syntax_capture(parser_node)
@@ -488,6 +659,12 @@ class GraphBuilder:
                 self._edge("HasTypeAnnotation", param_node.id, type_node.id, "parameter_annotation")
 
     def _emit_return_type(self, node: ParserNode, callable_node: GraphNode) -> None:
+        """Emit return type.
+
+        Args:
+            node: Node value.
+            callable_node: Callable node value.
+        """
         raw_return = _field(node, "returns") or _field(node, "return_type")
         if raw_return is None:
             return
@@ -506,6 +683,15 @@ class GraphBuilder:
         self._derived_from(return_node.id, syntax_id)
 
     def _emit_type_annotation(self, raw_node: Any, owner: GraphNode) -> GraphNode:
+        """Emit type annotation.
+
+        Args:
+            raw_node: Raw node value.
+            owner: Owner value.
+
+        Returns:
+            The computed result.
+        """
         parser_node = self._normalize(raw_node)
         syntax_id = self._syntax_capture(parser_node)
         type_node = self._semantic_node(
@@ -520,6 +706,12 @@ class GraphBuilder:
         return type_node
 
     def _emit_decorators(self, node: ParserNode, declaration: GraphNode) -> None:
+        """Emit decorators.
+
+        Args:
+            node: Node value.
+            declaration: Declaration value.
+        """
         for raw_decorator in _iter_field_items(node, "decorator_list", "decorators"):
             decorator_node = self._normalize(raw_decorator)
             syntax_id = self._syntax_capture(decorator_node)
@@ -543,6 +735,14 @@ class GraphBuilder:
         owner: ScopeFrame,
         syntax_id: str,
     ) -> None:
+        """Emit contextual relations.
+
+        Args:
+            semantic: Semantic value.
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+        """
         table = semantic.table
 
         if table == "ExportDeclaration":
@@ -624,6 +824,17 @@ class GraphBuilder:
         kind_prefix: str,
         target_tables: set[str] | None = None,
     ) -> GraphNode | None:
+        """Emit reference edges.
+
+        Args:
+            source: Source value.
+            label: Label value.
+            kind_prefix: Kind prefix value.
+            target_tables: Target tables value.
+
+        Returns:
+            The computed result.
+        """
         target = self._resolve_reference_target(label, target_tables)
         if target is None or target.id == source.id:
             return None
@@ -633,11 +844,28 @@ class GraphBuilder:
         return target
 
     def _connect_owner(self, owner: ScopeFrame, semantic: GraphNode) -> None:
+        """Process connect owner.
+
+        Args:
+            owner: Owner value.
+            semantic: Semantic value.
+        """
         self._edge("Contains", owner.node_id, semantic.id, f"contains_{semantic.table.lower()}")
         if owner.scope_id:
             self._edge("Contains", owner.scope_id, semantic.id, f"scope_contains_{semantic.table.lower()}")
 
     def _support_node(self, table: str, stable_key: str, label: str, *, path: str) -> GraphNode:
+        """Process support node.
+
+        Args:
+            table: Table value.
+            stable_key: Stable key value.
+            label: Label value.
+            path: The path to read or write.
+
+        Returns:
+            The computed result.
+        """
         node = GraphNode(
             id=_id(table, stable_key),
             table=table,
@@ -662,6 +890,20 @@ class GraphBuilder:
         owner_qualified_name: str = "",
         metadata: dict[str, Any] | None = None,
     ) -> GraphNode:
+        """Return semantic node.
+
+        Args:
+            table: Table value.
+            parser_node: Parser node value.
+            label: Label value.
+            owner: Owner value.
+            owner_id: The owner id to identify.
+            owner_qualified_name: Owner qualified name value.
+            metadata: Metadata value.
+
+        Returns:
+            The computed result.
+        """
         if table not in self._node_types:
             raise ValueError(f"Unknown ontology node type: {table}")
         semantic_label = label or _label_for(parser_node) or table
@@ -701,6 +943,14 @@ class GraphBuilder:
         return added
 
     def _symbol_node(self, label: str) -> GraphNode | None:
+        """Process symbol node.
+
+        Args:
+            label: Label value.
+
+        Returns:
+            The computed result.
+        """
         symbol_label = label.strip()
         if not symbol_label:
             return None
@@ -721,6 +971,11 @@ class GraphBuilder:
         return added
 
     def _register_resolvable(self, node: GraphNode) -> None:
+        """Register resolvable.
+
+        Args:
+            node: Node value.
+        """
         if node.table not in RESOLVABLE_NODE_TYPES:
             return
         keys = {node.label, node.qualified_name, str(node.metadata.get("imported_name") or "")}
@@ -733,6 +988,15 @@ class GraphBuilder:
                 self._symbols_by_name[normalized].append(node.id)
 
     def _resolve_reference_target(self, label: str, target_tables: set[str] | None = None) -> GraphNode | None:
+        """Resolve reference target.
+
+        Args:
+            label: Label value.
+            target_tables: Target tables value.
+
+        Returns:
+            The computed result.
+        """
         reference_label = label.strip()
         if not reference_label:
             return None
@@ -747,6 +1011,14 @@ class GraphBuilder:
         return self._symbol_node(reference_label)
 
     def _scope_for(self, owner: GraphNode) -> GraphNode:
+        """Process scope for.
+
+        Args:
+            owner: Owner value.
+
+        Returns:
+            The computed result.
+        """
         stable_key = f"{self._context.path}|{owner.id}|scope"
         scope = GraphNode(
             id=_id("Scope", stable_key),
@@ -767,6 +1039,14 @@ class GraphBuilder:
         return self._graph.add_node(scope)
 
     def _syntax_capture(self, node: ParserNode) -> str:
+        """Return syntax capture.
+
+        Args:
+            node: Node value.
+
+        Returns:
+            The computed string.
+        """
         stable_key = "|".join(
             str(value)
             for value in (self._context.path, node.node_type, node.line_start, node.byte_start, _label_for(node))
@@ -797,10 +1077,26 @@ class GraphBuilder:
         return syntax_id
 
     def _derived_from(self, semantic_id: str, syntax_id: str) -> None:
+        """Process derived from.
+
+        Args:
+            semantic_id: The semantic id to identify.
+            syntax_id: The syntax id to identify.
+        """
         if self.include_syntax_captures and syntax_id in self._graph.nodes:
             self._edge("DerivedFrom", semantic_id, syntax_id, "parser_capture")
 
     def _runtime_target(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode | None:
+        """Process runtime target.
+
+        Args:
+            node: Node value.
+            owner: Owner value.
+            syntax_id: The syntax id to identify.
+
+        Returns:
+            The computed result.
+        """
         label = _runtime_target_label(node)
         if label:
             target = self._resolve_reference_target(label, RUNTIME_TARGET_TYPES)
@@ -832,6 +1128,18 @@ class GraphBuilder:
         *,
         metadata: dict[str, Any] | None = None,
     ) -> GraphEdge | None:
+        """Process edge if allowed.
+
+        Args:
+            edge_type: Edge type value.
+            source_id: The source id to identify.
+            target_id: The target id to identify.
+            kind: Kind value.
+            metadata: Metadata value.
+
+        Returns:
+            The computed result.
+        """
         source = self._graph.nodes.get(source_id)
         target = self._graph.nodes.get(target_id)
         if source is None or target is None:
@@ -850,6 +1158,18 @@ class GraphBuilder:
         *,
         metadata: dict[str, Any] | None = None,
     ) -> GraphEdge:
+        """Process edge.
+
+        Args:
+            edge_type: Edge type value.
+            source_id: The source id to identify.
+            target_id: The target id to identify.
+            kind: Kind value.
+            metadata: Metadata value.
+
+        Returns:
+            The computed result.
+        """
         if edge_type not in self._relation_types:
             raise ValueError(f"Unknown ontology relation type: {edge_type}")
         edge = GraphEdge(
@@ -863,6 +1183,14 @@ class GraphBuilder:
         return self._graph.add_edge(edge)
 
     def _normalize(self, raw_node: Any) -> ParserNode:
+        """Normalize result.
+
+        Args:
+            raw_node: Raw node value.
+
+        Returns:
+            The computed result.
+        """
         if isinstance(raw_node, ParserNode):
             return raw_node
         if isinstance(raw_node, Mapping):
@@ -907,6 +1235,14 @@ class GraphBuilder:
         )
 
     def _semantic_children(self, node: ParserNode) -> tuple[Any, ...]:
+        """Return semantic children.
+
+        Args:
+            node: Node value.
+
+        Returns:
+            A tuple containing the computed values.
+        """
         ignored_fields = {"name", "id", "module", "names", "args", "returns", "return_type", "decorator_list", "decorators"}
         children: list[Any] = list(node.children)
         for field_name, value in node.fields.items():
@@ -994,6 +1330,14 @@ DICT_NODE_META_KEYS = {
 
 
 def _capture_node(capture: Mapping[str, Any] | tuple[Any, str]) -> Any:
+    """Process capture node.
+
+    Args:
+        capture: Capture value.
+
+    Returns:
+        The computed result.
+    """
     if isinstance(capture, CaptureRecord):
         return capture.node
     if isinstance(capture, tuple):
@@ -1002,6 +1346,14 @@ def _capture_node(capture: Mapping[str, Any] | tuple[Any, str]) -> Any:
 
 
 def _capture_name(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
+    """Process capture name.
+
+    Args:
+        capture: Capture value.
+
+    Returns:
+        The computed string.
+    """
     if isinstance(capture, CaptureRecord):
         return capture.capture
     if isinstance(capture, tuple):
@@ -1010,6 +1362,14 @@ def _capture_name(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
 
 
 def _capture_node_type(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
+    """Process capture node type.
+
+    Args:
+        capture: Capture value.
+
+    Returns:
+        The computed string.
+    """
     node = _capture_node(capture)
     if isinstance(node, Mapping):
         return str(node.get("type") or node.get("node_type") or node.get("kind") or "unknown")
@@ -1017,39 +1377,109 @@ def _capture_node_type(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
 
 
 def _table_from_capture(capture_name: str, owner: ScopeFrame) -> str | None:
+    """Return table for from capture.
+
+    Args:
+        capture_name: Capture name value.
+        owner: Owner value.
+
+    Returns:
+        The computed result.
+    """
     return default_capture_table_registry().table_for(capture_name, owner)
 
 
 def _normalize_capture_name(capture_name: str) -> str:
+    """Normalize capture name.
+
+    Args:
+        capture_name: Capture name value.
+
+    Returns:
+        The computed string.
+    """
     return capture_name.lstrip("@")
 
 
 def _resolve_capture_table(table: str | CaptureTableResolver, capture: str, owner: ScopeFrame) -> str | None:
+    """Resolve capture table.
+
+    Args:
+        table: Table value.
+        capture: Capture value.
+        owner: Owner value.
+
+    Returns:
+        The computed result.
+    """
     if callable(table):
         return table(capture, owner)
     return table
 
 
 def _function_capture_table(_capture: str, owner: ScopeFrame) -> str:
+    """Process function capture table.
+
+    Args:
+        _capture: Capture value.
+        owner: Owner value.
+
+    Returns:
+        The computed string.
+    """
     return "Method" if owner.table in {"Class", "Component"} else "Function"
 
 
 def _import_source_id(owner: ScopeFrame) -> str:
+    """Process import source ID.
+
+    Args:
+        owner: Owner value.
+
+    Returns:
+        The computed string.
+    """
     if owner.table in IMPORT_SOURCE_TYPES:
         return owner.node_id
     return owner.scope_id or owner.node_id
 
 
 def _id(prefix: str, value: str) -> str:
+    """Process ID.
+
+    Args:
+        prefix: Prefix value.
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     return f"{prefix}:{hashlib.sha1(value.encode('utf-8')).hexdigest()[:20]}"
 
 
 def _module_label(path: str) -> str:
+    """Process module label.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        The computed string.
+    """
     stem = path.rsplit(".", 1)[0]
     return stem.replace("/", ".")
 
 
 def _qualified_name(owner: str, label: str) -> str:
+    """Process qualified name.
+
+    Args:
+        owner: Owner value.
+        label: Label value.
+
+    Returns:
+        The computed string.
+    """
     if not owner or owner == label:
         return label
     if not label:
@@ -1058,6 +1488,15 @@ def _qualified_name(owner: str, label: str) -> str:
 
 
 def _kind_for(table: str, node: ParserNode) -> str:
+    """Process kind for.
+
+    Args:
+        table: Table value.
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     if table == "Method":
         return "method"
     if table == "Function":
@@ -1068,6 +1507,15 @@ def _kind_for(table: str, node: ParserNode) -> str:
 
 
 def _field(node: ParserNode, *names: str) -> Any:
+    """Return result field data.
+
+    Args:
+        node: Node value.
+        names: Names value.
+
+    Returns:
+        The computed result.
+    """
     for name in names:
         if name in node.fields:
             return node.fields[name]
@@ -1075,6 +1523,15 @@ def _field(node: ParserNode, *names: str) -> Any:
 
 
 def _iter_field_items(node: ParserNode, *names: str) -> tuple[Any, ...]:
+    """Iterate over field items.
+
+    Args:
+        node: Node value.
+        names: Names value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     items: list[Any] = []
     for name in names:
         value = node.fields.get(name)
@@ -1088,6 +1545,14 @@ def _iter_field_items(node: ParserNode, *names: str) -> tuple[Any, ...]:
 
 
 def _label_for(node: ParserNode) -> str:
+    """Process label for.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     for key in ("name", "id", "arg", "attr", "module"):
         value = node.fields.get(key)
         label = _value_label(value)
@@ -1099,12 +1564,30 @@ def _label_for(node: ParserNode) -> str:
 
 
 def _summary_for(table: str, label: str, node: ParserNode) -> str:
+    """Return summary for for.
+
+    Args:
+        table: Table value.
+        label: Label value.
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     if table in {"DocumentationSource", "DocumentationChunk"} and node.text.strip():
         return node.text.strip()
     return label
 
 
 def _value_label(value: Any) -> str:
+    """Return value for label.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     if value is None:
         return ""
     if isinstance(value, str):
@@ -1138,10 +1621,26 @@ def _value_label(value: Any) -> str:
 
 
 def _symbol_key(label: str) -> str:
+    """Process symbol key.
+
+    Args:
+        label: Label value.
+
+    Returns:
+        The computed string.
+    """
     return label.strip().lower()
 
 
 def _export_target_label(node: ParserNode) -> str:
+    """Process export target label.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     for field_name in ("exported", "target", "name", "declaration"):
         label = _value_label(node.fields.get(field_name))
         if label:
@@ -1150,6 +1649,14 @@ def _export_target_label(node: ParserNode) -> str:
 
 
 def _runtime_target_label(node: ParserNode) -> str:
+    """Process runtime target label.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     for field_name in ("handler", "endpoint", "target", "function", "callback"):
         label = _value_label(node.fields.get(field_name))
         if label:
@@ -1158,6 +1665,14 @@ def _runtime_target_label(node: ParserNode) -> str:
 
 
 def _query_reference_label(node: ParserNode) -> str:
+    """Return query reference label.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     for field_name in ("table", "collection", "model", "target", "index"):
         label = _value_label(node.fields.get(field_name))
         if label:
@@ -1166,6 +1681,14 @@ def _query_reference_label(node: ParserNode) -> str:
 
 
 def _control_flow_reference_label(node: ParserNode) -> str:
+    """Process control flow reference label.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     for field_name in ("test", "condition", "subject"):
         label = _value_label(node.fields.get(field_name))
         if label:
@@ -1174,16 +1697,40 @@ def _control_flow_reference_label(node: ParserNode) -> str:
 
 
 def _is_raise_flow(node: ParserNode) -> bool:
+    """Return whether raise flow.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     capture = node.capture_name.lstrip("@")
     return capture == "raises" or node.node_type in {"raise_statement", "throw_statement"}
 
 
 def _is_handle_flow(node: ParserNode) -> bool:
+    """Return whether handle flow.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     capture = node.capture_name.lstrip("@")
     return capture == "handles" or node.node_type in {"try_statement", "except_clause", "catch_clause"}
 
 
 def _import_label(node: ParserNode) -> str:
+    """Process import label.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     module = _value_label(node.fields.get("module"))
     names = node.fields.get("names")
     imported_names: list[str] = []
@@ -1197,10 +1744,26 @@ def _import_label(node: ParserNode) -> str:
 
 
 def _call_label(node: ParserNode) -> str:
+    """Call label.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     return _value_label(node.fields.get("func")) or _value_label(node.fields.get("function"))
 
 
 def _assignment_target_label(node: ParserNode) -> str:
+    """Process assignment target label.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     target = node.fields.get("target")
     targets = node.fields.get("targets")
     if target is not None:
@@ -1211,6 +1774,16 @@ def _assignment_target_label(node: ParserNode) -> str:
 
 
 def _assignment_target_table(label: str, owner: ScopeFrame, node: ParserNode) -> str:
+    """Process assignment target table.
+
+    Args:
+        label: Label value.
+        owner: Owner value.
+        node: Node value.
+
+    Returns:
+        The computed string.
+    """
     if label.isupper():
         return "Constant"
     if owner.table == "Class":
@@ -1223,6 +1796,14 @@ def _assignment_target_table(label: str, owner: ScopeFrame, node: ParserNode) ->
 
 
 def _parameters(node: ParserNode) -> tuple[Any, ...]:
+    """Process parameters.
+
+    Args:
+        node: Node value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     raw_args = node.fields.get("args") or node.fields.get("parameters")
     if raw_args is None:
         return ()
@@ -1240,6 +1821,14 @@ def _parameters(node: ParserNode) -> tuple[Any, ...]:
 
 
 def _normalized_type(raw_node: Any) -> str:
+    """Normalize type.
+
+    Args:
+        raw_node: Raw node value.
+
+    Returns:
+        The computed string.
+    """
     if isinstance(raw_node, ParserNode):
         return raw_node.node_type
     if isinstance(raw_node, Mapping):
@@ -1248,6 +1837,14 @@ def _normalized_type(raw_node: Any) -> str:
 
 
 def _coerce_children(raw_node: Mapping[str, Any]) -> tuple[Any, ...]:
+    """Coerce children.
+
+    Args:
+        raw_node: Raw node value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     children: list[Any] = []
     for key in ("children", "body"):
         value = raw_node.get(key)
@@ -1259,6 +1856,14 @@ def _coerce_children(raw_node: Mapping[str, Any]) -> tuple[Any, ...]:
 
 
 def _field_children(fields: Mapping[str, Any]) -> tuple[Any, ...]:
+    """Return children field data.
+
+    Args:
+        fields: Fields value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     children: list[Any] = []
     for value in fields.values():
         if _is_parser_like(value):
@@ -1269,6 +1874,14 @@ def _field_children(fields: Mapping[str, Any]) -> tuple[Any, ...]:
 
 
 def _object_fields(raw_node: Any) -> Mapping[str, Any]:
+    """Return object fields.
+
+    Args:
+        raw_node: Raw node value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     if hasattr(raw_node, "_fields"):
         return {name: getattr(raw_node, name) for name in getattr(raw_node, "_fields")}
     if hasattr(raw_node, "child_by_field_name"):
@@ -1289,6 +1902,14 @@ def _object_fields(raw_node: Any) -> Mapping[str, Any]:
 
 
 def _is_parser_like(value: Any) -> bool:
+    """Return whether parser like.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     if value is None or isinstance(value, (str, bytes, bytearray, int, float, bool)):
         return False
     if isinstance(value, Mapping):
@@ -1297,6 +1918,15 @@ def _is_parser_like(value: Any) -> bool:
 
 
 def _line(raw_node: Mapping[str, Any], *keys: str) -> int | None:
+    """Process line.
+
+    Args:
+        raw_node: Raw node value.
+        keys: Keys value.
+
+    Returns:
+        The computed result.
+    """
     for key in keys:
         value = raw_node.get(key)
         if isinstance(value, int):
@@ -1311,6 +1941,14 @@ def _line(raw_node: Mapping[str, Any], *keys: str) -> int | None:
 
 
 def _point_line(point: Any) -> int | None:
+    """Process point line.
+
+    Args:
+        point: Point value.
+
+    Returns:
+        The computed result.
+    """
     if point is None:
         return None
     if isinstance(point, Sequence) and point:
@@ -1321,6 +1959,14 @@ def _point_line(point: Any) -> int | None:
 
 
 def _node_text(raw_node: Any) -> str:
+    """Return node text.
+
+    Args:
+        raw_node: Raw node value.
+
+    Returns:
+        The computed string.
+    """
     text = getattr(raw_node, "text", b"")
     if isinstance(text, bytes):
         return text.decode("utf-8", errors="replace")

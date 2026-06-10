@@ -22,6 +22,7 @@ VisibilityCommandBuilder = Callable[[], list[str]]
 
 @dataclass(frozen=True, slots=True)
 class McpInstallOptions:
+    """Store options for MCP install operations."""
     client: str = "codex"
     scope: str = "local"
     setup_config_path: str | Path = ".codebaseGraph/config.json"
@@ -36,6 +37,7 @@ class McpInstallOptions:
 
 @dataclass(frozen=True, slots=True)
 class McpInstallResult:
+    """Store the result of MCP install operations."""
     action: str
     client: str
     scope: str
@@ -53,6 +55,11 @@ class McpInstallResult:
     native_error: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         payload: dict[str, Any] = {
             "action": self.action,
             "client": self.client,
@@ -81,6 +88,7 @@ class McpInstallResult:
 
 @dataclass(frozen=True, slots=True)
 class InstallClientStrategy:
+    """Store install client strategy data."""
     client_id: str
     adapter_id: str | None = None
     project_adapter_id: str | None = None
@@ -90,29 +98,77 @@ class InstallClientStrategy:
     visibility_command_builder: VisibilityCommandBuilder | None = None
 
     def install_scope(self, scope: str) -> str:
+        """Install scope.
+
+        Args:
+            scope: Scope value.
+
+        Returns:
+            The computed string.
+        """
         return self.forced_scope or scope
 
     def adapter_client_id(self, scope: str) -> str:
+        """Process adapter client ID.
+
+        Args:
+            scope: Scope value.
+
+        Returns:
+            The computed string.
+        """
         if self.project_adapter_id is not None and self.install_scope(scope) == "project":
             return self.project_adapter_id
         return self.adapter_id or self.client_id
 
     def native_command(self, descriptor: McpServerDescriptor, *, scope: str) -> list[str] | None:
+        """Return native command.
+
+        Args:
+            descriptor: The descriptor used by the operation.
+            scope: Scope value.
+
+        Returns:
+            A list containing the computed values.
+        """
         if self.native_command_builder is None:
             return None
         return self.native_command_builder(descriptor, self.install_scope(scope))
 
     def visibility_command(self) -> list[str] | None:
+        """Process visibility command.
+
+        Returns:
+            A list containing the computed values.
+        """
         if self.visibility_command_builder is None:
             return None
         return self.visibility_command_builder()
 
 
 def _codex_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    """Process codex native command.
+
+    Args:
+        descriptor: The descriptor used by the operation.
+        scope: Scope value.
+
+    Returns:
+        A list containing the computed values.
+    """
     return ["codex", "mcp", "add", descriptor.name, "--", descriptor.command, *descriptor.args]
 
 
 def _claude_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    """Process claude native command.
+
+    Args:
+        descriptor: The descriptor used by the operation.
+        scope: Scope value.
+
+    Returns:
+        A list containing the computed values.
+    """
     return [
         "claude",
         "mcp",
@@ -129,6 +185,15 @@ def _claude_native_command(descriptor: McpServerDescriptor, scope: str) -> list[
 
 
 def _openclaw_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
+    """Process openclaw native command.
+
+    Args:
+        descriptor: The descriptor used by the operation.
+        scope: Scope value.
+
+    Returns:
+        A list containing the computed values.
+    """
     entry = descriptor.stdio_entry(include_type=True)
     return ["openclaw", "mcp", "set", descriptor.name, json.dumps(entry, separators=(",", ":"), sort_keys=True)]
 
@@ -168,6 +233,14 @@ INSTALL_CLIENTS = tuple(INSTALL_STRATEGIES)
 
 
 def supported_install_client_ids(*, include_all: bool = False) -> tuple[str, ...]:
+    """Return supported install client ids.
+
+    Args:
+        include_all: Include all value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     values = [*INSTALL_CLIENTS]
     if include_all:
         values.append("all")
@@ -175,17 +248,41 @@ def supported_install_client_ids(*, include_all: bool = False) -> tuple[str, ...
 
 
 def default_server_name(repo_name: str | None) -> str:
+    """Create the default server name.
+
+    Args:
+        repo_name: Repo name value.
+
+    Returns:
+        The computed string.
+    """
     safe_repo_name = _safe_name(repo_name or "repository")
     return f"{MCP_SERVER_NAME}_{safe_repo_name}"
 
 
 def install_mcp_clients(options: McpInstallOptions) -> list[McpInstallResult]:
+    """Install MCP clients.
+
+    Args:
+        options: The options used by the operation.
+
+    Returns:
+        A list containing the computed values.
+    """
     if options.client == "all":
         return [_install_with_failure_result(options, client) for client in INSTALL_CLIENTS]
     return [install_mcp_server(options)]
 
 
 def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
+    """Install MCP server.
+
+    Args:
+        options: The options used by the operation.
+
+    Returns:
+        The computed result.
+    """
     _validate_options(options)
     strategy = _client_strategy(options.client)
     descriptor = _build_descriptor(options)
@@ -246,6 +343,15 @@ def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
 
 
 def _install_with_failure_result(options: McpInstallOptions, client: str) -> McpInstallResult:
+    """Install with failure result.
+
+    Args:
+        options: The options used by the operation.
+        client: Client value.
+
+    Returns:
+        The computed result.
+    """
     client_options = McpInstallOptions(
         client=client,
         scope=_client_strategy(client).install_scope(options.scope),
@@ -292,6 +398,18 @@ def _file_adapter_result(
     native_command: list[str] | None = None,
     native_error: str | None = None,
 ) -> McpInstallResult:
+    """Return adapter result file data.
+
+    Args:
+        options: Install options supplied by the caller.
+        descriptor: Server descriptor to install into the client config.
+        dry_run: Whether to return the rendered change without writing it.
+        native_command: Native client command that was preferred, if any.
+        native_error: Error from a failed native command, if any.
+
+    Returns:
+        The installation result for the file-adapter path.
+    """
     adapter = get_client_adapter(_client_strategy(options.client).adapter_client_id(options.scope))
     path = (
         Path(options.client_config_path).expanduser().resolve()
@@ -302,6 +420,8 @@ def _file_adapter_result(
     rendered = adapter.render(existing_text, descriptor)
     action = "dry_run" if dry_run else rendered.action
     if not dry_run:
+        # Write through a sibling temp file so interrupted installs do not corrupt
+        # an existing client configuration.
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = path.with_suffix(path.suffix + ".tmp")
         with tmp_path.open("w", encoding="utf-8") as handle:
@@ -333,6 +453,18 @@ def _native_result(
     *,
     verification: dict[str, Any] | None,
 ) -> McpInstallResult:
+    """Return native result.
+
+    Args:
+        action: Action value.
+        options: The options used by the operation.
+        descriptor: The descriptor used by the operation.
+        command: Command value.
+        verification: Verification value.
+
+    Returns:
+        The computed result.
+    """
     return McpInstallResult(
         action=action,
         client=options.client,
@@ -352,6 +484,16 @@ def _with_verification(
     descriptor: McpServerDescriptor,
     enabled: bool,
 ) -> McpInstallResult:
+    """Attach verification.
+
+    Args:
+        result: Result value.
+        descriptor: The descriptor used by the operation.
+        enabled: Enabled value.
+
+    Returns:
+        The computed result.
+    """
     if not enabled:
         return result
     verification = verify_mcp_install(descriptor, client=result.client, server_name=result.server_name)
@@ -381,6 +523,17 @@ def verify_mcp_install(
     server_name: str,
     timeout: int = 10,
 ) -> dict[str, Any]:
+    """Verify MCP install.
+
+    Args:
+        descriptor: The descriptor used by the operation.
+        client: Client value.
+        server_name: Server name value.
+        timeout: Timeout value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     stdio = _verify_stdio(descriptor, timeout=timeout)
     visibility = _verify_client_visibility(client, server_name, timeout=timeout)
     return {
@@ -391,6 +544,15 @@ def verify_mcp_install(
 
 
 def _verify_stdio(descriptor: McpServerDescriptor, *, timeout: int) -> dict[str, Any]:
+    """Verify stdio.
+
+    Args:
+        descriptor: The descriptor used by the operation.
+        timeout: Timeout value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     command = [descriptor.command, *descriptor.args]
     payload = b"".join(
         _stdio_json_rpc_message(method, params, request_id=index)
@@ -433,6 +595,16 @@ def _verify_stdio(descriptor: McpServerDescriptor, *, timeout: int) -> dict[str,
 
 
 def _verify_client_visibility(client: str, server_name: str, *, timeout: int) -> dict[str, Any]:
+    """Verify client visibility.
+
+    Args:
+        client: Client value.
+        server_name: Server name value.
+        timeout: Timeout value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     command = _client_strategy(client).visibility_command()
     if command is None:
         return {"ok": True, "skipped": True, "reason": f"{client} has no CLI visibility check"}
@@ -452,6 +624,14 @@ def _verify_client_visibility(client: str, server_name: str, *, timeout: int) ->
 
 
 def _stdio_checks(responses: list[dict[str, Any]]) -> dict[str, bool]:
+    """Return stdio checks.
+
+    Args:
+        responses: Responses value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     by_id = {response.get("id"): response for response in responses}
     initialized = by_id.get(1, {}).get("result", {}).get("protocolVersion") == LATEST_PROTOCOL_VERSION
     tools = by_id.get(2, {}).get("result", {}).get("tools", [])
@@ -469,6 +649,14 @@ def _stdio_checks(responses: list[dict[str, Any]]) -> dict[str, bool]:
 
 
 def _parse_stdio_messages(data: bytes) -> list[dict[str, Any]]:
+    """Parse stdio messages.
+
+    Args:
+        data: Data value.
+
+    Returns:
+        A list containing the computed values.
+    """
     messages: list[dict[str, Any]] = []
     for line in data.splitlines():
         if not line:
@@ -478,6 +666,16 @@ def _parse_stdio_messages(data: bytes) -> list[dict[str, Any]]:
 
 
 def _stdio_json_rpc_message(method: str, params: dict[str, Any], *, request_id: int) -> bytes:
+    """Return stdio JSON RPC message.
+
+    Args:
+        method: Method value.
+        params: Params value.
+        request_id: The request id to identify.
+
+    Returns:
+        The computed result.
+    """
     body = json.dumps(
         {"jsonrpc": "2.0", "id": request_id, "method": method, "params": params},
         separators=(",", ":"),
@@ -487,6 +685,14 @@ def _stdio_json_rpc_message(method: str, params: dict[str, Any], *, request_id: 
 
 
 def _build_descriptor(options: McpInstallOptions) -> McpServerDescriptor:
+    """Build descriptor.
+
+    Args:
+        options: The options used by the operation.
+
+    Returns:
+        The computed result.
+    """
     config_path = Path(options.setup_config_path).expanduser().resolve()
     repo_root: Path | None = None
     repo_name: str | None = None
@@ -504,6 +710,11 @@ def _build_descriptor(options: McpInstallOptions) -> McpServerDescriptor:
 
 
 def _validate_options(options: McpInstallOptions) -> None:
+    """Validate options.
+
+    Args:
+        options: The options used by the operation.
+    """
     if options.client not in {*INSTALL_CLIENTS, "none"}:
         supported = ", ".join(sorted([*INSTALL_CLIENTS, "all", "none"]))
         raise ValueError(f"Unsupported MCP client: {options.client}. Supported clients: {supported}")
@@ -512,18 +723,42 @@ def _validate_options(options: McpInstallOptions) -> None:
 
 
 def _client_strategy(client: str) -> InstallClientStrategy:
+    """Process client strategy.
+
+    Args:
+        client: Client value.
+
+    Returns:
+        The computed result.
+    """
     if client == "none":
         return InstallClientStrategy(client_id="none")
     return INSTALL_STRATEGIES[client]
 
 
 def _missing_native_error(strategy: InstallClientStrategy) -> str | None:
+    """Return missing native error.
+
+    Args:
+        strategy: Strategy value.
+
+    Returns:
+        The computed result.
+    """
     if strategy.native_executable is None:
         return None
     return f"{strategy.native_executable} executable not found"
 
 
 def _subprocess_error(completed: subprocess.CompletedProcess[str]) -> str:
+    """Return subprocess error.
+
+    Args:
+        completed: Completed value.
+
+    Returns:
+        The computed string.
+    """
     output = "\n".join(part for part in (completed.stdout.strip(), completed.stderr.strip()) if part)
     if output:
         return f"exit {completed.returncode}: {output}"
@@ -531,5 +766,13 @@ def _subprocess_error(completed: subprocess.CompletedProcess[str]) -> str:
 
 
 def _safe_name(value: str) -> str:
+    """Return safe name.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     normalized = re.sub(r"[^A-Za-z0-9_-]+", "_", value.strip())
     return normalized.strip("._-").lower() or "repository"

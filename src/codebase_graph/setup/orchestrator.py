@@ -15,11 +15,13 @@ from .state import MCP_SERVER_NAME, SetupPaths, build_setup_config, derive_setup
 
 
 class SetupError(RuntimeError):
+    """Signal setup error failures."""
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class SetupOptions:
+    """Store options for setup operations."""
     repo_root: str | Path = "."
     mcp_client: str = "codex"
     mcp_config_path: str | Path | None = None
@@ -31,6 +33,7 @@ class SetupOptions:
 
 @dataclass(frozen=True, slots=True)
 class SetupResult:
+    """Store the result of setup operations."""
     paths: SetupPaths
     config_action: str
     materialization: Any
@@ -39,6 +42,11 @@ class SetupResult:
     legacy_state_detected: bool
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             **self.paths.as_dict(),
             "config_action": self.config_action,
@@ -50,6 +58,14 @@ class SetupResult:
 
 
 def run_setup(options: SetupOptions) -> SetupResult:
+    """Run setup.
+
+    Args:
+        options: The options used by the operation.
+
+    Returns:
+        The computed result.
+    """
     try:
         log_event(
             "setup.start",
@@ -151,6 +167,14 @@ def run_setup(options: SetupOptions) -> SetupResult:
 
 
 def _materialization_payload(result: Any) -> dict[str, Any]:
+    """Return materialization payload.
+
+    Args:
+        result: Result value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     as_dict = getattr(result, "as_dict", None)
     if callable(as_dict):
         return as_dict()
@@ -158,6 +182,14 @@ def _materialization_payload(result: Any) -> dict[str, Any]:
 
 
 def _dry_run_materialization(paths: SetupPaths) -> Any:
+    """Process dry run materialization.
+
+    Args:
+        paths: Paths value.
+
+    Returns:
+        The computed result.
+    """
     materializer = GraphMaterializer(
         paths.repo_root,
         db_path=paths.db_path,
@@ -181,6 +213,7 @@ def _dry_run_materialization(paths: SetupPaths) -> Any:
 
 @dataclass(frozen=True, slots=True)
 class _DryRunMaterialization:
+    """Store dry run materialization data."""
     scanned: int
     skipped: int
     diagnostics: tuple[str, ...]
@@ -194,6 +227,11 @@ class _DryRunMaterialization:
     graph_summary: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "mode": self.mode,
             "scanned": self.scanned,
@@ -210,6 +248,15 @@ class _DryRunMaterialization:
 
 
 def _config_would_change(path: Path, payload: dict[str, Any]) -> bool:
+    """Process config would change.
+
+    Args:
+        path: The path to read or write.
+        payload: Payload to process.
+
+    Returns:
+        Whether the check succeeds.
+    """
     if not path.exists():
         return True
     try:
@@ -222,16 +269,38 @@ def _config_would_change(path: Path, payload: dict[str, Any]) -> bool:
 
 
 def _path_text(path: Path | None) -> str | None:
+    """Return path text.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        The computed result.
+    """
     return path.as_posix() if path is not None else None
 
 
 def _snapshot_file(path: Path | None) -> str | None:
+    """Snapshot file.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        The computed result.
+    """
     if path is None or not path.exists():
         return None
     return path.read_text(encoding="utf-8")
 
 
 def _restore_file(path: Path | None, previous: str | None) -> None:
+    """Restore file.
+
+    Args:
+        path: The path to read or write.
+        previous: Previous value.
+    """
     if path is None:
         return
     if previous is None:

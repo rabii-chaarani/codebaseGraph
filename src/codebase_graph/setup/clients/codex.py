@@ -11,13 +11,31 @@ from .base import RenderedClientConfig
 
 
 class CodexAdapter:
+    """Adapt codex operations to the project interface."""
     client_id = "codex"
 
     def default_config_path(self, descriptor: McpServerDescriptor) -> Path:
+        """Create the default config path.
+
+        Args:
+            descriptor: The descriptor used by the operation.
+
+        Returns:
+            The computed result.
+        """
         base = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
         return base / "config.toml"
 
     def render(self, existing_text: str | None, descriptor: McpServerDescriptor) -> RenderedClientConfig:
+        """Render the operation.
+
+        Args:
+            existing_text: Existing text value.
+            descriptor: The descriptor used by the operation.
+
+        Returns:
+            The computed result.
+        """
         entry = descriptor.stdio_entry(include_timeout=True)
         patch = _toml_block(descriptor, entry)
         next_text, previous = _upsert_toml_block(existing_text or "", descriptor.name, patch)
@@ -33,6 +51,16 @@ class CodexAdapter:
 
 
 def _upsert_toml_block(existing: str, server_name: str, block: str) -> tuple[str, str | None]:
+    """Upsert toml block.
+
+    Args:
+        existing: Existing value.
+        server_name: Server name value.
+        block: Block value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     lines = existing.splitlines()
     start: int | None = None
     end = len(lines)
@@ -56,6 +84,15 @@ def _upsert_toml_block(existing: str, server_name: str, block: str) -> tuple[str
 
 
 def _toml_block(descriptor: McpServerDescriptor, entry: dict[str, Any]) -> str:
+    """Render TOML block.
+
+    Args:
+        descriptor: The descriptor used by the operation.
+        entry: Entry value.
+
+    Returns:
+        The computed string.
+    """
     lines = [
         f"[mcp_servers.{descriptor.name}]",
         f"command = {_toml_string(entry['command'])}",
@@ -73,9 +110,25 @@ def _toml_block(descriptor: McpServerDescriptor, entry: dict[str, Any]) -> str:
 
 
 def _toml_array(values: list[str]) -> str:
+    """Render TOML array.
+
+    Args:
+        values: Values value.
+
+    Returns:
+        The computed string.
+    """
     return "[" + ", ".join(_toml_string(value) for value in values) + "]"
 
 
 def _toml_string(value: str) -> str:
+    """Render TOML string.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'

@@ -51,6 +51,7 @@ EXCLUDED_PARTS = {
 
 @dataclass(frozen=True, slots=True)
 class SourceSnapshot:
+    """Store source snapshot data."""
     path: str
     absolute_path: Path
     content_hash: str
@@ -59,6 +60,7 @@ class SourceSnapshot:
 
 @dataclass(frozen=True, slots=True)
 class ManifestEntry:
+    """Store manifest entry data."""
     path: str
     content_hash: str
     language: str
@@ -71,6 +73,14 @@ class ManifestEntry:
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> ManifestEntry:
+        """Convert dict.
+
+        Args:
+            payload: Payload to process.
+
+        Returns:
+            The computed result.
+        """
         return cls(
             path=str(payload["path"]),
             content_hash=str(payload["content_hash"]),
@@ -84,6 +94,11 @@ class ManifestEntry:
         )
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "path": self.path,
             "content_hash": self.content_hash,
@@ -99,6 +114,7 @@ class ManifestEntry:
 
 @dataclass(frozen=True, slots=True)
 class MaterializationManifest:
+    """Store materialization manifest data."""
     schema_version: int = MANIFEST_SCHEMA_VERSION
     ontology: str = ONTOLOGY_NAME
     parser_version: str = PARSER_VERSION
@@ -106,10 +122,26 @@ class MaterializationManifest:
 
     @classmethod
     def empty(cls, *, parser_version: str = PARSER_VERSION) -> MaterializationManifest:
+        """Return whether empty.
+
+        Args:
+            parser_version: Parser version value.
+
+        Returns:
+            The computed result.
+        """
         return cls(parser_version=parser_version, files={})
 
     @classmethod
     def load(cls, path: Path) -> MaterializationManifest:
+        """Load the operation.
+
+        Args:
+            path: The path to read or write.
+
+        Returns:
+            The computed result.
+        """
         if not path.exists():
             return cls.empty()
         with path.open("r", encoding="utf-8") as handle:
@@ -125,6 +157,11 @@ class MaterializationManifest:
         )
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "schema_version": self.schema_version,
             "ontology": self.ontology,
@@ -133,6 +170,11 @@ class MaterializationManifest:
         }
 
     def write(self, path: Path) -> None:
+        """Write result.
+
+        Args:
+            path: The path to read or write.
+        """
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = path.with_suffix(path.suffix + ".tmp")
         with tmp_path.open("w", encoding="utf-8") as handle:
@@ -141,6 +183,14 @@ class MaterializationManifest:
         os.replace(tmp_path, path)
 
     def is_compatible(self, *, parser_version: str = PARSER_VERSION) -> bool:
+        """Return whether compatible.
+
+        Args:
+            parser_version: Parser version value.
+
+        Returns:
+            Whether the check succeeds.
+        """
         return (
             self.schema_version == MANIFEST_SCHEMA_VERSION
             and self.ontology == ONTOLOGY_NAME
@@ -148,6 +198,15 @@ class MaterializationManifest:
         )
 
     def diff(self, current_files: Mapping[str, SourceSnapshot], *, parser_version: str = PARSER_VERSION) -> ManifestDiff:
+        """Process diff.
+
+        Args:
+            current_files: Current files value.
+            parser_version: Parser version value.
+
+        Returns:
+            The computed result.
+        """
         if not self.is_compatible(parser_version=parser_version):
             return ManifestDiff(
                 added=tuple(sorted(current_files)),
@@ -181,6 +240,7 @@ class MaterializationManifest:
 
 @dataclass(frozen=True, slots=True)
 class ManifestDiff:
+    """Store manifest diff data."""
     added: tuple[str, ...]
     modified: tuple[str, ...]
     unchanged: tuple[str, ...]
@@ -189,11 +249,17 @@ class ManifestDiff:
 
     @property
     def rebuild_paths(self) -> tuple[str, ...]:
+        """Process rebuild paths.
+
+        Returns:
+            A tuple containing the computed values.
+        """
         return tuple(sorted((*self.added, *self.modified)))
 
 
 @dataclass(frozen=True, slots=True)
 class MaterializationResult:
+    """Store the result of materialization operations."""
     mode: MaterializeMode
     scanned: int
     rebuilt: int
@@ -207,6 +273,11 @@ class MaterializationResult:
     graph_summary: Mapping[str, Any]
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {
             "mode": self.mode,
             "scanned": self.scanned,
@@ -223,6 +294,7 @@ class MaterializationResult:
 
 
 class GraphMaterializer:
+    """Scan source files and persist their generated graph partitions."""
     def __init__(
         self,
         source_root: str | Path,
@@ -235,6 +307,18 @@ class GraphMaterializer:
         parser_registry: ParserRegistry | None = None,
         graph_builder: GraphBuilder | None = None,
     ) -> None:
+        """Initialize the instance.
+
+        Args:
+            source_root: Source root value.
+            db_path: The db path to read or write.
+            manifest_path: The manifest path to read or write.
+            include_fts: Include fts value.
+            repository_label: Repository label value.
+            store: The store used by the operation.
+            parser_registry: Parser registry value.
+            graph_builder: Graph builder value.
+        """
         self.source_root = Path(source_root).resolve()
         paths = derive_graph_state_paths(self.source_root)
         self.state_dir = paths.state_dir
@@ -250,19 +334,38 @@ class GraphMaterializer:
 
     @property
     def store(self) -> LadybugCodeGraphStore:
+        """Return the backing graph store, creating it lazily.
+
+        Returns:
+            The open graph store used for materialization.
+        """
         if self._store is None:
             self._store = create_ladybug_database(self.db_path, include_fts=self.include_fts)
         return self._store
 
     @store.setter
     def store(self, value: LadybugCodeGraphStore | None) -> None:
+        """Process store.
+
+        Args:
+            value: Value value.
+        """
         self._store = value
         self._store_injected = value is not None
 
     def close(self) -> None:
+        """Close the owned graph store if one was opened."""
         self._close_store()
 
     def materialize(self, mode: MaterializeMode = "changed") -> MaterializationResult:
+        """Materialize source files into the graph database.
+
+        Args:
+            mode: Whether to rebuild all files or only files changed since the manifest.
+
+        Returns:
+            Counts, diagnostics, manifest location, and graph summary for the run.
+        """
         if mode not in {"full", "changed"}:
             raise ValueError(f"Unsupported materialization mode: {mode}")
 
@@ -271,6 +374,8 @@ class GraphMaterializer:
         supported = {path: snapshot for path, snapshot in snapshots.items() if snapshot.language is not None}
         force_atomic_recovery = self._should_force_atomic_recovery()
 
+        # Full rebuilds and crash recovery prefer an atomic database swap so a
+        # failed run does not leave a partially deleted persistent graph behind.
         if mode == "full" or force_atomic_recovery:
             diff = ManifestDiff(
                 added=tuple(sorted(supported)),
@@ -305,6 +410,8 @@ class GraphMaterializer:
                 retained_node_ids = set()
                 retained_edge_ids = set()
             elif self._can_atomic_rebuild() and _diff_has_changes(diff):
+                # Persistent stores are rebuilt atomically even for changed mode
+                # because partition-level deletion can otherwise expose a mixed graph.
                 return self._materialize_full_atomic(
                     mode=mode,
                     snapshots=snapshots,
@@ -382,6 +489,18 @@ class GraphMaterializer:
         supported: Mapping[str, SourceSnapshot],
         diff: ManifestDiff,
     ) -> MaterializationResult:
+        """Materialize full atomic.
+
+        Args:
+            mode: Mode value.
+            snapshots: Snapshots value.
+            diagnostics: Diagnostics value.
+            supported: Supported value.
+            diff: Diff value.
+
+        Returns:
+            The computed result.
+        """
         target_db_path = _filesystem_db_path(self.db_path)
         lock_fd, lock_path = _acquire_materialization_lock(target_db_path)
         try:
@@ -436,27 +555,53 @@ class GraphMaterializer:
         )
 
     def _read_manifest(self) -> MaterializationManifest:
+        """Read manifest.
+
+        Returns:
+            The computed result.
+        """
         if self._store_injected and self._store is not None and hasattr(self._store, "read_manifest"):
             return self._store.read_manifest(self.manifest_path)
         return MaterializationManifest.load(self.manifest_path)
 
     def _write_manifest(self, manifest: MaterializationManifest) -> None:
+        """Write manifest.
+
+        Args:
+            manifest: Manifest value.
+        """
         if self._store_injected and self._store is not None and hasattr(self._store, "write_manifest"):
             self._store.write_manifest(manifest, self.manifest_path)
             return
         manifest.write(self.manifest_path)
 
     def _can_atomic_rebuild(self) -> bool:
+        """Process can atomic rebuild.
+
+        Returns:
+            Whether the check succeeds.
+        """
         return not self._store_injected and not _is_memory_db_path(self.db_path)
 
     def _should_force_atomic_recovery(self) -> bool:
+        """Process should force atomic recovery.
+
+        Returns:
+            Whether the check succeeds.
+        """
         return self._can_atomic_rebuild() and self._rebuild_marker_path.exists()
 
     @property
     def _rebuild_marker_path(self) -> Path:
+        """Process rebuild marker path.
+
+        Returns:
+            The computed result.
+        """
         return self.manifest_path.with_suffix(self.manifest_path.suffix + ".rebuild-pending")
 
     def _close_store(self) -> None:
+        """Close store."""
         if self._store is None:
             return
         close = getattr(self._store, "close", None)
@@ -465,6 +610,11 @@ class GraphMaterializer:
         self._store = None
 
     def _scan_source_files(self) -> tuple[dict[str, SourceSnapshot], list[str]]:
+        """Scan source files.
+
+        Returns:
+            A tuple containing the computed values.
+        """
         snapshots: dict[str, SourceSnapshot] = {}
         diagnostics: list[str] = []
         for current_root, dirnames, filenames in os.walk(self.source_root):
@@ -494,6 +644,14 @@ class GraphMaterializer:
         return snapshots, diagnostics
 
     def _build_graph(self, snapshot: SourceSnapshot) -> CodeGraph:
+        """Build graph.
+
+        Args:
+            snapshot: Snapshot value.
+
+        Returns:
+            The computed result.
+        """
         if snapshot.language is None:
             raise ValueError(f"Cannot build graph for unsupported file: {snapshot.path}")
         try:
@@ -512,26 +670,67 @@ class GraphMaterializer:
 
 
 def _is_excluded_part(part: str) -> bool:
+    """Return whether excluded part.
+
+    Args:
+        part: Part value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     return part in EXCLUDED_PARTS or part.endswith(".egg-info")
 
 
 def _normalize_db_path(db_path: str | Path) -> str | Path:
+    """Normalize DB path.
+
+    Args:
+        db_path: The db path to read or write.
+
+    Returns:
+        The computed result.
+    """
     if _is_memory_db_path(db_path):
         return ":memory:"
     return Path(db_path)
 
 
 def _is_memory_db_path(db_path: str | Path) -> bool:
+    """Return whether memory db path.
+
+    Args:
+        db_path: The db path to read or write.
+
+    Returns:
+        Whether the check succeeds.
+    """
     return str(db_path) == ":memory:"
 
 
 def _filesystem_db_path(db_path: str | Path) -> Path:
+    """Process filesystem DB path.
+
+    Args:
+        db_path: The db path to read or write.
+
+    Returns:
+        The computed result.
+    """
     if _is_memory_db_path(db_path):
         raise ValueError("In-memory databases do not have a filesystem path")
     return Path(db_path)
 
 
 def _temporary_sibling(path: Path, *, suffix: str) -> Path:
+    """Create temporary sibling.
+
+    Args:
+        path: The path to read or write.
+        suffix: Suffix value.
+
+    Returns:
+        The computed result.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temp_path = tempfile.mkstemp(prefix=f".{path.name}.", suffix=suffix, dir=path.parent)
     os.close(descriptor)
@@ -540,6 +739,14 @@ def _temporary_sibling(path: Path, *, suffix: str) -> Path:
 
 
 def _acquire_materialization_lock(db_path: Path) -> tuple[int, Path]:
+    """Process acquire materialization lock.
+
+    Args:
+        db_path: The db path to read or write.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     lock_path = Path(f"{db_path}.lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     while True:
@@ -581,6 +788,14 @@ def _acquire_materialization_lock(db_path: Path) -> tuple[int, Path]:
 
 
 def _materialization_lock_is_stale(lock_path: Path) -> bool:
+    """Return materialization lock is stale.
+
+    Args:
+        lock_path: The lock path to read or write.
+
+    Returns:
+        Whether the check succeeds.
+    """
     try:
         payload = json.loads(lock_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -592,6 +807,14 @@ def _materialization_lock_is_stale(lock_path: Path) -> bool:
 
 
 def _process_is_running(pid: int) -> bool:
+    """Process process is running.
+
+    Args:
+        pid: Pid value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -602,11 +825,24 @@ def _process_is_running(pid: int) -> bool:
 
 
 def _release_materialization_lock(descriptor: int, lock_path: Path) -> None:
+    """Process release materialization lock.
+
+    Args:
+        descriptor: The descriptor used by the operation.
+        lock_path: The lock path to read or write.
+    """
     os.close(descriptor)
     _unlink_if_exists(lock_path)
 
 
 def _write_rebuild_marker(marker_path: Path, db_path: Path, manifest_path: Path) -> None:
+    """Write rebuild marker.
+
+    Args:
+        marker_path: The marker path to read or write.
+        db_path: The db path to read or write.
+        manifest_path: The manifest path to read or write.
+    """
     marker_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = marker_path.with_suffix(marker_path.suffix + ".tmp")
     with tmp_path.open("w", encoding="utf-8") as handle:
@@ -625,6 +861,11 @@ def _write_rebuild_marker(marker_path: Path, db_path: Path, manifest_path: Path)
 
 
 def _unlink_if_exists(path: Path) -> None:
+    """Unlink if exists.
+
+    Args:
+        path: The path to read or write.
+    """
     try:
         path.unlink()
     except FileNotFoundError:
@@ -632,20 +873,50 @@ def _unlink_if_exists(path: Path) -> None:
 
 
 def _unlink_db_sidecars(db_path: Path) -> None:
+    """Unlink DB sidecars.
+
+    Args:
+        db_path: The db path to read or write.
+    """
     for suffix in (".wal", ".shm", ".shadow"):
         _unlink_if_exists(Path(f"{db_path}{suffix}"))
 
 
 def _diff_has_changes(diff: ManifestDiff) -> bool:
+    """Process diff has changes.
+
+    Args:
+        diff: Diff value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     return bool(diff.rebuild_paths or diff.deleted)
 
 
 def _is_excluded(path: Path, source_root: Path) -> bool:
+    """Return whether excluded.
+
+    Args:
+        path: The path to read or write.
+        source_root: Source root value.
+
+    Returns:
+        Whether the check succeeds.
+    """
     parts = path.relative_to(source_root).parts
     return any(_is_excluded_part(part) for part in parts)
 
 
 def _file_hash(path: Path) -> str:
+    """Return hash file data.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        The computed string.
+    """
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
@@ -654,10 +925,27 @@ def _file_hash(path: Path) -> str:
 
 
 def _partition_id(path: str) -> str:
+    """Process partition ID.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        The computed string.
+    """
     return hashlib.sha1(path.encode("utf-8")).hexdigest()[:20]
 
 
 def _manifest_entry(snapshot: SourceSnapshot, graph: CodeGraph) -> ManifestEntry:
+    """Process manifest entry.
+
+    Args:
+        snapshot: Snapshot value.
+        graph: Graph value.
+
+    Returns:
+        The computed result.
+    """
     return ManifestEntry(
         path=snapshot.path,
         content_hash=snapshot.content_hash,
@@ -681,6 +969,20 @@ def _materialization_result(
     rebuilt_entries: Mapping[str, ManifestEntry],
     next_manifest: MaterializationManifest,
 ) -> MaterializationResult:
+    """Return materialization result.
+
+    Args:
+        mode: Mode value.
+        snapshots: Snapshots value.
+        diagnostics: Diagnostics value.
+        diff: Diff value.
+        manifest_path: The manifest path to read or write.
+        rebuilt_entries: Rebuilt entries value.
+        next_manifest: Next manifest value.
+
+    Returns:
+        The computed result.
+    """
     unsupported_paths = tuple(path for path, snapshot in snapshots.items() if snapshot.language is None)
     skipped_paths = tuple(sorted((*diff.unchanged, *unsupported_paths)))
     return MaterializationResult(
@@ -699,6 +1001,15 @@ def _materialization_result(
 
 
 def _retained_node_ids(manifest: MaterializationManifest, touched_paths: set[str]) -> set[str]:
+    """Return retained node ids.
+
+    Args:
+        manifest: Manifest value.
+        touched_paths: Touched paths value.
+
+    Returns:
+        The computed result.
+    """
     retained: set[str] = set()
     for path, entry in manifest.files.items():
         if path in touched_paths:
@@ -708,6 +1019,15 @@ def _retained_node_ids(manifest: MaterializationManifest, touched_paths: set[str
 
 
 def _retained_edge_ids(manifest: MaterializationManifest, touched_paths: set[str]) -> set[str]:
+    """Return retained edge ids.
+
+    Args:
+        manifest: Manifest value.
+        touched_paths: Touched paths value.
+
+    Returns:
+        The computed result.
+    """
     retained: set[str] = set()
     for path, entry in manifest.files.items():
         if path in touched_paths:
@@ -717,6 +1037,14 @@ def _retained_edge_ids(manifest: MaterializationManifest, touched_paths: set[str
 
 
 def _manifest_summary(manifest: MaterializationManifest) -> dict[str, int | str]:
+    """Process manifest summary.
+
+    Args:
+        manifest: Manifest value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     node_ids: set[str] = set()
     edge_ids: set[str] = set()
     for entry in manifest.files.values():

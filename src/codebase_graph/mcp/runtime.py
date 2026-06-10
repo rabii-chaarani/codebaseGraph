@@ -11,6 +11,7 @@ from codebase_graph.setup.state import derive_setup_paths, load_setup_config
 
 @dataclass(frozen=True, slots=True)
 class GraphRuntimeConfig:
+    """Store configuration for graph runtime operations."""
     repo_root: Path
     db_path: Path
     manifest_path: Path | None = None
@@ -23,6 +24,17 @@ def runtime_config(
     db_path: str | Path | None,
     manifest_path: str | Path | None,
 ) -> GraphRuntimeConfig:
+    """Process runtime config.
+
+    Args:
+        repo_root: Repo root value.
+        config_path: The config path to read or write.
+        db_path: The db path to read or write.
+        manifest_path: The manifest path to read or write.
+
+    Returns:
+        The computed result.
+    """
     root = Path(repo_root).expanduser().resolve()
     config = Path(config_path).expanduser().resolve() if config_path else derive_setup_paths(root).config_path
     payload: dict[str, Any] = {}
@@ -43,10 +55,23 @@ def runtime_config(
 
 
 def open_graph_store(runtime: GraphRuntimeConfig) -> LadybugCodeGraphStore:
+    """Open graph store.
+
+    Args:
+        runtime: The runtime used by the operation.
+
+    Returns:
+        The computed result.
+    """
     return create_ladybug_database(runtime.db_path, include_fts=True, read_only=True)
 
 
 def package_version() -> str:
+    """Return the installed package version.
+
+    Returns:
+        The computed string.
+    """
     try:
         return version("codebase-graph")
     except PackageNotFoundError:

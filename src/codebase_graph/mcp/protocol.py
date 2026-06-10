@@ -14,12 +14,19 @@ LATEST_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0]
 
 @dataclass(slots=True)
 class ProtocolSession:
+    """Store protocol session data."""
     protocol_version: str | None = None
     initialized: bool = False
 
 
 class McpGraphServer:
+    """Represent a MCP graph server."""
     def __init__(self, runtime: GraphRuntimeConfig) -> None:
+        """Initialize the instance.
+
+        Args:
+            runtime: The runtime used by the operation.
+        """
         self.runtime = runtime
         self.session = ProtocolSession()
 
@@ -32,6 +39,17 @@ class McpGraphServer:
         db_path: str | None = None,
         manifest_path: str | None = None,
     ) -> McpGraphServer:
+        """Convert paths.
+
+        Args:
+            repo_root: Repo root value.
+            config_path: The config path to read or write.
+            db_path: The db path to read or write.
+            manifest_path: The manifest path to read or write.
+
+        Returns:
+            The computed result.
+        """
         from .runtime import runtime_config
 
         runtime = runtime_config(
@@ -43,6 +61,14 @@ class McpGraphServer:
         return cls(runtime)
 
     def handle_json_rpc(self, message: dict[str, Any]) -> dict[str, Any] | None:
+        """Process one JSON-RPC message for the MCP server.
+
+        Args:
+            message: JSON-RPC request or notification payload.
+
+        Returns:
+            A JSON-RPC response, or None for notifications.
+        """
         method = str(message.get("method", ""))
         request_id = message.get("id")
         if method == "notifications/initialized":
@@ -50,6 +76,8 @@ class McpGraphServer:
             return None
         if method.startswith("notifications/"):
             return None
+        # MCP requires initialization before tool calls; enforcing that here
+        # keeps individual tools free of transport/session concerns.
         if method in {"tools/list", "tools/call"} and self.session.protocol_version is None:
             return rpc_error(request_id, -32002, "MCP session is not initialized")
         try:
@@ -72,6 +100,14 @@ class McpGraphServer:
         return {"jsonrpc": "2.0", "id": request_id, "result": result}
 
     def _initialize(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Process initialize.
+
+        Args:
+            params: Params value.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         requested = str(params.get("protocolVersion") or "")
         protocol_version = negotiate_protocol_version(requested)
         self.session.protocol_version = protocol_version
@@ -82,6 +118,14 @@ class McpGraphServer:
         }
 
     def _call_tool(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Call tool.
+
+        Args:
+            params: Params value.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return call_tool_result(
             str(params.get("name", "")),
             dict(params.get("arguments") or {}),
@@ -90,12 +134,31 @@ class McpGraphServer:
 
 
 def negotiate_protocol_version(requested: str) -> str:
+    """Negotiate protocol version.
+
+    Args:
+        requested: Requested value.
+
+    Returns:
+        The computed string.
+    """
     if requested in SUPPORTED_PROTOCOL_VERSIONS:
         return requested
     return LATEST_PROTOCOL_VERSION
 
 
 def rpc_error(request_id: Any, code: int, message: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Process RPC error.
+
+    Args:
+        request_id: The request id to identify.
+        code: Code value.
+        message: The message payload to process.
+        data: Data value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     error: dict[str, Any] = {"code": code, "message": message}
     if data is not None:
         error["data"] = data

@@ -31,6 +31,7 @@ DEFAULT_OUTPUT = REPO_ROOT / "docs" / "graph_output_token_comparison.md"
 
 @dataclass(frozen=True, slots=True)
 class Tokenizer:
+    """Store tokenizer data."""
     encoding: Any
     encoding_name: str
     model_name: str | None
@@ -38,6 +39,14 @@ class Tokenizer:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the command-line entrypoint.
+
+    Args:
+        argv: Optional command-line arguments. Defaults to process arguments when omitted.
+
+    Returns:
+        The computed integer.
+    """
     args = _parser().parse_args(argv)
     tokenizer = resolve_tokenizer(model=args.model, encoding_name=args.encoding)
     samples = _load_samples(args)
@@ -49,6 +58,15 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def resolve_tokenizer(*, model: str | None = None, encoding_name: str | None = None) -> Tokenizer:
+    """Resolve tokenizer.
+
+    Args:
+        model: Model value.
+        encoding_name: Encoding name value.
+
+    Returns:
+        The computed result.
+    """
     try:
         import tiktoken
     except ImportError as exc:
@@ -77,10 +95,24 @@ def resolve_tokenizer(*, model: str | None = None, encoding_name: str | None = N
 
 
 def count_tokens(text: str, encoding: Any) -> int:
+    """Count tokens.
+
+    Args:
+        text: Text value.
+        encoding: Encoding value.
+
+    Returns:
+        The computed integer.
+    """
     return len(encoding.encode(text))
 
 
 def _parser() -> argparse.ArgumentParser:
+    """Return parser for result.
+
+    Returns:
+        The computed result.
+    """
     parser = argparse.ArgumentParser(description="Compare graph-search JSON output with readable block output.")
     parser.add_argument("--queries", action="append", default=[], help="Graph-search query to run; repeat as needed")
     parser.add_argument("--fixture", action="append", type=Path, default=[], help="Path to a graph-search JSON fixture")
@@ -106,6 +138,14 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def _load_samples(args: argparse.Namespace) -> list[dict[str, Any]]:
+    """Load samples.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        A list containing the computed values.
+    """
     samples: list[dict[str, Any]] = []
     fixture_paths = args.fixture or ([] if args.queries else [DEFAULT_FIXTURE])
     for fixture_path in fixture_paths:
@@ -141,6 +181,15 @@ def _load_samples(args: argparse.Namespace) -> list[dict[str, Any]]:
 
 
 def _fixture_sample(payload: dict[str, Any], fixture_path: Path) -> dict[str, Any]:
+    """Process fixture sample.
+
+    Args:
+        payload: Payload to process.
+        fixture_path: The fixture path to read or write.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     if "payload" in payload and isinstance(payload["payload"], dict):
         name = str(payload.get("name") or payload["payload"].get("query") or fixture_path.stem)
         return {"name": name, "payload": payload["payload"], "source": fixture_path.as_posix()}
@@ -148,6 +197,16 @@ def _fixture_sample(payload: dict[str, Any], fixture_path: Path) -> dict[str, An
 
 
 def _compare_sample(sample: dict[str, Any], tokenizer: Tokenizer, *, block_format: str) -> dict[str, Any]:
+    """Process compare sample.
+
+    Args:
+        sample: Sample value.
+        tokenizer: Tokenizer value.
+        block_format: Block format value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     payload = sample["payload"]
     raw_text = _raw_json(payload)
     if block_format == "agent":
@@ -190,6 +249,14 @@ def _compare_sample(sample: dict[str, Any], tokenizer: Tokenizer, *, block_forma
 
 
 def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Process aggregate.
+
+    Args:
+        rows: Rows value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     raw_tokens = [row["raw_tokens"] for row in rows]
     block_tokens = [row["block_tokens"] for row in rows]
     reductions = [row["token_reduction_pct"] for row in rows]
@@ -218,6 +285,14 @@ def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _write_report(path: Path, rows: list[dict[str, Any]], aggregate: dict[str, Any], tokenizer: Tokenizer) -> None:
+    """Write report.
+
+    Args:
+        path: The path to read or write.
+        rows: Rows value.
+        aggregate: Aggregate value.
+        tokenizer: Tokenizer value.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     block_format = rows[0].get("block_format", "ontology") if rows else "ontology"
     table_rows = "\n".join(
@@ -303,6 +378,14 @@ def _write_report(path: Path, rows: list[dict[str, Any]], aggregate: dict[str, A
 
 
 def _print_summary(rows: list[dict[str, Any]], aggregate: dict[str, Any], tokenizer: Tokenizer, output_path: Path) -> None:
+    """Print summary.
+
+    Args:
+        rows: Rows value.
+        aggregate: Aggregate value.
+        tokenizer: Tokenizer value.
+        output_path: The output path to read or write.
+    """
     print(f"Compared {len(rows)} graph-search outputs using {tokenizer.encoding_name}.")
     print(f"Raw:   {aggregate['total_raw_tokens']:,} tokens")
     print(f"Block: {aggregate['total_block_tokens']:,} tokens")
@@ -312,14 +395,39 @@ def _print_summary(rows: list[dict[str, Any]], aggregate: dict[str, Any], tokeni
 
 
 def _raw_json(payload: dict[str, Any]) -> str:
+    """Return raw JSON.
+
+    Args:
+        payload: Payload to process.
+
+    Returns:
+        The computed string.
+    """
     return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
 
 def _pct(delta: int | float, original: int | float) -> float:
+    """Process percentage.
+
+    Args:
+        delta: Delta value.
+        original: Original value.
+
+    Returns:
+        The computed result.
+    """
     return (float(delta) / float(original) * 100.0) if original else 0.0
 
 
 def _p90(values: list[int]) -> int:
+    """Process p90.
+
+    Args:
+        values: Values value.
+
+    Returns:
+        The computed integer.
+    """
     ordered = sorted(values)
     index = int(0.9 * (len(ordered) - 1))
     return ordered[index]

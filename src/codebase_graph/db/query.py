@@ -10,6 +10,7 @@ from .schema import quote_identifier
 
 @dataclass(frozen=True, slots=True)
 class GraphNeighbor:
+    """Store graph neighbor data."""
     node_id: str
     node_type: str
     label: str
@@ -22,6 +23,7 @@ class GraphNeighbor:
 
 @dataclass(frozen=True, slots=True)
 class SearchIndexRow:
+    """Store search index row data."""
     id: str
     node_type: str
     label: str
@@ -35,7 +37,19 @@ class SearchIndexRow:
 
 
 class GraphQueryAdapter(Protocol):
+    """Adapt graph query operations to the project interface."""
     def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
+        """Search index.
+
+        Args:
+            node_type: Node type value.
+            index_name: Index name value.
+            query: Query value.
+            limit: Limit value.
+
+        Returns:
+            A list containing the computed values.
+        """
         ...
 
     def neighbors(
@@ -47,14 +61,43 @@ class GraphQueryAdapter(Protocol):
         direction: str,
         limit: int,
     ) -> list[GraphNeighbor]:
+        """Process neighbors.
+
+        Args:
+            node_id: The node id to identify.
+            node_type: Node type value.
+            relation: Relation value.
+            direction: Direction value.
+            limit: Limit value.
+
+        Returns:
+            A list containing the computed values.
+        """
         ...
 
 
 class LadybugGraphQueryAdapter:
+    """Adapt ladybug graph query operations to the project interface."""
     def __init__(self, store: Any) -> None:
+        """Initialize the instance.
+
+        Args:
+            store: The store used by the operation.
+        """
         self.store = store
 
     def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
+        """Search index.
+
+        Args:
+            node_type: Node type value.
+            index_name: Index name value.
+            query: Query value.
+            limit: Limit value.
+
+        Returns:
+            A list containing the computed values.
+        """
         rows = self.store.execute(
             _fts_query_statement(node_type=node_type, index_name=index_name),
             {"query": query, "top": limit},
@@ -83,6 +126,18 @@ class LadybugGraphQueryAdapter:
         direction: str,
         limit: int,
     ) -> list[GraphNeighbor]:
+        """Process neighbors.
+
+        Args:
+            node_id: The node id to identify.
+            node_type: Node type value.
+            relation: Relation value.
+            direction: Direction value.
+            limit: Limit value.
+
+        Returns:
+            A list containing the computed values.
+        """
         if direction not in {"outgoing", "incoming"}:
             raise ValueError(f"Unsupported relation direction: {direction}")
         try:
@@ -119,6 +174,14 @@ class LadybugGraphQueryAdapter:
 
 
 def graph_query_adapter(store: Any) -> GraphQueryAdapter:
+    """Return graph query adapter.
+
+    Args:
+        store: The store used by the operation.
+
+    Returns:
+        The computed result.
+    """
     adapter = getattr(store, "graph_query_adapter", None)
     if adapter is not None:
         return adapter
@@ -126,6 +189,15 @@ def graph_query_adapter(store: Any) -> GraphQueryAdapter:
 
 
 def _fts_query_statement(*, node_type: str, index_name: str) -> str:
+    """Process FTS query statement.
+
+    Args:
+        node_type: Node type value.
+        index_name: Index name value.
+
+    Returns:
+        The computed string.
+    """
     return (
         f"CALL QUERY_FTS_INDEX('{node_type}', '{index_name}', $query, TOP := $top) "
         "RETURN node.id, node.label, node.qualified_name, node.path, "
@@ -141,6 +213,18 @@ def _neighbor_statement(
     direction: str,
     limit: int,
 ) -> str:
+    """Process neighbor statement.
+
+    Args:
+        node_type: Node type value.
+        neighbor_type: Neighbor type value.
+        relation: Relation value.
+        direction: Direction value.
+        limit: Limit value.
+
+    Returns:
+        The computed string.
+    """
     if direction == "outgoing":
         return (
             f"MATCH (source:{quote_identifier(node_type)} {{id: $node_id}})"
@@ -159,6 +243,15 @@ def _neighbor_statement(
 
 
 def _neighbor_from_row(row: Any, node_type: str) -> GraphNeighbor:
+    """Process neighbor from row.
+
+    Args:
+        row: Row value.
+        node_type: Node type value.
+
+    Returns:
+        The computed result.
+    """
     return GraphNeighbor(
         node_id=_text(_value(row, 0)),
         node_type=node_type,
@@ -172,14 +265,39 @@ def _neighbor_from_row(row: Any, node_type: str) -> GraphNeighbor:
 
 
 def _optional_int(value: Any) -> int | None:
+    """Process optional int.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed result.
+    """
     return None if value is None else int(value)
 
 
 def _text(value: Any) -> str:
+    """Return text for result.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     return "" if value is None else str(value)
 
 
 def _value(row: Any, index: int) -> Any:
+    """Return value for result.
+
+    Args:
+        row: Row value.
+        index: Index value.
+
+    Returns:
+        The computed result.
+    """
     try:
         return row[index]
     except IndexError:

@@ -9,6 +9,14 @@ from typing import Any, BinaryIO
 
 
 def main(argv: list[str]) -> int:
+    """Run the command-line entrypoint.
+
+    Args:
+        argv: Optional command-line arguments. Defaults to process arguments when omitted.
+
+    Returns:
+        The computed integer.
+    """
     if len(argv) != 2:
         raise SystemExit("usage: smoke_built_wheel.py /path/to/codebase-graph")
     executable = Path(argv[1])
@@ -57,10 +65,25 @@ def main(argv: list[str]) -> int:
 
 
 def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
+    """Run the operation.
+
+    Args:
+        command: Command value.
+
+    Returns:
+        The computed result.
+    """
     return subprocess.run(command, capture_output=True, text=True, check=True)
 
 
 def _install_verify_smoke(executable: Path, config_path: Path, client_config_path: Path) -> None:
+    """Install verify smoke.
+
+    Args:
+        executable: Executable value.
+        config_path: The config path to read or write.
+        client_config_path: The client config path to read or write.
+    """
     verify = json.loads(
         _run(
             [
@@ -87,6 +110,14 @@ def _install_verify_smoke(executable: Path, config_path: Path, client_config_pat
 
 
 def _sample_repo(repo_root: Path) -> Path:
+    """Process sample repo.
+
+    Args:
+        repo_root: Repo root value.
+
+    Returns:
+        The computed result.
+    """
     package = repo_root / "sample_project"
     package.mkdir(parents=True)
     (package / "__init__.py").write_text("", encoding="utf-8")
@@ -103,6 +134,11 @@ def _sample_repo(repo_root: Path) -> Path:
 
 
 def _mcp_smoke(command: list[str]) -> None:
+    """Process MCP smoke.
+
+    Args:
+        command: Command value.
+    """
     proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert proc.stdin is not None
     assert proc.stdout is not None
@@ -127,6 +163,17 @@ def _mcp_smoke(command: list[str]) -> None:
 
 
 def _rpc(stdin: BinaryIO, stdout: BinaryIO, method: str, params: dict[str, Any]) -> dict[str, Any]:
+    """Process RPC.
+
+    Args:
+        stdin: Stdin value.
+        stdout: Stdout value.
+        method: Method value.
+        params: Params value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     request_id = _rpc.counter
     _rpc.counter += 1
     body = json.dumps({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}).encode("utf-8")
@@ -139,6 +186,14 @@ _rpc.counter = 1  # type: ignore[attr-defined]
 
 
 def _read_response(stdout: BinaryIO) -> dict[str, Any]:
+    """Read response.
+
+    Args:
+        stdout: Stdout value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     line = stdout.readline()
     if not line:
         raise AssertionError("missing MCP response")

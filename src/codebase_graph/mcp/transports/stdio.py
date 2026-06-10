@@ -10,6 +10,7 @@ from codebase_graph.mcp.protocol import McpGraphServer, rpc_error
 
 
 class StdioMessageError(ValueError):
+    """Signal stdio message error failures."""
     pass
 
 
@@ -20,6 +21,14 @@ def serve_stdio(
     db_path: str | Path | None = None,
     manifest_path: str | Path | None = None,
 ) -> None:
+    """Serve stdio.
+
+    Args:
+        repo_root: Repo root value.
+        config_path: The config path to read or write.
+        db_path: The db path to read or write.
+        manifest_path: The manifest path to read or write.
+    """
     server = McpGraphServer.from_paths(
         repo_root=repo_root,
         config_path=config_path,
@@ -41,6 +50,14 @@ def serve_stdio(
 
 
 def read_message(stream: BinaryIO) -> dict[str, Any] | None:
+    """Read message.
+
+    Args:
+        stream: Stream value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     line = stream.readline()
     if not line:
         return None
@@ -63,6 +80,12 @@ def read_message(stream: BinaryIO) -> dict[str, Any] | None:
 
 
 def write_message(stream: BinaryIO, message: dict[str, Any]) -> None:
+    """Write message.
+
+    Args:
+        stream: Stream value.
+        message: The message payload to process.
+    """
     body = json.dumps(message, separators=(",", ":"), sort_keys=True).encode("utf-8")
     stream.write(body)
     stream.write(b"\n")
@@ -70,6 +93,14 @@ def write_message(stream: BinaryIO, message: dict[str, Any]) -> None:
 
 
 def _json_rpc_payload(data: bytes) -> dict[str, Any]:
+    """Process JSON RPC payload.
+
+    Args:
+        data: Data value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     try:
         payload = json.loads(data.decode("utf-8"))
     except UnicodeDecodeError as exc:

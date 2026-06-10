@@ -12,12 +12,30 @@ END_MARKER = "# codebaseGraph MCP server end"
 
 
 class HermesAdapter:
+    """Adapt hermes operations to the project interface."""
     client_id = "hermes"
 
     def default_config_path(self, descriptor: McpServerDescriptor) -> Path:
+        """Create the default config path.
+
+        Args:
+            descriptor: The descriptor used by the operation.
+
+        Returns:
+            The computed result.
+        """
         return Path.home() / ".hermes" / "config.yaml"
 
     def render(self, existing_text: str | None, descriptor: McpServerDescriptor) -> RenderedClientConfig:
+        """Render the operation.
+
+        Args:
+            existing_text: Existing text value.
+            descriptor: The descriptor used by the operation.
+
+        Returns:
+            The computed result.
+        """
         entry = descriptor.stdio_entry(include_type=True)
         patch = _yaml_block(descriptor, entry)
         next_text, previous = _upsert_marked_block(existing_text or "", patch)
@@ -33,6 +51,15 @@ class HermesAdapter:
 
 
 def _upsert_marked_block(existing: str, block: str) -> tuple[str, str | None]:
+    """Upsert marked block.
+
+    Args:
+        existing: Existing value.
+        block: Block value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     start = existing.find(START_MARKER)
     end = existing.find(END_MARKER)
     if start == -1 or end == -1 or end < start:
@@ -46,6 +73,15 @@ def _upsert_marked_block(existing: str, block: str) -> tuple[str, str | None]:
 
 
 def _yaml_block(descriptor: McpServerDescriptor, entry: dict[str, Any]) -> str:
+    """Render YAML block.
+
+    Args:
+        descriptor: The descriptor used by the operation.
+        entry: Entry value.
+
+    Returns:
+        The computed string.
+    """
     lines = [
         START_MARKER,
         "mcp_servers:",
@@ -67,5 +103,13 @@ def _yaml_block(descriptor: McpServerDescriptor, entry: dict[str, Any]) -> str:
 
 
 def _yaml_scalar(value: str) -> str:
+    """Render YAML scalar.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed string.
+    """
     escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'

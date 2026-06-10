@@ -16,11 +16,13 @@ from .schema import build_ladybug_schema, build_ladybug_schema_statements, quote
 
 
 class LadybugUnavailableError(RuntimeError):
+    """Signal ladybug unavailable error failures."""
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class BulkLoadStats:
+    """Store bulk load stats data."""
     node_rows: int = 0
     edge_rows: int = 0
     connector_rows: int = 0
@@ -28,6 +30,7 @@ class BulkLoadStats:
 
 
 class LadybugCodeGraphStore:
+    """Represent a ladybug code graph store."""
     def __init__(
         self,
         db_path: str | Path = ":memory:",
@@ -35,6 +38,13 @@ class LadybugCodeGraphStore:
         include_fts: bool = True,
         read_only: bool = False,
     ) -> None:
+        """Initialize the instance.
+
+        Args:
+            db_path: The db path to read or write.
+            include_fts: Include fts value.
+            read_only: Read only value.
+        """
         self.db_path = db_path
         self.include_fts = include_fts
         self.read_only = read_only
@@ -54,33 +64,63 @@ class LadybugCodeGraphStore:
 
     @property
     def schema_sql(self) -> str:
+        """Return schema SQL.
+
+        Returns:
+            The computed string.
+        """
         return build_ladybug_schema(include_fts=self.include_fts)
 
     def ensure_schema(self) -> None:
+        """Process ensure schema."""
         for statement in build_ladybug_schema_statements(include_fts=self.include_fts):
             self._execute_ignoring_existing(statement)
 
     def load_extensions(self) -> None:
+        """Load extensions."""
         for statement in build_ladybug_schema_statements(include_fts=self.include_fts):
             if statement.upper().startswith("LOAD "):
                 self.execute(statement)
 
     def execute(self, statement: str, parameters: dict[str, Any] | None = None) -> Any:
+        """Execute the operation.
+
+        Args:
+            statement: Statement value.
+            parameters: Parameters value.
+
+        Returns:
+            The computed result.
+        """
         if parameters is None:
             return self.conn.execute(statement)
         return self.conn.execute(statement, parameters)
 
     def close(self) -> None:
+        """Close owned resources."""
         self.conn.close()
         self.db.close()
 
     def __enter__(self) -> LadybugCodeGraphStore:
+        """Enter the runtime context.
+
+        Returns:
+            The computed result.
+        """
         return self
 
     def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        """Exit the runtime context.
+
+        Args:
+            exc_type: Exc type value.
+            exc: Exc value.
+            traceback: Traceback value.
+        """
         self.close()
 
     def clear_graph(self) -> None:
+        """Process clear graph."""
         for relation_type in RELATION_TYPES:
             self._execute_ignoring_missing(f"MATCH ()-[r:{quote_identifier(f'FROM_{relation_type.name}')}]->() DELETE r")
             self._execute_ignoring_missing(f"MATCH ()-[r:{quote_identifier(f'TO_{relation_type.name}')}]->() DELETE r")
@@ -98,6 +138,15 @@ class LadybugCodeGraphStore:
         retained_node_ids: set[str] | None = None,
         retained_edge_ids: set[str] | None = None,
     ) -> None:
+        """Replace partition.
+
+        Args:
+            path: The path to read or write.
+            graph: Graph value.
+            previous_entry: Previous entry value.
+            retained_node_ids: Retained node ids value.
+            retained_edge_ids: Retained edge ids value.
+        """
         if previous_entry is not None:
             self.delete_partition(
                 path,
@@ -119,6 +168,16 @@ class LadybugCodeGraphStore:
         skip_node_ids: set[str] | None = None,
         skip_edge_ids: set[str] | None = None,
     ) -> BulkLoadStats:
+        """Process insert graphs bulk.
+
+        Args:
+            graphs: Graphs value.
+            skip_node_ids: Skip node ids value.
+            skip_edge_ids: Skip edge ids value.
+
+        Returns:
+            The computed result.
+        """
         staging_tables = _build_bulk_staging_tables(
             graphs,
             skip_node_ids=skip_node_ids,
@@ -146,6 +205,14 @@ class LadybugCodeGraphStore:
         retained_node_ids: set[str] | None = None,
         retained_edge_ids: set[str] | None = None,
     ) -> None:
+        """Delete partition.
+
+        Args:
+            path: The path to read or write.
+            manifest_entry: Manifest entry value.
+            retained_node_ids: Retained node ids value.
+            retained_edge_ids: Retained edge ids value.
+        """
         if manifest_entry is None:
             return
         retained = retained_node_ids or set()
@@ -168,14 +235,33 @@ class LadybugCodeGraphStore:
                 self._delete_node(node_id, node_type)
 
     def read_manifest(self, path: str | Path) -> Any:
+        """Read manifest.
+
+        Args:
+            path: The path to read or write.
+
+        Returns:
+            The computed result.
+        """
         from codebase_graph.ingest.materializer import MaterializationManifest
 
         return MaterializationManifest.load(Path(path))
 
     def write_manifest(self, manifest: Any, path: str | Path) -> None:
+        """Write manifest.
+
+        Args:
+            manifest: Manifest value.
+            path: The path to read or write.
+        """
         manifest.write(Path(path))
 
     def _execute_ignoring_existing(self, statement: str) -> None:
+        """Execute ignoring existing.
+
+        Args:
+            statement: Statement value.
+        """
         try:
             self.conn.execute(statement)
         except Exception as exc:
@@ -184,6 +270,12 @@ class LadybugCodeGraphStore:
                 raise
 
     def _execute_ignoring_missing(self, statement: str, parameters: dict[str, Any] | None = None) -> None:
+        """Execute ignoring missing.
+
+        Args:
+            statement: Statement value.
+            parameters: Parameters value.
+        """
         try:
             self.execute(statement, parameters)
         except Exception as exc:
@@ -192,6 +284,12 @@ class LadybugCodeGraphStore:
                 raise
 
     def _delete_edge(self, edge_id: str, edge_type: str) -> None:
+        """Delete edge.
+
+        Args:
+            edge_id: The edge id to identify.
+            edge_type: Edge type value.
+        """
         self._execute_ignoring_missing(
             f"MATCH ()-[r:{quote_identifier(f'FROM_{edge_type}')}]->(edge:{quote_identifier(edge_type)} {{id: $id}}) DELETE r",
             {"id": edge_id},
@@ -206,6 +304,12 @@ class LadybugCodeGraphStore:
         )
 
     def _delete_node(self, node_id: str, node_type: str) -> None:
+        """Delete node.
+
+        Args:
+            node_id: The node id to identify.
+            node_type: Node type value.
+        """
         self._execute_ignoring_missing(
             f"MATCH (node:{quote_identifier(node_type)} {{id: $id}}) DELETE node",
             {"id": node_id},
@@ -218,6 +322,16 @@ def create_ladybug_database(
     include_fts: bool = True,
     read_only: bool = False,
 ) -> LadybugCodeGraphStore:
+    """Create ladybug database.
+
+    Args:
+        db_path: The db path to read or write.
+        include_fts: Include fts value.
+        read_only: Read only value.
+
+    Returns:
+        The computed result.
+    """
     store = LadybugCodeGraphStore(db_path, include_fts=include_fts, read_only=read_only)
     if read_only:
         store.load_extensions()
@@ -239,15 +353,29 @@ EDGE_FIELDS_BY_TYPE = {
 
 @dataclass(slots=True)
 class _BulkStagingTables:
+    """Store bulk staging tables data."""
     nodes: dict[str, dict[str, dict[str, Any]]]
     edges: dict[str, dict[str, dict[str, Any]]]
     connectors: dict[tuple[str, str, str], dict[tuple[str, str, str], dict[str, str]]]
 
     @property
     def is_empty(self) -> bool:
+        """Return whether empty.
+
+        Returns:
+            Whether the check succeeds.
+        """
         return not any(self.nodes.values()) and not any(self.edges.values()) and not any(self.connectors.values())
 
     def write(self, staging_dir: Path) -> _BulkStagingResult:
+        """Write staged graph rows to COPY-ready files.
+
+        Args:
+            staging_dir: Directory where staging files should be written.
+
+        Returns:
+            COPY statements and row counts for the staged files.
+        """
         staging_dir.mkdir(parents=True, exist_ok=True)
         copy_statements: list[str] = []
         node_rows = 0
@@ -274,6 +402,8 @@ class _BulkStagingTables:
 
         for relation_type in RELATION_TYPES:
             for connector_table in (f"FROM_{relation_type.name}", f"TO_{relation_type.name}"):
+                # Connector CSV files are grouped by endpoint labels because Ladybug
+                # needs the concrete from/to node types on each COPY statement.
                 connector_groups = [
                     (endpoint_pair, rows)
                     for endpoint_pair, rows in self.connectors.items()
@@ -301,6 +431,7 @@ class _BulkStagingTables:
 
 @dataclass(frozen=True, slots=True)
 class _BulkStagingResult:
+    """Store the result of bulk staging operations."""
     copy_statements: tuple[str, ...]
     node_rows: int
     edge_rows: int
@@ -313,6 +444,16 @@ def _build_bulk_staging_tables(
     skip_node_ids: set[str] | None = None,
     skip_edge_ids: set[str] | None = None,
 ) -> _BulkStagingTables:
+    """Build bulk staging tables.
+
+    Args:
+        graphs: Graphs value.
+        skip_node_ids: Skip node ids value.
+        skip_edge_ids: Skip edge ids value.
+
+    Returns:
+        The computed result.
+    """
     skipped_nodes = skip_node_ids or set()
     skipped_edges = skip_edge_ids or set()
     node_rows: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
@@ -360,6 +501,16 @@ def _build_bulk_staging_tables(
 
 
 def _row_for_fields(row: Mapping[str, Any], fields: tuple[Any, ...], *, for_json_copy: bool = False) -> dict[str, Any]:
+    """Return row data for for fields.
+
+    Args:
+        row: Row value.
+        fields: Fields value.
+        for_json_copy: For json copy value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     return {
         field.name: _copy_field_value(field.name, row, field.value_type, for_json_copy=for_json_copy)
         for field in fields
@@ -367,6 +518,17 @@ def _row_for_fields(row: Mapping[str, Any], fields: tuple[Any, ...], *, for_json
 
 
 def _copy_field_value(name: str, row: Mapping[str, Any], value_type: str, *, for_json_copy: bool = False) -> Any:
+    """Copy field value.
+
+    Args:
+        name: Name value.
+        row: Row value.
+        value_type: Value type value.
+        for_json_copy: For json copy value.
+
+    Returns:
+        The computed result.
+    """
     if not for_json_copy or value_type != "json":
         return _field_value(name, row, value_type)
     if name in row:
@@ -381,6 +543,13 @@ def _copy_field_value(name: str, row: Mapping[str, Any], value_type: str, *, for
 
 
 def _merge_staged_row(rows: dict[str, dict[str, Any]], row_id: str, row: dict[str, Any]) -> None:
+    """Merge staged row.
+
+    Args:
+        rows: Rows value.
+        row_id: The row id to identify.
+        row: Row value.
+    """
     existing = rows.get(row_id)
     if existing is None:
         rows[row_id] = row
@@ -404,17 +573,41 @@ def _add_connector_row(
     to_id: str,
     role: str,
 ) -> None:
+    """Add connector row.
+
+    Args:
+        rows: Rows value.
+        table: Table value.
+        source_type: Source type value.
+        target_type: Target type value.
+        from_id: The from id to identify.
+        to_id: The to id to identify.
+        role: Role value.
+    """
     key = (table, source_type, target_type)
     rows[key][(from_id, to_id, role)] = {"from_id": from_id, "to_id": to_id, "role": role}
 
 
 def _write_json_rows(path: Path, rows: Any) -> None:
+    """Write JSON rows.
+
+    Args:
+        path: The path to read or write.
+        rows: Rows value.
+    """
     with path.open("w", encoding="utf-8") as handle:
         json.dump(list(rows), handle, separators=(",", ":"), sort_keys=True)
         handle.write("\n")
 
 
 def _write_csv_rows(path: Path, columns: tuple[str, ...], rows: Any) -> None:
+    """Write csv rows.
+
+    Args:
+        path: The path to read or write.
+        columns: Columns value.
+        rows: Rows value.
+    """
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
         writer.writeheader()
@@ -423,14 +616,40 @@ def _write_csv_rows(path: Path, columns: tuple[str, ...], rows: Any) -> None:
 
 
 def _stage_file_stem(name: str) -> str:
+    """Return stage file stem.
+
+    Args:
+        name: Name value.
+
+    Returns:
+        The computed string.
+    """
     return "".join(character.lower() if character.isalnum() else "_" for character in name).strip("_") or "table"
 
 
 def _copy_path(path: Path) -> str:
+    """Copy path.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        The computed string.
+    """
     return path.as_posix().replace('"', '\\"')
 
 
 def _field_value(name: str, row: Mapping[str, Any], value_type: str) -> Any:
+    """Return value field data.
+
+    Args:
+        name: Name value.
+        row: Row value.
+        value_type: Value type value.
+
+    Returns:
+        The computed result.
+    """
     if name in row:
         value = row[name]
     else:
@@ -442,6 +661,14 @@ def _field_value(name: str, row: Mapping[str, Any], value_type: str) -> Any:
 
 
 def _json_safe(value: Any) -> Any:
+    """Process JSON safe.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed result.
+    """
     if isinstance(value, Mapping):
         safe_items = {}
         for key, item in value.items():
@@ -460,6 +687,15 @@ def _json_safe(value: Any) -> Any:
 
 
 def _entry_values(entry: Mapping[str, Any] | Any, field_name: str) -> tuple[str, ...]:
+    """Process entry values.
+
+    Args:
+        entry: Entry value.
+        field_name: Field name value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     if isinstance(entry, Mapping):
         values = entry.get(field_name, ())
     else:
@@ -468,6 +704,15 @@ def _entry_values(entry: Mapping[str, Any] | Any, field_name: str) -> tuple[str,
 
 
 def _entry_mapping(entry: Mapping[str, Any] | Any, field_name: str) -> dict[str, str]:
+    """Process entry mapping.
+
+    Args:
+        entry: Entry value.
+        field_name: Field name value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     if isinstance(entry, Mapping):
         values = entry.get(field_name, {})
     else:

@@ -14,10 +14,26 @@ TYPE_MAP = {
 
 
 def quote_identifier(name: str) -> str:
+    """Quote identifier.
+
+    Args:
+        name: Name value.
+
+    Returns:
+        The computed string.
+    """
     return f"`{name.replace('`', '``')}`"
 
 
 def ladybug_type(value_type: str) -> str:
+    """Process ladybug type.
+
+    Args:
+        value_type: Value type value.
+
+    Returns:
+        The computed string.
+    """
     try:
         return TYPE_MAP[value_type]
     except KeyError as exc:
@@ -25,10 +41,26 @@ def ladybug_type(value_type: str) -> str:
 
 
 def build_ladybug_schema(*, include_fts: bool = True) -> str:
+    """Build ladybug schema.
+
+    Args:
+        include_fts: Include fts value.
+
+    Returns:
+        The computed string.
+    """
     return ";\n\n".join(build_ladybug_schema_statements(include_fts=include_fts)) + ";"
 
 
 def build_ladybug_schema_statements(*, include_fts: bool = True) -> list[str]:
+    """Build ladybug schema statements.
+
+    Args:
+        include_fts: Include fts value.
+
+    Returns:
+        A list containing the computed values.
+    """
     statements = [
         "INSTALL json",
         "LOAD json",
@@ -44,6 +76,11 @@ def build_ladybug_schema_statements(*, include_fts: bool = True) -> list[str]:
 
 
 def _semantic_node_table_sql() -> list[str]:
+    """Return semantic node table SQL.
+
+    Returns:
+        A list containing the computed values.
+    """
     return [
         _node_table_sql(node_type.name, node_type.fields)
         for node_type in NODE_TYPES
@@ -51,6 +88,11 @@ def _semantic_node_table_sql() -> list[str]:
 
 
 def _edge_node_table_sql() -> list[str]:
+    """Process edge node table SQL.
+
+    Returns:
+        A list containing the computed values.
+    """
     return [
         _node_table_sql(relation_type.name, relation_type.fields or EDGE_FIELDS)
         for relation_type in RELATION_TYPES
@@ -58,6 +100,11 @@ def _edge_node_table_sql() -> list[str]:
 
 
 def _connector_table_sql() -> list[str]:
+    """Process connector table SQL.
+
+    Returns:
+        A list containing the computed values.
+    """
     statements: list[str] = []
     for relation_type in RELATION_TYPES:
         relation_name = relation_type.name
@@ -69,11 +116,30 @@ def _connector_table_sql() -> list[str]:
 
 
 def _node_table_sql(table_name: str, fields: Iterable[FieldSpec]) -> str:
+    """Return node table SQL.
+
+    Args:
+        table_name: Table name value.
+        fields: Fields value.
+
+    Returns:
+        The computed string.
+    """
     columns = [_field_sql(field) for field in _dedupe_fields(fields)]
     return f"CREATE NODE TABLE IF NOT EXISTS {quote_identifier(table_name)}(\n" + ",\n".join(columns) + "\n)"
 
 
 def _relation_table_sql(table_name: str, endpoint_pairs: Iterable[tuple[str, str]], *, role: str) -> str:
+    """Return relation table SQL.
+
+    Args:
+        table_name: Table name value.
+        endpoint_pairs: Endpoint pairs value.
+        role: Role value.
+
+    Returns:
+        The computed string.
+    """
     endpoints = [
         f"  FROM {quote_identifier(source_type)} TO {quote_identifier(target_type)}"
         for source_type, target_type in endpoint_pairs
@@ -83,11 +149,27 @@ def _relation_table_sql(table_name: str, endpoint_pairs: Iterable[tuple[str, str
 
 
 def _field_sql(field: FieldSpec) -> str:
+    """Return SQL field data.
+
+    Args:
+        field: Field value.
+
+    Returns:
+        The computed string.
+    """
     primary_key = " PRIMARY KEY" if field.name == "id" else ""
     return f"  {quote_identifier(field.name)} {ladybug_type(field.value_type)}{primary_key}"
 
 
 def _dedupe_fields(fields: Iterable[FieldSpec]) -> list[FieldSpec]:
+    """Deduplicate fields.
+
+    Args:
+        fields: Fields value.
+
+    Returns:
+        A list containing the computed values.
+    """
     seen: set[str] = set()
     deduped: list[FieldSpec] = []
     for field in fields:
@@ -99,6 +181,14 @@ def _dedupe_fields(fields: Iterable[FieldSpec]) -> list[FieldSpec]:
 
 
 def _dedupe_pairs(pairs: Iterable[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Deduplicate pairs.
+
+    Args:
+        pairs: Pairs value.
+
+    Returns:
+        A list containing the computed values.
+    """
     seen: set[tuple[str, str]] = set()
     deduped: list[tuple[str, str]] = []
     for pair in pairs:
@@ -110,6 +200,11 @@ def _dedupe_pairs(pairs: Iterable[tuple[str, str]]) -> list[tuple[str, str]]:
 
 
 def _fts_index_sql() -> list[str]:
+    """Process FTS index SQL.
+
+    Returns:
+        A list containing the computed values.
+    """
     statements: list[str] = []
     for index in SEARCH_INDEXES:
         fields = ", ".join(repr(field) for field in index["fields"])

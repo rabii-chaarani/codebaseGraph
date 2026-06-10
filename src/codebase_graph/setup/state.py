@@ -19,6 +19,14 @@ SetupPaths = graph_paths.GraphStatePaths
 
 
 def derive_setup_paths(repo_root: str | Path) -> SetupPaths:
+    """Derive setup paths.
+
+    Args:
+        repo_root: Repo root value.
+
+    Returns:
+        The computed result.
+    """
     paths = derive_graph_state_paths(repo_root)
     if not paths.repo_root.exists():
         raise FileNotFoundError(f"Repository root does not exist: {paths.repo_root}")
@@ -32,6 +40,15 @@ def derive_setup_paths(repo_root: str | Path) -> SetupPaths:
 
 
 def build_setup_config(paths: SetupPaths, *, mcp_command: list[str]) -> dict[str, Any]:
+    """Build setup config.
+
+    Args:
+        paths: Paths value.
+        mcp_command: Mcp command value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     return {
         "schema_version": 1,
         "repo_root": paths.repo_root.as_posix(),
@@ -49,6 +66,14 @@ def build_setup_config(paths: SetupPaths, *, mcp_command: list[str]) -> dict[str
 
 
 def load_setup_config(path: str | Path) -> dict[str, Any]:
+    """Load setup config.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     config_path = Path(path).expanduser().resolve()
     with config_path.open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
@@ -57,6 +82,15 @@ def load_setup_config(path: str | Path) -> dict[str, Any]:
 
 
 def write_setup_config(path: Path, payload: dict[str, Any]) -> str:
+    """Write setup config.
+
+    Args:
+        path: The path to read or write.
+        payload: Payload to process.
+
+    Returns:
+        The computed string.
+    """
     previous = _read_json_if_exists(path)
     action = "created"
     if previous == payload:
@@ -73,6 +107,11 @@ def write_setup_config(path: Path, payload: dict[str, Any]) -> str:
 
 
 def _package_version() -> str:
+    """Return the installed package version.
+
+    Returns:
+        The computed string.
+    """
     try:
         return version("codebase-graph")
     except PackageNotFoundError:
@@ -80,6 +119,14 @@ def _package_version() -> str:
 
 
 def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
+    """Read JSON if exists.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     if not path.exists():
         return None
     with path.open("r", encoding="utf-8") as handle:
@@ -87,6 +134,12 @@ def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
 
 
 def _validate_setup_config(payload: dict[str, Any], path: Path) -> None:
+    """Validate setup config.
+
+    Args:
+        payload: Payload to process.
+        path: The path to read or write.
+    """
     required = ("repo_root", "repo_name", "state_dir", "database_path", "manifest_path")
     missing = [key for key in required if not payload.get(key)]
     if missing:

@@ -9,10 +9,16 @@ END_MARKER = "<!-- codebaseGraph:end -->"
 
 @dataclass(frozen=True, slots=True)
 class InstructionResult:
+    """Store the result of instruction operations."""
     action: str
     path: str | None
 
     def as_dict(self) -> dict[str, str | None]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         return {"action": self.action, "path": self.path}
 
 
@@ -24,6 +30,18 @@ def upsert_instruction_block(
     config_path: Path,
     setup_command: str = "codebase-graph",
 ) -> InstructionResult:
+    """Upsert instruction block.
+
+    Args:
+        repo_root: Repo root value.
+        target: Target value.
+        server_name: Server name value.
+        config_path: The config path to read or write.
+        setup_command: Setup command value.
+
+    Returns:
+        The computed result.
+    """
     if target == "skip":
         return InstructionResult("skipped", None)
     path = _select_instruction_path(repo_root, target)
@@ -37,12 +55,29 @@ def upsert_instruction_block(
 
 
 def instruction_target_path(repo_root: Path, *, target: str = "auto") -> Path | None:
+    """Process instruction target path.
+
+    Args:
+        repo_root: Repo root value.
+        target: Target value.
+
+    Returns:
+        The computed result.
+    """
     if target == "skip":
         return None
     return _select_instruction_path(repo_root, target)
 
 
 def remove_instruction_block(path: Path) -> bool:
+    """Remove instruction block.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        Whether the check succeeds.
+    """
     if not path.exists():
         return False
     existing = path.read_text(encoding="utf-8")
@@ -57,6 +92,15 @@ def remove_instruction_block(path: Path) -> bool:
 
 
 def _select_instruction_path(repo_root: Path, target: str) -> Path:
+    """Select instruction path.
+
+    Args:
+        repo_root: Repo root value.
+        target: Target value.
+
+    Returns:
+        The computed result.
+    """
     if target == "agents":
         return repo_root / "AGENTS.md"
     if target == "claude":
@@ -73,6 +117,16 @@ def _select_instruction_path(repo_root: Path, target: str) -> Path:
 
 
 def _instruction_block(*, server_name: str, config_path: Path, setup_command: str) -> str:
+    """Process instruction block.
+
+    Args:
+        server_name: Server name value.
+        config_path: The config path to read or write.
+        setup_command: Setup command value.
+
+    Returns:
+        The computed string.
+    """
     return (
         f"{START_MARKER}\n"
         "## codebaseGraph workflow\n"
@@ -90,6 +144,16 @@ def _instruction_block(*, server_name: str, config_path: Path, setup_command: st
 
 
 def _upsert_block(existing: str, block: str, *, created: bool) -> tuple[str, str]:
+    """Upsert block.
+
+    Args:
+        existing: Existing value.
+        block: Block value.
+        created: Created value.
+
+    Returns:
+        A tuple containing the computed values.
+    """
     if not existing.strip():
         return block, "created"
     start = existing.find(START_MARKER)
@@ -103,5 +167,15 @@ def _upsert_block(existing: str, block: str, *, created: bool) -> tuple[str, str
 
 
 def _join_sections(prefix: str, block: str, suffix: str) -> str:
+    """Join sections.
+
+    Args:
+        prefix: Prefix value.
+        block: Block value.
+        suffix: Suffix value.
+
+    Returns:
+        The computed string.
+    """
     sections = [section.strip() for section in (prefix, block, suffix) if section.strip()]
     return "\n\n".join(sections) + "\n"

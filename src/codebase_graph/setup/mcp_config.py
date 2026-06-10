@@ -12,6 +12,7 @@ from .state import MCP_SERVER_NAME
 
 @dataclass(frozen=True, slots=True)
 class McpConfigResult:
+    """Store the result of MCP config operations."""
     action: str
     client: str
     path: str | None
@@ -28,6 +29,11 @@ class McpConfigResult:
     native_error: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         payload = {
             "action": self.action,
             "client": self.client,
@@ -57,6 +63,14 @@ class McpConfigResult:
 
     @classmethod
     def from_install_result(cls, result: McpInstallResult) -> McpConfigResult:
+        """Convert install result.
+
+        Args:
+            result: Result value.
+
+        Returns:
+            The computed result.
+        """
         return cls(
             action=result.action,
             client=result.client,
@@ -83,6 +97,18 @@ def configure_mcp_client(
     dry_run: bool = False,
     skip: bool = False,
 ) -> McpConfigResult:
+    """Configure MCP client.
+
+    Args:
+        client: Client value.
+        config_path: The config path to read or write.
+        setup_config_path: The setup config path to read or write.
+        dry_run: Dry run value.
+        skip: Skip value.
+
+    Returns:
+        The computed result.
+    """
     result = install_mcp_server(
         McpInstallOptions(
             client=client,
@@ -99,9 +125,25 @@ def configure_mcp_client(
 
 
 def server_entry(setup_config_path: Path) -> dict[str, Any]:
+    """Return server entry.
+
+    Args:
+        setup_config_path: The setup config path to read or write.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     return build_server_descriptor(setup_config_path).stdio_entry()
 
 
 def default_config_path(client: str) -> Path:
+    """Create the default config path.
+
+    Args:
+        client: Client value.
+
+    Returns:
+        The computed result.
+    """
     descriptor = build_server_descriptor(Path.cwd() / ".codebaseGraph" / "config.json")
     return get_client_adapter(client).default_config_path(descriptor)

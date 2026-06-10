@@ -12,6 +12,7 @@ from .state import MCP_SERVER_NAME
 
 @dataclass(frozen=True, slots=True)
 class McpServerDescriptor:
+    """Store MCP server descriptor data."""
     name: str
     transport: str
     command: str
@@ -24,6 +25,11 @@ class McpServerDescriptor:
     tool_policy: str | None = "graph_query_read_only"
 
     def as_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         payload: dict[str, Any] = {
             "name": self.name,
             "transport": self.transport,
@@ -40,6 +46,15 @@ class McpServerDescriptor:
         return payload
 
     def stdio_entry(self, *, include_type: bool = False, include_timeout: bool = False) -> dict[str, Any]:
+        """Return stdio entry.
+
+        Args:
+            include_type: Include type value.
+            include_timeout: Include timeout value.
+
+        Returns:
+            A dictionary containing the computed payload.
+        """
         entry: dict[str, Any] = {"command": self.command, "args": list(self.args)}
         if include_type:
             entry["type"] = "stdio"
@@ -59,6 +74,17 @@ def build_server_descriptor(
     name: str = MCP_SERVER_NAME,
     timeout: int = 60,
 ) -> McpServerDescriptor:
+    """Build server descriptor.
+
+    Args:
+        setup_config_path: The setup config path to read or write.
+        repo_root: Repo root value.
+        name: Name value.
+        timeout: Timeout value.
+
+    Returns:
+        The computed result.
+    """
     config_path = setup_config_path.expanduser().resolve()
     resolved_repo_root = repo_root.expanduser().resolve() if repo_root is not None else config_path.parent.parent
     return McpServerDescriptor(
@@ -75,6 +101,11 @@ def build_server_descriptor(
 
 
 def resolve_server_command() -> str:
+    """Resolve server command.
+
+    Returns:
+        The computed string.
+    """
     sibling_script = Path(sys.executable).with_name("codebase-graph")
     if sibling_script.exists() and os.access(sibling_script, os.X_OK):
         return sibling_script.as_posix()

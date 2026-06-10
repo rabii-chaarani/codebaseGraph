@@ -8,6 +8,11 @@ from .transports.stdio import serve_stdio
 
 
 def main() -> int:
+    """Run the command-line entrypoint.
+
+    Returns:
+        The computed integer.
+    """
     import argparse
 
     parser = argparse.ArgumentParser(prog="codebase-graph-mcp")

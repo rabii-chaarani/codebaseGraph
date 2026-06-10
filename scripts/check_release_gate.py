@@ -28,15 +28,29 @@ PYPI_CONFIRMATION_FLAGS = (
 
 @dataclass(frozen=True, slots=True)
 class GateIssue:
+    """Store gate issue data."""
     severity: str
     code: str
     message: str
 
     def line(self) -> str:
+        """Process line.
+
+        Returns:
+            The computed string.
+        """
         return f"{self.severity}: {self.code}: {self.message}"
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the command-line entrypoint.
+
+    Args:
+        argv: Optional command-line arguments. Defaults to process arguments when omitted.
+
+    Returns:
+        The computed integer.
+    """
     parser = argparse.ArgumentParser(description="Check local and production release readiness gates.")
     parser.add_argument("--production", action="store_true", help="Require owner-controlled production release gates.")
     parser.add_argument("--require-conda", action="store_true", help="Require the conda-forge recipe to be finalized.")
@@ -63,6 +77,16 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def run_checks(*, production: bool, require_conda: bool, confirmations: set[str]) -> list[GateIssue]:
+    """Run checks.
+
+    Args:
+        production: Production value.
+        require_conda: Require conda value.
+        confirmations: Confirmations value.
+
+    Returns:
+        A list containing the computed values.
+    """
     issues: list[GateIssue] = []
     issues.extend(_check_security_policy())
     issues.extend(_check_workflows())
@@ -76,6 +100,11 @@ def run_checks(*, production: bool, require_conda: bool, confirmations: set[str]
 
 
 def _check_security_policy() -> list[GateIssue]:
+    """Check security policy.
+
+    Returns:
+        A list containing the computed values.
+    """
     issues: list[GateIssue] = []
     security = REPO_ROOT / "SECURITY.md"
     manifest = REPO_ROOT / "MANIFEST.in"
@@ -92,6 +121,11 @@ def _check_security_policy() -> list[GateIssue]:
 
 
 def _check_workflows() -> list[GateIssue]:
+    """Check workflows.
+
+    Returns:
+        A list containing the computed values.
+    """
     issues: list[GateIssue] = []
     for relative_path in WORKFLOWS:
         path = REPO_ROOT / relative_path
@@ -112,6 +146,15 @@ def _check_workflows() -> list[GateIssue]:
 
 
 def _workflow_action_pin_issues(relative_path: Path, text: str) -> list[GateIssue]:
+    """Return workflow action pin issues.
+
+    Args:
+        relative_path: The relative path to read or write.
+        text: Text value.
+
+    Returns:
+        A list containing the computed values.
+    """
     issues: list[GateIssue] = []
     uses_pattern = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<target>[^\s#]+)")
     for line_number, line in enumerate(text.splitlines(), start=1):
@@ -133,6 +176,14 @@ def _workflow_action_pin_issues(relative_path: Path, text: str) -> list[GateIssu
 
 
 def _jobs_missing_timeout(text: str) -> list[str]:
+    """Process jobs missing timeout.
+
+    Args:
+        text: Text value.
+
+    Returns:
+        A list containing the computed values.
+    """
     missing: list[str] = []
     in_jobs = False
     current_job: str | None = None
@@ -162,6 +213,11 @@ def _jobs_missing_timeout(text: str) -> list[str]:
 
 
 def _check_release_workflow_permissions() -> list[GateIssue]:
+    """Check release workflow permissions.
+
+    Returns:
+        A list containing the computed values.
+    """
     workflow = REPO_ROOT / ".github/workflows/release.yml"
     issues: list[GateIssue] = []
     if not workflow.exists():
@@ -189,6 +245,11 @@ def _check_release_workflow_permissions() -> list[GateIssue]:
 
 
 def _check_license_metadata() -> list[GateIssue]:
+    """Check license metadata.
+
+    Returns:
+        A list containing the computed values.
+    """
     pyproject = _load_toml(REPO_ROOT / "pyproject.toml")
     project = pyproject.get("project", {})
     license_value = project.get("license")
@@ -203,6 +264,14 @@ def _check_license_metadata() -> list[GateIssue]:
 
 
 def _check_external_confirmations(confirmations: set[str]) -> list[GateIssue]:
+    """Check external confirmations.
+
+    Args:
+        confirmations: Confirmations value.
+
+    Returns:
+        A list containing the computed values.
+    """
     return [
         GateIssue("FAIL", "external-confirmation-missing", f"production release requires --confirm {flag}.")
         for flag in PYPI_CONFIRMATION_FLAGS
@@ -211,6 +280,11 @@ def _check_external_confirmations(confirmations: set[str]) -> list[GateIssue]:
 
 
 def _check_conda_recipe() -> list[GateIssue]:
+    """Check conda recipe.
+
+    Returns:
+        A list containing the computed values.
+    """
     recipe_path = REPO_ROOT / "conda-forge/recipe/meta.yaml"
     issues: list[GateIssue] = []
     if not recipe_path.exists():
@@ -224,6 +298,14 @@ def _check_conda_recipe() -> list[GateIssue]:
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
+    """Load toml.
+
+    Args:
+        path: The path to read or write.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     with path.open("rb") as handle:
         return tomllib.load(handle)
 

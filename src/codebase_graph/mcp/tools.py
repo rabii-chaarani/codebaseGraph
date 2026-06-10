@@ -23,10 +23,21 @@ READ_ONLY_DENY_RE = re.compile(
 
 
 class UnknownToolError(ValueError):
+    """Signal unknown tool error failures."""
     pass
 
 
 def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRuntimeConfig | None) -> dict[str, Any]:
+    """Handle tool call.
+
+    Args:
+        name: Name value.
+        arguments: The arguments payload to process.
+        runtime: The runtime used by the operation.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     if name == "graph_health":
         return _health(runtime)
     if name == "graph_schema":
@@ -49,6 +60,16 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
 
 
 def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRuntimeConfig) -> dict[str, Any]:
+    """Call tool result.
+
+    Args:
+        name: Name value.
+        arguments: The arguments payload to process.
+        runtime: The runtime used by the operation.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     try:
         payload = handle_tool_call(name, arguments, runtime=runtime)
         return tool_result(name, payload, arguments)
@@ -59,12 +80,31 @@ def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
 
 
 def _require_runtime(runtime: GraphRuntimeConfig | None, tool_name: str) -> GraphRuntimeConfig:
+    """Require runtime.
+
+    Args:
+        runtime: The runtime used by the operation.
+        tool_name: Tool name value.
+
+    Returns:
+        The computed result.
+    """
     if runtime is None:
         raise ValueError(f"{tool_name} requires a graph runtime")
     return runtime
 
 
 def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Return tool result.
+
+    Args:
+        name: Name value.
+        payload: Payload to process.
+        arguments: The arguments payload to process.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     arguments = arguments or {}
     text = json.dumps(payload, separators=(",", ":"), sort_keys=True)
     include_structured_content = True
@@ -82,6 +122,15 @@ def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | 
 
 
 def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
+    """Return tool error result.
+
+    Args:
+        name: Name value.
+        exc: Exc value.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     log_event(
         "mcp.tool_error",
         level="WARNING",
@@ -104,10 +153,23 @@ def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
 
 
 def tool_specs() -> list[dict[str, Any]]:
+    """Return tool specs.
+
+    Returns:
+        A list containing the computed values.
+    """
     return graph_tool_specs()
 
 
 def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
+    """Process health.
+
+    Args:
+        runtime: The runtime used by the operation.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     payload: dict[str, Any] = {
         "ok": False,
         "repo_root": runtime.repo_root.as_posix(),
@@ -139,6 +201,14 @@ def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
 
 
 def _search_request(arguments: dict[str, Any]) -> SearchRequest:
+    """Search request.
+
+    Args:
+        arguments: The arguments payload to process.
+
+    Returns:
+        The computed result.
+    """
     request = SearchRequest(
         query=str(arguments.get("query", "")),
         limit=int(arguments.get("limit", 3)),
@@ -153,6 +223,15 @@ def _search_request(arguments: dict[str, Any]) -> SearchRequest:
 
 
 def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> dict[str, Any]:
+    """Process context payload.
+
+    Args:
+        store: The store used by the operation.
+        arguments: The arguments payload to process.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     node_id = str(arguments.get("node_id") or "")
     node_type = str(arguments.get("node_type") or "")
     if node_id and node_type:
@@ -177,6 +256,15 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
 
 
 def _query_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> dict[str, Any]:
+    """Return query payload.
+
+    Args:
+        store: The store used by the operation.
+        arguments: The arguments payload to process.
+
+    Returns:
+        A dictionary containing the computed payload.
+    """
     statement = str(arguments.get("statement") or arguments.get("query") or "").strip()
     if not statement:
         raise ValueError("graph_query requires a non-empty statement")
@@ -202,6 +290,11 @@ def _query_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> d
 
 
 def _validate_read_only_statement(statement: str) -> None:
+    """Validate read only statement.
+
+    Args:
+        statement: Statement value.
+    """
     stripped = statement.strip().rstrip(";")
     if ";" in stripped:
         raise ValueError("graph_query accepts one read-only statement at a time")
@@ -211,6 +304,14 @@ def _validate_read_only_statement(statement: str) -> None:
 
 
 def _graph_query_limit(arguments: dict[str, Any]) -> int:
+    """Return graph query limit.
+
+    Args:
+        arguments: The arguments payload to process.
+
+    Returns:
+        The computed integer.
+    """
     limit = int(arguments.get("limit", 100))
     if limit <= 0:
         raise ValueError("graph_query limit must be greater than zero")
@@ -220,6 +321,14 @@ def _graph_query_limit(arguments: dict[str, Any]) -> int:
 
 
 def _row_values(row: Any) -> list[Any]:
+    """Return row data for values.
+
+    Args:
+        row: Row value.
+
+    Returns:
+        A list containing the computed values.
+    """
     try:
         return [_json_safe(value) for value in row]
     except TypeError:
@@ -227,6 +336,14 @@ def _row_values(row: Any) -> list[Any]:
 
 
 def _json_safe(value: Any) -> Any:
+    """Process JSON safe.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed result.
+    """
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     if isinstance(value, (list, tuple)):
@@ -237,18 +354,42 @@ def _json_safe(value: Any) -> Any:
 
 
 def _optional_int(value: Any) -> int | None:
+    """Process optional int.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed result.
+    """
     if value is None or value == "":
         return None
     return int(value)
 
 
 def _optional_str(value: Any) -> str | None:
+    """Process optional str.
+
+    Args:
+        value: Value value.
+
+    Returns:
+        The computed result.
+    """
     if value is None or value == "":
         return None
     return str(value)
 
 
 def _detail(arguments: dict[str, Any]) -> str:
+    """Process detail.
+
+    Args:
+        arguments: The arguments payload to process.
+
+    Returns:
+        The computed string.
+    """
     detail = str(arguments.get("detail", "standard"))
     if detail not in DETAIL_LEVELS:
         valid = ", ".join(sorted(DETAIL_LEVELS))
@@ -257,6 +398,14 @@ def _detail(arguments: dict[str, Any]) -> str:
 
 
 def _output_format(arguments: dict[str, Any]) -> str:
+    """Process output format.
+
+    Args:
+        arguments: The arguments payload to process.
+
+    Returns:
+        The computed string.
+    """
     output_format = str(arguments.get("output_format", "block"))
     if output_format not in {"json", "block"}:
         raise ValueError(f"Unknown output format: {output_format}. Valid formats: block, json")
@@ -264,6 +413,14 @@ def _output_format(arguments: dict[str, Any]) -> str:
 
 
 def _include_structured_content(arguments: dict[str, Any]) -> bool:
+    """Process include structured content.
+
+    Args:
+        arguments: The arguments payload to process.
+
+    Returns:
+        Whether the check succeeds.
+    """
     value = arguments.get("include_structured_content", False)
     if isinstance(value, bool):
         return value

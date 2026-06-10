@@ -24,6 +24,14 @@ from codebase_graph.setup.installer import McpInstallOptions, install_mcp_client
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run the command-line entrypoint.
+
+    Args:
+        argv: Optional command-line arguments. Defaults to process arguments when omitted.
+
+    Returns:
+        The computed integer.
+    """
     parser = _build_parser()
     args = parser.parse_args(argv)
     if args.command == "materialize":
@@ -116,6 +124,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """Build parser.
+
+    Returns:
+        The computed result.
+    """
     parser = argparse.ArgumentParser(prog="codebase-graph")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -195,6 +208,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _add_search_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add search arguments.
+
+    Args:
+        parser: The parser used by the operation.
+    """
     parser.add_argument("query", help="Search query")
     parser.add_argument("--source-root", default=".", help="Repository or source root to search")
     parser.add_argument("--db", default=None, help="LadybugDB path; defaults under .codebaseGraph")
@@ -205,6 +223,14 @@ def _add_search_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _runtime(args: argparse.Namespace) -> object:
+    """Process runtime.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        The computed result.
+    """
     return runtime_config(
         repo_root=args.repo_root,
         config_path=args.config,
@@ -214,6 +240,15 @@ def _runtime(args: argparse.Namespace) -> object:
 
 
 def _run_legacy_search_command(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    """Run legacy search command.
+
+    Args:
+        parser: The parser used by the operation.
+        args: Parsed command-line arguments.
+
+    Returns:
+        The computed integer.
+    """
     try:
         request = _search_request_from_args(args)
     except ValueError as exc:
@@ -238,6 +273,14 @@ def _run_legacy_search_command(parser: argparse.ArgumentParser, args: argparse.N
 
 
 def _search_request_from_args(args: argparse.Namespace) -> SearchRequest:
+    """Search request from args.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        The computed result.
+    """
     request = SearchRequest(
         query=args.query,
         limit=args.limit,
@@ -252,6 +295,15 @@ def _search_request_from_args(args: argparse.Namespace) -> SearchRequest:
 
 
 def _run_graph_command(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    """Run graph command.
+
+    Args:
+        parser: The parser used by the operation.
+        args: Parsed command-line arguments.
+
+    Returns:
+        The computed integer.
+    """
     spec = graph_command_spec(args.command)
     try:
         arguments = spec.payload_from_args(args)
@@ -264,14 +316,31 @@ def _run_graph_command(parser: argparse.ArgumentParser, args: argparse.Namespace
 
 
 def _add_json_output_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add JSON output arguments.
+
+    Args:
+        parser: The parser used by the operation.
+    """
     add_json_output_arguments(parser)
 
 
 def _print_json(payload: object, args: argparse.Namespace) -> None:
+    """Print JSON.
+
+    Args:
+        payload: Payload to process.
+        args: Parsed command-line arguments.
+    """
     print(_json_dumps(payload, pretty=getattr(args, "pretty", False)))
 
 
 def _print_payload(payload: dict[str, object], args: argparse.Namespace) -> None:
+    """Print payload.
+
+    Args:
+        payload: Payload to process.
+        args: Parsed command-line arguments.
+    """
     if getattr(args, "json", False):
         _print_json(payload, args)
         return
@@ -282,12 +351,26 @@ def _print_payload(payload: dict[str, object], args: argparse.Namespace) -> None
 
 
 def _json_dumps(payload: object, *, pretty: bool) -> str:
+    """Process JSON dumps.
+
+    Args:
+        payload: Payload to process.
+        pretty: Pretty value.
+
+    Returns:
+        The computed string.
+    """
     if pretty:
         return json.dumps(payload, indent=2, sort_keys=True)
     return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
 
 def _print_mcp_install_results(results: Sequence[object]) -> None:
+    """Print MCP install results.
+
+    Args:
+        results: Results value.
+    """
     for result in results:
         action = getattr(result, "action")
         client = getattr(result, "client")
@@ -299,6 +382,15 @@ def _print_mcp_install_results(results: Sequence[object]) -> None:
 
 
 def _http_auth_token(args: argparse.Namespace, parser: argparse.ArgumentParser) -> str | None:
+    """Process HTTP auth token.
+
+    Args:
+        args: Parsed command-line arguments.
+        parser: The parser used by the operation.
+
+    Returns:
+        The computed result.
+    """
     if args.auth_token and args.auth_token_env:
         parser.error("mcp http accepts either --auth-token or --auth-token-env, not both")
     if args.auth_token_env:
