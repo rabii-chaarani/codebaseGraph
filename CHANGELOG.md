@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.2...v0.2.3) (2026-06-10)
+
+
+### Bug Fixes
+
+* ignore local Scryer state ([#13](https://github.com/rabii-chaarani/codebaseGraph/issues/13)) ([098bbc8](https://github.com/rabii-chaarani/codebaseGraph/commit/098bbc8815af3947f2bc4d4d7aa41e787a67aa24))
+
 ## [0.2.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.1...v0.2.2) (2026-06-09)
 
 
