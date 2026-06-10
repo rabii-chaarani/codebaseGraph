@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.3...v0.2.4) (2026-06-10)
+
+
+### Documentation
+
+* document runtime code paths ([#14](https://github.com/rabii-chaarani/codebaseGraph/issues/14)) ([c302b2a](https://github.com/rabii-chaarani/codebaseGraph/commit/c302b2ac13c19929e00f05666d20bb6a30abcd1c))
+
 ## [0.2.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.2...v0.2.3) (2026-06-10)
 
 
