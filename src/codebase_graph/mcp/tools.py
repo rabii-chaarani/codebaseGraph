@@ -23,20 +23,23 @@ READ_ONLY_DENY_RE = re.compile(
 
 
 class UnknownToolError(ValueError):
-    """Signal unknown tool error failures."""
+    """Signal failures raised by the MCP server and transport surface subsystem."""
     pass
 
 
 def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRuntimeConfig | None) -> dict[str, Any]:
-    """Handle tool call.
+    """Route a named MCP tool call to the matching graph operation.
 
     Args:
-        name: Name value.
-        arguments: The arguments payload to process.
-        runtime: The runtime used by the operation.
+        name: Name used by the MCP server and transport surface workflow.
+        arguments: Tool or command arguments supplied by the caller.
+        runtime: Resolved runtime paths and graph database settings.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
+
+    Raises:
+        UnknownToolError: Raised when validation or runtime preconditions fail.
     """
     if name == "graph_health":
         return _health(runtime)
@@ -60,15 +63,18 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
 
 
 def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRuntimeConfig) -> dict[str, Any]:
-    """Call tool result.
+    """Dispatch tool result for MCP server and transport surface.
 
     Args:
-        name: Name value.
-        arguments: The arguments payload to process.
-        runtime: The runtime used by the operation.
+        name: Name used by the MCP server and transport surface workflow.
+        arguments: Tool or command arguments supplied by the caller.
+        runtime: Resolved runtime paths and graph database settings.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
+
+    Raises:
+        Exception: Raised when validation or runtime preconditions fail.
     """
     try:
         payload = handle_tool_call(name, arguments, runtime=runtime)
@@ -80,14 +86,20 @@ def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
 
 
 def _require_runtime(runtime: GraphRuntimeConfig | None, tool_name: str) -> GraphRuntimeConfig:
-    """Require runtime.
+    """Require runtime for MCP server and transport surface.
+
+    This executes the selected workflow and returns a process status code or result object.
 
     Args:
-        runtime: The runtime used by the operation.
-        tool_name: Tool name value.
+        runtime: Resolved runtime paths and graph database settings.
+        tool_name: Name used to select or label tool data.
 
     Returns:
-        The computed result.
+        GraphRuntimeConfig instance populated with data from the MCP server and transport
+        surface workflow.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     if runtime is None:
         raise ValueError(f"{tool_name} requires a graph runtime")
@@ -95,15 +107,15 @@ def _require_runtime(runtime: GraphRuntimeConfig | None, tool_name: str) -> Grap
 
 
 def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Return tool result.
+    """Build result for MCP server and transport surface.
 
     Args:
-        name: Name value.
-        payload: Payload to process.
-        arguments: The arguments payload to process.
+        name: Name used by the MCP server and transport surface workflow.
+        payload: Structured payload being normalized or serialized.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     arguments = arguments or {}
     text = json.dumps(payload, separators=(",", ":"), sort_keys=True)
@@ -122,14 +134,14 @@ def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | 
 
 
 def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
-    """Return tool error result.
+    """Build error result for MCP server and transport surface.
 
     Args:
-        name: Name value.
-        exc: Exc value.
+        name: Name used by the MCP server and transport surface workflow.
+        exc: Exception being converted into an error response.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     log_event(
         "mcp.tool_error",
@@ -153,22 +165,22 @@ def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
 
 
 def tool_specs() -> list[dict[str, Any]]:
-    """Return tool specs.
+    """Build specs for MCP server and transport surface.
 
     Returns:
-        A list containing the computed values.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     return graph_tool_specs()
 
 
 def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
-    """Process health.
+    """Manage MCP server and transport state.
 
     Args:
-        runtime: The runtime used by the operation.
+        runtime: Resolved runtime paths and graph database settings.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     payload: dict[str, Any] = {
         "ok": False,
@@ -201,13 +213,14 @@ def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
 
 
 def _search_request(arguments: dict[str, Any]) -> SearchRequest:
-    """Search request.
+    """Search request for MCP server and transport surface.
 
     Args:
-        arguments: The arguments payload to process.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
-        The computed result.
+        SearchRequest instance populated with data from the MCP server and transport surface
+        workflow.
     """
     request = SearchRequest(
         query=str(arguments.get("query", "")),
@@ -223,14 +236,14 @@ def _search_request(arguments: dict[str, Any]) -> SearchRequest:
 
 
 def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> dict[str, Any]:
-    """Process context payload.
+    """Manage payload within MCP server and transport surface.
 
     Args:
-        store: The store used by the operation.
-        arguments: The arguments payload to process.
+        store: Graph store used for persistence or read-only queries.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     node_id = str(arguments.get("node_id") or "")
     node_type = str(arguments.get("node_type") or "")
@@ -256,18 +269,23 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
 
 
 def _query_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> dict[str, Any]:
-    """Return query payload.
+    """Build payload for MCP server and transport surface.
 
     Args:
-        store: The store used by the operation.
-        arguments: The arguments payload to process.
+        store: Graph store used for persistence or read-only queries.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     statement = str(arguments.get("statement") or arguments.get("query") or "").strip()
     if not statement:
         raise ValueError("graph_query requires a non-empty statement")
+    # Tool callers can supply arbitrary text, so the read-only gate runs before
+    # parameters are inspected or the statement reaches Ladybug.
     _validate_read_only_statement(statement)
     parameters = arguments.get("parameters") or {}
     if not isinstance(parameters, dict):
@@ -275,6 +293,8 @@ def _query_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> d
     limit = _graph_query_limit(arguments)
     result = store.execute(statement, parameters)
     try:
+        # Fetch one extra row to report truncation without materializing an
+        # unbounded query response into memory.
         rows = result.get_n(limit + 1)
     finally:
         close = getattr(result, "close", None)
@@ -290,10 +310,13 @@ def _query_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> d
 
 
 def _validate_read_only_statement(statement: str) -> None:
-    """Validate read only statement.
+    """Reject Cypher statements that could mutate the graph or inspect database internals.
 
     Args:
-        statement: Statement value.
+        statement: Statement used by the MCP server and transport surface workflow.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     stripped = statement.strip().rstrip(";")
     if ";" in stripped:
@@ -304,13 +327,16 @@ def _validate_read_only_statement(statement: str) -> None:
 
 
 def _graph_query_limit(arguments: dict[str, Any]) -> int:
-    """Return graph query limit.
+    """Return query limit for MCP server and transport surface.
 
     Args:
-        arguments: The arguments payload to process.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
-        The computed integer.
+        Integer count, status code, or index used by the caller.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     limit = int(arguments.get("limit", 100))
     if limit <= 0:
@@ -321,13 +347,13 @@ def _graph_query_limit(arguments: dict[str, Any]) -> int:
 
 
 def _row_values(row: Any) -> list[Any]:
-    """Return row data for values.
+    """Build values for MCP server and transport surface.
 
     Args:
-        row: Row value.
+        row: Database row returned by Ladybug.
 
     Returns:
-        A list containing the computed values.
+        Ordered results returned to the MCP server and transport surface caller.
     """
     try:
         return [_json_safe(value) for value in row]
@@ -336,13 +362,13 @@ def _row_values(row: Any) -> list[Any]:
 
 
 def _json_safe(value: Any) -> Any:
-    """Process JSON safe.
+    """Manage safe within MCP server and transport surface.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the MCP server and transport surface workflow.
     """
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
@@ -354,13 +380,14 @@ def _json_safe(value: Any) -> Any:
 
 
 def _optional_int(value: Any) -> int | None:
-    """Process optional int.
+    """Manage int within MCP server and transport surface.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed result.
+        int | None instance populated with data from the MCP server and transport surface
+        workflow.
     """
     if value is None or value == "":
         return None
@@ -368,13 +395,14 @@ def _optional_int(value: Any) -> int | None:
 
 
 def _optional_str(value: Any) -> str | None:
-    """Process optional str.
+    """Manage str within MCP server and transport surface.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed result.
+        str | None instance populated with data from the MCP server and transport surface
+        workflow.
     """
     if value is None or value == "":
         return None
@@ -382,13 +410,16 @@ def _optional_str(value: Any) -> str | None:
 
 
 def _detail(arguments: dict[str, Any]) -> str:
-    """Process detail.
+    """Manage MCP server and transport state.
 
     Args:
-        arguments: The arguments payload to process.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     detail = str(arguments.get("detail", "standard"))
     if detail not in DETAIL_LEVELS:
@@ -398,13 +429,16 @@ def _detail(arguments: dict[str, Any]) -> str:
 
 
 def _output_format(arguments: dict[str, Any]) -> str:
-    """Process output format.
+    """Manage format within MCP server and transport surface.
 
     Args:
-        arguments: The arguments payload to process.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     output_format = str(arguments.get("output_format", "block"))
     if output_format not in {"json", "block"}:
@@ -413,13 +447,13 @@ def _output_format(arguments: dict[str, Any]) -> str:
 
 
 def _include_structured_content(arguments: dict[str, Any]) -> bool:
-    """Process include structured content.
+    """Manage structured content within MCP server and transport surface.
 
     Args:
-        arguments: The arguments payload to process.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
-        Whether the check succeeds.
+        True when the requested condition is satisfied; otherwise False.
     """
     value = arguments.get("include_structured_content", False)
     if isinstance(value, bool):

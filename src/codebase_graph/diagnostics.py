@@ -17,12 +17,14 @@ _LEVELS = {
 
 
 def log_event(event: str, *, level: str = "INFO", **fields: Any) -> None:
-    """Log event.
+    """Write event for codebase graph runtime.
+
+    This appends structured diagnostic data when diagnostics are enabled.
 
     Args:
-        event: Event value.
-        level: Level value.
-        fields: Fields value.
+        event: Event used by the codebase graph runtime workflow.
+        level: Level used by the codebase graph runtime workflow.
+        fields: Field mapping to read or serialize.
     """
     normalized_level = level.upper()
     if _LEVELS.get(normalized_level, 20) < _configured_level():
@@ -37,23 +39,23 @@ def log_event(event: str, *, level: str = "INFO", **fields: Any) -> None:
 
 
 def _configured_level() -> int:
-    """Process configured level.
+    """Manage level within codebase graph runtime.
 
     Returns:
-        The computed integer.
+        Integer count, status code, or index used by the caller.
     """
     configured = os.environ.get(LOG_LEVEL_ENV, "WARNING").upper()
     return _LEVELS.get(configured, _LEVELS["WARNING"])
 
 
 def _safe_fields(fields: dict[str, Any]) -> dict[str, Any]:
-    """Return safe fields.
+    """Sanitize fields for codebase graph runtime.
 
     Args:
-        fields: Fields value.
+        fields: Field mapping to read or serialize.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the codebase graph runtime response contract.
     """
     safe: dict[str, Any] = {}
     for key, value in fields.items():
@@ -69,13 +71,13 @@ def _safe_fields(fields: dict[str, Any]) -> dict[str, Any]:
 
 
 def _safe_value(value: Any) -> Any:
-    """Return safe value.
+    """Sanitize value for codebase graph runtime.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the codebase graph runtime workflow.
     """
     if value is None or isinstance(value, (str, int, float, bool)):
         return value

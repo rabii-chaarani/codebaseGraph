@@ -11,30 +11,34 @@ from .base import RenderedClientConfig
 
 
 class CodexAdapter:
-    """Adapt codex operations to the project interface."""
+    """Adapt codex data to the codebaseGraph interface."""
     client_id = "codex"
 
     def default_config_path(self, descriptor: McpServerDescriptor) -> Path:
-        """Create the default config path.
+        """Create the default config path for setup workflow and client configuration.
 
         Args:
-            descriptor: The descriptor used by the operation.
+            descriptor: MCP server descriptor that will be rendered into client
+            configuration.
 
         Returns:
-            The computed result.
+            Path instance populated with data from the setup workflow and client
+            configuration workflow.
         """
         base = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
         return base / "config.toml"
 
     def render(self, existing_text: str | None, descriptor: McpServerDescriptor) -> RenderedClientConfig:
-        """Render the operation.
+        """Render setup workflow and client configuration for setup workflow and client configuration.
 
         Args:
-            existing_text: Existing text value.
-            descriptor: The descriptor used by the operation.
+            existing_text: Existing client configuration text, if the file already exists.
+            descriptor: MCP server descriptor that will be rendered into client
+            configuration.
 
         Returns:
-            The computed result.
+            RenderedClientConfig instance populated with data from the setup workflow and
+            client configuration workflow.
         """
         entry = descriptor.stdio_entry(include_timeout=True)
         patch = _toml_block(descriptor, entry)
@@ -51,15 +55,17 @@ class CodexAdapter:
 
 
 def _upsert_toml_block(existing: str, server_name: str, block: str) -> tuple[str, str | None]:
-    """Upsert toml block.
+    """Upsert TOML block for setup workflow and client configuration.
 
     Args:
-        existing: Existing value.
-        server_name: Server name value.
-        block: Block value.
+        existing: Existing used by the setup workflow and client configuration
+        workflow.
+        server_name: MCP server name used as a stable client config key.
+        block: Block used by the setup workflow and client configuration workflow.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the setup workflow and client configuration
+        caller.
     """
     lines = existing.splitlines()
     start: int | None = None
@@ -84,14 +90,14 @@ def _upsert_toml_block(existing: str, server_name: str, block: str) -> tuple[str
 
 
 def _toml_block(descriptor: McpServerDescriptor, entry: dict[str, Any]) -> str:
-    """Render TOML block.
+    """Render block for setup workflow and client configuration.
 
     Args:
-        descriptor: The descriptor used by the operation.
-        entry: Entry value.
+        descriptor: MCP server descriptor that will be rendered into client configuration.
+        entry: Client-specific MCP server entry.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     lines = [
         f"[mcp_servers.{descriptor.name}]",
@@ -110,25 +116,25 @@ def _toml_block(descriptor: McpServerDescriptor, entry: dict[str, Any]) -> str:
 
 
 def _toml_array(values: list[str]) -> str:
-    """Render TOML array.
+    """Render array for setup workflow and client configuration.
 
     Args:
-        values: Values value.
+        values: Sequence of values being rendered.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return "[" + ", ".join(_toml_string(value) for value in values) + "]"
 
 
 def _toml_string(value: str) -> str:
-    """Render TOML string.
+    """Render string for setup workflow and client configuration.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     escaped = value.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'

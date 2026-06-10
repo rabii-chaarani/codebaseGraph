@@ -14,18 +14,18 @@ LATEST_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0]
 
 @dataclass(slots=True)
 class ProtocolSession:
-    """Store protocol session data."""
+    """Represent protocol session data used by MCP server and transport surface."""
     protocol_version: str | None = None
     initialized: bool = False
 
 
 class McpGraphServer:
-    """Represent a MCP graph server."""
+    """Maintain MCP session state and dispatch JSON-RPC tool methods."""
     def __init__(self, runtime: GraphRuntimeConfig) -> None:
-        """Initialize the instance.
+        """Initialize MCP graph server with the collaborators and state it owns.
 
         Args:
-            runtime: The runtime used by the operation.
+            runtime: Resolved runtime paths and graph database settings.
         """
         self.runtime = runtime
         self.session = ProtocolSession()
@@ -39,16 +39,18 @@ class McpGraphServer:
         db_path: str | None = None,
         manifest_path: str | None = None,
     ) -> McpGraphServer:
-        """Convert paths.
+        """Manage paths within MCP server and transport surface.
 
         Args:
-            repo_root: Repo root value.
-            config_path: The config path to read or write.
-            db_path: The db path to read or write.
-            manifest_path: The manifest path to read or write.
+            repo_root: Repository root used to resolve graph state paths.
+            config_path: Setup configuration path used to resolve runtime state.
+            db_path: Ladybug database path, or an in-memory database marker.
+            manifest_path: Manifest path used to track previously materialized file
+            partitions.
 
         Returns:
-            The computed result.
+            McpGraphServer instance populated with data from the MCP server and transport
+            surface workflow.
         """
         from .runtime import runtime_config
 
@@ -61,13 +63,13 @@ class McpGraphServer:
         return cls(runtime)
 
     def handle_json_rpc(self, message: dict[str, Any]) -> dict[str, Any] | None:
-        """Process one JSON-RPC message for the MCP server.
+        """Serve one MCP JSON-RPC request or notification for the current session.
 
         Args:
-            message: JSON-RPC request or notification payload.
+            message: JSON-RPC request or notification body.
 
         Returns:
-            A JSON-RPC response, or None for notifications.
+            Structured mapping that follows the MCP server and transport surface response contract.
         """
         method = str(message.get("method", ""))
         request_id = message.get("id")
@@ -100,13 +102,13 @@ class McpGraphServer:
         return {"jsonrpc": "2.0", "id": request_id, "result": result}
 
     def _initialize(self, params: dict[str, Any]) -> dict[str, Any]:
-        """Process initialize.
+        """Manage MCP server and transport state.
 
         Args:
-            params: Params value.
+            params: Params used by the MCP server and transport surface workflow.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the MCP server and transport surface response contract.
         """
         requested = str(params.get("protocolVersion") or "")
         protocol_version = negotiate_protocol_version(requested)
@@ -118,13 +120,13 @@ class McpGraphServer:
         }
 
     def _call_tool(self, params: dict[str, Any]) -> dict[str, Any]:
-        """Call tool.
+        """Dispatch tool for MCP server and transport surface.
 
         Args:
-            params: Params value.
+            params: Params used by the MCP server and transport surface workflow.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the MCP server and transport surface response contract.
         """
         return call_tool_result(
             str(params.get("name", "")),
@@ -134,13 +136,13 @@ class McpGraphServer:
 
 
 def negotiate_protocol_version(requested: str) -> str:
-    """Negotiate protocol version.
+    """Negotiate protocol version for MCP server and transport surface.
 
     Args:
-        requested: Requested value.
+        requested: Requested used by the MCP server and transport surface workflow.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if requested in SUPPORTED_PROTOCOL_VERSIONS:
         return requested
@@ -148,16 +150,16 @@ def negotiate_protocol_version(requested: str) -> str:
 
 
 def rpc_error(request_id: Any, code: int, message: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Process RPC error.
+    """Manage error within MCP server and transport surface.
 
     Args:
-        request_id: The request id to identify.
-        code: Code value.
-        message: The message payload to process.
-        data: Data value.
+        request_id: Identifier for the request graph object.
+        code: Code used by the MCP server and transport surface workflow.
+        message: JSON-RPC request or notification body.
+        data: Raw bytes received from a transport.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     error: dict[str, Any] = {"code": code, "message": message}
     if data is not None:

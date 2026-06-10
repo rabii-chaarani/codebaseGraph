@@ -10,7 +10,11 @@ from .schema import quote_identifier
 
 @dataclass(frozen=True, slots=True)
 class GraphNeighbor:
-    """Store graph neighbor data."""
+    """Represent graph neighbor data used by Ladybug database persistence layer.
+
+    The class belongs to Read-oriented query adapter used by search and context-building
+    services.
+    """
     node_id: str
     node_type: str
     label: str
@@ -23,7 +27,11 @@ class GraphNeighbor:
 
 @dataclass(frozen=True, slots=True)
 class SearchIndexRow:
-    """Store search index row data."""
+    """Represent search index row data used by Ladybug database persistence layer.
+
+    The class belongs to Read-oriented query adapter used by search and context-building
+    services.
+    """
     id: str
     node_type: str
     label: str
@@ -37,18 +45,18 @@ class SearchIndexRow:
 
 
 class GraphQueryAdapter(Protocol):
-    """Adapt graph query operations to the project interface."""
+    """Adapt graph query data to the codebaseGraph interface."""
     def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
-        """Search index.
+        """Search index for Ladybug database persistence layer.
 
         Args:
-            node_type: Node type value.
-            index_name: Index name value.
-            query: Query value.
-            limit: Limit value.
+            node_type: Ontology node type used to choose a table or label.
+            index_name: Full-text search index name declared by the ontology.
+            query: User search text or read-only Cypher statement.
+            limit: Maximum number of rows or results requested.
 
         Returns:
-            A list containing the computed values.
+            Ordered results returned to the Ladybug database persistence layer caller.
         """
         ...
 
@@ -61,42 +69,42 @@ class GraphQueryAdapter(Protocol):
         direction: str,
         limit: int,
     ) -> list[GraphNeighbor]:
-        """Process neighbors.
+        """Manage Ladybug database persistence state.
 
         Args:
-            node_id: The node id to identify.
-            node_type: Node type value.
-            relation: Relation value.
-            direction: Direction value.
-            limit: Limit value.
+            node_id: Identifier for the node graph object.
+            node_type: Ontology node type used to choose a table or label.
+            relation: Ontology relation name used for graph traversal.
+            direction: Traversal direction relative to the source node.
+            limit: Maximum number of rows or results requested.
 
         Returns:
-            A list containing the computed values.
+            Ordered results returned to the Ladybug database persistence layer caller.
         """
         ...
 
 
 class LadybugGraphQueryAdapter:
-    """Adapt ladybug graph query operations to the project interface."""
+    """Adapt ladybug graph query data to the codebaseGraph interface."""
     def __init__(self, store: Any) -> None:
-        """Initialize the instance.
+        """Initialize ladybug graph query adapter with the collaborators and state it owns.
 
         Args:
-            store: The store used by the operation.
+            store: Graph store used for persistence or read-only queries.
         """
         self.store = store
 
     def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
-        """Search index.
+        """Search index for Ladybug database persistence layer.
 
         Args:
-            node_type: Node type value.
-            index_name: Index name value.
-            query: Query value.
-            limit: Limit value.
+            node_type: Ontology node type used to choose a table or label.
+            index_name: Full-text search index name declared by the ontology.
+            query: User search text or read-only Cypher statement.
+            limit: Maximum number of rows or results requested.
 
         Returns:
-            A list containing the computed values.
+            Ordered results returned to the Ladybug database persistence layer caller.
         """
         rows = self.store.execute(
             _fts_query_statement(node_type=node_type, index_name=index_name),
@@ -126,17 +134,20 @@ class LadybugGraphQueryAdapter:
         direction: str,
         limit: int,
     ) -> list[GraphNeighbor]:
-        """Process neighbors.
+        """Manage Ladybug database persistence state.
 
         Args:
-            node_id: The node id to identify.
-            node_type: Node type value.
-            relation: Relation value.
-            direction: Direction value.
-            limit: Limit value.
+            node_id: Identifier for the node graph object.
+            node_type: Ontology node type used to choose a table or label.
+            relation: Ontology relation name used for graph traversal.
+            direction: Traversal direction relative to the source node.
+            limit: Maximum number of rows or results requested.
 
         Returns:
-            A list containing the computed values.
+            Ordered results returned to the Ladybug database persistence layer caller.
+
+        Raises:
+            ValueError: Raised when validation or runtime preconditions fail.
         """
         if direction not in {"outgoing", "incoming"}:
             raise ValueError(f"Unsupported relation direction: {direction}")
@@ -174,13 +185,14 @@ class LadybugGraphQueryAdapter:
 
 
 def graph_query_adapter(store: Any) -> GraphQueryAdapter:
-    """Return graph query adapter.
+    """Return query adapter for Ladybug database persistence layer.
 
     Args:
-        store: The store used by the operation.
+        store: Graph store used for persistence or read-only queries.
 
     Returns:
-        The computed result.
+        GraphQueryAdapter instance populated with data from the Ladybug database persistence
+        layer workflow.
     """
     adapter = getattr(store, "graph_query_adapter", None)
     if adapter is not None:
@@ -189,14 +201,14 @@ def graph_query_adapter(store: Any) -> GraphQueryAdapter:
 
 
 def _fts_query_statement(*, node_type: str, index_name: str) -> str:
-    """Process FTS query statement.
+    """Manage query statement within Ladybug database persistence layer.
 
     Args:
-        node_type: Node type value.
-        index_name: Index name value.
+        node_type: Ontology node type used to choose a table or label.
+        index_name: Full-text search index name declared by the ontology.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return (
         f"CALL QUERY_FTS_INDEX('{node_type}', '{index_name}', $query, TOP := $top) "
@@ -213,17 +225,17 @@ def _neighbor_statement(
     direction: str,
     limit: int,
 ) -> str:
-    """Process neighbor statement.
+    """Manage statement within Ladybug database persistence layer.
 
     Args:
-        node_type: Node type value.
-        neighbor_type: Neighbor type value.
-        relation: Relation value.
-        direction: Direction value.
-        limit: Limit value.
+        node_type: Ontology node type used to choose a table or label.
+        neighbor_type: Ontology node type expected on the other side of a relation.
+        relation: Ontology relation name used for graph traversal.
+        direction: Traversal direction relative to the source node.
+        limit: Maximum number of rows or results requested.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if direction == "outgoing":
         return (
@@ -243,14 +255,15 @@ def _neighbor_statement(
 
 
 def _neighbor_from_row(row: Any, node_type: str) -> GraphNeighbor:
-    """Process neighbor from row.
+    """Manage from row within Ladybug database persistence layer.
 
     Args:
-        row: Row value.
-        node_type: Node type value.
+        row: Database row returned by Ladybug.
+        node_type: Ontology node type used to choose a table or label.
 
     Returns:
-        The computed result.
+        GraphNeighbor instance populated with data from the Ladybug database persistence
+        layer workflow.
     """
     return GraphNeighbor(
         node_id=_text(_value(row, 0)),
@@ -265,38 +278,40 @@ def _neighbor_from_row(row: Any, node_type: str) -> GraphNeighbor:
 
 
 def _optional_int(value: Any) -> int | None:
-    """Process optional int.
+    """Manage int within Ladybug database persistence layer.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed result.
+        int | None instance populated with data from the Ladybug database persistence layer
+        workflow.
     """
     return None if value is None else int(value)
 
 
 def _text(value: Any) -> str:
-    """Return text for result.
+    """Coerce Ladybug database persistence layer for Ladybug database persistence layer.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return "" if value is None else str(value)
 
 
 def _value(row: Any, index: int) -> Any:
-    """Return value for result.
+    """Manage Ladybug database persistence state.
 
     Args:
-        row: Row value.
-        index: Index value.
+        row: Database row returned by Ladybug.
+        index: Row index or search index metadata used to select fields.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the Ladybug database persistence layer
+        workflow.
     """
     try:
         return row[index]

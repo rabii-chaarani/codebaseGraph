@@ -15,13 +15,17 @@ from .state import MCP_SERVER_NAME, SetupPaths, build_setup_config, derive_setup
 
 
 class SetupError(RuntimeError):
-    """Signal setup error failures."""
+    """Signal failures raised by the setup workflow and client configuration subsystem."""
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class SetupOptions:
-    """Store options for setup operations."""
+    """Collect caller options for setup workflows.
+
+    The class belongs to Top-level setup orchestration for config, graph materialization,
+    instructions, and MCP client installation.
+    """
     repo_root: str | Path = "."
     mcp_client: str = "codex"
     mcp_config_path: str | Path | None = None
@@ -33,7 +37,11 @@ class SetupOptions:
 
 @dataclass(frozen=True, slots=True)
 class SetupResult:
-    """Store the result of setup operations."""
+    """Carry the observable outcome of setup workflows.
+
+    The class belongs to Top-level setup orchestration for config, graph materialization,
+    instructions, and MCP client installation.
+    """
     paths: SetupPaths
     config_action: str
     materialization: Any
@@ -42,10 +50,11 @@ class SetupResult:
     legacy_state_detected: bool
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the setup workflow and client configuration
+            response contract.
         """
         return {
             **self.paths.as_dict(),
@@ -58,13 +67,20 @@ class SetupResult:
 
 
 def run_setup(options: SetupOptions) -> SetupResult:
-    """Run setup.
+    """Run setup for setup workflow and client configuration.
+
+    This executes the selected workflow and returns a process status code or result object.
 
     Args:
-        options: The options used by the operation.
+        options: Caller-selected setup or install options.
 
     Returns:
-        The computed result.
+        SetupResult instance populated with data from the setup workflow and client
+        configuration workflow.
+
+    Raises:
+        Exception: Raised when validation or runtime preconditions fail.
+        SetupError: Raised when validation or runtime preconditions fail.
     """
     try:
         log_event(
@@ -167,13 +183,17 @@ def run_setup(options: SetupOptions) -> SetupResult:
 
 
 def _materialization_payload(result: Any) -> dict[str, Any]:
-    """Return materialization payload.
+    """Manage payload within setup workflow and client configuration.
 
     Args:
-        result: Result value.
+        result: Result used by the setup workflow and client configuration workflow.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
+
+    Raises:
+        TypeError: Raised when validation or runtime preconditions fail.
     """
     as_dict = getattr(result, "as_dict", None)
     if callable(as_dict):
@@ -182,13 +202,16 @@ def _materialization_payload(result: Any) -> dict[str, Any]:
 
 
 def _dry_run_materialization(paths: SetupPaths) -> Any:
-    """Process dry run materialization.
+    """Manage run materialization within setup workflow and client configuration.
+
+    This executes the selected workflow and returns a process status code or result object.
 
     Args:
-        paths: Paths value.
+        paths: Paths used by the setup workflow and client configuration workflow.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the setup workflow and client configuration
+        workflow.
     """
     materializer = GraphMaterializer(
         paths.repo_root,
@@ -213,7 +236,11 @@ def _dry_run_materialization(paths: SetupPaths) -> Any:
 
 @dataclass(frozen=True, slots=True)
 class _DryRunMaterialization:
-    """Store dry run materialization data."""
+    """Represent dry run materialization data used by setup workflow and client configuration.
+
+    The class belongs to Top-level setup orchestration for config, graph materialization,
+    instructions, and MCP client installation.
+    """
     scanned: int
     skipped: int
     diagnostics: tuple[str, ...]
@@ -227,10 +254,11 @@ class _DryRunMaterialization:
     graph_summary: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the setup workflow and client configuration
+            response contract.
         """
         return {
             "mode": self.mode,
@@ -248,14 +276,14 @@ class _DryRunMaterialization:
 
 
 def _config_would_change(path: Path, payload: dict[str, Any]) -> bool:
-    """Process config would change.
+    """Manage would change within setup workflow and client configuration.
 
     Args:
-        path: The path to read or write.
-        payload: Payload to process.
+        path: Filesystem path read from or written by this operation.
+        payload: Structured payload being normalized or serialized.
 
     Returns:
-        Whether the check succeeds.
+        True when the requested condition is satisfied; otherwise False.
     """
     if not path.exists():
         return True
@@ -269,25 +297,27 @@ def _config_would_change(path: Path, payload: dict[str, Any]) -> bool:
 
 
 def _path_text(path: Path | None) -> str | None:
-    """Return path text.
+    """Return text for setup workflow and client configuration.
 
     Args:
-        path: The path to read or write.
+        path: Filesystem path read from or written by this operation.
 
     Returns:
-        The computed result.
+        str | None instance populated with data from the setup workflow and client
+        configuration workflow.
     """
     return path.as_posix() if path is not None else None
 
 
 def _snapshot_file(path: Path | None) -> str | None:
-    """Snapshot file.
+    """Snapshot file for setup workflow and client configuration.
 
     Args:
-        path: The path to read or write.
+        path: Filesystem path read from or written by this operation.
 
     Returns:
-        The computed result.
+        str | None instance populated with data from the setup workflow and client
+        configuration workflow.
     """
     if path is None or not path.exists():
         return None
@@ -295,11 +325,11 @@ def _snapshot_file(path: Path | None) -> str | None:
 
 
 def _restore_file(path: Path | None, previous: str | None) -> None:
-    """Restore file.
+    """Restore file for setup workflow and client configuration.
 
     Args:
-        path: The path to read or write.
-        previous: Previous value.
+        path: Filesystem path read from or written by this operation.
+        previous: Previously rendered configuration text.
     """
     if path is None:
         return

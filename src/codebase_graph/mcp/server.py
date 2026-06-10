@@ -8,10 +8,10 @@ from .transports.stdio import serve_stdio
 
 
 def main() -> int:
-    """Run the command-line entrypoint.
+    """Run the command-line entrypoint and return a process exit status.
 
     Returns:
-        The computed integer.
+        Integer count, status code, or index used by the caller.
     """
     import argparse
 

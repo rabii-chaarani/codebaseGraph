@@ -12,7 +12,10 @@ from .state import MCP_SERVER_NAME
 
 @dataclass(frozen=True, slots=True)
 class McpServerDescriptor:
-    """Store MCP server descriptor data."""
+    """Represent MCP server descriptor data used by setup workflow and client configuration.
+
+    The class belongs to MCP server descriptor construction from repository setup paths.
+    """
     name: str
     transport: str
     command: str
@@ -25,10 +28,11 @@ class McpServerDescriptor:
     tool_policy: str | None = "graph_query_read_only"
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the setup workflow and client configuration
+            response contract.
         """
         payload: dict[str, Any] = {
             "name": self.name,
@@ -46,14 +50,16 @@ class McpServerDescriptor:
         return payload
 
     def stdio_entry(self, *, include_type: bool = False, include_timeout: bool = False) -> dict[str, Any]:
-        """Return stdio entry.
+        """Build entry for setup workflow and client configuration.
 
         Args:
-            include_type: Include type value.
-            include_timeout: Include timeout value.
+            include_type: Ontology type name for include handling.
+            include_timeout: Include timeout used by the setup workflow and client
+            configuration workflow.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the setup workflow and client configuration
+            response contract.
         """
         entry: dict[str, Any] = {"command": self.command, "args": list(self.args)}
         if include_type:
@@ -74,16 +80,19 @@ def build_server_descriptor(
     name: str = MCP_SERVER_NAME,
     timeout: int = 60,
 ) -> McpServerDescriptor:
-    """Build server descriptor.
+    """Build server descriptor for setup workflow and client configuration.
+
+    This starts a transport loop and blocks until the server stops.
 
     Args:
-        setup_config_path: The setup config path to read or write.
-        repo_root: Repo root value.
-        name: Name value.
-        timeout: Timeout value.
+        setup_config_path: Filesystem path for the setup config resource.
+        repo_root: Repository root used to resolve graph state paths.
+        name: Name used by the setup workflow and client configuration workflow.
+        timeout: Subprocess or server timeout in seconds.
 
     Returns:
-        The computed result.
+        McpServerDescriptor instance populated with data from the setup workflow and client
+        configuration workflow.
     """
     config_path = setup_config_path.expanduser().resolve()
     resolved_repo_root = repo_root.expanduser().resolve() if repo_root is not None else config_path.parent.parent
@@ -101,10 +110,12 @@ def build_server_descriptor(
 
 
 def resolve_server_command() -> str:
-    """Resolve server command.
+    """Resolve server command for setup workflow and client configuration.
+
+    This starts a transport loop and blocks until the server stops.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     sibling_script = Path(sys.executable).with_name("codebase-graph")
     if sibling_script.exists() and os.access(sibling_script, os.X_OK):

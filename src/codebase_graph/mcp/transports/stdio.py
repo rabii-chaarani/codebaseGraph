@@ -10,7 +10,7 @@ from codebase_graph.mcp.protocol import McpGraphServer, rpc_error
 
 
 class StdioMessageError(ValueError):
-    """Signal stdio message error failures."""
+    """Signal failures raised by the MCP server and transport surface subsystem."""
     pass
 
 
@@ -21,13 +21,15 @@ def serve_stdio(
     db_path: str | Path | None = None,
     manifest_path: str | Path | None = None,
 ) -> None:
-    """Serve stdio.
+    """Serve stdio for MCP server and transport surface.
+
+    This starts a transport loop and blocks until the server stops.
 
     Args:
-        repo_root: Repo root value.
-        config_path: The config path to read or write.
-        db_path: The db path to read or write.
-        manifest_path: The manifest path to read or write.
+        repo_root: Repository root used to resolve graph state paths.
+        config_path: Setup configuration path used to resolve runtime state.
+        db_path: Ladybug database path, or an in-memory database marker.
+        manifest_path: Manifest path used to track previously materialized file partitions.
     """
     server = McpGraphServer.from_paths(
         repo_root=repo_root,
@@ -50,13 +52,16 @@ def serve_stdio(
 
 
 def read_message(stream: BinaryIO) -> dict[str, Any] | None:
-    """Read message.
+    """Read message for MCP server and transport surface.
 
     Args:
-        stream: Stream value.
+        stream: Binary stream used for newline-delimited JSON-RPC messages.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
+
+    Raises:
+        StdioMessageError: Raised when validation or runtime preconditions fail.
     """
     line = stream.readline()
     if not line:
@@ -80,11 +85,13 @@ def read_message(stream: BinaryIO) -> dict[str, Any] | None:
 
 
 def write_message(stream: BinaryIO, message: dict[str, Any]) -> None:
-    """Write message.
+    """Write message for MCP server and transport surface.
+
+    This writes to disk and should leave complete files on success.
 
     Args:
-        stream: Stream value.
-        message: The message payload to process.
+        stream: Binary stream used for newline-delimited JSON-RPC messages.
+        message: JSON-RPC request or notification body.
     """
     body = json.dumps(message, separators=(",", ":"), sort_keys=True).encode("utf-8")
     stream.write(body)
@@ -93,13 +100,16 @@ def write_message(stream: BinaryIO, message: dict[str, Any]) -> None:
 
 
 def _json_rpc_payload(data: bytes) -> dict[str, Any]:
-    """Process JSON RPC payload.
+    """Manage RPC payload within MCP server and transport surface.
 
     Args:
-        data: Data value.
+        data: Raw bytes received from a transport.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
+
+    Raises:
+        StdioMessageError: Raised when validation or runtime preconditions fail.
     """
     try:
         payload = json.loads(data.decode("utf-8"))

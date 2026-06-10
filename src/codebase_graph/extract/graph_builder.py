@@ -12,14 +12,18 @@ from codebase_graph.ontology import ONTOLOGY_NAME, get_relation_type, node_type_
 
 @dataclass(frozen=True, slots=True)
 class CaptureRecord:
-    """Store capture record data."""
+    """Represent capture record data used by parser-output to ontology graph extraction."""
     capture: str
     node: Any
 
 
 @dataclass(frozen=True, slots=True)
 class ParseBundle:
-    """Store parse bundle data."""
+    """Represent parse bundle data used by parser-output to ontology graph extraction.
+
+    The class belongs to GraphBuilder transforms parser trees and capture records into ontology
+    nodes and relation edges.
+    """
     language: str
     path: str
     source_text: str = ""
@@ -32,7 +36,11 @@ class ParseBundle:
 
 @dataclass(frozen=True, slots=True)
 class GraphBuildResult:
-    """Store the result of graph build operations."""
+    """Carry the observable outcome of graph build workflows.
+
+    The class belongs to GraphBuilder transforms parser trees and capture records into ontology
+    nodes and relation edges.
+    """
     nodes: list[dict[str, Any]]
     edges: list[dict[str, Any]]
     diagnostics: list[str]
@@ -40,10 +48,11 @@ class GraphBuildResult:
     graph: CodeGraph
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the parser-output to ontology graph
+            extraction response contract.
         """
         return {
             "nodes": self.nodes,
@@ -56,7 +65,11 @@ class GraphBuildResult:
 
 @dataclass(frozen=True, slots=True)
 class ParserNode:
-    """Store parser node data."""
+    """Represent parser node data used by parser-output to ontology graph extraction.
+
+    The class belongs to GraphBuilder transforms parser trees and capture records into ontology
+    nodes and relation edges.
+    """
     node_type: str
     fields: Mapping[str, Any]
     children: tuple[Any, ...]
@@ -70,7 +83,7 @@ class ParserNode:
 
 @dataclass(frozen=True, slots=True)
 class BuildContext:
-    """Store build context data."""
+    """Represent build context data used by parser-output to ontology graph extraction."""
     path: str
     language: str
     source_text: str
@@ -80,7 +93,7 @@ class BuildContext:
 
 @dataclass(frozen=True, slots=True)
 class ScopeFrame:
-    """Store scope frame data."""
+    """Represent scope frame data used by parser-output to ontology graph extraction."""
     node_id: str
     table: str
     label: str
@@ -92,39 +105,42 @@ CaptureTableResolver = Callable[[str, ScopeFrame], str | None]
 
 
 class CaptureTableRegistry:
-    """Represent a capture table registry."""
+    """Represent capture table registry data used by parser-output to ontology graph extraction.
+    """
     def __init__(self) -> None:
-        """Initialize the instance."""
+        """Initialize capture table registry with the collaborators and state it owns."""
         self._exact: dict[str, str | CaptureTableResolver] = {}
         self._prefix: list[tuple[str, str | CaptureTableResolver]] = []
 
     def register_exact(self, capture_name: str, table: str | CaptureTableResolver) -> None:
-        """Register exact.
+        """Register exact for parser-output to ontology graph extraction.
 
         Args:
-            capture_name: Capture name value.
-            table: Table value.
+            capture_name: Normalized capture name emitted by a parser query.
+            table: Ontology table or node type targeted by the operation.
         """
         self._exact[_normalize_capture_name(capture_name)] = table
 
     def register_prefix(self, prefix: str, table: str | CaptureTableResolver) -> None:
-        """Register prefix.
+        """Register prefix for parser-output to ontology graph extraction.
 
         Args:
-            prefix: Prefix value.
-            table: Table value.
+            prefix: Prefix used by the parser-output to ontology graph extraction
+            workflow.
+            table: Ontology table or node type targeted by the operation.
         """
         self._prefix.append((_normalize_capture_name(prefix), table))
 
     def table_for(self, capture_name: str, owner: ScopeFrame) -> str | None:
-        """Return table for for.
+        """Resolve for for parser-output to ontology graph extraction.
 
         Args:
-            capture_name: Capture name value.
-            owner: Owner value.
+            capture_name: Normalized capture name emitted by a parser query.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
 
         Returns:
-            The computed result.
+            str | None instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         capture = _normalize_capture_name(capture_name)
         if not capture:
@@ -138,10 +154,11 @@ class CaptureTableRegistry:
 
 
 def default_capture_table_registry() -> CaptureTableRegistry:
-    """Create the default capture table registry.
+    """Create the default capture table registry for parser-output to ontology graph extraction.
 
     Returns:
-        The computed result.
+        CaptureTableRegistry instance populated with data from the parser-output to ontology
+        graph extraction workflow.
     """
     registry = CaptureTableRegistry()
     for capture in ("definition.class", "definition.struct", "definition.interface"):
@@ -186,11 +203,10 @@ def default_capture_table_registry() -> CaptureTableRegistry:
 
 
 class GraphBuilder:
-    """Build an ontology graph from tree-sitter-shaped parser output.
+    """Convert parser output into the project ontology graph.
 
-    The builder deliberately uses duck typing instead of importing tree-sitter.
-    It accepts dictionaries, Python AST-like objects, and tree-sitter Node-like
-    objects with ``type``, ``children``, ``start_point``, and ``end_point``.
+    The class belongs to GraphBuilder transforms parser trees and capture records into ontology
+    nodes and relation edges.
     """
 
     def __init__(
@@ -202,14 +218,18 @@ class GraphBuilder:
         include_syntax_captures: bool = True,
         capture_table_registry: CaptureTableRegistry | None = None,
     ) -> None:
-        """Initialize the instance.
+        """Initialize graph builder with the collaborators and state it owns.
 
         Args:
-            default_language: Default language value.
-            repository_label: Repository label value.
-            source_root: Source root value.
-            include_syntax_captures: Include syntax captures value.
-            capture_table_registry: Capture table registry value.
+            default_language: Default language used by the parser-output to ontology
+            graph extraction workflow.
+            repository_label: Repository label used by the parser-output to ontology
+            graph extraction workflow.
+            source_root: Root directory scanned for source files.
+            include_syntax_captures: Include syntax captures used by the parser-output
+            to ontology graph extraction workflow.
+            capture_table_registry: Capture table registry used by the parser-output to
+            ontology graph extraction workflow.
         """
         self.default_language = default_language
         self.repository_label = repository_label
@@ -226,13 +246,15 @@ class GraphBuilder:
         self._unresolved: list[str] = []
 
     def build_file_graph(self, bundle: ParseBundle) -> GraphBuildResult:
-        """Build file graph.
+        """Build file graph for parser-output to ontology graph extraction.
 
         Args:
-            bundle: Bundle value.
+            bundle: Bundle used by the parser-output to ontology graph extraction
+            workflow.
 
         Returns:
-            The computed result.
+            GraphBuildResult instance populated with data from the parser-output to ontology
+            graph extraction workflow.
         """
         if bundle.captures:
             graph = self.build_from_captures(
@@ -274,18 +296,23 @@ class GraphBuilder:
         repository_label: str | None = None,
         source_root: str | Path | None = None,
     ) -> CodeGraph:
-        """Build a graph from a parser tree for one source file.
+        """Build a complete ontology graph for one parsed source file.
 
         Args:
-            parse_tree: Parser output shaped as mappings, AST-like objects, or tree-sitter nodes.
-            source_path: Source file path represented by the graph.
-            language: Language identifier for parser-specific node handling.
-            source_text: Source text used to recover labels and snippets from parser byte ranges.
-            repository_label: Repository node label to use for this build.
-            source_root: Source root represented by the graph.
+            parse_tree: Parse tree used by the parser-output to ontology graph
+            extraction workflow.
+            source_path: Source file path represented in graph metadata.
+            language: Language used by the parser-output to ontology graph extraction
+            workflow.
+            source_text: Original source text used for labels, summaries, and byte-range
+            extraction.
+            repository_label: Repository label used by the parser-output to ontology
+            graph extraction workflow.
+            source_root: Root directory scanned for source files.
 
         Returns:
-            A validated ontology graph for the source file.
+            CodeGraph instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         path = Path(source_path).as_posix()
         root = Path(source_root).as_posix() if source_root is not None else self.source_root
@@ -340,18 +367,23 @@ class GraphBuilder:
         repository_label: str | None = None,
         source_root: str | Path | None = None,
     ) -> CodeGraph:
-        """Build a graph from explicit capture records.
+        """Build from captures for parser-output to ontology graph extraction.
 
         Args:
-            captures: Capture records emitted by a parser query.
-            source_path: Source file path represented by the graph.
-            language: Language identifier for parser-specific node handling.
-            source_text: Source text used to recover labels and snippets from parser byte ranges.
-            repository_label: Repository node label to use for this build.
-            source_root: Source root represented by the graph.
+            captures: Parser capture records to wrap in a synthetic module for graph
+            building.
+            source_path: Source file path represented in graph metadata.
+            language: Language used by the parser-output to ontology graph extraction
+            workflow.
+            source_text: Original source text used for labels, summaries, and byte-range
+            extraction.
+            repository_label: Repository label used by the parser-output to ontology
+            graph extraction workflow.
+            source_root: Root directory scanned for source files.
 
         Returns:
-            A validated ontology graph for the captured file.
+            CodeGraph instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         root = {
             "type": "Module",
@@ -370,17 +402,21 @@ class GraphBuilder:
         )
 
     def _traverse(self, raw_node: Any, owner: ScopeFrame) -> None:
-        """Walk parser nodes and emit semantic graph nodes.
+        """Walk normalized parser nodes while carrying the current semantic ownership scope.
 
         Args:
-            raw_node: Raw parser node to normalize and inspect.
-            owner: Current lexical ownership frame for emitted semantic nodes.
+            raw_node: Unnormalized parser object accepted from tree-sitter, AST, or mapping-
+            shaped input.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
         """
         node = self._normalize(raw_node)
         syntax_id = self._syntax_capture(node)
         next_owner = owner
         capture_table = self.capture_table_registry.table_for(node.capture_name, owner)
 
+        # Capture names are the highest-confidence semantic signal because they
+        # come from parser queries. Node-type fallbacks below keep simpler parser
+        # adapters useful even when they do not emit captures.
         if capture_table is not None:
             semantic = self._emit_captured_semantic(capture_table, node, owner, syntax_id)
             if capture_table in {"Class", "Function", "Method", "Component"}:
@@ -448,16 +484,17 @@ class GraphBuilder:
         owner: ScopeFrame,
         syntax_id: str,
     ) -> GraphNode:
-        """Emit captured semantic.
+        """Emit captured semantic for parser-output to ontology graph extraction.
 
         Args:
-            table: Table value.
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            table: Ontology table or node type targeted by the operation.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         if table == "ImportDeclaration":
             return self._emit_import(node, owner, syntax_id)
@@ -472,15 +509,16 @@ class GraphBuilder:
         return self._emit_simple_semantic(table, node, owner, syntax_id)
 
     def _emit_import(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
-        """Emit import.
+        """Emit import for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         imported = _import_label(node) or _label_for(node)
         semantic = self._semantic_node(
@@ -500,16 +538,17 @@ class GraphBuilder:
         return semantic
 
     def _emit_declaration(self, table: str, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
-        """Emit declaration.
+        """Emit declaration for parser-output to ontology graph extraction.
 
         Args:
-            table: Table value.
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            table: Ontology table or node type targeted by the operation.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         semantic = self._semantic_node(table, node, owner_id=owner.node_id, owner_qualified_name=owner.qualified_name)
         self._connect_owner(owner, semantic)
@@ -520,15 +559,16 @@ class GraphBuilder:
         return semantic
 
     def _emit_assignment(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
-        """Emit assignment.
+        """Emit assignment for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         assignment = self._semantic_node("Assignment", node, owner_id=owner.node_id, owner_qualified_name=owner.qualified_name)
         self._connect_owner(owner, assignment)
@@ -561,15 +601,16 @@ class GraphBuilder:
         return assignment
 
     def _emit_call(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
-        """Emit call.
+        """Emit call for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         call = self._semantic_node(
             "CallExpression",
@@ -588,15 +629,16 @@ class GraphBuilder:
         return call
 
     def _emit_reference(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
-        """Emit reference.
+        """Emit reference for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         reference = self._semantic_node(
             "Reference",
@@ -611,16 +653,17 @@ class GraphBuilder:
         return reference
 
     def _emit_simple_semantic(self, table: str, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode:
-        """Emit simple semantic.
+        """Emit simple semantic for parser-output to ontology graph extraction.
 
         Args:
-            table: Table value.
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            table: Ontology table or node type targeted by the operation.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         semantic = self._semantic_node(
             table,
@@ -635,11 +678,12 @@ class GraphBuilder:
         return semantic
 
     def _emit_parameters(self, node: ParserNode, callable_node: GraphNode) -> None:
-        """Emit parameters.
+        """Emit parameters for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
-            callable_node: Callable node value.
+            node: Parser or graph node being inspected.
+            callable_node: Callable node used by the parser-output to ontology graph
+            extraction workflow.
         """
         for index, parameter in enumerate(_parameters(node)):
             parser_node = self._normalize(parameter)
@@ -659,11 +703,12 @@ class GraphBuilder:
                 self._edge("HasTypeAnnotation", param_node.id, type_node.id, "parameter_annotation")
 
     def _emit_return_type(self, node: ParserNode, callable_node: GraphNode) -> None:
-        """Emit return type.
+        """Emit return type for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
-            callable_node: Callable node value.
+            node: Parser or graph node being inspected.
+            callable_node: Callable node used by the parser-output to ontology graph
+            extraction workflow.
         """
         raw_return = _field(node, "returns") or _field(node, "return_type")
         if raw_return is None:
@@ -683,14 +728,16 @@ class GraphBuilder:
         self._derived_from(return_node.id, syntax_id)
 
     def _emit_type_annotation(self, raw_node: Any, owner: GraphNode) -> GraphNode:
-        """Emit type annotation.
+        """Emit type annotation for parser-output to ontology graph extraction.
 
         Args:
-            raw_node: Raw node value.
-            owner: Owner value.
+            raw_node: Unnormalized parser object accepted from tree-sitter, AST, or mapping-
+            shaped input.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         parser_node = self._normalize(raw_node)
         syntax_id = self._syntax_capture(parser_node)
@@ -706,11 +753,12 @@ class GraphBuilder:
         return type_node
 
     def _emit_decorators(self, node: ParserNode, declaration: GraphNode) -> None:
-        """Emit decorators.
+        """Emit decorators for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
-            declaration: Declaration value.
+            node: Parser or graph node being inspected.
+            declaration: Declaration used by the parser-output to ontology graph
+            extraction workflow.
         """
         for raw_decorator in _iter_field_items(node, "decorator_list", "decorators"):
             decorator_node = self._normalize(raw_decorator)
@@ -735,13 +783,14 @@ class GraphBuilder:
         owner: ScopeFrame,
         syntax_id: str,
     ) -> None:
-        """Emit contextual relations.
+        """Attach semantic relation edges implied by the parser node and its lexical owner.
 
         Args:
-            semantic: Semantic value.
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            semantic: Semantic used by the parser-output to ontology graph extraction
+            workflow.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
         """
         table = semantic.table
 
@@ -824,16 +873,19 @@ class GraphBuilder:
         kind_prefix: str,
         target_tables: set[str] | None = None,
     ) -> GraphNode | None:
-        """Emit reference edges.
+        """Emit reference edges for parser-output to ontology graph extraction.
 
         Args:
-            source: Source value.
-            label: Label value.
-            kind_prefix: Kind prefix value.
-            target_tables: Target tables value.
+            source: Source graph node or serialized search payload.
+            label: Human-readable label stored on a graph node or edge.
+            kind_prefix: Kind prefix used by the parser-output to ontology graph
+            extraction workflow.
+            target_tables: Target tables used by the parser-output to ontology graph
+            extraction workflow.
 
         Returns:
-            The computed result.
+            GraphNode | None instance populated with data from the parser-output to ontology
+            graph extraction workflow.
         """
         target = self._resolve_reference_target(label, target_tables)
         if target is None or target.id == source.id:
@@ -844,27 +896,29 @@ class GraphBuilder:
         return target
 
     def _connect_owner(self, owner: ScopeFrame, semantic: GraphNode) -> None:
-        """Process connect owner.
+        """Manage owner within parser-output to ontology graph extraction.
 
         Args:
-            owner: Owner value.
-            semantic: Semantic value.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            semantic: Semantic used by the parser-output to ontology graph extraction
+            workflow.
         """
         self._edge("Contains", owner.node_id, semantic.id, f"contains_{semantic.table.lower()}")
         if owner.scope_id:
             self._edge("Contains", owner.scope_id, semantic.id, f"scope_contains_{semantic.table.lower()}")
 
     def _support_node(self, table: str, stable_key: str, label: str, *, path: str) -> GraphNode:
-        """Process support node.
+        """Manage node within parser-output to ontology graph extraction.
 
         Args:
-            table: Table value.
-            stable_key: Stable key value.
-            label: Label value.
-            path: The path to read or write.
+            table: Ontology table or node type targeted by the operation.
+            stable_key: Stable identifier component used to derive deterministic graph IDs.
+            label: Human-readable label stored on a graph node or edge.
+            path: Filesystem path read from or written by this operation.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         node = GraphNode(
             id=_id(table, stable_key),
@@ -890,19 +944,24 @@ class GraphBuilder:
         owner_qualified_name: str = "",
         metadata: dict[str, Any] | None = None,
     ) -> GraphNode:
-        """Return semantic node.
+        """Return node for parser-output to ontology graph extraction.
 
         Args:
-            table: Table value.
-            parser_node: Parser node value.
-            label: Label value.
-            owner: Owner value.
-            owner_id: The owner id to identify.
-            owner_qualified_name: Owner qualified name value.
-            metadata: Metadata value.
+            table: Ontology table or node type targeted by the operation.
+            parser_node: Parser node used by the parser-output to ontology graph
+            extraction workflow.
+            label: Human-readable label stored on a graph node or edge.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            owner_id: Identifier for the owner graph object.
+            owner_qualified_name: Name used to select or label owner qualified data.
+            metadata: Additional graph metadata copied onto nodes, edges, or responses.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
+
+        Raises:
+            ValueError: Raised when validation or runtime preconditions fail.
         """
         if table not in self._node_types:
             raise ValueError(f"Unknown ontology node type: {table}")
@@ -920,6 +979,9 @@ class GraphBuilder:
                 semantic_label,
             )
         )
+        # Stable IDs include lexical name plus parser coordinates. That preserves
+        # deterministic IDs for unchanged code while still distinguishing overload-
+        # like duplicate labels in different scopes or positions.
         node = GraphNode(
             id=_id(table, stable_key),
             table=table,
@@ -939,17 +1001,20 @@ class GraphBuilder:
             metadata={"canonical_key": stable_key, **(metadata or {})},
         )
         added = self._graph.add_node(node)
+        # Registration happens after graph insertion so merged duplicate nodes
+        # become the canonical reference target for later edges.
         self._register_resolvable(added)
         return added
 
     def _symbol_node(self, label: str) -> GraphNode | None:
-        """Process symbol node.
+        """Manage node within parser-output to ontology graph extraction.
 
         Args:
-            label: Label value.
+            label: Human-readable label stored on a graph node or edge.
 
         Returns:
-            The computed result.
+            GraphNode | None instance populated with data from the parser-output to ontology
+            graph extraction workflow.
         """
         symbol_label = label.strip()
         if not symbol_label:
@@ -971,10 +1036,10 @@ class GraphBuilder:
         return added
 
     def _register_resolvable(self, node: GraphNode) -> None:
-        """Register resolvable.
+        """Register resolvable for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
+            node: Parser or graph node being inspected.
         """
         if node.table not in RESOLVABLE_NODE_TYPES:
             return
@@ -988,14 +1053,16 @@ class GraphBuilder:
                 self._symbols_by_name[normalized].append(node.id)
 
     def _resolve_reference_target(self, label: str, target_tables: set[str] | None = None) -> GraphNode | None:
-        """Resolve reference target.
+        """Resolve a reference label against symbols visible in the current graph build.
 
         Args:
-            label: Label value.
-            target_tables: Target tables value.
+            label: Human-readable label stored on a graph node or edge.
+            target_tables: Target tables used by the parser-output to ontology graph
+            extraction workflow.
 
         Returns:
-            The computed result.
+            GraphNode | None instance populated with data from the parser-output to ontology
+            graph extraction workflow.
         """
         reference_label = label.strip()
         if not reference_label:
@@ -1011,13 +1078,14 @@ class GraphBuilder:
         return self._symbol_node(reference_label)
 
     def _scope_for(self, owner: GraphNode) -> GraphNode:
-        """Process scope for.
+        """Resolve data within parser-output to ontology graph extraction.
 
         Args:
-            owner: Owner value.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         stable_key = f"{self._context.path}|{owner.id}|scope"
         scope = GraphNode(
@@ -1039,13 +1107,13 @@ class GraphBuilder:
         return self._graph.add_node(scope)
 
     def _syntax_capture(self, node: ParserNode) -> str:
-        """Return syntax capture.
+        """Create capture for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
+            node: Parser or graph node being inspected.
 
         Returns:
-            The computed string.
+            Formatted text returned to the caller.
         """
         stable_key = "|".join(
             str(value)
@@ -1077,25 +1145,28 @@ class GraphBuilder:
         return syntax_id
 
     def _derived_from(self, semantic_id: str, syntax_id: str) -> None:
-        """Process derived from.
+        """Manage from within parser-output to ontology graph extraction.
 
         Args:
-            semantic_id: The semantic id to identify.
-            syntax_id: The syntax id to identify.
+            semantic_id: Identifier for the semantic graph object.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
         """
         if self.include_syntax_captures and syntax_id in self._graph.nodes:
             self._edge("DerivedFrom", semantic_id, syntax_id, "parser_capture")
 
     def _runtime_target(self, node: ParserNode, owner: ScopeFrame, syntax_id: str) -> GraphNode | None:
-        """Process runtime target.
+        """Manage target within parser-output to ontology graph extraction.
+
+        This executes the selected workflow and returns a process status code or result object.
 
         Args:
-            node: Node value.
-            owner: Owner value.
-            syntax_id: The syntax id to identify.
+            node: Parser or graph node being inspected.
+            owner: Current lexical owner used to attach semantic nodes and resolve names.
+            syntax_id: Identifier for the syntax node that produced a semantic graph node.
 
         Returns:
-            The computed result.
+            GraphNode | None instance populated with data from the parser-output to ontology
+            graph extraction workflow.
         """
         label = _runtime_target_label(node)
         if label:
@@ -1128,17 +1199,18 @@ class GraphBuilder:
         *,
         metadata: dict[str, Any] | None = None,
     ) -> GraphEdge | None:
-        """Process edge if allowed.
+        """Manage if allowed within parser-output to ontology graph extraction.
 
         Args:
-            edge_type: Edge type value.
-            source_id: The source id to identify.
-            target_id: The target id to identify.
-            kind: Kind value.
-            metadata: Metadata value.
+            edge_type: Ontology relation type used for the edge node and connector tables.
+            source_id: Identifier for the source graph object.
+            target_id: Identifier for the target graph object.
+            kind: Kind used by the parser-output to ontology graph extraction workflow.
+            metadata: Additional graph metadata copied onto nodes, edges, or responses.
 
         Returns:
-            The computed result.
+            GraphEdge | None instance populated with data from the parser-output to ontology
+            graph extraction workflow.
         """
         source = self._graph.nodes.get(source_id)
         target = self._graph.nodes.get(target_id)
@@ -1158,17 +1230,21 @@ class GraphBuilder:
         *,
         metadata: dict[str, Any] | None = None,
     ) -> GraphEdge:
-        """Process edge.
+        """Manage parser-output to ontology graph extraction state.
 
         Args:
-            edge_type: Edge type value.
-            source_id: The source id to identify.
-            target_id: The target id to identify.
-            kind: Kind value.
-            metadata: Metadata value.
+            edge_type: Ontology relation type used for the edge node and connector tables.
+            source_id: Identifier for the source graph object.
+            target_id: Identifier for the target graph object.
+            kind: Kind used by the parser-output to ontology graph extraction workflow.
+            metadata: Additional graph metadata copied onto nodes, edges, or responses.
 
         Returns:
-            The computed result.
+            GraphEdge instance populated with data from the parser-output to ontology graph
+            extraction workflow.
+
+        Raises:
+            ValueError: Raised when validation or runtime preconditions fail.
         """
         if edge_type not in self._relation_types:
             raise ValueError(f"Unknown ontology relation type: {edge_type}")
@@ -1183,13 +1259,15 @@ class GraphBuilder:
         return self._graph.add_edge(edge)
 
     def _normalize(self, raw_node: Any) -> ParserNode:
-        """Normalize result.
+        """Normalize parser-output to ontology graph extraction for parser-output to ontology graph extraction.
 
         Args:
-            raw_node: Raw node value.
+            raw_node: Unnormalized parser object accepted from tree-sitter, AST, or mapping-
+            shaped input.
 
         Returns:
-            The computed result.
+            ParserNode instance populated with data from the parser-output to ontology graph
+            extraction workflow.
         """
         if isinstance(raw_node, ParserNode):
             return raw_node
@@ -1235,13 +1313,14 @@ class GraphBuilder:
         )
 
     def _semantic_children(self, node: ParserNode) -> tuple[Any, ...]:
-        """Return semantic children.
+        """Return children for parser-output to ontology graph extraction.
 
         Args:
-            node: Node value.
+            node: Parser or graph node being inspected.
 
         Returns:
-            A tuple containing the computed values.
+            Tuple of stable results returned to the parser-output to ontology graph
+            extraction caller.
         """
         ignored_fields = {"name", "id", "module", "names", "args", "returns", "return_type", "decorator_list", "decorators"}
         children: list[Any] = list(node.children)
@@ -1330,13 +1409,14 @@ DICT_NODE_META_KEYS = {
 
 
 def _capture_node(capture: Mapping[str, Any] | tuple[Any, str]) -> Any:
-    """Process capture node.
+    """Manage node within parser-output to ontology graph extraction.
 
     Args:
-        capture: Capture value.
+        capture: Single parser capture record.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the parser-output to ontology graph extraction
+        workflow.
     """
     if isinstance(capture, CaptureRecord):
         return capture.node
@@ -1346,13 +1426,13 @@ def _capture_node(capture: Mapping[str, Any] | tuple[Any, str]) -> Any:
 
 
 def _capture_name(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
-    """Process capture name.
+    """Manage name within parser-output to ontology graph extraction.
 
     Args:
-        capture: Capture value.
+        capture: Single parser capture record.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if isinstance(capture, CaptureRecord):
         return capture.capture
@@ -1362,13 +1442,13 @@ def _capture_name(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
 
 
 def _capture_node_type(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
-    """Process capture node type.
+    """Manage node type within parser-output to ontology graph extraction.
 
     Args:
-        capture: Capture value.
+        capture: Single parser capture record.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     node = _capture_node(capture)
     if isinstance(node, Mapping):
@@ -1377,40 +1457,42 @@ def _capture_node_type(capture: Mapping[str, Any] | tuple[Any, str]) -> str:
 
 
 def _table_from_capture(capture_name: str, owner: ScopeFrame) -> str | None:
-    """Return table for from capture.
+    """Resolve from capture for parser-output to ontology graph extraction.
 
     Args:
-        capture_name: Capture name value.
-        owner: Owner value.
+        capture_name: Normalized capture name emitted by a parser query.
+        owner: Current lexical owner used to attach semantic nodes and resolve names.
 
     Returns:
-        The computed result.
+        str | None instance populated with data from the parser-output to ontology graph
+        extraction workflow.
     """
     return default_capture_table_registry().table_for(capture_name, owner)
 
 
 def _normalize_capture_name(capture_name: str) -> str:
-    """Normalize capture name.
+    """Normalize capture name for parser-output to ontology graph extraction.
 
     Args:
-        capture_name: Capture name value.
+        capture_name: Normalized capture name emitted by a parser query.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return capture_name.lstrip("@")
 
 
 def _resolve_capture_table(table: str | CaptureTableResolver, capture: str, owner: ScopeFrame) -> str | None:
-    """Resolve capture table.
+    """Resolve capture table for parser-output to ontology graph extraction.
 
     Args:
-        table: Table value.
-        capture: Capture value.
-        owner: Owner value.
+        table: Ontology table or node type targeted by the operation.
+        capture: Single parser capture record.
+        owner: Current lexical owner used to attach semantic nodes and resolve names.
 
     Returns:
-        The computed result.
+        str | None instance populated with data from the parser-output to ontology graph
+        extraction workflow.
     """
     if callable(table):
         return table(capture, owner)
@@ -1418,26 +1500,27 @@ def _resolve_capture_table(table: str | CaptureTableResolver, capture: str, owne
 
 
 def _function_capture_table(_capture: str, owner: ScopeFrame) -> str:
-    """Process function capture table.
+    """Manage capture table within parser-output to ontology graph extraction.
 
     Args:
-        _capture: Capture value.
-        owner: Owner value.
+        _capture: Capture used by the parser-output to ontology graph extraction
+        workflow.
+        owner: Current lexical owner used to attach semantic nodes and resolve names.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return "Method" if owner.table in {"Class", "Component"} else "Function"
 
 
 def _import_source_id(owner: ScopeFrame) -> str:
-    """Process import source ID.
+    """Manage source identifier within parser-output to ontology graph extraction.
 
     Args:
-        owner: Owner value.
+        owner: Current lexical owner used to attach semantic nodes and resolve names.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if owner.table in IMPORT_SOURCE_TYPES:
         return owner.node_id
@@ -1445,40 +1528,40 @@ def _import_source_id(owner: ScopeFrame) -> str:
 
 
 def _id(prefix: str, value: str) -> str:
-    """Process ID.
+    """Manage parser-output to ontology graph extraction state.
 
     Args:
-        prefix: Prefix value.
-        value: Value value.
+        prefix: Prefix used by the parser-output to ontology graph extraction workflow.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return f"{prefix}:{hashlib.sha1(value.encode('utf-8')).hexdigest()[:20]}"
 
 
 def _module_label(path: str) -> str:
-    """Process module label.
+    """Manage label within parser-output to ontology graph extraction.
 
     Args:
-        path: The path to read or write.
+        path: Filesystem path read from or written by this operation.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     stem = path.rsplit(".", 1)[0]
     return stem.replace("/", ".")
 
 
 def _qualified_name(owner: str, label: str) -> str:
-    """Process qualified name.
+    """Manage name within parser-output to ontology graph extraction.
 
     Args:
-        owner: Owner value.
-        label: Label value.
+        owner: Current lexical owner used to attach semantic nodes and resolve names.
+        label: Human-readable label stored on a graph node or edge.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if not owner or owner == label:
         return label
@@ -1488,14 +1571,14 @@ def _qualified_name(owner: str, label: str) -> str:
 
 
 def _kind_for(table: str, node: ParserNode) -> str:
-    """Process kind for.
+    """Resolve data within parser-output to ontology graph extraction.
 
     Args:
-        table: Table value.
-        node: Node value.
+        table: Ontology table or node type targeted by the operation.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if table == "Method":
         return "method"
@@ -1507,14 +1590,15 @@ def _kind_for(table: str, node: ParserNode) -> str:
 
 
 def _field(node: ParserNode, *names: str) -> Any:
-    """Return result field data.
+    """Read parser-output to ontology graph extraction for parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
-        names: Names value.
+        node: Parser or graph node being inspected.
+        names: Candidate field names to inspect in order.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the parser-output to ontology graph extraction
+        workflow.
     """
     for name in names:
         if name in node.fields:
@@ -1523,14 +1607,15 @@ def _field(node: ParserNode, *names: str) -> Any:
 
 
 def _iter_field_items(node: ParserNode, *names: str) -> tuple[Any, ...]:
-    """Iterate over field items.
+    """Iterate over field items for parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
-        names: Names value.
+        node: Parser or graph node being inspected.
+        names: Candidate field names to inspect in order.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the parser-output to ontology graph extraction
+        caller.
     """
     items: list[Any] = []
     for name in names:
@@ -1545,13 +1630,13 @@ def _iter_field_items(node: ParserNode, *names: str) -> tuple[Any, ...]:
 
 
 def _label_for(node: ParserNode) -> str:
-    """Process label for.
+    """Resolve data within parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     for key in ("name", "id", "arg", "attr", "module"):
         value = node.fields.get(key)
@@ -1564,15 +1649,15 @@ def _label_for(node: ParserNode) -> str:
 
 
 def _summary_for(table: str, label: str, node: ParserNode) -> str:
-    """Return summary for for.
+    """Summarize for for parser-output to ontology graph extraction.
 
     Args:
-        table: Table value.
-        label: Label value.
-        node: Node value.
+        table: Ontology table or node type targeted by the operation.
+        label: Human-readable label stored on a graph node or edge.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if table in {"DocumentationSource", "DocumentationChunk"} and node.text.strip():
         return node.text.strip()
@@ -1580,13 +1665,13 @@ def _summary_for(table: str, label: str, node: ParserNode) -> str:
 
 
 def _value_label(value: Any) -> str:
-    """Return value for label.
+    """Manage label within parser-output to ontology graph extraction.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if value is None:
         return ""
@@ -1621,25 +1706,25 @@ def _value_label(value: Any) -> str:
 
 
 def _symbol_key(label: str) -> str:
-    """Process symbol key.
+    """Manage key within parser-output to ontology graph extraction.
 
     Args:
-        label: Label value.
+        label: Human-readable label stored on a graph node or edge.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return label.strip().lower()
 
 
 def _export_target_label(node: ParserNode) -> str:
-    """Process export target label.
+    """Manage target label within parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     for field_name in ("exported", "target", "name", "declaration"):
         label = _value_label(node.fields.get(field_name))
@@ -1649,13 +1734,15 @@ def _export_target_label(node: ParserNode) -> str:
 
 
 def _runtime_target_label(node: ParserNode) -> str:
-    """Process runtime target label.
+    """Manage target label within parser-output to ontology graph extraction.
+
+    This executes the selected workflow and returns a process status code or result object.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     for field_name in ("handler", "endpoint", "target", "function", "callback"):
         label = _value_label(node.fields.get(field_name))
@@ -1665,13 +1752,13 @@ def _runtime_target_label(node: ParserNode) -> str:
 
 
 def _query_reference_label(node: ParserNode) -> str:
-    """Return query reference label.
+    """Build reference label for parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     for field_name in ("table", "collection", "model", "target", "index"):
         label = _value_label(node.fields.get(field_name))
@@ -1681,13 +1768,13 @@ def _query_reference_label(node: ParserNode) -> str:
 
 
 def _control_flow_reference_label(node: ParserNode) -> str:
-    """Process control flow reference label.
+    """Manage flow reference label within parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     for field_name in ("test", "condition", "subject"):
         label = _value_label(node.fields.get(field_name))
@@ -1697,39 +1784,39 @@ def _control_flow_reference_label(node: ParserNode) -> str:
 
 
 def _is_raise_flow(node: ParserNode) -> bool:
-    """Return whether raise flow.
+    """Return whether raise flow for parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        Whether the check succeeds.
+        True when the requested condition is satisfied; otherwise False.
     """
     capture = node.capture_name.lstrip("@")
     return capture == "raises" or node.node_type in {"raise_statement", "throw_statement"}
 
 
 def _is_handle_flow(node: ParserNode) -> bool:
-    """Return whether handle flow.
+    """Return whether handle flow for parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        Whether the check succeeds.
+        True when the requested condition is satisfied; otherwise False.
     """
     capture = node.capture_name.lstrip("@")
     return capture == "handles" or node.node_type in {"try_statement", "except_clause", "catch_clause"}
 
 
 def _import_label(node: ParserNode) -> str:
-    """Process import label.
+    """Manage label within parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     module = _value_label(node.fields.get("module"))
     names = node.fields.get("names")
@@ -1744,25 +1831,25 @@ def _import_label(node: ParserNode) -> str:
 
 
 def _call_label(node: ParserNode) -> str:
-    """Call label.
+    """Dispatch label for parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return _value_label(node.fields.get("func")) or _value_label(node.fields.get("function"))
 
 
 def _assignment_target_label(node: ParserNode) -> str:
-    """Process assignment target label.
+    """Manage target label within parser-output to ontology graph extraction.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     target = node.fields.get("target")
     targets = node.fields.get("targets")
@@ -1774,15 +1861,15 @@ def _assignment_target_label(node: ParserNode) -> str:
 
 
 def _assignment_target_table(label: str, owner: ScopeFrame, node: ParserNode) -> str:
-    """Process assignment target table.
+    """Manage target table within parser-output to ontology graph extraction.
 
     Args:
-        label: Label value.
-        owner: Owner value.
-        node: Node value.
+        label: Human-readable label stored on a graph node or edge.
+        owner: Current lexical owner used to attach semantic nodes and resolve names.
+        node: Parser or graph node being inspected.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if label.isupper():
         return "Constant"
@@ -1796,13 +1883,14 @@ def _assignment_target_table(label: str, owner: ScopeFrame, node: ParserNode) ->
 
 
 def _parameters(node: ParserNode) -> tuple[Any, ...]:
-    """Process parameters.
+    """Manage parser-output to ontology graph extraction state.
 
     Args:
-        node: Node value.
+        node: Parser or graph node being inspected.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the parser-output to ontology graph extraction
+        caller.
     """
     raw_args = node.fields.get("args") or node.fields.get("parameters")
     if raw_args is None:
@@ -1821,13 +1909,14 @@ def _parameters(node: ParserNode) -> tuple[Any, ...]:
 
 
 def _normalized_type(raw_node: Any) -> str:
-    """Normalize type.
+    """Normalize type for parser-output to ontology graph extraction.
 
     Args:
-        raw_node: Raw node value.
+        raw_node: Unnormalized parser object accepted from tree-sitter, AST, or mapping-
+        shaped input.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if isinstance(raw_node, ParserNode):
         return raw_node.node_type
@@ -1837,13 +1926,15 @@ def _normalized_type(raw_node: Any) -> str:
 
 
 def _coerce_children(raw_node: Mapping[str, Any]) -> tuple[Any, ...]:
-    """Coerce children.
+    """Coerce children for parser-output to ontology graph extraction.
 
     Args:
-        raw_node: Raw node value.
+        raw_node: Unnormalized parser object accepted from tree-sitter, AST, or mapping-
+        shaped input.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the parser-output to ontology graph extraction
+        caller.
     """
     children: list[Any] = []
     for key in ("children", "body"):
@@ -1856,13 +1947,14 @@ def _coerce_children(raw_node: Mapping[str, Any]) -> tuple[Any, ...]:
 
 
 def _field_children(fields: Mapping[str, Any]) -> tuple[Any, ...]:
-    """Return children field data.
+    """Read children for parser-output to ontology graph extraction.
 
     Args:
-        fields: Fields value.
+        fields: Field mapping to read or serialize.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the parser-output to ontology graph extraction
+        caller.
     """
     children: list[Any] = []
     for value in fields.values():
@@ -1874,13 +1966,15 @@ def _field_children(fields: Mapping[str, Any]) -> tuple[Any, ...]:
 
 
 def _object_fields(raw_node: Any) -> Mapping[str, Any]:
-    """Return object fields.
+    """Build fields for parser-output to ontology graph extraction.
 
     Args:
-        raw_node: Raw node value.
+        raw_node: Unnormalized parser object accepted from tree-sitter, AST, or mapping-
+        shaped input.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the parser-output to ontology graph extraction
+        response contract.
     """
     if hasattr(raw_node, "_fields"):
         return {name: getattr(raw_node, name) for name in getattr(raw_node, "_fields")}
@@ -1902,13 +1996,13 @@ def _object_fields(raw_node: Any) -> Mapping[str, Any]:
 
 
 def _is_parser_like(value: Any) -> bool:
-    """Return whether parser like.
+    """Return whether parser like for parser-output to ontology graph extraction.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        Whether the check succeeds.
+        True when the requested condition is satisfied; otherwise False.
     """
     if value is None or isinstance(value, (str, bytes, bytearray, int, float, bool)):
         return False
@@ -1918,14 +2012,16 @@ def _is_parser_like(value: Any) -> bool:
 
 
 def _line(raw_node: Mapping[str, Any], *keys: str) -> int | None:
-    """Process line.
+    """Manage parser-output to ontology graph extraction state.
 
     Args:
-        raw_node: Raw node value.
-        keys: Keys value.
+        raw_node: Unnormalized parser object accepted from tree-sitter, AST, or mapping-
+        shaped input.
+        keys: Candidate dictionary keys to inspect in order.
 
     Returns:
-        The computed result.
+        int | None instance populated with data from the parser-output to ontology graph
+        extraction workflow.
     """
     for key in keys:
         value = raw_node.get(key)
@@ -1941,13 +2037,14 @@ def _line(raw_node: Mapping[str, Any], *keys: str) -> int | None:
 
 
 def _point_line(point: Any) -> int | None:
-    """Process point line.
+    """Manage line within parser-output to ontology graph extraction.
 
     Args:
-        point: Point value.
+        point: Point used by the parser-output to ontology graph extraction workflow.
 
     Returns:
-        The computed result.
+        int | None instance populated with data from the parser-output to ontology graph
+        extraction workflow.
     """
     if point is None:
         return None
@@ -1959,13 +2056,14 @@ def _point_line(point: Any) -> int | None:
 
 
 def _node_text(raw_node: Any) -> str:
-    """Return node text.
+    """Manage text within parser-output to ontology graph extraction.
 
     Args:
-        raw_node: Raw node value.
+        raw_node: Unnormalized parser object accepted from tree-sitter, AST, or mapping-
+        shaped input.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     text = getattr(raw_node, "text", b"")
     if isinstance(text, bytes):

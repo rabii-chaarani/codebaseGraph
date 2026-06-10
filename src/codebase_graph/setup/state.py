@@ -19,13 +19,19 @@ SetupPaths = graph_paths.GraphStatePaths
 
 
 def derive_setup_paths(repo_root: str | Path) -> SetupPaths:
-    """Derive setup paths.
+    """Derive setup paths for setup workflow and client configuration.
 
     Args:
-        repo_root: Repo root value.
+        repo_root: Repository root used to resolve graph state paths.
 
     Returns:
-        The computed result.
+        SetupPaths instance populated with data from the setup workflow and client
+        configuration workflow.
+
+    Raises:
+        FileNotFoundError: Raised when validation or runtime preconditions fail.
+        NotADirectoryError: Raised when validation or runtime preconditions fail.
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     paths = derive_graph_state_paths(repo_root)
     if not paths.repo_root.exists():
@@ -40,14 +46,16 @@ def derive_setup_paths(repo_root: str | Path) -> SetupPaths:
 
 
 def build_setup_config(paths: SetupPaths, *, mcp_command: list[str]) -> dict[str, Any]:
-    """Build setup config.
+    """Build setup config for setup workflow and client configuration.
 
     Args:
-        paths: Paths value.
-        mcp_command: Mcp command value.
+        paths: Paths used by the setup workflow and client configuration workflow.
+        mcp_command: Mcp command used by the setup workflow and client configuration
+        workflow.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
     """
     return {
         "schema_version": 1,
@@ -66,13 +74,14 @@ def build_setup_config(paths: SetupPaths, *, mcp_command: list[str]) -> dict[str
 
 
 def load_setup_config(path: str | Path) -> dict[str, Any]:
-    """Load setup config.
+    """Load setup config for setup workflow and client configuration.
 
     Args:
-        path: The path to read or write.
+        path: Filesystem path read from or written by this operation.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
     """
     config_path = Path(path).expanduser().resolve()
     with config_path.open("r", encoding="utf-8") as handle:
@@ -82,14 +91,16 @@ def load_setup_config(path: str | Path) -> dict[str, Any]:
 
 
 def write_setup_config(path: Path, payload: dict[str, Any]) -> str:
-    """Write setup config.
+    """Write setup config for setup workflow and client configuration.
+
+    This writes to disk and should leave complete files on success.
 
     Args:
-        path: The path to read or write.
-        payload: Payload to process.
+        path: Filesystem path read from or written by this operation.
+        payload: Structured payload being normalized or serialized.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     previous = _read_json_if_exists(path)
     action = "created"
@@ -107,10 +118,10 @@ def write_setup_config(path: Path, payload: dict[str, Any]) -> str:
 
 
 def _package_version() -> str:
-    """Return the installed package version.
+    """Return version for setup workflow and client configuration.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     try:
         return version("codebase-graph")
@@ -119,13 +130,14 @@ def _package_version() -> str:
 
 
 def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
-    """Read JSON if exists.
+    """Read JSON if exists for setup workflow and client configuration.
 
     Args:
-        path: The path to read or write.
+        path: Filesystem path read from or written by this operation.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the setup workflow and client configuration
+        response contract.
     """
     if not path.exists():
         return None
@@ -134,11 +146,14 @@ def _read_json_if_exists(path: Path) -> dict[str, Any] | None:
 
 
 def _validate_setup_config(payload: dict[str, Any], path: Path) -> None:
-    """Validate setup config.
+    """Validate setup config for setup workflow and client configuration.
 
     Args:
-        payload: Payload to process.
-        path: The path to read or write.
+        payload: Structured payload being normalized or serialized.
+        path: Filesystem path read from or written by this operation.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     required = ("repo_root", "repo_name", "state_dir", "database_path", "manifest_path")
     missing = [key for key in required if not payload.get(key)]

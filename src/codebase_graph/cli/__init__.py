@@ -24,13 +24,13 @@ from codebase_graph.setup.installer import McpInstallOptions, install_mcp_client
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the command-line entrypoint.
+    """Run the command-line entrypoint and return a process exit status.
 
     Args:
-        argv: Optional command-line arguments. Defaults to process arguments when omitted.
+        argv: Command-line arguments supplied by tests or the process entrypoint.
 
     Returns:
-        The computed integer.
+        Integer count, status code, or index used by the caller.
     """
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -124,10 +124,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build parser.
+    """Build parser for CLI command parsing and dispatch.
 
     Returns:
-        The computed result.
+        argparse.ArgumentParser instance populated with data from the CLI command parsing
+        and dispatch workflow.
     """
     parser = argparse.ArgumentParser(prog="codebase-graph")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -208,10 +209,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _add_search_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add search arguments.
+    """Add search arguments for CLI command parsing and dispatch.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("query", help="Search query")
     parser.add_argument("--source-root", default=".", help="Repository or source root to search")
@@ -223,13 +224,16 @@ def _add_search_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _runtime(args: argparse.Namespace) -> object:
-    """Process runtime.
+    """Manage CLI command parsing and dispatch within CLI command parsing and dispatch.
+
+    This executes the selected workflow and returns a process status code or result object.
 
     Args:
-        args: Parsed command-line arguments.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        The computed result.
+        object instance populated with data from the CLI command parsing and dispatch
+        workflow.
     """
     return runtime_config(
         repo_root=args.repo_root,
@@ -240,14 +244,16 @@ def _runtime(args: argparse.Namespace) -> object:
 
 
 def _run_legacy_search_command(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
-    """Run legacy search command.
+    """Run legacy search command for CLI command parsing and dispatch.
+
+    This executes the selected workflow and returns a process status code or result object.
 
     Args:
-        parser: The parser used by the operation.
-        args: Parsed command-line arguments.
+        parser: Argparse parser or syntax parser participating in the workflow.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        The computed integer.
+        Integer count, status code, or index used by the caller.
     """
     try:
         request = _search_request_from_args(args)
@@ -273,13 +279,14 @@ def _run_legacy_search_command(parser: argparse.ArgumentParser, args: argparse.N
 
 
 def _search_request_from_args(args: argparse.Namespace) -> SearchRequest:
-    """Search request from args.
+    """Search request from args for CLI command parsing and dispatch.
 
     Args:
-        args: Parsed command-line arguments.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        The computed result.
+        SearchRequest instance populated with data from the CLI command parsing and dispatch
+        workflow.
     """
     request = SearchRequest(
         query=args.query,
@@ -295,14 +302,16 @@ def _search_request_from_args(args: argparse.Namespace) -> SearchRequest:
 
 
 def _run_graph_command(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
-    """Run graph command.
+    """Run graph command for CLI command parsing and dispatch.
+
+    This executes the selected workflow and returns a process status code or result object.
 
     Args:
-        parser: The parser used by the operation.
-        args: Parsed command-line arguments.
+        parser: Argparse parser or syntax parser participating in the workflow.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        The computed integer.
+        Integer count, status code, or index used by the caller.
     """
     spec = graph_command_spec(args.command)
     try:
@@ -316,30 +325,30 @@ def _run_graph_command(parser: argparse.ArgumentParser, args: argparse.Namespace
 
 
 def _add_json_output_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add JSON output arguments.
+    """Add JSON output arguments for CLI command parsing and dispatch.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     add_json_output_arguments(parser)
 
 
 def _print_json(payload: object, args: argparse.Namespace) -> None:
-    """Print JSON.
+    """Print JSON for CLI command parsing and dispatch.
 
     Args:
-        payload: Payload to process.
-        args: Parsed command-line arguments.
+        payload: Structured payload being normalized or serialized.
+        args: Parsed command-line namespace produced by argparse.
     """
     print(_json_dumps(payload, pretty=getattr(args, "pretty", False)))
 
 
 def _print_payload(payload: dict[str, object], args: argparse.Namespace) -> None:
-    """Print payload.
+    """Print payload for CLI command parsing and dispatch.
 
     Args:
-        payload: Payload to process.
-        args: Parsed command-line arguments.
+        payload: Structured payload being normalized or serialized.
+        args: Parsed command-line namespace produced by argparse.
     """
     if getattr(args, "json", False):
         _print_json(payload, args)
@@ -351,14 +360,14 @@ def _print_payload(payload: dict[str, object], args: argparse.Namespace) -> None
 
 
 def _json_dumps(payload: object, *, pretty: bool) -> str:
-    """Process JSON dumps.
+    """Manage dumps within CLI command parsing and dispatch.
 
     Args:
-        payload: Payload to process.
-        pretty: Pretty value.
+        payload: Structured payload being normalized or serialized.
+        pretty: Pretty used by the CLI command parsing and dispatch workflow.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if pretty:
         return json.dumps(payload, indent=2, sort_keys=True)
@@ -366,10 +375,12 @@ def _json_dumps(payload: object, *, pretty: bool) -> str:
 
 
 def _print_mcp_install_results(results: Sequence[object]) -> None:
-    """Print MCP install results.
+    """Print MCP install results for CLI command parsing and dispatch.
+
+    This may spawn a native client command or write a client config file.
 
     Args:
-        results: Results value.
+        results: Results used by the CLI command parsing and dispatch workflow.
     """
     for result in results:
         action = getattr(result, "action")
@@ -382,14 +393,15 @@ def _print_mcp_install_results(results: Sequence[object]) -> None:
 
 
 def _http_auth_token(args: argparse.Namespace, parser: argparse.ArgumentParser) -> str | None:
-    """Process HTTP auth token.
+    """Manage auth token within CLI command parsing and dispatch.
 
     Args:
-        args: Parsed command-line arguments.
-        parser: The parser used by the operation.
+        args: Parsed command-line namespace produced by argparse.
+        parser: Argparse parser or syntax parser participating in the workflow.
 
     Returns:
-        The computed result.
+        str | None instance populated with data from the CLI command parsing and dispatch
+        workflow.
     """
     if args.auth_token and args.auth_token_env:
         parser.error("mcp http accepts either --auth-token or --auth-token-env, not both")

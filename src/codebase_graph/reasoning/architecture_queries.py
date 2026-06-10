@@ -9,7 +9,10 @@ EXECUTION_TOOL = "graph_query"
 
 @dataclass(frozen=True, slots=True)
 class ArchitectureQuerySpec:
-    """Store architecture query spec data."""
+    """Describe a declared architecture query used by graph context and architecture-query reasoning.
+
+    The class belongs to Architecture-discovery Cypher catalog exposed to coding agents.
+    """
     name: str
     description: str
     statement: str
@@ -17,10 +20,11 @@ class ArchitectureQuerySpec:
     returns: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the graph context and architecture-query
+            reasoning response contract.
         """
         return {
             "name": self.name,
@@ -33,16 +37,18 @@ class ArchitectureQuerySpec:
 
 @dataclass(frozen=True, slots=True)
 class ArchitectureQueryGroup:
-    """Store architecture query group data."""
+    """Represent architecture query group data used by graph context and architecture-query reasoning.
+    """
     name: str
     goal: str
     queries: tuple[ArchitectureQuerySpec, ...]
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the graph context and architecture-query
+            reasoning response contract.
         """
         return {
             "name": self.name,
@@ -354,13 +360,16 @@ ARCHITECTURE_QUERY_GROUPS: dict[str, ArchitectureQueryGroup] = {
 
 
 def architecture_query_catalog(group: str | None = None) -> dict[str, Any]:
-    """Process architecture query catalog.
+    """Manage query catalog within graph context and architecture-query reasoning.
+
+    This appends structured diagnostic data when diagnostics are enabled.
 
     Args:
-        group: Group value.
+        group: Architecture-query group selected by the caller.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the graph context and architecture-query
+        reasoning response contract.
     """
     groups = _selected_groups(group)
     return {
@@ -372,13 +381,17 @@ def architecture_query_catalog(group: str | None = None) -> dict[str, Any]:
 
 
 def _selected_groups(group: str | None) -> tuple[ArchitectureQueryGroup, ...]:
-    """Process selected groups.
+    """Manage groups within graph context and architecture-query reasoning.
 
     Args:
-        group: Group value.
+        group: Architecture-query group selected by the caller.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the graph context and architecture-query
+        reasoning caller.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     if group is None or group == "":
         return tuple(ARCHITECTURE_QUERY_GROUPS[name] for name in ARCHITECTURE_QUERY_ORDER)

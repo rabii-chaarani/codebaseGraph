@@ -9,7 +9,7 @@ from codebase_graph.setup.descriptor import McpServerDescriptor
 
 @dataclass(frozen=True, slots=True)
 class RenderedClientConfig:
-    """Store configuration for rendered client operations."""
+    """Carry configuration needed by setup workflow and client configuration operations."""
     text: str
     action: str
     entry: dict[str, Any]
@@ -18,43 +18,49 @@ class RenderedClientConfig:
 
 
 class ClientConfigAdapter(Protocol):
-    """Adapt client config operations to the project interface."""
+    """Adapt client config data to the codebaseGraph interface."""
     client_id: str
 
     def default_config_path(self, descriptor: McpServerDescriptor) -> Path:
-        """Create the default config path.
+        """Create the default config path for setup workflow and client configuration.
 
         Args:
-            descriptor: The descriptor used by the operation.
+            descriptor: MCP server descriptor that will be rendered into client
+            configuration.
 
         Returns:
-            The computed result.
+            Path instance populated with data from the setup workflow and client
+            configuration workflow.
         """
         ...
 
     def render(self, existing_text: str | None, descriptor: McpServerDescriptor) -> RenderedClientConfig:
-        """Render the operation.
+        """Render setup workflow and client configuration for setup workflow and client configuration.
 
         Args:
-            existing_text: Existing text value.
-            descriptor: The descriptor used by the operation.
+            existing_text: Existing client configuration text, if the file already exists.
+            descriptor: MCP server descriptor that will be rendered into client
+            configuration.
 
         Returns:
-            The computed result.
+            RenderedClientConfig instance populated with data from the setup workflow and
+            client configuration workflow.
         """
         ...
 
 
 def action_for_server(previous: Any, next_value: Any, *, file_exists: bool) -> str:
-    """Process action for server.
+    """Manage for server within setup workflow and client configuration.
+
+    This starts a transport loop and blocks until the server stops.
 
     Args:
-        previous: Previous value.
-        next_value: Next value to compare.
-        file_exists: File exists value.
+        previous: Previously rendered configuration text.
+        next_value: Newly rendered configuration text.
+        file_exists: Whether the target configuration file already exists.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     if previous is None:
         return "created"

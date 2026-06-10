@@ -11,7 +11,11 @@ MCP_SERVER_NAME = "codebase_graph"
 
 @dataclass(frozen=True, slots=True)
 class GraphStatePaths:
-    """Store graph state paths data."""
+    """Represent graph state paths data used by codebase graph runtime.
+
+    The class belongs to Repository-local state path derivation for config, graph database,
+    manifest, and diagnostics files.
+    """
     repo_root: Path
     repo_name: str
     state_dir: Path
@@ -20,10 +24,10 @@ class GraphStatePaths:
     config_path: Path
 
     def as_dict(self) -> dict[str, str]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the codebase graph runtime response contract.
         """
         return {
             "repo_root": self.repo_root.as_posix(),
@@ -36,13 +40,14 @@ class GraphStatePaths:
 
 
 def derive_graph_state_paths(repo_root: str | Path) -> GraphStatePaths:
-    """Derive graph state paths.
+    """Derive graph state paths for codebase graph runtime.
 
     Args:
-        repo_root: Repo root value.
+        repo_root: Repository root used to resolve graph state paths.
 
     Returns:
-        The computed result.
+        GraphStatePaths instance populated with data from the codebase graph runtime
+        workflow.
     """
     root = Path(repo_root).expanduser().resolve()
     repo_name = _repo_name(root)
@@ -58,13 +63,13 @@ def derive_graph_state_paths(repo_root: str | Path) -> GraphStatePaths:
 
 
 def _repo_name(root: Path) -> str:
-    """Process repo name.
+    """Manage name within codebase graph runtime.
 
     Args:
-        root: Root value.
+        root: Root used by the codebase graph runtime workflow.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     name = root.name.strip()
     if name:
@@ -73,13 +78,13 @@ def _repo_name(root: Path) -> str:
 
 
 def _safe_name(value: str) -> str:
-    """Return safe name.
+    """Sanitize name for codebase graph runtime.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     normalized = "".join(character if character.isalnum() or character in {"-", "_"} else "_" for character in value)
     return normalized.strip("._-") or "repository"

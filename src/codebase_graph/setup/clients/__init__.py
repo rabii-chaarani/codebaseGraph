@@ -20,13 +20,17 @@ ADAPTERS: dict[str, ClientConfigAdapter] = {
 
 
 def get_client_adapter(client_id: str) -> ClientConfigAdapter:
-    """Return client adapter.
+    """Return client adapter for setup workflow and client configuration.
 
     Args:
-        client_id: The client id to identify.
+        client_id: Identifier for the client graph object.
 
     Returns:
-        The computed result.
+        ClientConfigAdapter instance populated with data from the setup workflow and client
+        configuration workflow.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     try:
         return ADAPTERS[client_id]
@@ -36,10 +40,11 @@ def get_client_adapter(client_id: str) -> ClientConfigAdapter:
 
 
 def supported_client_ids() -> tuple[str, ...]:
-    """Return supported client ids.
+    """Return client identifiers for setup workflow and client configuration.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the setup workflow and client configuration
+        caller.
     """
     return tuple(sorted([*ADAPTERS, "none"]))
 

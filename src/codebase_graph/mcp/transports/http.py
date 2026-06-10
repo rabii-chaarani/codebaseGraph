@@ -17,13 +17,14 @@ MAX_HTTP_BODY_BYTES = 1_000_000
 
 
 class McpHttpServer(ThreadingHTTPServer):
-    """Represent a MCP http server."""
+    """HTTP server carrying shared MCP runtime and session state."""
     def __init__(self, server_address: tuple[str, int], handler: type[BaseHTTPRequestHandler]) -> None:
-        """Initialize the instance.
+        """Initialize MCP HTTP server with the collaborators and state it owns.
 
         Args:
-            server_address: Server address value.
-            handler: Handler value.
+            server_address: Server address used by the MCP server and transport surface
+            workflow.
+            handler: Handler used by the MCP server and transport surface workflow.
         """
         super().__init__(server_address, handler)
         self.mcp_runtime: GraphRuntimeConfig
@@ -44,21 +45,27 @@ def build_http_server(
     allow_remote: bool = False,
     auth_token: str | None = None,
 ) -> McpHttpServer:
-    """Build http server.
+    """Build HTTP server for MCP server and transport surface.
+
+    This starts a transport loop and blocks until the server stops.
 
     Args:
-        repo_root: Repo root value.
-        config_path: The config path to read or write.
-        db_path: The db path to read or write.
-        manifest_path: The manifest path to read or write.
-        host: Host value.
-        port: Port value.
-        endpoint_path: The endpoint path to read or write.
-        allow_remote: Allow remote value.
-        auth_token: Auth token value.
+        repo_root: Repository root used to resolve graph state paths.
+        config_path: Setup configuration path used to resolve runtime state.
+        db_path: Ladybug database path, or an in-memory database marker.
+        manifest_path: Manifest path used to track previously materialized file partitions.
+        host: HTTP host interface to bind.
+        port: HTTP TCP port to bind.
+        endpoint_path: Filesystem path for the endpoint resource.
+        allow_remote: Whether the HTTP transport accepts non-local clients.
+        auth_token: Bearer token required for non-local HTTP access.
 
     Returns:
-        The computed result.
+        McpHttpServer instance populated with data from the MCP server and transport surface
+        workflow.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     if auth_token is not None and not auth_token.strip():
         raise ValueError("MCP HTTP auth token must not be blank")
@@ -94,18 +101,20 @@ def serve_http(
     allow_remote: bool = False,
     auth_token: str | None = None,
 ) -> None:
-    """Serve http.
+    """Serve HTTP for MCP server and transport surface.
+
+    This starts a transport loop and blocks until the server stops.
 
     Args:
-        repo_root: Repo root value.
-        config_path: The config path to read or write.
-        db_path: The db path to read or write.
-        manifest_path: The manifest path to read or write.
-        host: Host value.
-        port: Port value.
-        endpoint_path: The endpoint path to read or write.
-        allow_remote: Allow remote value.
-        auth_token: Auth token value.
+        repo_root: Repository root used to resolve graph state paths.
+        config_path: Setup configuration path used to resolve runtime state.
+        db_path: Ladybug database path, or an in-memory database marker.
+        manifest_path: Manifest path used to track previously materialized file partitions.
+        host: HTTP host interface to bind.
+        port: HTTP TCP port to bind.
+        endpoint_path: Filesystem path for the endpoint resource.
+        allow_remote: Whether the HTTP transport accepts non-local clients.
+        auth_token: Bearer token required for non-local HTTP access.
     """
     server = build_http_server(
         repo_root=repo_root,
@@ -125,11 +134,17 @@ def serve_http(
 
 
 class _McpHttpHandler(BaseHTTPRequestHandler):
-    """Represent a MCP http handler."""
+    """Represent MCP HTTP handler data used by MCP server and transport surface.
+
+    The class belongs to HTTP transport that validates local access, MCP protocol headers,
+    sessions, and JSON responses.
+    """
     server: McpHttpServer
 
     def do_POST(self) -> None:
-        """Handle an HTTP T request."""
+        """Validate and serve one MCP HTTP POST request."""
+        # Validate cheap transport-level constraints before reading the body so
+        # rejected remote or unauthenticated requests cannot force JSON parsing.
         if not self._request_path_matches() or not self._valid_origin() or not self._valid_auth():
             return
         if not self._valid_protocol_header():
@@ -158,7 +173,7 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         self._send_json(response, headers=headers)
 
     def do_GET(self) -> None:
-        """Handle an HTTP T request."""
+        """Validate and serve one MCP HTTP GET request."""
         if not self._request_path_matches() or not self._valid_origin() or not self._valid_auth():
             return
         self.send_response(HTTPStatus.METHOD_NOT_ALLOWED)
@@ -166,22 +181,24 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format: str, *args: Any) -> None:
-        """Log message.
+        """Write message for MCP server and transport surface.
+
+        This appends structured diagnostic data when diagnostics are enabled.
 
         Args:
-            format: Format value.
-            args: Parsed command-line arguments.
+            format: Logging format string supplied by BaseHTTPRequestHandler.
+            args: Parsed command-line namespace produced by argparse.
         """
         return
 
     def _resolve_session(self, message: dict[str, Any]) -> tuple[str, McpGraphServer] | tuple[None, None]:
-        """Resolve session.
+        """Resolve session for MCP server and transport surface.
 
         Args:
-            message: The message payload to process.
+            message: JSON-RPC request or notification body.
 
         Returns:
-            A tuple containing the computed values.
+            Tuple of stable results returned to the MCP server and transport surface caller.
         """
         method = str(message.get("method", ""))
         request_id = message.get("id")
@@ -189,6 +206,8 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         if method == "initialize":
             if session_id and session_id in self.server.mcp_sessions:
                 return session_id, self.server.mcp_sessions[session_id]
+            # A new MCP session gets its own protocol object so initialization
+            # state and future tool calls cannot leak across HTTP clients.
             session_id = secrets.token_urlsafe(32)
             server = McpGraphServer(self.server.mcp_runtime)
             self.server.mcp_sessions[session_id] = server
@@ -202,10 +221,10 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return session_id, self.server.mcp_sessions[session_id]
 
     def _request_path_matches(self) -> bool:
-        """Process request path matches.
+        """Manage path matches within MCP server and transport surface.
 
         Returns:
-            Whether the check succeeds.
+            True when the requested condition is satisfied; otherwise False.
         """
         if urlparse(self.path).path == self.server.endpoint_path:
             return True
@@ -213,10 +232,10 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return False
 
     def _valid_origin(self) -> bool:
-        """Return whether valid origin.
+        """Manage origin within MCP server and transport surface.
 
         Returns:
-            Whether the check succeeds.
+            True when the requested condition is satisfied; otherwise False.
         """
         origin = self.headers.get("Origin")
         if not origin:
@@ -234,10 +253,10 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return False
 
     def _valid_auth(self) -> bool:
-        """Return whether valid auth.
+        """Manage auth within MCP server and transport surface.
 
         Returns:
-            Whether the check succeeds.
+            True when the requested condition is satisfied; otherwise False.
         """
         if self.server.auth_token is None:
             return True
@@ -258,10 +277,10 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return False
 
     def _valid_protocol_header(self) -> bool:
-        """Return whether valid protocol header.
+        """Manage protocol header within MCP server and transport surface.
 
         Returns:
-            Whether the check succeeds.
+            True when the requested condition is satisfied; otherwise False.
         """
         requested = self.headers.get("MCP-Protocol-Version")
         if requested is None:
@@ -286,10 +305,11 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         return False
 
     def _content_length(self) -> int | None:
-        """Process content length.
+        """Manage length within MCP server and transport surface.
 
         Returns:
-            The computed result.
+            int | None instance populated with data from the MCP server and transport
+            surface workflow.
         """
         raw_length = self.headers.get("Content-Length", "0")
         try:
@@ -333,12 +353,12 @@ class _McpHttpHandler(BaseHTTPRequestHandler):
         status: HTTPStatus = HTTPStatus.OK,
         headers: dict[str, str] | None = None,
     ) -> None:
-        """Send JSON.
+        """Send JSON for MCP server and transport surface.
 
         Args:
-            payload: Payload to process.
-            status: Status value.
-            headers: Headers value.
+            payload: Structured payload being normalized or serialized.
+            status: HTTP status code to send.
+            headers: Additional HTTP headers to include.
         """
         body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
         self.send_response(status)

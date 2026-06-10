@@ -18,7 +18,10 @@ ArgumentAdder = Callable[[argparse.ArgumentParser], None]
 
 @dataclass(frozen=True, slots=True)
 class GraphCommandSpec:
-    """Store graph command spec data."""
+    """Describe a declared graph command used by MCP server and transport surface.
+
+    The class belongs to Shared CLI/MCP command metadata and JSON-schema argument definitions.
+    """
     command_name: str
     tool_name: str
     help: str
@@ -29,10 +32,10 @@ class GraphCommandSpec:
     requires_runtime: bool = True
 
     def tool_spec(self) -> dict[str, Any]:
-        """Return tool spec.
+        """Return the MCP tool schema advertised to clients.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the MCP server and transport surface response contract.
         """
         return {
             "name": self.tool_name,
@@ -42,40 +45,45 @@ class GraphCommandSpec:
 
 
 def graph_command_specs() -> tuple[GraphCommandSpec, ...]:
-    """Return graph command specs.
+    """Return command specs for MCP server and transport surface.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the MCP server and transport surface caller.
     """
     return GRAPH_COMMAND_SPECS
 
 
 def graph_command_names() -> set[str]:
-    """Return graph command names.
+    """Return command names for MCP server and transport surface.
 
     Returns:
-        The computed result.
+        set[str] instance populated with data from the MCP server and transport surface
+        workflow.
     """
     return {spec.command_name for spec in GRAPH_COMMAND_SPECS}
 
 
 def graph_tool_specs() -> list[dict[str, Any]]:
-    """Return graph tool specs.
+    """Return tool specs for MCP server and transport surface.
 
     Returns:
-        A list containing the computed values.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     return [spec.tool_spec() for spec in GRAPH_COMMAND_SPECS]
 
 
 def graph_command_spec(command_name: str) -> GraphCommandSpec:
-    """Return graph command spec.
+    """Return command spec for MCP server and transport surface.
 
     Args:
-        command_name: Command name value.
+        command_name: Name used to select or label command data.
 
     Returns:
-        The computed result.
+        GraphCommandSpec instance populated with data from the MCP server and transport
+        surface workflow.
+
+    Raises:
+        KeyError: Raised when validation or runtime preconditions fail.
     """
     for spec in GRAPH_COMMAND_SPECS:
         if spec.command_name == command_name:
@@ -84,13 +92,13 @@ def graph_command_spec(command_name: str) -> GraphCommandSpec:
 
 
 def search_arguments_payload(args: argparse.Namespace) -> dict[str, Any]:
-    """Search arguments payload.
+    """Search arguments payload for MCP server and transport surface.
 
     Args:
-        args: Parsed command-line arguments.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     payload: dict[str, Any] = {
         "limit": args.limit,
@@ -107,25 +115,25 @@ def search_arguments_payload(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _empty_payload(args: argparse.Namespace) -> dict[str, Any]:
-    """Return whether empty payload.
+    """Manage payload within MCP server and transport surface.
 
     Args:
-        args: Parsed command-line arguments.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     return {}
 
 
 def _architecture_payload(args: argparse.Namespace) -> dict[str, Any]:
-    """Process architecture payload.
+    """Manage payload within MCP server and transport surface.
 
     Args:
-        args: Parsed command-line arguments.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     payload: dict[str, Any] = {}
     if args.group:
@@ -134,13 +142,16 @@ def _architecture_payload(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _context_payload(args: argparse.Namespace) -> dict[str, Any]:
-    """Process context payload.
+    """Manage payload within MCP server and transport surface.
 
     Args:
-        args: Parsed command-line arguments.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     if not args.query and not (args.node_id and args.node_type):
         raise ValueError("graph-context requires a query or both --node-id and --node-type")
@@ -154,13 +165,16 @@ def _context_payload(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _query_payload(args: argparse.Namespace) -> dict[str, Any]:
-    """Return query payload.
+    """Build payload for MCP server and transport surface.
 
     Args:
-        args: Parsed command-line arguments.
+        args: Parsed command-line namespace produced by argparse.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     try:
         parameters = json.loads(args.parameters)
@@ -172,20 +186,21 @@ def _query_payload(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def add_json_output_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add JSON output arguments.
+    """Add JSON output arguments for MCP server and transport surface.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("--pretty", action="store_true", help="Emit indented JSON output")
 
 
 def add_compact_context_arguments(parser: argparse.ArgumentParser, *, default_format: str = "json") -> None:
-    """Add compact context arguments.
+    """Add compact context arguments for MCP server and transport surface.
 
     Args:
-        parser: The parser used by the operation.
-        default_format: Default format value.
+        parser: Argparse parser or syntax parser participating in the workflow.
+        default_format: Default format used by the MCP server and transport surface
+        workflow.
     """
     parser.add_argument("--limit", type=int, default=3, help="Maximum search hits to return")
     parser.add_argument("--profile", choices=sorted(CONTEXT_PROFILES), default="brief", help="Context profile")
@@ -198,10 +213,12 @@ def add_compact_context_arguments(parser: argparse.ArgumentParser, *, default_fo
 
 
 def add_runtime_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add runtime arguments.
+    """Add runtime arguments for MCP server and transport surface.
+
+    This executes the selected workflow and returns a process status code or result object.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("--repo-root", default=".", help="Repository root containing .codebaseGraph/config.json")
     parser.add_argument("--config", default=None, help="Path to .codebaseGraph/config.json")
@@ -210,30 +227,30 @@ def add_runtime_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def add_graph_compatibility_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add graph compatibility arguments.
+    """Add graph compatibility arguments for MCP server and transport surface.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("--no-refresh", action="store_true", help="Accepted for search/context command parity")
     parser.add_argument("--json", action="store_true", help="Accepted for search/context command parity; same as --format json")
 
 
 def _add_graph_health_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add graph health arguments.
+    """Add graph health arguments for MCP server and transport surface.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     add_runtime_arguments(parser)
     add_json_output_arguments(parser)
 
 
 def _add_graph_search_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add graph search arguments.
+    """Add graph search arguments for MCP server and transport surface.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("query", help="Search query")
     add_compact_context_arguments(parser, default_format="block")
@@ -242,10 +259,10 @@ def _add_graph_search_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_graph_context_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add graph context arguments.
+    """Add graph context arguments for MCP server and transport surface.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("query", nargs="?", help="Search query")
     parser.add_argument("--node-id", default=None, help="Explicit graph node id")
@@ -256,20 +273,20 @@ def _add_graph_context_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_graph_architecture_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add graph architecture arguments.
+    """Add graph architecture arguments for MCP server and transport surface.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("--group", default=None, help="Optional architecture query group")
     add_json_output_arguments(parser)
 
 
 def _add_graph_query_arguments(parser: argparse.ArgumentParser) -> None:
-    """Add graph query arguments.
+    """Add graph query arguments for MCP server and transport surface.
 
     Args:
-        parser: The parser used by the operation.
+        parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("statement", help="Read-only graph query statement")
     parser.add_argument("--parameters", default="{}", help="JSON object with query parameters")
@@ -283,14 +300,14 @@ def _object_schema(
     *,
     required: Sequence[str] = (),
 ) -> dict[str, Any]:
-    """Return object schema.
+    """Build schema for MCP server and transport surface.
 
     Args:
-        properties: Properties value.
-        required: Required value.
+        properties: Properties used by the MCP server and transport surface workflow.
+        required: Required used by the MCP server and transport surface workflow.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     schema: dict[str, Any] = {
         "type": "object",
@@ -303,13 +320,13 @@ def _object_schema(
 
 
 def _search_schema(*, required: Sequence[str]) -> dict[str, Any]:
-    """Search schema.
+    """Search schema for MCP server and transport surface.
 
     Args:
-        required: Required value.
+        required: Required used by the MCP server and transport surface workflow.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the MCP server and transport surface response contract.
     """
     return _object_schema(
         {

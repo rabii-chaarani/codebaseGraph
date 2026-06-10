@@ -7,7 +7,13 @@ from codebase_graph.db import LadybugUnavailableError, create_ladybug_database
 
 
 def validate_ladybug_runtime() -> None:
-    """Fail before setup creates repo state if LadyBugDB cannot create a graph DB."""
+    """Validate ladybug runtime for setup workflow and client configuration.
+
+    This executes the selected workflow and returns a process status code or result object.
+
+    Raises:
+        LadybugUnavailableError: Raised when validation or runtime preconditions fail.
+    """
     try:
         import real_ladybug  # noqa: F401
     except ImportError as exc:

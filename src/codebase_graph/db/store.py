@@ -16,13 +16,13 @@ from .schema import build_ladybug_schema, build_ladybug_schema_statements, quote
 
 
 class LadybugUnavailableError(RuntimeError):
-    """Signal ladybug unavailable error failures."""
+    """Signal failures raised by the Ladybug database persistence layer subsystem."""
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class BulkLoadStats:
-    """Store bulk load stats data."""
+    """Represent bulk load stats data used by Ladybug database persistence layer."""
     node_rows: int = 0
     edge_rows: int = 0
     connector_rows: int = 0
@@ -30,7 +30,11 @@ class BulkLoadStats:
 
 
 class LadybugCodeGraphStore:
-    """Represent a ladybug code graph store."""
+    """Wrap Ladybug database access for graph schema setup and partition persistence.
+
+    The class belongs to Ladybug-backed graph store that writes, deletes, and bulk-loads graph
+    partitions.
+    """
     def __init__(
         self,
         db_path: str | Path = ":memory:",
@@ -38,12 +42,17 @@ class LadybugCodeGraphStore:
         include_fts: bool = True,
         read_only: bool = False,
     ) -> None:
-        """Initialize the instance.
+        """Initialize ladybug code graph store with the collaborators and state it owns.
 
         Args:
-            db_path: The db path to read or write.
-            include_fts: Include fts value.
-            read_only: Read only value.
+            db_path: Ladybug database path, or an in-memory database marker.
+            include_fts: Include full-text search used by the Ladybug database
+            persistence layer workflow.
+            read_only: Read only used by the Ladybug database persistence layer
+            workflow.
+
+        Raises:
+            LadybugUnavailableError: Raised when validation or runtime preconditions fail.
         """
         self.db_path = db_path
         self.include_fts = include_fts
@@ -64,63 +73,70 @@ class LadybugCodeGraphStore:
 
     @property
     def schema_sql(self) -> str:
-        """Return schema SQL.
+        """Build SQL for Ladybug database persistence layer.
 
         Returns:
-            The computed string.
+            Formatted text returned to the caller.
         """
         return build_ladybug_schema(include_fts=self.include_fts)
 
     def ensure_schema(self) -> None:
-        """Process ensure schema."""
+        """Manage schema within Ladybug database persistence layer."""
         for statement in build_ladybug_schema_statements(include_fts=self.include_fts):
             self._execute_ignoring_existing(statement)
 
     def load_extensions(self) -> None:
-        """Load extensions."""
+        """Load extensions for Ladybug database persistence layer."""
         for statement in build_ladybug_schema_statements(include_fts=self.include_fts):
             if statement.upper().startswith("LOAD "):
                 self.execute(statement)
 
     def execute(self, statement: str, parameters: dict[str, Any] | None = None) -> Any:
-        """Execute the operation.
+        """Execute Ladybug database persistence layer for Ladybug database persistence layer.
 
         Args:
-            statement: Statement value.
-            parameters: Parameters value.
+            statement: Statement used by the Ladybug database persistence layer
+            workflow.
+            parameters: Parameters used by the Ladybug database persistence layer
+            workflow.
 
         Returns:
-            The computed result.
+            Any instance populated with data from the Ladybug database persistence layer
+            workflow.
         """
         if parameters is None:
             return self.conn.execute(statement)
         return self.conn.execute(statement, parameters)
 
     def close(self) -> None:
-        """Close owned resources."""
+        """Close Ladybug database persistence layer for Ladybug database persistence layer."""
         self.conn.close()
         self.db.close()
 
     def __enter__(self) -> LadybugCodeGraphStore:
-        """Enter the runtime context.
+        """Manage Ladybug database persistence state.
 
         Returns:
-            The computed result.
+            LadybugCodeGraphStore instance populated with data from the Ladybug database
+            persistence layer workflow.
         """
         return self
 
     def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
-        """Exit the runtime context.
+        """Manage Ladybug database persistence state.
 
         Args:
-            exc_type: Exc type value.
-            exc: Exc value.
-            traceback: Traceback value.
+            exc_type: Ontology type name for exc handling.
+            exc: Exception being converted into an error response.
+            traceback: Traceback used by the Ladybug database persistence layer
+            workflow.
         """
         self.close()
 
     def clear_graph(self) -> None:
-        """Process clear graph."""
+        """Clear graph for Ladybug database persistence layer."""
+        # Delete connector edges before relation nodes and semantic nodes so
+        # Ladybug never sees dangling typed relation endpoints during cleanup.
         for relation_type in RELATION_TYPES:
             self._execute_ignoring_missing(f"MATCH ()-[r:{quote_identifier(f'FROM_{relation_type.name}')}]->() DELETE r")
             self._execute_ignoring_missing(f"MATCH ()-[r:{quote_identifier(f'TO_{relation_type.name}')}]->() DELETE r")
@@ -138,16 +154,21 @@ class LadybugCodeGraphStore:
         retained_node_ids: set[str] | None = None,
         retained_edge_ids: set[str] | None = None,
     ) -> None:
-        """Replace partition.
+        """Replace partition for Ladybug database persistence layer.
+
+        This mutates graph storage by deleting and reinserting partition rows.
 
         Args:
-            path: The path to read or write.
-            graph: Graph value.
-            previous_entry: Previous entry value.
-            retained_node_ids: Retained node ids value.
-            retained_edge_ids: Retained edge ids value.
+            path: Filesystem path read from or written by this operation.
+            graph: In-memory graph whose nodes and edges are being persisted or summarized.
+            previous_entry: Previous entry used by the Ladybug database persistence
+            layer workflow.
+            retained_node_ids: Identifiers for retained node graph objects.
+            retained_edge_ids: Identifiers for retained edge graph objects.
         """
         if previous_entry is not None:
+            # Partition replacement uses manifest metadata from the previous run
+            # to remove exactly the rows that belonged to the old file version.
             self.delete_partition(
                 path,
                 manifest_entry=previous_entry,
@@ -168,15 +189,18 @@ class LadybugCodeGraphStore:
         skip_node_ids: set[str] | None = None,
         skip_edge_ids: set[str] | None = None,
     ) -> BulkLoadStats:
-        """Process insert graphs bulk.
+        """Bulk-load graph nodes, relation nodes, and connector rows through staging files.
+
+        This mutates graph storage by adding staged rows.
 
         Args:
-            graphs: Graphs value.
-            skip_node_ids: Skip node ids value.
-            skip_edge_ids: Skip edge ids value.
+            graphs: Graphs to merge into staging files before bulk insertion.
+            skip_node_ids: Identifiers for skip node graph objects.
+            skip_edge_ids: Identifiers for skip edge graph objects.
 
         Returns:
-            The computed result.
+            BulkLoadStats instance populated with data from the Ladybug database persistence
+            layer workflow.
         """
         staging_tables = _build_bulk_staging_tables(
             graphs,
@@ -188,6 +212,8 @@ class LadybugCodeGraphStore:
 
         with tempfile.TemporaryDirectory(prefix="codebase-graph-ladybug-") as staging_dir:
             staging = staging_tables.write(Path(staging_dir))
+            # COPY is much faster than one statement per node/edge and keeps the
+            # graph load order centralized in the staging table builder.
             for statement in staging.copy_statements:
                 self.execute(statement)
             return BulkLoadStats(
@@ -205,13 +231,16 @@ class LadybugCodeGraphStore:
         retained_node_ids: set[str] | None = None,
         retained_edge_ids: set[str] | None = None,
     ) -> None:
-        """Delete partition.
+        """Remove graph rows that belong to one source partition without deleting shared retained nodes.
+
+        This mutates persisted graph state for the selected partition or row.
 
         Args:
-            path: The path to read or write.
-            manifest_entry: Manifest entry value.
-            retained_node_ids: Retained node ids value.
-            retained_edge_ids: Retained edge ids value.
+            path: Filesystem path read from or written by this operation.
+            manifest_entry: Manifest entry used by the Ladybug database persistence
+            layer workflow.
+            retained_node_ids: Identifiers for retained node graph objects.
+            retained_edge_ids: Identifiers for retained edge graph objects.
         """
         if manifest_entry is None:
             return
@@ -235,32 +264,39 @@ class LadybugCodeGraphStore:
                 self._delete_node(node_id, node_type)
 
     def read_manifest(self, path: str | Path) -> Any:
-        """Read manifest.
+        """Read manifest for Ladybug database persistence layer.
 
         Args:
-            path: The path to read or write.
+            path: Filesystem path read from or written by this operation.
 
         Returns:
-            The computed result.
+            Any instance populated with data from the Ladybug database persistence layer
+            workflow.
         """
         from codebase_graph.ingest.materializer import MaterializationManifest
 
         return MaterializationManifest.load(Path(path))
 
     def write_manifest(self, manifest: Any, path: str | Path) -> None:
-        """Write manifest.
+        """Write manifest for Ladybug database persistence layer.
+
+        This writes to disk and should leave complete files on success.
 
         Args:
-            manifest: Manifest value.
-            path: The path to read or write.
+            manifest: Materialization manifest whose partition metadata is being inspected.
+            path: Filesystem path read from or written by this operation.
         """
         manifest.write(Path(path))
 
     def _execute_ignoring_existing(self, statement: str) -> None:
-        """Execute ignoring existing.
+        """Execute ignoring existing for Ladybug database persistence layer.
 
         Args:
-            statement: Statement value.
+            statement: Statement used by the Ladybug database persistence layer
+            workflow.
+
+        Raises:
+            Exception: Raised when validation or runtime preconditions fail.
         """
         try:
             self.conn.execute(statement)
@@ -270,11 +306,16 @@ class LadybugCodeGraphStore:
                 raise
 
     def _execute_ignoring_missing(self, statement: str, parameters: dict[str, Any] | None = None) -> None:
-        """Execute ignoring missing.
+        """Execute ignoring missing for Ladybug database persistence layer.
 
         Args:
-            statement: Statement value.
-            parameters: Parameters value.
+            statement: Statement used by the Ladybug database persistence layer
+            workflow.
+            parameters: Parameters used by the Ladybug database persistence layer
+            workflow.
+
+        Raises:
+            Exception: Raised when validation or runtime preconditions fail.
         """
         try:
             self.execute(statement, parameters)
@@ -284,11 +325,13 @@ class LadybugCodeGraphStore:
                 raise
 
     def _delete_edge(self, edge_id: str, edge_type: str) -> None:
-        """Delete edge.
+        """Delete edge for Ladybug database persistence layer.
+
+        This mutates persisted graph state for the selected partition or row.
 
         Args:
-            edge_id: The edge id to identify.
-            edge_type: Edge type value.
+            edge_id: Identifier for the edge graph object.
+            edge_type: Ontology relation type used for the edge node and connector tables.
         """
         self._execute_ignoring_missing(
             f"MATCH ()-[r:{quote_identifier(f'FROM_{edge_type}')}]->(edge:{quote_identifier(edge_type)} {{id: $id}}) DELETE r",
@@ -304,11 +347,13 @@ class LadybugCodeGraphStore:
         )
 
     def _delete_node(self, node_id: str, node_type: str) -> None:
-        """Delete node.
+        """Delete node for Ladybug database persistence layer.
+
+        This mutates persisted graph state for the selected partition or row.
 
         Args:
-            node_id: The node id to identify.
-            node_type: Node type value.
+            node_id: Identifier for the node graph object.
+            node_type: Ontology node type used to choose a table or label.
         """
         self._execute_ignoring_missing(
             f"MATCH (node:{quote_identifier(node_type)} {{id: $id}}) DELETE node",
@@ -322,15 +367,17 @@ def create_ladybug_database(
     include_fts: bool = True,
     read_only: bool = False,
 ) -> LadybugCodeGraphStore:
-    """Create ladybug database.
+    """Create ladybug database for Ladybug database persistence layer.
 
     Args:
-        db_path: The db path to read or write.
-        include_fts: Include fts value.
-        read_only: Read only value.
+        db_path: Ladybug database path, or an in-memory database marker.
+        include_fts: Include full-text search used by the Ladybug database persistence
+        layer workflow.
+        read_only: Read only used by the Ladybug database persistence layer workflow.
 
     Returns:
-        The computed result.
+        LadybugCodeGraphStore instance populated with data from the Ladybug database
+        persistence layer workflow.
     """
     store = LadybugCodeGraphStore(db_path, include_fts=include_fts, read_only=read_only)
     if read_only:
@@ -353,28 +400,31 @@ EDGE_FIELDS_BY_TYPE = {
 
 @dataclass(slots=True)
 class _BulkStagingTables:
-    """Store bulk staging tables data."""
+    """Represent bulk staging tables data used by Ladybug database persistence layer."""
     nodes: dict[str, dict[str, dict[str, Any]]]
     edges: dict[str, dict[str, dict[str, Any]]]
     connectors: dict[tuple[str, str, str], dict[tuple[str, str, str], dict[str, str]]]
 
     @property
     def is_empty(self) -> bool:
-        """Return whether empty.
+        """Return whether empty for Ladybug database persistence layer.
 
         Returns:
-            Whether the check succeeds.
+            True when the requested condition is satisfied; otherwise False.
         """
         return not any(self.nodes.values()) and not any(self.edges.values()) and not any(self.connectors.values())
 
     def write(self, staging_dir: Path) -> _BulkStagingResult:
-        """Write staged graph rows to COPY-ready files.
+        """Write Ladybug database persistence layer for Ladybug database persistence layer.
+
+        This writes to disk and should leave complete files on success.
 
         Args:
-            staging_dir: Directory where staging files should be written.
+            staging_dir: Temporary directory where bulk-load files are written.
 
         Returns:
-            COPY statements and row counts for the staged files.
+            _BulkStagingResult instance populated with data from the Ladybug database
+            persistence layer workflow.
         """
         staging_dir.mkdir(parents=True, exist_ok=True)
         copy_statements: list[str] = []
@@ -431,7 +481,7 @@ class _BulkStagingTables:
 
 @dataclass(frozen=True, slots=True)
 class _BulkStagingResult:
-    """Store the result of bulk staging operations."""
+    """Carry the observable outcome of bulk staging workflows."""
     copy_statements: tuple[str, ...]
     node_rows: int
     edge_rows: int
@@ -444,15 +494,16 @@ def _build_bulk_staging_tables(
     skip_node_ids: set[str] | None = None,
     skip_edge_ids: set[str] | None = None,
 ) -> _BulkStagingTables:
-    """Build bulk staging tables.
+    """Build bulk staging tables for Ladybug database persistence layer.
 
     Args:
-        graphs: Graphs value.
-        skip_node_ids: Skip node ids value.
-        skip_edge_ids: Skip edge ids value.
+        graphs: Graphs to merge into staging files before bulk insertion.
+        skip_node_ids: Identifiers for skip node graph objects.
+        skip_edge_ids: Identifiers for skip edge graph objects.
 
     Returns:
-        The computed result.
+        _BulkStagingTables instance populated with data from the Ladybug database
+        persistence layer workflow.
     """
     skipped_nodes = skip_node_ids or set()
     skipped_edges = skip_edge_ids or set()
@@ -501,15 +552,15 @@ def _build_bulk_staging_tables(
 
 
 def _row_for_fields(row: Mapping[str, Any], fields: tuple[Any, ...], *, for_json_copy: bool = False) -> dict[str, Any]:
-    """Return row data for for fields.
+    """Build a row mapping for ontology field declarations.
 
     Args:
-        row: Row value.
-        fields: Fields value.
-        for_json_copy: For json copy value.
+        row: Database row returned by Ladybug.
+        fields: Field mapping to read or serialize.
+        for_json_copy: Whether values should be encoded for Ladybug JSON COPY input.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the Ladybug database persistence layer response contract.
     """
     return {
         field.name: _copy_field_value(field.name, row, field.value_type, for_json_copy=for_json_copy)
@@ -518,16 +569,17 @@ def _row_for_fields(row: Mapping[str, Any], fields: tuple[Any, ...], *, for_json
 
 
 def _copy_field_value(name: str, row: Mapping[str, Any], value_type: str, *, for_json_copy: bool = False) -> Any:
-    """Copy field value.
+    """Copy field value for Ladybug database persistence layer.
 
     Args:
-        name: Name value.
-        row: Row value.
-        value_type: Value type value.
-        for_json_copy: For json copy value.
+        name: Name used by the Ladybug database persistence layer workflow.
+        row: Database row returned by Ladybug.
+        value_type: Ontology type name for value handling.
+        for_json_copy: Whether values should be encoded for Ladybug JSON COPY input.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the Ladybug database persistence layer
+        workflow.
     """
     if not for_json_copy or value_type != "json":
         return _field_value(name, row, value_type)
@@ -543,12 +595,12 @@ def _copy_field_value(name: str, row: Mapping[str, Any], value_type: str, *, for
 
 
 def _merge_staged_row(rows: dict[str, dict[str, Any]], row_id: str, row: dict[str, Any]) -> None:
-    """Merge staged row.
+    """Merge staged row for Ladybug database persistence layer.
 
     Args:
-        rows: Rows value.
-        row_id: The row id to identify.
-        row: Row value.
+        rows: Rows being aggregated or written.
+        row_id: Identifier for the row graph object.
+        row: Database row returned by Ladybug.
     """
     existing = rows.get(row_id)
     if existing is None:
@@ -573,27 +625,29 @@ def _add_connector_row(
     to_id: str,
     role: str,
 ) -> None:
-    """Add connector row.
+    """Add connector row for Ladybug database persistence layer.
 
     Args:
-        rows: Rows value.
-        table: Table value.
-        source_type: Source type value.
-        target_type: Target type value.
-        from_id: The from id to identify.
-        to_id: The to id to identify.
-        role: Role value.
+        rows: Rows being aggregated or written.
+        table: Ontology table or node type targeted by the operation.
+        source_type: Ontology type name for source handling.
+        target_type: Ontology type name for target handling.
+        from_id: Identifier for the from graph object.
+        to_id: Identifier for the to graph object.
+        role: Role used by the Ladybug database persistence layer workflow.
     """
     key = (table, source_type, target_type)
     rows[key][(from_id, to_id, role)] = {"from_id": from_id, "to_id": to_id, "role": role}
 
 
 def _write_json_rows(path: Path, rows: Any) -> None:
-    """Write JSON rows.
+    """Write JSON rows for Ladybug database persistence layer.
+
+    This writes to disk and should leave complete files on success.
 
     Args:
-        path: The path to read or write.
-        rows: Rows value.
+        path: Filesystem path read from or written by this operation.
+        rows: Rows being aggregated or written.
     """
     with path.open("w", encoding="utf-8") as handle:
         json.dump(list(rows), handle, separators=(",", ":"), sort_keys=True)
@@ -601,12 +655,14 @@ def _write_json_rows(path: Path, rows: Any) -> None:
 
 
 def _write_csv_rows(path: Path, columns: tuple[str, ...], rows: Any) -> None:
-    """Write csv rows.
+    """Write CSV rows for Ladybug database persistence layer.
+
+    This writes to disk and should leave complete files on success.
 
     Args:
-        path: The path to read or write.
-        columns: Columns value.
-        rows: Rows value.
+        path: Filesystem path read from or written by this operation.
+        columns: Columns used by the Ladybug database persistence layer workflow.
+        rows: Rows being aggregated or written.
     """
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
@@ -616,39 +672,40 @@ def _write_csv_rows(path: Path, columns: tuple[str, ...], rows: Any) -> None:
 
 
 def _stage_file_stem(name: str) -> str:
-    """Return stage file stem.
+    """Build file stem for Ladybug database persistence layer.
 
     Args:
-        name: Name value.
+        name: Name used by the Ladybug database persistence layer workflow.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return "".join(character.lower() if character.isalnum() else "_" for character in name).strip("_") or "table"
 
 
 def _copy_path(path: Path) -> str:
-    """Copy path.
+    """Copy path for Ladybug database persistence layer.
 
     Args:
-        path: The path to read or write.
+        path: Filesystem path read from or written by this operation.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return path.as_posix().replace('"', '\\"')
 
 
 def _field_value(name: str, row: Mapping[str, Any], value_type: str) -> Any:
-    """Return value field data.
+    """Read value for Ladybug database persistence layer.
 
     Args:
-        name: Name value.
-        row: Row value.
-        value_type: Value type value.
+        name: Name used by the Ladybug database persistence layer workflow.
+        row: Database row returned by Ladybug.
+        value_type: Ontology type name for value handling.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the Ladybug database persistence layer
+        workflow.
     """
     if name in row:
         value = row[name]
@@ -661,13 +718,14 @@ def _field_value(name: str, row: Mapping[str, Any], value_type: str) -> Any:
 
 
 def _json_safe(value: Any) -> Any:
-    """Process JSON safe.
+    """Manage safe within Ladybug database persistence layer.
 
     Args:
-        value: Value value.
+        value: Input being normalized for serialization or validation.
 
     Returns:
-        The computed result.
+        Any instance populated with data from the Ladybug database persistence layer
+        workflow.
     """
     if isinstance(value, Mapping):
         safe_items = {}
@@ -687,14 +745,14 @@ def _json_safe(value: Any) -> Any:
 
 
 def _entry_values(entry: Mapping[str, Any] | Any, field_name: str) -> tuple[str, ...]:
-    """Process entry values.
+    """Manage values within Ladybug database persistence layer.
 
     Args:
-        entry: Entry value.
-        field_name: Field name value.
+        entry: Client-specific MCP server entry.
+        field_name: Field name being extracted from a node or edge entry.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the Ladybug database persistence layer caller.
     """
     if isinstance(entry, Mapping):
         values = entry.get(field_name, ())
@@ -704,14 +762,14 @@ def _entry_values(entry: Mapping[str, Any] | Any, field_name: str) -> tuple[str,
 
 
 def _entry_mapping(entry: Mapping[str, Any] | Any, field_name: str) -> dict[str, str]:
-    """Process entry mapping.
+    """Return a normalized metadata mapping for a manifest entry.
 
     Args:
-        entry: Entry value.
-        field_name: Field name value.
+        entry: Client-specific MCP server entry.
+        field_name: Field name being extracted from a node or edge entry.
 
     Returns:
-        A dictionary containing the computed payload.
+        Structured mapping that follows the Ladybug database persistence layer response contract.
     """
     if isinstance(entry, Mapping):
         values = entry.get(field_name, {})

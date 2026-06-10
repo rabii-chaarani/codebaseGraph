@@ -8,7 +8,10 @@ from codebase_graph.ontology import ONTOLOGY_NAME, get_relation_type
 
 @dataclass(slots=True)
 class GraphNode:
-    """Store graph node data."""
+    """Represent one ontology node before it is written to the database.
+
+    The class belongs to In-memory graph primitives used before rows are persisted into Ladybug.
+    """
     id: str
     table: str
     label: str
@@ -27,10 +30,10 @@ class GraphNode:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the in-memory graph model response contract.
         """
         return {
             "id": self.id,
@@ -54,7 +57,10 @@ class GraphNode:
 
 @dataclass(slots=True)
 class GraphEdge:
-    """Store graph edge data."""
+    """Represent one ontology relation between two graph nodes.
+
+    The class belongs to In-memory graph primitives used before rows are persisted into Ladybug.
+    """
     id: str
     type: str
     source_id: str
@@ -68,10 +74,10 @@ class GraphEdge:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the in-memory graph model response contract.
         """
         return {
             "id": self.id,
@@ -90,20 +96,23 @@ class GraphEdge:
 
 @dataclass(slots=True)
 class CodeGraph:
-    """Store code graph data."""
+    """Collect graph nodes and relation edges for validation, serialization, and persistence.
+
+    The class belongs to In-memory graph primitives used before rows are persisted into Ladybug.
+    """
     nodes: dict[str, GraphNode] = field(default_factory=dict)
     edges: dict[str, GraphEdge] = field(default_factory=dict)
     ontology: str = ONTOLOGY_NAME
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_node(self, node: GraphNode) -> GraphNode:
-        """Add node.
+        """Add node for in-memory graph model.
 
         Args:
-            node: Node value.
+            node: Parser or graph node being inspected.
 
         Returns:
-            The computed result.
+            GraphNode instance populated with data from the in-memory graph model workflow.
         """
         existing = self.nodes.get(node.id)
         if existing is None:
@@ -113,44 +122,44 @@ class CodeGraph:
         return existing
 
     def add_edge(self, edge: GraphEdge) -> GraphEdge:
-        """Add edge.
+        """Add edge for in-memory graph model.
 
         Args:
-            edge: Edge value.
+            edge: Edge used by the in-memory graph model workflow.
 
         Returns:
-            The computed result.
+            GraphEdge instance populated with data from the in-memory graph model workflow.
         """
         self.edges.setdefault(edge.id, edge)
         return self.edges[edge.id]
 
     def nodes_by_type(self, table: str) -> list[GraphNode]:
-        """Process nodes by type.
+        """Manage by type within in-memory graph model.
 
         Args:
-            table: Table value.
+            table: Ontology table or node type targeted by the operation.
 
         Returns:
-            A list containing the computed values.
+            Ordered results returned to the in-memory graph model caller.
         """
         return [node for node in self.nodes.values() if node.table == table]
 
     def edges_by_type(self, edge_type: str) -> list[GraphEdge]:
-        """Process edges by type.
+        """Manage by type within in-memory graph model.
 
         Args:
-            edge_type: Edge type value.
+            edge_type: Ontology relation type used for the edge node and connector tables.
 
         Returns:
-            A list containing the computed values.
+            Ordered results returned to the in-memory graph model caller.
         """
         return [edge for edge in self.edges.values() if edge.type == edge_type]
 
     def as_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the in-memory graph model response contract.
         """
         return {
             "ontology": self.ontology,
@@ -166,10 +175,10 @@ class CodeGraph:
         }
 
     def summary(self) -> dict[str, Any]:
-        """Return summary for result.
+        """Summarize in-memory graph model for in-memory graph model.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the in-memory graph model response contract.
         """
         node_counts: dict[str, int] = {}
         edge_counts: dict[str, int] = {}
@@ -186,7 +195,11 @@ class CodeGraph:
         }
 
     def validate_schema(self) -> None:
-        """Validate schema."""
+        """Validate schema for in-memory graph model.
+
+        Raises:
+            ValueError: Raised when validation or runtime preconditions fail.
+        """
         node_tables = {node.id: node.table for node in self.nodes.values()}
         for edge in self.edges.values():
             if edge.source_id not in node_tables:
@@ -203,11 +216,11 @@ class CodeGraph:
 
 
 def _merge_node(existing: GraphNode, incoming: GraphNode) -> None:
-    """Merge node.
+    """Merge node for in-memory graph model.
 
     Args:
-        existing: Existing value.
-        incoming: Incoming value.
+        existing: Existing used by the in-memory graph model workflow.
+        incoming: Incoming used by the in-memory graph model workflow.
     """
     for field_name in (
         "label",

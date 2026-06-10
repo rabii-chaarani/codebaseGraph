@@ -9,15 +9,16 @@ END_MARKER = "<!-- codebaseGraph:end -->"
 
 @dataclass(frozen=True, slots=True)
 class InstructionResult:
-    """Store the result of instruction operations."""
+    """Carry the observable outcome of instruction workflows."""
     action: str
     path: str | None
 
     def as_dict(self) -> dict[str, str | None]:
-        """Return a JSON-serializable dictionary representation.
+        """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Returns:
-            A dictionary containing the computed payload.
+            Structured mapping that follows the setup workflow and client configuration
+            response contract.
         """
         return {"action": self.action, "path": self.path}
 
@@ -30,17 +31,19 @@ def upsert_instruction_block(
     config_path: Path,
     setup_command: str = "codebase-graph",
 ) -> InstructionResult:
-    """Upsert instruction block.
+    """Upsert instruction block for setup workflow and client configuration.
 
     Args:
-        repo_root: Repo root value.
-        target: Target value.
-        server_name: Server name value.
-        config_path: The config path to read or write.
-        setup_command: Setup command value.
+        repo_root: Repository root used to resolve graph state paths.
+        target: Target graph node or table name referenced by an edge.
+        server_name: MCP server name used as a stable client config key.
+        config_path: Setup configuration path used to resolve runtime state.
+        setup_command: Setup command used by the setup workflow and client configuration
+        workflow.
 
     Returns:
-        The computed result.
+        InstructionResult instance populated with data from the setup workflow and client
+        configuration workflow.
     """
     if target == "skip":
         return InstructionResult("skipped", None)
@@ -55,14 +58,15 @@ def upsert_instruction_block(
 
 
 def instruction_target_path(repo_root: Path, *, target: str = "auto") -> Path | None:
-    """Process instruction target path.
+    """Manage target path within setup workflow and client configuration.
 
     Args:
-        repo_root: Repo root value.
-        target: Target value.
+        repo_root: Repository root used to resolve graph state paths.
+        target: Target graph node or table name referenced by an edge.
 
     Returns:
-        The computed result.
+        Path | None instance populated with data from the setup workflow and client
+        configuration workflow.
     """
     if target == "skip":
         return None
@@ -70,13 +74,13 @@ def instruction_target_path(repo_root: Path, *, target: str = "auto") -> Path | 
 
 
 def remove_instruction_block(path: Path) -> bool:
-    """Remove instruction block.
+    """Remove instruction block for setup workflow and client configuration.
 
     Args:
-        path: The path to read or write.
+        path: Filesystem path read from or written by this operation.
 
     Returns:
-        Whether the check succeeds.
+        True when the requested condition is satisfied; otherwise False.
     """
     if not path.exists():
         return False
@@ -92,14 +96,18 @@ def remove_instruction_block(path: Path) -> bool:
 
 
 def _select_instruction_path(repo_root: Path, target: str) -> Path:
-    """Select instruction path.
+    """Select instruction path for setup workflow and client configuration.
 
     Args:
-        repo_root: Repo root value.
-        target: Target value.
+        repo_root: Repository root used to resolve graph state paths.
+        target: Target graph node or table name referenced by an edge.
 
     Returns:
-        The computed result.
+        Path instance populated with data from the setup workflow and client configuration
+        workflow.
+
+    Raises:
+        ValueError: Raised when validation or runtime preconditions fail.
     """
     if target == "agents":
         return repo_root / "AGENTS.md"
@@ -117,15 +125,16 @@ def _select_instruction_path(repo_root: Path, target: str) -> Path:
 
 
 def _instruction_block(*, server_name: str, config_path: Path, setup_command: str) -> str:
-    """Process instruction block.
+    """Manage block within setup workflow and client configuration.
 
     Args:
-        server_name: Server name value.
-        config_path: The config path to read or write.
-        setup_command: Setup command value.
+        server_name: MCP server name used as a stable client config key.
+        config_path: Setup configuration path used to resolve runtime state.
+        setup_command: Setup command used by the setup workflow and client configuration
+        workflow.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     return (
         f"{START_MARKER}\n"
@@ -144,15 +153,17 @@ def _instruction_block(*, server_name: str, config_path: Path, setup_command: st
 
 
 def _upsert_block(existing: str, block: str, *, created: bool) -> tuple[str, str]:
-    """Upsert block.
+    """Upsert block for setup workflow and client configuration.
 
     Args:
-        existing: Existing value.
-        block: Block value.
-        created: Created value.
+        existing: Existing used by the setup workflow and client configuration
+        workflow.
+        block: Block used by the setup workflow and client configuration workflow.
+        created: Created used by the setup workflow and client configuration workflow.
 
     Returns:
-        A tuple containing the computed values.
+        Tuple of stable results returned to the setup workflow and client configuration
+        caller.
     """
     if not existing.strip():
         return block, "created"
@@ -167,15 +178,15 @@ def _upsert_block(existing: str, block: str, *, created: bool) -> tuple[str, str
 
 
 def _join_sections(prefix: str, block: str, suffix: str) -> str:
-    """Join sections.
+    """Join sections for setup workflow and client configuration.
 
     Args:
-        prefix: Prefix value.
-        block: Block value.
-        suffix: Suffix value.
+        prefix: Prefix used by the setup workflow and client configuration workflow.
+        block: Block used by the setup workflow and client configuration workflow.
+        suffix: Suffix used by the setup workflow and client configuration workflow.
 
     Returns:
-        The computed string.
+        Formatted text returned to the caller.
     """
     sections = [section.strip() for section in (prefix, block, suffix) if section.strip()]
     return "\n\n".join(sections) + "\n"
