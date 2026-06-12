@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.3.0...v0.4.0) (2026-06-12)
+
+
+### Features
+
+* parse supported languages by default ([#21](https://github.com/rabii-chaarani/codebaseGraph/issues/21)) ([154006f](https://github.com/rabii-chaarani/codebaseGraph/commit/154006fdbae21b903f41a7bfe5df75d4d02f2f4f))
+
 ## [0.3.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.5...v0.3.0) (2026-06-12)
 
 
