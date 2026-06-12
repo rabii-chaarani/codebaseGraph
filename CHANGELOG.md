@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.5...v0.3.0) (2026-06-12)
+
+
+### Features
+
+* Extend ontology and setup workflows for language profiles ([#19](https://github.com/rabii-chaarani/codebaseGraph/issues/19)) ([6c684ea](https://github.com/rabii-chaarani/codebaseGraph/commit/6c684ea71208c9d847ca04a80f360c3de30d9ff3))
+
 ## [0.2.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.4...v0.2.5) (2026-06-12)
 
 
