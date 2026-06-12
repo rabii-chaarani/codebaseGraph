@@ -218,9 +218,8 @@ def _add_search_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--source-root", default=".", help="Repository or source root to search")
     parser.add_argument("--db", default=None, help="LadybugDB path; defaults under .codebaseGraph")
     parser.add_argument("--manifest", default=None, help="Manifest path; defaults under .codebaseGraph")
-    add_compact_context_arguments(parser)
+    add_compact_context_arguments(parser, default_format="block")
     parser.add_argument("--no-refresh", action="store_true", help="Query the existing graph without changed materialization")
-    parser.add_argument("--json", action="store_true", help="Emit compact JSON output")
 
 
 def _runtime(args: argparse.Namespace) -> object:
@@ -267,11 +266,11 @@ def _run_legacy_search_command(parser: argparse.ArgumentParser, args: argparse.N
     )
     if args.no_refresh:
         with create_ladybug_database(materializer.db_path, include_fts=True, read_only=True) as store:
-            payload = SearchService(store).search(request)
+            payload = SearchService(store, repo_root=Path(args.source_root)).search(request)
     else:
         try:
             materializer.materialize(mode="changed")
-            payload = SearchService(materializer.store).search(request)
+            payload = SearchService(materializer.store, repo_root=Path(args.source_root)).search(request)
         finally:
             materializer.close()
     _print_payload(payload.as_dict(detail=args.detail), args)
@@ -296,6 +295,8 @@ def _search_request_from_args(args: argparse.Namespace) -> SearchRequest:
         max_depth=args.max_depth,
         context_limit=args.context_limit,
         detail=args.detail,
+        include_snippets=args.include_snippets,
+        snippet_context_lines=args.snippet_context_lines,
     )
     request.validate()
     return request
@@ -353,7 +354,7 @@ def _print_payload(payload: dict[str, object], args: argparse.Namespace) -> None
     if getattr(args, "json", False):
         _print_json(payload, args)
         return
-    if getattr(args, "format", "json") == "block":
+    if getattr(args, "format", "block") == "block":
         print(serialize_graph_block(payload), end="")
         return
     _print_json(payload, args)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from codebase_graph.db import SearchIndexRow, graph_query_adapter
@@ -29,8 +30,10 @@ class SearchRequest:
     max_depth: int | None = None
     context_limit: int = DEFAULT_CONTEXT_LIMIT
     detail: str = "standard"
+    include_snippets: bool = False
+    snippet_context_lines: int = 0
 
-    def validate(self) -> None:
+    def validate(self, profile_catalog: dict[str, Any] | None = None) -> None:
         """Validate search, ranking, and block-format retrieval for search, ranking, and block-format retrieval.
 
         Raises:
@@ -46,9 +49,12 @@ class SearchRequest:
             raise ValueError("Context max depth must be zero or greater")
         if self.context_limit < 0:
             raise ValueError("Context limit must be zero or greater")
+        if self.snippet_context_lines < 0:
+            raise ValueError("Snippet context lines must be zero or greater")
         _validate_detail(self.detail)
-        if self.profile not in CONTEXT_PROFILES:
-            valid = ", ".join(sorted(CONTEXT_PROFILES))
+        profiles = profile_catalog or CONTEXT_PROFILES
+        if self.profile not in profiles:
+            valid = ", ".join(sorted(profiles))
             raise ValueError(f"Unknown context profile: {self.profile}. Valid profiles: {valid}")
 
 
@@ -152,7 +158,13 @@ class FTSIndexSpec:
 
 class SearchService:
     """Manage FTS-backed search and compact context assembly."""
-    def __init__(self, store: Any) -> None:
+    def __init__(
+        self,
+        store: Any,
+        *,
+        repo_root: str | Path | None = None,
+        profile_catalog: dict[str, Any] | None = None,
+    ) -> None:
         """Initialize search service with the collaborators and state it owns.
 
         Args:
@@ -161,6 +173,8 @@ class SearchService:
         self.store = store
         self.query = graph_query_adapter(store)
         self.indexes = tuple(_fts_index_specs())
+        self.repo_root = Path(repo_root).resolve() if repo_root is not None else None
+        self.profile_catalog = profile_catalog or CONTEXT_PROFILES
 
     def search(self, request: SearchRequest) -> CompactContextPayload:
         """Run full-text search, rank deduplicated hits, and attach compact graph context.
@@ -172,14 +186,18 @@ class SearchService:
             CompactContextPayload instance populated with data from the search, ranking, and
             block-format retrieval workflow.
         """
-        request.validate()
+        request.validate(self.profile_catalog)
         candidate_limit = _candidate_limit(request.limit)
         hits = self._rank_hits(
             self._query_fts(request.query, candidate_limit),
             query=request.query,
             profile=request.profile,
         )
-        context_builder = CompactContextBuilder(self.store)
+        context_builder = CompactContextBuilder(
+            self.store,
+            repo_root=self.repo_root,
+            profile_catalog=self.profile_catalog,
+        )
         compact_hits: list[SearchHit] = []
         for hit in hits[: request.limit]:
             # Context is attached only after ranking so expensive graph traversal
@@ -191,6 +209,9 @@ class SearchService:
                 limit=request.context_limit,
                 budget=request.budget,
                 max_depth=request.max_depth,
+                root_label=hit.label,
+                include_snippets=request.include_snippets,
+                snippet_context_lines=request.snippet_context_lines,
             )
             compact_hits.append(hit)
         return CompactContextPayload(

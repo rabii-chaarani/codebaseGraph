@@ -70,10 +70,9 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     assert "--format block" not in agents_text
     assert re.search(r"graph-search .*--json", agents_text) is None
     assert re.search(r"graph-context .*--json", agents_text) is None
-    assert 'output_format: "block"' not in agents_text
     assert 'output_format: "json"' in agents_text
     assert "include_structured_content: true" in agents_text
-    assert "AI agents receive block output by default" in agents_text
+    assert "AI agents receive block output by default for graph CLI and MCP tools" in agents_text
     assert "graph-architecture-queries" in agents_text
     assert (
         "It is prohibited to read the code source before you find the target files using the graph."
@@ -143,7 +142,6 @@ def test_claude_instruction_target_uses_block_format(tmp_path: Path) -> None:
     assert "Prefer the `codebase_graph` MCP server tools" in claude_text
     assert "MCP `graph_search`" in claude_text
     assert "If MCP tools are unavailable, fall back to CLI" in claude_text
-    assert 'output_format: "block"' not in claude_text
     assert 'output_format: "json"' in claude_text
     assert "include_structured_content: true" in claude_text
     assert "--format block" not in claude_text
@@ -311,6 +309,47 @@ def test_runtime_config_uses_repo_root_from_setup_config(tmp_path: Path) -> None
     assert runtime.repo_root == repo_root.resolve()
     assert runtime.db_path == paths.db_path
     assert runtime.manifest_path == paths.manifest_path
+
+
+def test_runtime_config_loads_custom_context_profiles(tmp_path: Path) -> None:
+    repo_root = _fresh_repo(tmp_path)
+    paths = derive_setup_paths(repo_root)
+    payload = build_setup_config(paths, mcp_command=["codebase-graph", "mcp", "serve", "--config", paths.config_path.as_posix()])
+    payload["context_profiles"] = {
+        "repo_flow": {
+            "description": "Repository-specific flow profile.",
+            "relations": ["Defines", "Calls"],
+            "max_depth": 2,
+        }
+    }
+    write_setup_config(paths.config_path, payload)
+    paths.db_path.write_text("", encoding="utf-8")
+    paths.manifest_path.write_text("{}", encoding="utf-8")
+
+    runtime = runtime_config(repo_root=repo_root, config_path=paths.config_path, db_path=None, manifest_path=None)
+
+    assert runtime.context_profiles["repo_flow"]["source"] == "repo"
+    assert runtime.context_profiles["repo_flow"]["relations"] == ["Defines", "Calls"]
+    assert runtime.context_profiles["change_impact"]["source"] == "builtin"
+    assert "graph_impact" not in runtime.context_profiles
+
+
+def test_setup_config_rejects_invalid_custom_context_profile(tmp_path: Path) -> None:
+    repo_root = _fresh_repo(tmp_path)
+    paths = derive_setup_paths(repo_root)
+    payload = build_setup_config(paths, mcp_command=["codebase-graph", "mcp", "serve", "--config", paths.config_path.as_posix()])
+    payload["context_profiles"] = {
+        "bad_profile": {
+            "description": "Invalid profile.",
+            "relations": ["MissingRelation"],
+            "max_depth": 1,
+        }
+    }
+    paths.config_path.parent.mkdir(parents=True)
+    paths.config_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unknown relation"):
+        load_setup_config(paths.config_path)
 
 
 def test_setup_config_rejects_database_path_outside_state_dir(tmp_path: Path) -> None:

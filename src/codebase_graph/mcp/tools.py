@@ -44,18 +44,30 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
     if name == "graph_health":
         return _health(runtime)
     if name == "graph_schema":
-        return schema_payload()
+        profiles = runtime.context_profiles if runtime is not None else None
+        return schema_payload(context_profiles=profiles)
     if name == "graph_query_helpers":
         return {"query_helpers": [helper.as_dict() for helper in QUERY_HELPERS]}
     if name == "graph_architecture_queries":
         return architecture_query_catalog(group=_optional_str(arguments.get("group")))
     if name == "graph_search":
-        with open_graph_store(_require_runtime(runtime, name)) as store:
-            request = _search_request(arguments)
-            return SearchService(store).search(request).as_dict(detail=request.detail)
+        resolved_runtime = _require_runtime(runtime, name)
+        with open_graph_store(resolved_runtime) as store:
+            request = _search_request(arguments, profile_catalog=resolved_runtime.context_profiles)
+            return SearchService(
+                store,
+                repo_root=resolved_runtime.repo_root,
+                profile_catalog=resolved_runtime.context_profiles,
+            ).search(request).as_dict(detail=request.detail)
     if name == "graph_context":
-        with open_graph_store(_require_runtime(runtime, name)) as store:
-            return _context_payload(store, arguments)
+        resolved_runtime = _require_runtime(runtime, name)
+        context_arguments = {
+            **arguments,
+            "_repo_root": resolved_runtime.repo_root,
+            "_profile_catalog": resolved_runtime.context_profiles,
+        }
+        with open_graph_store(resolved_runtime) as store:
+            return _context_payload(store, context_arguments)
     if name == "graph_query":
         with open_graph_store(_require_runtime(runtime, name)) as store:
             return _query_payload(store, arguments)
@@ -82,7 +94,7 @@ def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
     except UnknownToolError:
         raise
     except Exception as exc:
-        return tool_error_result(name, exc)
+        return tool_error_result(name, exc, arguments)
 
 
 def _require_runtime(runtime: GraphRuntimeConfig | None, tool_name: str) -> GraphRuntimeConfig:
@@ -118,12 +130,12 @@ def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | 
         Structured mapping that follows the MCP server and transport surface response contract.
     """
     arguments = arguments or {}
-    text = json.dumps(payload, separators=(",", ":"), sort_keys=True)
-    include_structured_content = True
-    if name in {"graph_search", "graph_context"}:
-        include_structured_content = _include_structured_content(arguments)
-        if _output_format(arguments) == "block":
-            text = serialize_graph_block(payload)
+    text = (
+        serialize_graph_block(payload)
+        if _output_format(arguments) == "block"
+        else json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    )
+    include_structured_content = _include_structured_content(arguments)
     result: dict[str, Any] = {
         "content": [{"type": "text", "text": text}],
         "isError": False,
@@ -133,12 +145,13 @@ def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | 
     return result
 
 
-def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
+def tool_error_result(name: str, exc: Exception, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build error result for MCP server and transport surface.
 
     Args:
         name: Name used by the MCP server and transport surface workflow.
         exc: Exception being converted into an error response.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
         Structured mapping that follows the MCP server and transport surface response contract.
@@ -157,11 +170,19 @@ def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
             "message": str(exc),
         }
     }
-    return {
-        "content": [{"type": "text", "text": f"{name} failed: {exc}"}],
-        "structuredContent": payload,
+    arguments = arguments or {}
+    text = (
+        serialize_graph_block(payload)
+        if _output_format(arguments) == "block"
+        else json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    )
+    result: dict[str, Any] = {
+        "content": [{"type": "text", "text": text}],
         "isError": True,
     }
+    if _include_structured_content(arguments):
+        result["structuredContent"] = payload
+    return result
 
 
 def tool_specs() -> list[dict[str, Any]]:
@@ -212,7 +233,7 @@ def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
     return payload
 
 
-def _search_request(arguments: dict[str, Any]) -> SearchRequest:
+def _search_request(arguments: dict[str, Any], *, profile_catalog: dict[str, Any] | None = None) -> SearchRequest:
     """Search request for MCP server and transport surface.
 
     Args:
@@ -230,8 +251,10 @@ def _search_request(arguments: dict[str, Any]) -> SearchRequest:
         max_depth=_optional_int(arguments.get("max_depth")),
         context_limit=int(arguments.get("context_limit", 3)),
         detail=_detail(arguments),
+        include_snippets=_bool(arguments.get("include_snippets", False)),
+        snippet_context_lines=int(arguments.get("snippet_context_lines", 0)),
     )
-    request.validate()
+    request.validate(profile_catalog)
     return request
 
 
@@ -250,13 +273,19 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
     if node_id and node_type:
         profile = str(arguments.get("profile", "brief"))
         detail = _detail(arguments)
-        context = CompactContextBuilder(store).build(
+        context = CompactContextBuilder(
+            store,
+            repo_root=arguments.get("_repo_root"),
+            profile_catalog=arguments.get("_profile_catalog"),
+        ).build(
             node_id,
             node_type,
             profile=profile,
             limit=int(arguments.get("limit", 3)),
             budget=int(arguments.get("budget", 600)),
             max_depth=_optional_int(arguments.get("max_depth")),
+            include_snippets=_bool(arguments.get("include_snippets", False)),
+            snippet_context_lines=int(arguments.get("snippet_context_lines", 0)),
         )
         return {
             "node_id": node_id,
@@ -264,8 +293,12 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
             "profile": profile,
             "context": [node.as_dict(detail=detail) for node in context],
         }
-    request = _search_request(arguments)
-    return SearchService(store).search(request).as_dict(detail=request.detail)
+    request = _search_request(arguments, profile_catalog=arguments.get("_profile_catalog"))
+    return SearchService(
+        store,
+        repo_root=arguments.get("_repo_root"),
+        profile_catalog=arguments.get("_profile_catalog"),
+    ).search(request).as_dict(detail=request.detail)
 
 
 def _query_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -407,6 +440,15 @@ def _optional_str(value: Any) -> str | None:
     if value is None or value == "":
         return None
     return str(value)
+
+
+def _bool(value: Any) -> bool:
+    """Coerce tool and CLI boolean values."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
 
 
 def _detail(arguments: dict[str, Any]) -> str:

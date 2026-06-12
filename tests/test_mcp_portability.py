@@ -56,7 +56,7 @@ def test_architecture_query_catalog_is_available_over_mcp_without_opening_graph(
             "jsonrpc": "2.0",
             "id": 2,
             "method": "tools/call",
-            "params": {"name": "graph_architecture_queries", "arguments": {}},
+            "params": {"name": "graph_architecture_queries", "arguments": {"include_structured_content": True}},
         }
     )
     filtered = server.handle_json_rpc(
@@ -64,7 +64,10 @@ def test_architecture_query_catalog_is_available_over_mcp_without_opening_graph(
             "jsonrpc": "2.0",
             "id": 3,
             "method": "tools/call",
-            "params": {"name": "graph_architecture_queries", "arguments": {"group": "overview"}},
+            "params": {
+                "name": "graph_architecture_queries",
+                "arguments": {"group": "overview", "include_structured_content": True},
+            },
         }
     )
     invalid = server.handle_json_rpc(
@@ -72,7 +75,10 @@ def test_architecture_query_catalog_is_available_over_mcp_without_opening_graph(
             "jsonrpc": "2.0",
             "id": 4,
             "method": "tools/call",
-            "params": {"name": "graph_architecture_queries", "arguments": {"group": "missing"}},
+            "params": {
+                "name": "graph_architecture_queries",
+                "arguments": {"group": "missing", "include_structured_content": True},
+            },
         }
     )
 
@@ -180,6 +186,12 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
         initialized = _rpc(proc.stdin, proc.stdout, "initialize", {"protocolVersion": "2025-11-25"})
         listed = _rpc(proc.stdin, proc.stdout, "tools/list", {})
         health = _rpc(proc.stdin, proc.stdout, "tools/call", {"name": "graph_health", "arguments": {}})
+        structured_health = _rpc(
+            proc.stdin,
+            proc.stdout,
+            "tools/call",
+            {"name": "graph_health", "arguments": {"include_structured_content": True}},
+        )
         search = _rpc(
             proc.stdin,
             proc.stdout,
@@ -211,19 +223,35 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
             "tools/call",
             {"name": "graph_query", "arguments": {"statement": "MATCH (n) DELETE n"}},
         )
+        structured_failure = _rpc(
+            proc.stdin,
+            proc.stdout,
+            "tools/call",
+            {
+                "name": "graph_query",
+                "arguments": {
+                    "statement": "MATCH (n) DELETE n",
+                    "include_structured_content": True,
+                },
+            },
+        )
     finally:
         proc.stdin.close()
         proc.wait(timeout=10)
 
     assert initialized["result"]["protocolVersion"] == "2025-11-25"
     assert {tool["name"] for tool in listed["result"]["tools"]} >= {"graph_health", "graph_search", "graph_query"}
+    for tool in listed["result"]["tools"]:
+        properties = tool["inputSchema"]["properties"]
+        assert properties["output_format"]["enum"] == ["json", "block"]
+        assert properties["output_format"]["default"] == "block"
+        assert properties["include_structured_content"]["default"] is False
     graph_search_tool = next(tool for tool in listed["result"]["tools"] if tool["name"] == "graph_search")
     assert "context_limit" in graph_search_tool["inputSchema"]["properties"]
     assert graph_search_tool["inputSchema"]["properties"]["detail"]["enum"] == ["slim", "standard"]
-    assert graph_search_tool["inputSchema"]["properties"]["output_format"]["enum"] == ["json", "block"]
-    assert graph_search_tool["inputSchema"]["properties"]["output_format"]["default"] == "block"
-    assert graph_search_tool["inputSchema"]["properties"]["include_structured_content"]["default"] is False
-    assert health["result"]["structuredContent"]["ok"] is True
+    assert "structuredContent" not in health["result"]
+    assert health["result"]["content"][0]["text"].startswith("health ok=true ")
+    assert structured_health["result"]["structuredContent"]["ok"] is True
     assert "structuredContent" not in search["result"]
     assert search["result"]["content"][0]["text"].startswith("q SampleService\n")
     assert "id=Class:" in search["result"]["content"][0]["text"]
@@ -234,7 +262,9 @@ def test_stdio_mcp_wire_initialize_list_call_and_tool_error(tmp_path: Path) -> N
     assert structured_search["result"]["content"][0]["text"].startswith("q SampleService\n")
     assert "error" not in failure
     assert failure["result"]["isError"] is True
-    assert failure["result"]["structuredContent"]["error"]["type"] == "ValueError"
+    assert "structuredContent" not in failure["result"]
+    assert failure["result"]["content"][0]["text"].startswith("error tool=graph_query type=ValueError")
+    assert structured_failure["result"]["structuredContent"]["error"]["type"] == "ValueError"
 
 
 def test_stdio_mcp_malformed_frame_returns_parse_error(tmp_path: Path) -> None:
@@ -329,7 +359,8 @@ def test_http_mcp_transport_handles_initialize_list_and_call(tmp_path: Path) -> 
     assert initialize["result"]["protocolVersion"] == "2025-11-25"
     assert missing_session.value.code == 400
     assert any(tool["name"] == "graph_context" for tool in listed["result"]["tools"])
-    assert health["result"]["structuredContent"]["ok"] is True
+    assert "structuredContent" not in health["result"]
+    assert health["result"]["content"][0]["text"].startswith("health ok=true ")
     assert exc_info.value.code == 400
 
 

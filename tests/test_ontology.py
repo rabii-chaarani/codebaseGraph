@@ -8,6 +8,7 @@ from codebase_graph.ontology import (
     PARSER_NODE_MAPPINGS,
     QUERY_HELPERS,
     RELATION_TYPES,
+    CONTEXT_PROFILES,
     get_node_type,
     get_relation_type,
     node_type_names,
@@ -24,6 +25,14 @@ def test_schema_payload_is_json_serializable() -> None:
     assert ONTOLOGY_NAME in encoded
     assert payload["node_types"]
     assert payload["relation_types"]
+
+
+def test_impact_context_profiles_are_declared() -> None:
+    assert "change_impact" in CONTEXT_PROFILES
+    assert "graph_impact" not in CONTEXT_PROFILES
+    assert "Calls" in CONTEXT_PROFILES["change_impact"]["relations"]
+    assert "Documents" in CONTEXT_PROFILES["change_impact"]["relations"]
+    assert "EvidencedBy" in CONTEXT_PROFILES["change_impact"]["relations"]
 
 
 def test_required_node_types_are_declared() -> None:

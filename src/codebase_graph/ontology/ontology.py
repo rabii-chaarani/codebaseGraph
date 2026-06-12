@@ -754,8 +754,18 @@ CONTEXT_PROFILES = {
         "max_depth": 1,
     },
     "change_impact": {
-        "description": "Context for likely downstream impact of changing a symbol.",
-        "relations": ["Defines", "References", "Calls", "RoutesTo", "ExecutesQuery", "UsesSecret", "DependsOn"],
+        "description": "Context for likely downstream impact of changing a symbol, including documentation and evidence.",
+        "relations": [
+            "Defines",
+            "References",
+            "Calls",
+            "RoutesTo",
+            "ExecutesQuery",
+            "UsesSecret",
+            "DependsOn",
+            "Documents",
+            "EvidencedBy",
+        ],
         "max_depth": 3,
     },
 }
@@ -894,7 +904,7 @@ def get_relation_type(name: str) -> RelationTypeSpec:
     raise KeyError(name)
 
 
-def schema_payload() -> dict[str, Any]:
+def schema_payload(*, context_profiles: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build payload for ontology and schema metadata.
 
     Returns:
@@ -907,6 +917,6 @@ def schema_payload() -> dict[str, Any]:
         "relation_types": [relation.as_dict() for relation in RELATION_TYPES],
         "parser_node_mappings": [mapping.as_dict() for mapping in PARSER_NODE_MAPPINGS],
         "search_indexes": list(SEARCH_INDEXES),
-        "context_profiles": CONTEXT_PROFILES,
+        "context_profiles": context_profiles or CONTEXT_PROFILES,
         "query_helpers": [helper.as_dict() for helper in QUERY_HELPERS],
     }

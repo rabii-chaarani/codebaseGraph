@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -23,6 +24,14 @@ class GraphNeighbor:
     line_start: int | None = None
     line_end: int | None = None
     summary: str = ""
+    relation: str = ""
+    direction: str = ""
+    source_node_id: str = ""
+    target_node_id: str = ""
+    edge_id: str = ""
+    edge_kind: str = ""
+    edge_confidence: float | None = None
+    edge_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -180,7 +189,7 @@ class LadybugGraphQueryAdapter:
                 ),
                 {"node_id": node_id},
             ).get_all()
-            neighbors.extend(_neighbor_from_row(row, neighbor_type) for row in rows)
+            neighbors.extend(_neighbor_from_row(row, neighbor_type, relation=relation, direction=direction) for row in rows)
         return neighbors
 
 
@@ -243,18 +252,22 @@ def _neighbor_statement(
             f"-[:{quote_identifier(f'FROM_{relation}')}]->(edge:{quote_identifier(relation)})"
             f"-[:{quote_identifier(f'TO_{relation}')}]->(neighbor:{quote_identifier(neighbor_type)}) "
             "RETURN neighbor.id, neighbor.label, neighbor.qualified_name, neighbor.path, "
-            f"neighbor.line_start, neighbor.line_end, neighbor.summary LIMIT {int(limit)}"
+            "neighbor.line_start, neighbor.line_end, neighbor.summary, "
+            "edge.id, edge.kind, edge.source_id, edge.target_id, edge.confidence, edge.metadata "
+            f"LIMIT {int(limit)}"
         )
     return (
         f"MATCH (neighbor:{quote_identifier(neighbor_type)})"
         f"-[:{quote_identifier(f'FROM_{relation}')}]->(edge:{quote_identifier(relation)})"
         f"-[:{quote_identifier(f'TO_{relation}')}]->(target:{quote_identifier(node_type)} {{id: $node_id}}) "
         "RETURN neighbor.id, neighbor.label, neighbor.qualified_name, neighbor.path, "
-        f"neighbor.line_start, neighbor.line_end, neighbor.summary LIMIT {int(limit)}"
+        "neighbor.line_start, neighbor.line_end, neighbor.summary, "
+        "edge.id, edge.kind, edge.source_id, edge.target_id, edge.confidence, edge.metadata "
+        f"LIMIT {int(limit)}"
     )
 
 
-def _neighbor_from_row(row: Any, node_type: str) -> GraphNeighbor:
+def _neighbor_from_row(row: Any, node_type: str, *, relation: str, direction: str) -> GraphNeighbor:
     """Manage from row within Ladybug database persistence layer.
 
     Args:
@@ -274,6 +287,14 @@ def _neighbor_from_row(row: Any, node_type: str) -> GraphNeighbor:
         line_start=_optional_int(_value(row, 4)),
         line_end=_optional_int(_value(row, 5)),
         summary=_text(_value(row, 6)),
+        relation=relation,
+        direction=direction,
+        edge_id=_text(_value(row, 7)),
+        edge_kind=_text(_value(row, 8)),
+        source_node_id=_text(_value(row, 9)),
+        target_node_id=_text(_value(row, 10)),
+        edge_confidence=_optional_float(_value(row, 11)),
+        edge_metadata=_metadata(_value(row, 12)),
     )
 
 
@@ -288,6 +309,24 @@ def _optional_int(value: Any) -> int | None:
         workflow.
     """
     return None if value is None else int(value)
+
+
+def _optional_float(value: Any) -> float | None:
+    """Coerce optional numeric edge metadata from Ladybug rows."""
+    return None if value is None else float(value)
+
+
+def _metadata(value: Any) -> dict[str, Any]:
+    """Coerce JSON metadata from Ladybug rows into a dictionary."""
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str) and value:
+        try:
+            decoded = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return decoded if isinstance(decoded, dict) else {}
+    return {}
 
 
 def _text(value: Any) -> str:

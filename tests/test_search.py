@@ -13,7 +13,13 @@ from codebase_graph.ingest import GraphMaterializer
 from codebase_graph.mcp.graph_commands import graph_command_spec, graph_tool_specs
 from codebase_graph.mcp.runtime import GraphRuntimeConfig
 from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _query_payload, handle_tool_call, tool_specs
-from codebase_graph.reasoning import CompactContextBuilder, ContextNode
+from codebase_graph.reasoning import (
+    CompactContextBuilder,
+    ContextNode,
+    collect_source_snippet,
+    estimate_token_count,
+    merge_context_profiles,
+)
 from codebase_graph.retrieval.search import CompactContextPayload, SearchHit, SearchRequest, SearchService
 
 
@@ -94,6 +100,77 @@ class _Adapter:
                 line_start=2,
                 line_end=3,
                 summary="Run the service.",
+            )
+        ]
+
+
+class _PathAdapter:
+    def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
+        return []
+
+    def neighbors(
+        self,
+        *,
+        node_id: str,
+        node_type: str,
+        relation: str,
+        direction: str,
+        limit: int,
+    ) -> list[GraphNeighbor]:
+        if direction != "outgoing":
+            return []
+        if node_id == "Function:A" and relation == "Calls":
+            return [
+                GraphNeighbor(
+                    node_id="Function:B",
+                    node_type="Function",
+                    label="B",
+                    source_node_id="Function:A",
+                    target_node_id="Function:B",
+                    edge_id="Calls:A:B",
+                    edge_kind="function_call",
+                )
+            ]
+        if node_id == "Function:B" and relation == "References":
+            return [
+                GraphNeighbor(
+                    node_id="Symbol:C",
+                    node_type="Symbol",
+                    label="C",
+                    source_node_id="Function:B",
+                    target_node_id="Symbol:C",
+                    edge_id="References:B:C",
+                    edge_kind="symbol_reference",
+                    edge_metadata={"confidence_source": "test"},
+                )
+            ]
+        return []
+
+
+class _DedupePathAdapter:
+    def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
+        return []
+
+    def neighbors(
+        self,
+        *,
+        node_id: str,
+        node_type: str,
+        relation: str,
+        direction: str,
+        limit: int,
+    ) -> list[GraphNeighbor]:
+        if node_id != "Function:A" or direction != "outgoing" or relation not in {"Calls", "References"}:
+            return []
+        return [
+            GraphNeighbor(
+                node_id="Symbol:C",
+                node_type="Symbol",
+                label="C",
+                source_node_id="Function:A",
+                target_node_id="Symbol:C",
+                edge_id=f"{relation}:A:C",
+                edge_kind=relation.lower(),
             )
         ]
 
@@ -207,7 +284,7 @@ def test_path_and_dependency_intents_boost_matching_ontology_families() -> None:
 
 
 def test_compact_context_respects_max_depth_limit_and_budget() -> None:
-    long_summary = "x" * 200
+    long_summary = " ".join(f"word{i}" for i in range(200))
     store = _RecordingStore(
         [["Method:run", "run", "sample.SampleService.run", "sample_project/service.py", 4, 6, long_summary]]
     )
@@ -220,7 +297,7 @@ def test_compact_context_respects_max_depth_limit_and_budget() -> None:
         "Class",
         profile="definitions",
         limit=1,
-        budget=80,
+        budget=40,
         max_depth=1,
     )
 
@@ -228,7 +305,40 @@ def test_compact_context_respects_max_depth_limit_and_budget() -> None:
     assert context[0].relation == "Defines"
     assert context[0].direction == "outgoing"
     assert context[0].summary
-    assert len(context[0].summary) < len(long_summary)
+    assert estimate_token_count(context[0].summary) < estimate_token_count(long_summary)
+
+
+def test_compact_context_builds_depth_two_evidence_paths_with_edge_metadata() -> None:
+    builder = CompactContextBuilder(_AdapterStore(_PathAdapter()))
+
+    context = builder.build(
+        "Function:A",
+        "Function",
+        profile="callgraph",
+        limit=3,
+        budget=200,
+        max_depth=2,
+        root_label="A",
+    )
+
+    terminal = next(item for item in context if item.label == "C")
+    payload = terminal.as_dict()
+
+    assert payload["evidence_path"]["chain"] == "Function A Calls Function B References Symbol C"
+    assert payload["evidence_path"]["edges"][1]["edge_id"] == "References:B:C"
+    assert payload["evidence_path"]["edges"][1]["metadata"] == {"confidence_source": "test"}
+
+
+def test_compact_context_dedupes_by_terminal_node_plus_relation_chain() -> None:
+    builder = CompactContextBuilder(_AdapterStore(_DedupePathAdapter()))
+
+    context = builder.build("Function:A", "Function", profile="callgraph", limit=3, budget=200, max_depth=1, root_label="A")
+
+    assert [item.relation for item in context] == ["Calls", "References"]
+    assert {item.evidence_path.chain for item in context if item.evidence_path is not None} == {
+        "Function A Calls Symbol C",
+        "Function A References Symbol C",
+    }
 
 
 def test_compact_context_uses_adapter_types_and_opaque_node_ids() -> None:
@@ -275,6 +385,41 @@ def test_search_service_respects_zero_context_limit() -> None:
 def test_search_request_rejects_invalid_profile() -> None:
     with pytest.raises(ValueError, match="Unknown context profile"):
         SearchRequest("SampleService", profile="missing").validate()
+
+
+def test_search_request_accepts_runtime_custom_profile_catalog() -> None:
+    catalog = merge_context_profiles(
+        {
+            "repo_flow": {
+                "description": "Repository-defined flow profile.",
+                "relations": ["Defines", "Calls"],
+                "max_depth": 2,
+            }
+        }
+    )
+
+    SearchRequest("SampleService", profile="repo_flow").validate(catalog)
+
+
+def test_source_snippet_collection_redacts_secret_like_literals(tmp_path: Path) -> None:
+    source = tmp_path / "sample.py"
+    source.write_text(
+        "def load():\n"
+        "    OPENAI_API_KEY = 'sk-testsecret1234567890'\n"
+        "    return OPENAI_API_KEY\n",
+        encoding="utf-8",
+    )
+
+    snippet = collect_source_snippet(
+        tmp_path,
+        "sample.py",
+        {"line_start": 2, "line_end": 2},
+    )
+
+    assert snippet is not None
+    assert "sk-testsecret" not in snippet.text
+    assert "[REDACTED]" in snippet.text
+    assert snippet.redactions
 
 
 def test_slim_payload_omits_diagnostics_and_duplicate_summaries() -> None:
@@ -442,6 +587,23 @@ def test_cli_search_and_context_return_compact_json_without_refresh(tmp_path: Pa
         manifest_path.as_posix(),
         "--no-refresh",
     ]) == 0
+    context_block = capsys.readouterr().out
+    assert context_block.startswith("q helper\n")
+    assert "file path sample_project/service.py" in context_block
+    assert not context_block.lstrip().startswith("{")
+
+    assert cli_main([
+        "context",
+        "helper",
+        "--source-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--no-refresh",
+        "--json",
+    ]) == 0
     context_payload = json.loads(capsys.readouterr().out)
     assert context_payload["results"]
     assert any(hit["label"] == "helper" and hit["context"] for hit in context_payload["results"])
@@ -475,6 +637,21 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         db_path.as_posix(),
         "--manifest",
         manifest_path.as_posix(),
+    ]) == 0
+    health_block = capsys.readouterr().out
+    assert health_block.startswith("health ok=true ")
+    assert "total_nodes=" in health_block
+    assert not health_block.lstrip().startswith("{")
+
+    assert cli_main([
+        "graph-health",
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--json",
     ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_health", {}, runtime=runtime)
 
@@ -626,6 +803,25 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         "--limit",
         "5",
     ]) == 0
+    query_block = capsys.readouterr().out
+    assert query_block.startswith("query rows=1 truncated=false\n")
+    assert "columns total_nodes" in query_block
+    assert "row 1 total_nodes=" in query_block
+    assert not query_block.lstrip().startswith("{")
+
+    assert cli_main([
+        "graph-query",
+        statement,
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--limit",
+        "5",
+        "--json",
+    ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_query", query_args, runtime=runtime)
 
 
@@ -706,21 +902,39 @@ def test_graph_command_specs_build_cli_payloads() -> None:
 def test_cli_graph_metadata_commands_do_not_open_graph_db(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli_main(["graph-schema"]) == 0
     schema_output = capsys.readouterr().out
-    assert "\n  " not in schema_output
-    schema = json.loads(schema_output)
+    assert schema_output.startswith("schema ")
+    assert "node_types " in schema_output
+    assert not schema_output.lstrip().startswith("{")
+
+    assert cli_main(["graph-schema", "--json"]) == 0
+    schema_json_output = capsys.readouterr().out
+    assert "\n  " not in schema_json_output
+    schema = json.loads(schema_json_output)
     assert schema["ontology"]
     assert schema["context_profiles"]
 
-    assert cli_main(["graph-schema", "--pretty"]) == 0
+    assert cli_main(["graph-schema", "--json", "--pretty"]) == 0
     pretty_schema_output = capsys.readouterr().out
     assert "\n  " in pretty_schema_output
     assert json.loads(pretty_schema_output)["ontology"]
 
     assert cli_main(["graph-query-helpers"]) == 0
+    helpers_block = capsys.readouterr().out
+    assert helpers_block.startswith("query_helpers count=")
+    assert "repository_overview" in helpers_block
+    assert not helpers_block.lstrip().startswith("{")
+
+    assert cli_main(["graph-query-helpers", "--json"]) == 0
     helpers = json.loads(capsys.readouterr().out)
     assert any(helper["name"] == "repository_overview" for helper in helpers["query_helpers"])
 
     assert cli_main(["graph-architecture-queries", "--group", "overview"]) == 0
+    architecture_block = capsys.readouterr().out
+    assert architecture_block.startswith("architecture_queries ")
+    assert "group overview " in architecture_block
+    assert not architecture_block.lstrip().startswith("{")
+
+    assert cli_main(["graph-architecture-queries", "--group", "overview", "--json"]) == 0
     architecture = json.loads(capsys.readouterr().out)
     assert [group["name"] for group in architecture["groups"]] == ["overview"]
 

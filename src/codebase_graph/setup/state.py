@@ -8,6 +8,7 @@ from typing import Any
 
 from codebase_graph import paths as graph_paths
 from codebase_graph.ontology import ONTOLOGY_VERSION
+from codebase_graph.reasoning.context_profiles import load_context_profile_config, merge_context_profiles
 
 CONFIG_NAME = graph_paths.CONFIG_NAME
 DEFAULT_STATE_DIR = graph_paths.DEFAULT_STATE_DIR
@@ -180,3 +181,4 @@ def _validate_setup_config(payload: dict[str, Any], path: Path) -> None:
         raise ValueError(f"Invalid codebaseGraph setup config at {path}: database_path must be {expected_database_path}")
     if manifest_path != expected_manifest_path:
         raise ValueError(f"Invalid codebaseGraph setup config at {path}: manifest_path must be {expected_manifest_path}")
+    merge_context_profiles(load_context_profile_config(payload))

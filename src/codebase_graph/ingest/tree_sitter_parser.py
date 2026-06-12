@@ -418,10 +418,21 @@ def _parameter_node(node: Any, source_bytes: bytes) -> dict[str, Any]:
         "byte_start": node.start_byte,
         "byte_end": node.end_byte,
     }
-    if ":" in text:
+    annotation_node = node.child_by_field_name("type")
+    if annotation_node is not None:
+        parameter["annotation"] = _convert_node(annotation_node, source_bytes)
+    elif ":" in text:
         annotation = text.split(":", 1)[1].split("=", 1)[0].strip()
         if annotation:
-            parameter["annotation"] = {"type": "type", "id": annotation, "text": annotation}
+            parameter["annotation"] = {
+                "type": "type",
+                "id": annotation,
+                "text": annotation,
+                "line_start": _line_start(node),
+                "line_end": _line_end(node),
+                "byte_start": node.start_byte,
+                "byte_end": node.end_byte,
+            }
     return parameter
 
 
@@ -512,11 +523,30 @@ def _attribute_fields(node: Any, source_bytes: bytes) -> dict[str, Any]:
         Structured mapping that follows the source scanning and graph materialization
         response contract.
     """
+    object_node = node.child_by_field_name("object")
+    attribute_node = node.child_by_field_name("attribute")
+    if object_node is not None and attribute_node is not None:
+        return {
+            "value": _convert_node(object_node, source_bytes),
+            "attr": _node_text(attribute_node, source_bytes),
+        }
+
     text = _node_text(node, source_bytes)
     if "." not in text:
         return {"id": text}
     base, attr = text.rsplit(".", 1)
-    return {"value": {"type": "identifier", "id": base}, "attr": attr}
+    return {
+        "value": {
+            "type": "identifier",
+            "id": base,
+            "text": base,
+            "line_start": _line_start(node),
+            "line_end": _line_end(node),
+            "byte_start": node.start_byte,
+            "byte_end": node.end_byte,
+        },
+        "attr": attr,
+    }
 
 
 def _literal_value(node: Any, source_bytes: bytes) -> str:

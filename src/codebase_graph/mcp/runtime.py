@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
 from codebase_graph.db import LadybugCodeGraphStore, create_ladybug_database
+from codebase_graph.reasoning.context_profiles import load_context_profile_config, merge_context_profiles
 from codebase_graph.setup.state import derive_setup_paths, load_setup_config
 
 
@@ -15,6 +16,7 @@ class GraphRuntimeConfig:
     repo_root: Path
     db_path: Path
     manifest_path: Path | None = None
+    context_profiles: dict[str, Any] = field(default_factory=merge_context_profiles)
 
 
 def runtime_config(
@@ -57,7 +59,13 @@ def runtime_config(
     )
     if not resolved_db.exists():
         raise FileNotFoundError(f"codebaseGraph database is missing: {resolved_db}")
-    return GraphRuntimeConfig(repo_root=root, db_path=resolved_db, manifest_path=resolved_manifest)
+    context_profiles = merge_context_profiles(load_context_profile_config(payload))
+    return GraphRuntimeConfig(
+        repo_root=root,
+        db_path=resolved_db,
+        manifest_path=resolved_manifest,
+        context_profiles=context_profiles,
+    )
 
 
 def open_graph_store(runtime: GraphRuntimeConfig) -> LadybugCodeGraphStore:

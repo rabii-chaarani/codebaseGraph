@@ -2,7 +2,7 @@
 ## codebaseGraph workflow
 - Treat the repo-local `.codebaseGraph` graph as the project operating source of truth. It is prohibited to read the code source before you find the target files using the graph.
 - Prefer the `codebase_graph` MCP server tools over shell commands whenever they are exposed in the current agent session.
-- AI agents receive block output by default for `graph_search` and `graph_context`; request `output_format: "json"` or `include_structured_content: true` only for tests, APIs, or explicit structured-payload debugging.
+- AI agents receive block output by default for graph CLI and MCP tools; request `output_format: "json"` or `include_structured_content: true` only for tests, APIs, or explicit structured-payload debugging.
 - Use MCP `graph_search` with `detail: "slim"` and `context_limit: 1` before answering repo-structure questions or performing coding tasks.
 - Use MCP `graph_context` with `profile: "<profile>"`, `detail: "slim"`, and `context_limit: 2` when relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.
 - For architecture orientation, use MCP `graph_architecture_queries`, then execute selected read-only statements with MCP `graph_query`.

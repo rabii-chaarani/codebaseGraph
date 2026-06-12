@@ -7,7 +7,24 @@ from .architecture_queries import (
     ArchitectureQuerySpec,
     architecture_query_catalog,
 )
-from .context_builder import CompactContextBuilder, ContextNode
+from .context_builder import (
+    CompactContextBuilder,
+    ContextEdge,
+    ContextNode,
+    ContextPath,
+    ContextPathNode,
+    SourceSnippet,
+    collect_source_snippet,
+    estimate_token_count,
+    redact_source_snippet,
+)
+from .context_profiles import (
+    ContextProfileSpec,
+    builtin_context_profiles,
+    load_context_profile_config,
+    merge_context_profiles,
+    validate_context_profile,
+)
 
 __all__ = [
     "ARCHITECTURE_QUERY_GROUPS",
@@ -15,6 +32,18 @@ __all__ = [
     "ArchitectureQueryGroup",
     "ArchitectureQuerySpec",
     "CompactContextBuilder",
+    "ContextEdge",
     "ContextNode",
+    "ContextPath",
+    "ContextPathNode",
+    "ContextProfileSpec",
+    "SourceSnippet",
     "architecture_query_catalog",
+    "builtin_context_profiles",
+    "collect_source_snippet",
+    "estimate_token_count",
+    "load_context_profile_config",
+    "merge_context_profiles",
+    "redact_source_snippet",
+    "validate_context_profile",
 ]
