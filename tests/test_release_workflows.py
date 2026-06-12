@@ -3,7 +3,11 @@ from __future__ import annotations
 import io
 import json
 import re
+import subprocess
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 from scripts import smoke_built_wheel
 from scripts import check_release_gate
@@ -60,6 +64,60 @@ def test_package_smoke_uses_newline_delimited_mcp_stdio() -> None:
     assert response == {"id": 1, "jsonrpc": "2.0", "result": {}}
     assert stdin.getvalue().endswith(b"\n")
     assert b"Content-Length" not in stdin.getvalue()
+
+
+def test_package_smoke_requests_json_graph_health(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str]) -> subprocess.CompletedProcess[str]:
+        commands.append(command)
+        if "setup" in command:
+            return subprocess.CompletedProcess(command, 0, stdout=json.dumps({"config_path": str(tmp_path / "config.json")}))
+        if "graph-health" in command:
+            return subprocess.CompletedProcess(command, 0, stdout=json.dumps({"ok": True, "graph_readable": True}))
+        if "graph-search" in command:
+            return subprocess.CompletedProcess(command, 0, stdout=json.dumps({"results": [{"id": "Class:SampleService"}]}))
+        raise AssertionError(command)
+
+    monkeypatch.setattr(smoke_built_wheel, "_run", fake_run)
+    monkeypatch.setattr(smoke_built_wheel, "_install_verify_smoke", lambda *args: None)
+    monkeypatch.setattr(smoke_built_wheel, "_mcp_smoke", lambda command: None)
+
+    assert smoke_built_wheel.main(["smoke_built_wheel.py", "/tmp/codebase-graph"]) == 0
+
+    health_command = next(command for command in commands if "graph-health" in command)
+    assert "--json" in health_command
+
+
+def test_package_mcp_smoke_requests_structured_health(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, dict[str, Any]]] = []
+
+    class FakeProcess:
+        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
+            self.stdin = io.BytesIO()
+            self.stdout = io.BytesIO()
+            self.stderr = io.BytesIO()
+            self.returncode = 0
+
+        def wait(self, *, timeout: int) -> int:
+            return self.returncode
+
+    def fake_rpc(_stdin: Any, _stdout: Any, method: str, params: dict[str, Any]) -> dict[str, Any]:
+        calls.append((method, params))
+        if method == "initialize":
+            return {"result": {"protocolVersion": "2025-11-25"}}
+        if method == "tools/list":
+            return {"result": {"tools": [{"name": "graph_health"}, {"name": "graph_search"}, {"name": "graph_query"}]}}
+        if method == "tools/call":
+            return {"result": {"structuredContent": {"ok": True}}}
+        raise AssertionError(method)
+
+    monkeypatch.setattr(smoke_built_wheel.subprocess, "Popen", FakeProcess)
+    monkeypatch.setattr(smoke_built_wheel, "_rpc", fake_rpc)
+
+    smoke_built_wheel._mcp_smoke(["/tmp/codebase-graph", "mcp", "serve"])
+
+    assert ("tools/call", {"name": "graph_health", "arguments": {"include_structured_content": True}}) in calls
 
 
 def test_release_workflow_enforces_production_gate_before_build() -> None:

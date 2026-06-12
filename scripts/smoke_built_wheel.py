@@ -29,7 +29,9 @@ def main(argv: list[str]) -> int:
         setup_payload = json.loads(setup.stdout)
         config_path = Path(setup_payload["config_path"])
 
-        health = json.loads(_run([executable.as_posix(), "graph-health", "--repo-root", repo_root.as_posix()]).stdout)
+        health = json.loads(
+            _run([executable.as_posix(), "graph-health", "--repo-root", repo_root.as_posix(), "--json"]).stdout
+        )
         if not health.get("ok") or not health.get("graph_readable"):
             raise AssertionError(f"graph-health failed readiness smoke: {health}")
 
@@ -109,7 +111,12 @@ def _mcp_smoke(command: list[str]) -> None:
     try:
         initialized = _rpc(proc.stdin, proc.stdout, "initialize", {"protocolVersion": "2025-11-25"})
         listed = _rpc(proc.stdin, proc.stdout, "tools/list", {})
-        health = _rpc(proc.stdin, proc.stdout, "tools/call", {"name": "graph_health", "arguments": {}})
+        health = _rpc(
+            proc.stdin,
+            proc.stdout,
+            "tools/call",
+            {"name": "graph_health", "arguments": {"include_structured_content": True}},
+        )
     finally:
         proc.stdin.close()
         proc.wait(timeout=10)
