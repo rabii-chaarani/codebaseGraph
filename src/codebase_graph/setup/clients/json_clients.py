@@ -132,6 +132,18 @@ class LmStudioAdapter(JsonMcpServersAdapter):
         return Path.home() / ".lmstudio" / "mcp.json"
 
 
+class GitHubCopilotAdapter(JsonMcpServersAdapter):
+    """Adapt GitHub Copilot data to the VS Code MCP workspace configuration."""
+    client_id = "github-copilot"
+    root_path = ("servers",)
+
+    def default_config_path(self, descriptor: McpServerDescriptor) -> Path:
+        """Create the default VS Code workspace MCP config path."""
+        if descriptor.repo_root:
+            return Path(descriptor.repo_root) / ".vscode" / "mcp.json"
+        return Path.cwd() / ".vscode" / "mcp.json"
+
+
 class GenericAdapter(JsonMcpServersAdapter):
     """Adapt generic data to the codebaseGraph interface."""
     client_id = "generic"

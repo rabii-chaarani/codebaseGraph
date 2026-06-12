@@ -35,6 +35,7 @@ Useful setup options:
 
 ```bash
 codebase-graph setup --repo-root /path/to/repo
+codebase-graph setup --mcp-client github-copilot
 codebase-graph setup --mcp-client claude
 codebase-graph setup --mcp-client lmstudio
 codebase-graph setup --skip-mcp-config
@@ -48,7 +49,8 @@ codebase-graph setup --dry-run --pretty
 codebase-graph mcp install --client codex
 ```
 
-Supported clients are `codex`, `claude`, `claude-project`, `lmstudio`, `hermes`, `openclaw`, and `generic`.
+Supported clients are `codex`, `claude`, `claude-project`, `github-copilot`, `lmstudio`, `hermes`, `openclaw`,
+`generic`, `copilot-studio`, and `microsoft-copilot`.
 
 Server naming:
 
@@ -63,10 +65,17 @@ command or config patch before writing, and `--verify` to run a stdio smoke test
 ```bash
 codebase-graph mcp install --client claude --scope user
 codebase-graph mcp install --client claude-project
+codebase-graph mcp install --client github-copilot
+codebase-graph mcp install --client copilot-studio --json
 codebase-graph mcp install --client all --dry-run --json
 codebase-graph mcp install --config-path /path/to/.codebaseGraph/config.json
 codebase-graph mcp install --verify
 ```
+
+`github-copilot` writes VS Code workspace configuration to `.vscode/mcp.json` with a top-level `servers` object for
+GitHub Copilot Chat. `copilot-studio` and `microsoft-copilot` are metadata-only targets: they print stdio and local HTTP
+connection details for manual Copilot Studio onboarding and do not provision a hosted connector, TLS, OAuth, or remote
+deployment.
 
 ## MCP usage
 

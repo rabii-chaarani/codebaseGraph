@@ -3,7 +3,14 @@ from __future__ import annotations
 from .base import ClientConfigAdapter, RenderedClientConfig
 from .codex import CodexAdapter
 from .hermes import HermesAdapter
-from .json_clients import ClaudeAdapter, ClaudeProjectAdapter, GenericAdapter, LmStudioAdapter, OpenClawAdapter
+from .json_clients import (
+    ClaudeAdapter,
+    ClaudeProjectAdapter,
+    GenericAdapter,
+    GitHubCopilotAdapter,
+    LmStudioAdapter,
+    OpenClawAdapter,
+)
 
 ADAPTERS: dict[str, ClientConfigAdapter] = {
     adapter.client_id: adapter
@@ -11,6 +18,7 @@ ADAPTERS: dict[str, ClientConfigAdapter] = {
         CodexAdapter(),
         ClaudeAdapter(),
         ClaudeProjectAdapter(),
+        GitHubCopilotAdapter(),
         LmStudioAdapter(),
         HermesAdapter(),
         OpenClawAdapter(),

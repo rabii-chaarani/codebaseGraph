@@ -250,6 +250,34 @@ def test_setup_dry_run_does_not_write_repo_or_client_state(
     assert not mcp_config_path.exists()
 
 
+def test_setup_dry_run_accepts_github_copilot_client(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    pytest.importorskip("real_ladybug")
+    repo_root = _fresh_repo(tmp_path)
+
+    exit_code = cli_main(
+        [
+            "setup",
+            "--repo-root",
+            repo_root.as_posix(),
+            "--mcp-client",
+            "github-copilot",
+            "--instructions-target",
+            "skip",
+            "--dry-run",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["mcp_config"]["action"] == "dry_run"
+    assert payload["mcp_config"]["method"] == "file_adapter"
+    assert payload["mcp_config"]["path"] == (repo_root / ".vscode" / "mcp.json").as_posix()
+    assert not (repo_root / ".vscode" / "mcp.json").exists()
+
+
 def test_setup_materialization_failure_rolls_back_published_control_files(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
