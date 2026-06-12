@@ -22,6 +22,15 @@ from .ontology import (
     relation_type_names,
     schema_payload,
 )
+from .compatibility import (
+    DEFAULT_SEMANTIC_CONSTRUCT_MAPPINGS,
+    OntologyExtensionDecision,
+    SemanticConstructMapping,
+    decide_ontology_extension,
+    evolve_cross_language_ontology,
+    map_semantic_construct,
+    validate_canonical_mapping,
+)
 
 __all__ = [
     "COMMON_NODE_FIELDS",
@@ -36,12 +45,19 @@ __all__ = [
     "SEARCH_INDEXES",
     "FieldSpec",
     "NodeTypeSpec",
+    "OntologyExtensionDecision",
     "ParserNodeMappingSpec",
     "QueryHelperSpec",
     "RelationTypeSpec",
+    "SemanticConstructMapping",
+    "DEFAULT_SEMANTIC_CONSTRUCT_MAPPINGS",
+    "decide_ontology_extension",
+    "evolve_cross_language_ontology",
     "get_node_type",
     "get_relation_type",
+    "map_semantic_construct",
     "node_type_names",
     "relation_type_names",
     "schema_payload",
+    "validate_canonical_mapping",
 ]

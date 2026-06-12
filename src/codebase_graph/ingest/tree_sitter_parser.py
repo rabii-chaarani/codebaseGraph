@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -8,6 +9,7 @@ from typing import Any, Protocol
 
 from codebase_graph.extract import ParseBundle
 from .document_parser import MarkdownDocumentParser
+from .languages import LanguageProfile, register_language_support
 
 
 class ParserUnavailableError(RuntimeError):
@@ -109,6 +111,17 @@ class ParserRegistry:
         registration = ParserRegistration(language, suffixes, parser_factory, parser_version)
         self._registrations[language] = registration
         self._register_suffixes(registration)
+
+    def register_language_profile(self, profile: LanguageProfile) -> None:
+        """Register a profiled tree-sitter parser for a language profile."""
+        from .tree_sitter_adapter import TreeSitterProfiledParser
+
+        self.register(
+            profile.language,
+            suffixes=profile.suffixes,
+            parser_factory=lambda profile=profile: TreeSitterProfiledParser(profile),
+            parser_version=profile.parser_version,
+        )
 
     def language_for_path(self, path: Path) -> str | None:
         """Manage for path within source scanning and graph materialization.
@@ -219,6 +232,24 @@ def default_parser_registry() -> ParserRegistry:
         ParserRegistry instance populated with data from the source scanning and graph
         materialization workflow.
     """
+    return assemble_profiled_parser_registry()
+
+
+def assemble_profiled_parser_registry(
+    source_root: str | Path | None = None,
+    *,
+    include_unavailable: bool = False,
+) -> ParserRegistry:
+    """Assemble parser registry with built-in parsers and available profiled languages."""
+    registry = _base_parser_registry()
+    for profile in register_language_support(source_root):
+        if include_unavailable or importlib.util.find_spec(profile.grammar_package) is not None:
+            registry.register_language_profile(profile)
+    return registry
+
+
+def _base_parser_registry() -> ParserRegistry:
+    """Create the built-in parser registry before optional profiled language registration."""
     registry = ParserRegistry()
     registry.register(
         "python",
