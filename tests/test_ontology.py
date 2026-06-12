@@ -29,9 +29,10 @@ def test_schema_payload_is_json_serializable() -> None:
 
 def test_impact_context_profiles_are_declared() -> None:
     assert "change_impact" in CONTEXT_PROFILES
-    assert "graph_impact" in CONTEXT_PROFILES
-    assert "Calls" in CONTEXT_PROFILES["graph_impact"]["relations"]
-    assert "EvidencedBy" in CONTEXT_PROFILES["graph_impact"]["relations"]
+    assert "graph_impact" not in CONTEXT_PROFILES
+    assert "Calls" in CONTEXT_PROFILES["change_impact"]["relations"]
+    assert "Documents" in CONTEXT_PROFILES["change_impact"]["relations"]
+    assert "EvidencedBy" in CONTEXT_PROFILES["change_impact"]["relations"]
 
 
 def test_required_node_types_are_declared() -> None:

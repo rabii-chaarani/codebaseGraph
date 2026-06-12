@@ -754,12 +754,7 @@ CONTEXT_PROFILES = {
         "max_depth": 1,
     },
     "change_impact": {
-        "description": "Context for likely downstream impact of changing a symbol.",
-        "relations": ["Defines", "References", "Calls", "RoutesTo", "ExecutesQuery", "UsesSecret", "DependsOn"],
-        "max_depth": 3,
-    },
-    "graph_impact": {
-        "description": "Graph-neighborhood impact context for callers, references, dependencies, runtime surfaces, and evidence.",
+        "description": "Context for likely downstream impact of changing a symbol, including documentation and evidence.",
         "relations": [
             "Defines",
             "References",

@@ -332,7 +332,8 @@ def test_runtime_config_loads_custom_context_profiles(tmp_path: Path) -> None:
 
     assert runtime.context_profiles["repo_flow"]["source"] == "repo"
     assert runtime.context_profiles["repo_flow"]["relations"] == ["Defines", "Calls"]
-    assert runtime.context_profiles["graph_impact"]["source"] == "builtin"
+    assert runtime.context_profiles["change_impact"]["source"] == "builtin"
+    assert "graph_impact" not in runtime.context_profiles
 
 
 def test_setup_config_rejects_invalid_custom_context_profile(tmp_path: Path) -> None:
