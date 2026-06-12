@@ -94,7 +94,7 @@ def call_tool_result(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
     except UnknownToolError:
         raise
     except Exception as exc:
-        return tool_error_result(name, exc)
+        return tool_error_result(name, exc, arguments)
 
 
 def _require_runtime(runtime: GraphRuntimeConfig | None, tool_name: str) -> GraphRuntimeConfig:
@@ -130,12 +130,12 @@ def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | 
         Structured mapping that follows the MCP server and transport surface response contract.
     """
     arguments = arguments or {}
-    text = json.dumps(payload, separators=(",", ":"), sort_keys=True)
-    include_structured_content = True
-    if name in {"graph_search", "graph_context"}:
-        include_structured_content = _include_structured_content(arguments)
-        if _output_format(arguments) == "block":
-            text = serialize_graph_block(payload)
+    text = (
+        serialize_graph_block(payload)
+        if _output_format(arguments) == "block"
+        else json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    )
+    include_structured_content = _include_structured_content(arguments)
     result: dict[str, Any] = {
         "content": [{"type": "text", "text": text}],
         "isError": False,
@@ -145,12 +145,13 @@ def tool_result(name: str, payload: dict[str, Any], arguments: dict[str, Any] | 
     return result
 
 
-def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
+def tool_error_result(name: str, exc: Exception, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build error result for MCP server and transport surface.
 
     Args:
         name: Name used by the MCP server and transport surface workflow.
         exc: Exception being converted into an error response.
+        arguments: Tool or command arguments supplied by the caller.
 
     Returns:
         Structured mapping that follows the MCP server and transport surface response contract.
@@ -169,11 +170,19 @@ def tool_error_result(name: str, exc: Exception) -> dict[str, Any]:
             "message": str(exc),
         }
     }
-    return {
-        "content": [{"type": "text", "text": f"{name} failed: {exc}"}],
-        "structuredContent": payload,
+    arguments = arguments or {}
+    text = (
+        serialize_graph_block(payload)
+        if _output_format(arguments) == "block"
+        else json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    )
+    result: dict[str, Any] = {
+        "content": [{"type": "text", "text": text}],
         "isError": True,
     }
+    if _include_structured_content(arguments):
+        result["structuredContent"] = payload
+    return result
 
 
 def tool_specs() -> list[dict[str, Any]]:

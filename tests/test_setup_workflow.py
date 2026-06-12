@@ -70,10 +70,9 @@ def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
     assert "--format block" not in agents_text
     assert re.search(r"graph-search .*--json", agents_text) is None
     assert re.search(r"graph-context .*--json", agents_text) is None
-    assert 'output_format: "block"' not in agents_text
     assert 'output_format: "json"' in agents_text
     assert "include_structured_content: true" in agents_text
-    assert "AI agents receive block output by default" in agents_text
+    assert "AI agents receive block output by default for graph CLI and MCP tools" in agents_text
     assert "graph-architecture-queries" in agents_text
     assert (
         "It is prohibited to read the code source before you find the target files using the graph."
@@ -143,7 +142,6 @@ def test_claude_instruction_target_uses_block_format(tmp_path: Path) -> None:
     assert "Prefer the `codebase_graph` MCP server tools" in claude_text
     assert "MCP `graph_search`" in claude_text
     assert "If MCP tools are unavailable, fall back to CLI" in claude_text
-    assert 'output_format: "block"' not in claude_text
     assert 'output_format: "json"' in claude_text
     assert "include_structured_content: true" in claude_text
     assert "--format block" not in claude_text

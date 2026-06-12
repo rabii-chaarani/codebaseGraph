@@ -218,9 +218,8 @@ def _add_search_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--source-root", default=".", help="Repository or source root to search")
     parser.add_argument("--db", default=None, help="LadybugDB path; defaults under .codebaseGraph")
     parser.add_argument("--manifest", default=None, help="Manifest path; defaults under .codebaseGraph")
-    add_compact_context_arguments(parser)
+    add_compact_context_arguments(parser, default_format="block")
     parser.add_argument("--no-refresh", action="store_true", help="Query the existing graph without changed materialization")
-    parser.add_argument("--json", action="store_true", help="Emit compact JSON output")
 
 
 def _runtime(args: argparse.Namespace) -> object:
@@ -355,7 +354,7 @@ def _print_payload(payload: dict[str, object], args: argparse.Namespace) -> None
     if getattr(args, "json", False):
         _print_json(payload, args)
         return
-    if getattr(args, "format", "json") == "block":
+    if getattr(args, "format", "block") == "block":
         print(serialize_graph_block(payload), end="")
         return
     _print_json(payload, args)

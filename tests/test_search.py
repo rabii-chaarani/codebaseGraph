@@ -587,6 +587,23 @@ def test_cli_search_and_context_return_compact_json_without_refresh(tmp_path: Pa
         manifest_path.as_posix(),
         "--no-refresh",
     ]) == 0
+    context_block = capsys.readouterr().out
+    assert context_block.startswith("q helper\n")
+    assert "file path sample_project/service.py" in context_block
+    assert not context_block.lstrip().startswith("{")
+
+    assert cli_main([
+        "context",
+        "helper",
+        "--source-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--no-refresh",
+        "--json",
+    ]) == 0
     context_payload = json.loads(capsys.readouterr().out)
     assert context_payload["results"]
     assert any(hit["label"] == "helper" and hit["context"] for hit in context_payload["results"])
@@ -620,6 +637,21 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         db_path.as_posix(),
         "--manifest",
         manifest_path.as_posix(),
+    ]) == 0
+    health_block = capsys.readouterr().out
+    assert health_block.startswith("health ok=true ")
+    assert "total_nodes=" in health_block
+    assert not health_block.lstrip().startswith("{")
+
+    assert cli_main([
+        "graph-health",
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--json",
     ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_health", {}, runtime=runtime)
 
@@ -771,6 +803,25 @@ def test_cli_graph_commands_match_mcp_tool_payloads(tmp_path: Path, capsys: pyte
         "--limit",
         "5",
     ]) == 0
+    query_block = capsys.readouterr().out
+    assert query_block.startswith("query rows=1 truncated=false\n")
+    assert "columns total_nodes" in query_block
+    assert "row 1 total_nodes=" in query_block
+    assert not query_block.lstrip().startswith("{")
+
+    assert cli_main([
+        "graph-query",
+        statement,
+        "--repo-root",
+        source_root.as_posix(),
+        "--db",
+        db_path.as_posix(),
+        "--manifest",
+        manifest_path.as_posix(),
+        "--limit",
+        "5",
+        "--json",
+    ]) == 0
     assert json.loads(capsys.readouterr().out) == handle_tool_call("graph_query", query_args, runtime=runtime)
 
 
@@ -851,21 +902,39 @@ def test_graph_command_specs_build_cli_payloads() -> None:
 def test_cli_graph_metadata_commands_do_not_open_graph_db(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli_main(["graph-schema"]) == 0
     schema_output = capsys.readouterr().out
-    assert "\n  " not in schema_output
-    schema = json.loads(schema_output)
+    assert schema_output.startswith("schema ")
+    assert "node_types " in schema_output
+    assert not schema_output.lstrip().startswith("{")
+
+    assert cli_main(["graph-schema", "--json"]) == 0
+    schema_json_output = capsys.readouterr().out
+    assert "\n  " not in schema_json_output
+    schema = json.loads(schema_json_output)
     assert schema["ontology"]
     assert schema["context_profiles"]
 
-    assert cli_main(["graph-schema", "--pretty"]) == 0
+    assert cli_main(["graph-schema", "--json", "--pretty"]) == 0
     pretty_schema_output = capsys.readouterr().out
     assert "\n  " in pretty_schema_output
     assert json.loads(pretty_schema_output)["ontology"]
 
     assert cli_main(["graph-query-helpers"]) == 0
+    helpers_block = capsys.readouterr().out
+    assert helpers_block.startswith("query_helpers count=")
+    assert "repository_overview" in helpers_block
+    assert not helpers_block.lstrip().startswith("{")
+
+    assert cli_main(["graph-query-helpers", "--json"]) == 0
     helpers = json.loads(capsys.readouterr().out)
     assert any(helper["name"] == "repository_overview" for helper in helpers["query_helpers"])
 
     assert cli_main(["graph-architecture-queries", "--group", "overview"]) == 0
+    architecture_block = capsys.readouterr().out
+    assert architecture_block.startswith("architecture_queries ")
+    assert "group overview " in architecture_block
+    assert not architecture_block.lstrip().startswith("{")
+
+    assert cli_main(["graph-architecture-queries", "--group", "overview", "--json"]) == 0
     architecture = json.loads(capsys.readouterr().out)
     assert [group["name"] for group in architecture["groups"]] == ["overview"]
 

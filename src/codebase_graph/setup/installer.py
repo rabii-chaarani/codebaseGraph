@@ -600,7 +600,7 @@ def _verify_stdio(descriptor: McpServerDescriptor, *, timeout: int) -> dict[str,
             (
                 ("initialize", {"protocolVersion": LATEST_PROTOCOL_VERSION}),
                 ("tools/list", {}),
-                ("tools/call", {"name": "graph_health", "arguments": {}}),
+                ("tools/call", {"name": "graph_health", "arguments": {"include_structured_content": True}}),
                 ("tools/call", {"name": "graph_search", "arguments": {"query": descriptor.name, "limit": 1}}),
                 ("tools/call", {"name": "graph_query", "arguments": {"statement": "MATCH (n) DELETE n"}}),
             ),

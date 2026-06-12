@@ -197,6 +197,18 @@ def add_json_output_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--pretty", action="store_true", help="Emit indented JSON output")
 
 
+def add_graph_output_arguments(parser: argparse.ArgumentParser, *, default_format: str = "block") -> None:
+    """Add shared graph output arguments for CLI and MCP command parity.
+
+    Args:
+        parser: Argparse parser or syntax parser participating in the workflow.
+        default_format: Default format used by graph command output.
+    """
+    parser.add_argument("--format", choices=("json", "block"), default=default_format, help="Output format")
+    parser.add_argument("--json", action="store_true", help="Emit compact JSON output")
+    add_json_output_arguments(parser)
+
+
 def add_compact_context_arguments(parser: argparse.ArgumentParser, *, default_format: str = "json") -> None:
     """Add compact context arguments for MCP server and transport surface.
 
@@ -213,8 +225,7 @@ def add_compact_context_arguments(parser: argparse.ArgumentParser, *, default_fo
     parser.add_argument("--include-snippets", action="store_true", help="Include bounded redacted source snippets")
     parser.add_argument("--snippet-context-lines", type=int, default=0, help="Extra source lines around snippet spans")
     parser.add_argument("--detail", choices=sorted(DETAIL_LEVELS), default="standard", help="Output detail level")
-    parser.add_argument("--format", choices=("json", "block"), default=default_format, help="Output format")
-    add_json_output_arguments(parser)
+    add_graph_output_arguments(parser, default_format=default_format)
 
 
 def add_runtime_arguments(parser: argparse.ArgumentParser) -> None:
@@ -238,7 +249,6 @@ def add_graph_compatibility_arguments(parser: argparse.ArgumentParser) -> None:
         parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("--no-refresh", action="store_true", help="Accepted for search/context command parity")
-    parser.add_argument("--json", action="store_true", help="Accepted for search/context command parity; same as --format json")
 
 
 def _add_graph_health_arguments(parser: argparse.ArgumentParser) -> None:
@@ -248,7 +258,7 @@ def _add_graph_health_arguments(parser: argparse.ArgumentParser) -> None:
         parser: Argparse parser or syntax parser participating in the workflow.
     """
     add_runtime_arguments(parser)
-    add_json_output_arguments(parser)
+    add_graph_output_arguments(parser)
 
 
 def _add_graph_search_arguments(parser: argparse.ArgumentParser) -> None:
@@ -284,7 +294,7 @@ def _add_graph_architecture_arguments(parser: argparse.ArgumentParser) -> None:
         parser: Argparse parser or syntax parser participating in the workflow.
     """
     parser.add_argument("--group", default=None, help="Optional architecture query group")
-    add_json_output_arguments(parser)
+    add_graph_output_arguments(parser)
 
 
 def _add_graph_query_arguments(parser: argparse.ArgumentParser) -> None:
@@ -297,13 +307,14 @@ def _add_graph_query_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--parameters", default="{}", help="JSON object with query parameters")
     parser.add_argument("--limit", type=int, default=100, help="Maximum rows to return")
     add_runtime_arguments(parser)
-    add_json_output_arguments(parser)
+    add_graph_output_arguments(parser)
 
 
 def _object_schema(
     properties: dict[str, Any] | None = None,
     *,
     required: Sequence[str] = (),
+    graph_output: bool = True,
 ) -> dict[str, Any]:
     """Build schema for MCP server and transport surface.
 
@@ -314,9 +325,12 @@ def _object_schema(
     Returns:
         Structured mapping that follows the MCP server and transport surface response contract.
     """
+    schema_properties = dict(properties or {})
+    if graph_output:
+        schema_properties.update(_output_schema_properties())
     schema: dict[str, Any] = {
         "type": "object",
-        "properties": properties or {},
+        "properties": schema_properties,
         "additionalProperties": False,
     }
     if required:
@@ -333,8 +347,7 @@ def _search_schema(*, required: Sequence[str]) -> dict[str, Any]:
     Returns:
         Structured mapping that follows the MCP server and transport surface response contract.
     """
-    return _object_schema(
-        {
+    properties = {
             "query": {"type": "string"},
             "limit": {"type": "integer", "minimum": 1},
             "profile": {"type": "string"},
@@ -353,17 +366,27 @@ def _search_schema(*, required: Sequence[str]) -> dict[str, Any]:
                 "description": "Extra source lines to include before and after snippet spans.",
             },
             "detail": {"type": "string", "enum": sorted(DETAIL_LEVELS)},
-            "output_format": {"type": "string", "enum": ["json", "block"], "default": "block"},
-            "include_structured_content": {
-                "type": "boolean",
-                "default": False,
-                "description": "Include the MCP structuredContent payload alongside the text result.",
-            },
             "node_id": {"type": "string"},
             "node_type": {"type": "string"},
-        },
+        }
+    properties.update(_output_schema_properties())
+    return _object_schema(
+        properties,
         required=required,
+        graph_output=False,
     )
+
+
+def _output_schema_properties() -> dict[str, Any]:
+    """Return shared graph output options advertised by MCP tools."""
+    return {
+        "output_format": {"type": "string", "enum": ["json", "block"], "default": "block"},
+        "include_structured_content": {
+            "type": "boolean",
+            "default": False,
+            "description": "Include the MCP structuredContent payload alongside the text result.",
+        },
+    }
 
 
 GRAPH_COMMAND_SPECS = (
@@ -400,7 +423,7 @@ GRAPH_COMMAND_SPECS = (
         help="Return ontology schema, indexes, profiles, and helpers",
         description="Return ontology schema, search indexes, context profiles, and query helper metadata.",
         input_schema=_object_schema(),
-        add_arguments=add_json_output_arguments,
+        add_arguments=add_graph_output_arguments,
         payload_from_args=_empty_payload,
         requires_runtime=False,
     ),
@@ -410,7 +433,7 @@ GRAPH_COMMAND_SPECS = (
         help="Return named read-only graph query helpers",
         description="Return named read-only query helpers for common graph exploration tasks.",
         input_schema=_object_schema(),
-        add_arguments=add_json_output_arguments,
+        add_arguments=add_graph_output_arguments,
         payload_from_args=_empty_payload,
         requires_runtime=False,
     ),
