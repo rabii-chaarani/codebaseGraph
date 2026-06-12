@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from codebase_graph.ingest import ParserRegistry, resolve_language_profile
+from codebase_graph.ingest import default_parser_registry
 from codebase_graph.ingest.tree_sitter_adapter import TreeSitterProfiledParser
 from codebase_graph.ingest.tree_sitter_parser import assemble_profiled_parser_registry
 
@@ -24,3 +27,14 @@ def test_assemble_profiled_parser_registry_skips_unavailable_grammars(monkeypatc
 
     assert registry.language_for_path(type("P", (), {"suffix": ".py"})()) == "python"
     assert registry.language_for_path(type("P", (), {"suffix": ".rs"})()) is None
+
+
+def test_default_parser_registry_includes_supported_languages() -> None:
+    registry = default_parser_registry()
+
+    assert registry.language_for_path(Path("main.rs")) == "rust"
+    assert registry.language_for_path(Path("main.go")) == "go"
+    assert registry.language_for_path(Path("lib.c")) == "c"
+    assert registry.language_for_path(Path("lib.cpp")) == "cpp"
+    assert registry.language_for_path(Path("lib.hpp")) == "cpp"
+    assert registry.language_for_path(Path("solver.f90")) == "fortran"

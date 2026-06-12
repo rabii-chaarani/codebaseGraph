@@ -161,11 +161,14 @@ def default_capture_table_registry() -> CaptureTableRegistry:
         graph extraction workflow.
     """
     registry = CaptureTableRegistry()
-    for capture in ("definition.class", "definition.struct", "definition.interface"):
+    for capture in ("definition.class", "definition.struct", "definition.interface", "definition.enum", "definition.union"):
         registry.register_exact(capture, "Class")
+    for capture in ("definition.module", "definition.namespace", "definition.package"):
+        registry.register_exact(capture, "Module")
     registry.register_exact("definition.component", "Component")
     registry.register_exact("component", "Component")
     registry.register_exact("definition.method", "Method")
+    registry.register_exact("definition.subroutine", "Function")
     registry.register_exact("definition.function", _function_capture_table)
     registry.register_exact("definition.parameter", "Parameter")
     registry.register_exact("parameter", "Parameter")
@@ -174,6 +177,7 @@ def default_capture_table_registry() -> CaptureTableRegistry:
     for capture in ("type", "type.annotation", "reference.type"):
         registry.register_exact(capture, "TypeAnnotation")
     registry.register_exact("definition.type_alias", "TypeAlias")
+    registry.register_exact("definition.macro", "Symbol")
     registry.register_exact("definition.constant", "Constant")
     registry.register_exact("definition.variable", "Variable")
     registry.register_exact("decorator", "Decorator")

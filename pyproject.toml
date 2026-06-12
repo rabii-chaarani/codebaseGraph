@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cbasegraph"
 dynamic = ["version"]
-description = "Generic codebase knowledge graph engine for Python projects."
+description = "Generic multi-language codebase knowledge graph engine."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Rabii Chaarani" }]
@@ -15,7 +15,12 @@ dependencies = [
   "real_ladybug>=0.15.3,<0.16",
   "tomli>=2.0.1; python_version < '3.11'",
   "tree-sitter>=0.25.2,<0.26",
+  "tree-sitter-c>=0.24.2,<0.25",
+  "tree-sitter-cpp>=0.23.4,<0.24",
+  "tree-sitter-fortran>=0.6.0,<0.7",
+  "tree-sitter-go>=0.25.0,<0.26",
   "tree-sitter-python>=0.25.0,<0.26",
+  "tree-sitter-rust>=0.24.2,<0.25",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",

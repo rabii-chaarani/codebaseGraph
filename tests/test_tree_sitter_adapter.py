@@ -50,6 +50,25 @@ def test_run_profile_queries_marks_profile_captures() -> None:
     assert result.syntax_nodes[0].children[0].capture_name == "definition.function"
 
 
+def test_run_profile_queries_applies_context_rules() -> None:
+    profile = resolve_language_profile("rust")
+    result = run_profile_queries(
+        {
+            "type": "source_file",
+            "children": [
+                {
+                    "type": "impl_item",
+                    "children": [{"type": "function_item", "text": "new", "line_start": 2}],
+                }
+            ],
+        },
+        profile,
+    )
+
+    assert [capture.capture for capture in result.captures] == ["definition.method"]
+    assert result.syntax_nodes[0].children[0].children[0].capture_name == "definition.method"
+
+
 def test_build_parse_bundle_feeds_graph_builder_tree() -> None:
     profile = resolve_language_profile("rust")
     result = run_profile_queries(
