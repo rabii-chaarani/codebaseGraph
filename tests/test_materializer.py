@@ -192,6 +192,69 @@ def test_full_materialization_writes_python_graph_to_ladybug(tmp_path: Path) -> 
     assert "ignored" not in _labels(materializer, "Function")
 
 
+def test_full_materialization_writes_supported_language_graphs(tmp_path: Path) -> None:
+    pytest.importorskip("real_ladybug")
+    source_root = tmp_path / "mixed_language_project"
+    source_root.mkdir()
+    (source_root / "lib.rs").write_text(
+        "use std::fmt;\n"
+        "struct User { id: i32 }\n"
+        "impl User { fn new(id: i32) -> Self { User { id } } }\n"
+        "fn helper() { User::new(1); }\n",
+        encoding="utf-8",
+    )
+    (source_root / "main.go").write_text(
+        "package main\n"
+        "import \"fmt\"\n"
+        "type User struct { ID int }\n"
+        "func (u User) Name() string { fmt.Println(u.ID); return \"\" }\n"
+        "func helper() { fmt.Println(1) }\n",
+        encoding="utf-8",
+    )
+    (source_root / "lib.c").write_text(
+        "#include <stdio.h>\n"
+        "struct User { int id; };\n"
+        "void helper(void) { printf(\"%d\", 1); }\n",
+        encoding="utf-8",
+    )
+    (source_root / "lib.cpp").write_text(
+        "#include <string>\n"
+        "namespace app {\n"
+        "class User { public: std::string name(); };\n"
+        "std::string User::name() { return std::string(); }\n"
+        "void helper() { User u; u.name(); }\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    (source_root / "solver.f90").write_text(
+        "module math_mod\n"
+        "use iso_fortran_env\n"
+        "contains\n"
+        "subroutine greet()\n"
+        "call print_hello()\n"
+        "end subroutine greet\n"
+        "end module math_mod\n",
+        encoding="utf-8",
+    )
+
+    materializer = GraphMaterializer(
+        source_root,
+        db_path=":memory:",
+        manifest_path=tmp_path / "manifest.json",
+        include_fts=False,
+    )
+    result = materializer.materialize(mode="full")
+
+    assert result.rebuilt == 5
+    assert not result.diagnostics
+    assert _labels(materializer, "File") == {"lib.c", "lib.cpp", "lib.rs", "main.go", "solver.f90"}
+    assert {"User", "math_mod", "app"} <= (_labels(materializer, "Class") | _labels(materializer, "Module"))
+    assert {"helper", "greet"} <= _labels(materializer, "Function")
+    assert {"new", "Name", "name"} <= _labels(materializer, "Method")
+    assert {"std::fmt", "fmt", "stdio.h", "string", "iso_fortran_env"} <= _labels(materializer, "ImportDeclaration")
+    assert {"User::new", "fmt.Println", "printf", "u.name", "print_hello"} <= _labels(materializer, "CallExpression")
+
+
 def test_full_materialization_handles_local_imports_inside_methods(tmp_path: Path) -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")

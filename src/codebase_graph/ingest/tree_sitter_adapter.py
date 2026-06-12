@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -247,13 +248,14 @@ def parser_for_profile(path_or_language: str | Path) -> TreeSitterProfiledParser
 def _mark_captures(
     node: NormalizedSyntaxNode,
     profile: LanguageProfile,
+    ancestors: tuple[str, ...] = (),
 ) -> tuple[NormalizedSyntaxNode, list[CaptureRecord]]:
     captures: list[CaptureRecord] = []
-    child_pairs = [_mark_captures(child, profile) for child in node.children]
+    child_pairs = [_mark_captures(child, profile, (*ancestors, node.node_type)) for child in node.children]
     children = tuple(child for child, _ in child_pairs)
     for _, child_captures in child_pairs:
         captures.extend(child_captures)
-    mapping = _mapping_for_node_type(node.node_type, profile)
+    mapping = _mapping_for_node(node, profile, ancestors)
     capture_name = mapping.capture_name if mapping is not None else node.capture_name
     marked = NormalizedSyntaxNode(
         node_type=node.node_type,
@@ -271,23 +273,219 @@ def _mark_captures(
     return marked, captures
 
 
-def _mapping_for_node_type(node_type: str, profile: LanguageProfile) -> CaptureMapping | None:
-    for mapping in profile.capture_mappings:
-        if node_type in mapping.parser_node_types:
+def _mapping_for_node(
+    node: NormalizedSyntaxNode,
+    profile: LanguageProfile,
+    ancestors: tuple[str, ...],
+) -> CaptureMapping | None:
+    candidates = [mapping for mapping in profile.capture_mappings if node.node_type in mapping.parser_node_types]
+    for mapping in candidates:
+        if mapping.context_rule and _context_rule_matches(mapping.context_rule, node, ancestors):
+            return mapping
+    for mapping in candidates:
+        if not mapping.context_rule:
             return mapping
     return None
 
 
 def _tree_sitter_fields(raw_node: Any, source_bytes: bytes) -> dict[str, Any]:
     fields: dict[str, Any] = {}
+    field_types: dict[str, str] = {}
+    field_descendant_types: dict[str, tuple[str, ...]] = {}
     child_by_field_name = getattr(raw_node, "child_by_field_name", None)
-    if child_by_field_name is None:
-        return fields
-    for field_name in ("name", "module", "path", "function", "type", "return_type"):
-        child = child_by_field_name(field_name)
-        if child is not None:
-            fields[field_name] = _node_text(child, source_bytes)
+    if child_by_field_name is not None:
+        for field_name in ("name", "module", "path", "function", "type", "return_type", "declarator"):
+            child = child_by_field_name(field_name)
+            if child is None:
+                continue
+            field_types[field_name] = str(getattr(child, "type", ""))
+            field_descendant_types[field_name] = tuple(sorted(_node_types(child)))
+            if field_name != "declarator":
+                fields[field_name] = _clean_label(_node_text(child, source_bytes))
+        _augment_field_metadata(raw_node, source_bytes, fields, field_types, field_descendant_types)
+    if field_types:
+        fields["_field_types"] = field_types
+    if field_descendant_types:
+        fields["_field_descendant_types"] = {
+            name: list(types)
+            for name, types in field_descendant_types.items()
+        }
     return fields
+
+
+def _augment_field_metadata(
+    raw_node: Any,
+    source_bytes: bytes,
+    fields: dict[str, Any],
+    field_types: dict[str, str],
+    field_descendant_types: dict[str, tuple[str, ...]],
+) -> None:
+    node_type = str(getattr(raw_node, "type", ""))
+    if "name" not in fields:
+        name = _derived_name(raw_node, source_bytes)
+        if name:
+            fields["name"] = name
+    if node_type in {"use_declaration", "import_declaration", "preproc_include", "use_statement"}:
+        module = _import_module(raw_node, source_bytes)
+        if module:
+            fields["module"] = module
+    if node_type == "subroutine_call" and "function" not in fields:
+        function = _first_descendant_text(raw_node, source_bytes, {"identifier", "name"})
+        if function:
+            fields["function"] = function
+    if node_type == "type_declaration":
+        type_spec = _first_descendant(raw_node, {"type_spec"})
+        type_child = type_spec.child_by_field_name("type") if type_spec is not None else None
+        if type_child is not None:
+            field_types["type"] = str(getattr(type_child, "type", ""))
+            field_descendant_types["type"] = tuple(sorted(_node_types(type_child)))
+
+
+def _derived_name(raw_node: Any, source_bytes: bytes) -> str:
+    node_type = str(getattr(raw_node, "type", ""))
+    if node_type in {"function_definition", "function_declaration", "field_declaration"}:
+        declarator = raw_node.child_by_field_name("declarator")
+        return _declarator_name(declarator, source_bytes)
+    if node_type == "function_declarator":
+        return _declarator_name(raw_node, source_bytes)
+    if node_type == "type_declaration":
+        type_spec = _first_descendant(raw_node, {"type_spec"})
+        if type_spec is not None:
+            name = type_spec.child_by_field_name("name")
+            if name is not None:
+                return _clean_label(_node_text(name, source_bytes))
+    if node_type in {"module", "subroutine", "function"}:
+        statement_type = {
+            "module": "module_statement",
+            "subroutine": "subroutine_statement",
+            "function": "function_statement",
+        }[node_type]
+        statement = _first_descendant(raw_node, {statement_type})
+        if statement is not None:
+            name = statement.child_by_field_name("name") or _first_descendant(statement, {"name"})
+            if name is not None:
+                return _clean_label(_node_text(name, source_bytes))
+    if node_type == "package_clause":
+        return _first_descendant_text(raw_node, source_bytes, {"package_identifier", "identifier"})
+    return ""
+
+
+def _declarator_name(raw_node: Any | None, source_bytes: bytes) -> str:
+    if raw_node is None:
+        return ""
+    child_by_field_name = getattr(raw_node, "child_by_field_name", None)
+    if child_by_field_name is not None:
+        for field_name in ("name", "declarator"):
+            child = child_by_field_name(field_name)
+            label = _declarator_name(child, source_bytes) if field_name == "declarator" else _node_text(child, source_bytes)
+            if label:
+                return _clean_label(label)
+    if getattr(raw_node, "type", "") in {
+        "identifier",
+        "field_identifier",
+        "type_identifier",
+        "qualified_identifier",
+        "namespace_identifier",
+    }:
+        return _clean_label(_node_text(raw_node, source_bytes))
+    for child in getattr(raw_node, "named_children", ()) or ():
+        label = _declarator_name(child, source_bytes)
+        if label:
+            return label
+    return ""
+
+
+def _import_module(raw_node: Any, source_bytes: bytes) -> str:
+    node_type = str(getattr(raw_node, "type", ""))
+    if node_type == "preproc_include":
+        path = raw_node.child_by_field_name("path")
+        return _strip_import_delimiters(_node_text(path, source_bytes)) if path is not None else ""
+    if node_type == "use_declaration":
+        for child in getattr(raw_node, "named_children", ()) or ():
+            return _clean_label(_node_text(child, source_bytes))
+    if node_type == "import_declaration":
+        for candidate_type in (
+            "interpreted_string_literal_content",
+            "raw_string_literal_content",
+            "interpreted_string_literal",
+            "raw_string_literal",
+            "string_literal",
+        ):
+            label = _first_descendant_text(raw_node, source_bytes, {candidate_type})
+            if label:
+                return _strip_import_delimiters(label)
+    if node_type == "use_statement":
+        return _first_descendant_text(raw_node, source_bytes, {"module_name", "name"})
+    return ""
+
+
+def _context_rule_matches(rule: str, node: NormalizedSyntaxNode, ancestors: tuple[str, ...]) -> bool:
+    normalized = rule.lower().strip()
+    if normalized.startswith("inside "):
+        return any(_context_name_matches(ancestor, normalized.removeprefix("inside ")) for ancestor in ancestors)
+    if normalized.startswith("type is "):
+        return _field_type_matches(node, "type", normalized.removeprefix("type is "))
+    if normalized == "qualified declarator":
+        return _field_descendant_has(node, "declarator", "qualified_identifier")
+    if normalized == "function declarator":
+        return _field_type_matches(node, "declarator", "function_declarator") or _field_descendant_has(
+            node,
+            "declarator",
+            "function_declarator",
+        )
+    return False
+
+
+def _context_name_matches(node_type: str, expected: str) -> bool:
+    aliases = {
+        "impl": {"impl_item"},
+        "class": {"class_specifier", "struct_specifier"},
+    }
+    expected_types = aliases.get(expected, {expected})
+    return node_type in expected_types
+
+
+def _field_type_matches(node: NormalizedSyntaxNode, field_name: str, expected_type: str) -> bool:
+    field_types = node.fields.get("_field_types", {})
+    return isinstance(field_types, dict) and field_types.get(field_name) == expected_type
+
+
+def _field_descendant_has(node: NormalizedSyntaxNode, field_name: str, expected_type: str) -> bool:
+    descendants = node.fields.get("_field_descendant_types", {})
+    if not isinstance(descendants, dict):
+        return False
+    values = descendants.get(field_name, ())
+    return expected_type in values
+
+
+def _node_types(raw_node: Any) -> set[str]:
+    types = {str(getattr(raw_node, "type", ""))}
+    for child in getattr(raw_node, "named_children", ()) or ():
+        types.update(_node_types(child))
+    return {item for item in types if item}
+
+
+def _first_descendant(raw_node: Any, node_types: set[str]) -> Any | None:
+    for child in getattr(raw_node, "named_children", ()) or ():
+        if getattr(child, "type", "") in node_types:
+            return child
+        found = _first_descendant(child, node_types)
+        if found is not None:
+            return found
+    return None
+
+
+def _first_descendant_text(raw_node: Any, source_bytes: bytes, node_types: Iterable[str]) -> str:
+    descendant = _first_descendant(raw_node, set(node_types))
+    return _clean_label(_node_text(descendant, source_bytes)) if descendant is not None else ""
+
+
+def _strip_import_delimiters(value: str) -> str:
+    return value.strip().strip('"').strip("'").strip("<>").strip()
+
+
+def _clean_label(value: str) -> str:
+    return value.strip().replace("\n", " ")
 
 
 def _node_text(raw_node: Any, source_bytes: bytes) -> str:
