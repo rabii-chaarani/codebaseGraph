@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.4...v0.2.5) (2026-06-12)
+
+
+### Bug Fixes
+
+* improved codebase context output ([#17](https://github.com/rabii-chaarani/codebaseGraph/issues/17)) ([54cd8ee](https://github.com/rabii-chaarani/codebaseGraph/commit/54cd8eee0d2dc1c41fde6c64a2667c53cff9d817))
+
 ## [0.2.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.2.3...v0.2.4) (2026-06-10)
 
 
