@@ -74,6 +74,7 @@ def serialize_parseable_search_block(payload: Mapping[str, Any]) -> str:
             context_summary = _meaningful_summary(context)
             if context_summary:
                 context_parts.append(f"summary={_format_value(context_summary)}")
+            _append_context_extras(context_parts, context)
             lines.append(" ".join(context_parts))
         previous_line_was_file = False
     return "\n".join(lines) + "\n"
@@ -131,6 +132,7 @@ def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
             context_summary = _meaningful_summary(context)
             if context_summary:
                 context_parts.append(f"summary={_format_value(context_summary)}")
+            _append_context_extras(context_parts, context)
             lines.append(" ".join(context_parts))
     return "\n".join(lines) + "\n"
 
@@ -168,6 +170,7 @@ def serialize_context_block(payload: Mapping[str, Any]) -> str:
         context_summary = _meaningful_summary(context)
         if context_summary:
             context_parts.append(f"summary={_format_value(context_summary)}")
+        _append_context_extras(context_parts, context)
         lines.append(" ".join(context_parts))
     return "\n".join(lines) + "\n"
 
@@ -239,6 +242,12 @@ def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             context_summary = _meaningful_summary(context)
             if context_summary:
                 context_record["summary"] = context_summary
+            evidence_path = _compact_evidence_path(context)
+            if evidence_path:
+                context_record["evidence_path"] = evidence_path
+            snippet = _compact_snippet(context)
+            if snippet:
+                context_record["snippet"] = snippet
             result_record["context"].append(context_record)
         records.append(result_record)
     return {"results": records}
@@ -300,6 +309,18 @@ def parse_search_block(text: str) -> dict[str, Any]:
             }
             if fields.get("summary"):
                 context_record["summary"] = fields["summary"]
+            if fields.get("chain"):
+                context_record["evidence_path"] = {"chain": fields["chain"]}
+            if fields.get("snippet"):
+                context_record["snippet"] = {
+                    "path": fields.get("snippet_path", fields.get("path", current_path)),
+                    "span": _parse_span(fields.get("snippet_span", "")),
+                    "text": fields["snippet"].replace("\\n", "\n"),
+                }
+                if fields.get("redactions"):
+                    context_record["snippet"]["redactions"] = [
+                        item for item in fields["redactions"].split(",") if item
+                    ]
             current_result["context"].append(context_record)
             continue
         raise ValueError(f"Unknown block line: {raw_line}")
@@ -357,6 +378,46 @@ def _format_value(value: str) -> str:
     if value and SIMPLE_VALUE_RE.match(value):
         return value
     return json.dumps(value, ensure_ascii=True)
+
+
+def _append_context_extras(parts: list[str], context: Mapping[str, Any]) -> None:
+    """Append additive context details to a block-format context row."""
+    evidence_path = _compact_evidence_path(context)
+    if evidence_path:
+        parts.append(f"chain={_format_value(str(evidence_path['chain']))}")
+    snippet = _compact_snippet(context)
+    if snippet:
+        parts.append(f"snippet_path={_format_value(str(snippet.get('path', '')))}")
+        parts.append(f"snippet_span={_format_span(_span(snippet.get('span', {})))}")
+        parts.append(f"snippet={_format_value(str(snippet.get('text', '')))}")
+        redactions = snippet.get("redactions", [])
+        if redactions:
+            parts.append(f"redactions={_format_value(','.join(str(item) for item in redactions))}")
+
+
+def _compact_evidence_path(record: Mapping[str, Any]) -> dict[str, str]:
+    """Return the parseable subset of evidence-path output."""
+    evidence_path = record.get("evidence_path")
+    if not isinstance(evidence_path, Mapping):
+        return {}
+    chain = str(evidence_path.get("chain", ""))
+    return {"chain": chain} if chain else {}
+
+
+def _compact_snippet(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the parseable subset of optional source-snippet output."""
+    snippet = record.get("snippet")
+    if not isinstance(snippet, Mapping):
+        return {}
+    text = str(snippet.get("text", ""))
+    if not text:
+        return {}
+    return {
+        "path": str(snippet.get("path", "")),
+        "span": _span(snippet.get("span", {})),
+        "text": text,
+        "redactions": list(snippet.get("redactions", [])) if isinstance(snippet.get("redactions"), list) else [],
+    }
 
 
 def _parse_value(value: str) -> str:

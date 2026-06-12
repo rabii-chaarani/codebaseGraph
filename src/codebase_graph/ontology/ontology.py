@@ -758,6 +758,21 @@ CONTEXT_PROFILES = {
         "relations": ["Defines", "References", "Calls", "RoutesTo", "ExecutesQuery", "UsesSecret", "DependsOn"],
         "max_depth": 3,
     },
+    "graph_impact": {
+        "description": "Graph-neighborhood impact context for callers, references, dependencies, runtime surfaces, and evidence.",
+        "relations": [
+            "Defines",
+            "References",
+            "Calls",
+            "RoutesTo",
+            "ExecutesQuery",
+            "UsesSecret",
+            "DependsOn",
+            "Documents",
+            "EvidencedBy",
+        ],
+        "max_depth": 3,
+    },
 }
 
 SYMBOL_LOOKUP_DEFINITION_TYPES = (
@@ -894,7 +909,7 @@ def get_relation_type(name: str) -> RelationTypeSpec:
     raise KeyError(name)
 
 
-def schema_payload() -> dict[str, Any]:
+def schema_payload(*, context_profiles: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build payload for ontology and schema metadata.
 
     Returns:
@@ -907,6 +922,6 @@ def schema_payload() -> dict[str, Any]:
         "relation_types": [relation.as_dict() for relation in RELATION_TYPES],
         "parser_node_mappings": [mapping.as_dict() for mapping in PARSER_NODE_MAPPINGS],
         "search_indexes": list(SEARCH_INDEXES),
-        "context_profiles": CONTEXT_PROFILES,
+        "context_profiles": context_profiles or CONTEXT_PROFILES,
         "query_helpers": [helper.as_dict() for helper in QUERY_HELPERS],
     }

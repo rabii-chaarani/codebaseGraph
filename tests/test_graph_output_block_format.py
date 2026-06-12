@@ -91,6 +91,59 @@ def test_non_boilerplate_context_summaries_are_preserved() -> None:
     assert parse_search_block(block) == canonicalize_search_payload(payload)
 
 
+def test_parseable_block_preserves_evidence_chain_and_snippet_fields() -> None:
+    payload = {
+        "query": "A",
+        "profile": "callgraph",
+        "limit": 1,
+        "budget": 600,
+        "results": [
+            {
+                "id": "Function:A",
+                "type": "Function",
+                "label": "A",
+                "path": "sample.py",
+                "span": {"line_start": 1, "line_end": 3},
+                "rank_score": 1.0,
+                "context": [
+                    {
+                        "direction": "outgoing",
+                        "relation": "Calls",
+                        "type": "Function",
+                        "label": "B",
+                        "path": "sample.py",
+                        "span": {"line_start": 5, "line_end": 8},
+                        "evidence_path": {
+                            "chain": "Function A Calls Function B",
+                            "edges": [
+                                {
+                                    "relation": "Calls",
+                                    "direction": "outgoing",
+                                    "source_node_id": "Function:A",
+                                    "target_node_id": "Function:B",
+                                    "edge_id": "Calls:A:B",
+                                }
+                            ],
+                        },
+                        "snippet": {
+                            "path": "sample.py",
+                            "span": {"line_start": 5, "line_end": 5},
+                            "text": "def b():\n",
+                            "redactions": ["token"],
+                        },
+                    }
+                ],
+            }
+        ],
+    }
+
+    block = serialize_search_block(payload)
+
+    assert 'chain="Function A Calls Function B"' in block
+    assert 'snippet="def b():\\n"' in block
+    assert parse_search_block(block) == canonicalize_search_payload(payload)
+
+
 def test_block_format_keeps_ontology_terms_literal() -> None:
     payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     block = serialize_search_block(payload)

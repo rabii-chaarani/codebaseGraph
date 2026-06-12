@@ -267,11 +267,11 @@ def _run_legacy_search_command(parser: argparse.ArgumentParser, args: argparse.N
     )
     if args.no_refresh:
         with create_ladybug_database(materializer.db_path, include_fts=True, read_only=True) as store:
-            payload = SearchService(store).search(request)
+            payload = SearchService(store, repo_root=Path(args.source_root)).search(request)
     else:
         try:
             materializer.materialize(mode="changed")
-            payload = SearchService(materializer.store).search(request)
+            payload = SearchService(materializer.store, repo_root=Path(args.source_root)).search(request)
         finally:
             materializer.close()
     _print_payload(payload.as_dict(detail=args.detail), args)
@@ -296,6 +296,8 @@ def _search_request_from_args(args: argparse.Namespace) -> SearchRequest:
         max_depth=args.max_depth,
         context_limit=args.context_limit,
         detail=args.detail,
+        include_snippets=args.include_snippets,
+        snippet_context_lines=args.snippet_context_lines,
     )
     request.validate()
     return request

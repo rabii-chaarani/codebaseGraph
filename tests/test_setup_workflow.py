@@ -313,6 +313,46 @@ def test_runtime_config_uses_repo_root_from_setup_config(tmp_path: Path) -> None
     assert runtime.manifest_path == paths.manifest_path
 
 
+def test_runtime_config_loads_custom_context_profiles(tmp_path: Path) -> None:
+    repo_root = _fresh_repo(tmp_path)
+    paths = derive_setup_paths(repo_root)
+    payload = build_setup_config(paths, mcp_command=["codebase-graph", "mcp", "serve", "--config", paths.config_path.as_posix()])
+    payload["context_profiles"] = {
+        "repo_flow": {
+            "description": "Repository-specific flow profile.",
+            "relations": ["Defines", "Calls"],
+            "max_depth": 2,
+        }
+    }
+    write_setup_config(paths.config_path, payload)
+    paths.db_path.write_text("", encoding="utf-8")
+    paths.manifest_path.write_text("{}", encoding="utf-8")
+
+    runtime = runtime_config(repo_root=repo_root, config_path=paths.config_path, db_path=None, manifest_path=None)
+
+    assert runtime.context_profiles["repo_flow"]["source"] == "repo"
+    assert runtime.context_profiles["repo_flow"]["relations"] == ["Defines", "Calls"]
+    assert runtime.context_profiles["graph_impact"]["source"] == "builtin"
+
+
+def test_setup_config_rejects_invalid_custom_context_profile(tmp_path: Path) -> None:
+    repo_root = _fresh_repo(tmp_path)
+    paths = derive_setup_paths(repo_root)
+    payload = build_setup_config(paths, mcp_command=["codebase-graph", "mcp", "serve", "--config", paths.config_path.as_posix()])
+    payload["context_profiles"] = {
+        "bad_profile": {
+            "description": "Invalid profile.",
+            "relations": ["MissingRelation"],
+            "max_depth": 1,
+        }
+    }
+    paths.config_path.parent.mkdir(parents=True)
+    paths.config_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unknown relation"):
+        load_setup_config(paths.config_path)
+
+
 def test_setup_config_rejects_database_path_outside_state_dir(tmp_path: Path) -> None:
     repo_root = _fresh_repo(tmp_path)
     paths = derive_setup_paths(repo_root)

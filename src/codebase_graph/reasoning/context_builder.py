@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
+import re
 from typing import Any
 
 from codebase_graph.db import graph_query_adapter
@@ -9,6 +11,108 @@ from codebase_graph.ontology import CONTEXT_PROFILES, RELATION_TYPES
 
 DEFAULT_CONTEXT_LIMIT = 3
 DEFAULT_CONTEXT_BUDGET = 600
+TOKEN_RE = re.compile(r"[A-Za-z0-9_]+|[^\sA-Za-z0-9_]")
+SECRET_LITERAL_RE = re.compile(r"\b(?:sk-[A-Za-z0-9_\-]{10,}|ghp_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})\b")
+SECRET_ASSIGNMENT_RE = re.compile(
+    r"(?i)\b([A-Z0-9_]*(?:API[_-]?KEY|TOKEN|SECRET|PASSWORD|PASSWD|PWD)[A-Z0-9_]*)\b(\s*[:=]\s*)([^\s#]+)"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPathNode:
+    """Identify one node participating in an evidence path."""
+    id: str
+    type: str
+    label: str
+
+    def as_dict(self) -> dict[str, str]:
+        """Serialize this path node for structured output."""
+        return {"id": self.id, "type": self.type, "label": self.label}
+
+
+@dataclass(frozen=True, slots=True)
+class ContextEdge:
+    """Describe one relation hop in a compact context evidence path."""
+    relation: str
+    direction: str
+    source_node_id: str
+    target_node_id: str
+    edge_id: str = ""
+    kind: str = ""
+    confidence: float | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+        """Serialize relation metadata without removing the existing context row shape."""
+        payload: dict[str, Any] = {
+            "relation": self.relation,
+            "direction": self.direction,
+            "source_node_id": self.source_node_id,
+            "target_node_id": self.target_node_id,
+        }
+        if self.edge_id:
+            payload["edge_id"] = self.edge_id
+        if self.kind:
+            payload["kind"] = self.kind
+        if self.confidence is not None:
+            payload["confidence"] = self.confidence
+        if detail != "slim" and self.metadata:
+            payload["metadata"] = dict(self.metadata)
+        return payload
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPath:
+    """Represent the relation chain that explains why a context node was returned."""
+    nodes: tuple[ContextPathNode, ...] = ()
+    edges: tuple[ContextEdge, ...] = ()
+
+    def extend(self, edge: ContextEdge, node: ContextPathNode) -> ContextPath:
+        """Return a new evidence path with one additional relation hop."""
+        return ContextPath(nodes=(*self.nodes, node), edges=(*self.edges, edge))
+
+    @property
+    def relation_chain(self) -> tuple[str, ...]:
+        """Return relation/direction identifiers used for path-level deduplication."""
+        return tuple(f"{edge.direction}:{edge.relation}" for edge in self.edges)
+
+    @property
+    def chain(self) -> str:
+        """Return a concise human-readable evidence chain."""
+        if not self.nodes:
+            return ""
+        parts = [_path_node_label(self.nodes[0])]
+        for edge, node in zip(self.edges, self.nodes[1:], strict=False):
+            parts.extend((edge.relation, _path_node_label(node)))
+        return " ".join(part for part in parts if part)
+
+    def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+        """Serialize the evidence path for CLI and MCP payloads."""
+        payload: dict[str, Any] = {"chain": self.chain}
+        if detail != "slim":
+            payload["nodes"] = [node.as_dict() for node in self.nodes]
+        payload["edges"] = [edge.as_dict(detail=detail) for edge in self.edges]
+        return payload
+
+
+@dataclass(frozen=True, slots=True)
+class SourceSnippet:
+    """Carry optional source evidence attached to a context node."""
+    path: str
+    span: dict[str, int]
+    text: str
+    redactions: tuple[str, ...] = ()
+
+    def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+        """Serialize the snippet after redaction."""
+        payload: dict[str, Any] = {
+            "path": self.path,
+            "span": dict(self.span),
+            "text": self.text,
+        }
+        if self.redactions:
+            payload["redactions"] = list(self.redactions)
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +130,8 @@ class ContextNode:
     span: dict[str, int] = field(default_factory=dict)
     summary: str = ""
     id: str = field(default="", repr=False)
+    evidence_path: ContextPath | None = None
+    snippet: SourceSnippet | None = None
 
     def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
         """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
@@ -55,8 +161,12 @@ class ContextNode:
                 payload["span"] = dict(self.span)
             if self.summary and self.summary != self.label:
                 payload["summary"] = self.summary
+            if self.evidence_path is not None:
+                payload["evidence_path"] = self.evidence_path.as_dict(detail=detail)
+            if self.snippet is not None:
+                payload["snippet"] = self.snippet.as_dict(detail=detail)
             return payload
-        return {
+        payload = {
             "relation": self.relation,
             "direction": self.direction,
             "type": self.type,
@@ -65,11 +175,22 @@ class ContextNode:
             "span": dict(self.span),
             "summary": self.summary,
         }
+        if self.evidence_path is not None:
+            payload["evidence_path"] = self.evidence_path.as_dict(detail=detail)
+        if self.snippet is not None:
+            payload["snippet"] = self.snippet.as_dict(detail=detail)
+        return payload
 
 
 class CompactContextBuilder:
     """Traverse graph relations to produce compact context for agents."""
-    def __init__(self, store: Any) -> None:
+    def __init__(
+        self,
+        store: Any,
+        *,
+        repo_root: str | Path | None = None,
+        profile_catalog: dict[str, Any] | None = None,
+    ) -> None:
         """Initialize compact context builder with the collaborators and state it owns.
 
         Args:
@@ -78,6 +199,8 @@ class CompactContextBuilder:
         self.store = store
         self.query = graph_query_adapter(store)
         self._relation_names = {relation_type.name for relation_type in RELATION_TYPES}
+        self.repo_root = Path(repo_root).resolve() if repo_root is not None else None
+        self.profile_catalog = profile_catalog or CONTEXT_PROFILES
 
     def build(
         self,
@@ -88,6 +211,9 @@ class CompactContextBuilder:
         limit: int = DEFAULT_CONTEXT_LIMIT,
         budget: int = DEFAULT_CONTEXT_BUDGET,
         max_depth: int | None = None,
+        root_label: str = "",
+        include_snippets: bool = False,
+        snippet_context_lines: int = 0,
     ) -> list[ContextNode]:
         """Build a budgeted graph-neighborhood explanation for a selected node.
 
@@ -119,23 +245,25 @@ class CompactContextBuilder:
             return []
 
         context: list[ContextNode] = []
-        seen = {node_id}
-        frontier = [(node_id, node_type, 0)]
+        seen = {_path_dedupe_key(node_id, ())}
+        root_path = ContextPath(nodes=(ContextPathNode(node_id, node_type, root_label or node_id),))
+        frontier = [(node_id, node_type, 0, root_path)]
         used_budget = 0
 
         while frontier and len(context) < limit:
-            current_id, current_type, depth = frontier.pop(0)
+            current_id, current_type, depth, current_path = frontier.pop(0)
             if depth >= depth_limit:
                 continue
             for relation in relations:
-                for candidate in self._neighbors(current_id, current_type, relation, limit):
+                for candidate in self._neighbors(current_id, current_type, relation, limit, current_path):
                     if candidate.type == "" or candidate.label == "":
                         continue
-                    candidate_key = f"{candidate.type}:{candidate.label}:{candidate.path}:{candidate.span}"
                     node_key = _node_key(candidate)
-                    dedupe_key = node_key or candidate_key
+                    dedupe_key = _context_dedupe_key(candidate)
                     if dedupe_key in seen:
                         continue
+                    if include_snippets:
+                        candidate = _with_snippet(candidate, self.repo_root, context_lines=snippet_context_lines)
                     compact_candidate, item_cost = _fit_to_budget(candidate, budget - used_budget)
                     if compact_candidate is None:
                         return context
@@ -143,7 +271,7 @@ class CompactContextBuilder:
                     used_budget += item_cost
                     seen.add(dedupe_key)
                     if node_key:
-                        frontier.append((node_key, candidate.type, depth + 1))
+                        frontier.append((node_key, candidate.type, depth + 1, candidate.evidence_path or current_path))
                     if len(context) >= limit:
                         return context
         return context
@@ -161,12 +289,19 @@ class CompactContextBuilder:
         Raises:
             ValueError: Raised when validation or runtime preconditions fail.
         """
-        if profile not in CONTEXT_PROFILES:
-            valid = ", ".join(sorted(CONTEXT_PROFILES))
+        if profile not in self.profile_catalog:
+            valid = ", ".join(sorted(self.profile_catalog))
             raise ValueError(f"Unknown context profile: {profile}. Valid profiles: {valid}")
-        return dict(CONTEXT_PROFILES[profile])
+        return dict(self.profile_catalog[profile])
 
-    def _neighbors(self, node_id: str, node_type: str, relation: str, limit: int) -> list[ContextNode]:
+    def _neighbors(
+        self,
+        node_id: str,
+        node_type: str,
+        relation: str,
+        limit: int,
+        current_path: ContextPath,
+    ) -> list[ContextNode]:
         """Manage graph context and architecture-query reasoning state.
 
         Args:
@@ -179,8 +314,8 @@ class CompactContextBuilder:
             Ordered results returned to the graph context and architecture-query reasoning
             caller.
         """
-        outgoing = self._query_neighbors(node_id, node_type, relation, "outgoing", limit)
-        incoming = self._query_neighbors(node_id, node_type, relation, "incoming", limit)
+        outgoing = self._query_neighbors(node_id, node_type, relation, "outgoing", limit, current_path)
+        incoming = self._query_neighbors(node_id, node_type, relation, "incoming", limit, current_path)
         return [*outgoing, *incoming]
 
     def _query_neighbors(
@@ -190,6 +325,7 @@ class CompactContextBuilder:
         relation: str,
         direction: str,
         limit: int,
+        current_path: ContextPath,
     ) -> list[ContextNode]:
         """Build neighbors for graph context and architecture-query reasoning.
 
@@ -204,8 +340,34 @@ class CompactContextBuilder:
             Ordered results returned to the graph context and architecture-query reasoning
             caller.
         """
-        return [
-            ContextNode(
+        context: list[ContextNode] = []
+        for neighbor in self.query.neighbors(
+            node_id=node_id,
+            node_type=node_type,
+            relation=relation,
+            direction=direction,
+            limit=limit,
+        ):
+            edge = ContextEdge(
+                relation=neighbor.relation or relation,
+                direction=neighbor.direction or direction,
+                source_node_id=neighbor.source_node_id or (node_id if direction == "outgoing" else neighbor.node_id),
+                target_node_id=neighbor.target_node_id or (neighbor.node_id if direction == "outgoing" else node_id),
+                edge_id=neighbor.edge_id,
+                kind=neighbor.edge_kind,
+                confidence=neighbor.edge_confidence,
+                metadata=neighbor.edge_metadata,
+            )
+            evidence_path = current_path.extend(
+                edge,
+                ContextPathNode(
+                    neighbor.node_id,
+                    neighbor.node_type,
+                    neighbor.label or neighbor.qualified_name or neighbor.node_id,
+                ),
+            )
+            context.append(
+                ContextNode(
                 relation=relation,
                 direction=direction,
                 type=neighbor.node_type,
@@ -214,15 +376,10 @@ class CompactContextBuilder:
                 span=_span(neighbor.line_start, neighbor.line_end),
                 summary=neighbor.summary,
                 id=neighbor.node_id,
+                evidence_path=evidence_path,
             )
-            for neighbor in self.query.neighbors(
-                node_id=node_id,
-                node_type=node_type,
-                relation=relation,
-                direction=direction,
-                limit=limit,
             )
-        ]
+        return context
 
 
 def _fit_to_budget(node: ContextNode, remaining_budget: int) -> tuple[ContextNode | None, int]:
@@ -240,14 +397,37 @@ def _fit_to_budget(node: ContextNode, remaining_budget: int) -> tuple[ContextNod
     cost = _context_cost(node)
     if cost <= remaining_budget:
         return node, cost
-    fixed_cost = _context_cost(ContextNode(node.relation, node.direction, node.type, node.label, node.path, node.span, ""))
+    fixed = ContextNode(
+        node.relation,
+        node.direction,
+        node.type,
+        node.label,
+        node.path,
+        node.span,
+        "",
+        node.id,
+        node.evidence_path,
+        node.snippet,
+    )
+    fixed_cost = _context_cost(fixed)
     summary_budget = remaining_budget - fixed_cost
     if summary_budget <= 0:
         return None, 0
     # Keep the relationship identity and source location intact, then trim only
     # the summary text because it is the least structural part of the context row.
-    summary = node.summary[:summary_budget]
-    compact = ContextNode(node.relation, node.direction, node.type, node.label, node.path, node.span, summary)
+    summary = _trim_text_to_token_budget(node.summary, summary_budget)
+    compact = ContextNode(
+        node.relation,
+        node.direction,
+        node.type,
+        node.label,
+        node.path,
+        node.span,
+        summary,
+        node.id,
+        node.evidence_path,
+        node.snippet,
+    )
     return compact, _context_cost(compact)
 
 
@@ -260,18 +440,123 @@ def _context_cost(node: ContextNode) -> int:
     Returns:
         Integer count, status code, or index used by the caller.
     """
-    return sum(
-        len(str(value))
-        for value in (
-            node.relation,
-            node.direction,
-            node.type,
-            node.label,
-            node.path,
-            node.summary,
-            *node.span.values(),
-        )
+    values: list[Any] = [
+        node.relation,
+        node.direction,
+        node.type,
+        node.label,
+        node.path,
+        node.summary,
+        *node.span.values(),
+    ]
+    if node.evidence_path is not None:
+        values.append(node.evidence_path.chain)
+        for edge in node.evidence_path.edges:
+            values.extend(
+                (
+                    edge.relation,
+                    edge.direction,
+                    edge.source_node_id,
+                    edge.target_node_id,
+                    edge.edge_id,
+                    edge.kind,
+                    edge.confidence,
+                    edge.metadata,
+                )
+            )
+    if node.snippet is not None:
+        values.extend((node.snippet.path, *node.snippet.span.values(), node.snippet.text, *node.snippet.redactions))
+    return sum(estimate_token_count(str(value)) for value in values if value not in ("", None, {}, []))
+
+
+def estimate_token_count(text: str) -> int:
+    """Estimate LLM token cost without requiring a tokenizer dependency."""
+    return len(TOKEN_RE.findall(text))
+
+
+def _trim_text_to_token_budget(text: str, budget: int) -> str:
+    """Trim text to an approximate token count while preserving original spacing."""
+    if budget <= 0:
+        return ""
+    matches = list(TOKEN_RE.finditer(text))
+    if len(matches) <= budget:
+        return text
+    return text[: matches[budget - 1].end()].rstrip()
+
+
+def _with_snippet(node: ContextNode, repo_root: Path | None, *, context_lines: int) -> ContextNode:
+    """Attach an optional redacted source snippet when source bounds are available."""
+    snippet = collect_source_snippet(repo_root, node.path, node.span, context_lines=max(context_lines, 0))
+    if snippet is None:
+        return node
+    return ContextNode(
+        node.relation,
+        node.direction,
+        node.type,
+        node.label,
+        node.path,
+        node.span,
+        node.summary,
+        node.id,
+        node.evidence_path,
+        snippet,
     )
+
+
+def collect_source_snippet(
+    repo_root: str | Path | None,
+    path: str,
+    span: dict[str, int],
+    *,
+    context_lines: int = 0,
+) -> SourceSnippet | None:
+    """Collect and redact a bounded snippet from a repository-relative source path."""
+    if repo_root is None or not path or not span:
+        return None
+    root = Path(repo_root).resolve()
+    source_path = (root / path).resolve()
+    try:
+        source_path.relative_to(root)
+    except ValueError:
+        return None
+    if not source_path.is_file():
+        return None
+    start = span.get("line_start")
+    end = span.get("line_end")
+    if start is None or end is None:
+        return None
+    lines = source_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    if not lines:
+        return None
+    start_line = max(1, int(start) - context_lines)
+    end_line = min(len(lines), int(end) + context_lines)
+    if start_line > end_line:
+        return None
+    text = "".join(lines[start_line - 1 : end_line])
+    redacted, redactions = redact_source_snippet(text)
+    return SourceSnippet(
+        path=path,
+        span={"line_start": start_line, "line_end": end_line},
+        text=redacted,
+        redactions=tuple(redactions),
+    )
+
+
+def redact_source_snippet(text: str) -> tuple[str, list[str]]:
+    """Redact secret-like literals before snippets reach JSON or block output."""
+    redactions: list[str] = []
+
+    def redact_literal(match: re.Match[str]) -> str:
+        redactions.append("token")
+        return "[REDACTED]"
+
+    def redact_assignment(match: re.Match[str]) -> str:
+        redactions.append(match.group(1))
+        return f"{match.group(1)}{match.group(2)}[REDACTED]"
+
+    redacted = SECRET_LITERAL_RE.sub(redact_literal, text)
+    redacted = SECRET_ASSIGNMENT_RE.sub(redact_assignment, redacted)
+    return redacted, redactions
 
 
 def _node_key(node: ContextNode) -> str:
@@ -284,6 +569,25 @@ def _node_key(node: ContextNode) -> str:
         Formatted text returned to the caller.
     """
     return node.id
+
+
+def _context_dedupe_key(node: ContextNode) -> str:
+    """Dedupe by terminal node and relation chain."""
+    node_key = _node_key(node) or f"{node.type}:{node.label}:{node.path}:{node.span}"
+    relation_chain = node.evidence_path.relation_chain if node.evidence_path is not None else ()
+    return _path_dedupe_key(node_key, relation_chain)
+
+
+def _path_dedupe_key(node_key: str, relation_chain: tuple[str, ...]) -> str:
+    """Build a stable key for a terminal node plus relation chain."""
+    return f"{node_key}|{'/'.join(relation_chain)}"
+
+
+def _path_node_label(node: ContextPathNode) -> str:
+    """Return a concise label for a node inside an evidence chain."""
+    if node.label:
+        return f"{node.type} {node.label}"
+    return node.type
 
 
 def _span(line_start: Any, line_end: Any) -> dict[str, int]:
@@ -305,4 +609,16 @@ def _span(line_start: Any, line_end: Any) -> dict[str, int]:
     return span
 
 
-__all__ = ["CompactContextBuilder", "ContextNode", "DEFAULT_CONTEXT_BUDGET", "DEFAULT_CONTEXT_LIMIT"]
+__all__ = [
+    "CompactContextBuilder",
+    "ContextEdge",
+    "ContextNode",
+    "ContextPath",
+    "ContextPathNode",
+    "SourceSnippet",
+    "DEFAULT_CONTEXT_BUDGET",
+    "DEFAULT_CONTEXT_LIMIT",
+    "collect_source_snippet",
+    "estimate_token_count",
+    "redact_source_snippet",
+]
