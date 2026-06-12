@@ -240,7 +240,6 @@ class GraphBuilder:
         self._relation_types = set(relation_type_names())
         self._graph = CodeGraph()
         self._context = BuildContext("", "", "", repository_label, self.source_root)
-        self._syntax_nodes: dict[int, str] = {}
         self._symbols_by_name: dict[str, list[str]] = {}
         self._diagnostics: list[str] = []
         self._unresolved: list[str] = []
@@ -1122,8 +1121,8 @@ class GraphBuilder:
         syntax_id = _id("SyntaxCapture", stable_key)
         if not self.include_syntax_captures:
             return syntax_id
-        if id(node) in self._syntax_nodes:
-            return self._syntax_nodes[id(node)]
+        if syntax_id in self._graph.nodes:
+            return syntax_id
         syntax = GraphNode(
             id=syntax_id,
             table="SyntaxCapture",
@@ -1141,7 +1140,6 @@ class GraphBuilder:
             metadata={"canonical_key": stable_key, "fields": sorted(node.fields.keys())},
         )
         self._graph.add_node(syntax)
-        self._syntax_nodes[id(node)] = syntax_id
         return syntax_id
 
     def _derived_from(self, semantic_id: str, syntax_id: str) -> None:

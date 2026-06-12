@@ -1,7 +1,109 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+
+import pytest
+
 from codebase_graph.extract import CaptureRecord, CaptureTableRegistry, GraphBuilder, ParseBundle
+from codebase_graph.ingest import TreeSitterPythonParser
 from codebase_graph.ontology import PARSER_NODE_MAPPINGS
+
+
+def _walk_parser_nodes(node: object) -> Iterator[dict[str, object]]:
+    if isinstance(node, dict):
+        yield node
+        for value in node.values():
+            yield from _walk_parser_nodes(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from _walk_parser_nodes(item)
+
+
+def test_tree_sitter_parser_preserves_attribute_object_coordinates() -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    parser = TreeSitterPythonParser()
+
+    tree = parser.parse_source('registry.register_exact("x", "Y")\n')
+
+    attribute = next(
+        node
+        for node in _walk_parser_nodes(tree)
+        if node.get("type") == "attribute" and node.get("text") == "registry.register_exact"
+    )
+    value = attribute["value"]
+    assert isinstance(value, dict)
+    assert value["type"] == "identifier"
+    assert value["id"] == "registry"
+    assert value["line_start"] == 1
+    assert value["byte_start"] == 0
+    assert value["byte_end"] == len("registry")
+    assert attribute["attr"] == "register_exact"
+
+
+def test_tree_sitter_parser_preserves_parameter_annotation_coordinates() -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    parser = TreeSitterPythonParser()
+
+    tree = parser.parse_source(
+        "def f(capture_name: str, table: str | CaptureTableResolver) -> None:\n"
+        "    pass\n"
+    )
+
+    function = next(node for node in _walk_parser_nodes(tree) if node.get("type") == "function_definition")
+    args = function["args"]
+    assert isinstance(args, dict)
+    parameters = args["args"]
+    assert isinstance(parameters, list)
+    annotations = [parameter["annotation"] for parameter in parameters]
+    assert {annotation["text"] for annotation in annotations} == {"str", "str | CaptureTableResolver"}
+    assert all(annotation["line_start"] == 1 for annotation in annotations)
+    assert all(isinstance(annotation["byte_start"], int) for annotation in annotations)
+    assert all(isinstance(annotation["byte_end"], int) for annotation in annotations)
+
+
+def test_graph_builder_keeps_registry_references_spanned_and_evidenced() -> None:
+    pytest.importorskip("tree_sitter")
+    pytest.importorskip("tree_sitter_python")
+    parser = TreeSitterPythonParser()
+    source = (
+        "class CaptureTableRegistry:\n"
+        "    def register_exact(\n"
+        "        self,\n"
+        "        capture_name: str,\n"
+        "        table: str | CaptureTableResolver,\n"
+        "    ) -> None:\n"
+        "        pass\n"
+        "\n"
+        "def default_capture_table_registry() -> CaptureTableRegistry:\n"
+        "    registry = CaptureTableRegistry()\n"
+        '    registry.register_exact("x", "Y")\n'
+        "    return registry\n"
+    )
+    tree = parser.parse_source(source)
+
+    graph = GraphBuilder(default_language="python").build(tree, source_path="sample.py")
+
+    registry_references = [node for node in graph.nodes_by_type("Reference") if node.label == "registry"]
+    assert registry_references
+    assert all(node.line_start is not None for node in registry_references)
+    assert all(node.byte_start is not None for node in registry_references)
+
+    type_annotations = graph.nodes_by_type("TypeAnnotation")
+    assert type_annotations
+    assert all(node.line_start is not None for node in type_annotations)
+    assert all(node.byte_start is not None for node in type_annotations)
+
+    derived_edges = graph.edges_by_type("DerivedFrom")
+    checked_nodes = [*registry_references, *type_annotations]
+    for semantic in checked_nodes:
+        syntax_ids = [edge.target_id for edge in derived_edges if edge.source_id == semantic.id]
+        assert len(syntax_ids) == 1
+        syntax = graph.nodes[syntax_ids[0]]
+        assert syntax.tree_sitter_node_type == semantic.tree_sitter_node_type
+        assert syntax.line_start == semantic.line_start
+        assert syntax.byte_start == semantic.byte_start
 
 
 def test_graph_builder_maps_python_ast_shaped_tree_to_ontology() -> None:
