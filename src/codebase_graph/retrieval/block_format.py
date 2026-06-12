@@ -120,19 +120,13 @@ def serialize_agent_search_block(payload: Mapping[str, Any]) -> str:
                 continue
             context_path = str(context.get("path", ""))
             context_span = _span(context.get("span", {}))
-            context_parts = [
-                f"  {context.get('direction', '')}",
-                str(context.get("relation", "")),
-                str(context.get("type", "")),
-                _format_value(str(context.get("label", ""))),
-                _format_span(context_span),
-            ]
+            context_parts = _agent_context_parts(context, context_span)
             if context_path and context_path != current_path:
                 context_parts.append(f"path={_format_value(context_path)}")
             context_summary = _meaningful_summary(context)
             if context_summary:
                 context_parts.append(f"summary={_format_value(context_summary)}")
-            _append_context_extras(context_parts, context)
+            _append_context_extras(context_parts, context, include_chain=False)
             lines.append(" ".join(context_parts))
     return "\n".join(lines) + "\n"
 
@@ -160,17 +154,11 @@ def serialize_context_block(payload: Mapping[str, Any]) -> str:
                 lines.append("")
             lines.append(f"file path {_format_value(context_path)}")
             current_path = context_path
-        context_parts = [
-            f"  {context.get('direction', '')}",
-            str(context.get("relation", "")),
-            str(context.get("type", "")),
-            _format_value(str(context.get("label", ""))),
-            _format_span(_span(context.get("span", {}))),
-        ]
+        context_parts = _agent_context_parts(context, _span(context.get("span", {})))
         context_summary = _meaningful_summary(context)
         if context_summary:
             context_parts.append(f"summary={_format_value(context_summary)}")
-        _append_context_extras(context_parts, context)
+        _append_context_extras(context_parts, context, include_chain=False)
         lines.append(" ".join(context_parts))
     return "\n".join(lines) + "\n"
 
@@ -380,10 +368,24 @@ def _format_value(value: str) -> str:
     return json.dumps(value, ensure_ascii=True)
 
 
-def _append_context_extras(parts: list[str], context: Mapping[str, Any]) -> None:
-    """Append additive context details to a block-format context row."""
+def _agent_context_parts(context: Mapping[str, Any], span: Mapping[str, int]) -> list[str]:
+    """Return context row fields for agent-facing block output."""
     evidence_path = _compact_evidence_path(context)
     if evidence_path:
+        return [f"  chain={_format_value(str(evidence_path['chain']))}", _format_span(span)]
+    return [
+        f"  {context.get('direction', '')}",
+        str(context.get("relation", "")),
+        str(context.get("type", "")),
+        _format_value(str(context.get("label", ""))),
+        _format_span(span),
+    ]
+
+
+def _append_context_extras(parts: list[str], context: Mapping[str, Any], *, include_chain: bool = True) -> None:
+    """Append additive context details to a block-format context row."""
+    evidence_path = _compact_evidence_path(context)
+    if include_chain and evidence_path:
         parts.append(f"chain={_format_value(str(evidence_path['chain']))}")
     snippet = _compact_snippet(context)
     if snippet:

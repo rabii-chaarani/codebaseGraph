@@ -144,6 +144,31 @@ def test_parseable_block_preserves_evidence_chain_and_snippet_fields() -> None:
     assert parse_search_block(block) == canonicalize_search_payload(payload)
 
 
+def test_agent_block_uses_evidence_chain_as_primary_context_text() -> None:
+    payload = _evidence_chain_payload()
+
+    block = serialize_agent_search_block(payload)
+
+    assert 'chain="Function A Calls Function B" L5-L8' in block
+    assert "outgoing Calls Function B L5-L8" not in block
+
+
+def test_context_block_uses_evidence_chain_as_primary_context_text() -> None:
+    payload = _evidence_chain_payload()["results"][0]
+
+    block = serialize_context_block(
+        {
+            "node_id": payload["id"],
+            "node_type": payload["type"],
+            "profile": "callgraph",
+            "context": payload["context"],
+        }
+    )
+
+    assert 'chain="Function A Calls Function B" L5-L8' in block
+    assert "outgoing Calls Function B L5-L8" not in block
+
+
 def test_block_format_keeps_ontology_terms_literal() -> None:
     payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     block = serialize_search_block(payload)
@@ -210,3 +235,50 @@ def _load_benchmark_script() -> Any:
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _evidence_chain_payload() -> dict[str, Any]:
+    return {
+        "query": "A",
+        "profile": "callgraph",
+        "limit": 1,
+        "budget": 600,
+        "results": [
+            {
+                "id": "Function:A",
+                "type": "Function",
+                "label": "A",
+                "path": "sample.py",
+                "span": {"line_start": 1, "line_end": 3},
+                "rank_score": 1.0,
+                "context": [
+                    {
+                        "direction": "outgoing",
+                        "relation": "Calls",
+                        "type": "Function",
+                        "label": "B",
+                        "path": "sample.py",
+                        "span": {"line_start": 5, "line_end": 8},
+                        "evidence_path": {
+                            "chain": "Function A Calls Function B",
+                            "edges": [
+                                {
+                                    "relation": "Calls",
+                                    "direction": "outgoing",
+                                    "source_node_id": "Function:A",
+                                    "target_node_id": "Function:B",
+                                    "edge_id": "Calls:A:B",
+                                }
+                            ],
+                        },
+                        "snippet": {
+                            "path": "sample.py",
+                            "span": {"line_start": 5, "line_end": 5},
+                            "text": "def b():\n",
+                            "redactions": ["token"],
+                        },
+                    }
+                ],
+            }
+        ],
+    }
