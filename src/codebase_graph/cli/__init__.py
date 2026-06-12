@@ -19,7 +19,6 @@ from codebase_graph.mcp.runtime import runtime_config
 from codebase_graph.mcp.tools import handle_tool_call
 from codebase_graph.retrieval import SearchRequest, SearchService, serialize_graph_block
 from codebase_graph.setup import SetupError, SetupOptions, run_setup
-from codebase_graph.setup.clients import supported_client_ids
 from codebase_graph.setup.installer import McpInstallOptions, install_mcp_clients, supported_install_client_ids
 
 
@@ -153,7 +152,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     setup_parser = subparsers.add_parser("setup", help="Bootstrap codebaseGraph state for a repository")
     setup_parser.add_argument("--repo-root", default=".", help="Repository root to configure")
-    setup_parser.add_argument("--mcp-client", choices=supported_client_ids(), default="codex")
+    setup_parser.add_argument("--mcp-client", choices=(*supported_install_client_ids(), "none"), default="codex")
     setup_parser.add_argument("--mcp-config-path", default=None, help="Override MCP client config path")
     setup_parser.add_argument("--skip-mcp-config", action="store_true", help="Do not write MCP client config")
     setup_parser.add_argument("--dry-run", action="store_true", help="Return the MCP config patch without writing it")

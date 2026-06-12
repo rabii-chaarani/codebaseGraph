@@ -18,6 +18,7 @@ from .state import MCP_SERVER_NAME, load_setup_config
 SCOPES = ("local", "user", "project")
 NativeCommandBuilder = Callable[[McpServerDescriptor, str], list[str]]
 VisibilityCommandBuilder = Callable[[], list[str]]
+ManualMetadataBuilder = Callable[[McpServerDescriptor], dict[str, Any]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +110,7 @@ class InstallClientStrategy:
     native_executable: str | None = None
     native_command_builder: NativeCommandBuilder | None = None
     visibility_command_builder: VisibilityCommandBuilder | None = None
+    manual_metadata_builder: ManualMetadataBuilder | None = None
 
     def install_scope(self, scope: str) -> str:
         """Install scope for setup workflow and client configuration.
@@ -160,6 +162,12 @@ class InstallClientStrategy:
         if self.visibility_command_builder is None:
             return None
         return self.visibility_command_builder()
+
+    def manual_metadata(self, descriptor: McpServerDescriptor) -> dict[str, Any] | None:
+        """Build manual setup metadata for clients without a local config file."""
+        if self.manual_metadata_builder is None:
+            return None
+        return self.manual_metadata_builder(descriptor)
 
 
 def _codex_native_command(descriptor: McpServerDescriptor, scope: str) -> list[str]:
@@ -214,6 +222,39 @@ def _openclaw_native_command(descriptor: McpServerDescriptor, scope: str) -> lis
     return ["openclaw", "mcp", "set", descriptor.name, json.dumps(entry, separators=(",", ":"), sort_keys=True)]
 
 
+def _copilot_studio_metadata(descriptor: McpServerDescriptor) -> dict[str, Any]:
+    """Build manual connection details for Microsoft Copilot Studio."""
+    config_path = descriptor.setup_config_path or ".codebaseGraph/config.json"
+    http_start_command = [
+        descriptor.command,
+        "mcp",
+        "http",
+        "--config",
+        config_path,
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8765",
+        "--path",
+        "/mcp",
+    ]
+    return {
+        "kind": "copilot_studio_manual_metadata",
+        "stdio": descriptor.stdio_entry(include_type=True),
+        "http": {
+            "url": "http://127.0.0.1:8765/mcp",
+            "start_command": http_start_command,
+            "host": "127.0.0.1",
+            "port": 8765,
+            "path": "/mcp",
+        },
+        "notes": [
+            "No local client configuration file is written for Copilot Studio.",
+            "Remote Copilot Studio use requires user-managed endpoint exposure, bearer-token configuration, and TLS.",
+        ],
+    }
+
+
 INSTALL_STRATEGIES: dict[str, InstallClientStrategy] = {
     "codex": InstallClientStrategy(
         client_id="codex",
@@ -236,6 +277,7 @@ INSTALL_STRATEGIES: dict[str, InstallClientStrategy] = {
         visibility_command_builder=lambda: ["claude", "mcp", "list"],
     ),
     "lmstudio": InstallClientStrategy(client_id="lmstudio"),
+    "github-copilot": InstallClientStrategy(client_id="github-copilot"),
     "hermes": InstallClientStrategy(client_id="hermes"),
     "openclaw": InstallClientStrategy(
         client_id="openclaw",
@@ -244,6 +286,14 @@ INSTALL_STRATEGIES: dict[str, InstallClientStrategy] = {
         visibility_command_builder=lambda: ["openclaw", "mcp", "list"],
     ),
     "generic": InstallClientStrategy(client_id="generic"),
+    "copilot-studio": InstallClientStrategy(
+        client_id="copilot-studio",
+        manual_metadata_builder=_copilot_studio_metadata,
+    ),
+    "microsoft-copilot": InstallClientStrategy(
+        client_id="microsoft-copilot",
+        manual_metadata_builder=_copilot_studio_metadata,
+    ),
 }
 INSTALL_CLIENTS = tuple(INSTALL_STRATEGIES)
 
@@ -324,6 +374,16 @@ def install_mcp_server(options: McpInstallOptions) -> McpInstallResult:
             descriptor=descriptor.as_dict(),
             entry=entry,
         )
+
+    manual_metadata = strategy.manual_metadata(descriptor)
+    if manual_metadata is not None:
+        result = _manual_metadata_result(
+            "dry_run" if options.dry_run else "reported",
+            options,
+            descriptor,
+            manual_metadata,
+        )
+        return _with_verification(result, descriptor, options.verify and not options.dry_run)
 
     native_command = strategy.native_command(descriptor, scope=options.scope)
     use_native = (
@@ -420,6 +480,28 @@ def _install_with_failure_result(options: McpInstallOptions, client: str) -> Mcp
             entry=entry,
             error=str(exc),
         )
+
+
+def _manual_metadata_result(
+    action: str,
+    options: McpInstallOptions,
+    descriptor: McpServerDescriptor,
+    metadata: dict[str, Any],
+) -> McpInstallResult:
+    """Build metadata-only result for clients that require manual onboarding."""
+    return McpInstallResult(
+        action=action,
+        client=options.client,
+        scope=options.scope,
+        server_name=descriptor.name,
+        method="manual_metadata",
+        path=None,
+        command=None,
+        descriptor=descriptor.as_dict(),
+        entry=metadata["stdio"],
+        patch=None,
+        payload=metadata,
+    )
 
 
 def _file_adapter_result(

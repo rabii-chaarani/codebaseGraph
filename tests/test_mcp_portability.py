@@ -151,6 +151,8 @@ def test_client_adapters_emit_native_config_shapes(tmp_path: Path) -> None:
     assert rendered["claude"]["payload"]["mcpServers"]["codebase_graph"]["command"]
     assert rendered["claude-project"]["payload"]["mcpServers"]["codebase_graph"]["type"] == "stdio"
     assert rendered["lmstudio"]["payload"]["mcpServers"]["codebase_graph"]["type"] == "stdio"
+    assert rendered["github-copilot"]["payload"]["servers"]["codebase_graph"]["type"] == "stdio"
+    assert rendered["github-copilot"]["payload"]["servers"]["codebase_graph"]["args"][0:2] == ["mcp", "serve"]
     assert rendered["generic"]["payload"]["mcpServers"]["codebase_graph"]["args"][0:2] == ["mcp", "serve"]
     assert rendered["openclaw"]["payload"]["mcp"]["servers"]["codebase_graph"]["type"] == "stdio"
     assert "mcp_servers:" in rendered["hermes"]["patch"]

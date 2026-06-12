@@ -26,6 +26,7 @@ def test_default_server_name_is_namespace_safe() -> None:
 
 def test_install_strategy_registry_covers_advertised_clients() -> None:
     assert set(INSTALL_CLIENTS) == set(INSTALL_STRATEGIES)
+    assert {"github-copilot", "copilot-studio", "microsoft-copilot"}.issubset(INSTALL_CLIENTS)
     for client, strategy in INSTALL_STRATEGIES.items():
         assert strategy.adapter_client_id("local")
         if strategy.native_command_builder is not None:
@@ -211,6 +212,31 @@ def test_hermes_default_path_is_documented_home_config(
     assert get_client_adapter("hermes").default_config_path(descriptor) == tmp_path / ".hermes" / "config.yaml"
 
 
+def test_github_copilot_default_path_is_vscode_workspace_config(tmp_path: Path) -> None:
+    config_path = _write_setup_config(tmp_path / "fresh_repo")
+    descriptor = build_server_descriptor(config_path, repo_root=tmp_path / "fresh_repo")
+
+    assert get_client_adapter("github-copilot").default_config_path(descriptor) == (
+        tmp_path / "fresh_repo" / ".vscode" / "mcp.json"
+    )
+
+
+def test_unsupported_install_client_lists_copilot_clients(tmp_path: Path) -> None:
+    with pytest.raises(ValueError) as exc_info:
+        install_mcp_server(
+            McpInstallOptions(
+                client="missing",
+                setup_config_path=tmp_path / ".codebaseGraph" / "config.json",
+                require_setup_config=False,
+            )
+        )
+
+    message = str(exc_info.value)
+    assert "github-copilot" in message
+    assert "copilot-studio" in message
+    assert "microsoft-copilot" in message
+
+
 def test_all_client_install_reports_partial_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -255,6 +281,47 @@ def test_mcp_install_cli_dry_run_json(
     assert output["action"] == "dry_run"
     assert output["method"] == "native_cli"
     assert output["server_name"] == default_server_name("fresh_repo")
+
+
+def test_mcp_install_cli_writes_github_copilot_workspace_config(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo_root = tmp_path / "fresh_repo"
+    config_path = _write_setup_config(repo_root)
+
+    exit_code = cli_main(
+        ["mcp", "install", "--client", "github-copilot", "--config-path", config_path.as_posix(), "--json"]
+    )
+    output = json.loads(capsys.readouterr().out)
+    config_payload = json.loads((repo_root / ".vscode" / "mcp.json").read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert output["action"] == "created"
+    assert output["method"] == "file_adapter"
+    assert output["path"] == (repo_root / ".vscode" / "mcp.json").as_posix()
+    assert config_payload["servers"]["codebase_graph_fresh_repo"]["type"] == "stdio"
+    assert config_payload["servers"]["codebase_graph_fresh_repo"]["args"][0:2] == ["mcp", "serve"]
+
+
+def test_mcp_install_cli_reports_copilot_studio_metadata(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    config_path = _write_setup_config(tmp_path / "fresh_repo")
+
+    exit_code = cli_main(
+        ["mcp", "install", "--client", "copilot-studio", "--config-path", config_path.as_posix(), "--json"]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert output["action"] == "reported"
+    assert output["method"] == "manual_metadata"
+    assert output["path"] is None
+    assert output["payload"]["http"]["url"] == "http://127.0.0.1:8765/mcp"
+    assert output["payload"]["http"]["start_command"][1:4] == ["mcp", "http", "--config"]
+    assert output["payload"]["stdio"]["type"] == "stdio"
 
 
 def test_mcp_install_cli_accepts_client_config_path(
