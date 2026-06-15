@@ -90,15 +90,7 @@ def resolve_type_annotation(graph: CodeGraph, resolution_edge: GraphEdge) -> Typ
     target = graph.nodes.get(resolution_edge.target_id)
     if source is None or target is None or source.table != "TypeAnnotation":
         return None
-    _edge_if_allowed(
-        graph,
-        "References",
-        source.id,
-        target.id,
-        "semantic_type_reference",
-        confidence=resolution_edge.confidence,
-        metadata={"resolver": "semantic", "source_edge": resolution_edge.id},
-    )
+    promote_type_resolution_edges(graph, resolution_edge)
     return TypeResolution(
         type_node_id=source.id,
         target_node_id=target.id,
@@ -154,17 +146,95 @@ def resolve_provider_backed_relation(
         )
         return None if edge is None else CallResolution(source_node_id, source.scope_id, target_node_id, confidence, "provider")
     if source.table == "TypeAnnotation":
-        edge = _edge_if_allowed(
+        edge = reconcile_type_reference_fallback(
             graph,
-            "References",
             source_node_id,
             target_node_id,
-            "provider_type_reference",
+            kind="provider_type_reference",
             confidence=confidence,
             metadata={"resolver": "provider"},
         )
+        emit_type_annotation_relation(
+            graph,
+            source_node_id,
+            confidence=confidence,
+            metadata={"resolver": "provider", "target_node_id": target_node_id},
+        )
         return None if edge is None else TypeResolution(source_node_id, target_node_id, confidence, "provider")
     return None
+
+
+def promote_type_resolution_edges(graph: CodeGraph, resolution_edge: GraphEdge) -> tuple[GraphEdge, ...]:
+    """Promote a type resolution to first-class and fallback semantic edges."""
+    source = graph.nodes.get(resolution_edge.source_id)
+    target = graph.nodes.get(resolution_edge.target_id)
+    if source is None or target is None or source.table != "TypeAnnotation":
+        return ()
+    metadata = {"resolver": "semantic", "source_edge": resolution_edge.id}
+    edges = [
+        edge
+        for edge in (
+            reconcile_type_reference_fallback(
+                graph,
+                source.id,
+                target.id,
+                kind="semantic_type_reference",
+                confidence=resolution_edge.confidence,
+                metadata=metadata,
+            ),
+            emit_type_annotation_relation(
+                graph,
+                source.id,
+                confidence=resolution_edge.confidence,
+                metadata={**metadata, "target_node_id": target.id},
+            ),
+        )
+        if edge is not None
+    ]
+    return tuple(edges)
+
+
+def emit_type_annotation_relation(
+    graph: CodeGraph,
+    type_node_id: str,
+    *,
+    confidence: float,
+    metadata: dict[str, Any],
+) -> GraphEdge | None:
+    """Emit a legal HasTypeAnnotation edge for a resolved type annotation."""
+    owner_id = _type_annotation_owner_id(graph, type_node_id)
+    if owner_id is None:
+        return None
+    return _edge_if_allowed(
+        graph,
+        "HasTypeAnnotation",
+        owner_id,
+        type_node_id,
+        "semantic_type_annotation",
+        confidence=confidence,
+        metadata=metadata,
+    )
+
+
+def reconcile_type_reference_fallback(
+    graph: CodeGraph,
+    type_node_id: str,
+    target_node_id: str,
+    *,
+    kind: str,
+    confidence: float,
+    metadata: dict[str, Any],
+) -> GraphEdge | None:
+    """Keep TypeAnnotation to declaration fallback references consistent."""
+    return _edge_if_allowed(
+        graph,
+        "References",
+        type_node_id,
+        target_node_id,
+        kind,
+        confidence=confidence,
+        metadata=metadata,
+    )
 
 
 def _edge_if_allowed(
@@ -194,6 +264,27 @@ def _edge_if_allowed(
         metadata={"canonical_key": f"{edge_type}|{source_id}|{target_id}|{kind}", **metadata},
     )
     return graph.add_edge(edge)
+
+
+def _type_annotation_owner_id(graph: CodeGraph, type_node_id: str) -> str | None:
+    typed_owner_types = set(get_relation_type("HasTypeAnnotation").source_types)
+    for edge in graph.edges_by_type("HasTypeAnnotation"):
+        if edge.target_id != type_node_id:
+            continue
+        owner = graph.nodes.get(edge.source_id)
+        if owner is not None and owner.table in typed_owner_types:
+            return owner.id
+    type_node = graph.nodes.get(type_node_id)
+    if type_node is None or not type_node.scope_id:
+        return None
+    owner = graph.nodes.get(type_node.scope_id)
+    if owner is not None and owner.table in typed_owner_types:
+        return owner.id
+    owner_id = str(type_node.metadata.get("owner_node_id") or type_node.metadata.get("typed_node_id") or "")
+    owner = graph.nodes.get(owner_id)
+    if owner is not None and owner.table in typed_owner_types:
+        return owner.id
+    return None
 
 
 def _graph_tuple(graphs: CodeGraph | Iterable[CodeGraph]) -> tuple[CodeGraph, ...]:

@@ -253,6 +253,9 @@ def _search_request(arguments: dict[str, Any], *, profile_catalog: dict[str, Any
         detail=_detail(arguments),
         include_snippets=_bool(arguments.get("include_snippets", False)),
         snippet_context_lines=int(arguments.get("snippet_context_lines", 0)),
+        include_semantic=_bool(arguments.get("include_semantic", True)),
+        include_confidence=_bool(arguments.get("include_confidence", True)),
+        include_evidence=_optional_bool(arguments.get("include_evidence")),
     )
     request.validate(profile_catalog)
     return request
@@ -273,6 +276,9 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
     if node_id and node_type:
         profile = str(arguments.get("profile", "brief"))
         detail = _detail(arguments)
+        include_semantic = _bool(arguments.get("include_semantic", True))
+        include_confidence = _bool(arguments.get("include_confidence", True))
+        include_evidence = _optional_bool(arguments.get("include_evidence"))
         context = CompactContextBuilder(
             store,
             repo_root=arguments.get("_repo_root"),
@@ -291,7 +297,15 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
             "node_id": node_id,
             "node_type": node_type,
             "profile": profile,
-            "context": [node.as_dict(detail=detail) for node in context],
+            "context": [
+                node.as_dict(
+                    detail=detail,
+                    include_semantic=include_semantic,
+                    include_confidence=include_confidence,
+                    include_evidence=include_evidence,
+                )
+                for node in context
+            ],
         }
     request = _search_request(arguments, profile_catalog=arguments.get("_profile_catalog"))
     return SearchService(
@@ -449,6 +463,13 @@ def _bool(value: Any) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"1", "true", "yes", "on"}
     return bool(value)
+
+
+def _optional_bool(value: Any) -> bool | None:
+    """Coerce optional tool and CLI boolean values."""
+    if value is None or value == "":
+        return None
+    return _bool(value)
 
 
 def _detail(arguments: dict[str, Any]) -> str:

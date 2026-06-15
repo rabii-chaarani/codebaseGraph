@@ -32,6 +32,9 @@ class SearchRequest:
     detail: str = "standard"
     include_snippets: bool = False
     snippet_context_lines: int = 0
+    include_semantic: bool = True
+    include_confidence: bool = True
+    include_evidence: bool | None = None
 
     def validate(self, profile_catalog: dict[str, Any] | None = None) -> None:
         """Validate search, ranking, and block-format retrieval for search, ranking, and block-format retrieval.
@@ -77,7 +80,14 @@ class SearchHit:
     context: list[ContextNode] = field(default_factory=list)
     index_order: int = 0
 
-    def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
+    def as_dict(
+        self,
+        *,
+        detail: str = "standard",
+        include_semantic: bool = True,
+        include_confidence: bool = True,
+        include_evidence: bool | None = None,
+    ) -> dict[str, Any]:
         """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
 
         Args:
@@ -98,7 +108,15 @@ class SearchHit:
             _set_non_empty(payload, "path", self.path)
             _set_non_empty(payload, "span", dict(self.span))
             _set_meaningful_summary(payload, self.summary, self.label)
-            context = [node.as_dict(detail=detail) for node in self.context]
+            context = [
+                node.as_dict(
+                    detail=detail,
+                    include_semantic=include_semantic,
+                    include_confidence=include_confidence,
+                    include_evidence=include_evidence,
+                )
+                for node in self.context
+            ]
             _set_non_empty(payload, "context", context)
             return payload
         return {
@@ -112,7 +130,15 @@ class SearchHit:
             "rank_score": self.rank_score,
             "score_components": dict(self.score_components),
             "summary": self.summary,
-            "context": [node.as_dict(detail=detail) for node in self.context],
+            "context": [
+                node.as_dict(
+                    detail=detail,
+                    include_semantic=include_semantic,
+                    include_confidence=include_confidence,
+                    include_evidence=include_evidence,
+                )
+                for node in self.context
+            ],
         }
 
 
@@ -127,6 +153,9 @@ class CompactContextPayload:
     limit: int
     budget: int
     results: tuple[SearchHit, ...]
+    include_semantic: bool = True
+    include_confidence: bool = True
+    include_evidence: bool | None = None
 
     def as_dict(self, *, detail: str = "standard") -> dict[str, Any]:
         """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
@@ -144,7 +173,15 @@ class CompactContextPayload:
             "profile": self.profile,
             "limit": self.limit,
             "budget": self.budget,
-            "results": [hit.as_dict(detail=detail) for hit in self.results],
+            "results": [
+                hit.as_dict(
+                    detail=detail,
+                    include_semantic=self.include_semantic,
+                    include_confidence=self.include_confidence,
+                    include_evidence=self.include_evidence,
+                )
+                for hit in self.results
+            ],
         }
 
 
@@ -220,6 +257,9 @@ class SearchService:
             limit=request.limit,
             budget=request.budget,
             results=tuple(compact_hits),
+            include_semantic=request.include_semantic,
+            include_confidence=request.include_confidence,
+            include_evidence=request.include_evidence,
         )
 
     def _query_fts(self, query: str, limit: int) -> list[SearchHit]:
