@@ -16,6 +16,8 @@ from codebase_graph.diagnostics import log_event
 from codebase_graph.extract import GraphBuilder
 from codebase_graph.ontology import ONTOLOGY_NAME
 from codebase_graph.paths import DEFAULT_STATE_DIR, derive_graph_state_paths
+from codebase_graph.semantic.build_context import BuildContext, collect_project_build_context
+from codebase_graph.semantic.enrichment_writer import persist_semantic_enrichment
 
 from .tree_sitter_parser import ParserRegistry, ParserUnavailableError, default_parser_registry
 
@@ -23,6 +25,7 @@ MaterializeMode = Literal["full", "changed"]
 
 MANIFEST_SCHEMA_VERSION = 1
 PARSER_VERSION = "tree-sitter-python-v1+markdown-docs-v1"
+SEMANTIC_ENRICHMENT_VERSION = "semantic-enrichment-v1"
 EXCLUDED_PARTS = {
     ".git",
     ".venv",
@@ -340,6 +343,8 @@ class GraphMaterializer:
         store: LadybugCodeGraphStore | None = None,
         parser_registry: ParserRegistry | None = None,
         graph_builder: GraphBuilder | None = None,
+        semantic_enrichment: bool = True,
+        semantic_provider_mode: str = "local_only",
     ) -> None:
         """Initialize graph materializer with the collaborators and state it owns.
 
@@ -357,6 +362,8 @@ class GraphMaterializer:
             materialization workflow.
             graph_builder: Graph builder used by the source scanning and graph
             materialization workflow.
+            semantic_enrichment: Enable additive semantic enrichment after syntax graph building.
+            semantic_provider_mode: Provider execution mode; defaults to local-only enrichment.
         """
         self.source_root = Path(source_root).resolve()
         paths = derive_graph_state_paths(self.source_root)
@@ -368,7 +375,12 @@ class GraphMaterializer:
         self._store = store
         self._store_injected = store is not None
         self.parser_registry = parser_registry or default_parser_registry()
-        self.parser_version = self.parser_registry.parser_version
+        self.semantic_enrichment = semantic_enrichment
+        self.semantic_provider_mode = semantic_provider_mode
+        self.parser_version = _materializer_parser_version(
+            self.parser_registry.parser_version,
+            semantic_enrichment=semantic_enrichment,
+        )
         self.builder = graph_builder or GraphBuilder(repository_label=self.repository_label, source_root=self.source_root)
 
     @property
@@ -494,10 +506,15 @@ class GraphMaterializer:
 
         rebuilt_entries: dict[str, ManifestEntry] = {}
         rebuilt_graphs: dict[str, CodeGraph] = {}
+        build_context = self._build_context(supported, diagnostics)
         for path in diff.rebuild_paths:
             snapshot = supported[path]
             graph = self._build_graph(snapshot)
             rebuilt_graphs[path] = graph
+
+        self._enrich_rebuilt_graphs(rebuilt_graphs, build_context, diagnostics)
+        for path, graph in rebuilt_graphs.items():
+            snapshot = supported[path]
             rebuilt_entries[path] = _manifest_entry(snapshot, graph)
 
         if not diff.force_rebuild:
@@ -567,10 +584,15 @@ class GraphMaterializer:
         try:
             rebuilt_entries: dict[str, ManifestEntry] = {}
             rebuilt_graphs: dict[str, CodeGraph] = {}
+            build_context = self._build_context(supported, diagnostics)
             for path in diff.rebuild_paths:
                 snapshot = supported[path]
                 graph = self._build_graph(snapshot)
                 rebuilt_graphs[path] = graph
+
+            self._enrich_rebuilt_graphs(rebuilt_graphs, build_context, diagnostics)
+            for path, graph in rebuilt_graphs.items():
+                snapshot = supported[path]
                 rebuilt_entries[path] = _manifest_entry(snapshot, graph)
 
             next_manifest = MaterializationManifest(parser_version=self.parser_version, files=rebuilt_entries)
@@ -739,6 +761,37 @@ class GraphMaterializer:
         result = self.builder.build_file_graph(bundle)
         return result.graph
 
+    def _build_context(
+        self,
+        supported: Mapping[str, SourceSnapshot],
+        diagnostics: list[str],
+    ) -> BuildContext | None:
+        """Collect project build metadata for semantic enrichment."""
+        if not self.semantic_enrichment:
+            return None
+        context = collect_project_build_context(self.source_root, source_paths=supported)
+        diagnostics.extend(context.diagnostics)
+        return context
+
+    def _enrich_rebuilt_graphs(
+        self,
+        rebuilt_graphs: Mapping[str, CodeGraph],
+        build_context: BuildContext | None,
+        diagnostics: list[str],
+    ) -> None:
+        """Run additive semantic enrichment over rebuilt graph partitions."""
+        if not self.semantic_enrichment or not rebuilt_graphs:
+            return
+        try:
+            persist_semantic_enrichment(
+                tuple(rebuilt_graphs[path] for path in sorted(rebuilt_graphs)),
+                source_root=self.source_root.as_posix(),
+                build_context=build_context,
+                provider_mode=self.semantic_provider_mode,  # type: ignore[arg-type]
+            )
+        except Exception as exc:  # pragma: no cover - defensive fallback for optional enrichment.
+            diagnostics.append(f"Semantic enrichment skipped: {exc}")
+
 
 def _is_excluded_part(part: str) -> bool:
     """Return whether excluded part for source scanning and graph materialization.
@@ -765,6 +818,13 @@ def _normalize_db_path(db_path: str | Path) -> str | Path:
     if _is_memory_db_path(db_path):
         return ":memory:"
     return Path(db_path)
+
+
+def _materializer_parser_version(parser_registry_version: str, *, semantic_enrichment: bool) -> str:
+    """Return the manifest compatibility version for parser and enrichment output."""
+    if not semantic_enrichment:
+        return parser_registry_version
+    return f"{parser_registry_version}+{SEMANTIC_ENRICHMENT_VERSION}"
 
 
 def _is_memory_db_path(db_path: str | Path) -> bool:
