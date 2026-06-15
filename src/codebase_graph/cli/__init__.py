@@ -296,6 +296,9 @@ def _search_request_from_args(args: argparse.Namespace) -> SearchRequest:
         detail=args.detail,
         include_snippets=args.include_snippets,
         snippet_context_lines=args.snippet_context_lines,
+        include_semantic=args.include_semantic,
+        include_confidence=args.include_confidence,
+        include_evidence=args.include_evidence,
     )
     request.validate()
     return request

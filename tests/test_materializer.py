@@ -9,6 +9,7 @@ import pytest
 
 import codebase_graph.ingest.materializer as materializer_module
 from codebase_graph.db import LadybugCodeGraphStore
+from codebase_graph.extract import ParseBundle
 from codebase_graph.ingest import (
     GraphMaterializer,
     MarkdownDocumentParser,
@@ -253,6 +254,29 @@ def test_full_materialization_writes_supported_language_graphs(tmp_path: Path) -
     assert {"new", "Name", "name"} <= _labels(materializer, "Method")
     assert {"std::fmt", "fmt", "stdio.h", "string", "iso_fortran_env"} <= _labels(materializer, "ImportDeclaration")
     assert {"User::new", "fmt.Println", "printf", "u.name", "print_hello"} <= _labels(materializer, "CallExpression")
+
+
+def test_materializer_runs_local_semantic_enrichment_before_persistence(tmp_path: Path) -> None:
+    source_root = tmp_path / "semantic_project"
+    source_root.mkdir()
+    (source_root / "main.toy").write_text("helper()\n", encoding="utf-8")
+    registry = ParserRegistry()
+    registry.register("toy", suffixes=(".toy",), parser_factory=ToyParser, parser_version="toy-v1")
+    store = CapturingStore()
+
+    result = GraphMaterializer(
+        source_root,
+        db_path=":memory:",
+        manifest_path=tmp_path / "manifest.json",
+        store=store,
+        parser_registry=registry,
+    ).materialize(mode="full")
+
+    graph = store.graphs[0]
+    assert result.rebuilt == 1
+    assert any(edge.type == "ResolvesTo" and edge.kind == "semantic_resolution" for edge in graph.edges.values())
+    assert any(edge.type == "Calls" and edge.kind == "semantic_call_target" for edge in graph.edges.values())
+    assert graph.metadata["semantic_enrichment"]["provider_resolution"] is False
 
 
 def test_full_materialization_handles_local_imports_inside_methods(tmp_path: Path) -> None:
@@ -595,3 +619,60 @@ def _labels(materializer: GraphMaterializer, table: str) -> set[str]:
 
 def _marker_path(manifest_path: Path) -> Path:
     return manifest_path.with_suffix(manifest_path.suffix + ".rebuild-pending")
+
+
+class ToyParser:
+    language = "toy"
+    parser_version = "toy-v1"
+
+    def parse_file(
+        self,
+        path: Path,
+        *,
+        relative_path: str,
+        source_root: Path,
+        repository_label: str,
+        content_hash: str,
+    ) -> ParseBundle:
+        return ParseBundle(
+            language=self.language,
+            path=relative_path,
+            source_text=path.read_text(encoding="utf-8"),
+            repository_label=repository_label,
+            source_root=source_root.as_posix(),
+            content_hash=content_hash,
+            tree={
+                "type": "module",
+                "children": [
+                    {"type": "function_definition", "name": "helper", "line_start": 1, "byte_start": 0},
+                    {
+                        "type": "function_definition",
+                        "name": "main",
+                        "line_start": 2,
+                        "byte_start": 10,
+                        "children": [
+                            {
+                                "type": "call",
+                                "function": "helper",
+                                "line_start": 3,
+                                "byte_start": 20,
+                            }
+                        ],
+                    },
+                ],
+            },
+        )
+
+
+class CapturingStore:
+    def __init__(self) -> None:
+        self.graphs = []
+
+    def clear_graph(self) -> None:
+        self.graphs.clear()
+
+    def delete_partition(self, *args: object, **kwargs: object) -> None:
+        return
+
+    def insert_graphs_bulk(self, graphs, **kwargs) -> None:  # noqa: ANN001, ANN003
+        self.graphs.extend(graphs)

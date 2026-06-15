@@ -114,6 +114,12 @@ def search_arguments_payload(args: argparse.Namespace) -> dict[str, Any]:
         payload["include_snippets"] = True
     if args.snippet_context_lines:
         payload["snippet_context_lines"] = args.snippet_context_lines
+    if not args.include_semantic:
+        payload["include_semantic"] = False
+    if not args.include_confidence:
+        payload["include_confidence"] = False
+    if args.include_evidence is not None:
+        payload["include_evidence"] = args.include_evidence
     return payload
 
 
@@ -224,6 +230,26 @@ def add_compact_context_arguments(parser: argparse.ArgumentParser, *, default_fo
     parser.add_argument("--context-limit", type=int, default=3, help="Maximum context items per search hit")
     parser.add_argument("--include-snippets", action="store_true", help="Include bounded redacted source snippets")
     parser.add_argument("--snippet-context-lines", type=int, default=0, help="Extra source lines around snippet spans")
+    parser.add_argument(
+        "--no-semantic",
+        action="store_false",
+        dest="include_semantic",
+        default=True,
+        help="Hide semantic relation annotations in graph context output",
+    )
+    parser.add_argument(
+        "--no-confidence",
+        action="store_false",
+        dest="include_confidence",
+        default=True,
+        help="Hide semantic relation confidence values in graph context output",
+    )
+    parser.add_argument(
+        "--include-evidence",
+        action="store_true",
+        default=None,
+        help="Include full semantic evidence metadata in graph context output",
+    )
     parser.add_argument("--detail", choices=sorted(DETAIL_LEVELS), default="standard", help="Output detail level")
     add_graph_output_arguments(parser, default_format=default_format)
 
@@ -348,27 +374,41 @@ def _search_schema(*, required: Sequence[str]) -> dict[str, Any]:
         Structured mapping that follows the MCP server and transport surface response contract.
     """
     properties = {
-            "query": {"type": "string"},
-            "limit": {"type": "integer", "minimum": 1},
-            "profile": {"type": "string"},
-            "budget": {"type": "integer", "minimum": 0},
-            "max_depth": {"type": "integer", "minimum": 0},
-            "context_limit": {"type": "integer", "minimum": 0},
-            "include_snippets": {
-                "type": "boolean",
-                "default": False,
-                "description": "Include bounded redacted source snippets from graph node spans.",
-            },
-            "snippet_context_lines": {
-                "type": "integer",
-                "minimum": 0,
-                "default": 0,
-                "description": "Extra source lines to include before and after snippet spans.",
-            },
-            "detail": {"type": "string", "enum": sorted(DETAIL_LEVELS)},
-            "node_id": {"type": "string"},
-            "node_type": {"type": "string"},
-        }
+        "query": {"type": "string"},
+        "limit": {"type": "integer", "minimum": 1},
+        "profile": {"type": "string"},
+        "budget": {"type": "integer", "minimum": 0},
+        "max_depth": {"type": "integer", "minimum": 0},
+        "context_limit": {"type": "integer", "minimum": 0},
+        "include_snippets": {
+            "type": "boolean",
+            "default": False,
+            "description": "Include bounded redacted source snippets from graph node spans.",
+        },
+        "snippet_context_lines": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Extra source lines to include before and after snippet spans.",
+        },
+        "detail": {"type": "string", "enum": sorted(DETAIL_LEVELS)},
+        "include_semantic": {
+            "type": "boolean",
+            "default": True,
+            "description": "Include semantic relation annotations in graph context output.",
+        },
+        "include_confidence": {
+            "type": "boolean",
+            "default": True,
+            "description": "Include confidence values on semantic relation annotations.",
+        },
+        "include_evidence": {
+            "type": "boolean",
+            "description": "Include full semantic evidence metadata in graph context output.",
+        },
+        "node_id": {"type": "string"},
+        "node_type": {"type": "string"},
+    }
     properties.update(_output_schema_properties())
     return _object_schema(
         properties,

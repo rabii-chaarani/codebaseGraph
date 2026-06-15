@@ -8,14 +8,18 @@ from typing import Any
 import pytest
 
 from codebase_graph.cli import _build_parser, main as cli_main
-from codebase_graph.db import GraphNeighbor, SearchIndexRow
+from codebase_graph.db import GraphNeighbor, LadybugGraphQueryAdapter, SearchIndexRow
 from codebase_graph.ingest import GraphMaterializer
 from codebase_graph.mcp.graph_commands import graph_command_spec, graph_tool_specs
 from codebase_graph.mcp.runtime import GraphRuntimeConfig
-from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _query_payload, handle_tool_call, tool_specs
+from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _context_payload as _tool_context_payload
+from codebase_graph.mcp.tools import _query_payload, handle_tool_call, tool_specs
 from codebase_graph.reasoning import (
     CompactContextBuilder,
+    ContextEdge,
     ContextNode,
+    ContextPath,
+    ContextPathNode,
     collect_source_snippet,
     estimate_token_count,
     merge_context_profiles,
@@ -147,6 +151,49 @@ class _PathAdapter:
         return []
 
 
+class _SemanticPathAdapter:
+    def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
+        return []
+
+    def neighbors(
+        self,
+        *,
+        node_id: str,
+        node_type: str,
+        relation: str,
+        direction: str,
+        limit: int,
+    ) -> list[GraphNeighbor]:
+        if node_id != "CallExpression:helper" or relation != "ResolvesTo" or direction != "outgoing":
+            return []
+        return [
+            GraphNeighbor(
+                node_id="Function:plain",
+                node_type="Function",
+                label="plain",
+                source_node_id="CallExpression:helper",
+                target_node_id="Function:plain",
+                edge_id="edge:plain",
+                edge_kind="syntax_resolution",
+            ),
+            GraphNeighbor(
+                node_id="Function:helper",
+                node_type="Function",
+                label="helper",
+                source_node_id="CallExpression:helper",
+                target_node_id="Function:helper",
+                edge_id="edge:semantic",
+                edge_kind="semantic_resolution",
+                edge_confidence=0.91,
+                edge_metadata={
+                    "resolution_source": "symbol_table",
+                    "evidence_id": "evidence:helper",
+                    "diagnostics": ["matched import binding"],
+                },
+            ),
+        ]
+
+
 class _DedupePathAdapter:
     def search_index(self, *, node_type: str, index_name: str, query: str, limit: int) -> list[SearchIndexRow]:
         return []
@@ -191,6 +238,52 @@ def test_search_query_uses_ontology_index_names_and_parameterized_user_text() ->
         assert statement.startswith("CALL QUERY_FTS_INDEX('")
         assert malicious_query not in statement
         assert parameters == {"query": malicious_query, "top": 10}
+
+
+@pytest.mark.parametrize(
+    ("relation", "edge_kind"),
+    (
+        ("ResolvesTo", "semantic_resolution"),
+        ("Calls", "semantic_call_target"),
+        ("References", "semantic_reference"),
+    ),
+)
+def test_query_adapter_projects_relation_metadata_for_semantic_neighbors(relation: str, edge_kind: str) -> None:
+    store = _RecordingStore(
+        [
+            [
+                "Function:helper",
+                "helper",
+                "sample.helper",
+                "sample.py",
+                3,
+                6,
+                "Helper function.",
+                f"edge:{relation}",
+                edge_kind,
+                "CallExpression:helper",
+                "Function:helper",
+                0.91,
+                json.dumps({"resolver": "semantic", "evidence_id": f"evidence:{relation}"}),
+            ]
+        ]
+    )
+
+    neighbors = LadybugGraphQueryAdapter(store).neighbors(
+        node_id="CallExpression:helper",
+        node_type="CallExpression",
+        relation=relation,
+        direction="outgoing",
+        limit=1,
+    )
+
+    assert len(neighbors) == 1
+    assert neighbors[0].edge_id == f"edge:{relation}"
+    assert neighbors[0].edge_kind == edge_kind
+    assert neighbors[0].source_node_id == "CallExpression:helper"
+    assert neighbors[0].target_node_id == "Function:helper"
+    assert neighbors[0].edge_confidence == 0.91
+    assert neighbors[0].edge_metadata == {"resolver": "semantic", "evidence_id": f"evidence:{relation}"}
 
 
 def test_search_result_ranking_dedupes_by_node_id_preserving_best_raw_score() -> None:
@@ -329,6 +422,143 @@ def test_compact_context_builds_depth_two_evidence_paths_with_edge_metadata() ->
     assert payload["evidence_path"]["edges"][1]["metadata"] == {"confidence_source": "test"}
 
 
+def test_evidence_path_chain_does_not_duplicate_type_for_typed_node_ids() -> None:
+    path = ContextPath(
+        nodes=(ContextPathNode("ReturnType:abc123", "ReturnType", "ReturnType:abc123"),)
+    ).extend(
+        ContextEdge(
+            relation="HasReturnType",
+            direction="incoming",
+            source_node_id="Method:line",
+            target_node_id="ReturnType:abc123",
+        ),
+        ContextPathNode("Method:line", "Method", "line"),
+    )
+
+    assert path.chain == "Method line HasReturnType ReturnType:abc123"
+
+
+def test_evidence_path_chain_uses_actual_edge_direction_for_incoming_calls() -> None:
+    path = ContextPath(
+        nodes=(
+            ContextPathNode("Class:GraphNeighbor", "Class", "GraphNeighbor"),
+            ContextPathNode("CallExpression:GraphNeighbor", "CallExpression", "GraphNeighbor"),
+        ),
+        edges=(
+            ContextEdge(
+                relation="Calls",
+                direction="incoming",
+                source_node_id="CallExpression:GraphNeighbor",
+                target_node_id="Class:GraphNeighbor",
+            ),
+        ),
+    ).extend(
+        ContextEdge(
+            relation="Calls",
+            direction="incoming",
+            source_node_id="Function:_neighbor_from_row",
+            target_node_id="CallExpression:GraphNeighbor",
+        ),
+        ContextPathNode("Function:_neighbor_from_row", "Function", "_neighbor_from_row"),
+    )
+
+    assert path.chain == (
+        "Function _neighbor_from_row Calls "
+        "CallExpression GraphNeighbor Calls "
+        "Class GraphNeighbor"
+    )
+
+
+def test_explicit_context_payload_honors_non_default_context_limit() -> None:
+    store = _AdapterStore(_DedupePathAdapter())
+    arguments = {
+        "node_id": "Function:A",
+        "node_type": "Function",
+        "profile": "callgraph",
+        "limit": 1,
+        "context_limit": 2,
+        "budget": 200,
+        "detail": "slim",
+        "_profile_catalog": {"callgraph": {"relations": ["Calls", "References"], "max_depth": 1}},
+    }
+
+    payload = _tool_context_payload(store, arguments)
+
+    assert len(payload["context"]) == 2
+
+
+def test_explicit_context_payload_keeps_limit_fallback_for_default_context_limit() -> None:
+    store = _AdapterStore(_DedupePathAdapter())
+    arguments = {
+        "node_id": "Function:A",
+        "node_type": "Function",
+        "profile": "callgraph",
+        "limit": 1,
+        "context_limit": 3,
+        "budget": 200,
+        "detail": "slim",
+        "_profile_catalog": {"callgraph": {"relations": ["Calls", "References"], "max_depth": 1}},
+    }
+
+    payload = _tool_context_payload(store, arguments)
+
+    assert len(payload["context"]) == 1
+
+
+def test_compact_context_adds_semantic_annotations_and_prioritizes_semantic_edges() -> None:
+    builder = CompactContextBuilder(
+        _AdapterStore(_SemanticPathAdapter()),
+        profile_catalog={"semantic": {"relations": ["ResolvesTo"], "max_depth": 1}},
+    )
+
+    context = builder.build(
+        "CallExpression:helper",
+        "CallExpression",
+        profile="semantic",
+        limit=2,
+        budget=200,
+        max_depth=1,
+        root_label="helper()",
+    )
+    slim_payload = context[0].as_dict(detail="slim")
+    standard_payload = context[0].as_dict(detail="standard")
+
+    assert [node.label for node in context] == ["helper", "plain"]
+    assert slim_payload["semantic_annotations"] == [
+        {"relation_kind": "semantic_resolution", "confidence": 0.91}
+    ]
+    assert standard_payload["semantic_annotations"] == [
+        {
+            "relation_kind": "semantic_resolution",
+            "confidence": 0.91,
+            "provider": "symbol_table",
+            "evidence_ids": ["edge:semantic", "evidence:helper"],
+            "diagnostics": ["matched import binding"],
+            "metadata": {
+                "resolution_source": "symbol_table",
+                "evidence_id": "evidence:helper",
+                "diagnostics": ["matched import binding"],
+            },
+        }
+    ]
+
+
+def test_compact_context_semantic_controls_can_hide_annotations_and_confidence() -> None:
+    builder = CompactContextBuilder(
+        _AdapterStore(_SemanticPathAdapter()),
+        profile_catalog={"semantic": {"relations": ["ResolvesTo"], "max_depth": 1}},
+    )
+
+    context = builder.build("CallExpression:helper", "CallExpression", profile="semantic", limit=1, budget=200)
+
+    without_semantic = context[0].as_dict(detail="standard", include_semantic=False)
+    without_confidence = context[0].as_dict(detail="standard", include_confidence=False)
+
+    assert "semantic_annotations" not in without_semantic
+    assert "confidence" not in without_confidence["semantic_annotations"][0]
+    assert "confidence" not in without_confidence["evidence_path"]["edges"][0]
+
+
 def test_compact_context_dedupes_by_terminal_node_plus_relation_chain() -> None:
     builder = CompactContextBuilder(_AdapterStore(_DedupePathAdapter()))
 
@@ -382,6 +612,35 @@ def test_search_service_respects_zero_context_limit() -> None:
     assert adapter.neighbor_calls == []
 
 
+def test_search_payload_threads_semantic_output_controls() -> None:
+    payload = CompactContextPayload(
+        query="helper",
+        profile="brief",
+        limit=1,
+        budget=600,
+        include_semantic=False,
+        include_confidence=False,
+        results=(
+            SearchHit(
+                id="CallExpression:helper",
+                type="CallExpression",
+                label="helper",
+                context=[
+                    CompactContextBuilder(
+                        _AdapterStore(_SemanticPathAdapter()),
+                        profile_catalog={"semantic": {"relations": ["ResolvesTo"], "max_depth": 1}},
+                    ).build("CallExpression:helper", "CallExpression", profile="semantic", limit=1)[0]
+                ],
+            ),
+        ),
+    )
+
+    context = payload.as_dict(detail="standard")["results"][0]["context"][0]
+
+    assert "semantic_annotations" not in context
+    assert "confidence" not in context["evidence_path"]["edges"][0]
+
+
 def test_search_request_rejects_invalid_profile() -> None:
     with pytest.raises(ValueError, match="Unknown context profile"):
         SearchRequest("SampleService", profile="missing").validate()
@@ -399,6 +658,30 @@ def test_search_request_accepts_runtime_custom_profile_catalog() -> None:
     )
 
     SearchRequest("SampleService", profile="repo_flow").validate(catalog)
+
+
+def test_graph_cli_and_mcp_schemas_accept_semantic_output_controls() -> None:
+    parser = _build_parser()
+
+    args = parser.parse_args(
+        [
+            "graph-search",
+            "helper",
+            "--no-semantic",
+            "--no-confidence",
+            "--include-evidence",
+        ]
+    )
+    payload = graph_command_spec("graph-search").payload_from_args(args)
+    search_schema = graph_command_spec("graph-search").input_schema["properties"]
+    context_schema = graph_command_spec("graph-context").input_schema["properties"]
+
+    assert payload["include_semantic"] is False
+    assert payload["include_confidence"] is False
+    assert payload["include_evidence"] is True
+    assert search_schema["include_semantic"]["default"] is True
+    assert search_schema["include_confidence"]["default"] is True
+    assert "include_evidence" in context_schema
 
 
 def test_source_snippet_collection_redacts_secret_like_literals(tmp_path: Path) -> None:

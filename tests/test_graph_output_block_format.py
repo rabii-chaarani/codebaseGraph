@@ -145,6 +145,80 @@ def test_parseable_block_preserves_evidence_chain_and_snippet_fields() -> None:
     assert parse_search_block(block) == canonicalize_search_payload(payload)
 
 
+def test_parseable_block_round_trips_semantic_annotations() -> None:
+    payload = _semantic_payload()
+
+    block = serialize_search_block(payload)
+
+    assert "semantic=semantic_resolution" in block
+    assert "confidence=0.91" in block
+    assert "provider=symbol_table" in block
+    assert 'evidence="edge:semantic,evidence:helper"' in block
+    assert parse_search_block(block) == canonicalize_search_payload(payload)
+
+
+def test_parseable_block_round_trips_multiple_semantic_annotation_groups() -> None:
+    payload = _semantic_payload()
+    payload["results"][0]["context"][0]["semantic_annotations"].append(
+        {
+            "relation_kind": "semantic_call_target",
+            "confidence": 0.8,
+            "provider": "receiver",
+            "evidence_ids": ["edge:call"],
+            "diagnostics": ["receiver match"],
+        }
+    )
+
+    block = serialize_search_block(payload)
+
+    assert 'semantic="semantic_resolution,semantic_call_target"' in block
+    assert 'evidence="edge:semantic,evidence:helper;edge:call"' in block
+    assert parse_search_block(block) == canonicalize_search_payload(payload)
+
+
+def test_agent_and_context_blocks_render_semantic_annotations_without_changing_row_shape() -> None:
+    payload = _semantic_payload()
+
+    agent_block = serialize_agent_search_block(payload)
+    context_block = serialize_context_block(
+        {
+            "node_id": payload["results"][0]["id"],
+            "node_type": payload["results"][0]["type"],
+            "profile": payload["profile"],
+            "context": payload["results"][0]["context"],
+        }
+    )
+
+    assert "Function helper() ResolvesTo Function helper L5-L8 semantic=semantic_resolution" in agent_block
+    assert "Function helper() ResolvesTo Function helper L5-L8 semantic=semantic_resolution" in context_block
+    assert "confidence=0.91" in agent_block
+    assert "provider=symbol_table" in context_block
+
+
+def test_agent_block_keeps_semantic_type_annotation_context() -> None:
+    payload = _semantic_payload()
+    payload["results"][0]["context"] = [
+        {
+            "direction": "outgoing",
+            "relation": "References",
+            "type": "TypeAnnotation",
+            "label": "User",
+            "path": "sample.py",
+            "span": {"line_start": 2, "line_end": 2},
+            "semantic_annotations": [
+                {
+                    "relation_kind": "semantic_type_reference",
+                    "confidence": 0.82,
+                }
+            ],
+        }
+    ]
+
+    block = serialize_agent_search_block(payload)
+
+    assert "TypeAnnotation User L2-L2 semantic=semantic_type_reference confidence=0.82" in block
+
+
 def test_agent_block_uses_evidence_chain_as_primary_context_text() -> None:
     payload = _evidence_chain_payload()
 
@@ -369,6 +443,65 @@ def _evidence_chain_payload() -> dict[str, Any]:
                             "text": "def b():\n",
                             "redactions": ["token"],
                         },
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _semantic_payload() -> dict[str, Any]:
+    return {
+        "query": "helper",
+        "profile": "callgraph",
+        "limit": 1,
+        "budget": 600,
+        "results": [
+            {
+                "id": "CallExpression:helper",
+                "type": "CallExpression",
+                "label": "helper()",
+                "path": "sample.py",
+                "span": {"line_start": 1, "line_end": 1},
+                "rank_score": 1.0,
+                "context": [
+                    {
+                        "direction": "outgoing",
+                        "relation": "ResolvesTo",
+                        "type": "Function",
+                        "label": "helper",
+                        "path": "sample.py",
+                        "span": {"line_start": 5, "line_end": 8},
+                        "evidence_path": {
+                            "chain": "Function helper() ResolvesTo Function helper",
+                            "edges": [
+                                {
+                                    "relation": "ResolvesTo",
+                                    "direction": "outgoing",
+                                    "source_node_id": "CallExpression:helper",
+                                    "target_node_id": "Function:helper",
+                                    "edge_id": "edge:semantic",
+                                    "kind": "semantic_resolution",
+                                    "confidence": 0.91,
+                                    "metadata": {
+                                        "resolution_source": "symbol_table",
+                                        "evidence_id": "evidence:helper",
+                                    },
+                                }
+                            ],
+                        },
+                        "semantic_annotations": [
+                            {
+                                "relation_kind": "semantic_resolution",
+                                "confidence": 0.91,
+                                "provider": "symbol_table",
+                                "evidence_ids": ["edge:semantic", "evidence:helper"],
+                                "metadata": {
+                                    "resolution_source": "symbol_table",
+                                    "evidence_id": "evidence:helper",
+                                },
+                            }
+                        ],
                     }
                 ],
             }

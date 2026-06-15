@@ -406,6 +406,9 @@ def canonicalize_search_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             evidence_path = _compact_evidence_path(context)
             if evidence_path:
                 context_record["evidence_path"] = evidence_path
+            semantic_annotations = _compact_semantic_annotations(context)
+            if semantic_annotations:
+                context_record["semantic_annotations"] = semantic_annotations
             snippet = _compact_snippet(context)
             if snippet:
                 context_record["snippet"] = snippet
@@ -472,6 +475,9 @@ def parse_search_block(text: str) -> dict[str, Any]:
                 context_record["summary"] = fields["summary"]
             if fields.get("chain"):
                 context_record["evidence_path"] = {"chain": fields["chain"]}
+            semantic_annotations = _parse_semantic_annotations(fields)
+            if semantic_annotations:
+                context_record["semantic_annotations"] = semantic_annotations
             if fields.get("snippet"):
                 context_record["snippet"] = {
                     "path": fields.get("snippet_path", fields.get("path", current_path)),
@@ -655,6 +661,7 @@ def _append_context_extras(parts: list[str], context: Mapping[str, Any], *, incl
     evidence_path = _compact_evidence_path(context)
     if include_chain and evidence_path:
         parts.append(f"chain={_format_value(str(evidence_path['chain']))}")
+    _append_semantic_extras(parts, context)
     snippet = _compact_snippet(context)
     if snippet:
         parts.append(f"snippet_path={_format_value(str(snippet.get('path', '')))}")
@@ -672,6 +679,112 @@ def _compact_evidence_path(record: Mapping[str, Any]) -> dict[str, str]:
         return {}
     chain = str(evidence_path.get("chain", ""))
     return {"chain": chain} if chain else {}
+
+
+def _compact_semantic_annotations(record: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Return the parseable subset of semantic relation annotations."""
+    annotations = record.get("semantic_annotations")
+    if not isinstance(annotations, list):
+        return []
+    compact: list[dict[str, Any]] = []
+    for annotation in annotations:
+        if not isinstance(annotation, Mapping):
+            continue
+        relation_kind = str(annotation.get("relation_kind", ""))
+        if not relation_kind:
+            continue
+        item: dict[str, Any] = {"relation_kind": relation_kind}
+        if annotation.get("confidence") is not None:
+            item["confidence"] = annotation["confidence"]
+        if annotation.get("provider"):
+            item["provider"] = str(annotation["provider"])
+        evidence_ids = annotation.get("evidence_ids")
+        if isinstance(evidence_ids, list) and evidence_ids:
+            item["evidence_ids"] = [str(value) for value in evidence_ids]
+        diagnostics = annotation.get("diagnostics")
+        if isinstance(diagnostics, list) and diagnostics:
+            item["diagnostics"] = [str(value) for value in diagnostics]
+        compact.append(item)
+    return compact
+
+
+def _append_semantic_extras(parts: list[str], context: Mapping[str, Any]) -> None:
+    """Append compact semantic relation fields to a block-format context row."""
+    annotations = _compact_semantic_annotations(context)
+    if not annotations:
+        return
+    parts.append(f"semantic={_format_csv([annotation['relation_kind'] for annotation in annotations])}")
+    confidences = [
+        str(annotation["confidence"])
+        for annotation in annotations
+        if annotation.get("confidence") is not None
+    ]
+    if confidences:
+        parts.append(f"confidence={_format_csv(confidences)}")
+    providers = [str(annotation["provider"]) for annotation in annotations if annotation.get("provider")]
+    if providers:
+        parts.append(f"provider={_format_csv(providers)}")
+    evidence_groups = [
+        ",".join(str(evidence_id) for evidence_id in annotation.get("evidence_ids", []))
+        for annotation in annotations
+    ]
+    if any(evidence_groups):
+        parts.append(f"evidence={_format_value(';'.join(evidence_groups))}")
+    diagnostic_groups = [
+        ",".join(str(diagnostic) for diagnostic in annotation.get("diagnostics", []))
+        for annotation in annotations
+    ]
+    if any(diagnostic_groups):
+        parts.append(f"diagnostics={_format_value(';'.join(diagnostic_groups))}")
+
+
+def _parse_semantic_annotations(fields: Mapping[str, str]) -> list[dict[str, Any]]:
+    """Parse semantic annotation fields from a context block row."""
+    kinds = _parse_csv(fields.get("semantic", ""))
+    if not kinds:
+        return []
+    confidences = _parse_csv(fields.get("confidence", ""))
+    providers = _parse_csv(fields.get("provider", ""))
+    evidence_groups = _parse_grouped_csv(fields.get("evidence", ""), len(kinds))
+    diagnostic_groups = _parse_grouped_csv(fields.get("diagnostics", ""), len(kinds))
+    annotations: list[dict[str, Any]] = []
+    for index, relation_kind in enumerate(kinds):
+        annotation: dict[str, Any] = {"relation_kind": relation_kind}
+        if index < len(confidences):
+            annotation["confidence"] = _parse_number(confidences[index])
+        if index < len(providers):
+            annotation["provider"] = providers[index]
+        if index < len(evidence_groups) and evidence_groups[index]:
+            annotation["evidence_ids"] = evidence_groups[index]
+        if index < len(diagnostic_groups) and diagnostic_groups[index]:
+            annotation["diagnostics"] = diagnostic_groups[index]
+        annotations.append(annotation)
+    return annotations
+
+
+def _parse_grouped_csv(value: str, group_count: int) -> list[list[str]]:
+    """Parse grouped comma-separated values aligned to semantic annotations."""
+    if not value:
+        return []
+    if ";" in value:
+        groups = [_parse_csv(group) for group in value.split(";")]
+        while len(groups) < group_count:
+            groups.append([])
+        return groups
+    items = _parse_csv(value)
+    if group_count <= 1:
+        return [items]
+    groups = [[item] for item in items[:group_count]]
+    while len(groups) < group_count:
+        groups.append([])
+    return groups
+
+
+def _parse_csv(value: str) -> list[str]:
+    """Parse a comma-separated block field."""
+    if not value:
+        return []
+    return [item for item in value.split(",") if item]
 
 
 def _compact_snippet(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -829,7 +942,7 @@ def _omit_agent_context(
         return True
     if _record_key(context) in result_keys:
         return True
-    return context.get("type") == "TypeAnnotation"
+    return context.get("type") == "TypeAnnotation" and not _compact_semantic_annotations(context)
 
 
 def _record_key(record: Mapping[str, Any]) -> tuple[str, str, str, tuple[tuple[str, int], ...]]:
