@@ -194,7 +194,7 @@ def candidate_symbol_keys(label: str) -> tuple[str, ...]:
             parts.add(text.rsplit(delimiter, 1)[-1])
     if "/" in text:
         parts.add(text.rsplit("/", 1)[-1])
-    return tuple(_normalize_symbol_key(part) for part in parts if _normalize_symbol_key(part))
+    return tuple(sorted(_normalize_symbol_key(part) for part in parts if _normalize_symbol_key(part)))
 
 
 def _graph_tuple(graphs: CodeGraph | Iterable[CodeGraph]) -> tuple[CodeGraph, ...]:

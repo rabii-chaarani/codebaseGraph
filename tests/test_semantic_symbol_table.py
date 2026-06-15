@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from codebase_graph.core import CodeGraph, GraphEdge, GraphNode
 from codebase_graph.semantic import build_project_symbol_table
+from codebase_graph.semantic.symbol_table import candidate_symbol_keys
 
 
 def test_symbol_table_indexes_declarations_scopes_imports_and_exports() -> None:
@@ -27,3 +28,7 @@ def test_symbol_table_indexes_declarations_scopes_imports_and_exports() -> None:
     assert table.by_node_id["function:helper"].visibility == "exported"
     assert table.scopes[0].owner_node_id == "module:app"
     assert table.imports[0].alias == "Path"
+
+
+def test_candidate_symbol_keys_are_sorted_for_deterministic_resolution() -> None:
+    assert candidate_symbol_keys("User::new") == ("new", "user::new")

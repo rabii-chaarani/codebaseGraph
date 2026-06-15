@@ -147,6 +147,7 @@ def resolve_local_reference(
                 symbol.language != reference.language,
                 symbol.visibility not in {"local", "public", "exported"},
                 symbol.qualified_name,
+                symbol.node_id,
             ),
         )
         symbol = ranked[0]
