@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.4.0...v0.5.0) (2026-06-15)
+
+
+### Features
+
+* Enhance semantic resolution across ingestion and reference handling ([#23](https://github.com/rabii-chaarani/codebaseGraph/issues/23)) ([5bad710](https://github.com/rabii-chaarani/codebaseGraph/commit/5bad71071f3fcb0de085d826ad872d64a5628555))
+
 ## [0.4.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.3.0...v0.4.0) (2026-06-12)
 
 
