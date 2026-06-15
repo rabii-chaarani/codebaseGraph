@@ -720,6 +720,8 @@ def _path_dedupe_key(node_key: str, relation_chain: tuple[str, ...]) -> str:
 def _path_node_label(node: ContextPathNode) -> str:
     """Return a concise label for a node inside an evidence chain."""
     if node.label:
+        if node.label == node.type or node.label.startswith(f"{node.type}:"):
+            return node.label
         return f"{node.type} {node.label}"
     return node.type
 

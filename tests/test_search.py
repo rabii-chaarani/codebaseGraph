@@ -15,7 +15,10 @@ from codebase_graph.mcp.runtime import GraphRuntimeConfig
 from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _query_payload, handle_tool_call, tool_specs
 from codebase_graph.reasoning import (
     CompactContextBuilder,
+    ContextEdge,
     ContextNode,
+    ContextPath,
+    ContextPathNode,
     collect_source_snippet,
     estimate_token_count,
     merge_context_profiles,
@@ -416,6 +419,22 @@ def test_compact_context_builds_depth_two_evidence_paths_with_edge_metadata() ->
     assert payload["evidence_path"]["chain"] == "Function A Calls Function B References Symbol C"
     assert payload["evidence_path"]["edges"][1]["edge_id"] == "References:B:C"
     assert payload["evidence_path"]["edges"][1]["metadata"] == {"confidence_source": "test"}
+
+
+def test_evidence_path_chain_does_not_duplicate_type_for_typed_node_ids() -> None:
+    path = ContextPath(
+        nodes=(ContextPathNode("ReturnType:abc123", "ReturnType", "ReturnType:abc123"),)
+    ).extend(
+        ContextEdge(
+            relation="HasReturnType",
+            direction="incoming",
+            source_node_id="Method:line",
+            target_node_id="ReturnType:abc123",
+        ),
+        ContextPathNode("Method:line", "Method", "line"),
+    )
+
+    assert path.chain == "ReturnType:abc123 HasReturnType Method line"
 
 
 def test_compact_context_adds_semantic_annotations_and_prioritizes_semantic_edges() -> None:
