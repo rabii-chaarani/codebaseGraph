@@ -7,7 +7,7 @@ from typing import Any
 from codebase_graph.db import LadybugCodeGraphStore
 from codebase_graph.diagnostics import log_event
 from codebase_graph.ontology import QUERY_HELPERS, schema_payload
-from codebase_graph.reasoning import CompactContextBuilder, architecture_query_catalog
+from codebase_graph.reasoning import CompactContextBuilder, DEFAULT_CONTEXT_LIMIT, architecture_query_catalog
 from codebase_graph.retrieval import DETAIL_LEVELS, SearchRequest, SearchService, serialize_graph_block
 
 from .graph_commands import MAX_GRAPH_QUERY_LIMIT, graph_tool_specs
@@ -287,7 +287,7 @@ def _context_payload(store: LadybugCodeGraphStore, arguments: dict[str, Any]) ->
             node_id,
             node_type,
             profile=profile,
-            limit=int(arguments.get("limit", 3)),
+            limit=_explicit_context_limit(arguments),
             budget=int(arguments.get("budget", 600)),
             max_depth=_optional_int(arguments.get("max_depth")),
             include_snippets=_bool(arguments.get("include_snippets", False)),
@@ -391,6 +391,16 @@ def _graph_query_limit(arguments: dict[str, Any]) -> int:
     if limit > MAX_GRAPH_QUERY_LIMIT:
         raise ValueError(f"graph_query limit must be {MAX_GRAPH_QUERY_LIMIT} or less")
     return limit
+
+
+def _explicit_context_limit(arguments: dict[str, Any]) -> int:
+    """Return row limit for explicit-node graph_context calls."""
+    context_limit = arguments.get("context_limit")
+    if context_limit is not None and (
+        "limit" not in arguments or int(context_limit) != DEFAULT_CONTEXT_LIMIT
+    ):
+        return int(context_limit)
+    return int(arguments.get("limit", context_limit or DEFAULT_CONTEXT_LIMIT))
 
 
 def _row_values(row: Any) -> list[Any]:

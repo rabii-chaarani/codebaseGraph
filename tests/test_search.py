@@ -12,7 +12,8 @@ from codebase_graph.db import GraphNeighbor, LadybugGraphQueryAdapter, SearchInd
 from codebase_graph.ingest import GraphMaterializer
 from codebase_graph.mcp.graph_commands import graph_command_spec, graph_tool_specs
 from codebase_graph.mcp.runtime import GraphRuntimeConfig
-from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _query_payload, handle_tool_call, tool_specs
+from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _context_payload as _tool_context_payload
+from codebase_graph.mcp.tools import _query_payload, handle_tool_call, tool_specs
 from codebase_graph.reasoning import (
     CompactContextBuilder,
     ContextEdge,
@@ -434,7 +435,74 @@ def test_evidence_path_chain_does_not_duplicate_type_for_typed_node_ids() -> Non
         ContextPathNode("Method:line", "Method", "line"),
     )
 
-    assert path.chain == "ReturnType:abc123 HasReturnType Method line"
+    assert path.chain == "Method line HasReturnType ReturnType:abc123"
+
+
+def test_evidence_path_chain_uses_actual_edge_direction_for_incoming_calls() -> None:
+    path = ContextPath(
+        nodes=(
+            ContextPathNode("Class:GraphNeighbor", "Class", "GraphNeighbor"),
+            ContextPathNode("CallExpression:GraphNeighbor", "CallExpression", "GraphNeighbor"),
+        ),
+        edges=(
+            ContextEdge(
+                relation="Calls",
+                direction="incoming",
+                source_node_id="CallExpression:GraphNeighbor",
+                target_node_id="Class:GraphNeighbor",
+            ),
+        ),
+    ).extend(
+        ContextEdge(
+            relation="Calls",
+            direction="incoming",
+            source_node_id="Function:_neighbor_from_row",
+            target_node_id="CallExpression:GraphNeighbor",
+        ),
+        ContextPathNode("Function:_neighbor_from_row", "Function", "_neighbor_from_row"),
+    )
+
+    assert path.chain == (
+        "Function _neighbor_from_row Calls "
+        "CallExpression GraphNeighbor Calls "
+        "Class GraphNeighbor"
+    )
+
+
+def test_explicit_context_payload_honors_non_default_context_limit() -> None:
+    store = _AdapterStore(_DedupePathAdapter())
+    arguments = {
+        "node_id": "Function:A",
+        "node_type": "Function",
+        "profile": "callgraph",
+        "limit": 1,
+        "context_limit": 2,
+        "budget": 200,
+        "detail": "slim",
+        "_profile_catalog": {"callgraph": {"relations": ["Calls", "References"], "max_depth": 1}},
+    }
+
+    payload = _tool_context_payload(store, arguments)
+
+    assert len(payload["context"]) == 2
+
+
+def test_explicit_context_payload_keeps_limit_fallback_for_default_context_limit() -> None:
+    store = _AdapterStore(_DedupePathAdapter())
+    arguments = {
+        "node_id": "Function:A",
+        "node_type": "Function",
+        "profile": "callgraph",
+        "limit": 1,
+        "context_limit": 3,
+        "budget": 200,
+        "detail": "slim",
+        "_profile_catalog": {"callgraph": {"relations": ["Calls", "References"], "max_depth": 1}},
+    }
+
+    payload = _tool_context_payload(store, arguments)
+
+    assert len(payload["context"]) == 1
 
 
 def test_compact_context_adds_semantic_annotations_and_prioritizes_semantic_edges() -> None:

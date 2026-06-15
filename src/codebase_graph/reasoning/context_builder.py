@@ -123,10 +123,9 @@ class ContextPath:
         """Return a concise human-readable evidence chain."""
         if not self.nodes:
             return ""
-        parts = [_path_node_label(self.nodes[0])]
-        for edge, node in zip(self.edges, self.nodes[1:], strict=False):
-            parts.extend((edge.relation, _path_node_label(node)))
-        return " ".join(part for part in parts if part)
+        if not self.edges:
+            return _path_node_label(self.nodes[0])
+        return _directed_path_chain(self.nodes, self.edges)
 
     def as_dict(
         self,
@@ -724,6 +723,60 @@ def _path_node_label(node: ContextPathNode) -> str:
             return node.label
         return f"{node.type} {node.label}"
     return node.type
+
+
+def _directed_path_chain(nodes: tuple[ContextPathNode, ...], edges: tuple[ContextEdge, ...]) -> str:
+    """Render evidence edges in their actual source-to-target direction."""
+    labels = {node.id: _path_node_label(node) for node in nodes}
+    ordered_edges = _ordered_directed_edges(edges)
+    if ordered_edges is None:
+        return "; ".join(_directed_edge_clause(edge, labels) for edge in edges)
+    first = ordered_edges[0]
+    parts = [_endpoint_label(first.source_node_id, labels)]
+    for edge in ordered_edges:
+        parts.extend((edge.relation, _endpoint_label(edge.target_node_id, labels)))
+    return " ".join(part for part in parts if part)
+
+
+def _ordered_directed_edges(edges: tuple[ContextEdge, ...]) -> tuple[ContextEdge, ...] | None:
+    """Order connected directed edges as one source-to-target chain when possible."""
+    if len(edges) == 1:
+        return edges
+    sources = {edge.source_node_id for edge in edges}
+    targets = {edge.target_node_id for edge in edges}
+    starts = sorted(sources - targets)
+    if len(starts) != 1:
+        return None
+    current = starts[0]
+    remaining = list(edges)
+    ordered: list[ContextEdge] = []
+    while remaining:
+        next_index = next(
+            (index for index, edge in enumerate(remaining) if edge.source_node_id == current),
+            None,
+        )
+        if next_index is None:
+            return None
+        edge = remaining.pop(next_index)
+        ordered.append(edge)
+        current = edge.target_node_id
+    return tuple(ordered)
+
+
+def _directed_edge_clause(edge: ContextEdge, labels: dict[str, str]) -> str:
+    return " ".join(
+        part
+        for part in (
+            _endpoint_label(edge.source_node_id, labels),
+            edge.relation,
+            _endpoint_label(edge.target_node_id, labels),
+        )
+        if part
+    )
+
+
+def _endpoint_label(node_id: str, labels: dict[str, str]) -> str:
+    return labels.get(node_id, node_id)
 
 
 def _span(line_start: Any, line_end: Any) -> dict[str, int]:
