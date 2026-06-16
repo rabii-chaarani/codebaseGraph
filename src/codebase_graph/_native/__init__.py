@@ -6,6 +6,7 @@ the Python modules that own fallback and compatibility behavior.
 
 from .bulk_staging import NativeBulkStagingUnavailable, NativeBulkStagingResult, write_bulk_staging
 from .graph_builder import NativeGraphBuilderUnavailable, build_file_graph
+from .materialization import NativeMaterializationUnavailable, NativeSyntaxBatchResult, materialize_syntax_batch
 from .scan_diff import NativeScanDiffResult, NativeScanDiffUnavailable, scan_repository
 from .semantic_enrichment import (
     NativeSemanticBatchResult,
@@ -21,12 +22,15 @@ __all__ = [
     "NativeBulkStagingResult",
     "NativeBulkStagingUnavailable",
     "NativeGraphBuilderUnavailable",
+    "NativeMaterializationUnavailable",
     "NativeScanDiffResult",
     "NativeScanDiffUnavailable",
     "NativeSemanticBatchResult",
     "NativeSemanticBatchUnavailable",
+    "NativeSyntaxBatchResult",
     "NativeTreeSitterNormalizationUnavailable",
     "build_file_graph",
+    "materialize_syntax_batch",
     "normalize_profiled_syntax",
     "run_semantic_batch",
     "scan_repository",

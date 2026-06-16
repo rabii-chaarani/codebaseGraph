@@ -13,7 +13,7 @@ from typing import Any, Literal
 from codebase_graph._native import build_file_graph as build_native_file_graph
 from codebase_graph._native import scan_repository as scan_native_repository
 from codebase_graph.core import CodeGraph
-from codebase_graph.db import LadybugCodeGraphStore, create_ladybug_database
+from codebase_graph.db import LadybugCodeGraphStore, build_ladybug_schema_statements, create_ladybug_database
 from codebase_graph.diagnostics import log_event
 from codebase_graph.extract import GraphBuilder, GraphBuildResult, ParseBundle
 from codebase_graph.ontology import ONTOLOGY_NAME
@@ -21,6 +21,7 @@ from codebase_graph.paths import DEFAULT_STATE_DIR, derive_graph_state_paths
 from codebase_graph.semantic.build_context import BuildContext, collect_project_build_context
 from codebase_graph.semantic.enrichment_writer import persist_semantic_enrichment
 
+from .languages import load_language_profiles
 from .tree_sitter_parser import ParserRegistry, ParserUnavailableError, default_parser_registry
 
 MaterializeMode = Literal["full", "changed"]
@@ -384,6 +385,7 @@ class GraphMaterializer:
         self.repository_label = repository_label or self.source_root.name or "repository"
         self._store = store
         self._store_injected = store is not None
+        self._parser_registry_injected = parser_registry is not None
         self.parser_registry = parser_registry or default_parser_registry()
         self.semantic_enrichment = semantic_enrichment
         self.semantic_provider_mode = semantic_provider_mode
@@ -440,6 +442,10 @@ class GraphMaterializer:
         """
         if mode not in {"full", "changed"}:
             raise ValueError(f"Unsupported materialization mode: {mode}")
+
+        native_result = self._materialize_native_syntax_batch(mode)
+        if native_result is not None:
+            return native_result
 
         previous_manifest = self._read_manifest()
         scan_state = self._scan_source_state(previous_manifest)
@@ -564,6 +570,147 @@ class GraphMaterializer:
             rebuilt_entries=rebuilt_entries,
             next_manifest=next_manifest,
         )
+
+    def _materialize_native_syntax_batch(self, mode: MaterializeMode) -> MaterializationResult | None:
+        """Run the in-process Rust syntax materialization kernel for supported persistent rebuilds."""
+        if not self._native_syntax_batch_enabled():
+            return None
+
+        from codebase_graph._native.materialization import materialize_syntax_batch, staging_dir_for
+
+        strict = self._native_syntax_batch_strict()
+        target_db_path = _filesystem_db_path(self.db_path)
+        lock_fd, lock_path = _acquire_materialization_lock(target_db_path)
+        try:
+            previous_manifest = self._read_manifest()
+            temp_db_path = _temporary_sibling(target_db_path, suffix=".lbug.tmp")
+            temp_manifest_path = _temporary_sibling(self.manifest_path, suffix=".manifest.tmp")
+            marker_path = self._rebuild_marker_path
+            effective_mode: MaterializeMode = "full" if mode == "full" or self._should_force_atomic_recovery() else mode
+
+            with tempfile.TemporaryDirectory(prefix="codebase-graph-native-staging-") as staging_dir:
+                payload = self._native_syntax_batch_payload(
+                    mode=effective_mode,
+                    previous_manifest=previous_manifest,
+                    temp_db_path=temp_db_path,
+                    staging_dir=Path(staging_dir_for(Path(staging_dir) / "graph.ladybug")),
+                    strict=strict,
+                )
+                result = materialize_syntax_batch(payload, strict=strict)
+                if result is None:
+                    _unlink_if_exists(temp_db_path)
+                    _unlink_db_sidecars(temp_db_path)
+                    _unlink_if_exists(temp_manifest_path)
+                    return None
+
+                snapshots = {
+                    path: SourceSnapshot(
+                        path=str(item["path"]),
+                        absolute_path=Path(str(item["absolute_path"])),
+                        content_hash=str(item["content_hash"]),
+                        language=(str(item["language"]) if item.get("language") is not None else None),
+                    )
+                    for path, item in result.snapshots.items()
+                }
+                diff = ManifestDiff(
+                    added=tuple(result.diff.get("added", ())),
+                    modified=tuple(result.diff.get("modified", ())),
+                    unchanged=tuple(result.diff.get("unchanged", ())),
+                    deleted=tuple(result.diff.get("deleted", ())),
+                    force_rebuild=bool(result.diff.get("force_rebuild", False)),
+                )
+                rebuilt_entries = {
+                    path: ManifestEntry.from_dict(entry)
+                    for path, entry in result.rebuilt_entries.items()
+                }
+                if diff.force_rebuild:
+                    next_files = dict(rebuilt_entries)
+                else:
+                    next_files = {
+                        path: entry
+                        for path, entry in previous_manifest.files.items()
+                        if path not in set(diff.deleted) | set(diff.rebuild_paths)
+                    }
+                    next_files.update(rebuilt_entries)
+                next_manifest = MaterializationManifest(parser_version=self.parser_version, files=next_files)
+
+                if not result.skipped:
+                    if not result.database_written:
+                        _unlink_if_exists(temp_db_path)
+                        _unlink_db_sidecars(temp_db_path)
+                        _unlink_if_exists(temp_manifest_path)
+                        return None
+                    try:
+                        next_manifest.write(temp_manifest_path)
+                        _write_rebuild_marker(marker_path, target_db_path, self.manifest_path)
+                        self._close_store()
+                        _unlink_db_sidecars(target_db_path)
+                        os.replace(temp_db_path, target_db_path)
+                        os.replace(temp_manifest_path, self.manifest_path)
+                        _unlink_db_sidecars(target_db_path)
+                        _unlink_if_exists(marker_path)
+                        self._store = None
+                    except Exception:
+                        _unlink_if_exists(temp_db_path)
+                        _unlink_db_sidecars(temp_db_path)
+                        _unlink_if_exists(temp_manifest_path)
+                        _unlink_if_exists(marker_path)
+                        raise
+
+                return _materialization_result(
+                    mode=mode,
+                    snapshots=snapshots,
+                    diagnostics=result.diagnostics,
+                    diff=diff,
+                    manifest_path=self.manifest_path,
+                    rebuilt_entries=rebuilt_entries,
+                    next_manifest=next_manifest,
+                )
+        finally:
+            _release_materialization_lock(lock_fd, lock_path)
+
+    def _native_syntax_batch_enabled(self) -> bool:
+        """Return whether this materializer can hand syntax materialization to Rust."""
+        return (
+            os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
+            and not self.semantic_enrichment
+            and not self._store_injected
+            and not self._parser_registry_injected
+            and not self._graph_builder_injected
+            and self._can_atomic_rebuild()
+        )
+
+    def _native_syntax_batch_strict(self) -> bool:
+        """Return whether eligible native materialization failures should be fatal."""
+        return os.environ.get("CODEBASE_GRAPH_NATIVE_STRICT") == "1"
+
+    def _native_syntax_batch_payload(
+        self,
+        *,
+        mode: MaterializeMode,
+        previous_manifest: MaterializationManifest,
+        temp_db_path: Path,
+        staging_dir: Path,
+        strict: bool,
+    ) -> dict[str, Any]:
+        """Encode the stable native batch materialization control payload."""
+        return {
+            "source_root": self.source_root.as_posix(),
+            "repository_label": self.repository_label,
+            "mode": mode,
+            "parser_version": self.parser_version,
+            "manifest_schema_version": MANIFEST_SCHEMA_VERSION,
+            "ontology": ONTOLOGY_NAME,
+            "previous_manifest": previous_manifest.as_dict(),
+            "profiles": [profile.as_dict() for profile in load_language_profiles(self.source_root)],
+            "excluded_parts": sorted(EXCLUDED_PARTS),
+            "db_path": temp_db_path.as_posix(),
+            "include_fts": self.include_fts,
+            "schema_statements": build_ladybug_schema_statements(include_fts=self.include_fts),
+            "staging_dir": staging_dir.as_posix(),
+            "atomic_rebuild": True,
+            "strict": strict,
+        }
 
     def _materialize_full_atomic(
         self,

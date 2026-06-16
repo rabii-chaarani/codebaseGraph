@@ -36,6 +36,7 @@ classifiers = [
 ladybug = []
 parquet = ["pyarrow"]
 dev = ["pytest", "ruff", "tiktoken"]
+native = ["maturin>=1,<2"]
 
 [project.scripts]
 codebase-graph = "codebase_graph.cli:main"
@@ -63,3 +64,9 @@ target-version = "py310"
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
 testpaths = ["tests"]
+
+[tool.maturin]
+manifest-path = "rust/crates/codebase_graph_native/Cargo.toml"
+module-name = "codebase_graph._native._native"
+python-source = "src"
+features = ["python-extension"]
