@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/codebase_graph_native"]
+resolver = "2"

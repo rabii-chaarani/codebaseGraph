@@ -1,0 +1,8 @@
+[package]
+name = "codebase_graph_native"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "codebase_graph_native_graph_builder"
+path = "src/main.rs"
