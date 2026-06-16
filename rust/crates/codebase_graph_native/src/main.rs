@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -79,6 +79,9 @@ fn main() -> Result<(), String> {
     }
     if first_record_kind(&input).as_deref() == Some("TSNORM") {
         return run_tree_sitter_normalization(&input);
+    }
+    if first_record_kind(&input).as_deref() == Some("SEMANTIC") {
+        return run_semantic_batch(&input);
     }
     let (meta, captures) = parse_input(&input)?;
     let mut builder = Builder::new(meta);
@@ -1605,6 +1608,971 @@ fn encode_ts_node(node: &TsNode) -> String {
         parts.push(hex(value));
     }
     parts.join("\t")
+}
+
+const DECLARATION_TABLES: &[&str] = &[
+    "Symbol",
+    "Module",
+    "Class",
+    "Function",
+    "Method",
+    "Variable",
+    "Constant",
+    "ClassAttribute",
+    "InstanceAttribute",
+    "Property",
+    "Parameter",
+    "Dependency",
+    "APIEndpoint",
+    "Component",
+    "TypeAlias",
+];
+
+const REFERENCE_TABLES: &[&str] = &[
+    "Reference",
+    "ImportDeclaration",
+    "CallExpression",
+    "TypeAnnotation",
+    "Decorator",
+];
+
+struct SemanticInput {
+    relation_specs: BTreeMap<String, RelationSpec>,
+    nodes: BTreeMap<String, SemNode>,
+    node_order: Vec<String>,
+    edges: BTreeMap<String, SemEdge>,
+    edge_order: Vec<String>,
+}
+
+struct RelationSpec {
+    source_types: BTreeSet<String>,
+    target_types: BTreeSet<String>,
+}
+
+#[derive(Clone)]
+struct SemNode {
+    graph_index: usize,
+    id: String,
+    table: String,
+    label: String,
+    language: String,
+    path: String,
+    qualified_name: String,
+    scope_id: String,
+    imported_name: String,
+    owner_node_id: String,
+    typed_node_id: String,
+}
+
+#[derive(Clone)]
+struct SemEdge {
+    graph_index: usize,
+    id: String,
+    edge_type: String,
+    source_id: String,
+    target_id: String,
+    kind: String,
+    confidence: f64,
+    metadata: BTreeMap<String, String>,
+}
+
+#[derive(Clone)]
+struct SemSymbol {
+    symbol_id: String,
+    name: String,
+    qualified_name: String,
+    node_id: String,
+    table: String,
+    language: String,
+    scope_id: String,
+    visibility: String,
+}
+
+struct SemReference {
+    graph_index: usize,
+    reference_node_id: String,
+    name: String,
+    scope_id: String,
+    language: String,
+    source_path: String,
+}
+
+struct SemResolutionCandidate {
+    target_node_id: String,
+    score: f64,
+    source: String,
+    rationale: String,
+}
+
+struct SemEvidence {
+    evidence_id: String,
+    source: String,
+    confidence: f64,
+    diagnostics: Vec<String>,
+    provider: String,
+    metadata: BTreeMap<String, String>,
+}
+
+struct SemEvidenceLink {
+    graph_index: usize,
+    semantic_relation_id: String,
+    evidence_node_id: String,
+    evidence_kind: String,
+    confidence: f64,
+    metadata_fallback: bool,
+}
+
+struct SemFallback {
+    graph_index: usize,
+    semantic_relation_id: String,
+    source_node_id: String,
+    evidence_id: String,
+    metadata: BTreeMap<String, String>,
+}
+
+struct SemanticOutput {
+    symbol_count: usize,
+    call_type_relations: usize,
+    edges: Vec<SemEdge>,
+    evidence: Vec<SemEvidence>,
+    evidence_links: Vec<SemEvidenceLink>,
+    fallbacks: Vec<SemFallback>,
+}
+
+fn run_semantic_batch(input: &str) -> Result<(), String> {
+    let output = execute_semantic_batch(parse_semantic_batch(input)?)?;
+    println!(
+        "RESULT\t{}\t{}",
+        output.symbol_count, output.call_type_relations
+    );
+    for edge in output.edges {
+        println!("{}", encode_semantic_edge("EDGE", &edge));
+    }
+    for evidence in output.evidence {
+        println!("{}", encode_semantic_evidence(&evidence));
+    }
+    for link in output.evidence_links {
+        println!("{}", encode_semantic_link(&link));
+    }
+    for fallback in output.fallbacks {
+        println!("{}", encode_semantic_fallback(&fallback));
+    }
+    Ok(())
+}
+
+fn parse_semantic_batch(input: &str) -> Result<SemanticInput, String> {
+    let mut relation_specs = BTreeMap::new();
+    let mut nodes = BTreeMap::new();
+    let mut node_order = Vec::new();
+    let mut edges = BTreeMap::new();
+    let mut edge_order = Vec::new();
+
+    for line in input.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.split('\t').collect();
+        match parts.first().copied() {
+            Some("SEMANTIC") if parts.len() == 1 => {}
+            Some("REL") if parts.len() >= 4 => {
+                let mut cursor = 1;
+                let name = next_unhex(&parts, &mut cursor, "relation name")?;
+                let source_types = decode_hex_list_from_cursor(&parts, &mut cursor)?
+                    .into_iter()
+                    .collect();
+                let target_types = decode_hex_list_from_cursor(&parts, &mut cursor)?
+                    .into_iter()
+                    .collect();
+                relation_specs.insert(
+                    name,
+                    RelationSpec {
+                        source_types,
+                        target_types,
+                    },
+                );
+            }
+            Some("GRAPH") if parts.len() == 3 => {
+                parts[1]
+                    .parse::<usize>()
+                    .map_err(|error| format!("invalid semantic graph index: {error}"))?;
+                unhex(parts[2])?;
+            }
+            Some("SNODE") if parts.len() == 12 => {
+                let node = SemNode {
+                    graph_index: parts[1]
+                        .parse::<usize>()
+                        .map_err(|error| format!("invalid semantic node graph index: {error}"))?,
+                    id: unhex(parts[2])?,
+                    table: unhex(parts[3])?,
+                    label: unhex(parts[4])?,
+                    language: unhex(parts[5])?,
+                    path: unhex(parts[6])?,
+                    qualified_name: unhex(parts[7])?,
+                    scope_id: unhex(parts[8])?,
+                    imported_name: unhex(parts[9])?,
+                    owner_node_id: unhex(parts[10])?,
+                    typed_node_id: unhex(parts[11])?,
+                };
+                node_order.push(node.id.clone());
+                nodes.insert(node.id.clone(), node);
+            }
+            Some("SEDGE") if parts.len() == 10 => {
+                let edge = SemEdge {
+                    graph_index: parts[1]
+                        .parse::<usize>()
+                        .map_err(|error| format!("invalid semantic edge graph index: {error}"))?,
+                    id: unhex(parts[2])?,
+                    edge_type: unhex(parts[3])?,
+                    source_id: unhex(parts[4])?,
+                    target_id: unhex(parts[5])?,
+                    kind: unhex(parts[6])?,
+                    confidence: parts[7]
+                        .parse::<f64>()
+                        .map_err(|error| format!("invalid semantic edge confidence: {error}"))?,
+                    metadata: {
+                        let mut metadata = BTreeMap::new();
+                        let resolution_source = unhex(parts[8])?;
+                        let source_edge = unhex(parts[9])?;
+                        if !resolution_source.is_empty() {
+                            metadata.insert("resolution_source".to_string(), resolution_source);
+                        }
+                        if !source_edge.is_empty() {
+                            metadata.insert("source_edge".to_string(), source_edge);
+                        }
+                        metadata
+                    },
+                };
+                edge_order.push(edge.id.clone());
+                edges.insert(edge.id.clone(), edge);
+            }
+            Some(kind) => return Err(format!("invalid semantic batch record: {kind}")),
+            None => {}
+        }
+    }
+
+    Ok(SemanticInput {
+        relation_specs,
+        nodes,
+        node_order,
+        edges,
+        edge_order,
+    })
+}
+
+fn execute_semantic_batch(mut input: SemanticInput) -> Result<SemanticOutput, String> {
+    let symbols = build_semantic_symbols(&input);
+    let symbol_count = symbols.len();
+    let by_name = index_symbols_by_name(&symbols);
+    let mut output_edges = Vec::new();
+    let mut evidence = Vec::new();
+
+    for reference in collect_semantic_references(&input) {
+        let Some(decision) = resolve_semantic_reference(&reference, &by_name) else {
+            evidence.push(SemEvidence {
+                evidence_id: semantic_stable_id(
+                    "evidence",
+                    &format!("unresolved:{}", reference.reference_node_id),
+                ),
+                source: "local".to_string(),
+                confidence: 0.0,
+                diagnostics: vec![format!("Unresolved reference: {}", reference.name)],
+                provider: String::new(),
+                metadata: BTreeMap::new(),
+            });
+            continue;
+        };
+        if let Some(primary) =
+            semantic_resolves_to_edge(&mut input, &reference, &decision, &mut output_edges)
+        {
+            let mut metadata = BTreeMap::new();
+            metadata.insert("edge_id".to_string(), primary.id.clone());
+            metadata.insert(
+                "target_node_id".to_string(),
+                decision.target_node_id.clone(),
+            );
+            evidence.push(SemEvidence {
+                evidence_id: semantic_stable_id("evidence", &primary.id),
+                source: decision.source,
+                confidence: decision.score,
+                diagnostics: Vec::new(),
+                provider: String::new(),
+                metadata,
+            });
+        }
+    }
+
+    let call_type_relations =
+        enrich_semantic_call_and_type_relations(&mut input, &mut output_edges);
+    let (evidence_links, fallbacks) =
+        build_semantic_evidence_links(&mut input, &evidence, &mut output_edges);
+
+    Ok(SemanticOutput {
+        symbol_count,
+        call_type_relations,
+        edges: output_edges,
+        evidence,
+        evidence_links,
+        fallbacks,
+    })
+}
+
+fn build_semantic_symbols(input: &SemanticInput) -> Vec<SemSymbol> {
+    let exported_targets: BTreeSet<String> = input
+        .edges
+        .values()
+        .filter(|edge| edge.edge_type == "Exports")
+        .map(|edge| edge.target_id.clone())
+        .collect();
+    let mut symbols = Vec::new();
+    for node_id in &input.node_order {
+        let Some(node) = input.nodes.get(node_id) else {
+            continue;
+        };
+        if !DECLARATION_TABLES.contains(&node.table.as_str()) {
+            continue;
+        }
+        let name = node.label.trim();
+        if name.is_empty() {
+            continue;
+        }
+        let mut visibility = semantic_visibility(node);
+        if exported_targets.contains(&node.id) {
+            visibility = "exported".to_string();
+        }
+        symbols.push(SemSymbol {
+            symbol_id: format!("{}:{}", node.table, node.id),
+            name: name.to_string(),
+            qualified_name: if node.qualified_name.is_empty() {
+                name.to_string()
+            } else {
+                node.qualified_name.clone()
+            },
+            node_id: node.id.clone(),
+            table: node.table.clone(),
+            language: node.language.clone(),
+            scope_id: node.scope_id.clone(),
+            visibility,
+        });
+    }
+    symbols.sort_by(|left, right| {
+        (
+            left.qualified_name.as_str(),
+            left.table.as_str(),
+            left.node_id.as_str(),
+        )
+            .cmp(&(
+                right.qualified_name.as_str(),
+                right.table.as_str(),
+                right.node_id.as_str(),
+            ))
+    });
+    symbols
+}
+
+fn index_symbols_by_name(symbols: &[SemSymbol]) -> BTreeMap<String, Vec<SemSymbol>> {
+    let mut by_name: BTreeMap<String, Vec<SemSymbol>> = BTreeMap::new();
+    for symbol in symbols {
+        let _ = &symbol.symbol_id;
+        for key in semantic_symbol_keys(&symbol.name, &symbol.qualified_name) {
+            by_name.entry(key).or_default().push(symbol.clone());
+        }
+    }
+    by_name
+}
+
+fn collect_semantic_references(input: &SemanticInput) -> Vec<SemReference> {
+    let mut references = Vec::new();
+    for node_id in &input.node_order {
+        let Some(node) = input.nodes.get(node_id) else {
+            continue;
+        };
+        if !REFERENCE_TABLES.contains(&node.table.as_str()) {
+            continue;
+        }
+        let name = if node.imported_name.trim().is_empty() {
+            node.label.trim().to_string()
+        } else {
+            node.imported_name.trim().to_string()
+        };
+        if name.is_empty() {
+            continue;
+        }
+        references.push(SemReference {
+            graph_index: node.graph_index,
+            reference_node_id: node.id.clone(),
+            name,
+            scope_id: node.scope_id.clone(),
+            language: node.language.clone(),
+            source_path: node.path.clone(),
+        });
+    }
+    references.sort_by(|left, right| {
+        (left.source_path.as_str(), left.reference_node_id.as_str())
+            .cmp(&(right.source_path.as_str(), right.reference_node_id.as_str()))
+    });
+    references
+}
+
+fn resolve_semantic_reference(
+    reference: &SemReference,
+    by_name: &BTreeMap<String, Vec<SemSymbol>>,
+) -> Option<SemResolutionCandidate> {
+    for key in candidate_semantic_symbol_keys(&reference.name) {
+        let Some(candidates) = by_name.get(&key) else {
+            continue;
+        };
+        let mut symbols = candidates.clone();
+        symbols.sort_by(|left, right| {
+            (
+                left.scope_id != reference.scope_id,
+                left.language != reference.language,
+                !matches!(left.visibility.as_str(), "local" | "public" | "exported"),
+                left.qualified_name.as_str(),
+                left.node_id.as_str(),
+            )
+                .cmp(&(
+                    right.scope_id != reference.scope_id,
+                    right.language != reference.language,
+                    !matches!(right.visibility.as_str(), "local" | "public" | "exported"),
+                    right.qualified_name.as_str(),
+                    right.node_id.as_str(),
+                ))
+        });
+        let symbol = symbols.first()?;
+        let mut score: f64 = 0.72;
+        if symbol.scope_id == reference.scope_id {
+            score += 0.13;
+        }
+        if symbol.language == reference.language {
+            score += 0.05;
+        }
+        return Some(SemResolutionCandidate {
+            target_node_id: symbol.node_id.clone(),
+            score: score.min(1.0),
+            source: "symbol_table".to_string(),
+            rationale: format!("symbol_table matched {}", reference.name),
+        });
+    }
+    None
+}
+
+fn semantic_resolves_to_edge(
+    input: &mut SemanticInput,
+    reference: &SemReference,
+    candidate: &SemResolutionCandidate,
+    output_edges: &mut Vec<SemEdge>,
+) -> Option<SemEdge> {
+    let source_id = input.nodes.get(&reference.reference_node_id)?.id.clone();
+    let target_id = input.nodes.get(&candidate.target_node_id)?.id.clone();
+    if source_id == target_id {
+        return None;
+    }
+    let mut metadata = BTreeMap::new();
+    metadata.insert("resolver".to_string(), "semantic".to_string());
+    metadata.insert("resolution_source".to_string(), candidate.source.clone());
+    metadata.insert("rationale".to_string(), candidate.rationale.clone());
+    metadata.insert("label".to_string(), reference.name.clone());
+    let primary = add_semantic_edge_if_allowed(
+        input,
+        output_edges,
+        reference.graph_index,
+        "ResolvesTo",
+        &source_id,
+        &target_id,
+        "semantic_resolution",
+        candidate.score,
+        metadata.clone(),
+    );
+    add_semantic_edge_if_allowed(
+        input,
+        output_edges,
+        reference.graph_index,
+        "References",
+        &source_id,
+        &target_id,
+        "semantic_reference",
+        candidate.score.min(0.9),
+        metadata,
+    );
+    primary
+}
+
+fn enrich_semantic_call_and_type_relations(
+    input: &mut SemanticInput,
+    output_edges: &mut Vec<SemEdge>,
+) -> usize {
+    let edge_ids = input.edge_order.clone();
+    let mut resolutions = 0;
+    for edge_id in edge_ids {
+        let Some(edge) = input.edges.get(&edge_id).cloned() else {
+            continue;
+        };
+        if edge.edge_type != "ResolvesTo" {
+            continue;
+        }
+        let Some(source) = input.nodes.get(&edge.source_id).cloned() else {
+            continue;
+        };
+        let Some(target) = input.nodes.get(&edge.target_id).cloned() else {
+            continue;
+        };
+        if source.table == "CallExpression" {
+            if !matches!(
+                target.table.as_str(),
+                "Function" | "Method" | "Class" | "APIEndpoint"
+            ) {
+                continue;
+            }
+            let mut metadata = BTreeMap::new();
+            metadata.insert("resolver".to_string(), "semantic".to_string());
+            metadata.insert("source_edge".to_string(), edge.id.clone());
+            add_semantic_edge_if_allowed(
+                input,
+                output_edges,
+                source.graph_index,
+                "Calls",
+                &source.id,
+                &target.id,
+                "semantic_call_target",
+                edge.confidence,
+                metadata,
+            );
+            resolutions += 1;
+        } else if source.table == "TypeAnnotation" {
+            let mut fallback_metadata = BTreeMap::new();
+            fallback_metadata.insert("resolver".to_string(), "semantic".to_string());
+            fallback_metadata.insert("source_edge".to_string(), edge.id.clone());
+            add_semantic_edge_if_allowed(
+                input,
+                output_edges,
+                source.graph_index,
+                "References",
+                &source.id,
+                &target.id,
+                "semantic_type_reference",
+                edge.confidence,
+                fallback_metadata.clone(),
+            );
+            if let Some(owner_id) = semantic_type_annotation_owner_id(input, &source.id) {
+                let mut metadata = fallback_metadata;
+                metadata.insert("target_node_id".to_string(), target.id.clone());
+                add_semantic_edge_if_allowed(
+                    input,
+                    output_edges,
+                    source.graph_index,
+                    "HasTypeAnnotation",
+                    &owner_id,
+                    &source.id,
+                    "semantic_type_annotation",
+                    edge.confidence,
+                    metadata,
+                );
+            }
+            resolutions += 1;
+        }
+    }
+    resolutions
+}
+
+fn semantic_type_annotation_owner_id(input: &SemanticInput, type_node_id: &str) -> Option<String> {
+    let typed_owner_types = input
+        .relation_specs
+        .get("HasTypeAnnotation")
+        .map(|spec| spec.source_types.clone())
+        .unwrap_or_default();
+    for edge_id in &input.edge_order {
+        let Some(edge) = input.edges.get(edge_id) else {
+            continue;
+        };
+        if edge.edge_type != "HasTypeAnnotation" || edge.target_id != type_node_id {
+            continue;
+        }
+        let Some(owner) = input.nodes.get(&edge.source_id) else {
+            continue;
+        };
+        if typed_owner_types.contains(&owner.table) {
+            return Some(owner.id.clone());
+        }
+    }
+    let type_node = input.nodes.get(type_node_id)?;
+    if !type_node.scope_id.is_empty() {
+        if let Some(owner) = input.nodes.get(&type_node.scope_id) {
+            if typed_owner_types.contains(&owner.table) {
+                return Some(owner.id.clone());
+            }
+        }
+    }
+    for owner_id in [&type_node.owner_node_id, &type_node.typed_node_id] {
+        if owner_id.is_empty() {
+            continue;
+        }
+        if let Some(owner) = input.nodes.get(owner_id) {
+            if typed_owner_types.contains(&owner.table) {
+                return Some(owner.id.clone());
+            }
+        }
+    }
+    None
+}
+
+fn build_semantic_evidence_links(
+    input: &mut SemanticInput,
+    evidence: &[SemEvidence],
+    output_edges: &mut Vec<SemEdge>,
+) -> (Vec<SemEvidenceLink>, Vec<SemFallback>) {
+    let mut links = Vec::new();
+    let mut fallbacks = Vec::new();
+    for item in evidence {
+        let semantic_relation_id = item.metadata.get("edge_id").cloned().unwrap_or_default();
+        let Some(semantic_edge) = input.edges.get(&semantic_relation_id).cloned() else {
+            continue;
+        };
+        let evidence_node_ids = semantic_evidence_node_ids(input, &semantic_edge.source_id, item);
+        if evidence_node_ids.is_empty() {
+            fallbacks.push(SemFallback {
+                graph_index: semantic_edge.graph_index,
+                semantic_relation_id,
+                source_node_id: semantic_edge.source_id,
+                evidence_id: item.evidence_id.clone(),
+                metadata: item.metadata.clone(),
+            });
+            continue;
+        }
+        for evidence_node_id in evidence_node_ids {
+            let Some(evidence_node) = input.nodes.get(&evidence_node_id).cloned() else {
+                continue;
+            };
+            let mut metadata = BTreeMap::new();
+            metadata.insert("resolver".to_string(), "semantic".to_string());
+            metadata.insert(
+                "semantic_relation_id".to_string(),
+                semantic_relation_id.clone(),
+            );
+            metadata.insert("evidence_id".to_string(), item.evidence_id.clone());
+            metadata.insert("source".to_string(), item.source.clone());
+            metadata.insert("provider".to_string(), item.provider.clone());
+            let edge = semantic_evidence_edge_if_allowed(
+                input,
+                output_edges,
+                semantic_edge.graph_index,
+                &semantic_edge.source_id,
+                &evidence_node_id,
+                item.confidence,
+                metadata,
+            );
+            if edge.is_none() {
+                continue;
+            }
+            links.push(SemEvidenceLink {
+                graph_index: semantic_edge.graph_index,
+                semantic_relation_id: semantic_relation_id.clone(),
+                evidence_node_id,
+                evidence_kind: evidence_node.table,
+                confidence: item.confidence,
+                metadata_fallback: false,
+            });
+        }
+    }
+    (links, fallbacks)
+}
+
+fn semantic_evidence_node_ids(
+    input: &SemanticInput,
+    source_node_id: &str,
+    evidence: &SemEvidence,
+) -> Vec<String> {
+    let mut node_ids = Vec::new();
+    if let Some(explicit_id) = evidence.metadata.get("evidence_node_id") {
+        if semantic_is_valid_evidence_target(input, explicit_id) {
+            node_ids.push(explicit_id.clone());
+        }
+    }
+    for edge_id in &input.edge_order {
+        let Some(edge) = input.edges.get(edge_id) else {
+            continue;
+        };
+        if edge.edge_type == "DerivedFrom"
+            && edge.source_id == source_node_id
+            && semantic_is_valid_evidence_target(input, &edge.target_id)
+        {
+            node_ids.push(edge.target_id.clone());
+        }
+    }
+    if let Some(source_node) = input.nodes.get(source_node_id) {
+        if !source_node.path.is_empty() {
+            for node_id in &input.node_order {
+                let Some(node) = input.nodes.get(node_id) else {
+                    continue;
+                };
+                if node.table == "File"
+                    && node.path == source_node.path
+                    && semantic_is_valid_evidence_target(input, &node.id)
+                {
+                    node_ids.push(node.id.clone());
+                }
+            }
+        }
+    }
+    dedupe_strings(node_ids)
+}
+
+fn semantic_is_valid_evidence_target(input: &SemanticInput, node_id: &str) -> bool {
+    input.nodes.get(node_id).is_some_and(|node| {
+        matches!(
+            node.table.as_str(),
+            "SyntaxCapture" | "File" | "DocumentationChunk"
+        )
+    })
+}
+
+fn semantic_evidence_edge_if_allowed(
+    input: &mut SemanticInput,
+    output_edges: &mut Vec<SemEdge>,
+    graph_index: usize,
+    source_id: &str,
+    target_id: &str,
+    confidence: f64,
+    metadata: BTreeMap<String, String>,
+) -> Option<SemEdge> {
+    let edge_id = format!(
+        "edge:semantic-evidence:{}",
+        sha1_hex(
+            format!(
+                "{}|{}|{}",
+                source_id,
+                target_id,
+                metadata
+                    .get("semantic_relation_id")
+                    .cloned()
+                    .unwrap_or_default()
+            )
+            .as_bytes()
+        )
+        .chars()
+        .take(20)
+        .collect::<String>()
+    );
+    semantic_edge_if_allowed_with_id(
+        input,
+        output_edges,
+        graph_index,
+        edge_id,
+        "EvidencedBy",
+        source_id,
+        target_id,
+        "semantic_evidence",
+        confidence,
+        metadata,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn add_semantic_edge_if_allowed(
+    input: &mut SemanticInput,
+    output_edges: &mut Vec<SemEdge>,
+    graph_index: usize,
+    edge_type: &str,
+    source_id: &str,
+    target_id: &str,
+    kind: &str,
+    confidence: f64,
+    metadata: BTreeMap<String, String>,
+) -> Option<SemEdge> {
+    let edge_id = semantic_stable_id(
+        "edge",
+        &format!("{edge_type}|{source_id}|{target_id}|{kind}"),
+    );
+    semantic_edge_if_allowed_with_id(
+        input,
+        output_edges,
+        graph_index,
+        edge_id,
+        edge_type,
+        source_id,
+        target_id,
+        kind,
+        confidence,
+        metadata,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn semantic_edge_if_allowed_with_id(
+    input: &mut SemanticInput,
+    output_edges: &mut Vec<SemEdge>,
+    graph_index: usize,
+    edge_id: String,
+    edge_type: &str,
+    source_id: &str,
+    target_id: &str,
+    kind: &str,
+    confidence: f64,
+    metadata: BTreeMap<String, String>,
+) -> Option<SemEdge> {
+    let source = input.nodes.get(source_id)?;
+    let target = input.nodes.get(target_id)?;
+    let spec = input.relation_specs.get(edge_type)?;
+    if !spec.source_types.contains(&source.table) || !spec.target_types.contains(&target.table) {
+        return None;
+    }
+    let mut full_metadata = BTreeMap::new();
+    full_metadata.insert(
+        "canonical_key".to_string(),
+        format!("{edge_type}|{source_id}|{target_id}|{kind}"),
+    );
+    for (key, value) in metadata {
+        full_metadata.insert(key, value);
+    }
+    let edge = SemEdge {
+        graph_index,
+        id: edge_id.clone(),
+        edge_type: edge_type.to_string(),
+        source_id: source_id.to_string(),
+        target_id: target_id.to_string(),
+        kind: kind.to_string(),
+        confidence,
+        metadata: full_metadata,
+    };
+    if !input.edges.contains_key(&edge_id) {
+        input.edge_order.push(edge_id.clone());
+        input.edges.insert(edge_id, edge.clone());
+        output_edges.push(edge.clone());
+    }
+    Some(input.edges.get(&edge.id).cloned().unwrap_or(edge))
+}
+
+fn semantic_symbol_keys(name: &str, qualified_name: &str) -> Vec<String> {
+    let mut keys: BTreeSet<String> = candidate_semantic_symbol_keys(name).into_iter().collect();
+    keys.extend(candidate_semantic_symbol_keys(qualified_name));
+    keys.into_iter().collect()
+}
+
+fn candidate_semantic_symbol_keys(label: &str) -> Vec<String> {
+    let text = label.trim();
+    if text.is_empty() {
+        return Vec::new();
+    }
+    let mut parts = BTreeSet::new();
+    parts.insert(text.to_string());
+    for delimiter in [".", "::", "->"] {
+        if text.contains(delimiter) {
+            if let Some((_, right)) = text.rsplit_once(delimiter) {
+                parts.insert(right.to_string());
+            }
+        }
+    }
+    if text.contains('/') {
+        if let Some((_, right)) = text.rsplit_once('/') {
+            parts.insert(right.to_string());
+        }
+    }
+    parts
+        .into_iter()
+        .filter_map(|part| {
+            let normalized = part.trim().to_lowercase().replace('_', "");
+            if normalized.is_empty() {
+                None
+            } else {
+                Some(normalized)
+            }
+        })
+        .collect()
+}
+
+fn semantic_visibility(node: &SemNode) -> String {
+    if node.table == "Dependency" {
+        "external".to_string()
+    } else if node.label.starts_with('_') {
+        "private".to_string()
+    } else if node.label.chars().next().is_some_and(char::is_uppercase)
+        || matches!(
+            node.table.as_str(),
+            "Module" | "Class" | "Function" | "Method" | "TypeAlias"
+        )
+    {
+        "public".to_string()
+    } else {
+        "local".to_string()
+    }
+}
+
+fn semantic_stable_id(prefix: &str, key: &str) -> String {
+    format!("{prefix}:{}", sha1_hex(key.as_bytes()))
+}
+
+fn dedupe_strings(values: Vec<String>) -> Vec<String> {
+    let mut seen = BTreeSet::new();
+    let mut output = Vec::new();
+    for value in values {
+        if seen.insert(value.clone()) {
+            output.push(value);
+        }
+    }
+    output
+}
+
+fn encode_semantic_edge(record_type: &str, edge: &SemEdge) -> String {
+    encode_record(&[
+        record_type,
+        &edge.graph_index.to_string(),
+        &hex(&edge.id),
+        &hex(&edge.edge_type),
+        &hex(&edge.source_id),
+        &hex(&edge.target_id),
+        &hex(&edge.kind),
+        &edge.confidence.to_string(),
+        &hex(&json_string_object(&edge.metadata)),
+    ])
+}
+
+fn encode_semantic_evidence(evidence: &SemEvidence) -> String {
+    let diagnostics = evidence
+        .diagnostics
+        .iter()
+        .map(|diagnostic| json_string(diagnostic))
+        .collect::<Vec<_>>()
+        .join(",");
+    encode_record(&[
+        "EVIDENCE",
+        &hex(&evidence.evidence_id),
+        &hex(&evidence.source),
+        &evidence.confidence.to_string(),
+        &hex(&evidence.provider),
+        &hex(&format!("[{diagnostics}]")),
+        &hex(&json_string_object(&evidence.metadata)),
+    ])
+}
+
+fn encode_semantic_link(link: &SemEvidenceLink) -> String {
+    encode_record(&[
+        "LINK",
+        &link.graph_index.to_string(),
+        &hex(&link.semantic_relation_id),
+        &hex(&link.evidence_node_id),
+        &hex(&link.evidence_kind),
+        &link.confidence.to_string(),
+        if link.metadata_fallback { "1" } else { "0" },
+    ])
+}
+
+fn encode_semantic_fallback(fallback: &SemFallback) -> String {
+    encode_record(&[
+        "FALLBACK",
+        &fallback.graph_index.to_string(),
+        &hex(&fallback.semantic_relation_id),
+        &hex(&fallback.source_node_id),
+        &hex(&fallback.evidence_id),
+        &hex(&json_string_object(&fallback.metadata)),
+    ])
+}
+
+fn json_string_object(values: &BTreeMap<String, String>) -> String {
+    let fields = values
+        .iter()
+        .map(|(key, value)| format!("{}:{}", json_string(key), json_string(value)))
+        .collect::<Vec<_>>()
+        .join(",");
+    format!("{{{fields}}}")
 }
 
 fn parse_input(input: &str) -> Result<(BTreeMap<String, String>, Vec<Capture>), String> {

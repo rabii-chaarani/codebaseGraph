@@ -94,23 +94,39 @@ def persist_semantic_enrichment(
         source_root,
         source_paths=tuple(_source_paths(graph_list)),
     )
-    symbol_table = build_project_symbol_table(graph_list)
     providers = discover_semantic_providers(context)
-    evidence = resolve_project_references(graph_list, symbol_table=symbol_table, provider_results=provider_results)
-    relations = enrich_call_and_type_relations(graph_list, provider_results=provider_results)
+    native_batch = _run_native_semantic_batch(graph_list) if not provider_results else None
+    if native_batch is None:
+        symbol_table = build_project_symbol_table(graph_list)
+        evidence = resolve_project_references(graph_list, symbol_table=symbol_table, provider_results=provider_results)
+        relations_count = len(enrich_call_and_type_relations(graph_list, provider_results=provider_results))
+        symbol_count = len(symbol_table.symbols)
+        native_evidence_links_by_graph: dict[int, tuple[SemanticEvidenceLink, ...]] = {}
+        native_fallbacks_by_graph: dict[int, list[dict[str, Any]]] = {}
+    else:
+        evidence = _native_resolution_evidence(native_batch)
+        relations_count = native_batch.call_type_relations
+        symbol_count = native_batch.symbol_count
+        native_evidence_links_by_graph = _native_evidence_links_by_graph(native_batch)
+        native_fallbacks_by_graph = _native_fallbacks_by_graph(native_batch)
     diagnostics = _diagnostics(context, evidence)
     provider_enabled = provider_mode != "local_only" and any(provider.available for provider in providers)
     report = report_enrichment_capabilities(
         syntax_graph=bool(graph_list),
         build_context=bool(context.targets),
-        symbol_table=bool(symbol_table.symbols),
+        symbol_table=bool(symbol_count),
         local_resolution=bool(evidence),
         provider_resolution=provider_enabled,
         diagnostics=diagnostics,
     )
-    for graph in graph_list:
+    for graph_index, graph in enumerate(graph_list):
         target = map_source_to_build_target(context, str(graph.metadata.get("source_path") or ""))
-        evidence_links = persist_first_class_semantic_evidence(graph, evidence)
+        if native_batch is None:
+            evidence_links = persist_first_class_semantic_evidence(graph, evidence)
+        else:
+            evidence_links = native_evidence_links_by_graph.get(graph_index, ())
+            if fallbacks := native_fallbacks_by_graph.get(graph_index):
+                graph.metadata["semantic_evidence_fallback"] = fallbacks
         graph.metadata["semantic_enrichment"] = report.as_dict()
         graph.metadata["semantic_build_context"] = {
             "ecosystem": context.ecosystem,
@@ -118,7 +134,7 @@ def persist_semantic_enrichment(
         }
         graph.metadata["semantic_relations"] = {
             "resolution_evidence": len(evidence),
-            "call_type_relations": len(relations),
+            "call_type_relations": relations_count,
             "evidence_links": len(evidence_links),
         }
         write_resolution_evidence(graph, evidence)
@@ -330,3 +346,131 @@ def _graph_tuple(graphs: CodeGraph | Iterable[CodeGraph]) -> tuple[CodeGraph, ..
     if isinstance(graphs, CodeGraph):
         return (graphs,)
     return tuple(graphs)
+
+
+def _run_native_semantic_batch(graphs: Sequence[CodeGraph]):
+    from codebase_graph._native.semantic_enrichment import run_semantic_batch
+
+    result = run_semantic_batch(_encode_native_semantic_batch(graphs))
+    if result is None:
+        return None
+    for edge in result.edges:
+        graph = graphs[edge.graph_index]
+        graph.add_edge(
+            GraphEdge(
+                id=edge.id,
+                type=edge.type,
+                source_id=edge.source_id,
+                target_id=edge.target_id,
+                kind=edge.kind,
+                confidence=edge.confidence,
+                metadata=dict(edge.metadata),
+            )
+        )
+    return result
+
+
+def _encode_native_semantic_batch(graphs: Sequence[CodeGraph]) -> str:
+    lines = ["SEMANTIC"]
+    for relation_name in ("ResolvesTo", "References", "Calls", "HasTypeAnnotation", "EvidencedBy"):
+        relation = get_relation_type(relation_name)
+        lines.append(
+            "\t".join(
+                (
+                    "REL",
+                    _hex(relation_name),
+                    *_counted_hex(relation.source_types),
+                    *_counted_hex(relation.target_types),
+                )
+            )
+        )
+    for graph_index, graph in enumerate(graphs):
+        lines.append("\t".join(("GRAPH", str(graph_index), _hex(str(graph.metadata.get("source_path") or "")))))
+        for node in graph.nodes.values():
+            lines.append(
+                "\t".join(
+                    (
+                        "SNODE",
+                        str(graph_index),
+                        _hex(node.id),
+                        _hex(node.table),
+                        _hex(node.label),
+                        _hex(node.language),
+                        _hex(node.path),
+                        _hex(node.qualified_name),
+                        _hex(node.scope_id),
+                        _hex(str(node.metadata.get("imported_name") or "")),
+                        _hex(str(node.metadata.get("owner_node_id") or "")),
+                        _hex(str(node.metadata.get("typed_node_id") or "")),
+                    )
+                )
+            )
+        for edge in graph.edges.values():
+            lines.append(
+                "\t".join(
+                    (
+                        "SEDGE",
+                        str(graph_index),
+                        _hex(edge.id),
+                        _hex(edge.type),
+                        _hex(edge.source_id),
+                        _hex(edge.target_id),
+                        _hex(edge.kind),
+                        str(edge.confidence),
+                        _hex(str(edge.metadata.get("resolution_source") or "")),
+                        _hex(str(edge.metadata.get("source_edge") or "")),
+                    )
+                )
+            )
+    return "\n".join(lines) + "\n"
+
+
+def _native_resolution_evidence(native_batch) -> tuple[ResolutionEvidence, ...]:
+    return tuple(
+        ResolutionEvidence(
+            evidence_id=item.evidence_id,
+            source=item.source,
+            confidence=item.confidence,
+            diagnostics=tuple(item.diagnostics),
+            provider=item.provider,
+            metadata=dict(item.metadata),
+        )
+        for item in native_batch.evidence
+    )
+
+
+def _native_evidence_links_by_graph(native_batch) -> dict[int, tuple[SemanticEvidenceLink, ...]]:
+    links_by_graph: dict[int, list[SemanticEvidenceLink]] = {}
+    for item in native_batch.evidence_links:
+        links_by_graph.setdefault(item.graph_index, []).append(
+            SemanticEvidenceLink(
+                semantic_relation_id=item.semantic_relation_id,
+                evidence_node_id=item.evidence_node_id,
+                evidence_kind=item.evidence_kind,
+                confidence=item.confidence,
+                metadata_fallback=item.metadata_fallback,
+            )
+        )
+    return {graph_index: tuple(links) for graph_index, links in links_by_graph.items()}
+
+
+def _native_fallbacks_by_graph(native_batch) -> dict[int, list[dict[str, Any]]]:
+    fallbacks_by_graph: dict[int, list[dict[str, Any]]] = {}
+    for item in native_batch.fallbacks:
+        fallbacks_by_graph.setdefault(item.graph_index, []).append(
+            {
+                "semantic_relation_id": item.semantic_relation_id,
+                "source_node_id": item.source_node_id,
+                "evidence_id": item.evidence_id,
+                "metadata": dict(item.metadata),
+            }
+        )
+    return fallbacks_by_graph
+
+
+def _counted_hex(values: Sequence[str]) -> tuple[str, ...]:
+    return (str(len(values)), *(_hex(value) for value in values))
+
+
+def _hex(value: str) -> str:
+    return value.encode("utf-8").hex()
