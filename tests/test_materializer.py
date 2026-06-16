@@ -333,6 +333,81 @@ def test_materializer_uses_native_graph_builder_when_opted_in(
     assert native_store.graphs[0].as_dict() == python_store.graphs[0].as_dict()
 
 
+def test_native_scan_diff_matches_python_rebuild_decisions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    native_binary = _native_graph_builder_binary()
+    source_root = tmp_path / "scan_project"
+    source_root.mkdir()
+    (source_root / "same.py").write_text("VALUE = 'same'\n", encoding="utf-8")
+    (source_root / "changed.py").write_text("VALUE = 'new'\n", encoding="utf-8")
+    (source_root / "added.py").write_text("VALUE = 'added'\n", encoding="utf-8")
+    (source_root / "archive.bin").write_bytes(b"\0" * 128)
+    ignored_dir = source_root / ".venv"
+    ignored_dir.mkdir()
+    (ignored_dir / "ignored.py").write_text("VALUE = 'ignored'\n", encoding="utf-8")
+    registry = ParserRegistry()
+    registry.register("python", suffixes=(".py",), parser_factory=ToyParser, parser_version="toy-v1")
+    previous_manifest = MaterializationManifest(
+        parser_version="toy-v1",
+        files={
+            "same.py": _entry("same.py", materializer_module._file_hash(source_root / "same.py")),
+            "changed.py": _entry("changed.py", "old-hash"),
+            "deleted.py": _entry("deleted.py", "old-hash"),
+        },
+    )
+    materializer = GraphMaterializer(
+        source_root,
+        db_path=":memory:",
+        manifest_path=tmp_path / "manifest.json",
+        store=object(),
+        parser_registry=registry,
+        semantic_enrichment=False,
+    )
+
+    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
+    expected = materializer._scan_source_state(previous_manifest)
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_SCAN_DIFF", native_binary.as_posix())
+    actual = materializer._scan_source_state(previous_manifest)
+
+    assert _scan_state_shape(actual) == _scan_state_shape(expected)
+
+
+def test_materializer_uses_native_scan_when_opted_in(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    native_binary = _native_graph_builder_binary()
+    source_root = tmp_path / "native_scan_project"
+    source_root.mkdir()
+    (source_root / "service.py").write_text("VALUE = 1\n", encoding="utf-8")
+    registry = ParserRegistry()
+    registry.register("python", suffixes=(".py",), parser_factory=ToyParser, parser_version="toy-v1")
+
+    def fail_python_hash(path: Path) -> str:
+        raise AssertionError(f"native scan should hash {path.name}")
+
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_SCAN_DIFF", native_binary.as_posix())
+    monkeypatch.setattr(materializer_module, "_file_hash", fail_python_hash)
+    materializer = GraphMaterializer(
+        source_root,
+        db_path=":memory:",
+        manifest_path=tmp_path / "manifest.json",
+        store=object(),
+        parser_registry=registry,
+        semantic_enrichment=False,
+    )
+
+    snapshots, diagnostics = materializer._scan_source_files()
+
+    assert not diagnostics
+    assert snapshots["service.py"].content_hash
+    assert snapshots["service.py"].language == "python"
+
+
 def test_materializer_runs_local_semantic_enrichment_before_persistence(tmp_path: Path) -> None:
     source_root = tmp_path / "semantic_project"
     source_root.mkdir()
@@ -736,6 +811,28 @@ def _labels(materializer: GraphMaterializer, table: str) -> set[str]:
 
 def _marker_path(manifest_path: Path) -> Path:
     return manifest_path.with_suffix(manifest_path.suffix + ".rebuild-pending")
+
+
+def _scan_state_shape(state) -> dict[str, object]:  # noqa: ANN001
+    return {
+        "snapshots": {
+            path: {
+                "content_hash": snapshot.content_hash,
+                "language": snapshot.language,
+            }
+            for path, snapshot in state.snapshots.items()
+        },
+        "diagnostics": tuple(state.diagnostics),
+        "diff": None
+        if state.diff is None
+        else {
+            "added": state.diff.added,
+            "modified": state.diff.modified,
+            "unchanged": state.diff.unchanged,
+            "deleted": state.diff.deleted,
+            "force_rebuild": state.diff.force_rebuild,
+        },
+    }
 
 
 class ToyParser:

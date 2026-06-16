@@ -80,6 +80,9 @@ fn main() -> Result<(), String> {
     if first_record_kind(&input).as_deref() == Some("TSNORM") {
         return run_tree_sitter_normalization(&input);
     }
+    if first_record_kind(&input).as_deref() == Some("SCAN") {
+        return run_scan_diff(&input);
+    }
     if first_record_kind(&input).as_deref() == Some("SEMANTIC") {
         return run_semantic_batch(&input);
     }
@@ -1610,6 +1613,345 @@ fn encode_ts_node(node: &TsNode) -> String {
     parts.join("\t")
 }
 
+struct ScanInput {
+    source_root: PathBuf,
+    expected_schema_version: i64,
+    expected_ontology: String,
+    expected_parser_version: String,
+    manifest_schema_version: Option<i64>,
+    manifest_ontology: String,
+    manifest_parser_version: String,
+    suffix_to_language: BTreeMap<String, String>,
+    excluded_parts: BTreeSet<String>,
+    previous_files: BTreeMap<String, ScanManifestEntry>,
+}
+
+#[derive(Clone)]
+struct ScanManifestEntry {
+    path: String,
+    content_hash: String,
+    language: String,
+}
+
+struct ScanSnapshot {
+    path: String,
+    absolute_path: String,
+    content_hash: String,
+    language: String,
+}
+
+struct ScanDiff {
+    added: Vec<String>,
+    modified: Vec<String>,
+    unchanged: Vec<String>,
+    deleted: Vec<String>,
+    force_rebuild: bool,
+}
+
+struct ScanOutput {
+    snapshots: BTreeMap<String, ScanSnapshot>,
+    diagnostics: Vec<String>,
+    diff: Option<ScanDiff>,
+}
+
+fn run_scan_diff(input: &str) -> Result<(), String> {
+    let output = execute_scan_diff(parse_scan_diff(input)?)?;
+    println!("RESULT\t{}", output.snapshots.len());
+    for snapshot in output.snapshots.values() {
+        println!("{}", encode_scan_snapshot(snapshot));
+    }
+    for diagnostic in output.diagnostics {
+        println!("DIAG\t{}", hex(&diagnostic));
+    }
+    if let Some(diff) = output.diff {
+        println!("{}", encode_scan_diff(&diff));
+    }
+    Ok(())
+}
+
+fn parse_scan_diff(input: &str) -> Result<ScanInput, String> {
+    let mut source_root = PathBuf::new();
+    let mut expected_schema_version = 0;
+    let mut expected_ontology = String::new();
+    let mut expected_parser_version = String::new();
+    let mut manifest_schema_version = None;
+    let mut manifest_ontology = String::new();
+    let mut manifest_parser_version = String::new();
+    let mut suffix_to_language = BTreeMap::new();
+    let mut excluded_parts = BTreeSet::new();
+    let mut previous_files = BTreeMap::new();
+
+    for line in input.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.split('\t').collect();
+        match parts.first().copied() {
+            Some("SCAN") if parts.len() == 1 => {}
+            Some("ROOT") if parts.len() == 2 => {
+                source_root = PathBuf::from(unhex(parts[1])?);
+            }
+            Some("EXPECTED") if parts.len() == 4 => {
+                expected_schema_version = parts[1].parse::<i64>().map_err(|error| {
+                    format!("invalid expected manifest schema version: {error}")
+                })?;
+                expected_ontology = unhex(parts[2])?;
+                expected_parser_version = unhex(parts[3])?;
+            }
+            Some("MANIFEST") if parts.len() == 4 => {
+                manifest_schema_version = Some(
+                    parts[1]
+                        .parse::<i64>()
+                        .map_err(|error| format!("invalid manifest schema version: {error}"))?,
+                );
+                manifest_ontology = unhex(parts[2])?;
+                manifest_parser_version = unhex(parts[3])?;
+            }
+            Some("SUFFIX") if parts.len() == 3 => {
+                suffix_to_language.insert(unhex(parts[1])?, unhex(parts[2])?);
+            }
+            Some("EXCLUDE") if parts.len() == 2 => {
+                excluded_parts.insert(unhex(parts[1])?);
+            }
+            Some("MENTRY") if parts.len() == 4 => {
+                let entry = ScanManifestEntry {
+                    path: unhex(parts[1])?,
+                    content_hash: unhex(parts[2])?,
+                    language: unhex(parts[3])?,
+                };
+                previous_files.insert(entry.path.clone(), entry);
+            }
+            Some(kind) => return Err(format!("invalid scan diff record: {kind}")),
+            None => {}
+        }
+    }
+
+    if source_root.as_os_str().is_empty() {
+        return Err("scan source root is missing".to_string());
+    }
+    Ok(ScanInput {
+        source_root,
+        expected_schema_version,
+        expected_ontology,
+        expected_parser_version,
+        manifest_schema_version,
+        manifest_ontology,
+        manifest_parser_version,
+        suffix_to_language,
+        excluded_parts,
+        previous_files,
+    })
+}
+
+fn execute_scan_diff(input: ScanInput) -> Result<ScanOutput, String> {
+    let mut snapshots = BTreeMap::new();
+    let mut diagnostics = Vec::new();
+    scan_source_root(&input, &input.source_root, &mut snapshots, &mut diagnostics)?;
+    let diff = if input.manifest_schema_version.is_some() {
+        Some(diff_scan_manifest(&input, &snapshots))
+    } else {
+        None
+    };
+    Ok(ScanOutput {
+        snapshots,
+        diagnostics,
+        diff,
+    })
+}
+
+fn scan_source_root(
+    input: &ScanInput,
+    current_root: &Path,
+    snapshots: &mut BTreeMap<String, ScanSnapshot>,
+    diagnostics: &mut Vec<String>,
+) -> Result<(), String> {
+    let mut directories = Vec::new();
+    let mut files = Vec::new();
+    for entry in fs::read_dir(current_root).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+        let file_type = entry.file_type().map_err(|error| error.to_string())?;
+        if file_type.is_dir() {
+            if !scan_part_is_excluded(&input.excluded_parts, &name) {
+                directories.push(path);
+            }
+        } else if file_type.is_file()
+            && !scan_path_is_excluded(&input.source_root, &path, &input.excluded_parts)?
+        {
+            files.push(path);
+        }
+    }
+    directories.sort();
+    files.sort();
+    for path in files {
+        let relative_path = scan_relative_path(&input.source_root, &path)?;
+        let language = scan_language_for_path(&path, &input.suffix_to_language);
+        if language.is_empty() {
+            snapshots.insert(
+                relative_path.clone(),
+                ScanSnapshot {
+                    path: relative_path.clone(),
+                    absolute_path: path.to_string_lossy().to_string(),
+                    content_hash: String::new(),
+                    language,
+                },
+            );
+            diagnostics.push(format!("Skipped unsupported file: {relative_path}"));
+            continue;
+        }
+        let bytes = fs::read(&path).map_err(|error| error.to_string())?;
+        snapshots.insert(
+            relative_path.clone(),
+            ScanSnapshot {
+                path: relative_path,
+                absolute_path: path.to_string_lossy().to_string(),
+                content_hash: sha256_hex(&bytes),
+                language,
+            },
+        );
+    }
+    for directory in directories {
+        scan_source_root(input, &directory, snapshots, diagnostics)?;
+    }
+    Ok(())
+}
+
+fn diff_scan_manifest(input: &ScanInput, snapshots: &BTreeMap<String, ScanSnapshot>) -> ScanDiff {
+    let supported: BTreeMap<String, &ScanSnapshot> = snapshots
+        .iter()
+        .filter(|(_, snapshot)| !snapshot.language.is_empty())
+        .map(|(path, snapshot)| (path.clone(), snapshot))
+        .collect();
+    if !input.manifest_is_compatible() {
+        return ScanDiff {
+            added: supported.keys().cloned().collect(),
+            modified: Vec::new(),
+            unchanged: Vec::new(),
+            deleted: input
+                .previous_files
+                .keys()
+                .filter(|path| !supported.contains_key(*path))
+                .cloned()
+                .collect(),
+            force_rebuild: true,
+        };
+    }
+
+    let mut added = Vec::new();
+    let mut modified = Vec::new();
+    let mut unchanged = Vec::new();
+    for (path, snapshot) in &supported {
+        match input.previous_files.get(path) {
+            None => added.push(path.clone()),
+            Some(previous)
+                if previous.content_hash != snapshot.content_hash
+                    || previous.language != snapshot.language =>
+            {
+                modified.push(path.clone());
+            }
+            Some(_) => unchanged.push(path.clone()),
+        }
+    }
+    let deleted = input
+        .previous_files
+        .keys()
+        .filter(|path| !supported.contains_key(*path))
+        .cloned()
+        .collect();
+    ScanDiff {
+        added,
+        modified,
+        unchanged,
+        deleted,
+        force_rebuild: false,
+    }
+}
+
+impl ScanInput {
+    fn manifest_is_compatible(&self) -> bool {
+        self.manifest_schema_version == Some(self.expected_schema_version)
+            && self.manifest_ontology == self.expected_ontology
+            && self.manifest_parser_version == self.expected_parser_version
+    }
+}
+
+fn scan_relative_path(source_root: &Path, path: &Path) -> Result<String, String> {
+    let relative = path
+        .strip_prefix(source_root)
+        .map_err(|error| error.to_string())?;
+    Ok(relative
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().to_string())
+        .collect::<Vec<_>>()
+        .join("/"))
+}
+
+fn scan_path_is_excluded(
+    source_root: &Path,
+    path: &Path,
+    excluded_parts: &BTreeSet<String>,
+) -> Result<bool, String> {
+    let relative = path
+        .strip_prefix(source_root)
+        .map_err(|error| error.to_string())?;
+    Ok(relative.components().any(|component| {
+        scan_part_is_excluded(
+            excluded_parts,
+            component.as_os_str().to_string_lossy().as_ref(),
+        )
+    }))
+}
+
+fn scan_part_is_excluded(excluded_parts: &BTreeSet<String>, part: &str) -> bool {
+    excluded_parts.contains(part) || part.ends_with(".egg-info")
+}
+
+fn scan_language_for_path(path: &Path, suffix_to_language: &BTreeMap<String, String>) -> String {
+    let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
+        return String::new();
+    };
+    let Some(index) = name.rfind('.') else {
+        return String::new();
+    };
+    if index == 0 {
+        return String::new();
+    }
+    suffix_to_language
+        .get(&name[index..])
+        .cloned()
+        .unwrap_or_default()
+}
+
+fn encode_scan_snapshot(snapshot: &ScanSnapshot) -> String {
+    encode_record(&[
+        "SNAP",
+        &hex(&snapshot.path),
+        &hex(&snapshot.absolute_path),
+        &hex(&snapshot.content_hash),
+        &hex(&snapshot.language),
+    ])
+}
+
+fn encode_scan_diff(diff: &ScanDiff) -> String {
+    let mut parts = vec![
+        "DIFF".to_string(),
+        if diff.force_rebuild { "1" } else { "0" }.to_string(),
+    ];
+    extend_counted_hex(&mut parts, &diff.added);
+    extend_counted_hex(&mut parts, &diff.modified);
+    extend_counted_hex(&mut parts, &diff.unchanged);
+    extend_counted_hex(&mut parts, &diff.deleted);
+    parts.join("\t")
+}
+
+fn extend_counted_hex(parts: &mut Vec<String>, values: &[String]) {
+    parts.push(values.len().to_string());
+    for value in values {
+        parts.push(hex(value));
+    }
+}
+
 const DECLARATION_TABLES: &[&str] = &[
     "Symbol",
     "Module",
@@ -2899,6 +3241,109 @@ fn sha1(input: &[u8]) -> [u8; 20] {
     output
 }
 
+const SHA256_K: [u32; 64] = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+];
+
+fn sha256_hex(input: &[u8]) -> String {
+    let digest = sha256(input);
+    digest.iter().map(|byte| format!("{:02x}", byte)).collect()
+}
+
+fn sha256(input: &[u8]) -> [u8; 32] {
+    let mut h = [
+        0x6a09e667u32,
+        0xbb67ae85,
+        0x3c6ef372,
+        0xa54ff53a,
+        0x510e527f,
+        0x9b05688c,
+        0x1f83d9ab,
+        0x5be0cd19,
+    ];
+
+    let bit_len = (input.len() as u64) * 8;
+    let mut message = input.to_vec();
+    message.push(0x80);
+    while message.len() % 64 != 56 {
+        message.push(0);
+    }
+    message.extend_from_slice(&bit_len.to_be_bytes());
+
+    for chunk in message.chunks(64) {
+        let mut words = [0u32; 64];
+        for (index, word) in words.iter_mut().enumerate().take(16) {
+            let offset = index * 4;
+            *word = u32::from_be_bytes([
+                chunk[offset],
+                chunk[offset + 1],
+                chunk[offset + 2],
+                chunk[offset + 3],
+            ]);
+        }
+        for index in 16..64 {
+            let s0 = words[index - 15].rotate_right(7)
+                ^ words[index - 15].rotate_right(18)
+                ^ (words[index - 15] >> 3);
+            let s1 = words[index - 2].rotate_right(17)
+                ^ words[index - 2].rotate_right(19)
+                ^ (words[index - 2] >> 10);
+            words[index] = words[index - 16]
+                .wrapping_add(s0)
+                .wrapping_add(words[index - 7])
+                .wrapping_add(s1);
+        }
+
+        let mut a = h[0];
+        let mut b = h[1];
+        let mut c = h[2];
+        let mut d = h[3];
+        let mut e = h[4];
+        let mut f = h[5];
+        let mut g = h[6];
+        let mut hh = h[7];
+
+        for index in 0..64 {
+            let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
+            let ch = (e & f) ^ ((!e) & g);
+            let temp1 = hh
+                .wrapping_add(s1)
+                .wrapping_add(ch)
+                .wrapping_add(SHA256_K[index])
+                .wrapping_add(words[index]);
+            let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
+            let maj = (a & b) ^ (a & c) ^ (b & c);
+            let temp2 = s0.wrapping_add(maj);
+
+            hh = g;
+            g = f;
+            f = e;
+            e = d.wrapping_add(temp1);
+            d = c;
+            c = b;
+            b = a;
+            a = temp1.wrapping_add(temp2);
+        }
+
+        for (index, value) in [a, b, c, d, e, f, g, hh].iter().enumerate() {
+            h[index] = h[index].wrapping_add(*value);
+        }
+    }
+
+    let mut output = [0u8; 32];
+    for (index, word) in h.iter().enumerate() {
+        output[index * 4..index * 4 + 4].copy_from_slice(&word.to_be_bytes());
+    }
+    output
+}
+
 fn json_object(values: &BTreeMap<String, JsonValue>) -> String {
     let fields: Vec<String> = values
         .iter()
@@ -3002,6 +3447,14 @@ mod tests {
         assert_eq!(
             graph_id("edge", "Contains|a|b|kind"),
             "edge:38fc26596ca334d0120d"
+        );
+    }
+
+    #[test]
+    fn sha256_matches_python_hashlib() {
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
     }
 }

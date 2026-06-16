@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from codebase_graph._native import build_file_graph as build_native_file_graph
+from codebase_graph._native import scan_repository as scan_native_repository
 from codebase_graph.core import CodeGraph
 from codebase_graph.db import LadybugCodeGraphStore, create_ladybug_database
 from codebase_graph.diagnostics import log_event
@@ -60,6 +61,14 @@ class SourceSnapshot:
     absolute_path: Path
     content_hash: str
     language: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class SourceScanState:
+    """Native-or-Python source scan output used before lifecycle decisions."""
+    snapshots: dict[str, SourceSnapshot]
+    diagnostics: list[str]
+    diff: ManifestDiff | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -433,7 +442,9 @@ class GraphMaterializer:
             raise ValueError(f"Unsupported materialization mode: {mode}")
 
         previous_manifest = self._read_manifest()
-        snapshots, diagnostics = self._scan_source_files()
+        scan_state = self._scan_source_state(previous_manifest)
+        snapshots = scan_state.snapshots
+        diagnostics = scan_state.diagnostics
         supported = {path: snapshot for path, snapshot in snapshots.items() if snapshot.language is not None}
         force_atomic_recovery = self._should_force_atomic_recovery()
 
@@ -462,7 +473,7 @@ class GraphMaterializer:
             retained_node_ids: set[str] = set()
             retained_edge_ids: set[str] = set()
         else:
-            diff = previous_manifest.diff(supported, parser_version=self.parser_version)
+            diff = scan_state.diff or previous_manifest.diff(supported, parser_version=self.parser_version)
             if diff.force_rebuild:
                 if self._can_atomic_rebuild():
                     return self._materialize_full_atomic(
@@ -705,6 +716,23 @@ class GraphMaterializer:
             Structured mapping that follows the source scanning and graph
             materialization response contract.
         """
+        scan_state = self._scan_source_state()
+        return scan_state.snapshots, scan_state.diagnostics
+
+    def _scan_source_state(self, previous_manifest: MaterializationManifest | None = None) -> SourceScanState:
+        """Scan source files and optionally compute the manifest diff natively."""
+        native_state = self._native_scan_source_state(previous_manifest)
+        if native_state is not None:
+            return native_state
+        snapshots, diagnostics = self._scan_source_files_python()
+        diff = None
+        if previous_manifest is not None:
+            supported = {path: snapshot for path, snapshot in snapshots.items() if snapshot.language is not None}
+            diff = previous_manifest.diff(supported, parser_version=self.parser_version)
+        return SourceScanState(snapshots=snapshots, diagnostics=diagnostics, diff=diff)
+
+    def _scan_source_files_python(self) -> tuple[dict[str, SourceSnapshot], list[str]]:
+        """Scan source files with the Python implementation."""
         snapshots: dict[str, SourceSnapshot] = {}
         diagnostics: list[str] = []
         for current_root, dirnames, filenames in os.walk(self.source_root):
@@ -732,6 +760,67 @@ class GraphMaterializer:
                     language=language,
                 )
         return snapshots, diagnostics
+
+    def _native_scan_source_state(self, previous_manifest: MaterializationManifest | None) -> SourceScanState | None:
+        """Scan sources and compute manifest diffs through the opt-in native helper."""
+        result = scan_native_repository(self._encode_native_scan_payload(previous_manifest))
+        if result is None:
+            return None
+        snapshots = {
+            item.path: SourceSnapshot(
+                path=item.path,
+                absolute_path=Path(item.absolute_path),
+                content_hash=item.content_hash,
+                language=item.language,
+            )
+            for item in result.snapshots
+        }
+        diff = None
+        if result.diff is not None:
+            diff = ManifestDiff(
+                added=result.diff.added,
+                modified=result.diff.modified,
+                unchanged=result.diff.unchanged,
+                deleted=result.diff.deleted,
+                force_rebuild=result.diff.force_rebuild,
+            )
+        return SourceScanState(snapshots=snapshots, diagnostics=list(result.diagnostics), diff=diff)
+
+    def _encode_native_scan_payload(self, previous_manifest: MaterializationManifest | None) -> str:
+        """Encode source scanning inputs for the native scan/diff helper."""
+        lines = [
+            "SCAN",
+            "\t".join(("ROOT", _hex(self.source_root.as_posix()))),
+            "\t".join(("EXPECTED", str(MANIFEST_SCHEMA_VERSION), _hex(ONTOLOGY_NAME), _hex(self.parser_version))),
+        ]
+        if previous_manifest is not None:
+            lines.append(
+                "\t".join(
+                    (
+                        "MANIFEST",
+                        str(previous_manifest.schema_version),
+                        _hex(previous_manifest.ontology),
+                        _hex(previous_manifest.parser_version),
+                    )
+                )
+            )
+            for entry in sorted(previous_manifest.files.values(), key=lambda item: item.path):
+                lines.append(
+                    "\t".join(
+                        (
+                            "MENTRY",
+                            _hex(entry.path),
+                            _hex(entry.content_hash),
+                            _hex(entry.language),
+                        )
+                    )
+                )
+        suffix_to_language = getattr(self.parser_registry, "_suffix_to_language", {})
+        for suffix, language in sorted(suffix_to_language.items()):
+            lines.append("\t".join(("SUFFIX", _hex(str(suffix)), _hex(str(language)))))
+        for part in sorted(EXCLUDED_PARTS):
+            lines.append("\t".join(("EXCLUDE", _hex(part))))
+        return "\n".join(lines) + "\n"
 
     def _build_graph(self, snapshot: SourceSnapshot) -> CodeGraph:
         """Build graph for source scanning and graph materialization.
@@ -1085,6 +1174,10 @@ def _file_hash(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _hex(value: str) -> str:
+    return value.encode("utf-8").hex()
 
 
 def _partition_id(path: str) -> str:
