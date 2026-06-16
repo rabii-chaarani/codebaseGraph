@@ -10,10 +10,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
+from codebase_graph._native import build_file_graph as build_native_file_graph
 from codebase_graph.core import CodeGraph
 from codebase_graph.db import LadybugCodeGraphStore, create_ladybug_database
 from codebase_graph.diagnostics import log_event
-from codebase_graph.extract import GraphBuilder
+from codebase_graph.extract import GraphBuilder, GraphBuildResult, ParseBundle
 from codebase_graph.ontology import ONTOLOGY_NAME
 from codebase_graph.paths import DEFAULT_STATE_DIR, derive_graph_state_paths
 from codebase_graph.semantic.build_context import BuildContext, collect_project_build_context
@@ -377,6 +378,7 @@ class GraphMaterializer:
         self.parser_registry = parser_registry or default_parser_registry()
         self.semantic_enrichment = semantic_enrichment
         self.semantic_provider_mode = semantic_provider_mode
+        self._graph_builder_injected = graph_builder is not None
         self.parser_version = _materializer_parser_version(
             self.parser_registry.parser_version,
             semantic_enrichment=semantic_enrichment,
@@ -758,8 +760,14 @@ class GraphMaterializer:
             )
         except ParserUnavailableError:
             raise
-        result = self.builder.build_file_graph(bundle)
+        result = self._build_file_graph(bundle)
         return result.graph
+
+    def _build_file_graph(self, bundle: ParseBundle) -> GraphBuildResult:
+        """Build one file graph through the configured Python or opt-in native builder."""
+        if self._graph_builder_injected or not _native_graph_builder_enabled():
+            return self.builder.build_file_graph(bundle)
+        return build_native_file_graph(bundle, fallback_builder=self.builder)
 
     def _build_context(
         self,
@@ -803,6 +811,11 @@ def _is_excluded_part(part: str) -> bool:
         True when the requested condition is satisfied; otherwise False.
     """
     return part in EXCLUDED_PARTS or part.endswith(".egg-info")
+
+
+def _native_graph_builder_enabled() -> bool:
+    """Return whether materialization should opt into the native graph builder."""
+    return os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
 
 
 def _normalize_db_path(db_path: str | Path) -> str | Path:

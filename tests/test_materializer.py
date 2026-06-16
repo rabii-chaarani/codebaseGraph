@@ -3,13 +3,15 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 import codebase_graph.ingest.materializer as materializer_module
 from codebase_graph.db import LadybugCodeGraphStore
-from codebase_graph.extract import ParseBundle
+from codebase_graph.extract import CaptureRecord, ParseBundle
 from codebase_graph.ingest import (
     GraphMaterializer,
     MarkdownDocumentParser,
@@ -20,6 +22,10 @@ from codebase_graph.ingest import (
     TreeSitterPythonParser,
 )
 from codebase_graph.ontology import ONTOLOGY_NAME
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+RUST_MANIFEST = REPO_ROOT / "rust" / "Cargo.toml"
+NATIVE_BINARY_NAME = "codebase_graph_native_graph_builder"
 
 
 def test_manifest_diff_tracks_added_modified_unchanged_and_deleted(tmp_path: Path) -> None:
@@ -254,6 +260,77 @@ def test_full_materialization_writes_supported_language_graphs(tmp_path: Path) -
     assert {"new", "Name", "name"} <= _labels(materializer, "Method")
     assert {"std::fmt", "fmt", "stdio.h", "string", "iso_fortran_env"} <= _labels(materializer, "ImportDeclaration")
     assert {"User::new", "fmt.Println", "printf", "u.name", "print_hello"} <= _labels(materializer, "CallExpression")
+
+
+def test_materializer_keeps_python_graph_builder_as_default(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source_root = _native_fixture_root(tmp_path)
+    registry = _native_fixture_registry()
+
+    def fail_native_builder(*args: object, **kwargs: object) -> None:
+        raise AssertionError("native graph builder must not run by default")
+
+    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
+    monkeypatch.setattr(materializer_module, "build_native_file_graph", fail_native_builder)
+
+    store = CapturingStore()
+    result = GraphMaterializer(
+        source_root,
+        db_path=":memory:",
+        manifest_path=tmp_path / "manifest.json",
+        store=store,
+        parser_registry=registry,
+        semantic_enrichment=False,
+    ).materialize(mode="full")
+
+    assert result.rebuilt == 1
+    assert {node.label for node in store.graphs[0].nodes_by_type("Function")} == {"helper"}
+
+
+def test_materializer_uses_native_graph_builder_when_opted_in(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    native_binary = _native_graph_builder_binary()
+    source_root = _native_fixture_root(tmp_path)
+    registry = _native_fixture_registry()
+
+    python_store = CapturingStore()
+    GraphMaterializer(
+        source_root,
+        db_path=":memory:",
+        manifest_path=tmp_path / "python_manifest.json",
+        store=python_store,
+        parser_registry=registry,
+        semantic_enrichment=False,
+    ).materialize(mode="full")
+
+    native_calls: list[str] = []
+    real_native_builder = materializer_module.build_native_file_graph
+
+    def recording_native_builder(bundle: ParseBundle, **kwargs: object) -> object:
+        native_calls.append(bundle.path)
+        return real_native_builder(bundle, **kwargs)
+
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_GRAPH_BUILDER", native_binary.as_posix())
+    monkeypatch.setattr(materializer_module, "build_native_file_graph", recording_native_builder)
+    native_store = CapturingStore()
+
+    result = GraphMaterializer(
+        source_root,
+        db_path=":memory:",
+        manifest_path=tmp_path / "native_manifest.json",
+        store=native_store,
+        parser_registry=registry,
+        semantic_enrichment=False,
+    ).materialize(mode="full")
+
+    assert result.rebuilt == 1
+    assert native_calls == ["service.native"]
+    assert native_store.graphs[0].as_dict() == python_store.graphs[0].as_dict()
 
 
 def test_materializer_runs_local_semantic_enrichment_before_persistence(tmp_path: Path) -> None:
@@ -590,6 +667,46 @@ def test_pending_rebuild_marker_forces_changed_mode_atomic_rebuild(
     assert "SampleService" in _labels(reader, "Class")
 
 
+def _native_graph_builder_binary() -> Path:
+    if shutil.which("cargo") is None:
+        pytest.skip("cargo is required for native materializer integration tests")
+
+    subprocess.run(
+        [
+            "cargo",
+            "build",
+            "--manifest-path",
+            RUST_MANIFEST.as_posix(),
+            "--bin",
+            NATIVE_BINARY_NAME,
+            "--quiet",
+        ],
+        check=True,
+    )
+    suffix = ".exe" if sys.platform.startswith("win") else ""
+    binary = REPO_ROOT / "rust" / "target" / "debug" / f"{NATIVE_BINARY_NAME}{suffix}"
+    assert binary.exists()
+    return binary
+
+
+def _native_fixture_root(tmp_path: Path) -> Path:
+    source_root = tmp_path / "native_materializer_project"
+    source_root.mkdir()
+    (source_root / "service.native").write_text("helper()\n", encoding="utf-8")
+    return source_root
+
+
+def _native_fixture_registry() -> ParserRegistry:
+    registry = ParserRegistry()
+    registry.register(
+        "native_fixture",
+        suffixes=(".native",),
+        parser_factory=NativeCaptureParser,
+        parser_version="native-fixture-v1",
+    )
+    return registry
+
+
 def _entry(path: str, content_hash: str) -> ManifestEntry:
     return ManifestEntry(
         path=path,
@@ -661,6 +778,55 @@ class ToyParser:
                     },
                 ],
             },
+        )
+
+
+class NativeCaptureParser:
+    language = "native_fixture"
+    parser_version = "native-fixture-v1"
+
+    def parse_file(
+        self,
+        path: Path,
+        *,
+        relative_path: str,
+        source_root: Path,
+        repository_label: str,
+        content_hash: str,
+    ) -> ParseBundle:
+        return ParseBundle(
+            language=self.language,
+            path=relative_path,
+            source_text=path.read_text(encoding="utf-8"),
+            repository_label=repository_label,
+            source_root=source_root.as_posix(),
+            content_hash=content_hash,
+            captures=(
+                CaptureRecord(
+                    "definition.function",
+                    {
+                        "type": "function_definition",
+                        "name": "helper",
+                        "text": "def helper",
+                        "line_start": 1,
+                        "line_end": 1,
+                        "byte_start": 0,
+                        "byte_end": 10,
+                    },
+                ),
+                CaptureRecord(
+                    "reference.call",
+                    {
+                        "type": "call",
+                        "name": "helper",
+                        "text": "helper",
+                        "line_start": 1,
+                        "line_end": 1,
+                        "byte_start": 0,
+                        "byte_end": 6,
+                    },
+                ),
+            ),
         )
 
 
