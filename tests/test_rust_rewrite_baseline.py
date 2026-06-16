@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 DOC_PATH = Path("docs/rust_rewrite.md")
+RELEASE_DOC_PATH = Path("docs/release.md")
 SCRIPT_PATH = Path("scripts/benchmark_materialization.py")
 
 
@@ -77,6 +78,17 @@ def test_rust_rewrite_design_doc_defines_boundary_benchmark_and_parity() -> None
     assert "ParseBundle" in text
     assert "GraphBuildResult" in text
     assert "BulkLoadStats" in text
+    assert "Do not change stable graph IDs" in text
+    assert "CODEBASE_GRAPH_NATIVE=1 codebase-graph setup --repo-root ." in text
+
+
+def test_release_doc_describes_native_fallback_and_graph_compatibility() -> None:
+    text = RELEASE_DOC_PATH.read_text(encoding="utf-8")
+
+    assert "CODEBASE_GRAPH_NATIVE=1" in text
+    assert "Python result shape" in text
+    assert "Do not change stable graph node IDs" in text
+    assert "Golden graph parity fixtures" in text
 
 
 def test_materialization_benchmark_reports_full_mode_with_isolated_state(tmp_path: Path) -> None:

@@ -49,6 +49,12 @@ Pull requests and pushes to `main` or `codex/**` run:
 Before publishing a production release, confirm:
 
 - Hosted CI is green for tests, ruff, package build, supply-chain, wheel smoke, and source-distribution smoke.
+- Native Rust accelerators, when included in the release, remain opt-in through `CODEBASE_GRAPH_NATIVE=1`; Python-default
+  setup and MCP behavior must pass without requiring Rust binaries.
+- Native fallback behavior is covered by tests or smoke checks: unsupported platforms, missing helpers, or native runtime
+  failures must preserve the Python result shape unless the command is intentionally strict.
+- Golden graph parity fixtures are current. Do not change stable graph node IDs, edge IDs, relation labels, source spans,
+  or manifest compatibility semantics without updating the fixtures and documenting the compatibility impact.
 - `SECURITY.md` is present and vulnerability reporting expectations are current.
 - The project owner has selected an SPDX license, added package license metadata, and included the corresponding license file.
 - The PyPI Trusted Publisher, `pypi` GitHub environment, and release-please token posture have been verified in GitHub/PyPI settings.
@@ -70,6 +76,10 @@ Add `--require-conda` when conda-forge submission is in scope for the release.
 Vulnerability advisory scans require an external advisory service. Hosted CI and release workflows run those scans and
 fail on known vulnerable dependencies. Local setup stays offline-safe and must not call external advisory APIs
 implicitly; run local advisory scans explicitly when that disclosure is acceptable.
+
+Rust-enabled release notes should state that native materialization is opt-in, describe Python fallback behavior, list
+the benchmark evidence used for any rollout recommendation, and call out graph compatibility changes that require users
+to refresh `.codebaseGraph` state.
 
 The package version remains tag-derived through `setuptools_scm`; do not add a static `project.version` field to `pyproject.toml` just for release-please.
 The release-please config intentionally disables component-prefixed tags so production releases stay in strict `vX.Y.Z` format.

@@ -70,6 +70,37 @@ rust/
 
 `pyproject.toml` should stay setuptools-based until the first native implementation task. Add `maturin` build metadata only when a compiled extension is introduced, and keep source distributions usable on platforms where a wheel is not available.
 
+## Build and Use
+
+The native path is a developer and benchmark surface until rollout evidence supports a default switch.
+
+Build and validate the Rust helpers with:
+
+```bash
+cargo test --manifest-path rust/Cargo.toml
+cargo clippy --manifest-path rust/Cargo.toml -- -D warnings
+```
+
+Run Python and native comparisons from the same checkout and isolated state directory:
+
+```bash
+python scripts/benchmark_materialization.py \
+  --repo-root . \
+  --mode full \
+  --iterations 3 \
+  --warmups 1 \
+  --output .codebaseGraph/benchmarks/materialization-python.json
+
+CODEBASE_GRAPH_NATIVE=1 python scripts/benchmark_materialization.py \
+  --repo-root . \
+  --mode full \
+  --iterations 3 \
+  --warmups 1 \
+  --output .codebaseGraph/benchmarks/materialization-native.json
+```
+
+Use `CODEBASE_GRAPH_NATIVE=1 codebase-graph setup --repo-root .` only for local opt-in validation. Production defaults remain Python-owned, and native failures must either fall back to Python or surface as benchmark/test diagnostics without changing public result shapes.
+
 ## CI Expectations
 
 Before enabling native defaults, hosted CI should run:
@@ -144,3 +175,14 @@ Canonicalization rules:
 - Fail on count changes, ID changes, span changes, label changes, metadata loss, and diagnostic differences.
 
 Native replacement is allowed only after parity fixtures pass in both Python-default and native-opt-in modes.
+
+## Graph Compatibility Maintenance Rules
+
+Future contributors must treat graph IDs, edge IDs, relation labels, source spans, manifest compatibility checks, and public dataclass shapes as stable compatibility surfaces. Changing any of them requires:
+
+- Updating golden parity fixtures in the same change.
+- Explaining whether existing `.codebaseGraph` state must be refreshed.
+- Keeping Python-default and `CODEBASE_GRAPH_NATIVE=1` outputs comparable for the same explicit input.
+- Recording benchmark evidence before recommending a default change.
+
+Do not change stable graph IDs in Rust to make implementation easier. The Rust path is an accelerator for the existing graph contract, not a new graph schema.

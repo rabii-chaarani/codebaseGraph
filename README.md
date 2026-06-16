@@ -133,6 +133,30 @@ python -m pytest
 ruff check .
 ```
 
+### Native Rust accelerators
+
+The Rust materialization path is experimental and remains opt-in. Python keeps ownership of the CLI, MCP server,
+configuration, graph state paths, atomic materialization flow, and public result shapes. Rust is used only as internal
+batch accelerators behind `codebase_graph._native` wrappers.
+
+Build the native helpers from the repository root with:
+
+```bash
+cargo test --manifest-path rust/Cargo.toml
+cargo clippy --manifest-path rust/Cargo.toml -- -D warnings
+```
+
+Use the native path by setting `CODEBASE_GRAPH_NATIVE=1` before setup, refresh, or benchmark commands:
+
+```bash
+CODEBASE_GRAPH_NATIVE=1 codebase-graph setup --repo-root .
+CODEBASE_GRAPH_NATIVE=1 python scripts/benchmark_materialization.py --repo-root . --mode full
+```
+
+If native helpers are unavailable or fail, Python wrappers fall back to the existing Python implementations unless a test
+or benchmark explicitly exercises strict native behavior. Keep Rust disabled by default until golden parity fixtures and
+representative benchmarks show a completed semantic-enabled speedup.
+
 ## Release and security
 
 CI runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff, package-build checks,
