@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import tempfile
 from collections import defaultdict
 from collections.abc import Mapping
@@ -202,6 +203,24 @@ class LadybugCodeGraphStore:
             BulkLoadStats instance populated with data from the Ladybug database persistence
             layer workflow.
         """
+        if _native_bulk_staging_enabled():
+            with tempfile.TemporaryDirectory(prefix="codebase-graph-ladybug-") as staging_dir:
+                staging = _write_native_bulk_staging(
+                    graphs,
+                    Path(staging_dir),
+                    skip_node_ids=skip_node_ids,
+                    skip_edge_ids=skip_edge_ids,
+                )
+                if staging is not None:
+                    for statement in staging.copy_statements:
+                        self.execute(statement)
+                    return BulkLoadStats(
+                        node_rows=staging.node_rows,
+                        edge_rows=staging.edge_rows,
+                        connector_rows=staging.connector_rows,
+                        copy_calls=len(staging.copy_statements),
+                    )
+
         staging_tables = _build_bulk_staging_tables(
             graphs,
             skip_node_ids=skip_node_ids,
@@ -549,6 +568,159 @@ def _build_bulk_staging_tables(
             )
 
     return _BulkStagingTables(nodes=dict(node_rows), edges=dict(edge_rows), connectors=dict(connector_rows))
+
+
+def _native_bulk_staging_enabled() -> bool:
+    """Return whether native bulk staging is enabled for the current process."""
+    return os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
+
+
+def _write_native_bulk_staging(
+    graphs: list[CodeGraph] | tuple[CodeGraph, ...],
+    staging_dir: Path,
+    *,
+    skip_node_ids: set[str] | None = None,
+    skip_edge_ids: set[str] | None = None,
+) -> _BulkStagingResult | None:
+    """Write bulk staging files through the native staging engine when available."""
+    from codebase_graph._native.bulk_staging import write_bulk_staging
+
+    if _native_bulk_staging_has_metadata_conflict(
+        graphs,
+        skip_node_ids=skip_node_ids,
+        skip_edge_ids=skip_edge_ids,
+    ):
+        return None
+    payload = _encode_native_bulk_staging_payload(
+        graphs,
+        staging_dir,
+        skip_node_ids=skip_node_ids,
+        skip_edge_ids=skip_edge_ids,
+    )
+    result = write_bulk_staging(payload)
+    if result is None:
+        return None
+    return _BulkStagingResult(
+        copy_statements=tuple(result.copy_statements),
+        node_rows=result.node_rows,
+        edge_rows=result.edge_rows,
+        connector_rows=result.connector_rows,
+    )
+
+
+def _native_bulk_staging_has_metadata_conflict(
+    graphs: list[CodeGraph] | tuple[CodeGraph, ...],
+    *,
+    skip_node_ids: set[str] | None = None,
+    skip_edge_ids: set[str] | None = None,
+) -> bool:
+    """Return whether native token merging would lose duplicate-row metadata updates."""
+    skipped_nodes = skip_node_ids or set()
+    skipped_edges = skip_edge_ids or set()
+    seen_metadata: dict[tuple[str, str], str] = {}
+
+    for graph in graphs:
+        for node in graph.nodes.values():
+            if node.id in skipped_nodes:
+                continue
+            row = _row_for_fields(node.as_dict(), NODE_FIELDS[node.table], for_json_copy=True)
+            if _metadata_token_conflicts(seen_metadata, ("node", node.id), _json_token(row.get("metadata", {}))):
+                return True
+
+        for edge in graph.edges.values():
+            if edge.id in skipped_edges:
+                continue
+            row = _row_for_fields(edge.as_dict(), EDGE_FIELDS_BY_TYPE[edge.type], for_json_copy=True)
+            if _metadata_token_conflicts(seen_metadata, ("edge", edge.id), _json_token(row.get("metadata", {}))):
+                return True
+
+    return False
+
+
+def _metadata_token_conflicts(
+    seen_metadata: dict[tuple[str, str], str],
+    key: tuple[str, str],
+    incoming: str,
+) -> bool:
+    existing = seen_metadata.get(key)
+    if existing is None:
+        seen_metadata[key] = incoming
+        return False
+    if existing != "{}" and incoming != "{}" and incoming != existing:
+        return True
+    if existing == "{}":
+        seen_metadata[key] = incoming
+    return False
+
+
+def _encode_native_bulk_staging_payload(
+    graphs: list[CodeGraph] | tuple[CodeGraph, ...],
+    staging_dir: Path,
+    *,
+    skip_node_ids: set[str] | None = None,
+    skip_edge_ids: set[str] | None = None,
+) -> str:
+    """Encode graph rows for the native bulk staging protocol."""
+    skipped_nodes = skip_node_ids or set()
+    skipped_edges = skip_edge_ids or set()
+    lines = [f"BULK\t{_hex(staging_dir.as_posix())}"]
+
+    for node_type in NODE_TYPES:
+        lines.append("\t".join(("TABLE", _hex("node"), _hex(node_type.name))))
+    for relation_type in RELATION_TYPES:
+        lines.append("\t".join(("TABLE", _hex("edge"), _hex(relation_type.name))))
+
+    for graph in graphs:
+        for node in graph.nodes.values():
+            if node.id in skipped_nodes:
+                continue
+            row = _row_for_fields(node.as_dict(), NODE_FIELDS[node.table], for_json_copy=True)
+            lines.append(_encode_native_bulk_row("NROW", node.table, node.id, row))
+
+        for edge in graph.edges.values():
+            if edge.id in skipped_edges:
+                continue
+            source = graph.nodes[edge.source_id]
+            target = graph.nodes[edge.target_id]
+            row = _row_for_fields(edge.as_dict(), EDGE_FIELDS_BY_TYPE[edge.type], for_json_copy=True)
+            lines.append(
+                _encode_native_bulk_row(
+                    "EROW",
+                    edge.type,
+                    edge.id,
+                    row,
+                    source.id,
+                    target.id,
+                    source.table,
+                    target.table,
+                )
+            )
+
+    return "\n".join(lines) + "\n"
+
+
+def _encode_native_bulk_row(
+    record_type: str,
+    table: str,
+    row_id: str,
+    row: Mapping[str, Any],
+    *connector_fields: str,
+) -> str:
+    fields: list[str] = [record_type, _hex(table), _hex(row_id)]
+    fields.extend(_hex(value) for value in connector_fields)
+    fields.append(str(len(row)))
+    for key, value in row.items():
+        fields.extend((_hex(key), _hex(_json_token(value))))
+    return "\t".join(fields)
+
+
+def _json_token(value: Any) -> str:
+    """Serialize one already-normalized staging value as a JSON token."""
+    return json.dumps(value, separators=(",", ":"), sort_keys=True)
+
+
+def _hex(value: str) -> str:
+    return value.encode("utf-8").hex()
 
 
 def _row_for_fields(row: Mapping[str, Any], fields: tuple[Any, ...], *, for_json_copy: bool = False) -> dict[str, Any]:

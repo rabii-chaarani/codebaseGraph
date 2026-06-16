@@ -1,5 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
+use std::fs;
 use std::io::{self, Read};
+use std::path::{Path, PathBuf};
 
 #[derive(Clone)]
 struct Capture {
@@ -72,11 +74,22 @@ fn main() -> Result<(), String> {
     io::stdin()
         .read_to_string(&mut input)
         .map_err(|error| error.to_string())?;
+    if first_record_kind(&input).as_deref() == Some("BULK") {
+        return run_bulk_staging(&input);
+    }
     let (meta, captures) = parse_input(&input)?;
     let mut builder = Builder::new(meta);
     builder.build(captures)?;
     print!("{}", builder.encode_output());
     Ok(())
+}
+
+fn first_record_kind(input: &str) -> Option<String> {
+    input
+        .lines()
+        .find(|line| !line.trim().is_empty())
+        .and_then(|line| line.split('\t').next())
+        .map(str::to_string)
 }
 
 impl Builder {
@@ -852,6 +865,335 @@ impl Edge {
             &hex(&json_object(&self.metadata)),
         ])
     }
+}
+
+type BulkRow = BTreeMap<String, String>;
+type BulkRowsById = BTreeMap<String, BulkRow>;
+type ConnectorKey = (String, String, String);
+type ConnectorRowKey = (String, String, String);
+
+struct BulkStaging {
+    staging_dir: PathBuf,
+    node_tables: Vec<String>,
+    edge_tables: Vec<String>,
+    nodes: BTreeMap<String, BulkRowsById>,
+    edges: BTreeMap<String, BulkRowsById>,
+    connectors: BTreeMap<ConnectorKey, BTreeMap<ConnectorRowKey, ConnectorRow>>,
+}
+
+struct ConnectorRow {
+    from_id: String,
+    to_id: String,
+    role: String,
+}
+
+struct BulkStagingOutput {
+    copy_statements: Vec<String>,
+    node_rows: usize,
+    edge_rows: usize,
+    connector_rows: usize,
+}
+
+fn run_bulk_staging(input: &str) -> Result<(), String> {
+    let output = parse_bulk_staging(input)?.write()?;
+    println!(
+        "RESULT\t{}\t{}\t{}",
+        output.node_rows, output.edge_rows, output.connector_rows
+    );
+    for statement in output.copy_statements {
+        println!("COPY\t{}", hex(&statement));
+    }
+    Ok(())
+}
+
+fn parse_bulk_staging(input: &str) -> Result<BulkStaging, String> {
+    let mut staging = BulkStaging {
+        staging_dir: PathBuf::new(),
+        node_tables: Vec::new(),
+        edge_tables: Vec::new(),
+        nodes: BTreeMap::new(),
+        edges: BTreeMap::new(),
+        connectors: BTreeMap::new(),
+    };
+
+    for line in input.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.split('\t').collect();
+        match parts.first().copied() {
+            Some("BULK") if parts.len() == 2 => {
+                staging.staging_dir = PathBuf::from(unhex(parts[1])?);
+            }
+            Some("TABLE") if parts.len() == 3 => {
+                let kind = unhex(parts[1])?;
+                let table = unhex(parts[2])?;
+                match kind.as_str() {
+                    "node" => staging.node_tables.push(table),
+                    "edge" => staging.edge_tables.push(table),
+                    _ => return Err(format!("unknown bulk table kind: {kind}")),
+                }
+            }
+            Some("NROW") if parts.len() >= 4 => {
+                let table = unhex(parts[1])?;
+                let row_id = unhex(parts[2])?;
+                let fields = decode_bulk_fields(&parts[3..])?;
+                merge_bulk_row(staging.nodes.entry(table).or_default(), row_id, fields);
+            }
+            Some("EROW") if parts.len() >= 8 => {
+                let table = unhex(parts[1])?;
+                let row_id = unhex(parts[2])?;
+                let source_id = unhex(parts[3])?;
+                let target_id = unhex(parts[4])?;
+                let source_table = unhex(parts[5])?;
+                let target_table = unhex(parts[6])?;
+                let fields = decode_bulk_fields(&parts[7..])?;
+                merge_bulk_row(
+                    staging.edges.entry(table.clone()).or_default(),
+                    row_id.clone(),
+                    fields,
+                );
+                staging.add_connector(
+                    format!("FROM_{table}"),
+                    source_table,
+                    table.clone(),
+                    source_id,
+                    row_id.clone(),
+                    "source".to_string(),
+                );
+                staging.add_connector(
+                    format!("TO_{table}"),
+                    table,
+                    target_table,
+                    row_id,
+                    target_id,
+                    "target".to_string(),
+                );
+            }
+            Some(kind) => return Err(format!("invalid bulk input record: {kind}")),
+            None => {}
+        }
+    }
+
+    if staging.staging_dir.as_os_str().is_empty() {
+        return Err("bulk staging directory is missing".to_string());
+    }
+    Ok(staging)
+}
+
+fn decode_bulk_fields(parts: &[&str]) -> Result<BulkRow, String> {
+    let Some(count_text) = parts.first() else {
+        return Err("bulk row field count is missing".to_string());
+    };
+    let count = count_text
+        .parse::<usize>()
+        .map_err(|error| format!("invalid bulk row field count: {error}"))?;
+    if parts.len() != 1 + (count * 2) {
+        return Err(format!(
+            "bulk row field count mismatch: expected {}, got {}",
+            count * 2,
+            parts.len().saturating_sub(1)
+        ));
+    }
+    let mut fields = BTreeMap::new();
+    for index in 0..count {
+        let key = unhex(parts[1 + (index * 2)])?;
+        let token = unhex(parts[2 + (index * 2)])?;
+        fields.insert(key, token);
+    }
+    Ok(fields)
+}
+
+impl BulkStaging {
+    fn add_connector(
+        &mut self,
+        table: String,
+        from_type: String,
+        to_type: String,
+        from_id: String,
+        to_id: String,
+        role: String,
+    ) {
+        let rows = self
+            .connectors
+            .entry((table, from_type, to_type))
+            .or_default();
+        rows.entry((from_id.clone(), to_id.clone(), role.clone()))
+            .or_insert(ConnectorRow {
+                from_id,
+                to_id,
+                role,
+            });
+    }
+
+    fn write(&self) -> Result<BulkStagingOutput, String> {
+        fs::create_dir_all(&self.staging_dir).map_err(|error| error.to_string())?;
+
+        let mut copy_statements = Vec::new();
+        let mut node_rows = 0;
+        let mut edge_rows = 0;
+        let mut connector_rows = 0;
+
+        for table in &self.node_tables {
+            let Some(rows) = self.nodes.get(table) else {
+                continue;
+            };
+            if rows.is_empty() {
+                continue;
+            }
+            let path = self
+                .staging_dir
+                .join(format!("{}.json", stage_file_stem(table)));
+            write_json_rows(&path, rows.values())?;
+            copy_statements.push(format!("COPY `{}` FROM \"{}\";", table, copy_path(&path)));
+            node_rows += rows.len();
+        }
+
+        for table in &self.edge_tables {
+            let Some(rows) = self.edges.get(table) else {
+                continue;
+            };
+            if rows.is_empty() {
+                continue;
+            }
+            let path = self
+                .staging_dir
+                .join(format!("{}.json", stage_file_stem(table)));
+            write_json_rows(&path, rows.values())?;
+            copy_statements.push(format!("COPY `{}` FROM \"{}\";", table, copy_path(&path)));
+            edge_rows += rows.len();
+        }
+
+        for relation in &self.edge_tables {
+            for connector_table in [format!("FROM_{relation}"), format!("TO_{relation}")] {
+                for ((table, from_type, to_type), rows) in &self.connectors {
+                    if table != &connector_table || rows.is_empty() {
+                        continue;
+                    }
+                    let path = self.staging_dir.join(format!(
+                        "{}__{}__{}.csv",
+                        stage_file_stem(table),
+                        stage_file_stem(from_type),
+                        stage_file_stem(to_type)
+                    ));
+                    write_csv_rows(&path, rows.values())?;
+                    copy_statements.push(format!(
+                        "COPY `{}` FROM \"{}\" (header=true, from=\"{}\", to=\"{}\");",
+                        table,
+                        copy_path(&path),
+                        from_type,
+                        to_type
+                    ));
+                    connector_rows += rows.len();
+                }
+            }
+        }
+
+        Ok(BulkStagingOutput {
+            copy_statements,
+            node_rows,
+            edge_rows,
+            connector_rows,
+        })
+    }
+}
+
+fn merge_bulk_row(rows: &mut BulkRowsById, row_id: String, incoming: BulkRow) {
+    let Some(existing) = rows.get_mut(&row_id) else {
+        rows.insert(row_id, incoming);
+        return;
+    };
+
+    for (key, value) in incoming {
+        if !json_token_is_empty(&value) {
+            let should_replace = match existing.get(&key) {
+                Some(current) => json_token_is_empty(current),
+                None => true,
+            };
+            if should_replace {
+                existing.insert(key, value);
+            }
+        }
+    }
+}
+
+fn json_token_is_empty(value: &str) -> bool {
+    matches!(value, "null" | "\"\"" | "{}" | "[]")
+}
+
+fn write_json_rows<'a>(
+    path: &Path,
+    rows: impl Iterator<Item = &'a BTreeMap<String, String>>,
+) -> Result<(), String> {
+    let mut output = String::from("[");
+    for (row_index, row) in rows.enumerate() {
+        if row_index > 0 {
+            output.push(',');
+        }
+        output.push('{');
+        for (field_index, (key, value)) in row.iter().enumerate() {
+            if field_index > 0 {
+                output.push(',');
+            }
+            output.push_str(&json_string(key));
+            output.push(':');
+            output.push_str(value);
+        }
+        output.push('}');
+    }
+    output.push_str("]\n");
+    fs::write(path, output).map_err(|error| error.to_string())
+}
+
+fn write_csv_rows<'a>(
+    path: &Path,
+    rows: impl Iterator<Item = &'a ConnectorRow>,
+) -> Result<(), String> {
+    let mut output = String::from("from_id,to_id,role\r\n");
+    for row in rows {
+        output.push_str(&csv_field(&row.from_id));
+        output.push(',');
+        output.push_str(&csv_field(&row.to_id));
+        output.push(',');
+        output.push_str(&csv_field(&row.role));
+        output.push_str("\r\n");
+    }
+    fs::write(path, output).map_err(|error| error.to_string())
+}
+
+fn csv_field(value: &str) -> String {
+    if value
+        .chars()
+        .any(|character| matches!(character, ',' | '"' | '\n' | '\r'))
+    {
+        format!("\"{}\"", value.replace('"', "\"\""))
+    } else {
+        value.to_string()
+    }
+}
+
+fn stage_file_stem(name: &str) -> String {
+    let stem = name
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>()
+        .trim_matches('_')
+        .to_string();
+    if stem.is_empty() {
+        "table".to_string()
+    } else {
+        stem
+    }
+}
+
+fn copy_path(path: &Path) -> String {
+    path.to_string_lossy().replace('"', "\\\"")
 }
 
 fn parse_input(input: &str) -> Result<(BTreeMap<String, String>, Vec<Capture>), String> {
