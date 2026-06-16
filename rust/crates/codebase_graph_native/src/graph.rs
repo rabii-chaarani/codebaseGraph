@@ -1,8 +1,10 @@
 use crate::error::NativeError;
 use crate::hash;
 use crate::legacy;
-use crate::normalize::NativeCapture;
+use crate::normalize::SyntaxNode;
+use crate::parser::ParseOutput;
 use crate::protocol::{ManifestEntry, NativeSyntaxMaterializationRequest, SourceSnapshot};
+use serde_json::Value;
 use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -15,10 +17,10 @@ pub(crate) struct GraphPartition {
 pub(crate) fn build_partition(
     request: &NativeSyntaxMaterializationRequest,
     snapshot: &SourceSnapshot,
-    captures: Vec<NativeCapture>,
+    parse: ParseOutput,
 ) -> Result<GraphPartition, NativeError> {
-    let payload = encode_graph_builder_payload(request, snapshot, captures);
-    let graph_output = legacy::build_graph_output(&payload).map_err(NativeError::Legacy)?;
+    let payload = encode_tree_graph_payload(request, snapshot, parse);
+    let graph_output = legacy::build_tree_graph_output(&payload).map_err(NativeError::Legacy)?;
     let entry = manifest_entry(snapshot, &graph_output)?;
     Ok(GraphPartition {
         entry,
@@ -26,12 +28,13 @@ pub(crate) fn build_partition(
     })
 }
 
-fn encode_graph_builder_payload(
+fn encode_tree_graph_payload(
     request: &NativeSyntaxMaterializationRequest,
     snapshot: &SourceSnapshot,
-    captures: Vec<NativeCapture>,
+    parse: ParseOutput,
 ) -> String {
     let mut lines = vec![
+        "TREEGRAPH".to_string(),
         format!("META\tpath\t{}", hex(&snapshot.path)),
         format!(
             "META\tlanguage\t{}",
@@ -40,24 +43,51 @@ fn encode_graph_builder_payload(
         format!("META\tsource_root\t{}", hex(&request.source_root)),
         format!("META\trepository_label\t{}", hex(&request.repository_label)),
     ];
-    for capture in captures {
-        lines.push(
-            [
-                "CAP".to_string(),
-                hex(&capture.capture_name),
-                hex(&capture.node_type),
-                hex(&capture.label),
-                hex(&capture.text),
-                optional_i64(capture.line_start),
-                optional_i64(capture.line_end),
-                optional_i64(capture.byte_start),
-                optional_i64(capture.byte_end),
-                hex(&capture.fields.join(",")),
-            ]
-            .join("\t"),
-        );
+    if !request.ontology_schema.relation_types.is_empty() {
+        let relation_types =
+            serde_json::to_string(&request.ontology_schema.relation_types).unwrap_or_default();
+        lines.push(format!(
+            "META\tontology_relations\t{}",
+            hex(&relation_types)
+        ));
     }
+    append_tree_node(&parse.root, None, &mut 0, &mut lines);
     lines.join("\n") + "\n"
+}
+
+fn append_tree_node(
+    node: &SyntaxNode,
+    parent_id: Option<usize>,
+    next_id: &mut usize,
+    lines: &mut Vec<String>,
+) {
+    let node_id = *next_id;
+    *next_id += 1;
+    let mut fields = vec![
+        "NODE".to_string(),
+        node_id.to_string(),
+        parent_id.map(|value| value.to_string()).unwrap_or_default(),
+        hex(&node.node_type),
+        hex(&node.text),
+        optional_i64(node.line_start),
+        optional_i64(node.line_end),
+        optional_i64(node.byte_start),
+        optional_i64(node.byte_end),
+        hex(&node.capture_name),
+        node.fields.len().to_string(),
+    ];
+    for (key, value) in &node.fields {
+        fields.push(hex(key));
+        fields.push(hex(&json_token(value)));
+    }
+    lines.push(fields.join("\t"));
+    for child in &node.children {
+        append_tree_node(child, Some(node_id), next_id, lines);
+    }
+}
+
+fn json_token(value: &Value) -> String {
+    serde_json::to_string(value).unwrap_or_else(|_| "null".to_string())
 }
 
 fn manifest_entry(

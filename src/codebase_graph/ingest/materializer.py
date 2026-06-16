@@ -16,7 +16,7 @@ from codebase_graph.core import CodeGraph
 from codebase_graph.db import LadybugCodeGraphStore, build_ladybug_schema_statements, create_ladybug_database
 from codebase_graph.diagnostics import log_event
 from codebase_graph.extract import GraphBuilder, GraphBuildResult, ParseBundle
-from codebase_graph.ontology import ONTOLOGY_NAME
+from codebase_graph.ontology import ONTOLOGY_NAME, schema_payload
 from codebase_graph.paths import DEFAULT_STATE_DIR, derive_graph_state_paths
 from codebase_graph.semantic.build_context import BuildContext, collect_project_build_context
 from codebase_graph.semantic.enrichment_writer import persist_semantic_enrichment
@@ -701,6 +701,7 @@ class GraphMaterializer:
             "parser_version": self.parser_version,
             "manifest_schema_version": MANIFEST_SCHEMA_VERSION,
             "ontology": ONTOLOGY_NAME,
+            "ontology_schema": schema_payload(),
             "previous_manifest": previous_manifest.as_dict(),
             "profiles": [profile.as_dict() for profile in load_language_profiles(self.source_root)],
             "excluded_parts": sorted(EXCLUDED_PARTS),

@@ -94,6 +94,27 @@ def test_materializer_defaults_to_canonical_codebasegraph_state_paths(tmp_path: 
     assert materializer.manifest_path == source_root / ".codebaseGraph" / "manifest.json"
 
 
+def test_native_syntax_batch_payload_includes_canonical_ontology_schema(tmp_path: Path) -> None:
+    materializer = GraphMaterializer(tmp_path, db_path=tmp_path / "graph.ldb", manifest_path=tmp_path / "manifest.json")
+
+    payload = materializer._native_syntax_batch_payload(
+        mode="full",
+        previous_manifest=MaterializationManifest(),
+        temp_db_path=tmp_path / "next.ldb",
+        staging_dir=tmp_path / "staging",
+        strict=False,
+    )
+
+    assert payload["ontology"] == ONTOLOGY_NAME
+    assert payload["ontology_schema"]["ontology"] == ONTOLOGY_NAME
+    assert any(
+        relation["name"] == "References"
+        and relation["source_types"]
+        and relation["target_types"]
+        for relation in payload["ontology_schema"]["relation_types"]
+    )
+
+
 def test_scan_source_files_uses_parser_registry_for_suffix_mapping(tmp_path: Path) -> None:
     registry = ParserRegistry()
     registry.register(

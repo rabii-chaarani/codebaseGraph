@@ -1,4 +1,6 @@
-use serde::{Deserialize, Serialize};
+use serde::de::Error as DeError;
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -9,6 +11,8 @@ pub struct NativeSyntaxMaterializationRequest {
     pub parser_version: String,
     pub manifest_schema_version: u64,
     pub ontology: String,
+    #[serde(default)]
+    pub ontology_schema: OntologySchema,
     pub previous_manifest: Option<NativeManifest>,
     pub profiles: Vec<LanguageProfile>,
     pub excluded_parts: Vec<String>,
@@ -23,12 +27,28 @@ pub struct NativeSyntaxMaterializationRequest {
     pub strict: bool,
 }
 
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct OntologySchema {
+    #[serde(default)]
+    pub relation_types: Vec<OntologyRelationType>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct OntologyRelationType {
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub source_types: Vec<String>,
+    #[serde(default)]
+    pub target_types: Vec<String>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct NativeManifest {
     pub schema_version: u64,
     pub ontology: String,
     pub parser_version: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "manifest_files_from_any")]
     pub files: BTreeMap<String, ManifestEntry>,
 }
 
@@ -183,5 +203,36 @@ impl NativeSyntaxMaterializationResponse {
             skipped: false,
             database_written: false,
         }
+    }
+}
+
+fn manifest_files_from_any<'de, D>(
+    deserializer: D,
+) -> Result<BTreeMap<String, ManifestEntry>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    match value {
+        Value::Null => Ok(BTreeMap::new()),
+        Value::Array(items) => {
+            let mut files = BTreeMap::new();
+            for item in items {
+                let entry = ManifestEntry::deserialize(item).map_err(D::Error::custom)?;
+                files.insert(entry.path.clone(), entry);
+            }
+            Ok(files)
+        }
+        Value::Object(values) => values
+            .into_iter()
+            .map(|(path, value)| {
+                let mut entry = ManifestEntry::deserialize(value).map_err(D::Error::custom)?;
+                if entry.path.is_empty() {
+                    entry.path = path.clone();
+                }
+                Ok((path, entry))
+            })
+            .collect(),
+        _ => Err(D::Error::custom("manifest files must be a list or object")),
     }
 }

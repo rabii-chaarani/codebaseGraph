@@ -30,6 +30,7 @@ pub fn materialize_syntax_batch(
 
     let profile_set = profiles::ProfileSet::new(&request.profiles);
     let mut partitions = Vec::new();
+    let mut diagnostics = scan.diagnostics;
     for path in diff.rebuild_paths() {
         let Some(snapshot) = scan.supported.get(&path) else {
             continue;
@@ -40,15 +41,17 @@ pub fn materialize_syntax_batch(
         let Some(profile) = profile_set.profile_for_language(language) else {
             continue;
         };
-        let captures = parser::parse_file(snapshot, profile)?;
-        partitions.push(graph::build_partition(&request, snapshot, captures)?);
+        let parse = parser::parse_file(snapshot, profile)?;
+        let mut parse_diagnostics = parse.diagnostics.clone();
+        partitions.push(graph::build_partition(&request, snapshot, parse)?);
+        diagnostics.append(&mut parse_diagnostics);
     }
 
     let staging = staging::write_partitions(&request, &partitions)?;
     Ok(NativeSyntaxMaterializationResponse::from_parts(
         scan.snapshots,
         diff,
-        scan.diagnostics,
+        diagnostics,
         partitions,
         staging,
     ))

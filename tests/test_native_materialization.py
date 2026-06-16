@@ -5,6 +5,7 @@ import types
 
 import pytest
 
+import codebase_graph._native as native_pkg
 from codebase_graph._native.materialization import (
     NativeMaterializationUnavailable,
     materialize_syntax_batch,
@@ -19,7 +20,8 @@ def test_native_materialization_falls_back_when_disabled(monkeypatch: pytest.Mon
 
 def test_native_materialization_strict_requires_extension(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
-    sys.modules.pop("codebase_graph._native._native", None)
+    monkeypatch.delattr(native_pkg, "_native", raising=False)
+    monkeypatch.setitem(sys.modules, "codebase_graph._native._native", None)
 
     with pytest.raises(NativeMaterializationUnavailable, match="extension is unavailable"):
         materialize_syntax_batch({}, strict=True)
@@ -34,6 +36,7 @@ def test_native_materialization_decodes_extension_result(monkeypatch: pytest.Mon
         '"database_written":true}'
     )
     monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.setattr(native_pkg, "_native", extension, raising=False)
     monkeypatch.setitem(sys.modules, "codebase_graph._native._native", extension)
 
     result = materialize_syntax_batch({"source_root": "/tmp"})

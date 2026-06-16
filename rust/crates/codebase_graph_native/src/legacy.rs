@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::io::{self, Read};
@@ -60,6 +61,58 @@ struct Builder {
     nodes: BTreeMap<String, Node>,
     edges: BTreeMap<String, Edge>,
     symbols_by_name: HashMap<String, Vec<String>>,
+    relation_allowlist: RelationAllowlist,
+}
+
+#[derive(Clone, Default)]
+struct RelationAllowlist {
+    enabled: bool,
+    pairs_by_relation: BTreeMap<String, BTreeSet<(String, String)>>,
+}
+
+#[derive(Deserialize)]
+struct RelationSpecPayload {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    source_types: Vec<String>,
+    #[serde(default)]
+    target_types: Vec<String>,
+}
+
+impl RelationAllowlist {
+    fn from_meta(meta: &BTreeMap<String, String>) -> Result<Self, String> {
+        let Some(encoded) = meta.get("ontology_relations") else {
+            return Ok(Self::default());
+        };
+        let relation_specs: Vec<RelationSpecPayload> = serde_json::from_str(encoded)
+            .map_err(|error| format!("invalid ontology_relations metadata: {error}"))?;
+        let mut pairs_by_relation: BTreeMap<String, BTreeSet<(String, String)>> = BTreeMap::new();
+        for relation in relation_specs {
+            if relation.name.is_empty() {
+                continue;
+            }
+            let pairs = pairs_by_relation.entry(relation.name).or_default();
+            for source in &relation.source_types {
+                for target in &relation.target_types {
+                    pairs.insert((source.clone(), target.clone()));
+                }
+            }
+        }
+        Ok(Self {
+            enabled: true,
+            pairs_by_relation,
+        })
+    }
+
+    fn allows(&self, edge_type: &str, source: &str, target: &str) -> bool {
+        if !self.enabled {
+            return legacy_relation_allowed(edge_type, source, target);
+        }
+        self.pairs_by_relation
+            .get(edge_type)
+            .is_some_and(|pairs| pairs.contains(&(source.to_string(), target.to_string())))
+    }
 }
 
 struct Owner {
@@ -87,7 +140,7 @@ pub fn run_cli() -> Result<(), String> {
         return run_semantic_batch(&input);
     }
     let (meta, captures) = parse_input(&input)?;
-    let mut builder = Builder::new(meta);
+    let mut builder = Builder::new(meta)?;
     builder.build(captures)?;
     print!("{}", builder.encode_output());
     Ok(())
@@ -100,10 +153,17 @@ pub(crate) struct LegacyBulkStagingOutput {
     pub(crate) connector_rows: usize,
 }
 
-pub(crate) fn build_graph_output(input: &str) -> Result<String, String> {
+pub fn build_graph_output(input: &str) -> Result<String, String> {
     let (meta, captures) = parse_input(input)?;
-    let mut builder = Builder::new(meta);
+    let mut builder = Builder::new(meta)?;
     builder.build(captures)?;
+    Ok(builder.encode_output())
+}
+
+pub(crate) fn build_tree_graph_output(input: &str) -> Result<String, String> {
+    let parsed = parse_tree_graph_input(input)?;
+    let mut builder = Builder::new(parsed.meta)?;
+    builder.build_tree(&parsed.nodes, parsed.root_id)?;
     Ok(builder.encode_output())
 }
 
@@ -126,8 +186,9 @@ fn first_record_kind(input: &str) -> Option<String> {
 }
 
 impl Builder {
-    fn new(meta: BTreeMap<String, String>) -> Self {
-        Self {
+    fn new(meta: BTreeMap<String, String>) -> Result<Self, String> {
+        let relation_allowlist = RelationAllowlist::from_meta(&meta)?;
+        Ok(Self {
             path: meta.get("path").cloned().unwrap_or_default(),
             language: meta.get("language").cloned().unwrap_or_default(),
             source_root: meta.get("source_root").cloned().unwrap_or_default(),
@@ -138,7 +199,8 @@ impl Builder {
             nodes: BTreeMap::new(),
             edges: BTreeMap::new(),
             symbols_by_name: HashMap::new(),
-        }
+            relation_allowlist,
+        })
     }
 
     fn build(&mut self, captures: Vec<Capture>) -> Result<(), String> {
@@ -224,10 +286,129 @@ impl Builder {
         Ok(())
     }
 
-    fn emit_capture(&mut self, capture: &Capture, owner: &Owner) -> Result<(), String> {
+    fn build_tree(
+        &mut self,
+        nodes: &BTreeMap<usize, TsNode>,
+        root_id: usize,
+    ) -> Result<(), String> {
+        let Some(root) = nodes.get(&root_id) else {
+            return Err("tree graph root node is missing".to_string());
+        };
+        let repository_label = self.repository_label.clone();
+        let source_root = self.source_root.clone();
+        let path = self.path.clone();
+        let repository = self.support_node("Repository", &repository_label, &repository_label, "");
+        let source = self.support_node("SourceRoot", &source_root, &source_root, &source_root);
+        let file_label = self
+            .path
+            .rsplit('/')
+            .next()
+            .unwrap_or(self.path.as_str())
+            .to_string();
+        let file = self.support_node("File", &path, &file_label, &path);
+        self.edge(
+            "Contains",
+            &repository.id,
+            &source.id,
+            "repository_source_root",
+            BTreeMap::new(),
+        )?;
+        self.edge(
+            "Contains",
+            &source.id,
+            &file.id,
+            "source_root_file",
+            BTreeMap::new(),
+        )?;
+
+        if matches!(
+            root.node_type.as_str(),
+            "Module" | "module" | "program" | "source_file"
+        ) {
+            let root_capture = tree_capture(root);
+            let syntax_id = self.syntax_capture(&root_capture);
+            let module = self.semantic_node(
+                "Module",
+                &root_capture,
+                &module_label(&self.path),
+                &file.id,
+                "",
+                None,
+            );
+            let module_scope = self.scope_for(&module);
+            self.edge(
+                "Contains",
+                &file.id,
+                &module.id,
+                "file_module",
+                BTreeMap::new(),
+            )?;
+            self.edge(
+                "Contains",
+                &module.id,
+                &module_scope.id,
+                "module_contains_scope",
+                BTreeMap::new(),
+            )?;
+            self.edge(
+                "HasScope",
+                &module.id,
+                &module_scope.id,
+                "module_scope",
+                BTreeMap::new(),
+            )?;
+            self.derived_from(&module.id, &syntax_id)?;
+            let owner = Owner {
+                node_id: module.id.clone(),
+                table: "Module".to_string(),
+                qualified_name: module.qualified_name.clone(),
+                scope_id: module_scope.id.clone(),
+            };
+            for child_id in &root.children {
+                self.traverse_tree_node(nodes, *child_id, &owner)?;
+            }
+        } else {
+            let file_scope = self.scope_for(&file);
+            self.edge(
+                "HasScope",
+                &file.id,
+                &file_scope.id,
+                "file_scope",
+                BTreeMap::new(),
+            )?;
+            let owner = Owner {
+                node_id: file.id.clone(),
+                table: "File".to_string(),
+                qualified_name: file.qualified_name.clone(),
+                scope_id: file_scope.id.clone(),
+            };
+            self.traverse_tree_node(nodes, root_id, &owner)?;
+        }
+        Ok(())
+    }
+
+    fn traverse_tree_node(
+        &mut self,
+        nodes: &BTreeMap<usize, TsNode>,
+        node_id: usize,
+        owner: &Owner,
+    ) -> Result<(), String> {
+        let Some(node) = nodes.get(&node_id) else {
+            return Err(format!("tree graph node {node_id} is missing"));
+        };
+        let capture = tree_capture(node);
+        let next_owner = self.emit_capture(&capture, owner)?;
+        let child_owner = next_owner.as_ref().unwrap_or(owner);
+        for child_id in &node.children {
+            self.traverse_tree_node(nodes, *child_id, child_owner)?;
+        }
+        Ok(())
+    }
+
+    fn emit_capture(&mut self, capture: &Capture, owner: &Owner) -> Result<Option<Owner>, String> {
         let syntax_id = self.syntax_capture(capture);
         let Some(table) = table_for_capture(&capture.capture_name, owner) else {
-            return Ok(());
+            return Ok(None);
         };
         let semantic = match table.as_str() {
             "ImportDeclaration" => self.emit_import(capture, owner, &syntax_id)?,
@@ -257,8 +438,14 @@ impl Builder {
                 &format!("{}_scope", table.to_lowercase()),
                 BTreeMap::new(),
             )?;
+            return Ok(Some(Owner {
+                node_id: semantic.id.clone(),
+                table,
+                qualified_name: semantic.qualified_name.clone(),
+                scope_id: scope.id.clone(),
+            }));
         }
-        Ok(())
+        Ok(None)
     }
 
     fn emit_import(
@@ -349,13 +536,18 @@ impl Builder {
             &format!("defines_{}", table.to_lowercase()),
             BTreeMap::new(),
         )?;
-        self.edge(
-            "Declares",
-            &owner.node_id,
-            &semantic.id,
-            &format!("declares_{}", table.to_lowercase()),
-            BTreeMap::new(),
-        )?;
+        if matches!(
+            owner.table.as_str(),
+            "Module" | "Scope" | "Class" | "Function" | "Method"
+        ) {
+            self.edge(
+                "Declares",
+                &owner.node_id,
+                &semantic.id,
+                &format!("declares_{}", table.to_lowercase()),
+                BTreeMap::new(),
+            )?;
+        }
         self.derived_from(&semantic.id, syntax_id)?;
         Ok(semantic)
     }
@@ -752,7 +944,10 @@ impl Builder {
         let Some(target) = self.nodes.get(target_id) else {
             return Ok(());
         };
-        if relation_allowed(edge_type, &source.table, &target.table) {
+        if self
+            .relation_allowlist
+            .allows(edge_type, &source.table, &target.table)
+        {
             self.edge(edge_type, source_id, target_id, kind, metadata)?;
         }
         Ok(())
@@ -766,6 +961,18 @@ impl Builder {
         kind: &str,
         metadata: BTreeMap<String, JsonValue>,
     ) -> Result<Edge, String> {
+        let source_table = self.nodes.get(source_id).map(|node| node.table.clone());
+        let target_table = self.nodes.get(target_id).map(|node| node.table.clone());
+        if let (Some(source_table), Some(target_table)) = (&source_table, &target_table) {
+            if !self
+                .relation_allowlist
+                .allows(edge_type, source_table, target_table)
+            {
+                return Err(format!(
+                    "relation {edge_type} does not allow {source_table} -> {target_table}"
+                ));
+            }
+        }
         let canonical_key = format!("{}|{}|{}|{}", edge_type, source_id, target_id, kind);
         let mut edge_metadata = BTreeMap::new();
         edge_metadata.insert(
@@ -1233,6 +1440,12 @@ struct TsNormInput {
     language: String,
     root_types: Vec<String>,
     mappings: Vec<TsMapping>,
+    nodes: BTreeMap<usize, TsNode>,
+    root_id: usize,
+}
+
+struct TreeGraphInput {
+    meta: BTreeMap<String, String>,
     nodes: BTreeMap<usize, TsNode>,
     root_id: usize,
 }
@@ -2975,6 +3188,156 @@ fn parse_input(input: &str) -> Result<(BTreeMap<String, String>, Vec<Capture>), 
     Ok((meta, captures))
 }
 
+fn parse_tree_graph_input(input: &str) -> Result<TreeGraphInput, String> {
+    let mut meta = BTreeMap::new();
+    let mut nodes = BTreeMap::new();
+    let mut root_id = None;
+    for line in input.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.split('\t').collect();
+        match parts.first().copied() {
+            Some("TREEGRAPH") if parts.len() == 1 => {}
+            Some("META") if parts.len() == 3 => {
+                meta.insert(parts[1].to_string(), unhex(parts[2])?);
+            }
+            Some("NODE") if parts.len() >= 11 => {
+                let node = decode_tree_graph_node(&parts[1..])?;
+                if node.parent_id.is_none() {
+                    root_id = Some(node.id);
+                }
+                nodes.insert(node.id, node);
+            }
+            Some(kind) => return Err(format!("invalid tree graph record: {kind}")),
+            None => {}
+        }
+    }
+    for node_id in nodes.keys().copied().collect::<Vec<_>>() {
+        let Some(parent_id) = nodes.get(&node_id).and_then(|node| node.parent_id) else {
+            continue;
+        };
+        let Some(parent) = nodes.get_mut(&parent_id) else {
+            return Err(format!(
+                "tree graph node {node_id} references missing parent {parent_id}"
+            ));
+        };
+        parent.children.push(node_id);
+    }
+    Ok(TreeGraphInput {
+        meta,
+        nodes,
+        root_id: root_id.unwrap_or(0),
+    })
+}
+
+fn decode_tree_graph_node(parts: &[&str]) -> Result<TsNode, String> {
+    let id = parts[0]
+        .parse::<usize>()
+        .map_err(|error| format!("invalid tree graph node id: {error}"))?;
+    let parent_id = if parts[1].is_empty() {
+        None
+    } else {
+        Some(
+            parts[1]
+                .parse::<usize>()
+                .map_err(|error| format!("invalid tree graph parent id: {error}"))?,
+        )
+    };
+    let node_type = unhex(parts[2])?;
+    let text = unhex(parts[3])?;
+    let line_start = parse_optional_i64(parts[4])?;
+    let line_end = parse_optional_i64(parts[5])?;
+    let byte_start = parse_optional_i64(parts[6])?;
+    let byte_end = parse_optional_i64(parts[7])?;
+    let capture_name = unhex(parts[8])?;
+    let mut cursor = 9;
+    let fields = decode_ts_field_tokens(parts, &mut cursor)?;
+    if cursor != parts.len() {
+        return Err("tree graph node has trailing fields".to_string());
+    }
+    Ok(TsNode {
+        id,
+        parent_id,
+        node_type,
+        text,
+        line_start,
+        line_end,
+        byte_start,
+        byte_end,
+        capture_name,
+        fields,
+        field_types: BTreeMap::new(),
+        field_descendant_types: BTreeMap::new(),
+        children: Vec::new(),
+    })
+}
+
+fn tree_capture(node: &TsNode) -> Capture {
+    Capture {
+        capture_name: node.capture_name.clone(),
+        node_type: node.node_type.clone(),
+        label: tree_label(node),
+        text: node.text.clone(),
+        line_start: node.line_start,
+        line_end: node.line_end,
+        byte_start: node.byte_start,
+        byte_end: node.byte_end,
+        fields: node.fields.keys().cloned().collect(),
+    }
+}
+
+fn tree_label(node: &TsNode) -> String {
+    for key in ["name", "id", "arg", "attr", "module", "path", "function"] {
+        if let Some(label) = node
+            .fields
+            .get(key)
+            .and_then(|value| json_token_label(value))
+        {
+            if !label.is_empty() {
+                return label;
+            }
+        }
+    }
+    if let Some(label) = node
+        .fields
+        .get("value")
+        .and_then(|value| json_token_label(value))
+    {
+        if !label.is_empty() {
+            return label;
+        }
+    }
+    let text = node.text.trim();
+    if text.is_empty() {
+        node.node_type.clone()
+    } else {
+        text.to_string()
+    }
+}
+
+fn json_token_label(token: &str) -> Option<String> {
+    let value: serde_json::Value = serde_json::from_str(token).ok()?;
+    match value {
+        serde_json::Value::String(text) => Some(text.trim().to_string()),
+        serde_json::Value::Number(number) => Some(number.to_string()),
+        serde_json::Value::Bool(boolean) => Some(boolean.to_string()),
+        serde_json::Value::Object(object) => {
+            for key in ["id", "name", "arg", "attr", "value"] {
+                if let Some(value) = object.get(key) {
+                    let encoded = serde_json::to_string(value).ok()?;
+                    let label = json_token_label(&encoded)?;
+                    if !label.is_empty() {
+                        return Some(label);
+                    }
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
 fn table_for_capture(capture: &str, owner: &Owner) -> Option<String> {
     let normalized = capture.trim_start_matches('@');
     Some(
@@ -3023,7 +3386,7 @@ fn table_for_capture(capture: &str, owner: &Owner) -> Option<String> {
     )
 }
 
-fn relation_allowed(edge_type: &str, source: &str, target: &str) -> bool {
+fn legacy_relation_allowed(edge_type: &str, source: &str, target: &str) -> bool {
     match edge_type {
         "Imports" => {
             matches!(source, "File" | "Module" | "Scope")
@@ -3488,5 +3851,29 @@ mod tests {
             sha256_hex(b"abc"),
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
+    }
+
+    #[test]
+    fn relation_allowlist_uses_supplied_ontology_pairs() {
+        let mut meta = BTreeMap::new();
+        meta.insert(
+            "ontology_relations".to_string(),
+            r#"[{"name":"References","source_types":["Reference"],"target_types":["Symbol"]}]"#
+                .to_string(),
+        );
+
+        let allowlist = RelationAllowlist::from_meta(&meta).unwrap();
+
+        assert!(allowlist.allows("References", "Reference", "Symbol"));
+        assert!(!allowlist.allows("References", "File", "Symbol"));
+        assert!(!allowlist.allows("Unknown", "Reference", "Symbol"));
+    }
+
+    #[test]
+    fn relation_allowlist_falls_back_without_ontology_metadata() {
+        let allowlist = RelationAllowlist::from_meta(&BTreeMap::new()).unwrap();
+
+        assert!(allowlist.allows("Contains", "Repository", "SourceRoot"));
+        assert!(allowlist.allows("CustomRelation", "File", "Symbol"));
     }
 }
