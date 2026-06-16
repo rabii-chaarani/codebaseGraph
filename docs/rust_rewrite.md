@@ -100,7 +100,31 @@ Record at least:
 
 - Current Python baseline with `CODEBASE_GRAPH_NATIVE` unset.
 - Native opt-in run with `CODEBASE_GRAPH_NATIVE=1` once native code exists.
-- Repository size, file counts, mode, iteration count, total elapsed time, per-iteration elapsed time, and graph summary counts.
+- Repository size, file counts, mode, iteration count, total elapsed time, per-iteration elapsed time, files/sec, nodes/sec, edges/sec, peak RSS when available, and graph summary counts.
+
+## Benchmark Evidence - 2026-06-16
+
+Local benchmark target: this repository at commit `c94fb44`, isolated state under `/private/tmp/codebasegraph-rust-bench`, one measured iteration, zero warmups, 2,380 scanned files, 121 rebuilt graph partitions for full mode. The Scryer architecture boundary is the Materializer Orchestrator: it scans files, computes manifest diffs, coordinates parser/graph builder work, writes graph store artifacts, and invokes semantic enrichment components. These results are therefore end-to-end materialization timings, not single-kernel microbenchmarks.
+
+| Run | Semantic enrichment | Mean seconds | Files/sec | Nodes/sec | Edges/sec | Peak RSS |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Python full | enabled | 37.709 | 63.11 | 4,896.89 | 8,680.60 | 4.10 GB |
+| Python full | disabled | 19.918 | 119.49 | 9,271.06 | 12,372.02 | 2.72 GB |
+| Native opt-in full | disabled | 39.111 | 60.85 | 4,721.36 | 6,300.55 | 3.74 GB |
+| Python no-change `changed` | disabled | 0.511 | 4,658.62 | 361,449.86 | 482,346.81 | 2.73 GB |
+| Native opt-in no-change `changed` | disabled | 0.608 | 3,911.93 | 303,516.32 | 405,035.79 | 3.73 GB |
+
+The native opt-in full run with semantic enrichment enabled did not complete within the practical comparison window and was interrupted after more than 180 seconds. The stack was waiting on the native semantic enrichment subprocess, so semantic enrichment is currently a blocker for full native rollout on this repository.
+
+An attempted syntax-only Python full run against the local NumPy checkout was interrupted after more than 150 seconds while writing bulk JSON staging rows. That run did not produce comparable throughput metrics, but it shows that large mixed-language repositories need phase-level timing before assigning wins or losses to parser normalization, graph building, or bulk loader staging.
+
+Observed cost drivers:
+
+- Semantic enrichment adds about 17.8 seconds and 1.38 GB RSS to the Python full run on this repository. Native semantic enrichment is not ready for default use because the semantic-enabled native full benchmark failed to complete promptly.
+- With semantic enrichment disabled, native opt-in full materialization is still about 1.96x slower than Python full materialization, so the remaining cost is in the combined parser normalization, graph builder, bulk staging, and Python/native serialization boundary.
+- No-change `changed` mode is close in absolute terms, but native scan/hash/diff is still slower here: 0.608s versus 0.511s.
+
+Rollout conclusion: keep `CODEBASE_GRAPH_NATIVE=1` opt-in. Do not switch defaults from Python to Rust based on this evidence. Before revisiting defaults, rerun this benchmark on representative large repositories with multiple iterations, add phase-level attribution for parser normalization versus graph builder versus bulk loader, and require a semantic-enabled native full run to complete with parity and a measured speedup.
 
 ## Parity Fixture Strategy
 

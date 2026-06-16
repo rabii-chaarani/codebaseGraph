@@ -32,6 +32,7 @@ class MaterializationTiming:
     phase: str
     iteration: int
     elapsed_seconds: float
+    peak_rss_bytes: int | None
     result: dict[str, Any]
 
     def as_dict(self) -> dict[str, Any]:
@@ -41,6 +42,7 @@ class MaterializationTiming:
             "phase": self.phase,
             "iteration": self.iteration,
             "elapsed_seconds": round(self.elapsed_seconds, 6),
+            "peak_rss_bytes": self.peak_rss_bytes,
             "result": self.result,
         }
 
@@ -277,6 +279,7 @@ def _time_materialization(
         phase=phase,
         iteration=iteration,
         elapsed_seconds=elapsed,
+        peak_rss_bytes=_peak_rss_bytes(),
         result=result.as_dict(),
     )
 
@@ -285,15 +288,57 @@ def _summary(timings: list[MaterializationTiming]) -> dict[str, Any]:
     elapsed = [timing.elapsed_seconds for timing in timings]
     latest_result = timings[-1].result if timings else {}
     graph_summary = latest_result.get("graph_summary", {}) if isinstance(latest_result, dict) else {}
+    total_elapsed = sum(elapsed)
+    total_files = sum(_numeric_result(timing.result, "scanned") for timing in timings)
+    total_nodes = sum(_graph_count(timing.result, "node") for timing in timings)
+    total_edges = sum(_graph_count(timing.result, "edge") for timing in timings)
+    memory_samples = [timing.peak_rss_bytes for timing in timings if timing.peak_rss_bytes is not None]
     return {
         "measured_iterations": len(timings),
-        "total_seconds": round(sum(elapsed), 6),
+        "total_seconds": round(total_elapsed, 6),
         "mean_seconds": round(statistics.fmean(elapsed), 6) if elapsed else 0.0,
         "median_seconds": round(statistics.median(elapsed), 6) if elapsed else 0.0,
         "min_seconds": round(min(elapsed), 6) if elapsed else 0.0,
         "max_seconds": round(max(elapsed), 6) if elapsed else 0.0,
+        "files_per_second": _rate(total_files, total_elapsed),
+        "nodes_per_second": _rate(total_nodes, total_elapsed),
+        "edges_per_second": _rate(total_edges, total_elapsed),
+        "peak_rss_bytes": max(memory_samples) if memory_samples else None,
         "latest_graph_summary": graph_summary,
     }
+
+
+def _rate(count: int, elapsed_seconds: float) -> float:
+    if elapsed_seconds <= 0:
+        return 0.0
+    return round(count / elapsed_seconds, 6)
+
+
+def _numeric_result(result: dict[str, Any], key: str) -> int:
+    value = result.get(key, 0)
+    return int(value) if isinstance(value, int | float) else 0
+
+
+def _graph_count(result: dict[str, Any], prefix: str) -> int:
+    graph_summary = result.get("graph_summary", {})
+    if not isinstance(graph_summary, dict):
+        return 0
+    for key in (f"{prefix}_count", f"{prefix}s"):
+        value = graph_summary.get(key)
+        if value is not None and isinstance(value, int | float):
+            return int(value)
+    return 0
+
+
+def _peak_rss_bytes() -> int | None:
+    try:
+        import resource
+    except ImportError:
+        return None
+    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform == "darwin":
+        return int(rss)
+    return int(rss * 1024)
 
 
 def _state_name(repo_root: Path) -> str:

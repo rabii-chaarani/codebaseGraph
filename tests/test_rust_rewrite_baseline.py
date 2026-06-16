@@ -104,6 +104,10 @@ def test_materialization_benchmark_reports_full_mode_with_isolated_state(tmp_pat
     assert all(call["semantic_enrichment"] is False for call in materialize_calls)
     assert report["repositories"][0]["summary"]["measured_iterations"] == 2
     assert report["repositories"][0]["summary"]["latest_graph_summary"] == {"edges": 2, "nodes": 3}
+    assert report["repositories"][0]["summary"]["files_per_second"] > 0
+    assert report["repositories"][0]["summary"]["nodes_per_second"] > 0
+    assert report["repositories"][0]["summary"]["edges_per_second"] > 0
+    assert "peak_rss_bytes" in report["repositories"][0]["summary"]
 
 
 def test_materialization_benchmark_seeds_changed_mode_once(tmp_path: Path) -> None:
