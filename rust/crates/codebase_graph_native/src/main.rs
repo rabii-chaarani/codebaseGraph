@@ -77,6 +77,9 @@ fn main() -> Result<(), String> {
     if first_record_kind(&input).as_deref() == Some("BULK") {
         return run_bulk_staging(&input);
     }
+    if first_record_kind(&input).as_deref() == Some("TSNORM") {
+        return run_tree_sitter_normalization(&input);
+    }
     let (meta, captures) = parse_input(&input)?;
     let mut builder = Builder::new(meta);
     builder.build(captures)?;
@@ -1194,6 +1197,414 @@ fn stage_file_stem(name: &str) -> String {
 
 fn copy_path(path: &Path) -> String {
     path.to_string_lossy().replace('"', "\\\"")
+}
+
+struct TsNormInput {
+    language: String,
+    root_types: Vec<String>,
+    mappings: Vec<TsMapping>,
+    nodes: BTreeMap<usize, TsNode>,
+    root_id: usize,
+}
+
+struct TsMapping {
+    capture_name: String,
+    parser_node_types: Vec<String>,
+    context_rule: String,
+}
+
+struct TsNode {
+    id: usize,
+    parent_id: Option<usize>,
+    node_type: String,
+    text: String,
+    line_start: Option<i64>,
+    line_end: Option<i64>,
+    byte_start: Option<i64>,
+    byte_end: Option<i64>,
+    capture_name: String,
+    fields: BulkRow,
+    field_types: BTreeMap<String, String>,
+    field_descendant_types: BTreeMap<String, Vec<String>>,
+    children: Vec<usize>,
+}
+
+struct TsNormOutput {
+    diagnostics: Vec<String>,
+    captures: Vec<(String, usize)>,
+    nodes: BTreeMap<usize, TsNode>,
+    root_id: usize,
+}
+
+fn run_tree_sitter_normalization(input: &str) -> Result<(), String> {
+    let parsed = parse_tree_sitter_normalization(input)?;
+    let mut output = normalize_tree_sitter(parsed)?;
+    println!("RESULT\t{}", output.root_id);
+    for diagnostic in output.diagnostics {
+        println!("DIAG\t{}", hex(&diagnostic));
+    }
+    for node in output.nodes.values_mut() {
+        println!("{}", encode_ts_node(node));
+    }
+    for (capture_name, node_id) in output.captures {
+        println!("CAP\t{}\t{}", hex(&capture_name), node_id);
+    }
+    Ok(())
+}
+
+fn parse_tree_sitter_normalization(input: &str) -> Result<TsNormInput, String> {
+    let mut language = String::new();
+    let mut root_types = Vec::new();
+    let mut mappings = Vec::new();
+    let mut nodes = BTreeMap::new();
+    let mut root_id = None;
+
+    for line in input.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.split('\t').collect();
+        match parts.first().copied() {
+            Some("TSNORM") if parts.len() == 1 => {}
+            Some("LANGUAGE") if parts.len() == 2 => {
+                language = unhex(parts[1])?;
+            }
+            Some("ROOT_TYPES") => {
+                root_types = decode_hex_list(&parts[1..])?;
+            }
+            Some("MAPPING") if parts.len() >= 4 => {
+                let capture_name = unhex(parts[1])?;
+                let context_rule = unhex(parts[2])?;
+                let parser_node_types = decode_counted_hex_list(&parts[3..])?;
+                mappings.push(TsMapping {
+                    capture_name,
+                    parser_node_types,
+                    context_rule,
+                });
+            }
+            Some("NODE") if parts.len() >= 12 => {
+                let node = decode_ts_node(&parts[1..])?;
+                if node.parent_id.is_none() {
+                    root_id = Some(node.id);
+                }
+                nodes.insert(node.id, node);
+            }
+            Some(kind) => return Err(format!("invalid tree-sitter normalization record: {kind}")),
+            None => {}
+        }
+    }
+
+    for node_id in nodes.keys().copied().collect::<Vec<_>>() {
+        let Some(parent_id) = nodes.get(&node_id).and_then(|node| node.parent_id) else {
+            continue;
+        };
+        let Some(parent) = nodes.get_mut(&parent_id) else {
+            return Err(format!(
+                "tree-sitter node {node_id} references missing parent {parent_id}"
+            ));
+        };
+        parent.children.push(node_id);
+    }
+
+    Ok(TsNormInput {
+        language,
+        root_types,
+        mappings,
+        nodes,
+        root_id: root_id.unwrap_or(0),
+    })
+}
+
+fn decode_hex_list(parts: &[&str]) -> Result<Vec<String>, String> {
+    let Some(count_text) = parts.first() else {
+        return Err("hex list count is missing".to_string());
+    };
+    let count = count_text
+        .parse::<usize>()
+        .map_err(|error| format!("invalid hex list count: {error}"))?;
+    if parts.len() != count + 1 {
+        return Err(format!(
+            "hex list count mismatch: expected {count}, got {}",
+            parts.len().saturating_sub(1)
+        ));
+    }
+    parts[1..].iter().map(|value| unhex(value)).collect()
+}
+
+fn decode_counted_hex_list(parts: &[&str]) -> Result<Vec<String>, String> {
+    decode_hex_list(parts)
+}
+
+fn decode_ts_node(parts: &[&str]) -> Result<TsNode, String> {
+    let id = parts[0]
+        .parse::<usize>()
+        .map_err(|error| format!("invalid tree-sitter node id: {error}"))?;
+    let parent_id = if parts[1].is_empty() {
+        None
+    } else {
+        Some(
+            parts[1]
+                .parse::<usize>()
+                .map_err(|error| format!("invalid tree-sitter parent id: {error}"))?,
+        )
+    };
+    let node_type = unhex(parts[2])?;
+    let text = unhex(parts[3])?;
+    let line_start = parse_optional_i64(parts[4])?;
+    let line_end = parse_optional_i64(parts[5])?;
+    let byte_start = parse_optional_i64(parts[6])?;
+    let byte_end = parse_optional_i64(parts[7])?;
+    let capture_name = unhex(parts[8])?;
+    let mut cursor = 9;
+    let fields = decode_ts_field_tokens(parts, &mut cursor)?;
+    let field_types = decode_ts_field_types(parts, &mut cursor)?;
+    let field_descendant_types = decode_ts_field_descendant_types(parts, &mut cursor)?;
+    if cursor != parts.len() {
+        return Err("tree-sitter node has trailing fields".to_string());
+    }
+    Ok(TsNode {
+        id,
+        parent_id,
+        node_type,
+        text,
+        line_start,
+        line_end,
+        byte_start,
+        byte_end,
+        capture_name,
+        fields,
+        field_types,
+        field_descendant_types,
+        children: Vec::new(),
+    })
+}
+
+fn decode_ts_field_tokens(parts: &[&str], cursor: &mut usize) -> Result<BulkRow, String> {
+    let count = parse_count(parts, cursor, "tree-sitter field")?;
+    let mut fields = BTreeMap::new();
+    for _ in 0..count {
+        let key = next_unhex(parts, cursor, "field key")?;
+        let token = next_unhex(parts, cursor, "field token")?;
+        fields.insert(key, token);
+    }
+    Ok(fields)
+}
+
+fn decode_ts_field_types(
+    parts: &[&str],
+    cursor: &mut usize,
+) -> Result<BTreeMap<String, String>, String> {
+    let count = parse_count(parts, cursor, "tree-sitter field type")?;
+    let mut fields = BTreeMap::new();
+    for _ in 0..count {
+        let key = next_unhex(parts, cursor, "field type key")?;
+        let value = next_unhex(parts, cursor, "field type value")?;
+        fields.insert(key, value);
+    }
+    Ok(fields)
+}
+
+fn decode_ts_field_descendant_types(
+    parts: &[&str],
+    cursor: &mut usize,
+) -> Result<BTreeMap<String, Vec<String>>, String> {
+    let count = parse_count(parts, cursor, "tree-sitter field descendant")?;
+    let mut fields = BTreeMap::new();
+    for _ in 0..count {
+        let key = next_unhex(parts, cursor, "field descendant key")?;
+        let values = decode_hex_list_from_cursor(parts, cursor)?;
+        fields.insert(key, values);
+    }
+    Ok(fields)
+}
+
+fn parse_count(parts: &[&str], cursor: &mut usize, label: &str) -> Result<usize, String> {
+    let Some(value) = parts.get(*cursor) else {
+        return Err(format!("{label} count is missing"));
+    };
+    *cursor += 1;
+    value
+        .parse::<usize>()
+        .map_err(|error| format!("invalid {label} count: {error}"))
+}
+
+fn next_unhex(parts: &[&str], cursor: &mut usize, label: &str) -> Result<String, String> {
+    let Some(value) = parts.get(*cursor) else {
+        return Err(format!("{label} is missing"));
+    };
+    *cursor += 1;
+    unhex(value)
+}
+
+fn decode_hex_list_from_cursor(parts: &[&str], cursor: &mut usize) -> Result<Vec<String>, String> {
+    let count = parse_count(parts, cursor, "nested hex list")?;
+    let mut values = Vec::with_capacity(count);
+    for _ in 0..count {
+        values.push(next_unhex(parts, cursor, "nested hex value")?);
+    }
+    Ok(values)
+}
+
+fn normalize_tree_sitter(input: TsNormInput) -> Result<TsNormOutput, String> {
+    if !input.nodes.contains_key(&input.root_id) {
+        return Err("tree-sitter root node is missing".to_string());
+    }
+    let mut diagnostics = Vec::new();
+    if !input.root_types.is_empty() {
+        let root_type = input
+            .nodes
+            .get(&input.root_id)
+            .map(|node| node.node_type.as_str())
+            .unwrap_or("");
+        if !input.root_types.iter().any(|item| item == root_type) {
+            if input.language.is_empty() {
+                diagnostics.push(format!("Unexpected root node {root_type}"));
+            } else {
+                diagnostics.push(format!(
+                    "Unexpected root node {root_type} for {}",
+                    input.language
+                ));
+            }
+        }
+    }
+
+    let mut nodes = input.nodes;
+    let mut captures = Vec::new();
+    mark_ts_captures(
+        input.root_id,
+        &mut nodes,
+        &input.mappings,
+        Vec::new(),
+        &mut captures,
+    )?;
+    Ok(TsNormOutput {
+        diagnostics,
+        captures,
+        nodes,
+        root_id: input.root_id,
+    })
+}
+
+fn mark_ts_captures(
+    node_id: usize,
+    nodes: &mut BTreeMap<usize, TsNode>,
+    mappings: &[TsMapping],
+    ancestors: Vec<String>,
+    captures: &mut Vec<(String, usize)>,
+) -> Result<(), String> {
+    let (node_type, children) = {
+        let Some(node) = nodes.get(&node_id) else {
+            return Err(format!("tree-sitter node {node_id} is missing"));
+        };
+        (node.node_type.clone(), node.children.clone())
+    };
+    let mut child_ancestors = ancestors.clone();
+    child_ancestors.push(node_type);
+    for child_id in children {
+        mark_ts_captures(child_id, nodes, mappings, child_ancestors.clone(), captures)?;
+    }
+    let capture_name = {
+        let node = nodes
+            .get(&node_id)
+            .ok_or_else(|| format!("tree-sitter node {node_id} is missing"))?;
+        mapping_for_ts_node(node, mappings, &ancestors).map(|mapping| mapping.capture_name.clone())
+    };
+    if let Some(capture_name) = capture_name {
+        if let Some(node) = nodes.get_mut(&node_id) {
+            node.capture_name = capture_name.clone();
+        }
+        captures.push((capture_name, node_id));
+    }
+    Ok(())
+}
+
+fn mapping_for_ts_node<'a>(
+    node: &TsNode,
+    mappings: &'a [TsMapping],
+    ancestors: &[String],
+) -> Option<&'a TsMapping> {
+    let candidates: Vec<&TsMapping> = mappings
+        .iter()
+        .filter(|mapping| {
+            mapping
+                .parser_node_types
+                .iter()
+                .any(|node_type| node_type == &node.node_type)
+        })
+        .collect();
+    for mapping in &candidates {
+        if !mapping.context_rule.is_empty()
+            && ts_context_rule_matches(&mapping.context_rule, node, ancestors)
+        {
+            return Some(mapping);
+        }
+    }
+    candidates
+        .into_iter()
+        .find(|mapping| mapping.context_rule.is_empty())
+}
+
+fn ts_context_rule_matches(rule: &str, node: &TsNode, ancestors: &[String]) -> bool {
+    let normalized = rule.trim().to_lowercase();
+    if let Some(expected) = normalized.strip_prefix("inside ") {
+        return ancestors
+            .iter()
+            .any(|ancestor| ts_context_name_matches(ancestor, expected));
+    }
+    if let Some(expected_type) = normalized.strip_prefix("type is ") {
+        return ts_field_type_matches(node, "type", expected_type);
+    }
+    if normalized == "qualified declarator" {
+        return ts_field_descendant_has(node, "declarator", "qualified_identifier");
+    }
+    if normalized == "function declarator" {
+        return ts_field_type_matches(node, "declarator", "function_declarator")
+            || ts_field_descendant_has(node, "declarator", "function_declarator");
+    }
+    false
+}
+
+fn ts_context_name_matches(node_type: &str, expected: &str) -> bool {
+    match expected {
+        "impl" => node_type == "impl_item",
+        "class" => matches!(node_type, "class_specifier" | "struct_specifier"),
+        value => node_type == value,
+    }
+}
+
+fn ts_field_type_matches(node: &TsNode, field_name: &str, expected_type: &str) -> bool {
+    node.field_types
+        .get(field_name)
+        .is_some_and(|value| value == expected_type)
+}
+
+fn ts_field_descendant_has(node: &TsNode, field_name: &str, expected_type: &str) -> bool {
+    node.field_descendant_types
+        .get(field_name)
+        .is_some_and(|values| values.iter().any(|value| value == expected_type))
+}
+
+fn encode_ts_node(node: &TsNode) -> String {
+    let mut parts = vec![
+        "NODE".to_string(),
+        node.id.to_string(),
+        node.parent_id
+            .map(|value| value.to_string())
+            .unwrap_or_default(),
+        hex(&node.node_type),
+        hex(&node.text),
+        optional_i64(node.line_start),
+        optional_i64(node.line_end),
+        optional_i64(node.byte_start),
+        optional_i64(node.byte_end),
+        hex(&node.capture_name),
+        node.fields.len().to_string(),
+    ];
+    for (key, value) in &node.fields {
+        parts.push(hex(key));
+        parts.push(hex(value));
+    }
+    parts.join("\t")
 }
 
 fn parse_input(input: &str) -> Result<(BTreeMap<String, String>, Vec<Capture>), String> {

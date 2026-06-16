@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib
+import json
+import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -120,6 +122,9 @@ def run_profile_queries(
     source_bytes: bytes = b"",
 ) -> ParserQueryResult:
     """Run profile capture mappings and return normalized syntax evidence."""
+    native_result = _run_native_profile_queries(root_node, profile, source_bytes=source_bytes)
+    if native_result is not None:
+        return native_result
     normalized = normalize_syntax_node(root_node, source_bytes=source_bytes)
     diagnostics = []
     if profile.root_node_types and normalized.node_type not in profile.root_node_types:
@@ -243,6 +248,295 @@ def parser_for_profile(path_or_language: str | Path) -> TreeSitterProfiledParser
     """Return a profiled parser for a language or source path when a profile exists."""
     profile = resolve_language_profile(path_or_language)
     return TreeSitterProfiledParser(profile) if profile is not None else None
+
+
+def _run_native_profile_queries(
+    root_node: Any,
+    profile: LanguageProfile,
+    *,
+    source_bytes: bytes,
+) -> ParserQueryResult | None:
+    if os.environ.get("CODEBASE_GRAPH_NATIVE") != "1":
+        return None
+    try:
+        from codebase_graph._native.tree_sitter_normalization import normalize_profiled_syntax
+
+        output = normalize_profiled_syntax(
+            _encode_native_profiled_syntax(root_node, profile, source_bytes=source_bytes)
+        )
+        if output is None:
+            return None
+        return _decode_native_profiled_syntax(output)
+    except Exception:
+        return None
+
+
+def _encode_native_profiled_syntax(
+    root_node: Any,
+    profile: LanguageProfile,
+    *,
+    source_bytes: bytes,
+) -> str:
+    lines = [
+        "TSNORM",
+        f"LANGUAGE\t{_hex(profile.language)}",
+        _encode_native_hex_list("ROOT_TYPES", profile.root_node_types),
+    ]
+    for mapping in profile.capture_mappings:
+        lines.append(
+            "\t".join(
+                (
+                    "MAPPING",
+                    _hex(mapping.capture_name),
+                    _hex(mapping.context_rule),
+                    str(len(mapping.parser_node_types)),
+                    *(_hex(node_type) for node_type in mapping.parser_node_types),
+                )
+            )
+        )
+    _append_native_node_records(root_node, source_bytes=source_bytes, lines=lines, parent_id=None, next_id=[0])
+    return "\n".join(lines) + "\n"
+
+
+def _append_native_node_records(
+    raw_node: Any,
+    *,
+    source_bytes: bytes,
+    lines: list[str],
+    parent_id: int | None,
+    next_id: list[int],
+) -> int:
+    node_id = next_id[0]
+    next_id[0] += 1
+    node_type, text, line_start, line_end, byte_start, byte_end, capture_name, fields, children = _native_node_parts(
+        raw_node,
+        source_bytes=source_bytes,
+    )
+    fields = dict(fields)
+    field_types = fields.get("_field_types", {})
+    field_descendant_types = fields.get("_field_descendant_types", {})
+    lines.append(
+        "\t".join(
+            (
+                "NODE",
+                str(node_id),
+                "" if parent_id is None else str(parent_id),
+                _hex(node_type),
+                _hex(text),
+                _int_field(line_start),
+                _int_field(line_end),
+                _int_field(byte_start),
+                _int_field(byte_end),
+                _hex(capture_name),
+                *_encode_native_field_tokens(fields),
+                *_encode_native_string_map(field_types if isinstance(field_types, dict) else {}),
+                *_encode_native_string_list_map(
+                    field_descendant_types if isinstance(field_descendant_types, dict) else {}
+                ),
+            )
+        )
+    )
+    for child in children:
+        _append_native_node_records(
+            child,
+            source_bytes=source_bytes,
+            lines=lines,
+            parent_id=node_id,
+            next_id=next_id,
+        )
+    return node_id
+
+
+def _native_node_parts(
+    raw_node: Any,
+    *,
+    source_bytes: bytes,
+) -> tuple[
+    str,
+    str,
+    int | None,
+    int | None,
+    int | None,
+    int | None,
+    str,
+    dict[str, Any],
+    Iterable[Any],
+]:
+    if isinstance(raw_node, NormalizedSyntaxNode):
+        return (
+            raw_node.node_type,
+            raw_node.text or _first_field_label(raw_node.fields),
+            raw_node.line_start,
+            raw_node.line_end,
+            raw_node.byte_start,
+            raw_node.byte_end,
+            raw_node.capture_name,
+            raw_node.fields,
+            raw_node.children,
+        )
+    if isinstance(raw_node, dict):
+        children = raw_node.get("children", raw_node.get("body", ())) or ()
+        fields = {
+            key: value
+            for key, value in raw_node.items()
+            if key
+            not in {
+                "type",
+                "node_type",
+                "kind",
+                "text",
+                "line_start",
+                "line_end",
+                "byte_start",
+                "byte_end",
+                "capture_name",
+                "children",
+                "body",
+            }
+        }
+        return (
+            str(raw_node.get("type") or raw_node.get("node_type") or raw_node.get("kind") or "unknown"),
+            str(raw_node.get("text") or _first_field_label(fields) or ""),
+            _optional_int(raw_node.get("line_start")),
+            _optional_int(raw_node.get("line_end")),
+            _optional_int(raw_node.get("byte_start")),
+            _optional_int(raw_node.get("byte_end")),
+            str(raw_node.get("capture_name") or ""),
+            fields,
+            children,
+        )
+    fields = _tree_sitter_fields(raw_node, source_bytes)
+    return (
+        str(getattr(raw_node, "type", "") or type(raw_node).__name__),
+        _node_text(raw_node, source_bytes) or _first_field_label(fields),
+        _point_line(getattr(raw_node, "start_point", None)),
+        _point_line(getattr(raw_node, "end_point", None)),
+        getattr(raw_node, "start_byte", None),
+        getattr(raw_node, "end_byte", None),
+        "",
+        fields,
+        getattr(raw_node, "named_children", getattr(raw_node, "children", ())) or (),
+    )
+
+
+def _decode_native_profiled_syntax(output: str) -> ParserQueryResult:
+    root_id = 0
+    diagnostics: list[str] = []
+    captures: list[tuple[str, int]] = []
+    raw_nodes: dict[int, dict[str, Any]] = {}
+    children_by_parent: dict[int | None, list[int]] = {}
+
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        match parts[0]:
+            case "RESULT":
+                root_id = int(parts[1])
+            case "DIAG":
+                diagnostics.append(_unhex(parts[1]))
+            case "NODE":
+                node_id, parent_id, payload = _decode_native_node(parts[1:])
+                raw_nodes[node_id] = payload
+                children_by_parent.setdefault(parent_id, []).append(node_id)
+            case "CAP":
+                captures.append((_unhex(parts[1]), int(parts[2])))
+            case other:
+                raise ValueError(f"Unknown native tree-sitter normalization record: {other}")
+
+    built_nodes: dict[int, NormalizedSyntaxNode] = {}
+
+    def build(node_id: int) -> NormalizedSyntaxNode:
+        if node_id in built_nodes:
+            return built_nodes[node_id]
+        payload = raw_nodes[node_id]
+        node = NormalizedSyntaxNode(
+            node_type=payload["node_type"],
+            text=payload["text"],
+            line_start=payload["line_start"],
+            line_end=payload["line_end"],
+            byte_start=payload["byte_start"],
+            byte_end=payload["byte_end"],
+            capture_name=payload["capture_name"],
+            children=tuple(build(child_id) for child_id in children_by_parent.get(node_id, ())),
+            fields=payload["fields"],
+        )
+        built_nodes[node_id] = node
+        return node
+
+    root = build(root_id)
+    capture_records = tuple(CaptureRecord(capture_name, build(node_id).as_dict()) for capture_name, node_id in captures)
+    return ParserQueryResult(captures=capture_records, diagnostics=tuple(diagnostics), syntax_nodes=(root,))
+
+
+def _decode_native_node(parts: list[str]) -> tuple[int, int | None, dict[str, Any]]:
+    node_id = int(parts[0])
+    parent_id = int(parts[1]) if parts[1] else None
+    field_count = int(parts[9])
+    cursor = 10
+    fields: dict[str, Any] = {}
+    for _ in range(field_count):
+        key = _unhex(parts[cursor])
+        value = json.loads(_unhex(parts[cursor + 1]))
+        fields[key] = value
+        cursor += 2
+    return (
+        node_id,
+        parent_id,
+        {
+            "node_type": _unhex(parts[2]),
+            "text": _unhex(parts[3]),
+            "line_start": _int(parts[4]),
+            "line_end": _int(parts[5]),
+            "byte_start": _int(parts[6]),
+            "byte_end": _int(parts[7]),
+            "capture_name": _unhex(parts[8]),
+            "fields": fields,
+        },
+    )
+
+
+def _encode_native_hex_list(record_type: str, values: Iterable[str]) -> str:
+    value_list = tuple(values)
+    return "\t".join((record_type, str(len(value_list)), *(_hex(value) for value in value_list)))
+
+
+def _encode_native_field_tokens(fields: dict[str, Any]) -> tuple[str, ...]:
+    encoded = [str(len(fields))]
+    for key, value in fields.items():
+        encoded.extend((_hex(key), _hex(json.dumps(value, separators=(",", ":"), sort_keys=True))))
+    return tuple(encoded)
+
+
+def _encode_native_string_map(values: dict[Any, Any]) -> tuple[str, ...]:
+    encoded = [str(len(values))]
+    for key, value in values.items():
+        encoded.extend((_hex(str(key)), _hex(str(value))))
+    return tuple(encoded)
+
+
+def _encode_native_string_list_map(values: dict[Any, Any]) -> tuple[str, ...]:
+    encoded = [str(len(values))]
+    for key, raw_items in values.items():
+        items = tuple(str(item) for item in raw_items) if isinstance(raw_items, list | tuple) else ()
+        encoded.extend((_hex(str(key)), str(len(items)), *(_hex(item) for item in items)))
+    return tuple(encoded)
+
+
+def _hex(value: str) -> str:
+    return value.encode("utf-8").hex()
+
+
+def _unhex(value: str) -> str:
+    return bytes.fromhex(value).decode("utf-8")
+
+
+def _int_field(value: int | None) -> str:
+    return "" if value is None else str(value)
+
+
+def _int(value: str) -> int | None:
+    return int(value) if value else None
 
 
 def _mark_captures(

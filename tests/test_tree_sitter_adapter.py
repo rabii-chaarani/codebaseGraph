@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
+import sys
 from dataclasses import replace
+from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -9,10 +14,38 @@ from codebase_graph.ingest import (
     build_parse_bundle,
     create_tree_sitter_parser,
     normalize_syntax_node,
+    parse_profiled_source,
     resolve_language_profile,
     run_profile_queries,
 )
 from codebase_graph.ingest.tree_sitter_parser import ParserUnavailableError
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+RUST_MANIFEST = REPO_ROOT / "rust" / "Cargo.toml"
+NATIVE_BINARY_NAME = "codebase_graph_native_graph_builder"
+
+
+@pytest.fixture(scope="session")
+def native_tree_sitter_normalizer_binary() -> Path:
+    if shutil.which("cargo") is None:
+        pytest.skip("cargo is required for native tree-sitter normalization tests")
+
+    subprocess.run(
+        [
+            "cargo",
+            "build",
+            "--manifest-path",
+            RUST_MANIFEST.as_posix(),
+            "--bin",
+            NATIVE_BINARY_NAME,
+            "--quiet",
+        ],
+        check=True,
+    )
+    suffix = ".exe" if sys.platform.startswith("win") else ""
+    binary = REPO_ROOT / "rust" / "target" / "debug" / f"{NATIVE_BINARY_NAME}{suffix}"
+    assert binary.exists()
+    return binary
 
 
 def test_normalize_syntax_node_preserves_expected_fields() -> None:
@@ -69,6 +102,30 @@ def test_run_profile_queries_applies_context_rules() -> None:
     assert result.syntax_nodes[0].children[0].children[0].capture_name == "definition.method"
 
 
+def test_native_profile_queries_match_python_for_context_rules(
+    monkeypatch: pytest.MonkeyPatch,
+    native_tree_sitter_normalizer_binary: Path,
+) -> None:
+    profile = resolve_language_profile("rust")
+    tree = {
+        "type": "source_file",
+        "children": [
+            {
+                "type": "impl_item",
+                "children": [{"type": "function_item", "text": "new", "line_start": 2}],
+            }
+        ],
+    }
+
+    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
+    expected = _query_result_shape(run_profile_queries(tree, profile))
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_TREE_SITTER_NORMALIZER", native_tree_sitter_normalizer_binary.as_posix())
+    actual = _query_result_shape(run_profile_queries(tree, profile))
+
+    assert actual == expected
+
+
 def test_build_parse_bundle_feeds_graph_builder_tree() -> None:
     profile = resolve_language_profile("rust")
     result = run_profile_queries(
@@ -90,6 +147,40 @@ def test_build_parse_bundle_feeds_graph_builder_tree() -> None:
     assert "main" in {node.label for node in graph.nodes_by_type("Function")}
 
 
+def test_native_profiled_source_matches_python_graph(
+    monkeypatch: pytest.MonkeyPatch,
+    native_tree_sitter_normalizer_binary: Path,
+) -> None:
+    profile = resolve_language_profile("rust")
+    source_text = "impl User { fn new() -> Self { User {} } }\nfn helper() { User::new(); }\n"
+
+    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
+    expected = GraphBuilder().build_file_graph(
+        parse_profiled_source(
+            source_text,
+            profile,
+            relative_path="src/lib.rs",
+            source_root=".",
+            repository_label="repo",
+            content_hash="hash",
+        )
+    ).graph.as_dict()
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_TREE_SITTER_NORMALIZER", native_tree_sitter_normalizer_binary.as_posix())
+    actual = GraphBuilder().build_file_graph(
+        parse_profiled_source(
+            source_text,
+            profile,
+            relative_path="src/lib.rs",
+            source_root=".",
+            repository_label="repo",
+            content_hash="hash",
+        )
+    ).graph.as_dict()
+
+    assert actual == expected
+
+
 def test_create_tree_sitter_parser_reports_missing_grammar() -> None:
     profile = resolve_language_profile("fortran")
     assert profile is not None
@@ -97,3 +188,11 @@ def test_create_tree_sitter_parser_reports_missing_grammar() -> None:
 
     with pytest.raises(ParserUnavailableError):
         create_tree_sitter_parser(profile)
+
+
+def _query_result_shape(result: Any) -> dict[str, Any]:
+    return {
+        "captures": [capture.capture for capture in result.captures],
+        "diagnostics": list(result.diagnostics),
+        "tree": result.syntax_nodes[0].as_dict(),
+    }
