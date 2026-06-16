@@ -103,6 +103,10 @@ fn tree_sitter_fields(node: Node<'_>, source_bytes: &[u8]) -> BTreeMap<String, V
         "type",
         "return_type",
         "declarator",
+        "left",
+        "right",
+        "object",
+        "attribute",
     ] {
         let Some(child) = node.child_by_field_name(field_name) else {
             continue;
@@ -180,6 +184,142 @@ fn augment_field_metadata(
             );
         }
     }
+    if matches!(node_type, "import_statement" | "import_from_statement") {
+        add_python_import_fields(node, source_bytes, fields);
+    }
+    if node_type == "call" {
+        if let Some(function) = node.child_by_field_name("function") {
+            let label = syntax_label(function, source_bytes);
+            if !label.is_empty() {
+                fields.insert("func".to_string(), json!(label));
+            }
+        }
+    }
+    if node_type == "assignment" {
+        if let Some(left) = node.child_by_field_name("left") {
+            let label = syntax_label(left, source_bytes);
+            if !label.is_empty() {
+                fields.insert("target".to_string(), json!(label));
+            }
+        }
+        if let Some(right) = node.child_by_field_name("right") {
+            let label = syntax_label(right, source_bytes);
+            if !label.is_empty() {
+                fields.insert("value".to_string(), json!(label));
+            }
+        }
+    }
+    if node_type == "attribute" {
+        if let Some(object) = node.child_by_field_name("object") {
+            let label = syntax_label(object, source_bytes);
+            if !label.is_empty() {
+                fields.insert("value".to_string(), json!(label));
+            }
+        }
+        if let Some(attribute) = node.child_by_field_name("attribute") {
+            let label = syntax_label(attribute, source_bytes);
+            if !label.is_empty() {
+                fields.insert("attr".to_string(), json!(label));
+            }
+        }
+    }
+    if matches!(
+        node_type,
+        "string" | "integer" | "float" | "true" | "false" | "none"
+    ) {
+        let label = node_text(node, source_bytes)
+            .map(|value| strip_literal_delimiters(&value))
+            .unwrap_or_default();
+        if !label.is_empty() {
+            fields.insert("value".to_string(), json!(label));
+        }
+    }
+    if matches!(node_type, "typed_parameter" | "default_parameter") {
+        if let Some(type_node) = node.child_by_field_name("type") {
+            let label = syntax_label(type_node, source_bytes);
+            if !label.is_empty() {
+                fields.insert("annotation".to_string(), json!(label));
+            }
+        } else if let Some(label) = parameter_annotation_from_text(node, source_bytes) {
+            fields.insert("annotation".to_string(), json!(label));
+        }
+    }
+}
+
+fn add_python_import_fields(
+    node: Node<'_>,
+    source_bytes: &[u8],
+    fields: &mut BTreeMap<String, Value>,
+) {
+    let text = node_text(node, source_bytes)
+        .map(|value| clean_label(&value))
+        .unwrap_or_default();
+    if node.kind() == "import_from_statement" {
+        if let Some(rest) = text.strip_prefix("from ") {
+            if let Some((module, names)) = rest.split_once(" import ") {
+                let names = names
+                    .split(',')
+                    .filter_map(import_alias_json)
+                    .collect::<Vec<_>>();
+                if !module.trim().is_empty() {
+                    fields.insert("module".to_string(), json!(module.trim()));
+                }
+                if !names.is_empty() {
+                    fields.insert("names".to_string(), Value::Array(names));
+                }
+            }
+        }
+    } else if let Some(names) = text.strip_prefix("import ") {
+        let names = names
+            .split(',')
+            .filter_map(import_alias_json)
+            .collect::<Vec<_>>();
+        if !names.is_empty() {
+            fields.insert("names".to_string(), Value::Array(names));
+        }
+    }
+}
+
+fn import_alias_json(raw_name: &str) -> Option<Value> {
+    let name = raw_name
+        .trim()
+        .split_once(" as ")
+        .map(|(left, _)| left)
+        .unwrap_or_else(|| raw_name.trim())
+        .trim();
+    if name.is_empty() {
+        None
+    } else {
+        Some(json!({"type": "alias", "name": name}))
+    }
+}
+
+fn syntax_label(node: Node<'_>, source_bytes: &[u8]) -> String {
+    if let Some(name) = node.child_by_field_name("name") {
+        return node_text(name, source_bytes)
+            .map(|value| clean_label(&value))
+            .unwrap_or_default();
+    }
+    if node.kind() == "attribute" {
+        let object = node
+            .child_by_field_name("object")
+            .map(|child| syntax_label(child, source_bytes))
+            .unwrap_or_default();
+        let attribute = node
+            .child_by_field_name("attribute")
+            .and_then(|child| node_text(child, source_bytes))
+            .map(|value| clean_label(&value))
+            .unwrap_or_default();
+        if !object.is_empty() && !attribute.is_empty() {
+            return format!("{object}.{attribute}");
+        }
+        if !attribute.is_empty() {
+            return attribute;
+        }
+    }
+    node_text(node, source_bytes)
+        .map(|value| clean_label(&value))
+        .unwrap_or_default()
 }
 
 fn derived_name(node: Node<'_>, source_bytes: &[u8]) -> String {
@@ -372,6 +512,30 @@ fn strip_import_delimiters(value: &str) -> String {
         .trim_matches('>')
         .trim()
         .to_string()
+}
+
+fn strip_literal_delimiters(value: &str) -> String {
+    value
+        .trim()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .to_string()
+}
+
+fn parameter_annotation_from_text(node: Node<'_>, source_bytes: &[u8]) -> Option<String> {
+    let text = node_text(node, source_bytes)?;
+    let annotation = text
+        .split_once(':')?
+        .1
+        .split_once('=')
+        .map(|(left, _)| left)
+        .unwrap_or_else(|| text.split_once(':').map(|(_, right)| right).unwrap_or(""))
+        .trim();
+    if annotation.is_empty() {
+        None
+    } else {
+        Some(annotation.to_string())
+    }
 }
 
 fn clean_label(value: &str) -> String {

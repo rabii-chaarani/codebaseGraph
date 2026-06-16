@@ -357,7 +357,9 @@ impl Builder {
                 "module_scope",
                 BTreeMap::new(),
             )?;
-            self.derived_from(&module.id, &syntax_id)?;
+            if should_derive_root_module(&self.language, &root.node_type) {
+                self.derived_from(&module.id, &syntax_id)?;
+            }
             let owner = Owner {
                 node_id: module.id.clone(),
                 table: "Module".to_string(),
@@ -396,13 +398,83 @@ impl Builder {
         let Some(node) = nodes.get(&node_id) else {
             return Err(format!("tree graph node {node_id} is missing"));
         };
-        let capture = tree_capture(node);
-        let next_owner = self.emit_capture(&capture, owner)?;
+        let next_owner = self.emit_tree_node(nodes, node, owner)?;
         let child_owner = next_owner.as_ref().unwrap_or(owner);
-        for child_id in &node.children {
-            self.traverse_tree_node(nodes, *child_id, child_owner)?;
+        for child_id in semantic_child_ids(nodes, node, &self.language) {
+            self.traverse_tree_node(nodes, child_id, child_owner)?;
         }
+        self.emit_parser_like_metadata_fields(node, child_owner)?;
         Ok(())
+    }
+
+    fn emit_tree_node(
+        &mut self,
+        nodes: &BTreeMap<usize, TsNode>,
+        node: &TsNode,
+        owner: &Owner,
+    ) -> Result<Option<Owner>, String> {
+        let mut capture = tree_capture(node);
+        if self.language == "python" {
+            capture.capture_name.clear();
+        }
+        let syntax_id = self.syntax_capture(&capture);
+        let capture_table = table_for_capture(&capture.capture_name, owner);
+        let from_capture = capture_table.is_some();
+        let Some(table) = capture_table.or_else(|| table_for_node_type(&capture.node_type, owner))
+        else {
+            return Ok(None);
+        };
+        let semantic = match table.as_str() {
+            "ImportDeclaration" => self.emit_tree_import(node, owner, &syntax_id)?,
+            "Class" | "Function" | "Method" => {
+                self.emit_declaration(&table, &capture, owner, &syntax_id)?
+            }
+            "Assignment" => self.emit_tree_assignment(nodes, node, owner, &syntax_id)?,
+            "CallExpression" => self.emit_call(&capture, owner, &syntax_id)?,
+            "Reference" => self.emit_reference(&capture, owner, &syntax_id)?,
+            "Literal" => {
+                let literal_capture = if self.language == "fortran" {
+                    fortran_literal_capture(nodes, node).unwrap_or_else(|| capture.clone())
+                } else {
+                    capture.clone()
+                };
+                self.emit_simple_semantic("Literal", &literal_capture, owner, &syntax_id)?
+            }
+            _ => self.emit_simple_semantic(&table, &capture, owner, &syntax_id)?,
+        };
+        if matches!(
+            table.as_str(),
+            "Class" | "Function" | "Method" | "Component"
+        ) {
+            let scope = self.scope_for(&semantic);
+            self.edge(
+                "Contains",
+                &semantic.id,
+                &scope.id,
+                &format!("{}_contains_scope", table.to_lowercase()),
+                BTreeMap::new(),
+            )?;
+            self.edge(
+                "HasScope",
+                &semantic.id,
+                &scope.id,
+                &format!("{}_scope", table.to_lowercase()),
+                BTreeMap::new(),
+            )?;
+            if matches!(table.as_str(), "Function" | "Method")
+                && (self.language == "python" || !from_capture)
+            {
+                self.emit_tree_parameters(nodes, node, &semantic)?;
+                self.emit_tree_return_type(nodes, node, &semantic)?;
+            }
+            return Ok(Some(Owner {
+                node_id: semantic.id.clone(),
+                table,
+                qualified_name: semantic.qualified_name.clone(),
+                scope_id: scope.id.clone(),
+            }));
+        }
+        Ok(None)
     }
 
     fn emit_capture(&mut self, capture: &Capture, owner: &Owner) -> Result<Option<Owner>, String> {
@@ -446,6 +518,275 @@ impl Builder {
             }));
         }
         Ok(None)
+    }
+
+    fn emit_tree_import(
+        &mut self,
+        node: &TsNode,
+        owner: &Owner,
+        syntax_id: &str,
+    ) -> Result<Node, String> {
+        let mut capture = tree_capture(node);
+        if self.language == "python" {
+            capture.capture_name.clear();
+        }
+        if let Some(label) = import_label(node) {
+            capture.label = label;
+        }
+        self.emit_import(&capture, owner, syntax_id)
+    }
+
+    fn emit_tree_assignment(
+        &mut self,
+        nodes: &BTreeMap<usize, TsNode>,
+        node: &TsNode,
+        owner: &Owner,
+        syntax_id: &str,
+    ) -> Result<Node, String> {
+        let capture = tree_capture(node);
+        let label = if self.language == "python" {
+            "Assignment"
+        } else {
+            &capture.label
+        };
+        let assignment = self.semantic_node(
+            "Assignment",
+            &capture,
+            label,
+            &owner.node_id,
+            &owner.qualified_name,
+            None,
+        );
+        self.connect_owner(owner, &assignment)?;
+        self.derived_from(&assignment.id, syntax_id)?;
+
+        if let Some(target_label) = assignment_target_label(nodes, node) {
+            let target_table = assignment_target_table(&target_label, owner, &capture.node_type);
+            let target = self.semantic_node(
+                target_table,
+                &capture,
+                &target_label,
+                &owner.node_id,
+                &owner.qualified_name,
+                None,
+            );
+            self.connect_owner(owner, &target)?;
+            self.edge_if_allowed(
+                "Defines",
+                &owner.node_id,
+                &target.id,
+                &format!("defines_{}", target_table.to_lowercase()),
+                BTreeMap::new(),
+            )?;
+            self.edge_if_allowed(
+                "Assigns",
+                &assignment.id,
+                &target.id,
+                "assignment_target",
+                BTreeMap::new(),
+            )?;
+            self.derived_from(&target.id, syntax_id)?;
+            if let Some(annotation) = json_field_label(node, "annotation") {
+                let type_node = self.emit_type_annotation_label(
+                    &annotation,
+                    &capture,
+                    &target.id,
+                    &target.qualified_name,
+                )?;
+                self.edge_if_allowed(
+                    "HasTypeAnnotation",
+                    &target.id,
+                    &type_node.id,
+                    "assignment_annotation",
+                    BTreeMap::new(),
+                )?;
+            }
+        }
+
+        if let Some(value_id) = call_value_child(nodes, node) {
+            let Some(value_node) = nodes.get(&value_id) else {
+                return Ok(assignment);
+            };
+            let call_capture = tree_capture(value_node);
+            let call_syntax_id = self.syntax_capture(&call_capture);
+            let call = self.emit_call(&call_capture, owner, &call_syntax_id)?;
+            self.edge_if_allowed(
+                "Assigns",
+                &assignment.id,
+                &call.id,
+                "assignment_value",
+                BTreeMap::new(),
+            )?;
+        }
+        Ok(assignment)
+    }
+
+    fn emit_tree_parameters(
+        &mut self,
+        nodes: &BTreeMap<usize, TsNode>,
+        function_node: &TsNode,
+        callable: &Node,
+    ) -> Result<(), String> {
+        for (index, parameter_id) in parameter_child_ids(nodes, function_node)
+            .into_iter()
+            .enumerate()
+        {
+            let Some(parameter_node) = nodes.get(&parameter_id) else {
+                continue;
+            };
+            let mut capture = parameter_capture(parameter_node, self.language.as_str());
+            if capture.label.is_empty() {
+                capture.label = format!("param_{index}");
+            }
+            let syntax_id = self.syntax_capture(&capture);
+            let parameter = self.semantic_node(
+                "Parameter",
+                &capture,
+                &capture.label,
+                &callable.id,
+                &callable.qualified_name,
+                None,
+            );
+            self.edge_if_allowed(
+                "HasParameter",
+                &callable.id,
+                &parameter.id,
+                "callable_parameter",
+                BTreeMap::new(),
+            )?;
+            self.derived_from(&parameter.id, &syntax_id)?;
+            if let Some(annotation) =
+                parameter_annotation_capture(nodes, parameter_node, self.language.as_str())
+            {
+                let type_node = self.emit_type_annotation_capture(
+                    &annotation,
+                    &parameter.id,
+                    &parameter.qualified_name,
+                )?;
+                self.edge_if_allowed(
+                    "HasTypeAnnotation",
+                    &parameter.id,
+                    &type_node.id,
+                    "parameter_annotation",
+                    BTreeMap::new(),
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    fn emit_tree_return_type(
+        &mut self,
+        nodes: &BTreeMap<usize, TsNode>,
+        function_node: &TsNode,
+        callable: &Node,
+    ) -> Result<(), String> {
+        let Some(capture) = return_type_capture(nodes, function_node, self.language.as_str())
+        else {
+            return Ok(());
+        };
+        let syntax_id = self.syntax_capture(&capture);
+        let return_node = self.semantic_node(
+            "ReturnType",
+            &capture,
+            &capture.label,
+            &callable.id,
+            &callable.qualified_name,
+            None,
+        );
+        self.edge_if_allowed(
+            "HasReturnType",
+            &callable.id,
+            &return_node.id,
+            "callable_return_type",
+            BTreeMap::new(),
+        )?;
+        let type_node = self.emit_type_annotation_capture(
+            &capture,
+            &return_node.id,
+            &return_node.qualified_name,
+        )?;
+        self.edge_if_allowed(
+            "HasTypeAnnotation",
+            &return_node.id,
+            &type_node.id,
+            "return_type_annotation",
+            BTreeMap::new(),
+        )?;
+        self.derived_from(&return_node.id, &syntax_id)?;
+        Ok(())
+    }
+
+    fn emit_type_annotation_capture(
+        &mut self,
+        capture: &Capture,
+        owner_id: &str,
+        owner_qualified_name: &str,
+    ) -> Result<Node, String> {
+        let syntax_id = self.syntax_capture(capture);
+        let type_node = self.semantic_node(
+            "TypeAnnotation",
+            capture,
+            &capture.label,
+            owner_id,
+            owner_qualified_name,
+            None,
+        );
+        self.emit_reference_edges(&type_node, &type_node.label, "type_annotation")?;
+        self.derived_from(&type_node.id, &syntax_id)?;
+        Ok(type_node)
+    }
+
+    fn emit_type_annotation_label(
+        &mut self,
+        label: &str,
+        source_capture: &Capture,
+        owner_id: &str,
+        owner_qualified_name: &str,
+    ) -> Result<Node, String> {
+        let capture = Capture {
+            capture_name: "type.annotation".to_string(),
+            node_type: "type".to_string(),
+            label: label.to_string(),
+            text: label.to_string(),
+            line_start: source_capture.line_start,
+            line_end: source_capture.line_end,
+            byte_start: source_capture.byte_start,
+            byte_end: source_capture.byte_end,
+            fields: Vec::new(),
+        };
+        let syntax_id = self.syntax_capture(&capture);
+        let type_node = self.semantic_node(
+            "TypeAnnotation",
+            &capture,
+            &capture.label,
+            owner_id,
+            owner_qualified_name,
+            None,
+        );
+        self.emit_reference_edges(&type_node, &type_node.label, "type_annotation")?;
+        self.derived_from(&type_node.id, &syntax_id)?;
+        Ok(type_node)
+    }
+
+    fn emit_parser_like_metadata_fields(
+        &mut self,
+        node: &TsNode,
+        owner: &Owner,
+    ) -> Result<(), String> {
+        if self.language == "python" {
+            return Ok(());
+        }
+        for field_name in ["_field_types", "_field_descendant_types"] {
+            let Some(capture) = parser_like_metadata_capture(node, field_name) else {
+                continue;
+            };
+            let syntax_id = self.syntax_capture(&capture);
+            if let Some(table) = table_for_node_type(&capture.node_type, owner) {
+                self.emit_simple_semantic(&table, &capture, owner, &syntax_id)?;
+            }
+        }
+        Ok(())
     }
 
     fn emit_import(
@@ -567,6 +908,18 @@ impl Builder {
             None,
         );
         self.connect_owner(owner, &call)?;
+        if matches!(
+            owner.table.as_str(),
+            "Function" | "Method" | "APIEndpoint" | "Route" | "Component"
+        ) {
+            self.edge_if_allowed(
+                "Calls",
+                &owner.node_id,
+                &call.id,
+                "body_call",
+                BTreeMap::new(),
+            )?;
+        }
         if let Some(target) = self.emit_reference_edges(&call, &call.label, "call")? {
             self.edge_if_allowed(
                 "Calls",
@@ -616,6 +969,47 @@ impl Builder {
             None,
         );
         self.connect_owner(owner, &semantic)?;
+        if table == "Parameter" {
+            self.edge_if_allowed(
+                "HasParameter",
+                &owner.node_id,
+                &semantic.id,
+                "captured_parameter",
+                BTreeMap::new(),
+            )?;
+        }
+        if table == "ReturnType" {
+            self.edge_if_allowed(
+                "HasReturnType",
+                &owner.node_id,
+                &semantic.id,
+                "captured_return_type",
+                BTreeMap::new(),
+            )?;
+            let type_node = self.emit_type_annotation_label(
+                &semantic.label,
+                capture,
+                &semantic.id,
+                &semantic.qualified_name,
+            )?;
+            self.edge_if_allowed(
+                "HasTypeAnnotation",
+                &semantic.id,
+                &type_node.id,
+                "return_type_annotation",
+                BTreeMap::new(),
+            )?;
+        }
+        if table == "TypeAnnotation" {
+            self.edge_if_allowed(
+                "HasTypeAnnotation",
+                &owner.node_id,
+                &semantic.id,
+                "captured_type_annotation",
+                BTreeMap::new(),
+            )?;
+            self.emit_reference_edges(&semantic, &semantic.label, "type_annotation")?;
+        }
         if matches!(table, "DocumentationSource" | "DocumentationChunk") {
             self.edge_if_allowed(
                 "Documents",
@@ -3316,6 +3710,12 @@ fn tree_label(node: &TsNode) -> String {
     }
 }
 
+fn should_derive_root_module(language: &str, root_node_type: &str) -> bool {
+    !(matches!(root_node_type, "source_file")
+        || (language == "python" && root_node_type == "module")
+        || (language == "markdown" && root_node_type == "Module"))
+}
+
 fn json_token_label(token: &str) -> Option<String> {
     let value: serde_json::Value = serde_json::from_str(token).ok()?;
     match value {
@@ -3335,6 +3735,460 @@ fn json_token_label(token: &str) -> Option<String> {
             None
         }
         _ => None,
+    }
+}
+
+fn semantic_child_ids(
+    nodes: &BTreeMap<usize, TsNode>,
+    parent: &TsNode,
+    language: &str,
+) -> Vec<usize> {
+    let mut child_ids = Vec::new();
+    for child_id in &parent.children {
+        let Some(child) = nodes.get(child_id) else {
+            continue;
+        };
+        if should_inline_child(parent, child, language) {
+            child_ids.extend(semantic_child_ids(nodes, child, language));
+        } else if should_traverse_child(parent, child, language) {
+            child_ids.push(*child_id);
+        }
+    }
+    child_ids
+}
+
+fn should_inline_child(_parent: &TsNode, child: &TsNode, language: &str) -> bool {
+    (language == "python" && child.node_type == "block")
+        || (language == "fortran" && child.node_type == "variable_declaration")
+}
+
+fn should_traverse_child(parent: &TsNode, child: &TsNode, language: &str) -> bool {
+    if language == "python" {
+        if parent.node_type == "attribute" {
+            return json_field_label(parent, "value")
+                .is_some_and(|label| label == tree_label(child));
+        }
+        if matches!(child.node_type.as_str(), "parameters" | "decorator") {
+            return false;
+        }
+        if matches!(
+            parent.node_type.as_str(),
+            "class_definition" | "function_definition"
+        ) && matches!(
+            child.node_type.as_str(),
+            "identifier" | "type" | "type_identifier"
+        ) {
+            return false;
+        }
+        if matches!(child.node_type.as_str(), "identifier" | "type_identifier")
+            && !matches!(
+                parent.node_type.as_str(),
+                "assignment" | "call" | "attribute"
+            )
+        {
+            return false;
+        }
+    }
+    if child.node_type == "block" {
+        return true;
+    }
+    if matches!(
+        parent.node_type.as_str(),
+        "import_statement" | "import_from_statement" | "import_declaration" | "use_declaration"
+    ) && matches!(
+        child.node_type.as_str(),
+        "identifier"
+            | "dotted_name"
+            | "aliased_import"
+            | "import_list"
+            | "string"
+            | "interpreted_string_literal"
+            | "raw_string_literal"
+            | "string_literal"
+    ) {
+        if language == "python" && child.node_type == "dotted_name" {
+            return true;
+        }
+        return false;
+    }
+    true
+}
+
+fn table_for_node_type(node_type: &str, owner: &Owner) -> Option<String> {
+    Some(
+        match node_type {
+            "import_statement"
+            | "import_from_statement"
+            | "import_declaration"
+            | "use_declaration"
+            | "preproc_include"
+            | "use_statement" => "ImportDeclaration",
+            "export_statement" | "export_clause" | "export_declaration" => "ExportDeclaration",
+            "class_definition"
+            | "class_declaration"
+            | "struct_item"
+            | "interface_declaration"
+            | "struct_specifier"
+            | "union_specifier"
+            | "enum_specifier"
+            | "class_specifier"
+            | "type_declaration" => "Class",
+            "function_definition"
+            | "function_declaration"
+            | "method_definition"
+            | "method_declaration"
+            | "function_item"
+            | "subroutine"
+            | "function" => {
+                if matches!(owner.table.as_str(), "Class" | "Component") {
+                    "Method"
+                } else {
+                    "Function"
+                }
+            }
+            "arg" => "Parameter",
+            "return_type" | "returns" => "ReturnType",
+            "type" | "type_identifier" | "qualified_type" | "type_annotation" | "annotation" => {
+                "TypeAnnotation"
+            }
+            "assignment" | "assignment_expression" => "Assignment",
+            "call"
+            | "call_expression"
+            | "invocation_expression"
+            | "call_statement"
+            | "subroutine_call" => "CallExpression",
+            "identifier" | "field_identifier" | "attribute" => "Reference",
+            "string" | "integer" | "float" | "true" | "false" | "null" | "none"
+            | "intrinsic_type" => "Literal",
+            "if_statement" | "for_statement" | "while_statement" | "match_statement"
+            | "switch_statement" => "ControlFlowBlock",
+            "try_statement" | "except_clause" | "catch_clause" | "raise_statement"
+            | "throw_statement" => "ExceptionFlow",
+            _ => return None,
+        }
+        .to_string(),
+    )
+}
+
+fn json_field_label(node: &TsNode, field: &str) -> Option<String> {
+    node.fields
+        .get(field)
+        .and_then(|value| json_token_label(value))
+}
+
+fn import_label(node: &TsNode) -> Option<String> {
+    let module = json_field_label(node, "module").unwrap_or_default();
+    let names = node
+        .fields
+        .get("names")
+        .and_then(|token| serde_json::from_str::<serde_json::Value>(token).ok())
+        .and_then(|value| value.as_array().cloned())
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|item| {
+            serde_json::to_string(&item)
+                .ok()
+                .and_then(|token| json_token_label(&token))
+        })
+        .filter(|label| !label.is_empty())
+        .collect::<Vec<_>>();
+    if !module.is_empty() && !names.is_empty() {
+        Some(
+            names
+                .into_iter()
+                .map(|name| format!("{module}.{name}"))
+                .collect::<Vec<_>>()
+                .join(", "),
+        )
+    } else if !module.is_empty() {
+        Some(module)
+    } else if !names.is_empty() {
+        Some(names.join(", "))
+    } else {
+        None
+    }
+}
+
+fn assignment_target_label(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) -> Option<String> {
+    json_field_label(node, "target").or_else(|| {
+        node.children
+            .iter()
+            .filter_map(|child_id| nodes.get(child_id))
+            .find(|child| !matches!(child.node_type.as_str(), "call" | "call_expression"))
+            .map(tree_label)
+            .filter(|label| !label.is_empty())
+    })
+}
+
+fn assignment_target_table(label: &str, owner: &Owner, node_type: &str) -> &'static str {
+    if label.chars().any(|character| character.is_alphabetic())
+        && label
+            .chars()
+            .filter(|character| character.is_alphabetic())
+            .all(|character| character.is_uppercase())
+    {
+        return "Constant";
+    }
+    if owner.table == "Class" {
+        return "ClassAttribute";
+    }
+    if label.contains('.') {
+        return "InstanceAttribute";
+    }
+    if node_type == "AnnAssign" && owner.table == "Class" {
+        return "ClassAttribute";
+    }
+    "Variable"
+}
+
+fn call_value_child(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) -> Option<usize> {
+    node.children.iter().copied().find(|child_id| {
+        nodes
+            .get(child_id)
+            .is_some_and(|child| matches!(child.node_type.as_str(), "call" | "call_expression"))
+    })
+}
+
+fn parameter_child_ids(nodes: &BTreeMap<usize, TsNode>, function_node: &TsNode) -> Vec<usize> {
+    function_node
+        .children
+        .iter()
+        .filter_map(|child_id| nodes.get(child_id))
+        .filter(|child| child.node_type == "parameters")
+        .flat_map(|parameters| parameters.children.iter().copied())
+        .filter(|child_id| {
+            nodes.get(child_id).is_some_and(|child| {
+                matches!(
+                    child.node_type.as_str(),
+                    "identifier" | "typed_parameter" | "default_parameter" | "parameter"
+                )
+            })
+        })
+        .collect()
+}
+
+fn parameter_label(node: &TsNode) -> String {
+    let label = tree_label(node);
+    label
+        .split_once(':')
+        .map(|(left, _)| left)
+        .unwrap_or(label.as_str())
+        .split_once('=')
+        .map(|(left, _)| left)
+        .unwrap_or_else(|| {
+            label
+                .split_once(':')
+                .map(|(left, _)| left)
+                .unwrap_or(label.as_str())
+        })
+        .trim()
+        .trim_start_matches('*')
+        .to_string()
+}
+
+fn parameter_capture(node: &TsNode, language: &str) -> Capture {
+    if language != "python" {
+        let mut capture = tree_capture(node);
+        capture.capture_name = "parameter".to_string();
+        capture.label = parameter_label(node);
+        return capture;
+    }
+    Capture {
+        capture_name: String::new(),
+        node_type: "arg".to_string(),
+        label: parameter_label(node),
+        text: node.text.clone(),
+        line_start: node.line_start,
+        line_end: node.line_end,
+        byte_start: node.byte_start,
+        byte_end: node.byte_end,
+        fields: vec!["arg".to_string()],
+    }
+}
+
+fn parameter_annotation_label(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) -> Option<String> {
+    json_field_label(node, "annotation").or_else(|| {
+        node.children
+            .iter()
+            .filter_map(|child_id| nodes.get(child_id))
+            .find(|child| {
+                matches!(
+                    child.node_type.as_str(),
+                    "type" | "type_identifier" | "qualified_type" | "annotation"
+                )
+            })
+            .map(tree_label)
+            .filter(|label| !label.is_empty())
+    })
+}
+
+fn parameter_annotation_capture(
+    nodes: &BTreeMap<usize, TsNode>,
+    node: &TsNode,
+    language: &str,
+) -> Option<Capture> {
+    if language == "python" {
+        if let Some(type_child) = first_child_with_type(nodes, node, &["type", "type_identifier"]) {
+            return Some(tree_capture(type_child));
+        }
+        return json_field_label(node, "annotation").map(|label| Capture {
+            capture_name: String::new(),
+            node_type: "type".to_string(),
+            label,
+            text: node.text.clone(),
+            line_start: node.line_start,
+            line_end: node.line_end,
+            byte_start: node.byte_start,
+            byte_end: node.byte_end,
+            fields: vec!["id".to_string()],
+        });
+    }
+    parameter_annotation_label(nodes, node).map(|label| Capture {
+        capture_name: String::new(),
+        node_type: "type_annotation".to_string(),
+        label,
+        text: node.text.clone(),
+        line_start: node.line_start,
+        line_end: node.line_end,
+        byte_start: node.byte_start,
+        byte_end: node.byte_end,
+        fields: Vec::new(),
+    })
+}
+
+fn return_type_capture(
+    nodes: &BTreeMap<usize, TsNode>,
+    function_node: &TsNode,
+    language: &str,
+) -> Option<Capture> {
+    if language == "python" {
+        return first_child_with_type(nodes, function_node, &["type", "type_identifier"])
+            .map(tree_capture);
+    }
+    json_field_label(function_node, "return_type")
+        .or_else(|| json_field_label(function_node, "returns"))
+        .map(|label| Capture {
+            capture_name: "return_type".to_string(),
+            node_type: "return_type".to_string(),
+            label,
+            text: function_node.text.clone(),
+            line_start: function_node.line_start,
+            line_end: function_node.line_end,
+            byte_start: function_node.byte_start,
+            byte_end: function_node.byte_end,
+            fields: Vec::new(),
+        })
+}
+
+fn first_child_with_type<'a>(
+    nodes: &'a BTreeMap<usize, TsNode>,
+    node: &TsNode,
+    node_types: &[&str],
+) -> Option<&'a TsNode> {
+    node.children.iter().find_map(|child_id| {
+        let child = nodes.get(child_id)?;
+        if node_types
+            .iter()
+            .any(|node_type| child.node_type == *node_type)
+        {
+            Some(child)
+        } else {
+            None
+        }
+    })
+}
+
+fn fortran_literal_capture(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) -> Option<Capture> {
+    if node.node_type != "intrinsic_type" {
+        return None;
+    }
+    let parent = node.parent_id.and_then(|parent_id| nodes.get(&parent_id))?;
+    if parent.node_type != "variable_declaration" {
+        return None;
+    }
+    Some(Capture {
+        capture_name: String::new(),
+        node_type: "integer".to_string(),
+        label: parent.text.clone(),
+        text: parent.text.clone(),
+        line_start: node.line_start,
+        line_end: node.line_end,
+        byte_start: node.byte_start,
+        byte_end: node.byte_end,
+        fields: Vec::new(),
+    })
+}
+
+fn parser_like_metadata_capture(node: &TsNode, field_name: &str) -> Option<Capture> {
+    let value = node.fields.get(field_name)?;
+    let metadata = serde_json::from_str::<serde_json::Value>(value).ok()?;
+    let object = metadata.as_object()?;
+    let node_type_value = object.get("type")?;
+    let node_type = metadata_value_label(node_type_value)?;
+    if node_type.is_empty() {
+        return None;
+    }
+    let label = metadata_object_label(object).unwrap_or_else(|| node_type.clone());
+    Some(Capture {
+        capture_name: String::new(),
+        node_type,
+        text: label.clone(),
+        label,
+        line_start: None,
+        line_end: None,
+        byte_start: None,
+        byte_end: None,
+        fields: object.keys().cloned().collect(),
+    })
+}
+
+fn metadata_object_label(object: &serde_json::Map<String, serde_json::Value>) -> Option<String> {
+    for key in ["name", "id", "arg", "attr", "module"] {
+        if let Some(label) = object.get(key).and_then(metadata_value_label) {
+            if !label.is_empty() {
+                return Some(label);
+            }
+        }
+    }
+    if let Some(label) = object.get("value").and_then(metadata_value_label) {
+        if !label.is_empty() {
+            return Some(label);
+        }
+    }
+    for key in [
+        "name",
+        "module",
+        "path",
+        "function",
+        "type",
+        "return_type",
+        "declarator",
+    ] {
+        if let Some(label) = object.get(key).and_then(metadata_value_label) {
+            if !label.is_empty() {
+                return Some(label);
+            }
+        }
+    }
+    None
+}
+
+fn metadata_value_label(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::String(text) => Some(text.clone()),
+        serde_json::Value::Number(number) => Some(number.to_string()),
+        serde_json::Value::Bool(boolean) => Some(boolean.to_string()),
+        serde_json::Value::Array(items) => Some(format!(
+            "[{}]",
+            items
+                .iter()
+                .filter_map(metadata_value_label)
+                .map(|item| format!("'{item}'"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )),
+        serde_json::Value::Object(object) => metadata_object_label(object),
+        serde_json::Value::Null => None,
     }
 }
 
