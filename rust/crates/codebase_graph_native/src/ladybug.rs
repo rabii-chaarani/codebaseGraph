@@ -103,22 +103,7 @@ mod tests {
             copy_statements: vec![format!("COPY `Thing` FROM \"{}\";", copy_path(&json_path))],
         });
         let _ = fs::remove_dir_all(&root);
-        if let Err(error) = result {
-            if is_local_json_extension_load_error(&error) {
-                eprintln!("skipping JSON COPY assertion because local Ladybug json extension failed to load: {error}");
-                return;
-            }
-            panic!("native writer failed to execute JSON COPY through Ladybug: {error}");
-        }
-    }
-
-    fn is_local_json_extension_load_error(error: &NativeError) -> bool {
-        match error {
-            NativeError::Database(message) => {
-                message.contains("Failed to load library") && message.contains("json")
-            }
-            _ => false,
-        }
+        result.expect("native writer should execute JSON COPY through Ladybug");
     }
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {
