@@ -1,17 +1,16 @@
 use crate::error::NativeError;
 use crate::hash;
-use crate::legacy;
-use crate::normalize::SyntaxNode;
+use crate::legacy::{self, GraphEdgeRow, GraphNodeRow};
 use crate::parser::ParseOutput;
 use crate::protocol::{ManifestEntry, NativeSyntaxMaterializationRequest, SourceSnapshot};
-use serde_json::Value;
 use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone)]
 pub(crate) struct GraphPartition {
     pub(crate) entry: ManifestEntry,
-    pub(crate) graph_output: String,
+    pub(crate) nodes: Vec<GraphNodeRow>,
+    pub(crate) edges: Vec<GraphEdgeRow>,
 }
 
 pub(crate) fn build_partition(
@@ -19,106 +18,59 @@ pub(crate) fn build_partition(
     snapshot: &SourceSnapshot,
     parse: ParseOutput,
 ) -> Result<GraphPartition, NativeError> {
-    let payload = encode_tree_graph_payload(request, snapshot, parse);
-    let graph_output = legacy::build_tree_graph_output(&payload).map_err(NativeError::Legacy)?;
-    let entry = manifest_entry(snapshot, &graph_output)?;
+    let rows = legacy::build_syntax_tree_graph_rows(graph_meta(request, snapshot), &parse.root)
+        .map_err(NativeError::Legacy)?;
+    let entry = manifest_entry(snapshot, &rows.nodes, &rows.edges);
     Ok(GraphPartition {
         entry,
-        graph_output,
+        nodes: rows.nodes,
+        edges: rows.edges,
     })
 }
 
-fn encode_tree_graph_payload(
+fn graph_meta(
     request: &NativeSyntaxMaterializationRequest,
     snapshot: &SourceSnapshot,
-    parse: ParseOutput,
-) -> String {
-    let mut lines = vec![
-        "TREEGRAPH".to_string(),
-        format!("META\tpath\t{}", hex(&snapshot.path)),
-        format!(
-            "META\tlanguage\t{}",
-            hex(snapshot.language.as_deref().unwrap_or(""))
-        ),
-        format!("META\tsource_root\t{}", hex(&request.source_root)),
-        format!("META\trepository_label\t{}", hex(&request.repository_label)),
-    ];
+) -> BTreeMap<String, String> {
+    let mut meta = BTreeMap::new();
+    meta.insert("path".to_string(), snapshot.path.clone());
+    meta.insert(
+        "language".to_string(),
+        snapshot.language.clone().unwrap_or_default(),
+    );
+    meta.insert("source_root".to_string(), request.source_root.clone());
+    meta.insert(
+        "repository_label".to_string(),
+        request.repository_label.clone(),
+    );
     if !request.ontology_schema.relation_types.is_empty() {
         let relation_types =
             serde_json::to_string(&request.ontology_schema.relation_types).unwrap_or_default();
-        lines.push(format!(
-            "META\tontology_relations\t{}",
-            hex(&relation_types)
-        ));
+        meta.insert("ontology_relations".to_string(), relation_types);
     }
-    append_tree_node(&parse.root, None, &mut 0, &mut lines);
-    lines.join("\n") + "\n"
-}
-
-fn append_tree_node(
-    node: &SyntaxNode,
-    parent_id: Option<usize>,
-    next_id: &mut usize,
-    lines: &mut Vec<String>,
-) {
-    let node_id = *next_id;
-    *next_id += 1;
-    let mut fields = vec![
-        "NODE".to_string(),
-        node_id.to_string(),
-        parent_id.map(|value| value.to_string()).unwrap_or_default(),
-        hex(&node.node_type),
-        hex(&node.text),
-        optional_i64(node.line_start),
-        optional_i64(node.line_end),
-        optional_i64(node.byte_start),
-        optional_i64(node.byte_end),
-        hex(&node.capture_name),
-        node.fields.len().to_string(),
-    ];
-    for (key, value) in &node.fields {
-        fields.push(hex(key));
-        fields.push(hex(&json_token(value)));
-    }
-    lines.push(fields.join("\t"));
-    for child in &node.children {
-        append_tree_node(child, Some(node_id), next_id, lines);
-    }
-}
-
-fn json_token(value: &Value) -> String {
-    serde_json::to_string(value).unwrap_or_else(|_| "null".to_string())
+    meta
 }
 
 fn manifest_entry(
     snapshot: &SourceSnapshot,
-    graph_output: &str,
-) -> Result<ManifestEntry, NativeError> {
+    nodes: &[GraphNodeRow],
+    edges: &[GraphEdgeRow],
+) -> ManifestEntry {
     let mut node_ids = Vec::new();
     let mut edge_ids = Vec::new();
     let mut node_types = BTreeMap::new();
     let mut edge_types = BTreeMap::new();
-    for line in graph_output.lines() {
-        let parts = line.split('\t').collect::<Vec<_>>();
-        match parts.first().copied() {
-            Some("NODE") if parts.len() >= 3 => {
-                let id = unhex(parts[1])?;
-                let table = unhex(parts[2])?;
-                node_types.insert(id.clone(), table);
-                node_ids.push(id);
-            }
-            Some("EDGE") if parts.len() >= 3 => {
-                let id = unhex(parts[1])?;
-                let edge_type = unhex(parts[2])?;
-                edge_types.insert(id.clone(), edge_type);
-                edge_ids.push(id);
-            }
-            _ => {}
-        }
+    for node in nodes {
+        node_types.insert(node.id.clone(), node.table.clone());
+        node_ids.push(node.id.clone());
+    }
+    for edge in edges {
+        edge_types.insert(edge.id.clone(), edge.edge_type.clone());
+        edge_ids.push(edge.id.clone());
     }
     node_ids.sort();
     edge_ids.sort();
-    Ok(ManifestEntry {
+    ManifestEntry {
         path: snapshot.path.clone(),
         content_hash: snapshot.content_hash.clone(),
         language: snapshot.language.clone().unwrap_or_default(),
@@ -128,7 +80,7 @@ fn manifest_entry(
         node_types,
         edge_types,
         materialized_at: materialized_at(),
-    })
+    }
 }
 
 fn materialized_at() -> String {
@@ -136,31 +88,4 @@ fn materialized_at() -> String {
         Ok(duration) => format!("unix:{}", duration.as_secs()),
         Err(_) => "unix:0".to_string(),
     }
-}
-
-pub(crate) fn hex(value: &str) -> String {
-    value
-        .as_bytes()
-        .iter()
-        .map(|byte| format!("{:02x}", byte))
-        .collect()
-}
-
-pub(crate) fn unhex(value: &str) -> Result<String, NativeError> {
-    if !value.len().is_multiple_of(2) {
-        return Err(NativeError::InvalidInput(
-            "hex value has odd length".to_string(),
-        ));
-    }
-    let mut bytes = Vec::with_capacity(value.len() / 2);
-    for index in (0..value.len()).step_by(2) {
-        let byte = u8::from_str_radix(&value[index..index + 2], 16)
-            .map_err(|error| NativeError::InvalidInput(error.to_string()))?;
-        bytes.push(byte);
-    }
-    String::from_utf8(bytes).map_err(|error| NativeError::InvalidInput(error.to_string()))
-}
-
-fn optional_i64(value: Option<i64>) -> String {
-    value.map(|number| number.to_string()).unwrap_or_default()
 }

@@ -1,3 +1,4 @@
+use crate::normalize::SyntaxNode;
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
@@ -45,6 +46,42 @@ struct Edge {
     target_id: String,
     kind: String,
     metadata: BTreeMap<String, JsonValue>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct GraphNodeRow {
+    pub(crate) id: String,
+    pub(crate) table: String,
+    pub(crate) label: String,
+    pub(crate) kind: String,
+    pub(crate) language: String,
+    pub(crate) path: String,
+    pub(crate) qualified_name: String,
+    pub(crate) scope_id: String,
+    pub(crate) line_start: Option<i64>,
+    pub(crate) line_end: Option<i64>,
+    pub(crate) byte_start: Option<i64>,
+    pub(crate) byte_end: Option<i64>,
+    pub(crate) tree_sitter_node_type: String,
+    pub(crate) capture_name: String,
+    pub(crate) summary: String,
+    pub(crate) metadata: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct GraphEdgeRow {
+    pub(crate) id: String,
+    pub(crate) edge_type: String,
+    pub(crate) source_id: String,
+    pub(crate) target_id: String,
+    pub(crate) kind: String,
+    pub(crate) metadata: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct BuiltGraphRows {
+    pub(crate) nodes: Vec<GraphNodeRow>,
+    pub(crate) edges: Vec<GraphEdgeRow>,
 }
 
 #[derive(Clone)]
@@ -146,6 +183,7 @@ pub fn run_cli() -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub(crate) struct LegacyBulkStagingOutput {
     pub(crate) copy_statements: Vec<String>,
     pub(crate) node_rows: usize,
@@ -160,6 +198,7 @@ pub fn build_graph_output(input: &str) -> Result<String, String> {
     Ok(builder.encode_output())
 }
 
+#[allow(dead_code)]
 pub(crate) fn build_tree_graph_output(input: &str) -> Result<String, String> {
     let parsed = parse_tree_graph_input(input)?;
     let mut builder = Builder::new(parsed.meta)?;
@@ -167,6 +206,18 @@ pub(crate) fn build_tree_graph_output(input: &str) -> Result<String, String> {
     Ok(builder.encode_output())
 }
 
+pub(crate) fn build_syntax_tree_graph_rows(
+    meta: BTreeMap<String, String>,
+    root: &SyntaxNode,
+) -> Result<BuiltGraphRows, String> {
+    let mut builder = Builder::new(meta)?;
+    let mut nodes = BTreeMap::new();
+    let root_id = append_syntax_tree_node(root, None, &mut 0, &mut nodes);
+    builder.build_tree(&nodes, root_id)?;
+    Ok(builder.typed_rows())
+}
+
+#[allow(dead_code)]
 pub(crate) fn write_bulk_staging_output(input: &str) -> Result<LegacyBulkStagingOutput, String> {
     let output = parse_bulk_staging(input)?.write()?;
     Ok(LegacyBulkStagingOutput {
@@ -1456,6 +1507,58 @@ impl Builder {
         }
         lines.join("\n") + "\n"
     }
+
+    fn typed_rows(&self) -> BuiltGraphRows {
+        let mut nodes: Vec<&Node> = self.nodes.values().collect();
+        nodes.sort_by(|left, right| {
+            (left.table.as_str(), left.id.as_str()).cmp(&(right.table.as_str(), right.id.as_str()))
+        });
+        let mut edges: Vec<&Edge> = self.edges.values().collect();
+        edges.sort_by(|left, right| {
+            (left.edge_type.as_str(), left.id.as_str())
+                .cmp(&(right.edge_type.as_str(), right.id.as_str()))
+        });
+        BuiltGraphRows {
+            nodes: nodes.into_iter().map(GraphNodeRow::from).collect(),
+            edges: edges.into_iter().map(GraphEdgeRow::from).collect(),
+        }
+    }
+}
+
+impl From<&Node> for GraphNodeRow {
+    fn from(node: &Node) -> Self {
+        Self {
+            id: node.id.clone(),
+            table: node.table.clone(),
+            label: node.label.clone(),
+            kind: node.kind.clone(),
+            language: node.language.clone(),
+            path: node.path.clone(),
+            qualified_name: node.qualified_name.clone(),
+            scope_id: node.scope_id.clone(),
+            line_start: node.line_start,
+            line_end: node.line_end,
+            byte_start: node.byte_start,
+            byte_end: node.byte_end,
+            tree_sitter_node_type: node.tree_sitter_node_type.clone(),
+            capture_name: node.capture_name.clone(),
+            summary: node.summary.clone(),
+            metadata: json_object(&node.metadata),
+        }
+    }
+}
+
+impl From<&Edge> for GraphEdgeRow {
+    fn from(edge: &Edge) -> Self {
+        Self {
+            id: edge.id.clone(),
+            edge_type: edge.edge_type.clone(),
+            source_id: edge.source_id.clone(),
+            target_id: edge.target_id.clone(),
+            kind: edge.kind.clone(),
+            metadata: json_object(&edge.metadata),
+        }
+    }
 }
 
 impl Node {
@@ -1838,6 +1941,7 @@ struct TsNormInput {
     root_id: usize,
 }
 
+#[allow(dead_code)]
 struct TreeGraphInput {
     meta: BTreeMap<String, String>,
     nodes: BTreeMap<usize, TsNode>,
@@ -3582,6 +3686,7 @@ fn parse_input(input: &str) -> Result<(BTreeMap<String, String>, Vec<Capture>), 
     Ok((meta, captures))
 }
 
+#[allow(dead_code)]
 fn parse_tree_graph_input(input: &str) -> Result<TreeGraphInput, String> {
     let mut meta = BTreeMap::new();
     let mut nodes = BTreeMap::new();
@@ -3625,6 +3730,53 @@ fn parse_tree_graph_input(input: &str) -> Result<TreeGraphInput, String> {
     })
 }
 
+fn append_syntax_tree_node(
+    node: &SyntaxNode,
+    parent_id: Option<usize>,
+    next_id: &mut usize,
+    nodes: &mut BTreeMap<usize, TsNode>,
+) -> usize {
+    let node_id = *next_id;
+    *next_id += 1;
+    let children = node
+        .children
+        .iter()
+        .map(|child| append_syntax_tree_node(child, Some(node_id), next_id, nodes))
+        .collect();
+    nodes.insert(
+        node_id,
+        TsNode {
+            id: node_id,
+            parent_id,
+            node_type: node.node_type.clone(),
+            text: node.text.clone(),
+            line_start: node.line_start,
+            line_end: node.line_end,
+            byte_start: node.byte_start,
+            byte_end: node.byte_end,
+            capture_name: node.capture_name.clone(),
+            fields: syntax_node_fields(&node.fields),
+            field_types: BTreeMap::new(),
+            field_descendant_types: BTreeMap::new(),
+            children,
+        },
+    );
+    node_id
+}
+
+fn syntax_node_fields(fields: &BTreeMap<String, serde_json::Value>) -> BulkRow {
+    fields
+        .iter()
+        .map(|(key, value)| {
+            (
+                key.clone(),
+                serde_json::to_string(value).unwrap_or_else(|_| "null".to_string()),
+            )
+        })
+        .collect()
+}
+
+#[allow(dead_code)]
 fn decode_tree_graph_node(parts: &[&str]) -> Result<TsNode, String> {
     let id = parts[0]
         .parse::<usize>()
@@ -4685,6 +4837,7 @@ fn parse_optional_i64(value: &str) -> Result<Option<i64>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn sha1_matches_python_builder_prefix() {
@@ -4729,5 +4882,113 @@ mod tests {
 
         assert!(allowlist.allows("Contains", "Repository", "SourceRoot"));
         assert!(allowlist.allows("CustomRelation", "File", "Symbol"));
+    }
+
+    #[test]
+    fn typed_tree_graph_rows_match_legacy_output_shape() {
+        let root = SyntaxNode {
+            node_type: "module".to_string(),
+            text: "def foo():\n    pass\n".to_string(),
+            line_start: Some(1),
+            line_end: Some(2),
+            byte_start: Some(0),
+            byte_end: Some(20),
+            capture_name: String::new(),
+            children: vec![SyntaxNode {
+                node_type: "function_definition".to_string(),
+                text: "def foo():\n    pass".to_string(),
+                line_start: Some(1),
+                line_end: Some(2),
+                byte_start: Some(0),
+                byte_end: Some(19),
+                capture_name: "definition.function".to_string(),
+                children: Vec::new(),
+                fields: BTreeMap::from([("name".to_string(), json!("foo"))]),
+            }],
+            fields: BTreeMap::new(),
+        };
+        let meta = BTreeMap::from([
+            ("path".to_string(), "pkg/sample.py".to_string()),
+            ("language".to_string(), "python".to_string()),
+            ("source_root".to_string(), "/repo".to_string()),
+            ("repository_label".to_string(), "repo".to_string()),
+        ]);
+
+        let typed = build_syntax_tree_graph_rows(meta.clone(), &root).unwrap();
+        let legacy = build_tree_graph_output(&tree_graph_payload(meta, &root)).unwrap();
+        let (legacy_node_types, legacy_edge_types) = output_types(&legacy);
+        let mut typed_node_types = typed
+            .nodes
+            .iter()
+            .map(|node| node.table.clone())
+            .collect::<Vec<_>>();
+        let mut typed_edge_types = typed
+            .edges
+            .iter()
+            .map(|edge| edge.edge_type.clone())
+            .collect::<Vec<_>>();
+        typed_node_types.sort();
+        typed_edge_types.sort();
+
+        assert_eq!(typed.nodes.len(), legacy_node_types.len());
+        assert_eq!(typed.edges.len(), legacy_edge_types.len());
+        assert_eq!(typed_node_types, legacy_node_types);
+        assert_eq!(typed_edge_types, legacy_edge_types);
+    }
+
+    fn tree_graph_payload(meta: BTreeMap<String, String>, root: &SyntaxNode) -> String {
+        let mut lines = vec!["TREEGRAPH".to_string()];
+        for (key, value) in meta {
+            lines.push(format!("META\t{}\t{}", key, hex(&value)));
+        }
+        append_tree_graph_record(root, None, &mut 0, &mut lines);
+        lines.join("\n") + "\n"
+    }
+
+    fn append_tree_graph_record(
+        node: &SyntaxNode,
+        parent_id: Option<usize>,
+        next_id: &mut usize,
+        lines: &mut Vec<String>,
+    ) {
+        let node_id = *next_id;
+        *next_id += 1;
+        let mut fields = vec![
+            "NODE".to_string(),
+            node_id.to_string(),
+            parent_id.map(|value| value.to_string()).unwrap_or_default(),
+            hex(&node.node_type),
+            hex(&node.text),
+            optional_i64(node.line_start),
+            optional_i64(node.line_end),
+            optional_i64(node.byte_start),
+            optional_i64(node.byte_end),
+            hex(&node.capture_name),
+            node.fields.len().to_string(),
+        ];
+        for (key, value) in &node.fields {
+            fields.push(hex(key));
+            fields.push(hex(&serde_json::to_string(value).unwrap()));
+        }
+        lines.push(fields.join("\t"));
+        for child in &node.children {
+            append_tree_graph_record(child, Some(node_id), next_id, lines);
+        }
+    }
+
+    fn output_types(output: &str) -> (Vec<String>, Vec<String>) {
+        let mut node_types = Vec::new();
+        let mut edge_types = Vec::new();
+        for line in output.lines() {
+            let parts = line.split('\t').collect::<Vec<_>>();
+            match parts.first().copied() {
+                Some("NODE") => node_types.push(unhex(parts[2]).unwrap()),
+                Some("EDGE") => edge_types.push(unhex(parts[2]).unwrap()),
+                _ => {}
+            }
+        }
+        node_types.sort();
+        edge_types.sort();
+        (node_types, edge_types)
     }
 }
