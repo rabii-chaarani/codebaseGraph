@@ -171,6 +171,7 @@ pub(crate) fn build_tree_graph_output(input: &str) -> Result<String, String> {
     Ok(builder.encode_output())
 }
 
+#[allow(dead_code)]
 pub(crate) fn build_syntax_tree_graph_rows(
     meta: BTreeMap<String, String>,
     root: &SyntaxNode,
@@ -1472,6 +1473,7 @@ impl Builder {
         lines.join("\n") + "\n"
     }
 
+    #[allow(dead_code)]
     fn typed_rows(&self) -> BuiltGraphRows {
         let mut nodes: Vec<&Node> = self.nodes.values().collect();
         nodes.sort_by(|left, right| {
@@ -1958,17 +1960,20 @@ impl TreeNodeLookup for NativeSyntaxArena<'_> {
     }
 }
 
+#[allow(dead_code)]
 struct NativeSyntaxArena<'a> {
     nodes: Vec<NativeSyntaxNode<'a>>,
     root_id: usize,
 }
 
+#[allow(dead_code)]
 struct NativeSyntaxNode<'a> {
     parent_id: Option<usize>,
     node: &'a SyntaxNode,
     children: Vec<usize>,
 }
 
+#[allow(dead_code)]
 impl<'a> NativeSyntaxArena<'a> {
     fn new(root: &'a SyntaxNode) -> Self {
         let mut arena = Self {
@@ -2003,6 +2008,7 @@ struct TreeNodeRef<'a> {
     data: TreeNodeData<'a>,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 enum TreeNodeData<'a> {
     Legacy(&'a TsNode),
