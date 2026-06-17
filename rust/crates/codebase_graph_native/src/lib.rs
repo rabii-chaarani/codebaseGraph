@@ -13,8 +13,10 @@ mod scan;
 mod staging;
 
 use crate::error::NativeError;
-use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
-use std::collections::BTreeMap;
+use crate::protocol::{
+    GraphSummary, NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse,
+};
+use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
 
 pub fn materialize_syntax_batch(
@@ -35,10 +37,14 @@ pub fn materialize_syntax_batch(
     }
 
     let profile_set = profiles::ProfileSet::new(&request.profiles);
-    let mut partitions = Vec::new();
+    let mut staging_accumulator = staging::StagingAccumulator::new(&request.staging_dir);
+    let mut rebuilt_entries = BTreeMap::new();
+    let mut node_ids = BTreeSet::new();
+    let mut edge_ids = BTreeSet::new();
     let mut diagnostics = scan.diagnostics;
     let mut parse_seconds = 0.0;
     let mut graph_build_seconds = 0.0;
+    let mut staging_seconds = 0.0;
     for path in diff.rebuild_paths() {
         let Some(snapshot) = scan.supported.get(&path) else {
             continue;
@@ -54,24 +60,38 @@ pub fn materialize_syntax_batch(
         parse_seconds += elapsed_seconds(parse_started);
         let mut parse_diagnostics = parse.diagnostics.clone();
         let graph_build_started = Instant::now();
-        partitions.push(graph::build_partition(&request, snapshot, parse)?);
+        let partition = graph::build_partition(&request, snapshot, parse)?;
         graph_build_seconds += elapsed_seconds(graph_build_started);
+        for node_id in &partition.entry.node_ids {
+            node_ids.insert(node_id.clone());
+        }
+        for edge_id in &partition.entry.edge_ids {
+            edge_ids.insert(edge_id.clone());
+        }
+        let staging_started = Instant::now();
+        staging_accumulator.add_partition(&partition);
+        staging_seconds += elapsed_seconds(staging_started);
+        let entry_path = partition.entry.path.clone();
+        rebuilt_entries.insert(entry_path, partition.entry);
         diagnostics.append(&mut parse_diagnostics);
     }
     phase_timings.insert("parse_seconds".to_string(), parse_seconds);
     phase_timings.insert("graph_build_seconds".to_string(), graph_build_seconds);
 
     let staging_started = Instant::now();
-    let staging = staging::write_partitions(&request, &partitions)?;
-    phase_timings.insert(
-        "staging_seconds".to_string(),
-        elapsed_seconds(staging_started),
-    );
+    let staging = staging_accumulator.finish()?;
+    staging_seconds += elapsed_seconds(staging_started);
+    phase_timings.insert("staging_seconds".to_string(), staging_seconds);
+    let graph_summary = GraphSummary {
+        node_count: node_ids.len(),
+        edge_count: edge_ids.len(),
+    };
     Ok(NativeSyntaxMaterializationResponse::from_parts(
         scan.snapshots,
         diff,
         diagnostics,
-        partitions,
+        rebuilt_entries,
+        graph_summary,
         staging,
         phase_timings,
     ))

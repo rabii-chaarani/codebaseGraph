@@ -1,7 +1,6 @@
 use crate::error::NativeError;
 use crate::graph::GraphPartition;
 use crate::legacy::{GraphEdgeRow, GraphNodeRow};
-use crate::protocol::NativeSyntaxMaterializationRequest;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -30,39 +29,26 @@ struct ConnectorRow {
     role: String,
 }
 
-struct StagingTables {
+struct EdgeConnector {
+    id: String,
+    edge_type: String,
+    source_id: String,
+    target_id: String,
+}
+
+pub(crate) struct StagingAccumulator {
     staging_dir: PathBuf,
     node_tables: BTreeSet<String>,
     edge_tables: BTreeSet<String>,
     nodes: BTreeMap<String, RowsById>,
     edges: BTreeMap<String, RowsById>,
     node_types_by_id: BTreeMap<String, String>,
+    edge_connectors: Vec<EdgeConnector>,
     connectors: BTreeMap<ConnectorKey, BTreeMap<ConnectorRowKey, ConnectorRow>>,
 }
 
-pub(crate) fn write_partitions(
-    request: &NativeSyntaxMaterializationRequest,
-    partitions: &[GraphPartition],
-) -> Result<StagingResult, NativeError> {
-    let mut tables = StagingTables::new(&request.staging_dir);
-    for partition in partitions {
-        for node in &partition.nodes {
-            tables.add_node(
-                node,
-                (node.table == "File").then_some(partition.entry.content_hash.as_str()),
-            );
-        }
-    }
-    for partition in partitions {
-        for edge in &partition.edges {
-            tables.add_edge(edge)?;
-        }
-    }
-    tables.write()
-}
-
-impl StagingTables {
-    fn new(staging_dir: &str) -> Self {
+impl StagingAccumulator {
+    pub(crate) fn new(staging_dir: &str) -> Self {
         Self {
             staging_dir: PathBuf::from(staging_dir),
             node_tables: BTreeSet::new(),
@@ -70,8 +56,26 @@ impl StagingTables {
             nodes: BTreeMap::new(),
             edges: BTreeMap::new(),
             node_types_by_id: BTreeMap::new(),
+            edge_connectors: Vec::new(),
             connectors: BTreeMap::new(),
         }
+    }
+
+    pub(crate) fn add_partition(&mut self, partition: &GraphPartition) {
+        for node in &partition.nodes {
+            self.add_node(
+                node,
+                (node.table == "File").then_some(partition.entry.content_hash.as_str()),
+            );
+        }
+        for edge in &partition.edges {
+            self.add_edge(edge);
+        }
+    }
+
+    pub(crate) fn finish(mut self) -> Result<StagingResult, NativeError> {
+        self.materialize_connectors()?;
+        self.write()
     }
 
     fn add_node(&mut self, node: &GraphNodeRow, content_hash: Option<&str>) {
@@ -86,50 +90,61 @@ impl StagingTables {
         );
     }
 
-    fn add_edge(&mut self, edge: &GraphEdgeRow) -> Result<(), NativeError> {
-        let source_type = self
-            .node_types_by_id
-            .get(&edge.source_id)
-            .cloned()
-            .ok_or_else(|| {
-                NativeError::InvalidInput(format!(
-                    "edge {} references missing source node {}",
-                    edge.id, edge.source_id
-                ))
-            })?;
-        let target_type = self
-            .node_types_by_id
-            .get(&edge.target_id)
-            .cloned()
-            .ok_or_else(|| {
-                NativeError::InvalidInput(format!(
-                    "edge {} references missing target node {}",
-                    edge.id, edge.target_id
-                ))
-            })?;
-
+    fn add_edge(&mut self, edge: &GraphEdgeRow) {
         self.edge_tables.insert(edge.edge_type.clone());
         merge_staged_row(
             self.edges.entry(edge.edge_type.clone()).or_default(),
             edge.id.clone(),
             edge_fields(edge),
         );
-        self.add_connector(
-            format!("FROM_{}", edge.edge_type),
-            source_type,
-            edge.edge_type.clone(),
-            edge.source_id.clone(),
-            edge.id.clone(),
-            "source".to_string(),
-        );
-        self.add_connector(
-            format!("TO_{}", edge.edge_type),
-            edge.edge_type.clone(),
-            target_type,
-            edge.id.clone(),
-            edge.target_id.clone(),
-            "target".to_string(),
-        );
+        self.edge_connectors.push(EdgeConnector {
+            id: edge.id.clone(),
+            edge_type: edge.edge_type.clone(),
+            source_id: edge.source_id.clone(),
+            target_id: edge.target_id.clone(),
+        });
+    }
+
+    fn materialize_connectors(&mut self) -> Result<(), NativeError> {
+        for edge in std::mem::take(&mut self.edge_connectors) {
+            let source_type = self
+                .node_types_by_id
+                .get(&edge.source_id)
+                .cloned()
+                .ok_or_else(|| {
+                    NativeError::InvalidInput(format!(
+                        "edge {} references missing source node {}",
+                        edge.id, edge.source_id
+                    ))
+                })?;
+            let target_type = self
+                .node_types_by_id
+                .get(&edge.target_id)
+                .cloned()
+                .ok_or_else(|| {
+                    NativeError::InvalidInput(format!(
+                        "edge {} references missing target node {}",
+                        edge.id, edge.target_id
+                    ))
+                })?;
+
+            self.add_connector(
+                format!("FROM_{}", edge.edge_type),
+                source_type,
+                edge.edge_type.clone(),
+                edge.source_id,
+                edge.id.clone(),
+                "source".to_string(),
+            );
+            self.add_connector(
+                format!("TO_{}", edge.edge_type),
+                edge.edge_type,
+                target_type,
+                edge.id,
+                edge.target_id,
+                "target".to_string(),
+            );
+        }
         Ok(())
     }
 
@@ -393,13 +408,12 @@ fn copy_path(path: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::{ManifestEntry, OntologySchema};
+    use crate::protocol::ManifestEntry;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn writes_typed_rows_and_connectors_without_bulk_protocol() {
         let staging_dir = temp_staging_dir("typed_rows_and_connectors");
-        let request = request(&staging_dir);
         let partition = partition(
             "hash-1",
             vec![
@@ -409,7 +423,9 @@ mod tests {
             vec![edge("edge:one", "Contains", "file:one", "sym:one")],
         );
 
-        let result = write_partitions(&request, &[partition]).unwrap();
+        let mut staging = StagingAccumulator::new(&staging_dir.to_string_lossy());
+        staging.add_partition(&partition);
+        let result = staging.finish().unwrap();
 
         assert_eq!(result.node_rows, 2);
         assert_eq!(result.edge_rows, 1);
@@ -436,7 +452,6 @@ mod tests {
     #[test]
     fn duplicate_typed_rows_keep_first_non_empty_fields() {
         let staging_dir = temp_staging_dir("duplicate_merge");
-        let request = request(&staging_dir);
         let mut first = node("sym:one", "Symbol", "");
         first.label.clear();
         first.summary = "first-summary".to_string();
@@ -445,7 +460,9 @@ mod tests {
         second.summary = "second-summary".to_string();
         let partition = partition("hash-1", vec![first, second], Vec::new());
 
-        let result = write_partitions(&request, &[partition]).unwrap();
+        let mut staging = StagingAccumulator::new(&staging_dir.to_string_lossy());
+        staging.add_partition(&partition);
+        let result = staging.finish().unwrap();
 
         assert_eq!(result.node_rows, 1);
         let symbol_rows = read_json_array(&staging_dir.join("symbol.json"));
@@ -456,39 +473,47 @@ mod tests {
     #[test]
     fn connector_generation_requires_existing_endpoints() {
         let staging_dir = temp_staging_dir("missing_endpoint");
-        let request = request(&staging_dir);
         let partition = partition(
             "hash-1",
             vec![node("file:one", "File", "file.py")],
             vec![edge("edge:one", "Contains", "file:one", "sym:missing")],
         );
 
-        let error = write_partitions(&request, &[partition]).unwrap_err();
+        let mut staging = StagingAccumulator::new(&staging_dir.to_string_lossy());
+        staging.add_partition(&partition);
+        let error = staging.finish().unwrap_err();
 
         assert!(error
             .to_string()
             .contains("edge edge:one references missing target node sym:missing"));
     }
 
-    fn request(staging_dir: &Path) -> NativeSyntaxMaterializationRequest {
-        NativeSyntaxMaterializationRequest {
-            source_root: ".".to_string(),
-            repository_label: "repo".to_string(),
-            mode: "full".to_string(),
-            parser_version: "test".to_string(),
-            manifest_schema_version: 1,
-            ontology: "default".to_string(),
-            ontology_schema: OntologySchema::default(),
-            previous_manifest: None,
-            profiles: Vec::new(),
-            excluded_parts: Vec::new(),
-            db_path: ":memory:".to_string(),
-            include_fts: false,
-            schema_statements: Vec::new(),
-            staging_dir: staging_dir.to_string_lossy().to_string(),
-            atomic_rebuild: false,
-            strict: false,
-        }
+    #[test]
+    fn connector_generation_allows_target_in_later_partition() {
+        let staging_dir = temp_staging_dir("deferred_connector");
+        let first = partition(
+            "hash-1",
+            vec![node("file:one", "File", "file.py")],
+            vec![edge("edge:one", "Contains", "file:one", "sym:later")],
+        );
+        let second = partition(
+            "hash-2",
+            vec![node("sym:later", "Symbol", "foo")],
+            Vec::new(),
+        );
+
+        let mut staging = StagingAccumulator::new(&staging_dir.to_string_lossy());
+        staging.add_partition(&first);
+        staging.add_partition(&second);
+        let result = staging.finish().unwrap();
+
+        assert_eq!(result.connector_rows, 2);
+        assert!(staging_dir
+            .join("from_contains__file__contains.csv")
+            .exists());
+        assert!(staging_dir
+            .join("to_contains__contains__symbol.csv")
+            .exists());
     }
 
     fn partition(

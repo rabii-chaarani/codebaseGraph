@@ -174,22 +174,11 @@ impl NativeSyntaxMaterializationResponse {
         snapshots: BTreeMap<String, SourceSnapshot>,
         diff: ManifestDiff,
         diagnostics: Vec<String>,
-        partitions: Vec<crate::graph::GraphPartition>,
+        rebuilt_entries: BTreeMap<String, ManifestEntry>,
+        graph_summary: GraphSummary,
         staging: crate::staging::StagingResult,
         phase_timings: BTreeMap<String, f64>,
     ) -> Self {
-        let mut rebuilt_entries = BTreeMap::new();
-        let mut node_ids = std::collections::BTreeSet::new();
-        let mut edge_ids = std::collections::BTreeSet::new();
-        for partition in partitions {
-            for node_id in &partition.entry.node_ids {
-                node_ids.insert(node_id.clone());
-            }
-            for edge_id in &partition.entry.edge_ids {
-                edge_ids.insert(edge_id.clone());
-            }
-            rebuilt_entries.insert(partition.entry.path.clone(), partition.entry);
-        }
         Self {
             snapshots,
             diff,
@@ -200,10 +189,7 @@ impl NativeSyntaxMaterializationResponse {
             edge_rows: staging.edge_rows,
             connector_rows: staging.connector_rows,
             copy_calls: staging.copy_calls,
-            graph_summary: GraphSummary {
-                node_count: node_ids.len(),
-                edge_count: edge_ids.len(),
-            },
+            graph_summary,
             phase_timings,
             skipped: false,
             database_written: false,
