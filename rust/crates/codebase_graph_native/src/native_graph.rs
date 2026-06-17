@@ -2135,7 +2135,7 @@ fn empty_metadata() -> Map<String, Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::legacy;
+    use crate::legacy_cli;
     use serde_json::json;
 
     #[test]
@@ -2218,7 +2218,7 @@ mod tests {
 
         let native = build_syntax_tree_graph_rows(meta("python", "pkg/dupe.py"), &root).unwrap();
         let legacy =
-            legacy::build_syntax_tree_graph_rows(meta("python", "pkg/dupe.py"), &root).unwrap();
+            legacy_cli::build_syntax_tree_graph_rows(meta("python", "pkg/dupe.py"), &root).unwrap();
 
         assert_eq!(native.nodes, legacy.nodes);
         assert_eq!(native.edges, legacy.edges);
@@ -2268,7 +2268,7 @@ mod tests {
 
     fn assert_native_matches_legacy(meta: BTreeMap<String, String>, root: &SyntaxNode) {
         let native = build_syntax_tree_graph_rows(meta.clone(), root).unwrap();
-        let legacy = legacy::build_syntax_tree_graph_rows(meta, root).unwrap();
+        let legacy = legacy_cli::build_syntax_tree_graph_rows(meta, root).unwrap();
 
         assert_eq!(native, legacy);
     }

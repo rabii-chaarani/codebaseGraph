@@ -5,7 +5,7 @@ mod graph;
 mod graph_rows;
 mod hash;
 pub mod ladybug;
-pub mod legacy;
+pub mod legacy_cli;
 mod native_graph;
 mod normalize;
 mod parser;

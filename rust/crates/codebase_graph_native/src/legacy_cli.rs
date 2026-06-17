@@ -4618,14 +4618,6 @@ fn graph_id(prefix: &str, value: &str) -> String {
     format!("{}:{}", prefix, sha1_hex(value.as_bytes()))
 }
 
-pub(crate) fn stable_partition_id(path: &str) -> String {
-    sha1_hex(path.as_bytes())
-}
-
-pub(crate) fn stable_sha256_hex(input: &[u8]) -> String {
-    sha256_hex(input)
-}
-
 fn sha1_hex(bytes: &[u8]) -> String {
     let digest = sha1(bytes);
     digest[..10]
