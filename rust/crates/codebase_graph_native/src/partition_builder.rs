@@ -1,9 +1,9 @@
 use crate::error::NativeError;
 use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::hash;
-use crate::native_graph;
 use crate::parser::ParseOutput;
 use crate::protocol::{ManifestEntry, NativeSyntaxMaterializationRequest, SourceSnapshot};
+use crate::syntax_materializer;
 use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -19,9 +19,11 @@ pub(crate) fn build_partition(
     snapshot: &SourceSnapshot,
     parse: ParseOutput,
 ) -> Result<GraphPartition, NativeError> {
-    let rows =
-        native_graph::build_syntax_tree_graph_rows(graph_meta(request, snapshot), &parse.root)
-            .map_err(NativeError::Legacy)?;
+    let rows = syntax_materializer::build_syntax_tree_graph_rows(
+        graph_meta(request, snapshot),
+        &parse.root,
+    )
+    .map_err(NativeError::Legacy)?;
     let entry = manifest_entry(snapshot, &rows.nodes, &rows.edges);
     Ok(GraphPartition {
         entry,

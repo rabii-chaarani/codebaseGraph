@@ -192,11 +192,11 @@ Do not change stable graph IDs in Rust to make implementation easier. The Rust p
 Current Rust module responsibilities after the native materializer cleanup:
 
 - `lib.rs`: PyO3-callable syntax materialization orchestration and phase timing.
-- `graph.rs`: Per-file graph partition construction and manifest entry assembly.
+- `partition_builder.rs`: Per-file graph partition construction and manifest entry assembly.
 - `graph_rows.rs`: Native typed node, edge, and built-row DTOs.
-- `native_graph.rs`: Row-first native syntax graph builder. It consumes `SyntaxNode` directly, uses hash-based internal dedup state, and emits sorted typed rows.
-- `staging.rs`: Native typed-row staging accumulator and LadyBug COPY staging file writer.
-- `ladybug.rs`: LadyBug schema and COPY execution.
+- `syntax_materializer.rs`: Row-first native syntax graph builder. It consumes `SyntaxNode` directly, uses hash-based internal dedup state, and emits sorted typed rows.
+- `staging_writer.rs`: Native typed-row staging accumulator and LadyBug COPY staging file writer.
+- `ladybug_writer.rs`: LadyBug schema and COPY execution.
 - `hash.rs`: Native-owned stable partition IDs and file content hashes.
 - `parser.rs`, `normalize.rs`, and `profiles.rs`: Tree-sitter parser integration and normalized syntax profiles.
 - `scan.rs`: Native source snapshot and manifest diff helper.

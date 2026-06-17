@@ -1,18 +1,18 @@
 pub mod error;
 #[cfg(feature = "python-extension")]
 mod ffi;
-mod graph;
 mod graph_rows;
 mod hash;
-pub mod ladybug;
+pub mod ladybug_writer;
 pub mod legacy_cli;
-mod native_graph;
 mod normalize;
 mod parser;
+mod partition_builder;
 mod profiles;
 pub mod protocol;
 mod scan;
-mod staging;
+mod staging_writer;
+mod syntax_materializer;
 
 use crate::error::NativeError;
 use crate::protocol::{
@@ -39,7 +39,7 @@ pub fn materialize_syntax_batch(
     }
 
     let profile_set = profiles::ProfileSet::new(&request.profiles);
-    let mut staging_accumulator = staging::StagingAccumulator::new(&request.staging_dir);
+    let mut staging_accumulator = staging_writer::StagingAccumulator::new(&request.staging_dir);
     let mut rebuilt_entries = BTreeMap::new();
     let mut node_ids = BTreeSet::new();
     let mut edge_ids = BTreeSet::new();
@@ -62,7 +62,7 @@ pub fn materialize_syntax_batch(
         parse_seconds += elapsed_seconds(parse_started);
         let mut parse_diagnostics = parse.diagnostics.clone();
         let graph_build_started = Instant::now();
-        let partition = graph::build_partition(&request, snapshot, parse)?;
+        let partition = partition_builder::build_partition(&request, snapshot, parse)?;
         graph_build_seconds += elapsed_seconds(graph_build_started);
         for node_id in &partition.entry.node_ids {
             node_ids.insert(node_id.clone());

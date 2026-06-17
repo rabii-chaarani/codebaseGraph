@@ -1,6 +1,6 @@
 use crate::error::NativeError;
-use crate::graph::GraphPartition;
 use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
+use crate::partition_builder::GraphPartition;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;

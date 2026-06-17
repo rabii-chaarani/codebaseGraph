@@ -2139,7 +2139,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn native_graph_rows_match_legacy_for_python_tree() {
+    fn syntax_materializer_rows_match_legacy_for_python_tree() {
         let root = syntax_node(
             "module",
             "class Service:\n    def handle(self):\n        return call()\n",
@@ -2161,7 +2161,7 @@ mod tests {
     }
 
     #[test]
-    fn native_graph_rows_match_legacy_for_rust_tree() {
+    fn syntax_materializer_rows_match_legacy_for_rust_tree() {
         let root = syntax_node(
             "source_file",
             "fn handle() { call(); }",
@@ -2178,7 +2178,7 @@ mod tests {
     }
 
     #[test]
-    fn native_graph_rows_match_legacy_for_go_tree() {
+    fn syntax_materializer_rows_match_legacy_for_go_tree() {
         let root = syntax_node(
             "source_file",
             "package main\nfunc Handle() { Call() }\n",
@@ -2195,14 +2195,14 @@ mod tests {
     }
 
     #[test]
-    fn native_graph_rows_match_legacy_for_empty_module_tree() {
+    fn syntax_materializer_rows_match_legacy_for_empty_module_tree() {
         let root = syntax_node("module", "", Vec::new(), &[]);
 
         assert_native_matches_legacy(meta("python", "empty.py"), &root);
     }
 
     #[test]
-    fn native_graph_duplicate_node_and_edge_behavior_matches_legacy() {
+    fn syntax_materializer_duplicate_node_and_edge_behavior_matches_legacy() {
         let duplicate = syntax_node(
             "function_definition",
             "def same():\n    pass",
@@ -2233,7 +2233,7 @@ mod tests {
     }
 
     #[test]
-    fn native_graph_manifest_ids_remain_stable() {
+    fn syntax_materializer_manifest_ids_remain_stable() {
         let root = syntax_node(
             "module",
             "import os\nVALUE = call()\n",

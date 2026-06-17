@@ -176,7 +176,7 @@ impl NativeSyntaxMaterializationResponse {
         diagnostics: Vec<String>,
         rebuilt_entries: BTreeMap<String, ManifestEntry>,
         graph_summary: GraphSummary,
-        staging: crate::staging::StagingResult,
+        staging: crate::staging_writer::StagingResult,
         phase_timings: BTreeMap<String, f64>,
     ) -> Self {
         Self {

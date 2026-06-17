@@ -1,5 +1,5 @@
 use crate::error::NativeError;
-use crate::ladybug::{self, LadybugWriteRequest};
+use crate::ladybug_writer::{self, LadybugWriteRequest};
 use crate::protocol::NativeSyntaxMaterializationRequest;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
@@ -15,7 +15,7 @@ fn materialize_syntax_batch(payload: &str) -> PyResult<String> {
     response.add_phase_timing("rust_json_decode_seconds", json_decode_seconds);
     if !response.skipped {
         let database_write_started = Instant::now();
-        ladybug::write_database_for_python(LadybugWriteRequest {
+        ladybug_writer::write_database_for_python(LadybugWriteRequest {
             db_path: request.db_path,
             include_fts: request.include_fts,
             schema_statements: request.schema_statements,
