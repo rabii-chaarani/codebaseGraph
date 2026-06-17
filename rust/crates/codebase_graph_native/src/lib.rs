@@ -2,6 +2,7 @@ pub mod error;
 #[cfg(feature = "python-extension")]
 mod ffi;
 mod graph;
+mod graph_rows;
 mod hash;
 pub mod ladybug;
 pub mod legacy;

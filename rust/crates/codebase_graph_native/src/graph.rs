@@ -1,6 +1,7 @@
 use crate::error::NativeError;
+use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::hash;
-use crate::legacy::{self, GraphEdgeRow, GraphNodeRow};
+use crate::legacy;
 use crate::parser::ParseOutput;
 use crate::protocol::{ManifestEntry, NativeSyntaxMaterializationRequest, SourceSnapshot};
 use std::collections::BTreeMap;
