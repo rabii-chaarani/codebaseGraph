@@ -105,9 +105,6 @@ pub fn materialize_syntax_batch_json(payload: &str) -> Result<String, NativeErro
     let json_decode_seconds = elapsed_seconds(decode_started);
     let mut response = materialize_syntax_batch(request)?;
     response.add_phase_timing("rust_json_decode_seconds", json_decode_seconds);
-    let encode_started = Instant::now();
-    let _ = serde_json::to_string(&response)?;
-    response.add_phase_timing("rust_json_encode_seconds", elapsed_seconds(encode_started));
     Ok(serde_json::to_string(&response)?)
 }
 

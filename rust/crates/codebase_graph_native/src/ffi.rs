@@ -27,12 +27,6 @@ fn materialize_syntax_batch(payload: &str) -> PyResult<String> {
         );
         response.database_written = true;
     }
-    let encode_started = Instant::now();
-    let _ = serde_json::to_string(&response).map_err(to_py_error)?;
-    response.add_phase_timing(
-        "rust_json_encode_seconds",
-        encode_started.elapsed().as_secs_f64(),
-    );
     serde_json::to_string(&response).map_err(to_py_error)
 }
 
