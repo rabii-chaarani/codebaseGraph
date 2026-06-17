@@ -186,3 +186,36 @@ Future contributors must treat graph IDs, edge IDs, relation labels, source span
 - Recording benchmark evidence before recommending a default change.
 
 Do not change stable graph IDs in Rust to make implementation easier. The Rust path is an accelerator for the existing graph contract, not a new graph schema.
+
+## Native Materializer Module Map
+
+Current Rust module responsibilities after the native materializer cleanup:
+
+- `lib.rs`: PyO3-callable syntax materialization orchestration and phase timing.
+- `graph.rs`: Per-file graph partition construction and manifest entry assembly.
+- `graph_rows.rs`: Native typed node, edge, and built-row DTOs.
+- `native_graph.rs`: Row-first native syntax graph builder. It consumes `SyntaxNode` directly, uses hash-based internal dedup state, and emits sorted typed rows.
+- `staging.rs`: Native typed-row staging accumulator and LadyBug COPY staging file writer.
+- `ladybug.rs`: LadyBug schema and COPY execution.
+- `hash.rs`: Native-owned stable partition IDs and file content hashes.
+- `parser.rs`, `normalize.rs`, and `profiles.rs`: Tree-sitter parser integration and normalized syntax profiles.
+- `scan.rs`: Native source snapshot and manifest diff helper.
+- `legacy_cli.rs`: Compatibility-only stdin protocol binary handlers.
+
+Native materialization must not depend on `legacy_cli.rs`. Test-only parity imports from `legacy_cli.rs` are acceptable until the remaining compatibility protocols are retired or gated.
+
+## Legacy Compatibility Surface
+
+Caller audit on 2026-06-17:
+
+| Protocol or helper | Current callers | Decision |
+| --- | --- | --- |
+| `BULK` | `src/codebase_graph/db/store.py` via `src/codebase_graph/_native/bulk_staging.py` | Keep in `legacy_cli.rs`; Python still exposes optional native bulk staging through the compatibility binary. |
+| `TSNORM` | `src/codebase_graph/ingest/tree_sitter_adapter.py` | Keep in `legacy_cli.rs`; Python still shells to the profiled syntax normalization helper. |
+| `SCAN` | `src/codebase_graph/ingest/materializer.py` | Keep in `legacy_cli.rs`; Python still shells to the scan/hash/diff helper outside the PyO3 native batch. |
+| `SEMANTIC` | `src/codebase_graph/semantic/enrichment_writer.py` | Keep in `legacy_cli.rs`; Python still shells to local semantic enrichment. |
+| `TREEGRAPH` | Rust parity tests only | Keep as test/compatibility support until native graph parity no longer needs legacy comparisons. |
+| `build_graph_output` | No callers | Deleted. |
+| `write_bulk_staging_output` | No callers | Deleted. |
+
+The compatibility binary remains isolated behind `legacy_cli.rs` and `src/main.rs`. It is not part of the native PyO3 materialization path. Before deleting more protocols, replace or remove the Python shell-out callers above and rerun the full Rust tests plus split Python materialization tests.

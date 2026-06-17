@@ -149,21 +149,6 @@ pub fn run_cli() -> Result<(), String> {
 }
 
 #[allow(dead_code)]
-pub(crate) struct LegacyBulkStagingOutput {
-    pub(crate) copy_statements: Vec<String>,
-    pub(crate) node_rows: usize,
-    pub(crate) edge_rows: usize,
-    pub(crate) connector_rows: usize,
-}
-
-pub fn build_graph_output(input: &str) -> Result<String, String> {
-    let (meta, captures) = parse_input(input)?;
-    let mut builder = Builder::new(meta)?;
-    builder.build(captures)?;
-    Ok(builder.encode_output())
-}
-
-#[allow(dead_code)]
 pub(crate) fn build_tree_graph_output(input: &str) -> Result<String, String> {
     let parsed = parse_tree_graph_input(input)?;
     let mut builder = Builder::new(parsed.meta)?;
@@ -180,17 +165,6 @@ pub(crate) fn build_syntax_tree_graph_rows(
     let nodes = NativeSyntaxArena::new(root);
     builder.build_tree(&nodes, nodes.root_id)?;
     Ok(builder.typed_rows())
-}
-
-#[allow(dead_code)]
-pub(crate) fn write_bulk_staging_output(input: &str) -> Result<LegacyBulkStagingOutput, String> {
-    let output = parse_bulk_staging(input)?.write()?;
-    Ok(LegacyBulkStagingOutput {
-        copy_statements: output.copy_statements,
-        node_rows: output.node_rows,
-        edge_rows: output.edge_rows,
-        connector_rows: output.connector_rows,
-    })
 }
 
 fn first_record_kind(input: &str) -> Option<String> {
