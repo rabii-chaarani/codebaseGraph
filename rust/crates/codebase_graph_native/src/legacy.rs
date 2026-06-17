@@ -211,8 +211,8 @@ pub(crate) fn build_syntax_tree_graph_rows(
     root: &SyntaxNode,
 ) -> Result<BuiltGraphRows, String> {
     let mut builder = Builder::new(meta)?;
-    let mut nodes = BTreeMap::new();
-    let root_id = append_syntax_tree_node(root, None, &mut 0, &mut nodes);
+    let mut nodes = Vec::new();
+    let root_id = append_syntax_tree_node(root, None, &mut nodes);
     builder.build_tree(&nodes, root_id)?;
     Ok(builder.typed_rows())
 }
@@ -337,12 +337,12 @@ impl Builder {
         Ok(())
     }
 
-    fn build_tree(
+    fn build_tree<N: TsNodeLookup + ?Sized>(
         &mut self,
-        nodes: &BTreeMap<usize, TsNode>,
+        nodes: &N,
         root_id: usize,
     ) -> Result<(), String> {
-        let Some(root) = nodes.get(&root_id) else {
+        let Some(root) = nodes.get_node(root_id) else {
             return Err("tree graph root node is missing".to_string());
         };
         let repository_label = self.repository_label.clone();
@@ -440,13 +440,13 @@ impl Builder {
         Ok(())
     }
 
-    fn traverse_tree_node(
+    fn traverse_tree_node<N: TsNodeLookup + ?Sized>(
         &mut self,
-        nodes: &BTreeMap<usize, TsNode>,
+        nodes: &N,
         node_id: usize,
         owner: &Owner,
     ) -> Result<(), String> {
-        let Some(node) = nodes.get(&node_id) else {
+        let Some(node) = nodes.get_node(node_id) else {
             return Err(format!("tree graph node {node_id} is missing"));
         };
         let next_owner = self.emit_tree_node(nodes, node, owner)?;
@@ -458,9 +458,9 @@ impl Builder {
         Ok(())
     }
 
-    fn emit_tree_node(
+    fn emit_tree_node<N: TsNodeLookup + ?Sized>(
         &mut self,
-        nodes: &BTreeMap<usize, TsNode>,
+        nodes: &N,
         node: &TsNode,
         owner: &Owner,
     ) -> Result<Option<Owner>, String> {
@@ -587,9 +587,9 @@ impl Builder {
         self.emit_import(&capture, owner, syntax_id)
     }
 
-    fn emit_tree_assignment(
+    fn emit_tree_assignment<N: TsNodeLookup + ?Sized>(
         &mut self,
-        nodes: &BTreeMap<usize, TsNode>,
+        nodes: &N,
         node: &TsNode,
         owner: &Owner,
         syntax_id: &str,
@@ -655,7 +655,7 @@ impl Builder {
         }
 
         if let Some(value_id) = call_value_child(nodes, node) {
-            let Some(value_node) = nodes.get(&value_id) else {
+            let Some(value_node) = nodes.get_node(value_id) else {
                 return Ok(assignment);
             };
             let call_capture = tree_capture(value_node);
@@ -672,9 +672,9 @@ impl Builder {
         Ok(assignment)
     }
 
-    fn emit_tree_parameters(
+    fn emit_tree_parameters<N: TsNodeLookup + ?Sized>(
         &mut self,
-        nodes: &BTreeMap<usize, TsNode>,
+        nodes: &N,
         function_node: &TsNode,
         callable: &Node,
     ) -> Result<(), String> {
@@ -682,7 +682,7 @@ impl Builder {
             .into_iter()
             .enumerate()
         {
-            let Some(parameter_node) = nodes.get(&parameter_id) else {
+            let Some(parameter_node) = nodes.get_node(parameter_id) else {
                 continue;
             };
             let mut capture = parameter_capture(parameter_node, self.language.as_str());
@@ -726,9 +726,9 @@ impl Builder {
         Ok(())
     }
 
-    fn emit_tree_return_type(
+    fn emit_tree_return_type<N: TsNodeLookup + ?Sized>(
         &mut self,
-        nodes: &BTreeMap<usize, TsNode>,
+        nodes: &N,
         function_node: &TsNode,
         callable: &Node,
     ) -> Result<(), String> {
@@ -1968,6 +1968,22 @@ struct TsNode {
     field_types: BTreeMap<String, String>,
     field_descendant_types: BTreeMap<String, Vec<String>>,
     children: Vec<usize>,
+}
+
+trait TsNodeLookup {
+    fn get_node(&self, id: usize) -> Option<&TsNode>;
+}
+
+impl TsNodeLookup for BTreeMap<usize, TsNode> {
+    fn get_node(&self, id: usize) -> Option<&TsNode> {
+        self.get(&id)
+    }
+}
+
+impl TsNodeLookup for Vec<TsNode> {
+    fn get_node(&self, id: usize) -> Option<&TsNode> {
+        self.get(id).filter(|node| node.id == id)
+    }
 }
 
 struct TsNormOutput {
@@ -3733,34 +3749,30 @@ fn parse_tree_graph_input(input: &str) -> Result<TreeGraphInput, String> {
 fn append_syntax_tree_node(
     node: &SyntaxNode,
     parent_id: Option<usize>,
-    next_id: &mut usize,
-    nodes: &mut BTreeMap<usize, TsNode>,
+    nodes: &mut Vec<TsNode>,
 ) -> usize {
-    let node_id = *next_id;
-    *next_id += 1;
+    let node_id = nodes.len();
+    nodes.push(TsNode {
+        id: node_id,
+        parent_id,
+        node_type: node.node_type.clone(),
+        text: node.text.clone(),
+        line_start: node.line_start,
+        line_end: node.line_end,
+        byte_start: node.byte_start,
+        byte_end: node.byte_end,
+        capture_name: node.capture_name.clone(),
+        fields: syntax_node_fields(&node.fields),
+        field_types: BTreeMap::new(),
+        field_descendant_types: BTreeMap::new(),
+        children: Vec::new(),
+    });
     let children = node
         .children
         .iter()
-        .map(|child| append_syntax_tree_node(child, Some(node_id), next_id, nodes))
+        .map(|child| append_syntax_tree_node(child, Some(node_id), nodes))
         .collect();
-    nodes.insert(
-        node_id,
-        TsNode {
-            id: node_id,
-            parent_id,
-            node_type: node.node_type.clone(),
-            text: node.text.clone(),
-            line_start: node.line_start,
-            line_end: node.line_end,
-            byte_start: node.byte_start,
-            byte_end: node.byte_end,
-            capture_name: node.capture_name.clone(),
-            fields: syntax_node_fields(&node.fields),
-            field_types: BTreeMap::new(),
-            field_descendant_types: BTreeMap::new(),
-            children,
-        },
-    );
+    nodes[node_id].children = children;
     node_id
 }
 
@@ -3890,14 +3902,14 @@ fn json_token_label(token: &str) -> Option<String> {
     }
 }
 
-fn semantic_child_ids(
-    nodes: &BTreeMap<usize, TsNode>,
+fn semantic_child_ids<N: TsNodeLookup + ?Sized>(
+    nodes: &N,
     parent: &TsNode,
     language: &str,
 ) -> Vec<usize> {
     let mut child_ids = Vec::new();
     for child_id in &parent.children {
-        let Some(child) = nodes.get(child_id) else {
+        let Some(child) = nodes.get_node(*child_id) else {
             continue;
         };
         if should_inline_child(parent, child, language) {
@@ -4061,11 +4073,11 @@ fn import_label(node: &TsNode) -> Option<String> {
     }
 }
 
-fn assignment_target_label(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) -> Option<String> {
+fn assignment_target_label<N: TsNodeLookup + ?Sized>(nodes: &N, node: &TsNode) -> Option<String> {
     json_field_label(node, "target").or_else(|| {
         node.children
             .iter()
-            .filter_map(|child_id| nodes.get(child_id))
+            .filter_map(|child_id| nodes.get_node(*child_id))
             .find(|child| !matches!(child.node_type.as_str(), "call" | "call_expression"))
             .map(tree_label)
             .filter(|label| !label.is_empty())
@@ -4093,23 +4105,23 @@ fn assignment_target_table(label: &str, owner: &Owner, node_type: &str) -> &'sta
     "Variable"
 }
 
-fn call_value_child(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) -> Option<usize> {
+fn call_value_child<N: TsNodeLookup + ?Sized>(nodes: &N, node: &TsNode) -> Option<usize> {
     node.children.iter().copied().find(|child_id| {
         nodes
-            .get(child_id)
+            .get_node(*child_id)
             .is_some_and(|child| matches!(child.node_type.as_str(), "call" | "call_expression"))
     })
 }
 
-fn parameter_child_ids(nodes: &BTreeMap<usize, TsNode>, function_node: &TsNode) -> Vec<usize> {
+fn parameter_child_ids<N: TsNodeLookup + ?Sized>(nodes: &N, function_node: &TsNode) -> Vec<usize> {
     function_node
         .children
         .iter()
-        .filter_map(|child_id| nodes.get(child_id))
+        .filter_map(|child_id| nodes.get_node(*child_id))
         .filter(|child| child.node_type == "parameters")
         .flat_map(|parameters| parameters.children.iter().copied())
         .filter(|child_id| {
-            nodes.get(child_id).is_some_and(|child| {
+            nodes.get_node(*child_id).is_some_and(|child| {
                 matches!(
                     child.node_type.as_str(),
                     "identifier" | "typed_parameter" | "default_parameter" | "parameter"
@@ -4158,11 +4170,14 @@ fn parameter_capture(node: &TsNode, language: &str) -> Capture {
     }
 }
 
-fn parameter_annotation_label(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) -> Option<String> {
+fn parameter_annotation_label<N: TsNodeLookup + ?Sized>(
+    nodes: &N,
+    node: &TsNode,
+) -> Option<String> {
     json_field_label(node, "annotation").or_else(|| {
         node.children
             .iter()
-            .filter_map(|child_id| nodes.get(child_id))
+            .filter_map(|child_id| nodes.get_node(*child_id))
             .find(|child| {
                 matches!(
                     child.node_type.as_str(),
@@ -4174,8 +4189,8 @@ fn parameter_annotation_label(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) ->
     })
 }
 
-fn parameter_annotation_capture(
-    nodes: &BTreeMap<usize, TsNode>,
+fn parameter_annotation_capture<N: TsNodeLookup + ?Sized>(
+    nodes: &N,
     node: &TsNode,
     language: &str,
 ) -> Option<Capture> {
@@ -4208,8 +4223,8 @@ fn parameter_annotation_capture(
     })
 }
 
-fn return_type_capture(
-    nodes: &BTreeMap<usize, TsNode>,
+fn return_type_capture<N: TsNodeLookup + ?Sized>(
+    nodes: &N,
     function_node: &TsNode,
     language: &str,
 ) -> Option<Capture> {
@@ -4232,13 +4247,13 @@ fn return_type_capture(
         })
 }
 
-fn first_child_with_type<'a>(
-    nodes: &'a BTreeMap<usize, TsNode>,
+fn first_child_with_type<'a, N: TsNodeLookup + ?Sized>(
+    nodes: &'a N,
     node: &TsNode,
     node_types: &[&str],
 ) -> Option<&'a TsNode> {
     node.children.iter().find_map(|child_id| {
-        let child = nodes.get(child_id)?;
+        let child = nodes.get_node(*child_id)?;
         if node_types
             .iter()
             .any(|node_type| child.node_type == *node_type)
@@ -4250,11 +4265,13 @@ fn first_child_with_type<'a>(
     })
 }
 
-fn fortran_literal_capture(nodes: &BTreeMap<usize, TsNode>, node: &TsNode) -> Option<Capture> {
+fn fortran_literal_capture<N: TsNodeLookup + ?Sized>(nodes: &N, node: &TsNode) -> Option<Capture> {
     if node.node_type != "intrinsic_type" {
         return None;
     }
-    let parent = node.parent_id.and_then(|parent_id| nodes.get(&parent_id))?;
+    let parent = node
+        .parent_id
+        .and_then(|parent_id| nodes.get_node(parent_id))?;
     if parent.node_type != "variable_declaration" {
         return None;
     }

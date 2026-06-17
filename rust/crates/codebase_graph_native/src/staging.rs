@@ -3,7 +3,7 @@ use crate::graph::GraphPartition;
 use crate::legacy::{GraphEdgeRow, GraphNodeRow};
 use serde::Serialize;
 use serde_json::{json, Value};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -17,10 +17,45 @@ pub(crate) struct StagingResult {
     pub(crate) copy_calls: usize,
 }
 
-type StagedRow = BTreeMap<String, Value>;
-type RowsById = BTreeMap<String, StagedRow>;
+type NodeRowsById = HashMap<String, NodeStagedRow>;
+type EdgeRowsById = HashMap<String, EdgeStagedRow>;
 type ConnectorKey = (String, String, String);
 type ConnectorRowKey = (String, String, String);
+
+#[derive(Clone, Debug, Serialize)]
+struct NodeStagedRow {
+    id: String,
+    label: String,
+    kind: String,
+    language: String,
+    path: String,
+    qualified_name: String,
+    scope_id: String,
+    line_start: Option<i64>,
+    line_end: Option<i64>,
+    byte_start: Option<i64>,
+    byte_end: Option<i64>,
+    tree_sitter_node_type: String,
+    capture_name: String,
+    summary: String,
+    metadata: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    content_hash: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct EdgeStagedRow {
+    id: String,
+    kind: String,
+    source_id: String,
+    target_id: String,
+    confidence: f64,
+    line_start: Option<i64>,
+    line_end: Option<i64>,
+    byte_start: Option<i64>,
+    byte_end: Option<i64>,
+    metadata: Value,
+}
 
 #[derive(Serialize)]
 struct ConnectorRow {
@@ -38,26 +73,22 @@ struct EdgeConnector {
 
 pub(crate) struct StagingAccumulator {
     staging_dir: PathBuf,
-    node_tables: BTreeSet<String>,
-    edge_tables: BTreeSet<String>,
-    nodes: BTreeMap<String, RowsById>,
-    edges: BTreeMap<String, RowsById>,
-    node_types_by_id: BTreeMap<String, String>,
+    nodes: HashMap<String, NodeRowsById>,
+    edges: HashMap<String, EdgeRowsById>,
+    node_types_by_id: HashMap<String, String>,
     edge_connectors: Vec<EdgeConnector>,
-    connectors: BTreeMap<ConnectorKey, BTreeMap<ConnectorRowKey, ConnectorRow>>,
+    connectors: HashMap<ConnectorKey, HashMap<ConnectorRowKey, ConnectorRow>>,
 }
 
 impl StagingAccumulator {
     pub(crate) fn new(staging_dir: &str) -> Self {
         Self {
             staging_dir: PathBuf::from(staging_dir),
-            node_tables: BTreeSet::new(),
-            edge_tables: BTreeSet::new(),
-            nodes: BTreeMap::new(),
-            edges: BTreeMap::new(),
-            node_types_by_id: BTreeMap::new(),
+            nodes: HashMap::new(),
+            edges: HashMap::new(),
+            node_types_by_id: HashMap::new(),
             edge_connectors: Vec::new(),
-            connectors: BTreeMap::new(),
+            connectors: HashMap::new(),
         }
     }
 
@@ -79,11 +110,10 @@ impl StagingAccumulator {
     }
 
     fn add_node(&mut self, node: &GraphNodeRow, content_hash: Option<&str>) {
-        self.node_tables.insert(node.table.clone());
         self.node_types_by_id
             .entry(node.id.clone())
             .or_insert_with(|| node.table.clone());
-        merge_staged_row(
+        merge_node_row(
             self.nodes.entry(node.table.clone()).or_default(),
             node.id.clone(),
             node_fields(node, content_hash),
@@ -91,8 +121,7 @@ impl StagingAccumulator {
     }
 
     fn add_edge(&mut self, edge: &GraphEdgeRow) {
-        self.edge_tables.insert(edge.edge_type.clone());
-        merge_staged_row(
+        merge_edge_row(
             self.edges.entry(edge.edge_type.clone()).or_default(),
             edge.id.clone(),
             edge_fields(edge),
@@ -177,7 +206,7 @@ impl StagingAccumulator {
         let mut edge_rows = 0;
         let mut connector_rows = 0;
 
-        for table in &self.node_tables {
+        for table in sorted_keys(&self.nodes) {
             let Some(rows) = self.nodes.get(table) else {
                 continue;
             };
@@ -187,12 +216,12 @@ impl StagingAccumulator {
             let path = self
                 .staging_dir
                 .join(format!("{}.json", stage_file_stem(table)));
-            write_json_rows(&path, rows.values())?;
+            write_json_rows(&path, sorted_row_values(rows))?;
             copy_statements.push(format!("COPY `{}` FROM \"{}\";", table, copy_path(&path)));
             node_rows += rows.len();
         }
 
-        for table in &self.edge_tables {
+        for table in sorted_keys(&self.edges) {
             let Some(rows) = self.edges.get(table) else {
                 continue;
             };
@@ -202,14 +231,16 @@ impl StagingAccumulator {
             let path = self
                 .staging_dir
                 .join(format!("{}.json", stage_file_stem(table)));
-            write_json_rows(&path, rows.values())?;
+            write_json_rows(&path, sorted_row_values(rows))?;
             copy_statements.push(format!("COPY `{}` FROM \"{}\";", table, copy_path(&path)));
             edge_rows += rows.len();
         }
 
-        for relation in &self.edge_tables {
+        for relation in sorted_keys(&self.edges) {
             for connector_table in [format!("FROM_{relation}"), format!("TO_{relation}")] {
-                for ((table, from_type, to_type), rows) in &self.connectors {
+                for ((table, from_type, to_type), rows) in
+                    sorted_connector_buckets(&self.connectors)
+                {
                     if table != &connector_table || rows.is_empty() {
                         continue;
                     }
@@ -219,7 +250,7 @@ impl StagingAccumulator {
                         stage_file_stem(from_type),
                         stage_file_stem(to_type)
                     ));
-                    write_csv_rows(&path, rows.values())?;
+                    write_csv_rows(&path, sorted_connector_rows(rows))?;
                     copy_statements.push(format!(
                         "COPY `{}` FROM \"{}\" (header=true, from=\"{}\", to=\"{}\");",
                         table,
@@ -242,58 +273,40 @@ impl StagingAccumulator {
     }
 }
 
-fn node_fields(node: &GraphNodeRow, content_hash: Option<&str>) -> StagedRow {
-    let mut fields = BTreeMap::from([
-        ("id".to_string(), Value::String(node.id.clone())),
-        ("label".to_string(), Value::String(node.label.clone())),
-        ("kind".to_string(), Value::String(node.kind.clone())),
-        ("language".to_string(), Value::String(node.language.clone())),
-        ("path".to_string(), Value::String(node.path.clone())),
-        (
-            "qualified_name".to_string(),
-            Value::String(node.qualified_name.clone()),
-        ),
-        ("scope_id".to_string(), Value::String(node.scope_id.clone())),
-        ("line_start".to_string(), optional_i64(node.line_start)),
-        ("line_end".to_string(), optional_i64(node.line_end)),
-        ("byte_start".to_string(), optional_i64(node.byte_start)),
-        ("byte_end".to_string(), optional_i64(node.byte_end)),
-        (
-            "tree_sitter_node_type".to_string(),
-            Value::String(node.tree_sitter_node_type.clone()),
-        ),
-        (
-            "capture_name".to_string(),
-            Value::String(node.capture_name.clone()),
-        ),
-        ("summary".to_string(), Value::String(node.summary.clone())),
-        ("metadata".to_string(), metadata_object(&node.metadata)),
-    ]);
-    if let Some(hash) = content_hash {
-        fields.insert("content_hash".to_string(), Value::String(hash.to_string()));
+fn node_fields(node: &GraphNodeRow, content_hash: Option<&str>) -> NodeStagedRow {
+    NodeStagedRow {
+        id: node.id.clone(),
+        label: node.label.clone(),
+        kind: node.kind.clone(),
+        language: node.language.clone(),
+        path: node.path.clone(),
+        qualified_name: node.qualified_name.clone(),
+        scope_id: node.scope_id.clone(),
+        line_start: node.line_start,
+        line_end: node.line_end,
+        byte_start: node.byte_start,
+        byte_end: node.byte_end,
+        tree_sitter_node_type: node.tree_sitter_node_type.clone(),
+        capture_name: node.capture_name.clone(),
+        summary: node.summary.clone(),
+        metadata: metadata_object(&node.metadata),
+        content_hash: content_hash.map(str::to_string),
     }
-    fields
 }
 
-fn edge_fields(edge: &GraphEdgeRow) -> StagedRow {
-    BTreeMap::from([
-        ("id".to_string(), Value::String(edge.id.clone())),
-        ("kind".to_string(), Value::String(edge.kind.clone())),
-        (
-            "source_id".to_string(),
-            Value::String(edge.source_id.clone()),
-        ),
-        (
-            "target_id".to_string(),
-            Value::String(edge.target_id.clone()),
-        ),
-        ("confidence".to_string(), json!(1.0)),
-        ("line_start".to_string(), Value::Null),
-        ("line_end".to_string(), Value::Null),
-        ("byte_start".to_string(), Value::Null),
-        ("byte_end".to_string(), Value::Null),
-        ("metadata".to_string(), metadata_object(&edge.metadata)),
-    ])
+fn edge_fields(edge: &GraphEdgeRow) -> EdgeStagedRow {
+    EdgeStagedRow {
+        id: edge.id.clone(),
+        kind: edge.kind.clone(),
+        source_id: edge.source_id.clone(),
+        target_id: edge.target_id.clone(),
+        confidence: 1.0,
+        line_start: None,
+        line_end: None,
+        byte_start: None,
+        byte_end: None,
+        metadata: metadata_object(&edge.metadata),
+    }
 }
 
 fn metadata_object(value: &str) -> Value {
@@ -303,27 +316,73 @@ fn metadata_object(value: &str) -> Value {
     }
 }
 
-fn optional_i64(value: Option<i64>) -> Value {
-    value.map(Value::from).unwrap_or(Value::Null)
-}
-
-fn merge_staged_row(rows: &mut RowsById, row_id: String, incoming: StagedRow) {
+fn merge_node_row(rows: &mut NodeRowsById, row_id: String, incoming: NodeStagedRow) {
     let Some(existing) = rows.get_mut(&row_id) else {
         rows.insert(row_id, incoming);
         return;
     };
 
-    for (key, value) in incoming {
-        if json_value_is_empty(&value) {
-            continue;
+    merge_string(&mut existing.id, incoming.id);
+    merge_string(&mut existing.label, incoming.label);
+    merge_string(&mut existing.kind, incoming.kind);
+    merge_string(&mut existing.language, incoming.language);
+    merge_string(&mut existing.path, incoming.path);
+    merge_string(&mut existing.qualified_name, incoming.qualified_name);
+    merge_string(&mut existing.scope_id, incoming.scope_id);
+    merge_optional_i64(&mut existing.line_start, incoming.line_start);
+    merge_optional_i64(&mut existing.line_end, incoming.line_end);
+    merge_optional_i64(&mut existing.byte_start, incoming.byte_start);
+    merge_optional_i64(&mut existing.byte_end, incoming.byte_end);
+    merge_string(
+        &mut existing.tree_sitter_node_type,
+        incoming.tree_sitter_node_type,
+    );
+    merge_string(&mut existing.capture_name, incoming.capture_name);
+    merge_string(&mut existing.summary, incoming.summary);
+    merge_value(&mut existing.metadata, incoming.metadata);
+    merge_optional_string(&mut existing.content_hash, incoming.content_hash);
+}
+
+fn merge_edge_row(rows: &mut EdgeRowsById, row_id: String, incoming: EdgeStagedRow) {
+    let Some(existing) = rows.get_mut(&row_id) else {
+        rows.insert(row_id, incoming);
+        return;
+    };
+
+    merge_string(&mut existing.id, incoming.id);
+    merge_string(&mut existing.kind, incoming.kind);
+    merge_string(&mut existing.source_id, incoming.source_id);
+    merge_string(&mut existing.target_id, incoming.target_id);
+    merge_optional_i64(&mut existing.line_start, incoming.line_start);
+    merge_optional_i64(&mut existing.line_end, incoming.line_end);
+    merge_optional_i64(&mut existing.byte_start, incoming.byte_start);
+    merge_optional_i64(&mut existing.byte_end, incoming.byte_end);
+    merge_value(&mut existing.metadata, incoming.metadata);
+}
+
+fn merge_string(existing: &mut String, incoming: String) {
+    if existing.is_empty() && !incoming.is_empty() {
+        *existing = incoming;
+    }
+}
+
+fn merge_optional_string(existing: &mut Option<String>, incoming: Option<String>) {
+    if let Some(incoming) = incoming {
+        if !incoming.is_empty() && existing.as_ref().is_none_or(|current| current.is_empty()) {
+            *existing = Some(incoming);
         }
-        let should_replace = match existing.get(&key) {
-            Some(current) => json_value_is_empty(current),
-            None => true,
-        };
-        if should_replace {
-            existing.insert(key, value);
-        }
+    }
+}
+
+fn merge_optional_i64(existing: &mut Option<i64>, incoming: Option<i64>) {
+    if existing.is_none() && incoming.is_some() {
+        *existing = incoming;
+    }
+}
+
+fn merge_value(existing: &mut Value, incoming: Value) {
+    if json_value_is_empty(existing) && !json_value_is_empty(&incoming) {
+        *existing = incoming;
     }
 }
 
@@ -337,13 +396,39 @@ fn json_value_is_empty(value: &Value) -> bool {
     }
 }
 
-fn write_json_rows<'a>(
+fn sorted_keys<V>(values: &HashMap<String, V>) -> Vec<&String> {
+    let mut keys = values.keys().collect::<Vec<_>>();
+    keys.sort();
+    keys
+}
+
+fn sorted_row_values<V>(rows: &HashMap<String, V>) -> Vec<&V> {
+    let mut entries = rows.iter().collect::<Vec<_>>();
+    entries.sort_by(|left, right| left.0.cmp(right.0));
+    entries.into_iter().map(|(_, value)| value).collect()
+}
+
+fn sorted_connector_buckets(
+    connectors: &HashMap<ConnectorKey, HashMap<ConnectorRowKey, ConnectorRow>>,
+) -> Vec<(&ConnectorKey, &HashMap<ConnectorRowKey, ConnectorRow>)> {
+    let mut buckets = connectors.iter().collect::<Vec<_>>();
+    buckets.sort_by(|left, right| left.0.cmp(right.0));
+    buckets
+}
+
+fn sorted_connector_rows(rows: &HashMap<ConnectorRowKey, ConnectorRow>) -> Vec<&ConnectorRow> {
+    let mut entries = rows.iter().collect::<Vec<_>>();
+    entries.sort_by(|left, right| left.0.cmp(right.0));
+    entries.into_iter().map(|(_, value)| value).collect()
+}
+
+fn write_json_rows<'a, T: Serialize + 'a>(
     path: &Path,
-    rows: impl Iterator<Item = &'a StagedRow>,
+    rows: impl IntoIterator<Item = &'a T>,
 ) -> Result<(), NativeError> {
     let mut writer = BufWriter::new(File::create(path)?);
     writer.write_all(b"[")?;
-    for (row_index, row) in rows.enumerate() {
+    for (row_index, row) in rows.into_iter().enumerate() {
         if row_index > 0 {
             writer.write_all(b",")?;
         }
@@ -355,7 +440,7 @@ fn write_json_rows<'a>(
 
 fn write_csv_rows<'a>(
     path: &Path,
-    rows: impl Iterator<Item = &'a ConnectorRow>,
+    rows: impl IntoIterator<Item = &'a ConnectorRow>,
 ) -> Result<(), NativeError> {
     let mut writer = BufWriter::new(File::create(path)?);
     writer.write_all(b"from_id,to_id,role\r\n")?;
@@ -454,20 +539,97 @@ mod tests {
         let staging_dir = temp_staging_dir("duplicate_merge");
         let mut first = node("sym:one", "Symbol", "");
         first.label.clear();
+        first.line_start = None;
         first.summary = "first-summary".to_string();
         let mut second = node("sym:one", "Symbol", "foo");
         second.label = "second-label".to_string();
+        second.line_start = Some(42);
         second.summary = "second-summary".to_string();
-        let partition = partition("hash-1", vec![first, second], Vec::new());
+        second.metadata = json!({"source": "later"}).to_string();
+        let first_file = node("file:one", "File", "file.py");
+        let second_file = node("file:one", "File", "file.py");
+        let first_partition = partition("", vec![first, first_file], Vec::new());
+        let second_partition = partition("hash-2", vec![second, second_file], Vec::new());
+
+        let mut staging = StagingAccumulator::new(&staging_dir.to_string_lossy());
+        staging.add_partition(&first_partition);
+        staging.add_partition(&second_partition);
+        let result = staging.finish().unwrap();
+
+        assert_eq!(result.node_rows, 2);
+        let symbol_rows = read_json_array(&staging_dir.join("symbol.json"));
+        assert_eq!(symbol_rows[0]["label"], "second-label");
+        assert_eq!(symbol_rows[0]["summary"], "first-summary");
+        assert_eq!(symbol_rows[0]["line_start"], 42);
+        assert_eq!(symbol_rows[0]["metadata"], json!({"source": "later"}));
+        let file_rows = read_json_array(&staging_dir.join("file.json"));
+        assert_eq!(file_rows[0]["content_hash"], "hash-2");
+    }
+
+    #[test]
+    fn deterministic_output_sorts_rows_connectors_and_copy_statements() {
+        let staging_dir = temp_staging_dir("deterministic_output");
+        let partition = partition(
+            "hash-1",
+            vec![
+                node("sym:b", "Symbol", "b"),
+                node("file:z", "File", "z.py"),
+                node("sym:a", "Symbol", "a"),
+                node("file:a", "File", "a.py"),
+            ],
+            vec![
+                edge("edge:b", "Contains", "file:z", "sym:b"),
+                edge("edge:a", "Contains", "file:a", "sym:a"),
+            ],
+        );
 
         let mut staging = StagingAccumulator::new(&staging_dir.to_string_lossy());
         staging.add_partition(&partition);
         let result = staging.finish().unwrap();
 
-        assert_eq!(result.node_rows, 1);
+        let statement_tables = result
+            .copy_statements
+            .iter()
+            .map(|statement| statement.split(" FROM ").next().unwrap().to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            statement_tables,
+            vec![
+                "COPY `File`",
+                "COPY `Symbol`",
+                "COPY `Contains`",
+                "COPY `FROM_Contains`",
+                "COPY `TO_Contains`",
+            ]
+        );
+
         let symbol_rows = read_json_array(&staging_dir.join("symbol.json"));
-        assert_eq!(symbol_rows[0]["label"], "second-label");
-        assert_eq!(symbol_rows[0]["summary"], "first-summary");
+        assert_eq!(symbol_rows[0]["id"], "sym:a");
+        assert_eq!(symbol_rows[1]["id"], "sym:b");
+        let edge_rows = read_json_array(&staging_dir.join("contains.json"));
+        assert_eq!(edge_rows[0]["id"], "edge:a");
+        assert_eq!(edge_rows[1]["id"], "edge:b");
+
+        let from_csv =
+            fs::read_to_string(staging_dir.join("from_contains__file__contains.csv")).unwrap();
+        assert_eq!(
+            from_csv.lines().collect::<Vec<_>>(),
+            vec![
+                "from_id,to_id,role",
+                "file:a,edge:a,source",
+                "file:z,edge:b,source",
+            ]
+        );
+        let to_csv =
+            fs::read_to_string(staging_dir.join("to_contains__contains__symbol.csv")).unwrap();
+        assert_eq!(
+            to_csv.lines().collect::<Vec<_>>(),
+            vec![
+                "from_id,to_id,role",
+                "edge:a,sym:a,target",
+                "edge:b,sym:b,target",
+            ]
+        );
     }
 
     #[test]
