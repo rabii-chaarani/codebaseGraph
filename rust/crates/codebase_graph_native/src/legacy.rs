@@ -1508,7 +1508,7 @@ impl From<&Node> for GraphNodeRow {
             tree_sitter_node_type: node.tree_sitter_node_type.clone(),
             capture_name: node.capture_name.clone(),
             summary: node.summary.clone(),
-            metadata: json_object(&node.metadata),
+            metadata: json_value_object(&node.metadata),
         }
     }
 }
@@ -1521,7 +1521,7 @@ impl From<&Edge> for GraphEdgeRow {
             source_id: edge.source_id.clone(),
             target_id: edge.target_id.clone(),
             kind: edge.kind.clone(),
-            metadata: json_object(&edge.metadata),
+            metadata: json_value_object(&edge.metadata),
         }
     }
 }
@@ -4733,6 +4733,24 @@ fn json_object(values: &BTreeMap<String, JsonValue>) -> String {
         .map(|(key, value)| format!("{}:{}", json_string(key), json_value(value)))
         .collect();
     format!("{{{}}}", fields.join(","))
+}
+
+fn json_value_object(values: &BTreeMap<String, JsonValue>) -> serde_json::Value {
+    serde_json::Value::Object(
+        values
+            .iter()
+            .map(|(key, value)| (key.clone(), json_value_to_serde(value)))
+            .collect(),
+    )
+}
+
+fn json_value_to_serde(value: &JsonValue) -> serde_json::Value {
+    match value {
+        JsonValue::String(text) => serde_json::Value::String(text.clone()),
+        JsonValue::Array(items) => {
+            serde_json::Value::Array(items.iter().map(json_value_to_serde).collect())
+        }
+    }
 }
 
 fn json_value(value: &JsonValue) -> String {

@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct GraphNodeRow {
     pub(crate) id: String,
@@ -15,7 +17,7 @@ pub(crate) struct GraphNodeRow {
     pub(crate) tree_sitter_node_type: String,
     pub(crate) capture_name: String,
     pub(crate) summary: String,
-    pub(crate) metadata: String,
+    pub(crate) metadata: Value,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -25,7 +27,7 @@ pub(crate) struct GraphEdgeRow {
     pub(crate) source_id: String,
     pub(crate) target_id: String,
     pub(crate) kind: String,
-    pub(crate) metadata: String,
+    pub(crate) metadata: Value,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

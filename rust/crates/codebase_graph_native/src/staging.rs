@@ -2,7 +2,7 @@ use crate::error::NativeError;
 use crate::graph::GraphPartition;
 use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
@@ -289,7 +289,7 @@ fn node_fields(node: &GraphNodeRow, content_hash: Option<&str>) -> NodeStagedRow
         tree_sitter_node_type: node.tree_sitter_node_type.clone(),
         capture_name: node.capture_name.clone(),
         summary: node.summary.clone(),
-        metadata: metadata_object(&node.metadata),
+        metadata: node.metadata.clone(),
         content_hash: content_hash.map(str::to_string),
     }
 }
@@ -305,14 +305,7 @@ fn edge_fields(edge: &GraphEdgeRow) -> EdgeStagedRow {
         line_end: None,
         byte_start: None,
         byte_end: None,
-        metadata: metadata_object(&edge.metadata),
-    }
-}
-
-fn metadata_object(value: &str) -> Value {
-    match serde_json::from_str::<Value>(value) {
-        Ok(Value::Object(object)) => Value::Object(object),
-        _ => json!({}),
+        metadata: edge.metadata.clone(),
     }
 }
 
@@ -494,6 +487,7 @@ fn copy_path(path: &Path) -> String {
 mod tests {
     use super::*;
     use crate::protocol::ManifestEntry;
+    use serde_json::json;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -545,7 +539,7 @@ mod tests {
         second.label = "second-label".to_string();
         second.line_start = Some(42);
         second.summary = "second-summary".to_string();
-        second.metadata = json!({"source": "later"}).to_string();
+        second.metadata = json!({"source": "later"});
         let first_file = node("file:one", "File", "file.py");
         let second_file = node("file:one", "File", "file.py");
         let first_partition = partition("", vec![first, first_file], Vec::new());
@@ -723,7 +717,7 @@ mod tests {
             tree_sitter_node_type: "identifier".to_string(),
             capture_name: "name".to_string(),
             summary: String::new(),
-            metadata: "{}".to_string(),
+            metadata: json!({}),
         }
     }
 
@@ -734,7 +728,7 @@ mod tests {
             source_id: source_id.to_string(),
             target_id: target_id.to_string(),
             kind: "contains".to_string(),
-            metadata: "{}".to_string(),
+            metadata: json!({}),
         }
     }
 
