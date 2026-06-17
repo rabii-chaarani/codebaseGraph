@@ -64,7 +64,7 @@ def test_native_materialization_decodes_extension_result(monkeypatch: pytest.Mon
         '{"snapshots":{},"diff":{"added":[],"modified":[],"unchanged":[],"deleted":[],"force_rebuild":false},'
         '"diagnostics":[],"rebuilt_entries":{},"node_rows":1,"edge_rows":2,"connector_rows":3,'
         '"copy_calls":4,"graph_summary":{"node_count":1,"edge_count":2},"skipped":false,'
-        '"database_written":true}'
+        '"phase_timings":{"scan_seconds":0.25},"database_written":true}'
     )
     monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
     monkeypatch.setattr(native_pkg, "_native", extension, raising=False)
@@ -77,6 +77,10 @@ def test_native_materialization_decodes_extension_result(monkeypatch: pytest.Mon
     assert result.bulk_stats.edge_rows == 2
     assert result.bulk_stats.connector_rows == 3
     assert result.bulk_stats.copy_calls == 4
+    assert result.phase_timings["scan_seconds"] == 0.25
+    assert "python_json_encode_seconds" in result.phase_timings
+    assert "python_json_decode_seconds" in result.phase_timings
+    assert "native_call_seconds" in result.phase_timings
     assert result.database_written is True
 
 

@@ -28,6 +28,13 @@ class FakeMaterializationResult:
             "skipped_paths": [] if self.mode == "full" else ["sample.py"],
             "deleted_paths": [],
             "graph_summary": {"nodes": 3, "edges": 2},
+            "phase_timings": {
+                "scan_seconds": 0.01,
+                "parse_seconds": 0.02,
+                "graph_build_seconds": 0.03,
+                "staging_seconds": 0.04,
+                "database_write_seconds": 0.05,
+            },
         }
 
 
@@ -120,6 +127,8 @@ def test_materialization_benchmark_reports_full_mode_with_isolated_state(tmp_pat
     assert report["repositories"][0]["summary"]["nodes_per_second"] > 0
     assert report["repositories"][0]["summary"]["edges_per_second"] > 0
     assert "peak_rss_bytes" in report["repositories"][0]["summary"]
+    assert report["repositories"][0]["iterations"][0]["phase_timings"]["scan_seconds"] == 0.01
+    assert report["repositories"][0]["summary"]["phase_timings"]["database_write_seconds"]["mean_seconds"] == 0.05
 
 
 def test_materialization_benchmark_seeds_changed_mode_once(tmp_path: Path) -> None:

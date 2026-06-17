@@ -314,6 +314,7 @@ class MaterializationResult:
     skipped_paths: tuple[str, ...]
     deleted_paths: tuple[str, ...]
     graph_summary: Mapping[str, Any]
+    phase_timings: Mapping[str, float] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         """Serialize this object into the stable dictionary shape exposed to CLI, MCP, and tests.
@@ -322,7 +323,7 @@ class MaterializationResult:
             Structured mapping that follows the source scanning and graph
             materialization response contract.
         """
-        return {
+        payload = {
             "mode": self.mode,
             "scanned": self.scanned,
             "rebuilt": self.rebuilt,
@@ -335,6 +336,9 @@ class MaterializationResult:
             "deleted_paths": list(self.deleted_paths),
             "graph_summary": dict(self.graph_summary),
         }
+        if self.phase_timings:
+            payload["phase_timings"] = dict(self.phase_timings)
+        return payload
 
 
 class GraphMaterializer:
@@ -665,6 +669,7 @@ class GraphMaterializer:
                     manifest_path=self.manifest_path,
                     rebuilt_entries=rebuilt_entries,
                     next_manifest=next_manifest,
+                    phase_timings=result.phase_timings,
                 )
         finally:
             _release_materialization_lock(lock_fd, lock_path)
@@ -1373,6 +1378,7 @@ def _materialization_result(
     manifest_path: Path,
     rebuilt_entries: Mapping[str, ManifestEntry],
     next_manifest: MaterializationManifest,
+    phase_timings: Mapping[str, float] | None = None,
 ) -> MaterializationResult:
     """Manage result within source scanning and graph materialization.
 
@@ -1405,6 +1411,7 @@ def _materialization_result(
         skipped_paths=skipped_paths,
         deleted_paths=diff.deleted,
         graph_summary=_manifest_summary(next_manifest),
+        phase_timings=dict(phase_timings or {}),
     )
 
 

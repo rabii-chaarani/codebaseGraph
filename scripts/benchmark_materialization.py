@@ -36,7 +36,7 @@ class MaterializationTiming:
     result: dict[str, Any]
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        payload = {
             "repo_root": self.repo_root.as_posix(),
             "mode": self.mode,
             "phase": self.phase,
@@ -45,6 +45,9 @@ class MaterializationTiming:
             "peak_rss_bytes": self.peak_rss_bytes,
             "result": self.result,
         }
+        if phase_timings := _phase_timings(self.result):
+            payload["phase_timings"] = phase_timings
+        return payload
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -305,6 +308,7 @@ def _summary(timings: list[MaterializationTiming]) -> dict[str, Any]:
         "edges_per_second": _rate(total_edges, total_elapsed),
         "peak_rss_bytes": max(memory_samples) if memory_samples else None,
         "latest_graph_summary": graph_summary,
+        "phase_timings": _phase_summary(timings),
     }
 
 
@@ -328,6 +332,34 @@ def _graph_count(result: dict[str, Any], prefix: str) -> int:
         if value is not None and isinstance(value, int | float):
             return int(value)
     return 0
+
+
+def _phase_timings(result: dict[str, Any]) -> dict[str, float]:
+    value = result.get("phase_timings", {})
+    if not isinstance(value, dict):
+        return {}
+    timings: dict[str, float] = {}
+    for phase, seconds in value.items():
+        if isinstance(seconds, int | float):
+            timings[str(phase)] = round(float(seconds), 6)
+    return timings
+
+
+def _phase_summary(timings: list[MaterializationTiming]) -> dict[str, dict[str, float]]:
+    values_by_phase: dict[str, list[float]] = {}
+    for timing in timings:
+        for phase, seconds in _phase_timings(timing.result).items():
+            values_by_phase.setdefault(phase, []).append(seconds)
+    return {
+        phase: {
+            "total_seconds": round(sum(values), 6),
+            "mean_seconds": round(statistics.fmean(values), 6),
+            "median_seconds": round(statistics.median(values), 6),
+            "min_seconds": round(min(values), 6),
+            "max_seconds": round(max(values), 6),
+        }
+        for phase, values in sorted(values_by_phase.items())
+    }
 
 
 def _peak_rss_bytes() -> int | None:

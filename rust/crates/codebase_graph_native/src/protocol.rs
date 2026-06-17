@@ -135,6 +135,7 @@ pub struct NativeSyntaxMaterializationResponse {
     pub connector_rows: usize,
     pub copy_calls: usize,
     pub graph_summary: GraphSummary,
+    pub phase_timings: BTreeMap<String, f64>,
     pub skipped: bool,
     pub database_written: bool,
 }
@@ -150,6 +151,7 @@ impl NativeSyntaxMaterializationResponse {
         snapshots: BTreeMap<String, SourceSnapshot>,
         diff: ManifestDiff,
         diagnostics: Vec<String>,
+        phase_timings: BTreeMap<String, f64>,
     ) -> Self {
         Self {
             snapshots,
@@ -162,6 +164,7 @@ impl NativeSyntaxMaterializationResponse {
             connector_rows: 0,
             copy_calls: 0,
             graph_summary: GraphSummary::default(),
+            phase_timings,
             skipped: true,
             database_written: false,
         }
@@ -173,6 +176,7 @@ impl NativeSyntaxMaterializationResponse {
         diagnostics: Vec<String>,
         partitions: Vec<crate::graph::GraphPartition>,
         staging: crate::staging::StagingResult,
+        phase_timings: BTreeMap<String, f64>,
     ) -> Self {
         let mut rebuilt_entries = BTreeMap::new();
         let mut node_ids = std::collections::BTreeSet::new();
@@ -200,9 +204,14 @@ impl NativeSyntaxMaterializationResponse {
                 node_count: node_ids.len(),
                 edge_count: edge_ids.len(),
             },
+            phase_timings,
             skipped: false,
             database_written: false,
         }
+    }
+
+    pub(crate) fn add_phase_timing(&mut self, phase: &str, seconds: f64) {
+        self.phase_timings.insert(phase.to_string(), seconds);
     }
 }
 
