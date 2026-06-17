@@ -176,9 +176,8 @@ pub(crate) fn build_syntax_tree_graph_rows(
     root: &SyntaxNode,
 ) -> Result<BuiltGraphRows, String> {
     let mut builder = Builder::new(meta)?;
-    let mut nodes = Vec::new();
-    let root_id = append_syntax_tree_node(root, None, &mut nodes);
-    builder.build_tree(&nodes, root_id)?;
+    let nodes = NativeSyntaxArena::new(root);
+    builder.build_tree(&nodes, nodes.root_id)?;
     Ok(builder.typed_rows())
 }
 
@@ -302,7 +301,7 @@ impl Builder {
         Ok(())
     }
 
-    fn build_tree<N: TsNodeLookup + ?Sized>(
+    fn build_tree<N: TreeNodeLookup + ?Sized>(
         &mut self,
         nodes: &N,
         root_id: usize,
@@ -338,7 +337,7 @@ impl Builder {
         )?;
 
         if matches!(
-            root.node_type.as_str(),
+            root.node_type(),
             "Module" | "module" | "program" | "source_file"
         ) {
             let root_capture = tree_capture(root);
@@ -373,7 +372,7 @@ impl Builder {
                 "module_scope",
                 BTreeMap::new(),
             )?;
-            if should_derive_root_module(&self.language, &root.node_type) {
+            if should_derive_root_module(&self.language, root.node_type()) {
                 self.derived_from(&module.id, &syntax_id)?;
             }
             let owner = Owner {
@@ -382,7 +381,7 @@ impl Builder {
                 qualified_name: module.qualified_name.clone(),
                 scope_id: module_scope.id.clone(),
             };
-            for child_id in &root.children {
+            for child_id in root.children {
                 self.traverse_tree_node(nodes, *child_id, &owner)?;
             }
         } else {
@@ -405,7 +404,7 @@ impl Builder {
         Ok(())
     }
 
-    fn traverse_tree_node<N: TsNodeLookup + ?Sized>(
+    fn traverse_tree_node<N: TreeNodeLookup + ?Sized>(
         &mut self,
         nodes: &N,
         node_id: usize,
@@ -423,10 +422,10 @@ impl Builder {
         Ok(())
     }
 
-    fn emit_tree_node<N: TsNodeLookup + ?Sized>(
+    fn emit_tree_node<N: TreeNodeLookup + ?Sized>(
         &mut self,
         nodes: &N,
-        node: &TsNode,
+        node: TreeNodeRef<'_>,
         owner: &Owner,
     ) -> Result<Option<Owner>, String> {
         let mut capture = tree_capture(node);
@@ -538,7 +537,7 @@ impl Builder {
 
     fn emit_tree_import(
         &mut self,
-        node: &TsNode,
+        node: TreeNodeRef<'_>,
         owner: &Owner,
         syntax_id: &str,
     ) -> Result<Node, String> {
@@ -552,10 +551,10 @@ impl Builder {
         self.emit_import(&capture, owner, syntax_id)
     }
 
-    fn emit_tree_assignment<N: TsNodeLookup + ?Sized>(
+    fn emit_tree_assignment<N: TreeNodeLookup + ?Sized>(
         &mut self,
         nodes: &N,
-        node: &TsNode,
+        node: TreeNodeRef<'_>,
         owner: &Owner,
         syntax_id: &str,
     ) -> Result<Node, String> {
@@ -637,10 +636,10 @@ impl Builder {
         Ok(assignment)
     }
 
-    fn emit_tree_parameters<N: TsNodeLookup + ?Sized>(
+    fn emit_tree_parameters<N: TreeNodeLookup + ?Sized>(
         &mut self,
         nodes: &N,
-        function_node: &TsNode,
+        function_node: TreeNodeRef<'_>,
         callable: &Node,
     ) -> Result<(), String> {
         for (index, parameter_id) in parameter_child_ids(nodes, function_node)
@@ -691,10 +690,10 @@ impl Builder {
         Ok(())
     }
 
-    fn emit_tree_return_type<N: TsNodeLookup + ?Sized>(
+    fn emit_tree_return_type<N: TreeNodeLookup + ?Sized>(
         &mut self,
         nodes: &N,
-        function_node: &TsNode,
+        function_node: TreeNodeRef<'_>,
         callable: &Node,
     ) -> Result<(), String> {
         let Some(capture) = return_type_capture(nodes, function_node, self.language.as_str())
@@ -787,7 +786,7 @@ impl Builder {
 
     fn emit_parser_like_metadata_fields(
         &mut self,
-        node: &TsNode,
+        node: TreeNodeRef<'_>,
         owner: &Owner,
     ) -> Result<(), String> {
         if self.language == "python" {
@@ -1935,19 +1934,150 @@ struct TsNode {
     children: Vec<usize>,
 }
 
-trait TsNodeLookup {
-    fn get_node(&self, id: usize) -> Option<&TsNode>;
+trait TreeNodeLookup {
+    fn get_node(&self, id: usize) -> Option<TreeNodeRef<'_>>;
 }
 
-impl TsNodeLookup for BTreeMap<usize, TsNode> {
-    fn get_node(&self, id: usize) -> Option<&TsNode> {
-        self.get(&id)
+impl TreeNodeLookup for BTreeMap<usize, TsNode> {
+    fn get_node(&self, id: usize) -> Option<TreeNodeRef<'_>> {
+        self.get(&id).map(|node| TreeNodeRef {
+            parent_id: node.parent_id,
+            children: &node.children,
+            data: TreeNodeData::Legacy(node),
+        })
     }
 }
 
-impl TsNodeLookup for Vec<TsNode> {
-    fn get_node(&self, id: usize) -> Option<&TsNode> {
-        self.get(id).filter(|node| node.id == id)
+impl TreeNodeLookup for NativeSyntaxArena<'_> {
+    fn get_node(&self, id: usize) -> Option<TreeNodeRef<'_>> {
+        self.nodes.get(id).map(|node| TreeNodeRef {
+            parent_id: node.parent_id,
+            children: &node.children,
+            data: TreeNodeData::Native(node.node),
+        })
+    }
+}
+
+struct NativeSyntaxArena<'a> {
+    nodes: Vec<NativeSyntaxNode<'a>>,
+    root_id: usize,
+}
+
+struct NativeSyntaxNode<'a> {
+    parent_id: Option<usize>,
+    node: &'a SyntaxNode,
+    children: Vec<usize>,
+}
+
+impl<'a> NativeSyntaxArena<'a> {
+    fn new(root: &'a SyntaxNode) -> Self {
+        let mut arena = Self {
+            nodes: Vec::new(),
+            root_id: 0,
+        };
+        arena.root_id = arena.append(root, None);
+        arena
+    }
+
+    fn append(&mut self, node: &'a SyntaxNode, parent_id: Option<usize>) -> usize {
+        let node_id = self.nodes.len();
+        self.nodes.push(NativeSyntaxNode {
+            parent_id,
+            node,
+            children: Vec::new(),
+        });
+        let children = node
+            .children
+            .iter()
+            .map(|child| self.append(child, Some(node_id)))
+            .collect();
+        self.nodes[node_id].children = children;
+        node_id
+    }
+}
+
+#[derive(Clone, Copy)]
+struct TreeNodeRef<'a> {
+    parent_id: Option<usize>,
+    children: &'a [usize],
+    data: TreeNodeData<'a>,
+}
+
+#[derive(Clone, Copy)]
+enum TreeNodeData<'a> {
+    Legacy(&'a TsNode),
+    Native(&'a SyntaxNode),
+}
+
+impl TreeNodeRef<'_> {
+    fn node_type(&self) -> &str {
+        match self.data {
+            TreeNodeData::Legacy(node) => &node.node_type,
+            TreeNodeData::Native(node) => &node.node_type,
+        }
+    }
+
+    fn text(&self) -> &str {
+        match self.data {
+            TreeNodeData::Legacy(node) => &node.text,
+            TreeNodeData::Native(node) => &node.text,
+        }
+    }
+
+    fn line_start(&self) -> Option<i64> {
+        match self.data {
+            TreeNodeData::Legacy(node) => node.line_start,
+            TreeNodeData::Native(node) => node.line_start,
+        }
+    }
+
+    fn line_end(&self) -> Option<i64> {
+        match self.data {
+            TreeNodeData::Legacy(node) => node.line_end,
+            TreeNodeData::Native(node) => node.line_end,
+        }
+    }
+
+    fn byte_start(&self) -> Option<i64> {
+        match self.data {
+            TreeNodeData::Legacy(node) => node.byte_start,
+            TreeNodeData::Native(node) => node.byte_start,
+        }
+    }
+
+    fn byte_end(&self) -> Option<i64> {
+        match self.data {
+            TreeNodeData::Legacy(node) => node.byte_end,
+            TreeNodeData::Native(node) => node.byte_end,
+        }
+    }
+
+    fn capture_name(&self) -> &str {
+        match self.data {
+            TreeNodeData::Legacy(node) => &node.capture_name,
+            TreeNodeData::Native(node) => &node.capture_name,
+        }
+    }
+
+    fn field_keys(&self) -> Vec<String> {
+        match self.data {
+            TreeNodeData::Legacy(node) => node.fields.keys().cloned().collect(),
+            TreeNodeData::Native(node) => node.fields.keys().cloned().collect(),
+        }
+    }
+
+    fn field_value(&self, field: &str) -> Option<serde_json::Value> {
+        match self.data {
+            TreeNodeData::Legacy(node) => node
+                .fields
+                .get(field)
+                .and_then(|value| serde_json::from_str(value).ok()),
+            TreeNodeData::Native(node) => node.fields.get(field).cloned(),
+        }
+    }
+
+    fn field_label(&self, field: &str) -> Option<String> {
+        self.field_value(field).as_ref().and_then(json_value_label)
     }
 }
 
@@ -3711,48 +3841,6 @@ fn parse_tree_graph_input(input: &str) -> Result<TreeGraphInput, String> {
     })
 }
 
-fn append_syntax_tree_node(
-    node: &SyntaxNode,
-    parent_id: Option<usize>,
-    nodes: &mut Vec<TsNode>,
-) -> usize {
-    let node_id = nodes.len();
-    nodes.push(TsNode {
-        id: node_id,
-        parent_id,
-        node_type: node.node_type.clone(),
-        text: node.text.clone(),
-        line_start: node.line_start,
-        line_end: node.line_end,
-        byte_start: node.byte_start,
-        byte_end: node.byte_end,
-        capture_name: node.capture_name.clone(),
-        fields: syntax_node_fields(&node.fields),
-        field_types: BTreeMap::new(),
-        field_descendant_types: BTreeMap::new(),
-        children: Vec::new(),
-    });
-    let children = node
-        .children
-        .iter()
-        .map(|child| append_syntax_tree_node(child, Some(node_id), nodes))
-        .collect();
-    nodes[node_id].children = children;
-    node_id
-}
-
-fn syntax_node_fields(fields: &BTreeMap<String, serde_json::Value>) -> BulkRow {
-    fields
-        .iter()
-        .map(|(key, value)| {
-            (
-                key.clone(),
-                serde_json::to_string(value).unwrap_or_else(|_| "null".to_string()),
-            )
-        })
-        .collect()
-}
-
 #[allow(dead_code)]
 fn decode_tree_graph_node(parts: &[&str]) -> Result<TsNode, String> {
     let id = parts[0]
@@ -3796,44 +3884,36 @@ fn decode_tree_graph_node(parts: &[&str]) -> Result<TsNode, String> {
     })
 }
 
-fn tree_capture(node: &TsNode) -> Capture {
+fn tree_capture(node: TreeNodeRef<'_>) -> Capture {
     Capture {
-        capture_name: node.capture_name.clone(),
-        node_type: node.node_type.clone(),
+        capture_name: node.capture_name().to_string(),
+        node_type: node.node_type().to_string(),
         label: tree_label(node),
-        text: node.text.clone(),
-        line_start: node.line_start,
-        line_end: node.line_end,
-        byte_start: node.byte_start,
-        byte_end: node.byte_end,
-        fields: node.fields.keys().cloned().collect(),
+        text: node.text().to_string(),
+        line_start: node.line_start(),
+        line_end: node.line_end(),
+        byte_start: node.byte_start(),
+        byte_end: node.byte_end(),
+        fields: node.field_keys(),
     }
 }
 
-fn tree_label(node: &TsNode) -> String {
+fn tree_label(node: TreeNodeRef<'_>) -> String {
     for key in ["name", "id", "arg", "attr", "module", "path", "function"] {
-        if let Some(label) = node
-            .fields
-            .get(key)
-            .and_then(|value| json_token_label(value))
-        {
+        if let Some(label) = node.field_label(key) {
             if !label.is_empty() {
                 return label;
             }
         }
     }
-    if let Some(label) = node
-        .fields
-        .get("value")
-        .and_then(|value| json_token_label(value))
-    {
+    if let Some(label) = node.field_label("value") {
         if !label.is_empty() {
             return label;
         }
     }
-    let text = node.text.trim();
+    let text = node.text().trim();
     if text.is_empty() {
-        node.node_type.clone()
+        node.node_type().to_string()
     } else {
         text.to_string()
     }
@@ -3845,8 +3925,7 @@ fn should_derive_root_module(language: &str, root_node_type: &str) -> bool {
         || (language == "markdown" && root_node_type == "Module"))
 }
 
-fn json_token_label(token: &str) -> Option<String> {
-    let value: serde_json::Value = serde_json::from_str(token).ok()?;
+fn json_value_label(value: &serde_json::Value) -> Option<String> {
     match value {
         serde_json::Value::String(text) => Some(text.trim().to_string()),
         serde_json::Value::Number(number) => Some(number.to_string()),
@@ -3854,8 +3933,7 @@ fn json_token_label(token: &str) -> Option<String> {
         serde_json::Value::Object(object) => {
             for key in ["id", "name", "arg", "attr", "value"] {
                 if let Some(value) = object.get(key) {
-                    let encoded = serde_json::to_string(value).ok()?;
-                    let label = json_token_label(&encoded)?;
+                    let label = json_value_label(value)?;
                     if !label.is_empty() {
                         return Some(label);
                     }
@@ -3867,13 +3945,13 @@ fn json_token_label(token: &str) -> Option<String> {
     }
 }
 
-fn semantic_child_ids<N: TsNodeLookup + ?Sized>(
+fn semantic_child_ids<N: TreeNodeLookup + ?Sized>(
     nodes: &N,
-    parent: &TsNode,
+    parent: TreeNodeRef<'_>,
     language: &str,
 ) -> Vec<usize> {
     let mut child_ids = Vec::new();
-    for child_id in &parent.children {
+    for child_id in parent.children {
         let Some(child) = nodes.get_node(*child_id) else {
             continue;
         };
@@ -3886,46 +3964,41 @@ fn semantic_child_ids<N: TsNodeLookup + ?Sized>(
     child_ids
 }
 
-fn should_inline_child(_parent: &TsNode, child: &TsNode, language: &str) -> bool {
-    (language == "python" && child.node_type == "block")
-        || (language == "fortran" && child.node_type == "variable_declaration")
+fn should_inline_child(_parent: TreeNodeRef<'_>, child: TreeNodeRef<'_>, language: &str) -> bool {
+    (language == "python" && child.node_type() == "block")
+        || (language == "fortran" && child.node_type() == "variable_declaration")
 }
 
-fn should_traverse_child(parent: &TsNode, child: &TsNode, language: &str) -> bool {
+fn should_traverse_child(parent: TreeNodeRef<'_>, child: TreeNodeRef<'_>, language: &str) -> bool {
     if language == "python" {
-        if parent.node_type == "attribute" {
+        if parent.node_type() == "attribute" {
             return json_field_label(parent, "value")
                 .is_some_and(|label| label == tree_label(child));
         }
-        if matches!(child.node_type.as_str(), "parameters" | "decorator") {
+        if matches!(child.node_type(), "parameters" | "decorator") {
             return false;
         }
         if matches!(
-            parent.node_type.as_str(),
+            parent.node_type(),
             "class_definition" | "function_definition"
-        ) && matches!(
-            child.node_type.as_str(),
-            "identifier" | "type" | "type_identifier"
-        ) {
+        ) && matches!(child.node_type(), "identifier" | "type" | "type_identifier")
+        {
             return false;
         }
-        if matches!(child.node_type.as_str(), "identifier" | "type_identifier")
-            && !matches!(
-                parent.node_type.as_str(),
-                "assignment" | "call" | "attribute"
-            )
+        if matches!(child.node_type(), "identifier" | "type_identifier")
+            && !matches!(parent.node_type(), "assignment" | "call" | "attribute")
         {
             return false;
         }
     }
-    if child.node_type == "block" {
+    if child.node_type() == "block" {
         return true;
     }
     if matches!(
-        parent.node_type.as_str(),
+        parent.node_type(),
         "import_statement" | "import_from_statement" | "import_declaration" | "use_declaration"
     ) && matches!(
-        child.node_type.as_str(),
+        child.node_type(),
         "identifier"
             | "dotted_name"
             | "aliased_import"
@@ -3935,7 +4008,7 @@ fn should_traverse_child(parent: &TsNode, child: &TsNode, language: &str) -> boo
             | "raw_string_literal"
             | "string_literal"
     ) {
-        if language == "python" && child.node_type == "dotted_name" {
+        if language == "python" && child.node_type() == "dotted_name" {
             return true;
         }
         return false;
@@ -3999,26 +4072,18 @@ fn table_for_node_type(node_type: &str, owner: &Owner) -> Option<String> {
     )
 }
 
-fn json_field_label(node: &TsNode, field: &str) -> Option<String> {
-    node.fields
-        .get(field)
-        .and_then(|value| json_token_label(value))
+fn json_field_label(node: TreeNodeRef<'_>, field: &str) -> Option<String> {
+    node.field_label(field)
 }
 
-fn import_label(node: &TsNode) -> Option<String> {
+fn import_label(node: TreeNodeRef<'_>) -> Option<String> {
     let module = json_field_label(node, "module").unwrap_or_default();
     let names = node
-        .fields
-        .get("names")
-        .and_then(|token| serde_json::from_str::<serde_json::Value>(token).ok())
+        .field_value("names")
         .and_then(|value| value.as_array().cloned())
         .unwrap_or_default()
         .into_iter()
-        .filter_map(|item| {
-            serde_json::to_string(&item)
-                .ok()
-                .and_then(|token| json_token_label(&token))
-        })
+        .filter_map(|item| json_value_label(&item))
         .filter(|label| !label.is_empty())
         .collect::<Vec<_>>();
     if !module.is_empty() && !names.is_empty() {
@@ -4038,12 +4103,15 @@ fn import_label(node: &TsNode) -> Option<String> {
     }
 }
 
-fn assignment_target_label<N: TsNodeLookup + ?Sized>(nodes: &N, node: &TsNode) -> Option<String> {
+fn assignment_target_label<N: TreeNodeLookup + ?Sized>(
+    nodes: &N,
+    node: TreeNodeRef<'_>,
+) -> Option<String> {
     json_field_label(node, "target").or_else(|| {
         node.children
             .iter()
             .filter_map(|child_id| nodes.get_node(*child_id))
-            .find(|child| !matches!(child.node_type.as_str(), "call" | "call_expression"))
+            .find(|child| !matches!(child.node_type(), "call" | "call_expression"))
             .map(tree_label)
             .filter(|label| !label.is_empty())
     })
@@ -4070,25 +4138,28 @@ fn assignment_target_table(label: &str, owner: &Owner, node_type: &str) -> &'sta
     "Variable"
 }
 
-fn call_value_child<N: TsNodeLookup + ?Sized>(nodes: &N, node: &TsNode) -> Option<usize> {
+fn call_value_child<N: TreeNodeLookup + ?Sized>(nodes: &N, node: TreeNodeRef<'_>) -> Option<usize> {
     node.children.iter().copied().find(|child_id| {
         nodes
             .get_node(*child_id)
-            .is_some_and(|child| matches!(child.node_type.as_str(), "call" | "call_expression"))
+            .is_some_and(|child| matches!(child.node_type(), "call" | "call_expression"))
     })
 }
 
-fn parameter_child_ids<N: TsNodeLookup + ?Sized>(nodes: &N, function_node: &TsNode) -> Vec<usize> {
+fn parameter_child_ids<N: TreeNodeLookup + ?Sized>(
+    nodes: &N,
+    function_node: TreeNodeRef<'_>,
+) -> Vec<usize> {
     function_node
         .children
         .iter()
         .filter_map(|child_id| nodes.get_node(*child_id))
-        .filter(|child| child.node_type == "parameters")
+        .filter(|child| child.node_type() == "parameters")
         .flat_map(|parameters| parameters.children.iter().copied())
         .filter(|child_id| {
             nodes.get_node(*child_id).is_some_and(|child| {
                 matches!(
-                    child.node_type.as_str(),
+                    child.node_type(),
                     "identifier" | "typed_parameter" | "default_parameter" | "parameter"
                 )
             })
@@ -4096,7 +4167,7 @@ fn parameter_child_ids<N: TsNodeLookup + ?Sized>(nodes: &N, function_node: &TsNo
         .collect()
 }
 
-fn parameter_label(node: &TsNode) -> String {
+fn parameter_label(node: TreeNodeRef<'_>) -> String {
     let label = tree_label(node);
     label
         .split_once(':')
@@ -4115,7 +4186,7 @@ fn parameter_label(node: &TsNode) -> String {
         .to_string()
 }
 
-fn parameter_capture(node: &TsNode, language: &str) -> Capture {
+fn parameter_capture(node: TreeNodeRef<'_>, language: &str) -> Capture {
     if language != "python" {
         let mut capture = tree_capture(node);
         capture.capture_name = "parameter".to_string();
@@ -4126,18 +4197,18 @@ fn parameter_capture(node: &TsNode, language: &str) -> Capture {
         capture_name: String::new(),
         node_type: "arg".to_string(),
         label: parameter_label(node),
-        text: node.text.clone(),
-        line_start: node.line_start,
-        line_end: node.line_end,
-        byte_start: node.byte_start,
-        byte_end: node.byte_end,
+        text: node.text().to_string(),
+        line_start: node.line_start(),
+        line_end: node.line_end(),
+        byte_start: node.byte_start(),
+        byte_end: node.byte_end(),
         fields: vec!["arg".to_string()],
     }
 }
 
-fn parameter_annotation_label<N: TsNodeLookup + ?Sized>(
+fn parameter_annotation_label<N: TreeNodeLookup + ?Sized>(
     nodes: &N,
-    node: &TsNode,
+    node: TreeNodeRef<'_>,
 ) -> Option<String> {
     json_field_label(node, "annotation").or_else(|| {
         node.children
@@ -4145,7 +4216,7 @@ fn parameter_annotation_label<N: TsNodeLookup + ?Sized>(
             .filter_map(|child_id| nodes.get_node(*child_id))
             .find(|child| {
                 matches!(
-                    child.node_type.as_str(),
+                    child.node_type(),
                     "type" | "type_identifier" | "qualified_type" | "annotation"
                 )
             })
@@ -4154,9 +4225,9 @@ fn parameter_annotation_label<N: TsNodeLookup + ?Sized>(
     })
 }
 
-fn parameter_annotation_capture<N: TsNodeLookup + ?Sized>(
+fn parameter_annotation_capture<N: TreeNodeLookup + ?Sized>(
     nodes: &N,
-    node: &TsNode,
+    node: TreeNodeRef<'_>,
     language: &str,
 ) -> Option<Capture> {
     if language == "python" {
@@ -4167,11 +4238,11 @@ fn parameter_annotation_capture<N: TsNodeLookup + ?Sized>(
             capture_name: String::new(),
             node_type: "type".to_string(),
             label,
-            text: node.text.clone(),
-            line_start: node.line_start,
-            line_end: node.line_end,
-            byte_start: node.byte_start,
-            byte_end: node.byte_end,
+            text: node.text().to_string(),
+            line_start: node.line_start(),
+            line_end: node.line_end(),
+            byte_start: node.byte_start(),
+            byte_end: node.byte_end(),
             fields: vec!["id".to_string()],
         });
     }
@@ -4179,18 +4250,18 @@ fn parameter_annotation_capture<N: TsNodeLookup + ?Sized>(
         capture_name: String::new(),
         node_type: "type_annotation".to_string(),
         label,
-        text: node.text.clone(),
-        line_start: node.line_start,
-        line_end: node.line_end,
-        byte_start: node.byte_start,
-        byte_end: node.byte_end,
+        text: node.text().to_string(),
+        line_start: node.line_start(),
+        line_end: node.line_end(),
+        byte_start: node.byte_start(),
+        byte_end: node.byte_end(),
         fields: Vec::new(),
     })
 }
 
-fn return_type_capture<N: TsNodeLookup + ?Sized>(
+fn return_type_capture<N: TreeNodeLookup + ?Sized>(
     nodes: &N,
-    function_node: &TsNode,
+    function_node: TreeNodeRef<'_>,
     language: &str,
 ) -> Option<Capture> {
     if language == "python" {
@@ -4203,25 +4274,25 @@ fn return_type_capture<N: TsNodeLookup + ?Sized>(
             capture_name: "return_type".to_string(),
             node_type: "return_type".to_string(),
             label,
-            text: function_node.text.clone(),
-            line_start: function_node.line_start,
-            line_end: function_node.line_end,
-            byte_start: function_node.byte_start,
-            byte_end: function_node.byte_end,
+            text: function_node.text().to_string(),
+            line_start: function_node.line_start(),
+            line_end: function_node.line_end(),
+            byte_start: function_node.byte_start(),
+            byte_end: function_node.byte_end(),
             fields: Vec::new(),
         })
 }
 
-fn first_child_with_type<'a, N: TsNodeLookup + ?Sized>(
+fn first_child_with_type<'a, N: TreeNodeLookup + ?Sized>(
     nodes: &'a N,
-    node: &TsNode,
+    node: TreeNodeRef<'_>,
     node_types: &[&str],
-) -> Option<&'a TsNode> {
+) -> Option<TreeNodeRef<'a>> {
     node.children.iter().find_map(|child_id| {
         let child = nodes.get_node(*child_id)?;
         if node_types
             .iter()
-            .any(|node_type| child.node_type == *node_type)
+            .any(|node_type| child.node_type() == *node_type)
         {
             Some(child)
         } else {
@@ -4230,32 +4301,34 @@ fn first_child_with_type<'a, N: TsNodeLookup + ?Sized>(
     })
 }
 
-fn fortran_literal_capture<N: TsNodeLookup + ?Sized>(nodes: &N, node: &TsNode) -> Option<Capture> {
-    if node.node_type != "intrinsic_type" {
+fn fortran_literal_capture<N: TreeNodeLookup + ?Sized>(
+    nodes: &N,
+    node: TreeNodeRef<'_>,
+) -> Option<Capture> {
+    if node.node_type() != "intrinsic_type" {
         return None;
     }
     let parent = node
         .parent_id
         .and_then(|parent_id| nodes.get_node(parent_id))?;
-    if parent.node_type != "variable_declaration" {
+    if parent.node_type() != "variable_declaration" {
         return None;
     }
     Some(Capture {
         capture_name: String::new(),
         node_type: "integer".to_string(),
-        label: parent.text.clone(),
-        text: parent.text.clone(),
-        line_start: node.line_start,
-        line_end: node.line_end,
-        byte_start: node.byte_start,
-        byte_end: node.byte_end,
+        label: parent.text().to_string(),
+        text: parent.text().to_string(),
+        line_start: node.line_start(),
+        line_end: node.line_end(),
+        byte_start: node.byte_start(),
+        byte_end: node.byte_end(),
         fields: Vec::new(),
     })
 }
 
-fn parser_like_metadata_capture(node: &TsNode, field_name: &str) -> Option<Capture> {
-    let value = node.fields.get(field_name)?;
-    let metadata = serde_json::from_str::<serde_json::Value>(value).ok()?;
+fn parser_like_metadata_capture(node: TreeNodeRef<'_>, field_name: &str) -> Option<Capture> {
+    let metadata = node.field_value(field_name)?;
     let object = metadata.as_object()?;
     let node_type_value = object.get("type")?;
     let node_type = metadata_value_label(node_type_value)?;
@@ -4886,36 +4959,95 @@ mod tests {
 
     #[test]
     fn typed_tree_graph_rows_match_legacy_output_shape() {
-        let root = SyntaxNode {
-            node_type: "module".to_string(),
-            text: "def foo():\n    pass\n".to_string(),
-            line_start: Some(1),
-            line_end: Some(2),
-            byte_start: Some(0),
-            byte_end: Some(20),
-            capture_name: String::new(),
-            children: vec![SyntaxNode {
-                node_type: "function_definition".to_string(),
-                text: "def foo():\n    pass".to_string(),
-                line_start: Some(1),
-                line_end: Some(2),
-                byte_start: Some(0),
-                byte_end: Some(19),
-                capture_name: "definition.function".to_string(),
-                children: Vec::new(),
-                fields: BTreeMap::from([("name".to_string(), json!("foo"))]),
-            }],
-            fields: BTreeMap::new(),
-        };
-        let meta = BTreeMap::from([
-            ("path".to_string(), "pkg/sample.py".to_string()),
-            ("language".to_string(), "python".to_string()),
-            ("source_root".to_string(), "/repo".to_string()),
-            ("repository_label".to_string(), "repo".to_string()),
-        ]);
+        let root = syntax_node(
+            "module",
+            "def foo():\n    pass\n",
+            vec![syntax_node(
+                "function_definition",
+                "def foo():\n    pass",
+                Vec::new(),
+                &[("name", json!("foo"))],
+            )],
+            &[],
+        );
 
-        let typed = build_syntax_tree_graph_rows(meta.clone(), &root).unwrap();
-        let legacy = build_tree_graph_output(&tree_graph_payload(meta, &root)).unwrap();
+        assert_typed_tree_matches_legacy(meta("python", "pkg/sample.py"), &root);
+    }
+
+    #[test]
+    fn typed_tree_graph_rows_match_legacy_for_native_syntax_features() {
+        let python_root = syntax_node(
+            "module",
+            "import os\nclass Service:\n    def handle(self: Request) -> Response:\n        result = call()\n",
+            vec![
+                syntax_node(
+                    "import_statement",
+                    "import os",
+                    Vec::new(),
+                    &[("module", json!("os"))],
+                ),
+                syntax_node(
+                    "class_definition",
+                    "class Service:\n    def handle(self: Request) -> Response:\n        result = call()",
+                    vec![syntax_node(
+                        "function_definition",
+                        "def handle(self: Request) -> Response:\n        result = call()",
+                        vec![
+                            syntax_node(
+                                "parameters",
+                                "(self: Request)",
+                                vec![syntax_node(
+                                    "typed_parameter",
+                                    "self: Request",
+                                    vec![syntax_node(
+                                        "type",
+                                        "Request",
+                                        Vec::new(),
+                                        &[("id", json!("Request"))],
+                                    )],
+                                    &[("arg", json!("self"))],
+                                )],
+                                &[],
+                            ),
+                            syntax_node(
+                                "type",
+                                "Response",
+                                Vec::new(),
+                                &[("id", json!("Response"))],
+                            ),
+                            syntax_node(
+                                "assignment",
+                                "result = call()",
+                                vec![syntax_node("call", "call()", Vec::new(), &[])],
+                                &[("target", json!("result"))],
+                            ),
+                        ],
+                        &[("name", json!("handle"))],
+                    )],
+                    &[("name", json!("Service"))],
+                ),
+            ],
+            &[],
+        );
+        assert_typed_tree_matches_legacy(meta("python", "pkg/service.py"), &python_root);
+
+        let fortran_root = syntax_node(
+            "program",
+            "integer :: count",
+            vec![syntax_node(
+                "variable_declaration",
+                "integer :: count",
+                vec![syntax_node("intrinsic_type", "integer", Vec::new(), &[])],
+                &[],
+            )],
+            &[],
+        );
+        assert_typed_tree_matches_legacy(meta("fortran", "main.f90"), &fortran_root);
+    }
+
+    fn assert_typed_tree_matches_legacy(meta: BTreeMap<String, String>, root: &SyntaxNode) {
+        let typed = build_syntax_tree_graph_rows(meta.clone(), root).unwrap();
+        let legacy = build_tree_graph_output(&tree_graph_payload(meta, root)).unwrap();
         let (legacy_node_types, legacy_edge_types) = output_types(&legacy);
         let mut typed_node_types = typed
             .nodes
@@ -4934,6 +5066,37 @@ mod tests {
         assert_eq!(typed.edges.len(), legacy_edge_types.len());
         assert_eq!(typed_node_types, legacy_node_types);
         assert_eq!(typed_edge_types, legacy_edge_types);
+    }
+
+    fn meta(language: &str, path: &str) -> BTreeMap<String, String> {
+        BTreeMap::from([
+            ("path".to_string(), path.to_string()),
+            ("language".to_string(), language.to_string()),
+            ("source_root".to_string(), "/repo".to_string()),
+            ("repository_label".to_string(), "repo".to_string()),
+        ])
+    }
+
+    fn syntax_node(
+        node_type: &str,
+        text: &str,
+        children: Vec<SyntaxNode>,
+        fields: &[(&str, serde_json::Value)],
+    ) -> SyntaxNode {
+        SyntaxNode {
+            node_type: node_type.to_string(),
+            text: text.to_string(),
+            line_start: Some(1),
+            line_end: Some(text.lines().count().max(1) as i64),
+            byte_start: Some(0),
+            byte_end: Some(text.len() as i64),
+            capture_name: String::new(),
+            children,
+            fields: fields
+                .iter()
+                .map(|(key, value)| ((*key).to_string(), value.clone()))
+                .collect(),
+        }
     }
 
     fn tree_graph_payload(meta: BTreeMap<String, String>, root: &SyntaxNode) -> String {
