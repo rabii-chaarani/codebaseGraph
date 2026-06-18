@@ -19,8 +19,10 @@ pub(crate) struct StagingResult {
 
 type NodeRowsById = HashMap<String, NodeStagedRow>;
 type EdgeRowsById = HashMap<String, EdgeStagedRow>;
-type ConnectorKey = (String, String, String);
+type ConnectorTypePair = (String, String);
 type ConnectorRowKey = (String, String, String);
+type ConnectorRowsByTypePair = HashMap<ConnectorTypePair, HashMap<ConnectorRowKey, ConnectorRow>>;
+type ConnectorBucketsByTable = HashMap<String, ConnectorRowsByTypePair>;
 
 #[derive(Clone, Debug, Serialize)]
 struct NodeStagedRow {
@@ -77,7 +79,7 @@ pub(crate) struct StagingAccumulator {
     edges: HashMap<String, EdgeRowsById>,
     node_types_by_id: HashMap<String, String>,
     edge_connectors: Vec<EdgeConnector>,
-    connectors: HashMap<ConnectorKey, HashMap<ConnectorRowKey, ConnectorRow>>,
+    connectors: ConnectorBucketsByTable,
 }
 
 impl StagingAccumulator {
@@ -188,7 +190,9 @@ impl StagingAccumulator {
     ) {
         let rows = self
             .connectors
-            .entry((table, from_type, to_type))
+            .entry(table)
+            .or_default()
+            .entry((from_type, to_type))
             .or_default();
         rows.entry((from_id.clone(), to_id.clone(), role.clone()))
             .or_insert(ConnectorRow {
@@ -238,22 +242,23 @@ impl StagingAccumulator {
 
         for relation in sorted_keys(&self.edges) {
             for connector_table in [format!("FROM_{relation}"), format!("TO_{relation}")] {
-                for ((table, from_type, to_type), rows) in
-                    sorted_connector_buckets(&self.connectors)
-                {
-                    if table != &connector_table || rows.is_empty() {
+                let Some(buckets) = self.connectors.get(&connector_table) else {
+                    continue;
+                };
+                for ((from_type, to_type), rows) in sorted_connector_type_buckets(buckets) {
+                    if rows.is_empty() {
                         continue;
                     }
                     let path = self.staging_dir.join(format!(
                         "{}__{}__{}.csv",
-                        stage_file_stem(table),
+                        stage_file_stem(&connector_table),
                         stage_file_stem(from_type),
                         stage_file_stem(to_type)
                     ));
                     write_csv_rows(&path, sorted_connector_rows(rows))?;
                     copy_statements.push(format!(
                         "COPY `{}` FROM \"{}\" (header=true, from=\"{}\", to=\"{}\");",
-                        table,
+                        connector_table,
                         copy_path(&path),
                         from_type,
                         to_type
@@ -401,10 +406,10 @@ fn sorted_row_values<V>(rows: &HashMap<String, V>) -> Vec<&V> {
     entries.into_iter().map(|(_, value)| value).collect()
 }
 
-fn sorted_connector_buckets(
-    connectors: &HashMap<ConnectorKey, HashMap<ConnectorRowKey, ConnectorRow>>,
-) -> Vec<(&ConnectorKey, &HashMap<ConnectorRowKey, ConnectorRow>)> {
-    let mut buckets = connectors.iter().collect::<Vec<_>>();
+fn sorted_connector_type_buckets(
+    buckets: &ConnectorRowsByTypePair,
+) -> Vec<(&ConnectorTypePair, &HashMap<ConnectorRowKey, ConnectorRow>)> {
+    let mut buckets = buckets.iter().collect::<Vec<_>>();
     buckets.sort_by(|left, right| left.0.cmp(right.0));
     buckets
 }
@@ -574,6 +579,7 @@ mod tests {
             vec![
                 edge("edge:b", "Contains", "file:z", "sym:b"),
                 edge("edge:a", "Contains", "file:a", "sym:a"),
+                edge("edge:r", "References", "file:z", "sym:a"),
             ],
         );
 
@@ -592,8 +598,11 @@ mod tests {
                 "COPY `File`",
                 "COPY `Symbol`",
                 "COPY `Contains`",
+                "COPY `References`",
                 "COPY `FROM_Contains`",
                 "COPY `TO_Contains`",
+                "COPY `FROM_References`",
+                "COPY `TO_References`",
             ]
         );
 
@@ -603,6 +612,8 @@ mod tests {
         let edge_rows = read_json_array(&staging_dir.join("contains.json"));
         assert_eq!(edge_rows[0]["id"], "edge:a");
         assert_eq!(edge_rows[1]["id"], "edge:b");
+        let reference_rows = read_json_array(&staging_dir.join("references.json"));
+        assert_eq!(reference_rows[0]["id"], "edge:r");
 
         let from_csv =
             fs::read_to_string(staging_dir.join("from_contains__file__contains.csv")).unwrap();
@@ -624,6 +635,12 @@ mod tests {
                 "edge:b,sym:b,target",
             ]
         );
+        assert!(staging_dir
+            .join("from_references__file__references.csv")
+            .exists());
+        assert!(staging_dir
+            .join("to_references__references__symbol.csv")
+            .exists());
     }
 
     #[test]
