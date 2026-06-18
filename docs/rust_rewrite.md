@@ -101,6 +101,9 @@ CODEBASE_GRAPH_NATIVE=1 python scripts/benchmark_materialization.py \
 
 Use `CODEBASE_GRAPH_NATIVE=1 codebase-graph setup --repo-root .` only for local opt-in validation. Production defaults remain Python-owned, and native failures must either fall back to Python or surface as benchmark/test diagnostics without changing public result shapes.
 
+Local-only semantic enrichment is part of the PyO3 native materialization batch when `CODEBASE_GRAPH_NATIVE=1` and the
+semantic provider mode is `local_only`. Provider-backed modes remain Python-owned in this phase.
+
 ## CI Expectations
 
 Before enabling native defaults, hosted CI should run:
@@ -200,6 +203,8 @@ Current Rust module responsibilities after the native materializer cleanup:
 - `hash.rs`: Native-owned stable partition IDs and file content hashes.
 - `parser.rs`, `normalize.rs`, and `profiles.rs`: Tree-sitter parser integration and normalized syntax profiles.
 - `scan.rs`: Native source snapshot and manifest diff helper.
+- `semantic_enrichment.rs`: Row-first local semantic symbol resolution, call/type promotion, evidence edges, and
+  semantic phase timings for the PyO3 materializer.
 - `legacy_cli.rs`: Compatibility-only stdin protocol binary handlers.
 
 Native materialization must not depend on `legacy_cli.rs`. Test-only parity imports from `legacy_cli.rs` are acceptable until the remaining compatibility protocols are retired or gated.
@@ -213,7 +218,7 @@ Caller audit on 2026-06-17:
 | `BULK` | `src/codebase_graph/db/store.py` via `src/codebase_graph/_native/bulk_staging.py` | Keep in `legacy_cli.rs`; Python still exposes optional native bulk staging through the compatibility binary. |
 | `TSNORM` | `src/codebase_graph/ingest/tree_sitter_adapter.py` | Keep in `legacy_cli.rs`; Python still shells to the profiled syntax normalization helper. |
 | `SCAN` | `src/codebase_graph/ingest/materializer.py` | Keep in `legacy_cli.rs`; Python still shells to the scan/hash/diff helper outside the PyO3 native batch. |
-| `SEMANTIC` | `src/codebase_graph/semantic/enrichment_writer.py` | Keep in `legacy_cli.rs`; Python still shells to local semantic enrichment. |
+| `SEMANTIC` | `src/codebase_graph/semantic/enrichment_writer.py` | Keep temporarily for compatibility and parity fixtures; PyO3 native materialization no longer depends on this subprocess path for local-only semantic enrichment. |
 | `TREEGRAPH` | Rust parity tests only | Keep as test/compatibility support until native graph parity no longer needs legacy comparisons. |
 | `build_graph_output` | No callers | Deleted. |
 | `write_bulk_staging_output` | No callers | Deleted. |

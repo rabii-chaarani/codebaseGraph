@@ -1163,6 +1163,11 @@ impl NativeBuilder {
             source_id: source_id.to_string(),
             target_id: target_id.to_string(),
             kind: kind.to_string(),
+            confidence: 1.0,
+            line_start: None,
+            line_end: None,
+            byte_start: None,
+            byte_end: None,
             metadata: Value::Object(edge_metadata),
         };
         self.edges

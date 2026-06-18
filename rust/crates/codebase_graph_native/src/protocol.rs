@@ -19,12 +19,20 @@ pub struct NativeSyntaxMaterializationRequest {
     pub db_path: String,
     pub include_fts: bool,
     #[serde(default)]
+    pub semantic_enrichment: bool,
+    #[serde(default = "default_semantic_provider_mode")]
+    pub semantic_provider_mode: String,
+    #[serde(default)]
     pub schema_statements: Vec<String>,
     pub staging_dir: String,
     #[serde(default)]
     pub atomic_rebuild: bool,
     #[serde(default)]
     pub strict: bool,
+}
+
+fn default_semantic_provider_mode() -> String {
+    "local_only".to_string()
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]

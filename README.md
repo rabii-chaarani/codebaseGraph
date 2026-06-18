@@ -137,7 +137,8 @@ ruff check .
 
 The Rust materialization path is experimental and remains opt-in. Python keeps ownership of the CLI, MCP server,
 configuration, graph state paths, atomic materialization flow, and public result shapes. Rust is used only as internal
-batch accelerators behind `codebase_graph._native` wrappers.
+batch accelerators behind `codebase_graph._native` wrappers. In native mode, local-only semantic enrichment runs inside
+the PyO3 materialization batch; provider-backed semantic enrichment still falls back to the Python path.
 
 Build the native helpers from the repository root with:
 
@@ -154,8 +155,8 @@ CODEBASE_GRAPH_NATIVE=1 python scripts/benchmark_materialization.py --repo-root 
 ```
 
 If native helpers are unavailable or fail, Python wrappers fall back to the existing Python implementations unless a test
-or benchmark explicitly exercises strict native behavior. Keep Rust disabled by default until golden parity fixtures and
-representative benchmarks show a completed semantic-enabled speedup.
+or benchmark explicitly exercises strict native behavior. Keep Rust disabled by default until representative benchmarks
+show a completed semantic-enabled speedup.
 
 ## Release and security
 

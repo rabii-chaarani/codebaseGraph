@@ -577,6 +577,16 @@ class GraphMaterializer:
 
     def _materialize_native_syntax_batch(self, mode: MaterializeMode) -> MaterializationResult | None:
         """Run the in-process Rust syntax materialization kernel for supported persistent rebuilds."""
+        if (
+            os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
+            and self.semantic_enrichment
+            and self.semantic_provider_mode != "local_only"
+        ):
+            if self._native_syntax_batch_strict():
+                raise RuntimeError(
+                    "Native semantic materialization only supports local_only provider mode"
+                )
+            return None
         if not self._native_syntax_batch_enabled():
             return None
 
@@ -678,7 +688,7 @@ class GraphMaterializer:
         """Return whether this materializer can hand syntax materialization to Rust."""
         return (
             os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
-            and not self.semantic_enrichment
+            and (not self.semantic_enrichment or self.semantic_provider_mode == "local_only")
             and not self._store_injected
             and not self._parser_registry_injected
             and not self._graph_builder_injected
@@ -712,6 +722,8 @@ class GraphMaterializer:
             "excluded_parts": sorted(EXCLUDED_PARTS),
             "db_path": temp_db_path.as_posix(),
             "include_fts": self.include_fts,
+            "semantic_enrichment": self.semantic_enrichment,
+            "semantic_provider_mode": self.semantic_provider_mode,
             "schema_statements": build_ladybug_schema_statements(include_fts=self.include_fts),
             "staging_dir": staging_dir.as_posix(),
             "atomic_rebuild": True,

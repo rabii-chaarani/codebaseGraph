@@ -305,11 +305,11 @@ fn edge_fields(edge: &GraphEdgeRow) -> EdgeStagedRow {
         kind: edge.kind.clone(),
         source_id: edge.source_id.clone(),
         target_id: edge.target_id.clone(),
-        confidence: 1.0,
-        line_start: None,
-        line_end: None,
-        byte_start: None,
-        byte_end: None,
+        confidence: edge.confidence,
+        line_start: edge.line_start,
+        line_end: edge.line_end,
+        byte_start: edge.byte_start,
+        byte_end: edge.byte_end,
         metadata: edge.metadata.clone(),
     }
 }
@@ -351,6 +351,11 @@ fn merge_edge_row(rows: &mut EdgeRowsById, row_id: String, incoming: EdgeStagedR
     merge_string(&mut existing.kind, incoming.kind);
     merge_string(&mut existing.source_id, incoming.source_id);
     merge_string(&mut existing.target_id, incoming.target_id);
+    if (existing.confidence - 1.0).abs() < f64::EPSILON
+        && (incoming.confidence - 1.0).abs() >= f64::EPSILON
+    {
+        existing.confidence = incoming.confidence;
+    }
     merge_optional_i64(&mut existing.line_start, incoming.line_start);
     merge_optional_i64(&mut existing.line_end, incoming.line_end);
     merge_optional_i64(&mut existing.byte_start, incoming.byte_start);
@@ -745,6 +750,11 @@ mod tests {
             source_id: source_id.to_string(),
             target_id: target_id.to_string(),
             kind: "contains".to_string(),
+            confidence: 1.0,
+            line_start: None,
+            line_end: None,
+            byte_start: None,
+            byte_end: None,
             metadata: json!({}),
         }
     }

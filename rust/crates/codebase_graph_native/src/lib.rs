@@ -11,6 +11,7 @@ mod partition_builder;
 mod profiles;
 pub mod protocol;
 mod scan;
+mod semantic_enrichment;
 mod staging_writer;
 mod syntax_materializer;
 
@@ -44,6 +45,7 @@ pub fn materialize_syntax_batch(
     let mut node_ids = BTreeSet::new();
     let mut edge_ids = BTreeSet::new();
     let mut diagnostics = scan.diagnostics;
+    let mut partitions = Vec::new();
     let mut parse_seconds = 0.0;
     let mut graph_build_seconds = 0.0;
     let mut staging_seconds = 0.0;
@@ -64,6 +66,18 @@ pub fn materialize_syntax_batch(
         let graph_build_started = Instant::now();
         let partition = partition_builder::build_partition(request, snapshot, parse)?;
         graph_build_seconds += elapsed_seconds(graph_build_started);
+        partitions.push(partition);
+        diagnostics.append(&mut parse_diagnostics);
+    }
+    phase_timings.insert("parse_seconds".to_string(), parse_seconds);
+    phase_timings.insert("graph_build_seconds".to_string(), graph_build_seconds);
+
+    let semantic_stats = semantic_enrichment::enrich_partitions(&mut partitions, request)?;
+    for (phase, seconds) in semantic_stats.phase_timings {
+        phase_timings.insert(phase, seconds);
+    }
+
+    for partition in partitions {
         for node_id in &partition.entry.node_ids {
             node_ids.insert(node_id.clone());
         }
@@ -75,10 +89,7 @@ pub fn materialize_syntax_batch(
         staging_seconds += elapsed_seconds(staging_started);
         let entry_path = partition.entry.path.clone();
         rebuilt_entries.insert(entry_path, partition.entry);
-        diagnostics.append(&mut parse_diagnostics);
     }
-    phase_timings.insert("parse_seconds".to_string(), parse_seconds);
-    phase_timings.insert("graph_build_seconds".to_string(), graph_build_seconds);
 
     let staging_started = Instant::now();
     let staging = staging_accumulator.finish()?;

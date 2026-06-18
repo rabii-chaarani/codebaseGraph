@@ -1499,6 +1499,11 @@ impl From<&Edge> for GraphEdgeRow {
             source_id: edge.source_id.clone(),
             target_id: edge.target_id.clone(),
             kind: edge.kind.clone(),
+            confidence: 1.0,
+            line_start: None,
+            line_end: None,
+            byte_start: None,
+            byte_end: None,
             metadata: json_value_object(&edge.metadata),
         }
     }

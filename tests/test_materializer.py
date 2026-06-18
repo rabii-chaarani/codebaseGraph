@@ -452,6 +452,72 @@ def test_materializer_runs_local_semantic_enrichment_before_persistence(tmp_path
     assert graph.metadata["semantic_enrichment"]["provider_resolution"] is False
 
 
+def test_materializer_routes_local_semantic_enrichment_to_native_batch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from codebase_graph._native import materialization as native_materialization
+
+    calls: list[dict[str, object]] = []
+
+    def fake_native_batch(payload: dict[str, object], *, strict: bool = False) -> native_materialization.NativeSyntaxBatchResult:
+        calls.append({"payload": payload, "strict": strict})
+        return native_materialization.NativeSyntaxBatchResult(
+            snapshots={},
+            diff={"added": [], "modified": [], "unchanged": [], "deleted": [], "force_rebuild": False},
+            diagnostics=[],
+            rebuilt_entries={},
+            bulk_stats=native_materialization.NativeBulkStats(
+                node_rows=0,
+                edge_rows=0,
+                connector_rows=0,
+                copy_calls=0,
+            ),
+            graph_summary={"node_count": 0, "edge_count": 0},
+            phase_timings={"semantic_resolution_seconds": 0.001},
+            skipped=True,
+            database_written=False,
+        )
+
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.setattr(native_materialization, "materialize_syntax_batch", fake_native_batch)
+
+    GraphMaterializer(
+        Path("tests/fixtures/golden_parity_project"),
+        db_path=tmp_path / "native.ladybug",
+        manifest_path=tmp_path / "native-manifest.json",
+        include_fts=False,
+        semantic_enrichment=True,
+        semantic_provider_mode="local_only",
+    ).materialize(mode="full")
+
+    assert len(calls) == 1
+    payload = calls[0]["payload"]
+    assert isinstance(payload, dict)
+    assert payload["semantic_enrichment"] is True
+    assert payload["semantic_provider_mode"] == "local_only"
+
+
+def test_materializer_rejects_native_provider_semantics_in_strict_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_STRICT", "1")
+
+    materializer = GraphMaterializer(
+        Path("tests/fixtures/golden_parity_project"),
+        db_path=tmp_path / "native.ladybug",
+        manifest_path=tmp_path / "native-manifest.json",
+        include_fts=False,
+        semantic_enrichment=True,
+        semantic_provider_mode="provider_first",
+    )
+
+    with pytest.raises(RuntimeError, match="only supports local_only provider mode"):
+        materializer.materialize(mode="full")
+
+
 def test_full_materialization_handles_local_imports_inside_methods(tmp_path: Path) -> None:
     pytest.importorskip("tree_sitter")
     pytest.importorskip("tree_sitter_python")
