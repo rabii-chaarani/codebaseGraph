@@ -11,7 +11,7 @@ use std::io::{self, BufRead, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::Instant;
+use std::time::{Duration, Instant, SystemTime};
 
 const GRAPH_SCHEMA_JSON: &str = include_str!("../assets/graph_schema.json");
 const QUERY_HELPERS_JSON: &str = include_str!("../assets/query_helpers.json");
@@ -63,6 +63,8 @@ where
         }
         Some("setup") => run_setup(&args[1..], stdout),
         Some("materialize") => run_materialize(&args[1..], stdout),
+        Some("plan") => run_plan(&args[1..], stdout),
+        Some("watch") => run_watch(&args[1..], stdout),
         Some("graph-health") => run_graph_health(&args[1..], stdout),
         Some("graph-schema") => run_graph_schema(&args[1..], stdout),
         Some("graph-query-helpers") => run_graph_query_helpers(&args[1..], stdout),
@@ -172,6 +174,71 @@ fn materialize(
     Ok((request, response))
 }
 
+fn run_plan<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
+    let options = MaterializeOptions::parse_with_command(args, "plan")?;
+    if options.help {
+        writeln!(stdout, "{}", plan_help()).map_err(|error| error.to_string())?;
+        return Ok(());
+    }
+    let mut request = match options.native_request.as_ref() {
+        Some(request_path) => read_request(request_path)?,
+        None => build_request(&options)?,
+    };
+    request.atomic_rebuild = false;
+    let response =
+        crate::plan_syntax_materialization(&request).map_err(|error| error.to_string())?;
+    let paths = GraphStatePaths::derive(Path::new(&request.source_root));
+    let payload = materialization_payload(&response, &request.mode, &paths);
+    if options.json_output {
+        writeln!(
+            stdout,
+            "{}",
+            serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())?
+        )
+        .map_err(|error| error.to_string())
+    } else {
+        write!(stdout, "{}", serialize_plan_block(&payload)).map_err(|error| error.to_string())
+    }
+}
+
+fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
+    let options = WatchOptions::parse(args)?;
+    if options.help {
+        writeln!(stdout, "{}", watch_help()).map_err(|error| error.to_string())?;
+        return Ok(());
+    }
+    let mut materialize_options = options.materialize;
+    let source_root = materialize_options
+        .source_root
+        .clone()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .canonicalize()
+        .map_err(|error| format!("failed to resolve source root: {error}"))?;
+    materialize_options.source_root = Some(source_root.clone());
+    let mut previous_snapshot = watch_file_snapshot(&source_root)?;
+    let mut iterations = 0_usize;
+    loop {
+        if options.once {
+            let (_, response) = materialize(&materialize_options)?;
+            write_watch_event(stdout, "refreshed", &response)?;
+            return Ok(());
+        }
+        std::thread::sleep(Duration::from_millis(options.poll_ms));
+        let current_snapshot = watch_file_snapshot(&source_root)?;
+        if current_snapshot != previous_snapshot {
+            std::thread::sleep(Duration::from_millis(options.debounce_ms));
+            let debounced_snapshot = watch_file_snapshot(&source_root)?;
+            previous_snapshot = debounced_snapshot;
+            let (_, response) = materialize(&materialize_options)?;
+            write_watch_event(stdout, "refreshed", &response)?;
+        }
+        iterations += 1;
+        if options.max_iterations.is_some_and(|max| iterations >= max) {
+            return Ok(());
+        }
+    }
+}
+
 fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
     let options = SetupOptions::parse(args)?;
     if options.help {
@@ -201,6 +268,7 @@ fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
         include_fts: options.include_fts,
         semantic_enrichment: options.semantic_enrichment,
         semantic_provider_mode: options.semantic_provider_mode.clone(),
+        use_git: true,
         ..MaterializeOptions::default()
     };
     let config_payload = setup_config_payload(&paths, &source_root);
@@ -1408,6 +1476,13 @@ fn build_request(
     } else {
         None
     };
+    let config_rules = read_materialization_config_rules(&paths.config_path)?;
+    let mut include_patterns = config_rules.include_patterns;
+    include_patterns.extend(options.include_patterns.clone());
+    let mut exclude_patterns = config_rules.exclude_patterns;
+    exclude_patterns.extend(options.exclude_patterns.clone());
+    let ignore_patterns = read_codebase_graph_ignore(&source_root)?;
+    let candidate_paths = git_candidate_paths(&source_root, options)?;
     let staging_dir = paths.state_dir.join("native-staging");
     Ok(NativeSyntaxMaterializationRequest {
         source_root: source_root.to_string_lossy().to_string(),
@@ -1420,6 +1495,10 @@ fn build_request(
         previous_manifest,
         profiles: Vec::new(),
         excluded_parts: default_excluded_parts(),
+        include_patterns,
+        exclude_patterns,
+        ignore_patterns,
+        candidate_paths,
         db_path: db_path.to_string_lossy().to_string(),
         include_fts: options.include_fts,
         semantic_enrichment: options.semantic_enrichment,
@@ -1428,7 +1507,116 @@ fn build_request(
         staging_dir: staging_dir.to_string_lossy().to_string(),
         atomic_rebuild: true,
         strict: true,
+        parallel: options.parallel,
+        progress: options.progress,
     })
+}
+
+#[derive(Default)]
+struct ConfigScanRules {
+    include_patterns: Vec<String>,
+    exclude_patterns: Vec<String>,
+}
+
+fn read_materialization_config_rules(path: &Path) -> Result<ConfigScanRules, String> {
+    if !path.exists() {
+        return Ok(ConfigScanRules::default());
+    }
+    let text = fs::read_to_string(path)
+        .map_err(|error| format!("failed to read config {}: {error}", path.display()))?;
+    let value: serde_json::Value = serde_json::from_str(&text)
+        .map_err(|error| format!("failed to parse config {}: {error}", path.display()))?;
+    let materialization = value
+        .get("materialization")
+        .and_then(serde_json::Value::as_object);
+    Ok(ConfigScanRules {
+        include_patterns: materialization
+            .and_then(|payload| payload.get("include"))
+            .map(json_string_array)
+            .unwrap_or_default(),
+        exclude_patterns: materialization
+            .and_then(|payload| payload.get("exclude"))
+            .map(json_string_array)
+            .unwrap_or_default(),
+    })
+}
+
+fn json_string_array(value: &serde_json::Value) -> Vec<String> {
+    value
+        .as_array()
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(serde_json::Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn read_codebase_graph_ignore(source_root: &Path) -> Result<Vec<String>, String> {
+    let path = source_root.join(".codebaseGraphignore");
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let text = fs::read_to_string(&path)
+        .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
+    Ok(text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(str::to_string)
+        .collect())
+}
+
+fn git_candidate_paths(
+    source_root: &Path,
+    options: &MaterializeOptions,
+) -> Result<Vec<String>, String> {
+    if !options.use_git {
+        return Ok(Vec::new());
+    }
+    let mut paths = if options.git_diff && options.plan_only {
+        let base = options.git_base.as_deref().unwrap_or("HEAD");
+        git_paths(
+            source_root,
+            &["diff", "--name-only", "--diff-filter=ACMRTD", base, "--"],
+        )
+        .unwrap_or_default()
+    } else {
+        git_paths(
+            source_root,
+            &["ls-files", "--cached", "--others", "--exclude-standard"],
+        )
+        .unwrap_or_default()
+    };
+    if options.git_diff && options.plan_only {
+        if let Ok(untracked) =
+            git_paths(source_root, &["ls-files", "--others", "--exclude-standard"])
+        {
+            paths.extend(untracked);
+        }
+    }
+    paths.sort();
+    paths.dedup();
+    Ok(paths)
+}
+
+fn git_paths(source_root: &Path, args: &[&str]) -> Result<Vec<String>, String> {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(source_root)
+        .output()
+        .map_err(|error| format!("failed to run git {}: {error}", args.join(" ")))?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .map(|line| line.replace('\\', "/"))
+        .collect())
 }
 
 fn read_manifest(path: &Path) -> Result<NativeManifest, String> {
@@ -1544,16 +1732,31 @@ struct MaterializeOptions {
     include_fts: bool,
     semantic_enrichment: bool,
     semantic_provider_mode: String,
+    use_git: bool,
+    git_diff: bool,
+    git_base: Option<String>,
+    include_patterns: Vec<String>,
+    exclude_patterns: Vec<String>,
+    parallel: bool,
+    progress: bool,
+    plan_only: bool,
     help: bool,
+    json_output: bool,
 }
 
 impl MaterializeOptions {
     fn parse(args: &[String]) -> Result<Self, String> {
+        Self::parse_with_command(args, "materialize")
+    }
+
+    fn parse_with_command(args: &[String], command_name: &str) -> Result<Self, String> {
         let mut options = Self {
             mode: "changed".to_string(),
             include_fts: true,
             semantic_enrichment: true,
             semantic_provider_mode: "local_only".to_string(),
+            use_git: true,
+            plan_only: command_name == "plan",
             ..Self::default()
         };
         let mut index = 0;
@@ -1570,10 +1773,10 @@ impl MaterializeOptions {
                     options.native_request = Some(PathBuf::from(value));
                     index += 2;
                 }
-                "--source-root" => {
+                "--source-root" | "--repo-root" => {
                     let value = args
                         .get(index + 1)
-                        .ok_or_else(|| "--source-root requires a path".to_string())?;
+                        .ok_or_else(|| format!("{} requires a path", args[index]))?;
                     options.source_root = Some(PathBuf::from(value));
                     index += 2;
                 }
@@ -1619,18 +1822,142 @@ impl MaterializeOptions {
                     options.semantic_provider_mode = value.clone();
                     index += 2;
                 }
+                "--no-git" => {
+                    options.use_git = false;
+                    index += 1;
+                }
+                "--git-diff" => {
+                    options.git_diff = true;
+                    index += 1;
+                }
+                "--git-base" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--git-base requires a revision".to_string())?;
+                    options.git_base = Some(value.clone());
+                    options.git_diff = true;
+                    index += 2;
+                }
+                "--include" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--include requires a glob pattern".to_string())?;
+                    options.include_patterns.push(value.clone());
+                    index += 2;
+                }
+                "--exclude" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--exclude requires a glob pattern".to_string())?;
+                    options.exclude_patterns.push(value.clone());
+                    index += 2;
+                }
+                "--single-thread" => {
+                    options.parallel = false;
+                    index += 1;
+                }
+                "--parallel" => {
+                    options.parallel = true;
+                    index += 1;
+                }
+                "--progress" => {
+                    options.progress = true;
+                    index += 1;
+                }
                 "--json" => {
+                    options.json_output = true;
                     index += 1;
                 }
                 other => {
                     return Err(format!(
-                        "unknown materialize option: {other}\n\n{}",
-                        materialize_help()
+                        "unknown {command_name} option: {other}\n\n{}",
+                        materialize_like_help(command_name)
                     ));
                 }
             }
         }
         Ok(options)
+    }
+}
+
+fn materialize_like_help(command_name: &str) -> &'static str {
+    match command_name {
+        "plan" => plan_help(),
+        "watch" => watch_help(),
+        _ => materialize_help(),
+    }
+}
+
+#[derive(Debug)]
+struct WatchOptions {
+    materialize: MaterializeOptions,
+    poll_ms: u64,
+    debounce_ms: u64,
+    max_iterations: Option<usize>,
+    once: bool,
+    help: bool,
+}
+
+impl WatchOptions {
+    fn parse(args: &[String]) -> Result<Self, String> {
+        let mut materialize_args = Vec::new();
+        let mut poll_ms = 500_u64;
+        let mut debounce_ms = 250_u64;
+        let mut max_iterations = None;
+        let mut once = false;
+        let mut help = false;
+        let mut index = 0;
+        while index < args.len() {
+            match args[index].as_str() {
+                "-h" | "--help" => {
+                    help = true;
+                    index += 1;
+                }
+                "--poll-ms" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--poll-ms requires an integer".to_string())?;
+                    poll_ms = value
+                        .parse()
+                        .map_err(|error| format!("--poll-ms must be an integer: {error}"))?;
+                    index += 2;
+                }
+                "--debounce-ms" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--debounce-ms requires an integer".to_string())?;
+                    debounce_ms = value
+                        .parse()
+                        .map_err(|error| format!("--debounce-ms must be an integer: {error}"))?;
+                    index += 2;
+                }
+                "--max-iterations" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--max-iterations requires an integer".to_string())?;
+                    max_iterations = Some(value.parse().map_err(|error| {
+                        format!("--max-iterations must be an integer: {error}")
+                    })?);
+                    index += 2;
+                }
+                "--once" => {
+                    once = true;
+                    index += 1;
+                }
+                _ => {
+                    materialize_args.push(args[index].clone());
+                    index += 1;
+                }
+            }
+        }
+        Ok(Self {
+            materialize: MaterializeOptions::parse_with_command(&materialize_args, "watch")?,
+            poll_ms,
+            debounce_ms,
+            max_iterations,
+            once,
+            help,
+        })
     }
 }
 
@@ -1832,22 +2159,34 @@ fn materialization_payload(
             }
         })
         .collect::<Vec<_>>();
+    let ignored_paths = response
+        .diagnostics
+        .iter()
+        .filter_map(|diagnostic| diagnostic.strip_prefix("Ignored file: "))
+        .map(str::to_string)
+        .collect::<Vec<_>>();
     json!({
         "mode": mode,
         "scanned": response.snapshots.len(),
         "rebuilt": rebuilt_paths.len(),
         "skipped": skipped_paths.len(),
+        "ignored": ignored_paths.len(),
         "deleted": response.diff.deleted.len(),
         "diagnostics": response.diagnostics,
         "manifest_path": paths.manifest_path,
         "rebuilt_paths": rebuilt_paths,
-        "skipped_paths": skipped_paths,
-        "deleted_paths": response.diff.deleted,
+        "skipped_paths": skipped_paths.clone(),
+        "ignored_paths": ignored_paths,
+        "deleted_paths": response.diff.deleted.clone(),
+        "would_rebuild": response.diff.rebuild_paths(),
+        "would_delete": response.diff.deleted,
+        "would_skip": skipped_paths,
         "graph_summary": response.graph_summary,
         "node_rows": response.node_rows,
         "edge_rows": response.edge_rows,
         "connector_rows": response.connector_rows,
         "database_written": response.database_written,
+        "progress_events": response.progress_events,
         "phase_timings": response.phase_timings,
     })
 }
@@ -1875,6 +2214,110 @@ fn dry_run_materialization_payload(
         "deleted_paths": [],
         "graph_summary": {},
     })
+}
+
+fn serialize_plan_block(payload: &serde_json::Value) -> String {
+    let mut lines = vec![format!(
+        "plan mode={} scanned={} rebuild={} delete={} skip={} ignored={}",
+        block_value(value_str(payload, "mode")),
+        payload
+            .get("scanned")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0),
+        payload
+            .get("rebuilt")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0),
+        payload
+            .get("deleted")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0),
+        payload
+            .get("skipped")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0),
+        payload
+            .get("ignored")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or(0),
+    )];
+    append_plan_path_lines(&mut lines, "rebuild", value_array(payload, "would_rebuild"));
+    append_plan_path_lines(&mut lines, "delete", value_array(payload, "would_delete"));
+    append_plan_path_lines(&mut lines, "skip", value_array(payload, "would_skip"));
+    append_plan_path_lines(&mut lines, "ignore", value_array(payload, "ignored_paths"));
+    format!("{}\n", lines.join("\n"))
+}
+
+fn append_plan_path_lines(lines: &mut Vec<String>, label: &str, paths: &[serde_json::Value]) {
+    for path in paths {
+        if let Some(path) = path.as_str() {
+            lines.push(format!("{label} {}", block_value(path)));
+        }
+    }
+}
+
+fn watch_file_snapshot(source_root: &Path) -> Result<BTreeMap<String, u128>, String> {
+    let mut snapshot = BTreeMap::new();
+    watch_file_snapshot_inner(source_root, source_root, &mut snapshot)?;
+    Ok(snapshot)
+}
+
+fn watch_file_snapshot_inner(
+    root: &Path,
+    directory: &Path,
+    snapshot: &mut BTreeMap<String, u128>,
+) -> Result<(), String> {
+    let entries = fs::read_dir(directory)
+        .map_err(|error| format!("failed to read directory {}: {error}", directory.display()))?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("");
+        if default_excluded_parts().iter().any(|part| part == name) {
+            continue;
+        }
+        if path.is_dir() {
+            watch_file_snapshot_inner(root, &path, snapshot)?;
+        } else if path.is_file() {
+            let relative = path
+                .strip_prefix(root)
+                .unwrap_or(&path)
+                .to_string_lossy()
+                .replace('\\', "/");
+            let modified = fs::metadata(&path)
+                .and_then(|metadata| metadata.modified())
+                .ok()
+                .and_then(system_time_nanos)
+                .unwrap_or(0);
+            snapshot.insert(relative, modified);
+        }
+    }
+    Ok(())
+}
+
+fn system_time_nanos(time: SystemTime) -> Option<u128> {
+    time.duration_since(SystemTime::UNIX_EPOCH)
+        .ok()
+        .map(|duration| duration.as_nanos())
+}
+
+fn write_watch_event<W: Write>(
+    stdout: &mut W,
+    event: &str,
+    response: &NativeSyntaxMaterializationResponse,
+) -> Result<(), String> {
+    writeln!(
+        stdout,
+        "watch event={} rebuilt={} deleted={} skipped={} database_written={}",
+        event,
+        response.diff.rebuild_paths().len(),
+        response.diff.deleted.len(),
+        response.skipped,
+        response.database_written
+    )
+    .map_err(|error| error.to_string())
 }
 
 fn scan_source_snapshots(root: &Path) -> Vec<(String, Option<&'static str>)> {
@@ -3807,6 +4250,10 @@ fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) -> serde_json
         "manifest_path": paths.manifest_path,
         "ontology_version": "code_ontology_v1",
         "package_version": env!("CARGO_PKG_VERSION"),
+        "materialization": {
+            "include": [],
+            "exclude": []
+        },
         "mcp": {
             "server_name": "codebase_graph",
             "command": [
@@ -5173,7 +5620,7 @@ fn block_value(value: &str) -> String {
 }
 
 fn top_level_help() -> &'static str {
-    "codebase-graph native CLI\n\nUSAGE:\n  codebase-graph <command> [options]\n\nCOMMANDS:\n  setup                       Materialize graph state and write .codebaseGraph/config.json\n  materialize                 Materialize a graph through the Rust native engine\n  graph-health                Check whether the native graph database is readable\n  graph-schema                Return ontology schema, indexes, profiles, and helpers\n  graph-query-helpers         Return named read-only graph query helpers\n  graph-architecture-queries  Return the architecture-discovery query catalog\n  graph-search, search        Search the code graph with compact context\n  graph-context, context      Return compact graph context\n  graph-query                 Execute a restricted read-only graph query\n  mcp                         Serve codebaseGraph MCP over stdio or HTTP\n\nRun `codebase-graph <command> --help` for command options."
+    "codebase-graph native CLI\n\nUSAGE:\n  codebase-graph <command> [options]\n\nCOMMANDS:\n  setup                       Materialize graph state and write .codebaseGraph/config.json\n  materialize                 Materialize a graph through the Rust native engine\n  plan                        Preview files that would rebuild, delete, skip, or ignore\n  watch                       Poll for file changes and refresh after a debounce window\n  graph-health                Check whether the native graph database is readable\n  graph-schema                Return ontology schema, indexes, profiles, and helpers\n  graph-query-helpers         Return named read-only graph query helpers\n  graph-architecture-queries  Return the architecture-discovery query catalog\n  graph-search, search        Search the code graph with compact context\n  graph-context, context      Return compact graph context\n  graph-query                 Execute a restricted read-only graph query\n  mcp                         Serve codebaseGraph MCP over stdio or HTTP\n\nRun `codebase-graph <command> --help` for command options."
 }
 
 fn mcp_help() -> &'static str {
@@ -5185,7 +5632,15 @@ fn mcp_install_help() -> &'static str {
 }
 
 fn materialize_help() -> &'static str {
-    "codebase-graph materialize\n\nUSAGE:\n  codebase-graph materialize [--source-root <path>] [--db <path>] [--manifest <path>] [--mode full|changed] [--json]\n  codebase-graph materialize --native-request <path> [--manifest <path>] [--json]\n\nOPTIONS:\n  --source-root <path>      Repository or source root to scan\n  --db <path>               Ladybug database path; defaults under .codebaseGraph\n  --manifest <path>         Manifest path; defaults under .codebaseGraph\n  --mode <mode>             full or changed; defaults to changed\n  --no-fts                  Skip FTS extension loading and index creation\n  --no-semantic-enrichment  Skip semantic enrichment\n  --semantic-provider-mode  local_only only; provider-backed modes are not supported by Rust-only production\n  --native-request <path>   JSON NativeSyntaxMaterializationRequest payload\n  --json                    Emit JSON output"
+    "codebase-graph materialize\n\nUSAGE:\n  codebase-graph materialize [--source-root <path>|--repo-root <path>] [--db <path>] [--manifest <path>] [--mode full|changed] [--json]\n  codebase-graph materialize --native-request <path> [--manifest <path>] [--json]\n\nOPTIONS:\n  --source-root <path>      Repository or source root to scan\n  --repo-root <path>        Alias for --source-root\n  --db <path>               Ladybug database path; defaults under .codebaseGraph\n  --manifest <path>         Manifest path; defaults under .codebaseGraph\n  --mode <mode>             full or changed; defaults to changed\n  --no-git                  Disable Git file discovery and scan the filesystem\n  --git-diff                Materialize files from git diff plus untracked files\n  --git-base <rev>          Revision used by --git-diff; defaults to HEAD\n  --include <glob>          Include only paths matching the glob; repeatable\n  --exclude <glob>          Exclude paths matching the glob; repeatable\n  --parallel                Parse independent files concurrently\n  --single-thread           Force single-thread parsing\n  --progress                Include progress events in JSON output\n  --no-fts                  Skip FTS extension loading and index creation\n  --no-semantic-enrichment  Skip semantic enrichment\n  --semantic-provider-mode  local_only only; provider-backed modes are not supported by Rust-only production\n  --native-request <path>   JSON NativeSyntaxMaterializationRequest payload\n  --json                    Emit JSON output"
+}
+
+fn plan_help() -> &'static str {
+    "codebase-graph plan\n\nUSAGE:\n  codebase-graph plan [--source-root <path>|--repo-root <path>] [--manifest <path>] [--mode full|changed] [--json]\n\nOPTIONS:\n  --source-root <path>      Repository or source root to scan\n  --repo-root <path>        Alias for --source-root\n  --manifest <path>         Manifest path; defaults under .codebaseGraph\n  --mode <mode>             full or changed; defaults to changed\n  --no-git                  Disable Git file discovery and scan the filesystem\n  --git-diff                Plan files from git diff plus untracked files\n  --git-base <rev>          Revision used by --git-diff; defaults to HEAD\n  --include <glob>          Include only paths matching the glob; repeatable\n  --exclude <glob>          Exclude paths matching the glob; repeatable\n  --native-request <path>   JSON NativeSyntaxMaterializationRequest payload\n  --json                    Emit JSON output"
+}
+
+fn watch_help() -> &'static str {
+    "codebase-graph watch\n\nUSAGE:\n  codebase-graph watch [--source-root <path>|--repo-root <path>] [--mode full|changed] [--poll-ms <n>] [--debounce-ms <n>]\n\nOPTIONS:\n  --source-root <path>      Repository or source root to watch\n  --repo-root <path>        Alias for --source-root\n  --mode <mode>             full or changed; defaults to changed\n  --poll-ms <n>             Poll interval in milliseconds; defaults to 500\n  --debounce-ms <n>         Debounce interval in milliseconds; defaults to 250\n  --max-iterations <n>      Stop after n poll iterations, useful for tests\n  --once                    Run one refresh immediately and exit\n  --no-git                  Disable Git file discovery and scan the filesystem\n  --git-diff                Refresh files from git diff plus untracked files\n  --git-base <rev>          Revision used by --git-diff; defaults to HEAD\n  --include <glob>          Include only paths matching the glob; repeatable\n  --exclude <glob>          Exclude paths matching the glob; repeatable\n  --parallel                Parse independent files concurrently\n  --progress                Include progress events in JSON output"
 }
 
 fn setup_help() -> &'static str {
@@ -5985,6 +6440,173 @@ mod tests {
     }
 
     #[test]
+    fn plan_lists_rebuild_delete_skip_and_ignore_paths() {
+        let root = unique_temp_dir("codebase-graph-rust-plan");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+        fs::write(root.join("old.py"), "def old():\n    return 1\n").unwrap();
+        fs::write(root.join("notes.txt"), "not source\n").unwrap();
+        fs::write(root.join("ignored.py"), "def ignored():\n    return 1\n").unwrap();
+        fs::write(root.join(".codebaseGraphignore"), "ignored.py\n").unwrap();
+        setup_fixture_repo(&root);
+
+        fs::write(root.join("service.py"), "def helper():\n    return 2\n").unwrap();
+        fs::write(root.join("new.py"), "def new():\n    return 3\n").unwrap();
+        fs::remove_file(root.join("old.py")).unwrap();
+
+        let mut output = Vec::new();
+        run(
+            [
+                "plan",
+                "--source-root",
+                root.to_str().unwrap(),
+                "--no-git",
+                "--json",
+            ],
+            &mut output,
+        )
+        .unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+        assert_json_array_contains(&value["would_rebuild"], "new.py");
+        assert_json_array_contains(&value["would_rebuild"], "service.py");
+        assert_json_array_contains(&value["would_delete"], "old.py");
+        assert_json_array_contains(&value["would_skip"], "notes.txt");
+        assert_json_array_contains(&value["ignored_paths"], "ignored.py");
+        assert_eq!(value["database_written"], false);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn materialize_honors_config_excludes() {
+        let root = unique_temp_dir("codebase-graph-rust-config-excludes");
+        fs::create_dir_all(root.join(".codebaseGraph")).unwrap();
+        fs::write(root.join("keep.py"), "def keep():\n    return 1\n").unwrap();
+        fs::write(root.join("skip.py"), "def skip():\n    return 1\n").unwrap();
+        fs::write(
+            root.join(".codebaseGraph").join("config.json"),
+            r#"{"materialization":{"exclude":["skip.py"]}}"#,
+        )
+        .unwrap();
+
+        let mut output = Vec::new();
+        run(
+            [
+                "plan",
+                "--source-root",
+                root.to_str().unwrap(),
+                "--no-git",
+                "--json",
+            ],
+            &mut output,
+        )
+        .unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+        assert_json_array_contains(&value["would_rebuild"], "keep.py");
+        assert_json_array_contains(&value["ignored_paths"], "skip.py");
+        assert!(!json_array_contains(&value["would_rebuild"], "skip.py"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn git_diff_plan_scopes_to_changed_paths() {
+        if Command::new("git").arg("--version").output().is_err() {
+            return;
+        }
+        let root = unique_temp_dir("codebase-graph-rust-git-diff");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("a.py"), "def a():\n    return 1\n").unwrap();
+        fs::write(root.join("b.py"), "def b():\n    return 1\n").unwrap();
+        Command::new("git")
+            .args(["init"])
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["add", "."])
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args([
+                "-c",
+                "user.email=test@example.com",
+                "-c",
+                "user.name=Test",
+                "commit",
+                "-m",
+                "initial",
+            ])
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        setup_fixture_repo(&root);
+        run(
+            [
+                "materialize",
+                "--source-root",
+                root.to_str().unwrap(),
+                "--mode",
+                "full",
+                "--no-fts",
+                "--no-semantic-enrichment",
+                "--json",
+            ],
+            &mut Vec::new(),
+        )
+        .unwrap();
+
+        fs::write(root.join("a.py"), "def a():\n    return 2\n").unwrap();
+        let mut output = Vec::new();
+        run(
+            [
+                "plan",
+                "--source-root",
+                root.to_str().unwrap(),
+                "--git-diff",
+                "--json",
+            ],
+            &mut output,
+        )
+        .unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+        assert_json_array_contains(&value["would_rebuild"], "a.py");
+        assert!(!json_array_contains(&value["would_rebuild"], "b.py"));
+        assert!(!json_array_contains(&value["would_delete"], "b.py"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn parallel_materialize_reports_progress_events() {
+        let root = unique_temp_dir("codebase-graph-rust-progress");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("a.py"), "def a():\n    return 1\n").unwrap();
+        fs::write(root.join("b.py"), "def b():\n    return 1\n").unwrap();
+
+        let mut output = Vec::new();
+        run(
+            [
+                "materialize",
+                "--source-root",
+                root.to_str().unwrap(),
+                "--no-git",
+                "--parallel",
+                "--progress",
+                "--no-fts",
+                "--no-semantic-enrichment",
+                "--json",
+            ],
+            &mut output,
+        )
+        .unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+        assert_eq!(value["database_written"], true);
+        assert!(value["progress_events"].as_array().unwrap().len() >= 2);
+        assert_eq!(value["diff"]["added"][0], "a.py");
+        assert_eq!(value["diff"]["added"][1], "b.py");
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn setup_materializes_graph_and_writes_config() {
         let root = unique_temp_dir("codebase-graph-rust-setup");
         fs::create_dir_all(&root).unwrap();
@@ -6698,6 +7320,21 @@ mod tests {
             body: serde_json::to_vec(&payload).unwrap(),
             body_too_large: false,
         }
+    }
+
+    fn assert_json_array_contains(value: &serde_json::Value, expected: &str) {
+        assert!(
+            json_array_contains(value, expected),
+            "expected {value:?} to contain {expected}"
+        );
+    }
+
+    fn json_array_contains(value: &serde_json::Value, expected: &str) -> bool {
+        value
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item.as_str() == Some(expected))
     }
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {

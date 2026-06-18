@@ -84,6 +84,19 @@ codebase-graph graph-query "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" --
 Retrieval commands emit block format by default for agent-facing output. Use `--json --pretty` or `--format json` for
 structured inspection.
 
+Freshness commands use the same manifest hashing as setup/materialize, with Git as an optional file-selection layer:
+
+```bash
+codebase-graph plan --repo-root . --json
+codebase-graph plan --repo-root . --git-diff --git-base main --json
+codebase-graph watch --repo-root . --debounce-ms 250
+codebase-graph materialize --repo-root . --parallel --progress --json
+```
+
+Use `.codebaseGraphignore`, `--include`, `--exclude`, or `.codebaseGraph/config.json` materialization include/exclude
+arrays to tune scanned paths. Git discovery respects `.gitignore` by default and falls back to filesystem scanning when
+Git is unavailable.
+
 ## Development
 
 ```bash

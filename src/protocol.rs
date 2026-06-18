@@ -16,6 +16,14 @@ pub struct NativeSyntaxMaterializationRequest {
     pub previous_manifest: Option<NativeManifest>,
     pub profiles: Vec<LanguageProfile>,
     pub excluded_parts: Vec<String>,
+    #[serde(default)]
+    pub include_patterns: Vec<String>,
+    #[serde(default)]
+    pub exclude_patterns: Vec<String>,
+    #[serde(default)]
+    pub ignore_patterns: Vec<String>,
+    #[serde(default)]
+    pub candidate_paths: Vec<String>,
     pub db_path: String,
     pub include_fts: bool,
     #[serde(default)]
@@ -29,6 +37,10 @@ pub struct NativeSyntaxMaterializationRequest {
     pub atomic_rebuild: bool,
     #[serde(default)]
     pub strict: bool,
+    #[serde(default)]
+    pub parallel: bool,
+    #[serde(default)]
+    pub progress: bool,
 }
 
 fn default_semantic_provider_mode() -> String {
@@ -143,6 +155,7 @@ pub struct NativeSyntaxMaterializationResponse {
     pub connector_rows: usize,
     pub copy_calls: usize,
     pub graph_summary: GraphSummary,
+    pub progress_events: Vec<ProgressEvent>,
     pub phase_timings: BTreeMap<String, f64>,
     pub skipped: bool,
     pub database_written: bool,
@@ -154,11 +167,20 @@ pub struct GraphSummary {
     pub edge_count: usize,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ProgressEvent {
+    pub phase: String,
+    pub current: usize,
+    pub total: usize,
+    pub path: Option<String>,
+}
+
 impl NativeSyntaxMaterializationResponse {
     pub fn skipped(
         snapshots: BTreeMap<String, SourceSnapshot>,
         diff: ManifestDiff,
         diagnostics: Vec<String>,
+        progress_events: Vec<ProgressEvent>,
         phase_timings: BTreeMap<String, f64>,
     ) -> Self {
         Self {
@@ -172,6 +194,7 @@ impl NativeSyntaxMaterializationResponse {
             connector_rows: 0,
             copy_calls: 0,
             graph_summary: GraphSummary::default(),
+            progress_events,
             phase_timings,
             skipped: true,
             database_written: false,
@@ -198,6 +221,7 @@ impl NativeSyntaxMaterializationResponse {
             connector_rows: staging.connector_rows,
             copy_calls: staging.copy_calls,
             graph_summary,
+            progress_events: Vec::new(),
             phase_timings,
             skipped: false,
             database_written: false,

@@ -1478,6 +1478,10 @@ mod tests {
             previous_manifest: None,
             profiles: Vec::new(),
             excluded_parts: Vec::new(),
+            include_patterns: Vec::new(),
+            exclude_patterns: Vec::new(),
+            ignore_patterns: Vec::new(),
+            candidate_paths: Vec::new(),
             db_path: "graph.ladybug".to_string(),
             include_fts: false,
             semantic_enrichment: true,
@@ -1486,6 +1490,8 @@ mod tests {
             staging_dir: "staging".to_string(),
             atomic_rebuild: true,
             strict: true,
+            parallel: false,
+            progress: false,
         };
 
         let stats = enrich_partitions(&mut partitions, &request).unwrap();
