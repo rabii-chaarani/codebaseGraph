@@ -5,6 +5,7 @@
 /.codebaseGraph/
 /.scryer/
 /.codex/
+/.venv/
 /.mcp.json
 
 # Editor and OS noise
