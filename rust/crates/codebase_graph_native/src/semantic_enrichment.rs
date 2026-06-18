@@ -136,6 +136,9 @@ struct SemanticState {
     node_order: Vec<String>,
     edges: HashMap<String, SemEdge>,
     edge_order: Vec<String>,
+    derived_from_targets_by_source: HashMap<String, Vec<String>>,
+    file_node_ids_by_path: HashMap<String, Vec<String>>,
+    type_annotation_owner_ids_by_type: HashMap<String, Vec<String>>,
 }
 
 struct SemanticOutput {
@@ -193,6 +196,9 @@ impl SemanticState {
             node_order: Vec::new(),
             edges: HashMap::new(),
             edge_order: Vec::new(),
+            derived_from_targets_by_source: HashMap::new(),
+            file_node_ids_by_path: HashMap::new(),
+            type_annotation_owner_ids_by_type: HashMap::new(),
         };
         for (graph_index, partition) in partitions.iter().enumerate() {
             for node in &partition.nodes {
@@ -206,7 +212,64 @@ impl SemanticState {
                 state.edges.insert(sem_edge.id.clone(), sem_edge);
             }
         }
+        state.rebuild_lookup_indexes();
         state
+    }
+
+    fn rebuild_lookup_indexes(&mut self) {
+        self.derived_from_targets_by_source.clear();
+        self.file_node_ids_by_path.clear();
+        self.type_annotation_owner_ids_by_type.clear();
+
+        for node_id in &self.node_order {
+            let Some(node) = self.nodes.get(node_id) else {
+                continue;
+            };
+            if node.table == "File" && !node.path.is_empty() {
+                self.file_node_ids_by_path
+                    .entry(node.path.clone())
+                    .or_default()
+                    .push(node.id.clone());
+            }
+        }
+
+        let edges: Vec<SemEdge> = self
+            .edge_order
+            .iter()
+            .filter_map(|edge_id| self.edges.get(edge_id).cloned())
+            .collect();
+        for edge in edges {
+            self.index_edge(&edge);
+        }
+    }
+
+    fn index_edge(&mut self, edge: &SemEdge) {
+        if edge.edge_type == "DerivedFrom" {
+            self.derived_from_targets_by_source
+                .entry(edge.source_id.clone())
+                .or_default()
+                .push(edge.target_id.clone());
+            return;
+        }
+
+        if edge.edge_type != "HasTypeAnnotation" {
+            return;
+        }
+        let Some(owner) = self.nodes.get(&edge.source_id) else {
+            return;
+        };
+        if self.is_type_annotation_owner(owner) {
+            self.type_annotation_owner_ids_by_type
+                .entry(edge.target_id.clone())
+                .or_default()
+                .push(owner.id.clone());
+        }
+    }
+
+    fn is_type_annotation_owner(&self, node: &SemNode) -> bool {
+        self.relation_specs
+            .get("HasTypeAnnotation")
+            .is_some_and(|spec| spec.source_types.contains(&node.table))
     }
 }
 
@@ -590,29 +653,21 @@ fn enrich_semantic_call_and_type_relations(
 }
 
 fn semantic_type_annotation_owner_id(state: &SemanticState, type_node_id: &str) -> Option<String> {
-    let typed_owner_types = state
-        .relation_specs
-        .get("HasTypeAnnotation")
-        .map(|spec| spec.source_types.clone())
-        .unwrap_or_default();
-    for edge_id in &state.edge_order {
-        let Some(edge) = state.edges.get(edge_id) else {
-            continue;
-        };
-        if edge.edge_type != "HasTypeAnnotation" || edge.target_id != type_node_id {
-            continue;
-        }
-        let Some(owner) = state.nodes.get(&edge.source_id) else {
-            continue;
-        };
-        if typed_owner_types.contains(&owner.table) {
-            return Some(owner.id.clone());
+    if let Some(owner_ids) = state.type_annotation_owner_ids_by_type.get(type_node_id) {
+        for owner_id in owner_ids {
+            let Some(owner) = state.nodes.get(owner_id) else {
+                continue;
+            };
+            if state.is_type_annotation_owner(owner) {
+                return Some(owner.id.clone());
+            }
         }
     }
+
     let type_node = state.nodes.get(type_node_id)?;
     if !type_node.scope_id.is_empty() {
         if let Some(owner) = state.nodes.get(&type_node.scope_id) {
-            if typed_owner_types.contains(&owner.table) {
+            if state.is_type_annotation_owner(owner) {
                 return Some(owner.id.clone());
             }
         }
@@ -622,7 +677,7 @@ fn semantic_type_annotation_owner_id(state: &SemanticState, type_node_id: &str) 
             continue;
         }
         if let Some(owner) = state.nodes.get(owner_id) {
-            if typed_owner_types.contains(&owner.table) {
+            if state.is_type_annotation_owner(owner) {
                 return Some(owner.id.clone());
             }
         }
@@ -702,28 +757,20 @@ fn semantic_evidence_node_ids(
             node_ids.push(explicit_id.clone());
         }
     }
-    for edge_id in &state.edge_order {
-        let Some(edge) = state.edges.get(edge_id) else {
-            continue;
-        };
-        if edge.edge_type == "DerivedFrom"
-            && edge.source_id == source_node_id
-            && semantic_is_valid_evidence_target(state, &edge.target_id)
-        {
-            node_ids.push(edge.target_id.clone());
+    if let Some(target_ids) = state.derived_from_targets_by_source.get(source_node_id) {
+        for target_id in target_ids {
+            if semantic_is_valid_evidence_target(state, target_id) {
+                node_ids.push(target_id.clone());
+            }
         }
     }
     if let Some(source_node) = state.nodes.get(source_node_id) {
         if !source_node.path.is_empty() {
-            for node_id in &state.node_order {
-                let Some(node) = state.nodes.get(node_id) else {
-                    continue;
-                };
-                if node.table == "File"
-                    && node.path == source_node.path
-                    && semantic_is_valid_evidence_target(state, &node.id)
-                {
-                    node_ids.push(node.id.clone());
+            if let Some(file_node_ids) = state.file_node_ids_by_path.get(&source_node.path) {
+                for node_id in file_node_ids {
+                    if semantic_is_valid_evidence_target(state, node_id) {
+                        node_ids.push(node_id.clone());
+                    }
                 }
             }
         }
@@ -840,6 +887,7 @@ fn semantic_edge_if_allowed_with_id(
     };
     if !state.edges.contains_key(&edge_id) {
         state.edge_order.push(edge_id.clone());
+        state.index_edge(&edge);
         state.edges.insert(edge_id, edge.clone());
         output_edges.push(edge.clone());
     }
@@ -1357,6 +1405,9 @@ mod tests {
             node_order: vec!["type:User".to_string(), "function:helper".to_string()],
             edges: HashMap::new(),
             edge_order: Vec::new(),
+            derived_from_targets_by_source: HashMap::new(),
+            file_node_ids_by_path: HashMap::new(),
+            type_annotation_owner_ids_by_type: HashMap::new(),
         };
         let mut output = Vec::new();
 
