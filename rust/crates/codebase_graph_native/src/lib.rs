@@ -22,11 +22,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
 
 pub fn materialize_syntax_batch(
-    request: NativeSyntaxMaterializationRequest,
+    request: &NativeSyntaxMaterializationRequest,
 ) -> Result<NativeSyntaxMaterializationResponse, NativeError> {
     let mut phase_timings = BTreeMap::new();
     let scan_started = Instant::now();
-    let scan = scan::scan_source_state(&request)?;
+    let scan = scan::scan_source_state(request)?;
     phase_timings.insert("scan_seconds".to_string(), elapsed_seconds(scan_started));
     let diff = scan.diff.clone();
     if diff.rebuild_paths().is_empty() && diff.deleted.is_empty() {
@@ -62,7 +62,7 @@ pub fn materialize_syntax_batch(
         parse_seconds += elapsed_seconds(parse_started);
         let mut parse_diagnostics = parse.diagnostics.clone();
         let graph_build_started = Instant::now();
-        let partition = partition_builder::build_partition(&request, snapshot, parse)?;
+        let partition = partition_builder::build_partition(request, snapshot, parse)?;
         graph_build_seconds += elapsed_seconds(graph_build_started);
         for node_id in &partition.entry.node_ids {
             node_ids.insert(node_id.clone());
@@ -103,7 +103,7 @@ pub fn materialize_syntax_batch_json(payload: &str) -> Result<String, NativeErro
     let decode_started = Instant::now();
     let request: NativeSyntaxMaterializationRequest = serde_json::from_str(payload)?;
     let json_decode_seconds = elapsed_seconds(decode_started);
-    let mut response = materialize_syntax_batch(request)?;
+    let mut response = materialize_syntax_batch(&request)?;
     response.add_phase_timing("rust_json_decode_seconds", json_decode_seconds);
     Ok(serde_json::to_string(&response)?)
 }

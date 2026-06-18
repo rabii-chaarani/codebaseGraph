@@ -11,7 +11,7 @@ fn materialize_syntax_batch(payload: &str) -> PyResult<String> {
     let request: NativeSyntaxMaterializationRequest =
         serde_json::from_str(payload).map_err(to_py_error)?;
     let json_decode_seconds = decode_started.elapsed().as_secs_f64();
-    let mut response = crate::materialize_syntax_batch(request.clone()).map_err(to_py_error)?;
+    let mut response = crate::materialize_syntax_batch(&request).map_err(to_py_error)?;
     response.add_phase_timing("rust_json_decode_seconds", json_decode_seconds);
     if !response.skipped {
         let database_write_started = Instant::now();
