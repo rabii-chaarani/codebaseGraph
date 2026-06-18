@@ -227,6 +227,9 @@ impl NativeBuilder {
         for child_id in semantic_child_ids(nodes, node, &self.language) {
             self.traverse_tree_node(nodes, child_id, child_owner)?;
         }
+        if self.language == "python" {
+            self.traverse_python_field_nodes(node, child_owner)?;
+        }
         self.emit_parser_like_metadata_fields(node, child_owner)?;
         Ok(())
     }
@@ -254,7 +257,13 @@ impl NativeBuilder {
                 self.emit_declaration(&table, &capture, owner, &syntax_id)?
             }
             "Assignment" => self.emit_tree_assignment(nodes, node, owner, &syntax_id)?,
-            "CallExpression" => self.emit_call(&capture, owner, &syntax_id)?,
+            "CallExpression" => {
+                let mut call_capture = capture.clone();
+                if let Some(label) = call_label(node).filter(|label| !label.is_empty()) {
+                    call_capture.label = label;
+                }
+                self.emit_call(&call_capture, owner, &syntax_id)?
+            }
             "Reference" => self.emit_reference(&capture, owner, &syntax_id)?,
             "Literal" => {
                 let literal_capture = if self.language == "fortran" {
@@ -290,6 +299,9 @@ impl NativeBuilder {
             {
                 self.emit_tree_parameters(nodes, node, &semantic)?;
                 self.emit_tree_return_type(nodes, node, &semantic)?;
+            }
+            if self.language == "python" {
+                self.emit_tree_decorators(node, &semantic)?;
             }
             return Ok(Some(Owner {
                 node_id: semantic.id.clone(),
@@ -384,13 +396,16 @@ impl NativeBuilder {
             }
         }
 
-        if let Some(value_id) = call_value_child(nodes, node) {
-            let Some(value_node) = nodes.get_node(value_id) else {
-                return Ok(assignment);
-            };
-            let call_capture = tree_capture(value_node);
+        if let Some(call_capture) = call_value_capture(nodes, node) {
             let call_syntax_id = self.syntax_capture(&call_capture);
-            let call = self.emit_call(&call_capture, owner, &call_syntax_id)?;
+            let mut semantic_capture = call_capture.clone();
+            if let Some(value) = node.field_value("value") {
+                if let Some(label) = call_label_from_value(&value).filter(|label| !label.is_empty())
+                {
+                    semantic_capture.label = label;
+                }
+            }
+            let call = self.emit_call(&semantic_capture, owner, &call_syntax_id)?;
             self.edge_if_allowed(
                 "Assigns",
                 &assignment.id,
@@ -408,6 +423,57 @@ impl NativeBuilder {
         function_node: TreeNodeRef<'_>,
         callable: &GraphNodeRow,
     ) -> Result<(), String> {
+        if self.language == "python" {
+            if let Some(args) = function_node
+                .field_value("args")
+                .and_then(|value| value.as_object().cloned())
+                .and_then(|object| object.get("args").and_then(Value::as_array).cloned())
+            {
+                for (index, parameter_value) in args.iter().enumerate() {
+                    let mut capture = capture_from_contract_value(parameter_value)
+                        .unwrap_or_else(|| fallback_parameter_capture(index));
+                    if capture.label.is_empty() {
+                        capture.label = format!("param_{index}");
+                    }
+                    let syntax_id = self.syntax_capture(&capture);
+                    let parameter = self.semantic_node(
+                        "Parameter",
+                        &capture,
+                        &capture.label,
+                        &callable.id,
+                        &callable.qualified_name,
+                        None,
+                    );
+                    self.edge_if_allowed(
+                        "HasParameter",
+                        &callable.id,
+                        &parameter.id,
+                        "callable_parameter",
+                        empty_metadata(),
+                    )?;
+                    self.derived_from(&parameter.id, &syntax_id)?;
+                    if let Some(annotation) = parameter_value
+                        .as_object()
+                        .and_then(|object| object.get("annotation"))
+                        .and_then(capture_from_contract_value)
+                    {
+                        let type_node = self.emit_type_annotation_capture(
+                            &annotation,
+                            &parameter.id,
+                            &parameter.qualified_name,
+                        )?;
+                        self.edge_if_allowed(
+                            "HasTypeAnnotation",
+                            &parameter.id,
+                            &type_node.id,
+                            "parameter_annotation",
+                            empty_metadata(),
+                        )?;
+                    }
+                }
+                return Ok(());
+            }
+        }
         for (index, parameter_id) in parameter_child_ids(nodes, function_node)
             .into_iter()
             .enumerate()
@@ -462,6 +528,44 @@ impl NativeBuilder {
         function_node: TreeNodeRef<'_>,
         callable: &GraphNodeRow,
     ) -> Result<(), String> {
+        if self.language == "python" {
+            if let Some(capture) = function_node
+                .field_value("returns")
+                .as_ref()
+                .and_then(capture_from_contract_value)
+            {
+                let syntax_id = self.syntax_capture(&capture);
+                let return_node = self.semantic_node(
+                    "ReturnType",
+                    &capture,
+                    &capture.label,
+                    &callable.id,
+                    &callable.qualified_name,
+                    None,
+                );
+                self.edge_if_allowed(
+                    "HasReturnType",
+                    &callable.id,
+                    &return_node.id,
+                    "callable_return_type",
+                    empty_metadata(),
+                )?;
+                let type_node = self.emit_type_annotation_capture(
+                    &capture,
+                    &return_node.id,
+                    &return_node.qualified_name,
+                )?;
+                self.edge_if_allowed(
+                    "HasTypeAnnotation",
+                    &return_node.id,
+                    &type_node.id,
+                    "return_type_annotation",
+                    empty_metadata(),
+                )?;
+                self.derived_from(&return_node.id, &syntax_id)?;
+                return Ok(());
+            }
+        }
         let Some(capture) = return_type_capture(nodes, function_node, self.language.as_str())
         else {
             return Ok(());
@@ -495,6 +599,83 @@ impl NativeBuilder {
             empty_metadata(),
         )?;
         self.derived_from(&return_node.id, &syntax_id)?;
+        Ok(())
+    }
+
+    fn emit_tree_decorators(
+        &mut self,
+        node: TreeNodeRef<'_>,
+        declaration: &GraphNodeRow,
+    ) -> Result<(), String> {
+        let decorators = node
+            .field_value("decorator_list")
+            .and_then(|value| value.as_array().cloned())
+            .unwrap_or_default();
+        for decorator_value in decorators {
+            let Some(capture) = capture_from_contract_value(&decorator_value) else {
+                continue;
+            };
+            let syntax_id = self.syntax_capture(&capture);
+            let semantic_label = call_label_from_value(&decorator_value)
+                .filter(|label| !label.is_empty())
+                .unwrap_or_else(|| capture.label.clone());
+            let decorator = self.semantic_node(
+                "Decorator",
+                &capture,
+                &semantic_label,
+                &declaration.id,
+                &declaration.qualified_name,
+                None,
+            );
+            self.edge_if_allowed(
+                "DecoratedBy",
+                &declaration.id,
+                &decorator.id,
+                "declaration_decorator",
+                empty_metadata(),
+            )?;
+            if let Some(target) =
+                self.emit_reference_edges(&decorator, &decorator.label, "decorator")?
+            {
+                self.edge_if_allowed(
+                    "Calls",
+                    &decorator.id,
+                    &target.id,
+                    "decorator_call",
+                    empty_metadata(),
+                )?;
+            }
+            self.derived_from(&decorator.id, &syntax_id)?;
+        }
+        Ok(())
+    }
+
+    fn traverse_python_field_nodes(
+        &mut self,
+        node: TreeNodeRef<'_>,
+        owner: &Owner,
+    ) -> Result<(), String> {
+        for (field_name, value) in &node.node.fields {
+            if python_ignored_semantic_field(field_name) {
+                continue;
+            }
+            self.traverse_python_field_value(value, owner)?;
+        }
+        Ok(())
+    }
+
+    fn traverse_python_field_value(&mut self, value: &Value, owner: &Owner) -> Result<(), String> {
+        if let Some(syntax_node) = syntax_node_from_contract_value(value) {
+            let nodes = NativeSyntaxArena::new(&syntax_node);
+            self.traverse_tree_node(&nodes, nodes.root_id, owner)?;
+            return Ok(());
+        }
+        let Some(items) = value.as_array() else {
+            return Ok(());
+        };
+        for item in items {
+            self.traverse_python_field_value(item, owner)?;
+        }
         Ok(())
     }
 
@@ -1334,23 +1515,181 @@ fn tree_capture(node: TreeNodeRef<'_>) -> Capture {
 }
 
 fn tree_label(node: TreeNodeRef<'_>) -> String {
-    for key in ["name", "id", "arg", "attr", "module", "path", "function"] {
+    for key in ["name", "id", "arg", "attr", "module", "path"] {
         if let Some(label) = node.field_label(key) {
             if !label.is_empty() {
                 return label;
             }
         }
     }
-    if let Some(label) = node.field_label("value") {
-        if !label.is_empty() {
-            return label;
-        }
+    if node.field_value("value").is_some() {
+        return node.field_label("value").unwrap_or_default();
     }
     let text = node.text().trim();
     if text.is_empty() {
         node.node_type().to_string()
     } else {
         text.to_string()
+    }
+}
+
+fn tree_label_from_value(value: &Value) -> String {
+    let Some(object) = value.as_object() else {
+        return json_value_label(value).unwrap_or_default();
+    };
+    for key in ["name", "id", "arg", "attr", "module", "path"] {
+        let Some(value) = object.get(key) else {
+            continue;
+        };
+        let Some(label) = json_value_label(value) else {
+            continue;
+        };
+        if !label.is_empty() {
+            return label;
+        }
+    }
+    if let Some(value) = object.get("value") {
+        return json_value_label(value).unwrap_or_default();
+    }
+    object
+        .get("text")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|text| !text.is_empty())
+        .map(str::to_string)
+        .or_else(|| {
+            object
+                .get("type")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+        })
+        .unwrap_or_default()
+}
+
+fn capture_from_contract_value(value: &Value) -> Option<Capture> {
+    let object = value.as_object()?;
+    let node_type = object.get("type")?.as_str()?.to_string();
+    let label = tree_label_from_value(value);
+    let text = object
+        .get("text")
+        .and_then(Value::as_str)
+        .unwrap_or(label.as_str())
+        .to_string();
+    Some(Capture {
+        capture_name: object
+            .get("capture_name")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+        node_type,
+        label,
+        text,
+        line_start: object.get("line_start").and_then(Value::as_i64),
+        line_end: object.get("line_end").and_then(Value::as_i64),
+        byte_start: object.get("byte_start").and_then(Value::as_i64),
+        byte_end: object.get("byte_end").and_then(Value::as_i64),
+        fields: object
+            .keys()
+            .filter(|key| !dict_node_meta_key(key))
+            .cloned()
+            .collect(),
+    })
+}
+
+fn syntax_node_from_contract_value(value: &Value) -> Option<SyntaxNode> {
+    let object = value.as_object()?;
+    let node_type = object
+        .get("type")
+        .or_else(|| object.get("node_type"))
+        .or_else(|| object.get("kind"))?
+        .as_str()?
+        .to_string();
+    let mut children = Vec::new();
+    for key in ["children", "body"] {
+        let Some(child_value) = object.get(key) else {
+            continue;
+        };
+        if let Some(items) = child_value.as_array() {
+            children.extend(items.iter().filter_map(syntax_node_from_contract_value));
+        } else if let Some(child) = syntax_node_from_contract_value(child_value) {
+            children.push(child);
+        }
+    }
+    let fields = object
+        .iter()
+        .filter(|(key, _)| !dict_node_meta_key(key))
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect();
+    Some(SyntaxNode {
+        node_type,
+        text: object
+            .get("text")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+        line_start: object.get("line_start").and_then(Value::as_i64),
+        line_end: object.get("line_end").and_then(Value::as_i64),
+        byte_start: object.get("byte_start").and_then(Value::as_i64),
+        byte_end: object.get("byte_end").and_then(Value::as_i64),
+        capture_name: object
+            .get("capture_name")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+        children,
+        fields,
+    })
+}
+
+fn dict_node_meta_key(key: &str) -> bool {
+    matches!(
+        key,
+        "type"
+            | "node_type"
+            | "kind"
+            | "children"
+            | "body"
+            | "line_start"
+            | "line_end"
+            | "start_line"
+            | "end_line"
+            | "byte_start"
+            | "byte_end"
+            | "start_byte"
+            | "end_byte"
+            | "capture"
+            | "capture_name"
+            | "text"
+    )
+}
+
+fn python_ignored_semantic_field(field_name: &str) -> bool {
+    matches!(
+        field_name,
+        "name"
+            | "id"
+            | "module"
+            | "names"
+            | "args"
+            | "returns"
+            | "return_type"
+            | "decorator_list"
+            | "decorators"
+    )
+}
+
+fn fallback_parameter_capture(index: usize) -> Capture {
+    let label = format!("param_{index}");
+    Capture {
+        capture_name: String::new(),
+        node_type: "arg".to_string(),
+        label: label.clone(),
+        text: label,
+        line_start: None,
+        line_end: None,
+        byte_start: None,
+        byte_end: None,
+        fields: vec!["arg".to_string()],
     }
 }
 
@@ -1366,7 +1705,7 @@ fn json_value_label(value: &Value) -> Option<String> {
         Value::Number(number) => Some(number.to_string()),
         Value::Bool(boolean) => Some(boolean.to_string()),
         Value::Object(object) => {
-            for key in ["id", "name", "arg", "attr", "value"] {
+            for key in ["id", "name", "arg"] {
                 if let Some(value) = object.get(key) {
                     let label = json_value_label(value)?;
                     if !label.is_empty() {
@@ -1374,10 +1713,55 @@ fn json_value_label(value: &Value) -> Option<String> {
                     }
                 }
             }
+            if let Some(attr) = object.get("attr").and_then(json_value_label) {
+                if !attr.is_empty() {
+                    let base = object
+                        .get("value")
+                        .and_then(json_value_label)
+                        .unwrap_or_default();
+                    if base.is_empty() {
+                        return Some(attr);
+                    }
+                    return Some(format!("{base}.{attr}"));
+                }
+            }
+            if let Some(value) = object.get("value") {
+                let label = json_value_label(value)?;
+                if !label.is_empty() {
+                    return Some(label);
+                }
+            }
             None
         }
         _ => None,
     }
+}
+
+fn call_label(node: TreeNodeRef<'_>) -> Option<String> {
+    node.field_value("func")
+        .as_ref()
+        .and_then(json_value_label)
+        .filter(|label| !label.is_empty())
+        .or_else(|| {
+            node.field_value("function")
+                .as_ref()
+                .and_then(json_value_label)
+                .filter(|label| !label.is_empty())
+        })
+}
+
+fn call_label_from_value(value: &Value) -> Option<String> {
+    let object = value.as_object()?;
+    object
+        .get("func")
+        .and_then(json_value_label)
+        .filter(|label| !label.is_empty())
+        .or_else(|| {
+            object
+                .get("function")
+                .and_then(json_value_label)
+                .filter(|label| !label.is_empty())
+        })
 }
 
 fn semantic_child_ids(
@@ -1570,12 +1954,21 @@ fn assignment_target_table(label: &str, owner: &Owner, node_type: &str) -> &'sta
     "Variable"
 }
 
-fn call_value_child(nodes: &NativeSyntaxArena<'_>, node: TreeNodeRef<'_>) -> Option<usize> {
-    node.children.iter().copied().find(|child_id| {
-        nodes
-            .get_node(*child_id)
-            .is_some_and(|child| matches!(child.node_type(), "call" | "call_expression"))
-    })
+fn call_value_capture(nodes: &NativeSyntaxArena<'_>, node: TreeNodeRef<'_>) -> Option<Capture> {
+    node.field_value("value")
+        .as_ref()
+        .and_then(capture_from_contract_value)
+        .filter(|capture| matches!(capture.node_type.as_str(), "call" | "call_expression"))
+        .or_else(|| {
+            node.children.iter().find_map(|child_id| {
+                let child = nodes.get_node(*child_id)?;
+                if matches!(child.node_type(), "call" | "call_expression") {
+                    Some(tree_capture(child))
+                } else {
+                    None
+                }
+            })
+        })
 }
 
 fn parameter_child_ids(

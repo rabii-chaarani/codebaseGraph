@@ -30,9 +30,15 @@ fn materialize_syntax_batch(payload: &str) -> PyResult<String> {
     serde_json::to_string(&response).map_err(to_py_error)
 }
 
+#[pyfunction]
+fn normalize_python_source(source: &str) -> PyResult<String> {
+    crate::parser::normalize_python_source_json(source).map_err(to_py_error)
+}
+
 #[pymodule]
 fn _native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(materialize_syntax_batch, module)?)?;
+    module.add_function(wrap_pyfunction!(normalize_python_source, module)?)?;
     Ok(())
 }
 
