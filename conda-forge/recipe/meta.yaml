@@ -12,9 +12,9 @@ source:
 build:
   number: 0
   script:
-    - cargo build --manifest-path rust/Cargo.toml --locked --release --bin codebase-graph
+    - cargo build --locked --release --bin codebase-graph
     - mkdir -p "${PREFIX}/bin"
-    - cp rust/target/release/codebase-graph "${PREFIX}/bin/codebase-graph"
+    - cp target/release/codebase-graph "${PREFIX}/bin/codebase-graph"
 
 requirements:
   host:

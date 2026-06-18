@@ -1,0 +1,306 @@
+{
+  "tools": [
+    {
+      "description": "Check the configured codebaseGraph database path and manifest path.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "include_structured_content": {
+            "default": false,
+            "description": "Include the MCP structuredContent payload alongside the text result.",
+            "type": "boolean"
+          },
+          "output_format": {
+            "default": "block",
+            "enum": [
+              "json",
+              "block"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "graph_health"
+    },
+    {
+      "description": "Search code, documentation, paths, and dependencies with compact graph context.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "budget": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "context_limit": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "detail": {
+            "enum": [
+              "slim",
+              "standard"
+            ],
+            "type": "string"
+          },
+          "include_confidence": {
+            "default": true,
+            "description": "Include confidence values on semantic relation annotations.",
+            "type": "boolean"
+          },
+          "include_evidence": {
+            "description": "Include full semantic evidence metadata in graph context output.",
+            "type": "boolean"
+          },
+          "include_semantic": {
+            "default": true,
+            "description": "Include semantic relation annotations in graph context output.",
+            "type": "boolean"
+          },
+          "include_snippets": {
+            "default": false,
+            "description": "Include bounded redacted source snippets from graph node spans.",
+            "type": "boolean"
+          },
+          "include_structured_content": {
+            "default": false,
+            "description": "Include the MCP structuredContent payload alongside the text result.",
+            "type": "boolean"
+          },
+          "limit": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "max_depth": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "node_type": {
+            "type": "string"
+          },
+          "output_format": {
+            "default": "block",
+            "enum": [
+              "json",
+              "block"
+            ],
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "snippet_context_lines": {
+            "default": 0,
+            "description": "Extra source lines to include before and after snippet spans.",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "graph_search"
+    },
+    {
+      "description": "Return compact context for a search query or explicit node_id/node_type pair.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "budget": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "context_limit": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "detail": {
+            "enum": [
+              "slim",
+              "standard"
+            ],
+            "type": "string"
+          },
+          "include_confidence": {
+            "default": true,
+            "description": "Include confidence values on semantic relation annotations.",
+            "type": "boolean"
+          },
+          "include_evidence": {
+            "description": "Include full semantic evidence metadata in graph context output.",
+            "type": "boolean"
+          },
+          "include_semantic": {
+            "default": true,
+            "description": "Include semantic relation annotations in graph context output.",
+            "type": "boolean"
+          },
+          "include_snippets": {
+            "default": false,
+            "description": "Include bounded redacted source snippets from graph node spans.",
+            "type": "boolean"
+          },
+          "include_structured_content": {
+            "default": false,
+            "description": "Include the MCP structuredContent payload alongside the text result.",
+            "type": "boolean"
+          },
+          "limit": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "max_depth": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "node_id": {
+            "type": "string"
+          },
+          "node_type": {
+            "type": "string"
+          },
+          "output_format": {
+            "default": "block",
+            "enum": [
+              "json",
+              "block"
+            ],
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "snippet_context_lines": {
+            "default": 0,
+            "description": "Extra source lines to include before and after snippet spans.",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "name": "graph_context"
+    },
+    {
+      "description": "Return ontology schema, search indexes, context profiles, and query helper metadata.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "include_structured_content": {
+            "default": false,
+            "description": "Include the MCP structuredContent payload alongside the text result.",
+            "type": "boolean"
+          },
+          "output_format": {
+            "default": "block",
+            "enum": [
+              "json",
+              "block"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "graph_schema"
+    },
+    {
+      "description": "Return named read-only query helpers for common graph exploration tasks.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "include_structured_content": {
+            "default": false,
+            "description": "Include the MCP structuredContent payload alongside the text result.",
+            "type": "boolean"
+          },
+          "output_format": {
+            "default": "block",
+            "enum": [
+              "json",
+              "block"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "graph_query_helpers"
+    },
+    {
+      "description": "Return the grouped architecture-discovery Cypher catalog for coding-agent first-step orientation.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "group": {
+            "description": "Optional architecture query group to return.",
+            "type": "string"
+          },
+          "include_structured_content": {
+            "default": false,
+            "description": "Include the MCP structuredContent payload alongside the text result.",
+            "type": "boolean"
+          },
+          "output_format": {
+            "default": "block",
+            "enum": [
+              "json",
+              "block"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "graph_architecture_queries"
+    },
+    {
+      "description": "Execute a restricted read-only graph query against the configured database.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "include_structured_content": {
+            "default": false,
+            "description": "Include the MCP structuredContent payload alongside the text result.",
+            "type": "boolean"
+          },
+          "limit": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "output_format": {
+            "default": "block",
+            "enum": [
+              "json",
+              "block"
+            ],
+            "type": "string"
+          },
+          "parameters": {
+            "type": "object"
+          },
+          "statement": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "statement"
+        ],
+        "type": "object"
+      },
+      "name": "graph_query"
+    }
+  ]
+}

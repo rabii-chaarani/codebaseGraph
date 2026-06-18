@@ -1,0 +1,101 @@
+{
+  "query_helpers": [
+    {
+      "description": "List high-level source roots, files, modules, dependencies, and runtime surfaces.",
+      "name": "repository_overview",
+      "parameters": [],
+      "query": "MATCH (n) WHERE n:SourceRoot OR n:File OR n:Module OR n:Dependency OR n:APIEndpoint OR n:Component RETURN n.id, n.label, n.path LIMIT 100",
+      "returns": [
+        "id",
+        "label",
+        "path"
+      ]
+    },
+    {
+      "description": "Find concrete semantic definitions by label or qualified name.",
+      "name": "symbol_lookup",
+      "parameters": [
+        "name"
+      ],
+      "query": "MATCH (s:Class) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Function) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Method) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Variable) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Constant) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:ClassAttribute) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:InstanceAttribute) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Property) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Parameter) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:TypeAlias) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path LIMIT 25",
+      "returns": [
+        "id",
+        "label",
+        "qualified_name",
+        "path"
+      ]
+    },
+    {
+      "description": "Find a named class, function, method, variable, or constant definition.",
+      "name": "definition_context",
+      "parameters": [],
+      "query": "MATCH (d) WHERE d:Class OR d:Function OR d:Method OR d:Variable OR d:Constant RETURN d.id, d.label, d.kind, d.path LIMIT 50",
+      "returns": [
+        "id",
+        "label",
+        "kind",
+        "path"
+      ]
+    },
+    {
+      "description": "Find call expressions and resolved callable targets near a symbol.",
+      "name": "callgraph_neighborhood",
+      "parameters": [],
+      "query": "MATCH (c:CallExpression)-[:FROM_ResolvesTo]->(:ResolvesTo)-[:TO_ResolvesTo]->(target) RETURN c.id, c.path, target.id, target.label LIMIT 50",
+      "returns": [
+        "call_id",
+        "path",
+        "target_id",
+        "target_label"
+      ]
+    },
+    {
+      "description": "Inspect imports and dependencies.",
+      "name": "dependency_map",
+      "parameters": [],
+      "query": "MATCH (i:ImportDeclaration)-[:FROM_DependsOn]->(:DependsOn)-[:TO_DependsOn]->(d:Dependency) RETURN i.id, i.label, d.id, d.label LIMIT 100",
+      "returns": [
+        "import_id",
+        "import_label",
+        "dependency_id",
+        "dependency_label"
+      ]
+    },
+    {
+      "description": "Inspect routes, endpoints, executed queries, and secret use.",
+      "name": "runtime_surface",
+      "parameters": [],
+      "query": "MATCH (r:Route)-[:FROM_RoutesTo]->(:RoutesTo)-[:TO_RoutesTo]->(e:APIEndpoint) RETURN r.id, r.label, e.id, e.label LIMIT 100",
+      "returns": [
+        "route_id",
+        "route_label",
+        "endpoint_id",
+        "endpoint_label"
+      ]
+    },
+    {
+      "description": "Find documentation chunks connected to code nodes.",
+      "name": "documentation_context",
+      "parameters": [],
+      "query": "MATCH (d:DocumentationChunk)-[:FROM_Documents]->(:Documents)-[:TO_Documents]->(n) RETURN d.id, d.label, n.id, n.label LIMIT 50",
+      "returns": [
+        "doc_id",
+        "doc_label",
+        "node_id",
+        "node_label"
+      ]
+    },
+    {
+      "description": "Find references that have not been resolved to a semantic target.",
+      "name": "unresolved_references",
+      "parameters": [],
+      "query": "MATCH (r:Reference) WHERE NOT EXISTS { MATCH (r)-[:FROM_ResolvesTo]->(:ResolvesTo)-[:TO_ResolvesTo]->() } RETURN r.id, r.label, r.path, r.line_start LIMIT 100",
+      "returns": [
+        "id",
+        "label",
+        "path",
+        "line_start"
+      ]
+    }
+  ]
+}
