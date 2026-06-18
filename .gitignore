@@ -3,6 +3,9 @@
 
 # Local graph state
 /.codebaseGraph/
+/.scryer/
+/.codex/
+/.mcp.json
 
 # Editor and OS noise
 .DS_Store
