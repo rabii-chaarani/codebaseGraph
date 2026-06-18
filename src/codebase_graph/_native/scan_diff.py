@@ -40,11 +40,8 @@ class NativeScanDiffResult:
     diff: NativeManifestDiff | None
 
 
-def scan_repository(payload: str, *, strict: bool = False) -> NativeScanDiffResult | None:
+def scan_repository(payload: str, *, strict: bool = True) -> NativeScanDiffResult | None:
     """Run the native repository scan/hash/manifest-diff helper for an encoded payload."""
-    if not strict and os.environ.get("CODEBASE_GRAPH_NATIVE") != "1":
-        return None
-
     command = _native_command(strict=strict)
     if command is None:
         if strict:
@@ -70,7 +67,7 @@ def scan_repository(payload: str, *, strict: bool = False) -> NativeScanDiffResu
 
 
 def _native_command(*, strict: bool) -> list[str] | None:
-    configured = os.environ.get("CODEBASE_GRAPH_NATIVE_SCAN_DIFF")
+    configured = os.environ.get("CODEBASE_GRAPH_COMPAT_SCAN_DIFF")
     if configured:
         return [configured]
 

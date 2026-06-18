@@ -42,12 +42,10 @@ def test_native_semantic_batch_matches_python_enrichment(
     monkeypatch: pytest.MonkeyPatch,
     native_semantic_binary: Path,
 ) -> None:
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
     expected_graph = _semantic_graph()
     expected_report = persist_semantic_enrichment((expected_graph,), source_root=".", provider_mode="local_only")
 
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_SEMANTIC_BATCH", native_semantic_binary.as_posix())
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_SEMANTIC_BATCH", native_semantic_binary.as_posix())
     actual_graph = _semantic_graph()
     actual_report = persist_semantic_enrichment((actual_graph,), source_root=".", provider_mode="local_only")
 
@@ -55,11 +53,10 @@ def test_native_semantic_batch_matches_python_enrichment(
     assert actual_graph.as_dict() == expected_graph.as_dict()
 
 
-def test_native_semantic_batch_defers_provider_backed_enrichment_to_python(
+def test_python_semantic_compatibility_accepts_explicit_provider_results(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_SEMANTIC_BATCH", "/missing/native-semantic-batch")
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_SEMANTIC_BATCH", "/missing/native-semantic-batch")
     graph = CodeGraph()
     graph.add_node(GraphNode("function:helper", "Function", "helper", qualified_name="helper", language="rust"))
     graph.add_node(GraphNode("call:helper", "CallExpression", "helper", language="rust"))

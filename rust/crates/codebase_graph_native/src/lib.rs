@@ -8,6 +8,7 @@ pub mod legacy_cli;
 mod normalize;
 mod parser;
 mod partition_builder;
+pub mod product_cli;
 mod profiles;
 pub mod protocol;
 mod scan;

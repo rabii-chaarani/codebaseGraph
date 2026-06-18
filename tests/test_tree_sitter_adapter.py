@@ -117,10 +117,8 @@ def test_native_profile_queries_match_python_for_context_rules(
         ],
     }
 
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
     expected = _query_result_shape(run_profile_queries(tree, profile))
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_TREE_SITTER_NORMALIZER", native_tree_sitter_normalizer_binary.as_posix())
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_TREE_SITTER_NORMALIZER", native_tree_sitter_normalizer_binary.as_posix())
     actual = _query_result_shape(run_profile_queries(tree, profile))
 
     assert actual == expected
@@ -154,7 +152,6 @@ def test_native_profiled_source_matches_python_graph(
     profile = resolve_language_profile("rust")
     source_text = "impl User { fn new() -> Self { User {} } }\nfn helper() { User::new(); }\n"
 
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
     expected = GraphBuilder().build_file_graph(
         parse_profiled_source(
             source_text,
@@ -165,8 +162,7 @@ def test_native_profiled_source_matches_python_graph(
             content_hash="hash",
         )
     ).graph.as_dict()
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_TREE_SITTER_NORMALIZER", native_tree_sitter_normalizer_binary.as_posix())
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_TREE_SITTER_NORMALIZER", native_tree_sitter_normalizer_binary.as_posix())
     actual = GraphBuilder().build_file_graph(
         parse_profiled_source(
             source_text,

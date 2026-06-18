@@ -46,14 +46,13 @@ class CapturingStore:
         return None
 
 
-def test_native_materialization_falls_back_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
+def test_native_materialization_non_strict_still_fails_explicitly(monkeypatch: pytest.MonkeyPatch) -> None:
 
-    assert materialize_syntax_batch({}) is None
+    with pytest.raises(NativeMaterializationUnavailable, match="native materialization"):
+        materialize_syntax_batch({}, strict=False)
 
 
 def test_native_materialization_strict_requires_extension(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
     monkeypatch.delattr(native_pkg, "_native", raising=False)
     monkeypatch.setitem(sys.modules, "codebase_graph._native._native", None)
 
@@ -77,7 +76,6 @@ def test_native_materialization_decodes_extension_result(monkeypatch: pytest.Mon
         )
 
     extension.materialize_syntax_batch = materialize
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
     monkeypatch.setattr(native_pkg, "_native", extension, raising=False)
     monkeypatch.setitem(sys.modules, "codebase_graph._native._native", extension)
 
@@ -153,7 +151,6 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 import json
-import os
 import sys
 
 from codebase_graph._native.materialization import materialize_syntax_batch
@@ -162,8 +159,6 @@ from codebase_graph.ingest import GraphMaterializer, MaterializationManifest
 fixture_root = Path(sys.argv[1])
 tmp_path = Path(sys.argv[2])
 semantic_enrichment = sys.argv[3] == "1"
-os.environ["CODEBASE_GRAPH_NATIVE"] = "1"
-os.environ["CODEBASE_GRAPH_NATIVE_STRICT"] = "1"
 
 materializer = GraphMaterializer(
     fixture_root,

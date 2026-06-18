@@ -1,5 +1,9 @@
 use crate::error::NativeError;
+use crate::protocol::{ManifestDiff, NativeManifest};
 use lbug::{Connection, Database, SystemConfig};
+use std::collections::{BTreeMap, BTreeSet};
+
+const DELETE_BATCH_SIZE: usize = 500;
 #[cfg(test)]
 use std::fs;
 #[cfg(test)]
@@ -10,16 +14,24 @@ pub struct LadybugWriteRequest {
     pub db_path: String,
     pub include_fts: bool,
     pub schema_statements: Vec<String>,
+    pub replace_database: bool,
+    pub delete_statements: Vec<String>,
     pub copy_statements: Vec<String>,
 }
 
 pub fn write_database(request: LadybugWriteRequest) -> Result<(), NativeError> {
+    if request.replace_database {
+        remove_existing_database(&request.db_path)?;
+    }
     let database = Database::new(&request.db_path, SystemConfig::default())
         .map_err(|error| NativeError::Database(error.to_string()))?;
     let connection =
         Connection::new(&database).map_err(|error| NativeError::Database(error.to_string()))?;
     for statement in schema_statements(request.include_fts, request.schema_statements) {
         query_ignoring_existing(&connection, &statement)?;
+    }
+    for statement in request.delete_statements {
+        query_ignoring_missing(&connection, &statement)?;
     }
     for statement in request.copy_statements {
         connection
@@ -33,6 +45,42 @@ pub fn write_database(request: LadybugWriteRequest) -> Result<(), NativeError> {
 pub(crate) fn write_database_for_python(request: LadybugWriteRequest) -> pyo3::PyResult<()> {
     write_database(request)
         .map_err(|error| pyo3::exceptions::PyRuntimeError::new_err(error.to_string()))
+}
+
+fn remove_existing_database(path: &str) -> Result<(), NativeError> {
+    let path = std::path::Path::new(path);
+    for sidecar in database_sidecar_paths(path) {
+        remove_path_if_exists(&sidecar)?;
+    }
+    remove_path_if_exists(path)
+}
+
+fn database_sidecar_paths(path: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let mut paths = Vec::new();
+    for suffix in ["wal", "tmp", "lock"] {
+        paths.push(std::path::PathBuf::from(format!(
+            "{}.{suffix}",
+            path.to_string_lossy()
+        )));
+    }
+    paths
+}
+
+fn remove_path_if_exists(path: &std::path::Path) -> Result<(), NativeError> {
+    if !path.exists() {
+        return Ok(());
+    }
+    let result = if path.is_dir() {
+        std::fs::remove_dir_all(path)
+    } else {
+        std::fs::remove_file(path)
+    };
+    result.map_err(|error| {
+        NativeError::Database(format!(
+            "failed to remove existing database {}: {error}",
+            path.display()
+        ))
+    })
 }
 
 fn query_ignoring_existing(
@@ -55,6 +103,23 @@ fn query_ignoring_existing(
     }
 }
 
+fn query_ignoring_missing(connection: &Connection<'_>, statement: &str) -> Result<(), NativeError> {
+    match connection.query(statement) {
+        Ok(_) => Ok(()),
+        Err(error) => {
+            let message = error.to_string().to_lowercase();
+            if message.contains("does not exist")
+                || message.contains("not found")
+                || message.contains("no such")
+            {
+                Ok(())
+            } else {
+                Err(NativeError::Database(error.to_string()))
+            }
+        }
+    }
+}
+
 fn schema_statements(include_fts: bool, provided: Vec<String>) -> Vec<String> {
     if !provided.is_empty() {
         return provided;
@@ -66,6 +131,143 @@ fn schema_statements(include_fts: bool, provided: Vec<String>) -> Vec<String> {
     statements
 }
 
+pub fn partition_delete_statements(
+    previous_manifest: Option<&NativeManifest>,
+    diff: &ManifestDiff,
+) -> Vec<String> {
+    let Some(manifest) = previous_manifest else {
+        return Vec::new();
+    };
+    if diff.force_rebuild {
+        return Vec::new();
+    }
+    let touched_paths = diff
+        .deleted
+        .iter()
+        .chain(diff.rebuild_paths().iter())
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    if touched_paths.is_empty() {
+        return Vec::new();
+    }
+    let mut retained_nodes = BTreeSet::new();
+    let mut retained_edges = BTreeSet::new();
+    for (path, entry) in &manifest.files {
+        if touched_paths.contains(path) {
+            continue;
+        }
+        retained_nodes.extend(entry.node_ids.iter().cloned());
+        retained_edges.extend(entry.edge_ids.iter().cloned());
+    }
+    let mut edge_deletes = Vec::new();
+    let mut node_deletes = Vec::new();
+    for path in touched_paths {
+        let Some(entry) = manifest.files.get(&path) else {
+            continue;
+        };
+        edge_deletes.extend(delete_edge_statements(
+            &entry.edge_ids,
+            &entry.edge_types,
+            &retained_edges,
+        ));
+        node_deletes.extend(delete_node_statements(
+            &entry.node_ids,
+            &entry.node_types,
+            &retained_nodes,
+        ));
+    }
+    edge_deletes.extend(node_deletes);
+    edge_deletes
+}
+
+fn delete_edge_statements(
+    edge_ids: &[String],
+    edge_types: &BTreeMap<String, String>,
+    retained_edges: &BTreeSet<String>,
+) -> Vec<String> {
+    let mut ids_by_type: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for edge_id in edge_ids {
+        if retained_edges.contains(edge_id) {
+            continue;
+        }
+        let Some(edge_type) = edge_types.get(edge_id) else {
+            continue;
+        };
+        ids_by_type
+            .entry(edge_type.clone())
+            .or_default()
+            .push(edge_id.clone());
+    }
+    let mut statements = Vec::new();
+    for (edge_type, mut ids) in ids_by_type {
+        ids.sort();
+        let edge_table = quote_identifier(&edge_type);
+        let from_table = quote_identifier(&format!("FROM_{edge_type}"));
+        let to_table = quote_identifier(&format!("TO_{edge_type}"));
+        for chunk in ids.chunks(DELETE_BATCH_SIZE) {
+            let id_list = cypher_string_list(chunk);
+            statements.push(format!(
+                "MATCH ()-[r:{from_table}]->(edge:{edge_table}) WHERE edge.id IN [{id_list}] DELETE r"
+            ));
+            statements.push(format!(
+                "MATCH (edge:{edge_table})-[r:{to_table}]->() WHERE edge.id IN [{id_list}] DELETE r"
+            ));
+            statements.push(format!(
+                "MATCH (edge:{edge_table}) WHERE edge.id IN [{id_list}] DELETE edge"
+            ));
+        }
+    }
+    statements
+}
+
+fn delete_node_statements(
+    node_ids: &[String],
+    node_types: &BTreeMap<String, String>,
+    retained_nodes: &BTreeSet<String>,
+) -> Vec<String> {
+    let mut ids_by_type: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for node_id in node_ids {
+        if retained_nodes.contains(node_id) {
+            continue;
+        }
+        let Some(node_type) = node_types.get(node_id) else {
+            continue;
+        };
+        ids_by_type
+            .entry(node_type.clone())
+            .or_default()
+            .push(node_id.clone());
+    }
+    let mut statements = Vec::new();
+    for (node_type, mut ids) in ids_by_type {
+        ids.sort();
+        let node_table = quote_identifier(&node_type);
+        for chunk in ids.chunks(DELETE_BATCH_SIZE) {
+            statements.push(format!(
+                "MATCH (node:{node_table}) WHERE node.id IN [{}] DELETE node",
+                cypher_string_list(chunk)
+            ));
+        }
+    }
+    statements
+}
+
+fn quote_identifier(value: &str) -> String {
+    format!("`{}`", value.replace('`', "``"))
+}
+
+fn cypher_string(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('\'', "\\'")
+}
+
+fn cypher_string_list(values: &[String]) -> String {
+    values
+        .iter()
+        .map(|value| format!("'{}'", cypher_string(value)))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
 #[cfg(test)]
 fn copy_path(path: &Path) -> String {
     path.to_string_lossy().replace('"', "\\\"")
@@ -74,6 +276,8 @@ fn copy_path(path: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::protocol::{ManifestDiff, ManifestEntry, NativeManifest};
+    use std::collections::BTreeMap;
 
     #[test]
     fn native_writer_loads_json_staging_through_ladybug_copy() {
@@ -100,10 +304,91 @@ mod tests {
 )"
                 .to_string(),
             ],
+            replace_database: false,
+            delete_statements: Vec::new(),
             copy_statements: vec![format!("COPY `Thing` FROM \"{}\";", copy_path(&json_path))],
         });
         let _ = fs::remove_dir_all(&root);
         result.expect("native writer should execute JSON COPY through Ladybug");
+    }
+
+    #[test]
+    fn partition_delete_statements_skip_retained_shared_ids() {
+        let mut files = BTreeMap::new();
+        files.insert(
+            "changed.py".to_string(),
+            entry(
+                &["Function:changed", "Symbol:shared"],
+                &[
+                    ("Function:changed", "Function"),
+                    ("Symbol:shared", "Symbol"),
+                ],
+                &["Contains:changed", "References:shared"],
+                &[
+                    ("Contains:changed", "Contains"),
+                    ("References:shared", "References"),
+                ],
+            ),
+        );
+        files.insert(
+            "unchanged.py".to_string(),
+            entry(
+                &["Function:unchanged", "Symbol:shared"],
+                &[
+                    ("Function:unchanged", "Function"),
+                    ("Symbol:shared", "Symbol"),
+                ],
+                &["References:shared"],
+                &[("References:shared", "References")],
+            ),
+        );
+        let manifest = NativeManifest {
+            schema_version: 1,
+            ontology: "code_ontology_v1".to_string(),
+            parser_version: "test".to_string(),
+            files,
+        };
+        let statements = partition_delete_statements(
+            Some(&manifest),
+            &ManifestDiff {
+                added: Vec::new(),
+                modified: vec!["changed.py".to_string()],
+                unchanged: vec!["unchanged.py".to_string()],
+                deleted: Vec::new(),
+                force_rebuild: false,
+            },
+        );
+        let joined = statements.join("\n");
+
+        assert!(joined.contains("Function:changed"));
+        assert!(joined.contains("Contains:changed"));
+        assert!(!joined.contains("Symbol:shared"));
+        assert!(!joined.contains("References:shared"));
+    }
+
+    fn entry(
+        node_ids: &[&str],
+        node_types: &[(&str, &str)],
+        edge_ids: &[&str],
+        edge_types: &[(&str, &str)],
+    ) -> ManifestEntry {
+        ManifestEntry {
+            path: "path.py".to_string(),
+            content_hash: "hash".to_string(),
+            language: "python".to_string(),
+            partition_id: "partition".to_string(),
+            node_ids: node_ids.iter().map(|value| value.to_string()).collect(),
+            edge_ids: edge_ids.iter().map(|value| value.to_string()).collect(),
+            node_types: node_types
+                .iter()
+                .map(|(id, table)| (id.to_string(), table.to_string()))
+                .collect(),
+            edge_types: edge_types
+                .iter()
+                .map(|(id, table)| (id.to_string(), table.to_string()))
+                .collect(),
+            materialized_at: "now".to_string(),
+        }
     }
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {

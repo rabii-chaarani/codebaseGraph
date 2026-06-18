@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import statistics
 import sys
 import tempfile
@@ -153,7 +152,7 @@ def _run_with_state_dir(
         "warmups": warmups,
         "include_fts": include_fts,
         "semantic_enrichment": semantic_enrichment,
-        "native_opt_in": os.environ.get("CODEBASE_GRAPH_NATIVE") == "1",
+        "native_runtime": True,
         "state_dir": state_dir.as_posix(),
         "state_dir_is_temporary": state_dir_is_temporary,
         "repositories": repositories,

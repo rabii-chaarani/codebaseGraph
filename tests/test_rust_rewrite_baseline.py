@@ -77,23 +77,26 @@ def test_rust_rewrite_design_doc_defines_boundary_benchmark_and_parity() -> None
     text = DOC_PATH.read_text(encoding="utf-8")
 
     assert "codebase_graph._native" in text
-    assert "pyo3" in text
-    assert "maturin" in text
-    assert "CODEBASE_GRAPH_NATIVE=1" in text
+    assert "PyO3 bindings" in text
+    assert "native Rust binary the production runtime" in text
+    assert "must not define `[build-system]`" in text
+    assert "must not define `[build-system]`, `[project]`" in text
+    assert "Python remains only as the repository development and test harness" in text
     assert "python scripts/benchmark_materialization.py" in text
-    assert "Golden parity fixtures" in text
+    assert "Golden fixtures are canonical graph-contract fixtures" in text
+    assert "must not use Python output as the pass/fail oracle" in text
     assert "ParseBundle" in text
     assert "GraphBuildResult" in text
     assert "BulkLoadStats" in text
     assert "Do not change stable graph IDs" in text
-    assert "CODEBASE_GRAPH_NATIVE=1 codebase-graph setup --repo-root ." in text
+    assert "codebase-graph setup --repo-root ." in text
 
 
-def test_release_doc_describes_native_fallback_and_graph_compatibility() -> None:
+def test_release_doc_describes_native_runtime_and_graph_compatibility() -> None:
     text = RELEASE_DOC_PATH.read_text(encoding="utf-8")
 
-    assert "CODEBASE_GRAPH_NATIVE=1" in text
-    assert "Python result shape" in text
+    assert "Native Rust CLI and MCP entrypoints are required" in text
+    assert "native CLI/MCP entrypoints" in text
     assert "Do not change stable graph node IDs" in text
     assert "Golden graph parity fixtures" in text
 

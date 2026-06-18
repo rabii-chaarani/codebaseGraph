@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
 from codebase_graph.db import LadybugCodeGraphStore, create_ladybug_database
 from codebase_graph.reasoning.context_profiles import load_context_profile_config, merge_context_profiles
 from codebase_graph.setup.state import derive_setup_paths, load_setup_config
+from codebase_graph.version import rust_package_version
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,7 +87,4 @@ def package_version() -> str:
     Returns:
         Formatted text returned to the caller.
     """
-    try:
-        return version("codebase-graph")
-    except PackageNotFoundError:
-        return "0.1.0"
+    return rust_package_version()

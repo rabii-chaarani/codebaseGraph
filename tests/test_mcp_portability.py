@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
 import threading
 import urllib.error
 import urllib.request
@@ -23,6 +22,7 @@ from codebase_graph.setup import SetupOptions, run_setup
 from codebase_graph.setup.clients import supported_client_ids
 from codebase_graph.setup.descriptor import build_server_descriptor
 from codebase_graph.setup.mcp_config import configure_mcp_client
+from codebase_graph.version import rust_package_version
 
 
 def test_initialize_negotiates_supported_and_fallback_protocol_versions(tmp_path: Path) -> None:
@@ -40,6 +40,7 @@ def test_initialize_negotiates_supported_and_fallback_protocol_versions(tmp_path
     assert older is not None
     assert fallback is not None
     assert older["result"]["protocolVersion"] == "2024-11-05"
+    assert older["result"]["serverInfo"]["version"] == rust_package_version()
     assert fallback["result"]["protocolVersion"] == LATEST_PROTOCOL_VERSION
     assert "2025-11-25" in SUPPORTED_PROTOCOL_VERSIONS
 
@@ -110,21 +111,18 @@ def test_mcp_rejects_tools_before_initialize(tmp_path: Path) -> None:
     assert called["error"]["code"] == -32002
 
 
-def test_descriptor_prefers_current_environment_script(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    bin_dir = tmp_path / "venv" / "bin"
-    bin_dir.mkdir(parents=True)
-    python_path = bin_dir / "python"
-    script_path = bin_dir / "codebase-graph"
-    python_path.write_text("", encoding="utf-8")
-    script_path.write_text("", encoding="utf-8")
-    script_path.chmod(0o755)
-    monkeypatch.setattr(sys, "executable", python_path.as_posix())
+def test_descriptor_prefers_explicit_native_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    native_binary = tmp_path / "bin" / "codebase-graph"
+    native_binary.parent.mkdir(parents=True)
+    native_binary.write_text("", encoding="utf-8")
+    native_binary.chmod(0o755)
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_CLI", native_binary.as_posix())
     monkeypatch.setenv("PATH", "")
 
     descriptor = build_server_descriptor(tmp_path / ".codebaseGraph" / "config.json")
 
-    assert descriptor.command == script_path.as_posix()
-    assert descriptor.stdio_entry()["command"] == script_path.as_posix()
+    assert descriptor.command == native_binary.as_posix()
+    assert descriptor.stdio_entry()["command"] == native_binary.as_posix()
     assert descriptor.as_dict()["transport"] == "stdio"
 
 

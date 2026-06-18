@@ -15,11 +15,8 @@ class NativeTreeSitterNormalizationUnavailable(RuntimeError):
     """Raised when strict native tree-sitter normalization is requested but unavailable."""
 
 
-def normalize_profiled_syntax(payload: str, *, strict: bool = False) -> str | None:
+def normalize_profiled_syntax(payload: str, *, strict: bool = True) -> str | None:
     """Run native profiled syntax normalization for an encoded tree payload."""
-    if not strict and os.environ.get("CODEBASE_GRAPH_NATIVE") != "1":
-        return None
-
     command = _native_command(strict=strict)
     if command is None:
         if strict:
@@ -45,7 +42,7 @@ def normalize_profiled_syntax(payload: str, *, strict: bool = False) -> str | No
 
 
 def _native_command(*, strict: bool) -> list[str] | None:
-    configured = os.environ.get("CODEBASE_GRAPH_NATIVE_TREE_SITTER_NORMALIZER")
+    configured = os.environ.get("CODEBASE_GRAPH_COMPAT_TREE_SITTER_NORMALIZER")
     if configured:
         return [configured]
 

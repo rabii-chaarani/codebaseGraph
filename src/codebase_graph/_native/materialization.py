@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,16 +32,12 @@ class NativeSyntaxBatchResult:
     database_written: bool
 
 
-def materialize_syntax_batch(payload: dict[str, Any], *, strict: bool = False) -> NativeSyntaxBatchResult | None:
+def materialize_syntax_batch(payload: dict[str, Any], *, strict: bool = True) -> NativeSyntaxBatchResult:
     """Run the in-process Rust syntax materialization batch kernel when available."""
-    if not strict and os.environ.get("CODEBASE_GRAPH_NATIVE") != "1":
-        return None
     try:
         from codebase_graph._native import _native
     except ImportError as exc:
-        if strict:
-            raise NativeMaterializationUnavailable("native materialization extension is unavailable") from exc
-        return None
+        raise NativeMaterializationUnavailable("native materialization extension is unavailable") from exc
 
     try:
         encode_started = time.perf_counter()
@@ -52,9 +47,7 @@ def materialize_syntax_batch(payload: dict[str, Any], *, strict: bool = False) -
         raw = _native.materialize_syntax_batch(encoded_payload)
         native_call_seconds = time.perf_counter() - native_started
     except Exception as exc:
-        if strict:
-            raise NativeMaterializationUnavailable(f"native materialization failed: {exc}") from exc
-        return None
+        raise NativeMaterializationUnavailable(f"native materialization failed: {exc}") from exc
 
     decode_started = time.perf_counter()
     result = json.loads(raw)

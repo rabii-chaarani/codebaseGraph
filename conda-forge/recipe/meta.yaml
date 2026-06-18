@@ -1,50 +1,35 @@
 {% set name = "codebase-graph" %}
-{% set pypi_name = "cbasegraph" %}
 {% set version = "PUT_RELEASE_VERSION_HERE" %}
-{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ pypi_name[0] }}/{{ pypi_name }}/{{ pypi_name }}-{{ version }}.tar.gz
-  sha256: PUT_RELEASE_SDIST_SHA256_HERE
+  url: https://github.com/rabii-chaarani/codebaseGraph/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: PUT_RELEASE_ARCHIVE_SHA256_HERE
 
 build:
-  noarch: python
   number: 0
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  entry_points:
-    - codebase-graph = codebase_graph.cli:main
-    - codebase-graph-mcp = codebase_graph.mcp.server:main
+  script:
+    - cargo build --manifest-path rust/Cargo.toml --locked --release --bin codebase-graph
+    - mkdir -p "${PREFIX}/bin"
+    - cp rust/target/release/codebase-graph "${PREFIX}/bin/codebase-graph"
 
 requirements:
   host:
-    - python {{ python_min }}
-    - pip
-    - setuptools >=77
-    - setuptools-scm >=8
-    - wheel
+    - cargo-bundle-licenses
+    - {{ compiler('rust') }}
   run:
-    - python >={{ python_min }}
-    - real-ladybug >=0.15.3,<0.16
-    - tomli >=2.0.1  # [py<311]
-    - tree-sitter >=0.25.2,<0.26
-    - tree-sitter-python >=0.25.0,<0.26
 
 test:
-  imports:
-    - codebase_graph
   commands:
     - codebase-graph --help
-    - codebase-graph-mcp --help
-  requires:
-    - python {{ python_min }}
+    - codebase-graph mcp --help
 
 about:
   home: https://github.com/rabii-chaarani/codebaseGraph
-  summary: Generic codebase knowledge graph engine for Python projects.
+  summary: Native codebase knowledge graph CLI and MCP server.
   license: MIT
 
 extra:

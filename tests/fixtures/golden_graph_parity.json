@@ -1,6 +1,6 @@
 {
   "aggregate": {
-    "edge_count": 964,
+    "edge_count": 983,
     "edge_counts": {
       "Assigns": 2,
       "Calls": 15,
@@ -10,14 +10,14 @@
       "DependsOn": 6,
       "DerivedFrom": 118,
       "Documents": 3,
-      "EvidencedBy": 155,
+      "EvidencedBy": 163,
       "HasParameter": 2,
       "HasReturnType": 3,
       "HasScope": 26,
       "HasTypeAnnotation": 8,
       "Imports": 6,
-      "References": 173,
-      "ResolvesTo": 155
+      "References": 179,
+      "ResolvesTo": 160
     },
     "graph_count": 8,
     "node_count": 469,
@@ -366,9 +366,9 @@
           "syntax_graph": true
         },
         "semantic_relations": {
-          "call_type_relations": 44,
+          "call_type_relations": 46,
           "evidence_links": 0,
-          "resolution_evidence": 78
+          "resolution_evidence": 83
         },
         "source_path": "README.md",
         "source_root": "$FIXTURE_ROOT"
@@ -2852,9 +2852,9 @@
           "syntax_graph": true
         },
         "semantic_relations": {
-          "call_type_relations": 44,
+          "call_type_relations": 46,
           "evidence_links": 22,
-          "resolution_evidence": 78
+          "resolution_evidence": 83
         },
         "source_path": "fortran/solver.f90",
         "source_root": "$FIXTURE_ROOT"
@@ -5602,26 +5602,6 @@
           "byte_end": null,
           "byte_start": null,
           "confidence": 0.77,
-          "id": "edge:semantic-evidence:0276fa8c650f2d43fd66",
-          "kind": "semantic_evidence",
-          "line_end": null,
-          "line_start": null,
-          "metadata": {
-            "canonical_key": "EvidencedBy|CallExpression:040ba2f943eaa1758c16|SyntaxCapture:f707570db5975548026b|semantic_evidence",
-            "evidence_id": "evidence:f58ce24b0fc6597d1100",
-            "provider": "",
-            "resolver": "semantic",
-            "semantic_relation_id": "edge:9fbf7edbadb1864ee8ca",
-            "source": "symbol_table"
-          },
-          "source_id": "CallExpression:040ba2f943eaa1758c16",
-          "target_id": "SyntaxCapture:f707570db5975548026b",
-          "type": "EvidencedBy"
-        },
-        {
-          "byte_end": null,
-          "byte_start": null,
-          "confidence": 0.77,
           "id": "edge:semantic-evidence:048b4b830b9e59885e79",
           "kind": "semantic_evidence",
           "line_end": null,
@@ -5655,26 +5635,6 @@
             "source": "symbol_table"
           },
           "source_id": "TypeAnnotation:ac3fb3b84bbc46fc6953",
-          "target_id": "File:312e250a374cdfd7e26a",
-          "type": "EvidencedBy"
-        },
-        {
-          "byte_end": null,
-          "byte_start": null,
-          "confidence": 0.77,
-          "id": "edge:semantic-evidence:363756eaae1fbbd6305f",
-          "kind": "semantic_evidence",
-          "line_end": null,
-          "line_start": null,
-          "metadata": {
-            "canonical_key": "EvidencedBy|CallExpression:88123c1b5846a8605ac5|File:312e250a374cdfd7e26a|semantic_evidence",
-            "evidence_id": "evidence:f1fe4c8f8b6865f4b6b7",
-            "provider": "",
-            "resolver": "semantic",
-            "semantic_relation_id": "edge:ab6d951a82af879eb125",
-            "source": "symbol_table"
-          },
-          "source_id": "CallExpression:88123c1b5846a8605ac5",
           "target_id": "File:312e250a374cdfd7e26a",
           "type": "EvidencedBy"
         },
@@ -5762,6 +5722,26 @@
           "byte_end": null,
           "byte_start": null,
           "confidence": 0.77,
+          "id": "edge:semantic-evidence:5fb973bacd0abbbc564b",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|CallExpression:040ba2f943eaa1758c16|File:312e250a374cdfd7e26a|semantic_evidence",
+            "evidence_id": "evidence:250dc8f86353dc5a3a3a",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:c6afcc7b8f659c6911ea",
+            "source": "symbol_table"
+          },
+          "source_id": "CallExpression:040ba2f943eaa1758c16",
+          "target_id": "File:312e250a374cdfd7e26a",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
           "id": "edge:semantic-evidence:69639bc2201962791a63",
           "kind": "semantic_evidence",
           "line_end": null,
@@ -5821,6 +5801,26 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.72,
+          "id": "edge:semantic-evidence:74bd963964554f661deb",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|Reference:f94c46f77c29d2841e1b|SyntaxCapture:3f7a546ebf1966e06a3d|semantic_evidence",
+            "evidence_id": "evidence:eac96cdb695ffaa73b9a",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:09f93b24420a6f1e3a50",
+            "source": "symbol_table"
+          },
+          "source_id": "Reference:f94c46f77c29d2841e1b",
+          "target_id": "SyntaxCapture:3f7a546ebf1966e06a3d",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 0.77,
           "id": "edge:semantic-evidence:75b4f145ade8b7d70d2b",
           "kind": "semantic_evidence",
@@ -5835,6 +5835,26 @@
             "source": "symbol_table"
           },
           "source_id": "Reference:1aa035032ebde57a87dd",
+          "target_id": "File:312e250a374cdfd7e26a",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:semantic-evidence:7c6a0fe499390d21e02b",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|CallExpression:88123c1b5846a8605ac5|File:312e250a374cdfd7e26a|semantic_evidence",
+            "evidence_id": "evidence:7b99e0bd55863034940a",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:073351cf36387a26f914",
+            "source": "symbol_table"
+          },
+          "source_id": "CallExpression:88123c1b5846a8605ac5",
           "target_id": "File:312e250a374cdfd7e26a",
           "type": "EvidencedBy"
         },
@@ -5962,6 +5982,26 @@
           "byte_end": null,
           "byte_start": null,
           "confidence": 0.77,
+          "id": "edge:semantic-evidence:a28cb3db9392670ccc00",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|CallExpression:88123c1b5846a8605ac5|SyntaxCapture:d8f560a551859aa97499|semantic_evidence",
+            "evidence_id": "evidence:7b99e0bd55863034940a",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:073351cf36387a26f914",
+            "source": "symbol_table"
+          },
+          "source_id": "CallExpression:88123c1b5846a8605ac5",
+          "target_id": "SyntaxCapture:d8f560a551859aa97499",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
           "id": "edge:semantic-evidence:a2ec4b5dbe51bdaee69f",
           "kind": "semantic_evidence",
           "line_end": null,
@@ -5996,6 +6036,26 @@
           },
           "source_id": "Reference:de4c71644e50b3657a22",
           "target_id": "File:312e250a374cdfd7e26a",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.72,
+          "id": "edge:semantic-evidence:aa2a8773b63a75a5e635",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|Reference:5587aadad13705caa2b4|SyntaxCapture:6a39a3e67a4f5fbaf293|semantic_evidence",
+            "evidence_id": "evidence:14912730f1f36b8e0dae",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:5f21e4af5b0e2cd0dc1c",
+            "source": "symbol_table"
+          },
+          "source_id": "Reference:5587aadad13705caa2b4",
+          "target_id": "SyntaxCapture:6a39a3e67a4f5fbaf293",
           "type": "EvidencedBy"
         },
         {
@@ -6061,20 +6121,20 @@
         {
           "byte_end": null,
           "byte_start": null,
-          "confidence": 0.77,
-          "id": "edge:semantic-evidence:c17be01c6073f6d70692",
+          "confidence": 0.72,
+          "id": "edge:semantic-evidence:cdaf63bbc0a7e618e2be",
           "kind": "semantic_evidence",
           "line_end": null,
           "line_start": null,
           "metadata": {
-            "canonical_key": "EvidencedBy|CallExpression:040ba2f943eaa1758c16|File:312e250a374cdfd7e26a|semantic_evidence",
-            "evidence_id": "evidence:f58ce24b0fc6597d1100",
+            "canonical_key": "EvidencedBy|Reference:5587aadad13705caa2b4|File:312e250a374cdfd7e26a|semantic_evidence",
+            "evidence_id": "evidence:14912730f1f36b8e0dae",
             "provider": "",
             "resolver": "semantic",
-            "semantic_relation_id": "edge:9fbf7edbadb1864ee8ca",
+            "semantic_relation_id": "edge:5f21e4af5b0e2cd0dc1c",
             "source": "symbol_table"
           },
-          "source_id": "CallExpression:040ba2f943eaa1758c16",
+          "source_id": "Reference:5587aadad13705caa2b4",
           "target_id": "File:312e250a374cdfd7e26a",
           "type": "EvidencedBy"
         },
@@ -6201,6 +6261,26 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.72,
+          "id": "edge:semantic-evidence:e3d0b691d31bc83af7b4",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|Reference:f94c46f77c29d2841e1b|File:312e250a374cdfd7e26a|semantic_evidence",
+            "evidence_id": "evidence:eac96cdb695ffaa73b9a",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:09f93b24420a6f1e3a50",
+            "source": "symbol_table"
+          },
+          "source_id": "Reference:f94c46f77c29d2841e1b",
+          "target_id": "File:312e250a374cdfd7e26a",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 0.77,
           "id": "edge:semantic-evidence:e408aa8041672f8171a5",
           "kind": "semantic_evidence",
@@ -6222,20 +6302,20 @@
           "byte_end": null,
           "byte_start": null,
           "confidence": 0.77,
-          "id": "edge:semantic-evidence:e8732821564710082dec",
+          "id": "edge:semantic-evidence:f13ab7ed1e8994ef6727",
           "kind": "semantic_evidence",
           "line_end": null,
           "line_start": null,
           "metadata": {
-            "canonical_key": "EvidencedBy|CallExpression:88123c1b5846a8605ac5|SyntaxCapture:d8f560a551859aa97499|semantic_evidence",
-            "evidence_id": "evidence:f1fe4c8f8b6865f4b6b7",
+            "canonical_key": "EvidencedBy|CallExpression:040ba2f943eaa1758c16|SyntaxCapture:f707570db5975548026b|semantic_evidence",
+            "evidence_id": "evidence:250dc8f86353dc5a3a3a",
             "provider": "",
             "resolver": "semantic",
-            "semantic_relation_id": "edge:ab6d951a82af879eb125",
+            "semantic_relation_id": "edge:c6afcc7b8f659c6911ea",
             "source": "symbol_table"
           },
-          "source_id": "CallExpression:88123c1b5846a8605ac5",
-          "target_id": "SyntaxCapture:d8f560a551859aa97499",
+          "source_id": "CallExpression:040ba2f943eaa1758c16",
+          "target_id": "SyntaxCapture:f707570db5975548026b",
           "type": "EvidencedBy"
         },
         {
@@ -6423,25 +6503,6 @@
           "byte_end": null,
           "byte_start": null,
           "confidence": 0.77,
-          "id": "edge:2a15dbbebb37939fc13b",
-          "kind": "semantic_reference",
-          "line_end": null,
-          "line_start": null,
-          "metadata": {
-            "canonical_key": "References|CallExpression:040ba2f943eaa1758c16|Symbol:a30ebf2763c6e713b7a6|semantic_reference",
-            "label": "fmt.Println",
-            "rationale": "symbol_table matched fmt.Println",
-            "resolution_source": "symbol_table",
-            "resolver": "semantic"
-          },
-          "source_id": "CallExpression:040ba2f943eaa1758c16",
-          "target_id": "Symbol:a30ebf2763c6e713b7a6",
-          "type": "References"
-        },
-        {
-          "byte_end": null,
-          "byte_start": null,
-          "confidence": 0.77,
           "id": "edge:2d6578bea1c7b0aad590",
           "kind": "semantic_reference",
           "line_end": null,
@@ -6455,6 +6516,25 @@
           },
           "source_id": "TypeAnnotation:e483b2d80cc8b5e08b14",
           "target_id": "Class:bcb0304db592555960bf",
+          "type": "References"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:322c91724553a6d4101c",
+          "kind": "semantic_reference",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "References|CallExpression:88123c1b5846a8605ac5|Symbol:fc9a12648c4ffe1f484d|semantic_reference",
+            "label": "fmt.Println",
+            "rationale": "symbol_table matched fmt.Println",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "CallExpression:88123c1b5846a8605ac5",
+          "target_id": "Symbol:fc9a12648c4ffe1f484d",
           "type": "References"
         },
         {
@@ -6548,19 +6628,19 @@
           "byte_end": null,
           "byte_start": null,
           "confidence": 0.77,
-          "id": "edge:6840ed97f26d4a542411",
+          "id": "edge:5ee44cfc768636fd5a60",
           "kind": "semantic_reference",
           "line_end": null,
           "line_start": null,
           "metadata": {
-            "canonical_key": "References|CallExpression:88123c1b5846a8605ac5|Symbol:a30ebf2763c6e713b7a6|semantic_reference",
+            "canonical_key": "References|CallExpression:040ba2f943eaa1758c16|Symbol:fc9a12648c4ffe1f484d|semantic_reference",
             "label": "fmt.Println",
             "rationale": "symbol_table matched fmt.Println",
             "resolution_source": "symbol_table",
             "resolver": "semantic"
           },
-          "source_id": "CallExpression:88123c1b5846a8605ac5",
-          "target_id": "Symbol:a30ebf2763c6e713b7a6",
+          "source_id": "CallExpression:040ba2f943eaa1758c16",
+          "target_id": "Symbol:fc9a12648c4ffe1f484d",
           "type": "References"
         },
         {
@@ -6829,6 +6909,44 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.72,
+          "id": "edge:c87b6fdcbb1bc9dcddd9",
+          "kind": "semantic_reference",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "References|Reference:5587aadad13705caa2b4|Symbol:a946301108ea34b5ffb6|semantic_reference",
+            "label": "fmt",
+            "rationale": "symbol_table matched fmt",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "Reference:5587aadad13705caa2b4",
+          "target_id": "Symbol:a946301108ea34b5ffb6",
+          "type": "References"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.72,
+          "id": "edge:ca8aa04de270df7fa410",
+          "kind": "semantic_reference",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "References|Reference:f94c46f77c29d2841e1b|Symbol:a946301108ea34b5ffb6|semantic_reference",
+            "label": "fmt",
+            "rationale": "symbol_table matched fmt",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "Reference:f94c46f77c29d2841e1b",
+          "target_id": "Symbol:a946301108ea34b5ffb6",
+          "type": "References"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 0.77,
           "id": "edge:cbfddcf78abd60c54647",
           "kind": "semantic_reference",
@@ -7045,6 +7163,25 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:073351cf36387a26f914",
+          "kind": "semantic_resolution",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "ResolvesTo|CallExpression:88123c1b5846a8605ac5|Symbol:fc9a12648c4ffe1f484d|semantic_resolution",
+            "label": "fmt.Println",
+            "rationale": "symbol_table matched fmt.Println",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "CallExpression:88123c1b5846a8605ac5",
+          "target_id": "Symbol:fc9a12648c4ffe1f484d",
+          "type": "ResolvesTo"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 1.0,
           "id": "edge:07622f6e33a731473ec5",
           "kind": "reference_resolution",
@@ -7057,6 +7194,25 @@
           },
           "source_id": "Reference:3bc03ca8e061d9fa605d",
           "target_id": "Symbol:f7ba4cfd4aa10a525608",
+          "type": "ResolvesTo"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.72,
+          "id": "edge:09f93b24420a6f1e3a50",
+          "kind": "semantic_resolution",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "ResolvesTo|Reference:f94c46f77c29d2841e1b|Symbol:a946301108ea34b5ffb6|semantic_resolution",
+            "label": "fmt",
+            "rationale": "symbol_table matched fmt",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "Reference:f94c46f77c29d2841e1b",
+          "target_id": "Symbol:a946301108ea34b5ffb6",
           "type": "ResolvesTo"
         },
         {
@@ -7329,6 +7485,25 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.72,
+          "id": "edge:5f21e4af5b0e2cd0dc1c",
+          "kind": "semantic_resolution",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "ResolvesTo|Reference:5587aadad13705caa2b4|Symbol:a946301108ea34b5ffb6|semantic_resolution",
+            "label": "fmt",
+            "rationale": "symbol_table matched fmt",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "Reference:5587aadad13705caa2b4",
+          "target_id": "Symbol:a946301108ea34b5ffb6",
+          "type": "ResolvesTo"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 0.77,
           "id": "edge:6d9543977e72ed28f040",
           "kind": "semantic_resolution",
@@ -7416,44 +7591,6 @@
         {
           "byte_end": null,
           "byte_start": null,
-          "confidence": 0.77,
-          "id": "edge:9fbf7edbadb1864ee8ca",
-          "kind": "semantic_resolution",
-          "line_end": null,
-          "line_start": null,
-          "metadata": {
-            "canonical_key": "ResolvesTo|CallExpression:040ba2f943eaa1758c16|Symbol:a30ebf2763c6e713b7a6|semantic_resolution",
-            "label": "fmt.Println",
-            "rationale": "symbol_table matched fmt.Println",
-            "resolution_source": "symbol_table",
-            "resolver": "semantic"
-          },
-          "source_id": "CallExpression:040ba2f943eaa1758c16",
-          "target_id": "Symbol:a30ebf2763c6e713b7a6",
-          "type": "ResolvesTo"
-        },
-        {
-          "byte_end": null,
-          "byte_start": null,
-          "confidence": 0.77,
-          "id": "edge:ab6d951a82af879eb125",
-          "kind": "semantic_resolution",
-          "line_end": null,
-          "line_start": null,
-          "metadata": {
-            "canonical_key": "ResolvesTo|CallExpression:88123c1b5846a8605ac5|Symbol:a30ebf2763c6e713b7a6|semantic_resolution",
-            "label": "fmt.Println",
-            "rationale": "symbol_table matched fmt.Println",
-            "resolution_source": "symbol_table",
-            "resolver": "semantic"
-          },
-          "source_id": "CallExpression:88123c1b5846a8605ac5",
-          "target_id": "Symbol:a30ebf2763c6e713b7a6",
-          "type": "ResolvesTo"
-        },
-        {
-          "byte_end": null,
-          "byte_start": null,
           "confidence": 1.0,
           "id": "edge:ba1a0d5d8f2e00d6febf",
           "kind": "reference_resolution",
@@ -7484,6 +7621,25 @@
             "resolver": "semantic"
           },
           "source_id": "Reference:39d41619cde3c27e8d84",
+          "target_id": "Symbol:fc9a12648c4ffe1f484d",
+          "type": "ResolvesTo"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:c6afcc7b8f659c6911ea",
+          "kind": "semantic_resolution",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "ResolvesTo|CallExpression:040ba2f943eaa1758c16|Symbol:fc9a12648c4ffe1f484d|semantic_resolution",
+            "label": "fmt.Println",
+            "rationale": "symbol_table matched fmt.Println",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "CallExpression:040ba2f943eaa1758c16",
           "target_id": "Symbol:fc9a12648c4ffe1f484d",
           "type": "ResolvesTo"
         },
@@ -7602,6 +7758,25 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.72,
+          "id": "edge:efe8b9aef38890090276",
+          "kind": "semantic_resolution",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "ResolvesTo|ImportDeclaration:72aa080437440c711ba5|Symbol:a946301108ea34b5ffb6|semantic_resolution",
+            "label": "fmt",
+            "rationale": "symbol_table matched fmt",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "ImportDeclaration:72aa080437440c711ba5",
+          "target_id": "Symbol:a946301108ea34b5ffb6",
+          "type": "ResolvesTo"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 0.77,
           "id": "edge:f264e20317484d5b4dbc",
           "kind": "semantic_resolution",
@@ -7659,9 +7834,9 @@
           "syntax_graph": true
         },
         "semantic_relations": {
-          "call_type_relations": 44,
-          "evidence_links": 32,
-          "resolution_evidence": 78
+          "call_type_relations": 46,
+          "evidence_links": 36,
+          "resolution_evidence": 83
         },
         "source_path": "go/main.go",
         "source_root": "$FIXTURE_ROOT"
@@ -9685,7 +9860,7 @@
       ],
       "path": "go/main.go",
       "summary": {
-        "edge_count": 197,
+        "edge_count": 206,
         "edge_counts": {
           "Calls": 2,
           "Contains": 53,
@@ -9693,11 +9868,11 @@
           "Defines": 3,
           "DependsOn": 1,
           "DerivedFrom": 23,
-          "EvidencedBy": 33,
+          "EvidencedBy": 37,
           "HasScope": 4,
           "Imports": 1,
-          "References": 40,
-          "ResolvesTo": 34
+          "References": 42,
+          "ResolvesTo": 37
         },
         "node_count": 95,
         "node_counts": {
@@ -11256,9 +11431,9 @@
           "syntax_graph": true
         },
         "semantic_relations": {
-          "call_type_relations": 44,
+          "call_type_relations": 46,
           "evidence_links": 14,
-          "resolution_evidence": 78
+          "resolution_evidence": 83
         },
         "source_path": "native/lib.c",
         "source_root": "$FIXTURE_ROOT"
@@ -15344,9 +15519,9 @@
           "syntax_graph": true
         },
         "semantic_relations": {
-          "call_type_relations": 44,
+          "call_type_relations": 46,
           "evidence_links": 28,
-          "resolution_evidence": 78
+          "resolution_evidence": 83
         },
         "source_path": "native/lib.cpp",
         "source_root": "$FIXTURE_ROOT"
@@ -20204,9 +20379,9 @@
           "syntax_graph": true
         },
         "semantic_relations": {
-          "call_type_relations": 44,
+          "call_type_relations": 46,
           "evidence_links": 30,
-          "resolution_evidence": 78
+          "resolution_evidence": 83
         },
         "source_path": "rust/lib.rs",
         "source_root": "$FIXTURE_ROOT"
@@ -23030,6 +23205,26 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:semantic-evidence:2585a02cf21025e4faac",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|TypeAnnotation:75f0613ec944bb77fd29|File:ac95095330a4a20b1f19|semantic_evidence",
+            "evidence_id": "evidence:a6b2183413d1b3d1caed",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:8ec6e2807fd53a2417f0",
+            "source": "symbol_table"
+          },
+          "source_id": "TypeAnnotation:75f0613ec944bb77fd29",
+          "target_id": "File:ac95095330a4a20b1f19",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 0.9,
           "id": "edge:semantic-evidence:31be9bbdf9a2564af832",
           "kind": "semantic_evidence",
@@ -23171,6 +23366,26 @@
           "byte_end": null,
           "byte_start": null,
           "confidence": 0.77,
+          "id": "edge:semantic-evidence:86f953b2c9f1f2ee1eb3",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|TypeAnnotation:ffd422e28aca2276b628|SyntaxCapture:9ee8dba3b2b03c126d75|semantic_evidence",
+            "evidence_id": "evidence:35946aadad9f4bd7bf31",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:12710f5f95f2be97da06",
+            "source": "symbol_table"
+          },
+          "source_id": "TypeAnnotation:ffd422e28aca2276b628",
+          "target_id": "SyntaxCapture:9ee8dba3b2b03c126d75",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
           "id": "edge:semantic-evidence:b3842b57307886986d7d",
           "kind": "semantic_evidence",
           "line_end": null,
@@ -23205,6 +23420,26 @@
           },
           "source_id": "Reference:cd8b9e23b7afb37f7bef",
           "target_id": "SyntaxCapture:4d4a38dfe6be11c7e9ee",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:semantic-evidence:cf9666ec4552eb7e021d",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|TypeAnnotation:75f0613ec944bb77fd29|SyntaxCapture:7c9f3a9d796ed518606f|semantic_evidence",
+            "evidence_id": "evidence:a6b2183413d1b3d1caed",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:8ec6e2807fd53a2417f0",
+            "source": "symbol_table"
+          },
+          "source_id": "TypeAnnotation:75f0613ec944bb77fd29",
+          "target_id": "SyntaxCapture:7c9f3a9d796ed518606f",
           "type": "EvidencedBy"
         },
         {
@@ -23245,6 +23480,26 @@
           },
           "source_id": "CallExpression:25af75bd35d3d8254c9f",
           "target_id": "SyntaxCapture:f8178661042124602dd5",
+          "type": "EvidencedBy"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:semantic-evidence:e3f10535e7ad57f4acfc",
+          "kind": "semantic_evidence",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "EvidencedBy|TypeAnnotation:ffd422e28aca2276b628|File:ac95095330a4a20b1f19|semantic_evidence",
+            "evidence_id": "evidence:35946aadad9f4bd7bf31",
+            "provider": "",
+            "resolver": "semantic",
+            "semantic_relation_id": "edge:12710f5f95f2be97da06",
+            "source": "symbol_table"
+          },
+          "source_id": "TypeAnnotation:ffd422e28aca2276b628",
+          "target_id": "File:ac95095330a4a20b1f19",
           "type": "EvidencedBy"
         },
         {
@@ -23497,6 +23752,23 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:0c69151d66173591355b",
+          "kind": "semantic_type_reference",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "References|TypeAnnotation:ffd422e28aca2276b628|Symbol:5f05bc739fc69ff5c55d|semantic_type_reference",
+            "resolver": "semantic",
+            "source_edge": "edge:12710f5f95f2be97da06"
+          },
+          "source_id": "TypeAnnotation:ffd422e28aca2276b628",
+          "target_id": "Symbol:5f05bc739fc69ff5c55d",
+          "type": "References"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 1.0,
           "id": "edge:22c6da5074321c927e05",
           "kind": "reference_reference",
@@ -23636,6 +23908,42 @@
           },
           "source_id": "CallExpression:96291dd35a4d9773c2af",
           "target_id": "Method:00c8277476e47421682b",
+          "type": "References"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:6fa4db4b71eba2c2a9bf",
+          "kind": "semantic_type_reference",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "References|TypeAnnotation:75f0613ec944bb77fd29|Symbol:5f05bc739fc69ff5c55d|semantic_type_reference",
+            "resolver": "semantic",
+            "source_edge": "edge:8ec6e2807fd53a2417f0"
+          },
+          "source_id": "TypeAnnotation:75f0613ec944bb77fd29",
+          "target_id": "Symbol:5f05bc739fc69ff5c55d",
+          "type": "References"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:80f3bbfc1623db1abf1e",
+          "kind": "semantic_reference",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "References|TypeAnnotation:ffd422e28aca2276b628|Symbol:5f05bc739fc69ff5c55d|semantic_reference",
+            "label": "str",
+            "rationale": "symbol_table matched str",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "TypeAnnotation:ffd422e28aca2276b628",
+          "target_id": "Symbol:5f05bc739fc69ff5c55d",
           "type": "References"
         },
         {
@@ -23836,6 +24144,25 @@
         {
           "byte_end": null,
           "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:eab29daed642887d0a89",
+          "kind": "semantic_reference",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "References|TypeAnnotation:75f0613ec944bb77fd29|Symbol:5f05bc739fc69ff5c55d|semantic_reference",
+            "label": "str",
+            "rationale": "symbol_table matched str",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "TypeAnnotation:75f0613ec944bb77fd29",
+          "target_id": "Symbol:5f05bc739fc69ff5c55d",
+          "type": "References"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
           "confidence": 1.0,
           "id": "edge:edd83fac6c57441ae456",
           "kind": "reference_reference",
@@ -23865,6 +24192,25 @@
           },
           "source_id": "TypeAnnotation:75f0613ec944bb77fd29",
           "target_id": "Symbol:895ef1076c1f3b0beab7",
+          "type": "ResolvesTo"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:12710f5f95f2be97da06",
+          "kind": "semantic_resolution",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "ResolvesTo|TypeAnnotation:ffd422e28aca2276b628|Symbol:5f05bc739fc69ff5c55d|semantic_resolution",
+            "label": "str",
+            "rationale": "symbol_table matched str",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "TypeAnnotation:ffd422e28aca2276b628",
+          "target_id": "Symbol:5f05bc739fc69ff5c55d",
           "type": "ResolvesTo"
         },
         {
@@ -24011,6 +24357,25 @@
           },
           "source_id": "Reference:1910dcffdd5c689f3681",
           "target_id": "Method:00c8277476e47421682b",
+          "type": "ResolvesTo"
+        },
+        {
+          "byte_end": null,
+          "byte_start": null,
+          "confidence": 0.77,
+          "id": "edge:8ec6e2807fd53a2417f0",
+          "kind": "semantic_resolution",
+          "line_end": null,
+          "line_start": null,
+          "metadata": {
+            "canonical_key": "ResolvesTo|TypeAnnotation:75f0613ec944bb77fd29|Symbol:5f05bc739fc69ff5c55d|semantic_resolution",
+            "label": "str",
+            "rationale": "symbol_table matched str",
+            "resolution_source": "symbol_table",
+            "resolver": "semantic"
+          },
+          "source_id": "TypeAnnotation:75f0613ec944bb77fd29",
+          "target_id": "Symbol:5f05bc739fc69ff5c55d",
           "type": "ResolvesTo"
         },
         {
@@ -24207,9 +24572,9 @@
           "syntax_graph": true
         },
         "semantic_relations": {
-          "call_type_relations": 44,
-          "evidence_links": 16,
-          "resolution_evidence": 78
+          "call_type_relations": 46,
+          "evidence_links": 20,
+          "resolution_evidence": 83
         },
         "source_path": "src/app.py",
         "source_root": "$FIXTURE_ROOT"
@@ -25488,7 +25853,7 @@
       ],
       "path": "src/app.py",
       "summary": {
-        "edge_count": 140,
+        "edge_count": 150,
         "edge_counts": {
           "Assigns": 2,
           "Calls": 5,
@@ -25497,14 +25862,14 @@
           "Defines": 4,
           "DependsOn": 1,
           "DerivedFrom": 20,
-          "EvidencedBy": 17,
+          "EvidencedBy": 21,
           "HasParameter": 1,
           "HasReturnType": 2,
           "HasScope": 4,
           "HasTypeAnnotation": 4,
           "Imports": 1,
-          "References": 20,
-          "ResolvesTo": 19
+          "References": 24,
+          "ResolvesTo": 21
         },
         "node_count": 60,
         "node_counts": {
@@ -26190,9 +26555,9 @@
           "syntax_graph": true
         },
         "semantic_relations": {
-          "call_type_relations": 44,
+          "call_type_relations": 46,
           "evidence_links": 4,
-          "resolution_evidence": 78
+          "resolution_evidence": 83
         },
         "source_path": "src/util.py",
         "source_root": "$FIXTURE_ROOT"
@@ -26741,7 +27106,7 @@
     "deleted_paths": [],
     "diagnostics": [],
     "graph_summary": {
-      "edge_count": 957,
+      "edge_count": 976,
       "node_count": 455,
       "ontology": "code_ontology_v1",
       "partition_count": 8

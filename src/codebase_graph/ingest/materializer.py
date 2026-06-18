@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -577,22 +578,14 @@ class GraphMaterializer:
 
     def _materialize_native_syntax_batch(self, mode: MaterializeMode) -> MaterializationResult | None:
         """Run the in-process Rust syntax materialization kernel for supported persistent rebuilds."""
-        if (
-            os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
-            and self.semantic_enrichment
-            and self.semantic_provider_mode != "local_only"
-        ):
-            if self._native_syntax_batch_strict():
-                raise RuntimeError(
-                    "Native semantic materialization only supports local_only provider mode"
-                )
-            return None
+        if self.semantic_enrichment and self.semantic_provider_mode != "local_only":
+            raise RuntimeError("Native semantic materialization only supports local_only provider mode")
         if not self._native_syntax_batch_enabled():
             return None
 
         from codebase_graph._native.materialization import materialize_syntax_batch, staging_dir_for
 
-        strict = self._native_syntax_batch_strict()
+        strict = True
         target_db_path = _filesystem_db_path(self.db_path)
         lock_fd, lock_path = _acquire_materialization_lock(target_db_path)
         try:
@@ -600,7 +593,11 @@ class GraphMaterializer:
             temp_db_path = _temporary_sibling(target_db_path, suffix=".lbug.tmp")
             temp_manifest_path = _temporary_sibling(self.manifest_path, suffix=".manifest.tmp")
             marker_path = self._rebuild_marker_path
-            effective_mode: MaterializeMode = "full" if mode == "full" or self._should_force_atomic_recovery() else mode
+            # Native writes target a fresh temporary database before an atomic swap. Until
+            # Rust supports copying unchanged partitions forward, changed-mode requests use
+            # a full native rebuild so the temp database is complete and never mutates the
+            # current production database in place.
+            effective_mode: MaterializeMode = "full"
 
             with tempfile.TemporaryDirectory(prefix="codebase-graph-native-staging-") as staging_dir:
                 payload = self._native_syntax_batch_payload(
@@ -611,11 +608,6 @@ class GraphMaterializer:
                     strict=strict,
                 )
                 result = materialize_syntax_batch(payload, strict=strict)
-                if result is None:
-                    _unlink_if_exists(temp_db_path)
-                    _unlink_db_sidecars(temp_db_path)
-                    _unlink_if_exists(temp_manifest_path)
-                    return None
 
                 snapshots = {
                     path: SourceSnapshot(
@@ -687,17 +679,15 @@ class GraphMaterializer:
     def _native_syntax_batch_enabled(self) -> bool:
         """Return whether this materializer can hand syntax materialization to Rust."""
         return (
-            os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
-            and (not self.semantic_enrichment or self.semantic_provider_mode == "local_only")
-            and not self._store_injected
+            not self._store_injected
             and not self._parser_registry_injected
             and not self._graph_builder_injected
+            # The legacy Python API can have the Python Ladybug binding loaded in-process.
+            # Production CLI/MCP execution stays Rust-owned; this avoids mixing both
+            # native database bindings inside one Python interpreter.
+            and "real_ladybug" not in sys.modules
             and self._can_atomic_rebuild()
         )
-
-    def _native_syntax_batch_strict(self) -> bool:
-        """Return whether eligible native materialization failures should be fatal."""
-        return os.environ.get("CODEBASE_GRAPH_NATIVE_STRICT") == "1"
 
     def _native_syntax_batch_payload(
         self,
@@ -886,9 +876,10 @@ class GraphMaterializer:
 
     def _scan_source_state(self, previous_manifest: MaterializationManifest | None = None) -> SourceScanState:
         """Scan source files and optionally compute the manifest diff natively."""
-        native_state = self._native_scan_source_state(previous_manifest)
-        if native_state is not None:
-            return native_state
+        if not self._store_injected and not self._parser_registry_injected and "real_ladybug" not in sys.modules:
+            native_state = self._native_scan_source_state(previous_manifest)
+            if native_state is not None:
+                return native_state
         snapshots, diagnostics = self._scan_source_files_python()
         diff = None
         if previous_manifest is not None:
@@ -927,7 +918,7 @@ class GraphMaterializer:
         return snapshots, diagnostics
 
     def _native_scan_source_state(self, previous_manifest: MaterializationManifest | None) -> SourceScanState | None:
-        """Scan sources and compute manifest diffs through the opt-in native helper."""
+        """Scan sources and compute manifest diffs through the native helper."""
         result = scan_native_repository(self._encode_native_scan_payload(previous_manifest))
         if result is None:
             return None
@@ -1018,10 +1009,15 @@ class GraphMaterializer:
         return result.graph
 
     def _build_file_graph(self, bundle: ParseBundle) -> GraphBuildResult:
-        """Build one file graph through the configured Python or opt-in native builder."""
-        if self._graph_builder_injected or not _native_graph_builder_enabled():
+        """Build one file graph through Rust unless a test seam is injected."""
+        if (
+            self._graph_builder_injected
+            or self._parser_registry_injected
+            or self._store_injected
+            or "real_ladybug" in sys.modules
+        ):
             return self.builder.build_file_graph(bundle)
-        return build_native_file_graph(bundle, fallback_builder=self.builder)
+        return build_native_file_graph(bundle)
 
     def _build_context(
         self,
@@ -1065,11 +1061,6 @@ def _is_excluded_part(part: str) -> bool:
         True when the requested condition is satisfied; otherwise False.
     """
     return part in EXCLUDED_PARTS or part.endswith(".egg-info")
-
-
-def _native_graph_builder_enabled() -> bool:
-    """Return whether materialization should opt into the native graph builder."""
-    return os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
 
 
 def _normalize_db_path(db_path: str | Path) -> str | Path:

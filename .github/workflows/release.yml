@@ -6,13 +6,8 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      pypi-environment-smoke:
-        description: Verify the pypi environment and OIDC claims without publishing.
-        required: false
-        type: boolean
-        default: false
       publish-existing-tag:
-        description: Publish an existing GitHub release tag to PyPI without creating a new release.
+        description: Re-publish an existing GitHub release tag's native artifacts.
         required: false
         type: string
         default: ""
@@ -22,68 +17,12 @@ permissions:
 
 env:
   PIP_NO_CACHE_DIR: "1"
+  MACOSX_DEPLOYMENT_TARGET: "13.3"
 
 jobs:
-  pypi-environment-smoke:
-    name: pypi environment smoke
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.pypi-environment-smoke }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: pypi
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Verify PyPI environment OIDC claims
-        shell: bash
-        run: |
-          python - <<'PY'
-          import base64
-          import json
-          import os
-          import urllib.request
-
-          request_url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
-          separator = "&" if "?" in request_url else "?"
-          request = urllib.request.Request(
-              f"{request_url}{separator}audience=pypi",
-              headers={"Authorization": f"bearer {os.environ['ACTIONS_ID_TOKEN_REQUEST_TOKEN']}"},
-          )
-          with urllib.request.urlopen(request, timeout=30) as response:
-              token = json.load(response)["value"]
-
-          payload = token.split(".")[1]
-          payload += "=" * (-len(payload) % 4)
-          claims = json.loads(base64.urlsafe_b64decode(payload))
-
-          expected_claims = {
-              "aud": "pypi",
-              "environment": "pypi",
-              "repository": os.environ["GITHUB_REPOSITORY"],
-              "repository_owner": os.environ["GITHUB_REPOSITORY_OWNER"],
-              "workflow": "Release",
-          }
-          for claim, expected in expected_claims.items():
-              actual = claims.get(claim)
-              if actual != expected:
-                  raise SystemExit(f"OIDC claim {claim!r} expected {expected!r}, got {actual!r}")
-
-          expected_workflow_ref_prefix = f"{os.environ['GITHUB_REPOSITORY']}/.github/workflows/release.yml@"
-          workflow_ref = claims.get("workflow_ref")
-          if not isinstance(workflow_ref, str) or not workflow_ref.startswith(expected_workflow_ref_prefix):
-              raise SystemExit(
-                  f"OIDC claim 'workflow_ref' expected to start with {expected_workflow_ref_prefix!r}, "
-                  f"got {workflow_ref!r}"
-              )
-
-          print("pypi environment OIDC claims verified")
-          PY
-
   release-please:
     name: release please
-    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.pypi-environment-smoke && inputs.publish-existing-tag == '') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.publish-existing-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -110,14 +49,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
-      name: pypi
+      name: release
     permissions:
       contents: read
 
     env:
       RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
-      CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER: ${{ vars.CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER }}
-      CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT: ${{ vars.CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT }}
+      CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT: ${{ vars.CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT }}
       CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN: ${{ vars.CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN }}
       CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING: ${{ vars.CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING }}
       CODEBASE_GRAPH_REQUIRE_CONDA: ${{ vars.CODEBASE_GRAPH_REQUIRE_CONDA }}
@@ -133,11 +71,8 @@ jobs:
         shell: bash
         run: |
           args=(--production)
-          if [[ "${CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER}" == "true" ]]; then
-            args+=(--confirm trusted-publisher)
-          fi
-          if [[ "${CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT}" == "true" ]]; then
-            args+=(--confirm pypi-environment)
+          if [[ "${CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT}" == "true" ]]; then
+            args+=(--confirm release-environment)
           fi
           if [[ "${CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN}" == "true" ]]; then
             args+=(--confirm hosted-ci-green)
@@ -151,17 +86,30 @@ jobs:
           python scripts/check_release_gate.py "${args[@]}"
 
   build:
-    name: build release distributions
+    name: build native release artifacts (${{ matrix.os }})
     needs:
       - release-please
       - production-gate
     if: needs.release-please.outputs.release-created == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     permissions:
       contents: write
     outputs:
       package-version: ${{ steps.verify-version.outputs.package-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: codebase-graph
+            artifact-suffix: linux-x86_64
+          - os: macos-latest
+            binary: codebase-graph
+            artifact-suffix: macos-universal
+          - os: windows-2022
+            binary: codebase-graph.exe
+            artifact-suffix: windows-x86_64
 
     env:
       RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
@@ -173,29 +121,14 @@ jobs:
           ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.12"
-
-      - name: Build and validate distributions
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install build twine
-          python -m build
-          python -m twine check dist/*
-
       - name: Verify package version matches tag
         id: verify-version
         shell: bash
         run: |
           python - <<'PY'
-          import email
-          import glob
           import os
           import re
-          import tarfile
-          import zipfile
+          import tomllib
 
           tag = os.environ["RELEASE_TAG"]
           match = re.fullmatch(r"v(?P<version>\d+\.\d+\.\d+)", tag)
@@ -203,112 +136,54 @@ jobs:
               raise SystemExit(f"release tag must match vX.Y.Z, got {tag!r}")
           expected = match.group("version")
 
-          versions = set()
-          for artifact in glob.glob("dist/*"):
-              if artifact.endswith(".whl"):
-                  with zipfile.ZipFile(artifact) as wheel:
-                      metadata_name = next(name for name in wheel.namelist() if name.endswith(".dist-info/METADATA"))
-                      metadata = email.message_from_bytes(wheel.read(metadata_name))
-              elif artifact.endswith(".tar.gz"):
-                  with tarfile.open(artifact, "r:gz") as sdist:
-                      metadata_member = next(member for member in sdist.getmembers() if member.name.endswith("/PKG-INFO"))
-                      metadata = email.message_from_binary_file(sdist.extractfile(metadata_member))
-              else:
-                  raise SystemExit(f"unexpected distribution artifact: {artifact}")
-              versions.add(metadata["Version"])
-
-          if versions != {expected}:
-              raise SystemExit(f"built package versions {sorted(versions)} do not match release tag {tag}")
+          with open("rust/crates/codebase_graph_native/Cargo.toml", "rb") as handle:
+              cargo = tomllib.load(handle)
+          actual = cargo["package"]["version"]
+          if actual != expected:
+              raise SystemExit(f"Rust crate version {actual} does not match release tag {tag}")
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
               output.write(f"package-version={expected}\n")
           PY
 
-      - name: Smoke-test built wheel
+      - name: Build Rust production binary
         shell: bash
         run: |
-          python -m venv /tmp/codebase-graph-wheel
-          /tmp/codebase-graph-wheel/bin/python -m pip install --upgrade pip
-          /tmp/codebase-graph-wheel/bin/python -m pip install dist/*.whl
-          /tmp/codebase-graph-wheel/bin/python -m pip install cyclonedx-bom pip-audit
-          /tmp/codebase-graph-wheel/bin/codebase-graph --help
-          /tmp/codebase-graph-wheel/bin/codebase-graph-mcp --help
-          /tmp/codebase-graph-wheel/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-wheel/bin/codebase-graph
-          /tmp/codebase-graph-wheel/bin/python -m pip check
-          /tmp/codebase-graph-wheel/bin/python -m pip_audit --strict . --progress-spinner off --cache-dir /tmp/pip-audit-cache
-          /tmp/codebase-graph-wheel/bin/cyclonedx-py environment /tmp/codebase-graph-wheel/bin/python \
-            --pyproject pyproject.toml \
-            --mc-type library \
-            --output-reproducible \
-            --of JSON \
-            -o codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom.cdx.json
+          cargo build --manifest-path rust/Cargo.toml --locked --release --bin codebase-graph
+          mkdir -p dist/smoke
+          cp "rust/target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
+          chmod +x "dist/smoke/${{ matrix.binary }}"
+          archive="codebase-graph-${{ steps.verify-version.outputs.package-version }}-${{ matrix.artifact-suffix }}.tar.gz"
+          tar -C dist/smoke -czf "dist/${archive}" "${{ matrix.binary }}"
+          shasum -a 256 "dist/${archive}" > "dist/${archive}.sha256"
 
-      - name: Smoke-test source distribution
+      - name: Smoke-test Rust production binary
         shell: bash
         run: |
-          python -m venv /tmp/codebase-graph-sdist
-          /tmp/codebase-graph-sdist/bin/python -m pip install --upgrade pip
-          /tmp/codebase-graph-sdist/bin/python -m pip install dist/*.tar.gz
-          /tmp/codebase-graph-sdist/bin/codebase-graph --help
-          /tmp/codebase-graph-sdist/bin/codebase-graph-mcp --help
-          /tmp/codebase-graph-sdist/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-sdist/bin/codebase-graph
+          "./dist/smoke/${{ matrix.binary }}" --help
+          "./dist/smoke/${{ matrix.binary }}" graph-schema --json
+          "./dist/smoke/${{ matrix.binary }}" setup --repo-root tests/fixtures/sample_project --mcp-client none --instructions-target skip --dry-run --json
+          "./dist/smoke/${{ matrix.binary }}" mcp --help
+          python scripts/smoke_native_artifact.py "./dist/smoke/${{ matrix.binary }}"
 
-      - name: Upload distributions to GitHub release
+      - name: Upload native artifacts to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$RELEASE_TAG" dist/* codebase-graph-${{ steps.verify-version.outputs.package-version }}-sbom.cdx.json --clobber
-
-  publish-pypi:
-    name: publish to PyPI
-    needs:
-      - release-please
-      - build
-    if: needs.release-please.outputs.release-created == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: pypi
-      url: https://pypi.org/p/cbasegraph
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      GH_TOKEN: ${{ github.token }}
-      RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
-
-    steps:
-      - name: Download distributions from GitHub release
-        shell: bash
-        run: |
-          mkdir -p dist
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist --pattern "*.whl" --pattern "*.tar.gz"
-          python - <<'PY'
-          from pathlib import Path
-
-          artifacts = sorted(path.name for path in Path("dist").iterdir())
-          if not any(name.endswith(".whl") for name in artifacts):
-              raise SystemExit(f"release {artifacts=} does not include a wheel")
-          if not any(name.endswith(".tar.gz") for name in artifacts):
-              raise SystemExit(f"release {artifacts=} does not include a source distribution")
-          PY
-
-      - name: Publish distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+        run: gh release upload "$RELEASE_TAG" dist/codebase-graph-*.tar.gz dist/codebase-graph-*.tar.gz.sha256 --clobber
 
   publish-existing-release-gate:
     name: existing release gate
-    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.pypi-environment-smoke && inputs.publish-existing-tag != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish-existing-tag != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
-      name: pypi
+      name: release
     permissions:
       contents: read
 
     env:
       RELEASE_TAG: ${{ inputs.publish-existing-tag }}
-      CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER: ${{ vars.CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER }}
-      CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT: ${{ vars.CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT }}
+      CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT: ${{ vars.CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT }}
       CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN: ${{ vars.CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN }}
       CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING: ${{ vars.CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING }}
       CODEBASE_GRAPH_REQUIRE_CONDA: ${{ vars.CODEBASE_GRAPH_REQUIRE_CONDA }}
@@ -336,11 +211,8 @@ jobs:
         shell: bash
         run: |
           args=(--production)
-          if [[ "${CODEBASE_GRAPH_CONFIRM_TRUSTED_PUBLISHER}" == "true" ]]; then
-            args+=(--confirm trusted-publisher)
-          fi
-          if [[ "${CODEBASE_GRAPH_CONFIRM_PYPI_ENVIRONMENT}" == "true" ]]; then
-            args+=(--confirm pypi-environment)
+          if [[ "${CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT}" == "true" ]]; then
+            args+=(--confirm release-environment)
           fi
           if [[ "${CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN}" == "true" ]]; then
             args+=(--confirm hosted-ci-green)
@@ -353,37 +225,34 @@ jobs:
           fi
           python scripts/check_release_gate.py "${args[@]}"
 
-  publish-existing-pypi:
-    name: publish existing release to PyPI
+  verify-existing-native-artifacts:
+    name: verify existing native artifacts
     needs: publish-existing-release-gate
-    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.pypi-environment-smoke && inputs.publish-existing-tag != '' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish-existing-tag != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: pypi
-      url: https://pypi.org/p/cbasegraph
     permissions:
       contents: read
-      id-token: write
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ inputs.publish-existing-tag }}
 
     steps:
-      - name: Download distributions from GitHub release
+      - name: Download native artifacts from GitHub release
         shell: bash
         run: |
           mkdir -p dist
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist --pattern "*.whl" --pattern "*.tar.gz"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir dist --pattern "codebase-graph-*.tar.gz" --pattern "codebase-graph-*.tar.gz.sha256"
           python - <<'PY'
           from pathlib import Path
 
           artifacts = sorted(path.name for path in Path("dist").iterdir())
-          if not any(name.endswith(".whl") for name in artifacts):
-              raise SystemExit(f"release {artifacts=} does not include a wheel")
-          if not any(name.endswith(".tar.gz") for name in artifacts):
-              raise SystemExit(f"release {artifacts=} does not include a source distribution")
+          required_suffixes = ("linux-x86_64", "macos-universal", "windows-x86_64")
+          for suffix in required_suffixes:
+              archive = [name for name in artifacts if name.startswith("codebase-graph-") and name.endswith(f"{suffix}.tar.gz")]
+              if not archive:
+                  raise SystemExit(f"release {artifacts=} does not include a native {suffix} codebase-graph archive")
+              checksum = f"{archive[0]}.sha256"
+              if checksum not in artifacts:
+                  raise SystemExit(f"release {artifacts=} does not include checksum {checksum}")
           PY
-
-      - name: Publish distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1

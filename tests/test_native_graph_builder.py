@@ -46,7 +46,7 @@ def test_native_graph_builder_matches_python_for_golden_capture_bundles(
     monkeypatch: pytest.MonkeyPatch,
     native_graph_builder_binary: Path,
 ) -> None:
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_GRAPH_BUILDER", native_graph_builder_binary.as_posix())
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_GRAPH_BUILDER", native_graph_builder_binary.as_posix())
 
     for bundle in _golden_capture_bundles():
         expected = _python_graph(bundle)
@@ -55,9 +55,9 @@ def test_native_graph_builder_matches_python_for_golden_capture_bundles(
         assert actual == expected, f"native graph builder changed rows for {bundle.path}"
 
 
-def test_native_graph_builder_uses_python_fallback_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE_GRAPH_BUILDER", raising=False)
+def test_native_graph_builder_requires_native_command_when_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CODEBASE_GRAPH_COMPAT_GRAPH_BUILDER", raising=False)
+    monkeypatch.setattr("codebase_graph._native.graph_builder._built_binary_path", lambda: Path("/missing/native-builder"))
     bundle = ParseBundle(
         language="python",
         path=(FIXTURE_ROOT / "src/app.py").as_posix(),
@@ -69,13 +69,13 @@ def test_native_graph_builder_uses_python_fallback_when_disabled(monkeypatch: py
         ),
     )
 
-    assert build_file_graph(bundle).graph.as_dict() == _python_graph(bundle)
+    with pytest.raises(NativeGraphBuilderUnavailable, match="native graph builder command is unavailable"):
+        build_file_graph(bundle, strict=False)
 
 
 def test_native_graph_builder_strict_mode_rejects_parse_tree_only_bundle(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
     bundle = ParseBundle(
         language="python",
         path="app.py",
@@ -87,7 +87,8 @@ def test_native_graph_builder_strict_mode_rejects_parse_tree_only_bundle(
     with pytest.raises(NativeGraphBuilderUnavailable, match="only supports captures"):
         build_file_graph(bundle, strict=True)
 
-    assert build_file_graph(bundle).graph.as_dict() == _python_graph(bundle)
+    with pytest.raises(NativeGraphBuilderUnavailable, match="only supports captures"):
+        build_file_graph(bundle, strict=False)
 
 
 def _python_graph(bundle: ParseBundle) -> dict[str, Any]:

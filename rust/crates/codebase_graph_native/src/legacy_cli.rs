@@ -4773,7 +4773,7 @@ fn hex(value: &str) -> String {
 }
 
 fn unhex(value: &str) -> Result<String, String> {
-    if !value.len().is_multiple_of(2) {
+    if value.len() % 2 != 0 {
         return Err("hex input has odd length".to_string());
     }
     let mut bytes = Vec::with_capacity(value.len() / 2);

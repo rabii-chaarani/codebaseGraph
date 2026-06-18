@@ -50,8 +50,7 @@ def test_native_bulk_staging_matches_python_files(
     monkeypatch: pytest.MonkeyPatch,
     native_bulk_staging_binary: Path,
 ) -> None:
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_BULK_STAGING", native_bulk_staging_binary.as_posix())
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_BULK_STAGING", native_bulk_staging_binary.as_posix())
     graph = _sample_graph()
 
     python_dir = tmp_path / "python"
@@ -74,8 +73,7 @@ def test_store_native_bulk_loader_preserves_stats(
     monkeypatch: pytest.MonkeyPatch,
     native_bulk_staging_binary: Path,
 ) -> None:
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_BULK_STAGING", native_bulk_staging_binary.as_posix())
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_BULK_STAGING", native_bulk_staging_binary.as_posix())
     graph = _sample_graph()
     expected = _build_bulk_staging_tables([graph])
 

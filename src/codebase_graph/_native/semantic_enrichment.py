@@ -69,11 +69,8 @@ class NativeSemanticBatchResult:
     fallbacks: tuple[NativeSemanticFallback, ...]
 
 
-def run_semantic_batch(payload: str, *, strict: bool = False) -> NativeSemanticBatchResult | None:
+def run_semantic_batch(payload: str, *, strict: bool = True) -> NativeSemanticBatchResult | None:
     """Run the native semantic batch engine for an already-normalized graph payload."""
-    if not strict and os.environ.get("CODEBASE_GRAPH_NATIVE") != "1":
-        return None
-
     command = _native_command(strict=strict)
     if command is None:
         if strict:
@@ -99,7 +96,7 @@ def run_semantic_batch(payload: str, *, strict: bool = False) -> NativeSemanticB
 
 
 def _native_command(*, strict: bool) -> list[str] | None:
-    configured = os.environ.get("CODEBASE_GRAPH_NATIVE_SEMANTIC_BATCH")
+    configured = os.environ.get("CODEBASE_GRAPH_COMPAT_SEMANTIC_BATCH")
     if configured:
         return [configured]
 

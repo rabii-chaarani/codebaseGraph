@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import json
 import shutil
+import argparse
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from codebase_graph.cli import _build_parser, main as cli_main
+from codebase_graph.cli import main as cli_main
 from codebase_graph.db import GraphNeighbor, LadybugGraphQueryAdapter, SearchIndexRow
 from codebase_graph.ingest import GraphMaterializer
-from codebase_graph.mcp.graph_commands import graph_command_spec, graph_tool_specs
+from codebase_graph.mcp.graph_commands import graph_command_spec, graph_command_specs, graph_tool_specs
 from codebase_graph.mcp.runtime import GraphRuntimeConfig
 from codebase_graph.mcp.tools import MAX_GRAPH_QUERY_LIMIT, _context_payload as _tool_context_payload
 from codebase_graph.mcp.tools import _query_payload, handle_tool_call, tool_specs
@@ -661,7 +662,7 @@ def test_search_request_accepts_runtime_custom_profile_catalog() -> None:
 
 
 def test_graph_cli_and_mcp_schemas_accept_semantic_output_controls() -> None:
-    parser = _build_parser()
+    parser = _graph_command_parser()
 
     args = parser.parse_args(
         [
@@ -1113,7 +1114,7 @@ def test_graph_command_specs_drive_mcp_tool_specs() -> None:
 
 
 def test_graph_command_specs_build_cli_payloads() -> None:
-    parser = _build_parser()
+    parser = _graph_command_parser()
     cases = [
         (
             [
@@ -1180,6 +1181,14 @@ def test_graph_command_specs_build_cli_payloads() -> None:
 
         assert spec.tool_name == tool_name
         assert spec.payload_from_args(args) == expected_payload
+
+
+def _graph_command_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="codebase-graph")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    for spec in graph_command_specs():
+        spec.add_arguments(subparsers.add_parser(spec.command_name))
+    return parser
 
 
 def test_cli_graph_metadata_commands_do_not_open_graph_db(capsys: pytest.CaptureFixture[str]) -> None:

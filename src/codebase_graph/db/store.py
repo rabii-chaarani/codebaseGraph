@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
-import os
+import sys
 import tempfile
 from collections import defaultdict
 from collections.abc import Mapping
@@ -529,6 +529,7 @@ def _build_bulk_staging_tables(
     node_rows: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     edge_rows: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     connector_rows: dict[tuple[str, str, str], dict[tuple[str, str, str], dict[str, str]]] = defaultdict(dict)
+    nodes_by_id = {node.id: node for graph in graphs for node in graph.nodes.values()}
 
     for graph in graphs:
         for node in graph.nodes.values():
@@ -546,8 +547,8 @@ def _build_bulk_staging_tables(
         for edge in graph.edges.values():
             if edge.id in skipped_edges:
                 continue
-            source = graph.nodes[edge.source_id]
-            target = graph.nodes[edge.target_id]
+            source = nodes_by_id[edge.source_id]
+            target = nodes_by_id[edge.target_id]
             _add_connector_row(
                 connector_rows,
                 table=f"FROM_{edge.type}",
@@ -572,7 +573,7 @@ def _build_bulk_staging_tables(
 
 def _native_bulk_staging_enabled() -> bool:
     """Return whether native bulk staging is enabled for the current process."""
-    return os.environ.get("CODEBASE_GRAPH_NATIVE") == "1"
+    return "real_ladybug" not in sys.modules
 
 
 def _write_native_bulk_staging(
@@ -597,7 +598,7 @@ def _write_native_bulk_staging(
         skip_node_ids=skip_node_ids,
         skip_edge_ids=skip_edge_ids,
     )
-    result = write_bulk_staging(payload)
+    result = write_bulk_staging(payload, strict=True)
     if result is None:
         return None
     return _BulkStagingResult(
@@ -663,6 +664,7 @@ def _encode_native_bulk_staging_payload(
     """Encode graph rows for the native bulk staging protocol."""
     skipped_nodes = skip_node_ids or set()
     skipped_edges = skip_edge_ids or set()
+    nodes_by_id = {node.id: node for graph in graphs for node in graph.nodes.values()}
     lines = [f"BULK\t{_hex(staging_dir.as_posix())}"]
 
     for node_type in NODE_TYPES:
@@ -680,8 +682,8 @@ def _encode_native_bulk_staging_payload(
         for edge in graph.edges.values():
             if edge.id in skipped_edges:
                 continue
-            source = graph.nodes[edge.source_id]
-            target = graph.nodes[edge.target_id]
+            source = nodes_by_id[edge.source_id]
+            target = nodes_by_id[edge.target_id]
             row = _row_for_fields(edge.as_dict(), EDGE_FIELDS_BY_TYPE[edge.type], for_json_copy=True)
             lines.append(
                 _encode_native_bulk_row(

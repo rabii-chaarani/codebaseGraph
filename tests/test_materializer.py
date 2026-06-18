@@ -283,7 +283,7 @@ def test_full_materialization_writes_supported_language_graphs(tmp_path: Path) -
     assert {"User::new", "fmt.Println", "printf", "u.name", "print_hello"} <= _labels(materializer, "CallExpression")
 
 
-def test_materializer_keeps_python_graph_builder_as_default(
+def test_materializer_keeps_python_graph_builder_for_injected_test_seams(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -291,9 +291,8 @@ def test_materializer_keeps_python_graph_builder_as_default(
     registry = _native_fixture_registry()
 
     def fail_native_builder(*args: object, **kwargs: object) -> None:
-        raise AssertionError("native graph builder must not run by default")
+        raise AssertionError("native graph builder must not run for injected test seams")
 
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
     monkeypatch.setattr(materializer_module, "build_native_file_graph", fail_native_builder)
 
     store = CapturingStore()
@@ -310,7 +309,7 @@ def test_materializer_keeps_python_graph_builder_as_default(
     assert {node.label for node in store.graphs[0].nodes_by_type("Function")} == {"helper"}
 
 
-def test_materializer_uses_native_graph_builder_when_opted_in(
+def test_materializer_uses_compat_native_helper_for_default_registry(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -335,8 +334,7 @@ def test_materializer_uses_native_graph_builder_when_opted_in(
         native_calls.append(bundle.path)
         return real_native_builder(bundle, **kwargs)
 
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_GRAPH_BUILDER", native_binary.as_posix())
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_GRAPH_BUILDER", native_binary.as_posix())
     monkeypatch.setattr(materializer_module, "build_native_file_graph", recording_native_builder)
     native_store = CapturingStore()
 
@@ -350,7 +348,7 @@ def test_materializer_uses_native_graph_builder_when_opted_in(
     ).materialize(mode="full")
 
     assert result.rebuilt == 1
-    assert native_calls == ["service.native"]
+    assert native_calls == []
     assert native_store.graphs[0].as_dict() == python_store.graphs[0].as_dict()
 
 
@@ -387,16 +385,14 @@ def test_native_scan_diff_matches_python_rebuild_decisions(
         semantic_enrichment=False,
     )
 
-    monkeypatch.delenv("CODEBASE_GRAPH_NATIVE", raising=False)
     expected = materializer._scan_source_state(previous_manifest)
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_SCAN_DIFF", native_binary.as_posix())
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_SCAN_DIFF", native_binary.as_posix())
     actual = materializer._scan_source_state(previous_manifest)
 
     assert _scan_state_shape(actual) == _scan_state_shape(expected)
 
 
-def test_materializer_uses_native_scan_when_opted_in(
+def test_materializer_uses_python_scan_for_injected_test_seams(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -407,12 +403,15 @@ def test_materializer_uses_native_scan_when_opted_in(
     registry = ParserRegistry()
     registry.register("python", suffixes=(".py",), parser_factory=ToyParser, parser_version="toy-v1")
 
-    def fail_python_hash(path: Path) -> str:
-        raise AssertionError(f"native scan should hash {path.name}")
+    hashed_paths: list[str] = []
+    real_file_hash = materializer_module._file_hash
 
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_SCAN_DIFF", native_binary.as_posix())
-    monkeypatch.setattr(materializer_module, "_file_hash", fail_python_hash)
+    def recording_file_hash(path: Path) -> str:
+        hashed_paths.append(path.name)
+        return real_file_hash(path)
+
+    monkeypatch.setenv("CODEBASE_GRAPH_COMPAT_SCAN_DIFF", native_binary.as_posix())
+    monkeypatch.setattr(materializer_module, "_file_hash", recording_file_hash)
     materializer = GraphMaterializer(
         source_root,
         db_path=":memory:",
@@ -425,6 +424,7 @@ def test_materializer_uses_native_scan_when_opted_in(
     snapshots, diagnostics = materializer._scan_source_files()
 
     assert not diagnostics
+    assert hashed_paths == ["service.py"]
     assert snapshots["service.py"].content_hash
     assert snapshots["service.py"].language == "python"
 
@@ -456,6 +456,8 @@ def test_materializer_routes_local_semantic_enrichment_to_native_batch(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    import sys
+
     from codebase_graph._native import materialization as native_materialization
 
     calls: list[dict[str, object]] = []
@@ -479,7 +481,7 @@ def test_materializer_routes_local_semantic_enrichment_to_native_batch(
             database_written=False,
         )
 
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
+    monkeypatch.delitem(sys.modules, "real_ladybug", raising=False)
     monkeypatch.setattr(native_materialization, "materialize_syntax_batch", fake_native_batch)
 
     GraphMaterializer(
@@ -492,19 +494,16 @@ def test_materializer_routes_local_semantic_enrichment_to_native_batch(
     ).materialize(mode="full")
 
     assert len(calls) == 1
+    assert calls[0]["strict"] is True
     payload = calls[0]["payload"]
     assert isinstance(payload, dict)
     assert payload["semantic_enrichment"] is True
     assert payload["semantic_provider_mode"] == "local_only"
 
 
-def test_materializer_rejects_native_provider_semantics_in_strict_mode(
+def test_materializer_rejects_native_provider_semantics_by_default(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE", "1")
-    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_STRICT", "1")
-
     materializer = GraphMaterializer(
         Path("tests/fixtures/golden_parity_project"),
         db_path=tmp_path / "native.ladybug",

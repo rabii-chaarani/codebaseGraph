@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import os
-import shutil
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
+
+from codebase_graph.native_binary import default_native_product_command
 
 from .state import MCP_SERVER_NAME
 
@@ -99,7 +98,7 @@ def build_server_descriptor(
     return McpServerDescriptor(
         name=name,
         transport="stdio",
-        command=resolve_server_command(),
+        command=resolve_server_command(repo_root=resolved_repo_root),
         args=("mcp", "serve", "--config", config_path.as_posix()),
         env={},
         cwd=None,
@@ -109,7 +108,7 @@ def build_server_descriptor(
     )
 
 
-def resolve_server_command() -> str:
+def resolve_server_command(*, repo_root: Path | None = None) -> str:
     """Resolve server command for setup workflow and client configuration.
 
     This starts a transport loop and blocks until the server stops.
@@ -117,7 +116,4 @@ def resolve_server_command() -> str:
     Returns:
         Formatted text returned to the caller.
     """
-    sibling_script = Path(sys.executable).with_name("codebase-graph")
-    if sibling_script.exists() and os.access(sibling_script, os.X_OK):
-        return sibling_script.as_posix()
-    return shutil.which("codebase-graph") or "codebase-graph"
+    return default_native_product_command(repo_root=repo_root)

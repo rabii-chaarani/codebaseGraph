@@ -1,28 +1,37 @@
 from __future__ import annotations
 
+import subprocess
+import sys
+from collections.abc import Sequence
+
+from codebase_graph.native_binary import resolve_native_product_binary
+
 from .protocol import LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS, McpGraphServer, negotiate_protocol_version
 from .runtime import GraphRuntimeConfig
 from .tools import handle_tool_call
-from .transports.http import build_http_server, serve_http
-from .transports.stdio import serve_stdio
 
 
-def main() -> int:
-    """Run the command-line entrypoint and return a process exit status.
+def main(argv: Sequence[str] | None = None) -> int:
+    argv_list = list(argv) if argv is not None else sys.argv[1:]
+    return _run_native_mcp_serve(argv_list)
 
-    Returns:
-        Integer count, status code, or index used by the caller.
-    """
-    import argparse
 
-    parser = argparse.ArgumentParser(prog="codebase-graph-mcp")
-    parser.add_argument("--repo-root", default=".", help="Repository root containing .codebaseGraph/config.json")
-    parser.add_argument("--config", default=None, help="Path to .codebaseGraph/config.json")
-    parser.add_argument("--db", default=None, help="Override LadyBugDB path")
-    parser.add_argument("--manifest", default=None, help="Override manifest path")
-    args = parser.parse_args()
-    serve_stdio(repo_root=args.repo_root, config_path=args.config, db_path=args.db, manifest_path=args.manifest)
-    return 0
+def _run_native_mcp_serve(argv: Sequence[str]) -> int:
+    command_args = ["mcp", *argv] if any(arg in {"-h", "--help"} for arg in argv) else ["mcp", "serve", *argv]
+    native_binary = _native_product_binary()
+    if native_binary is None:
+        raise SystemExit(
+            "Rust native MCP binary is required. Build or install `codebase-graph`, "
+            "or set CODEBASE_GRAPH_NATIVE_CLI to its absolute path."
+        )
+    status = subprocess.call([native_binary, *command_args])
+    if status:
+        raise SystemExit(status)
+    return status
+
+
+def _native_product_binary() -> str | None:
+    return resolve_native_product_binary(skip_current_script=True)
 
 
 __all__ = [
@@ -30,9 +39,6 @@ __all__ = [
     "SUPPORTED_PROTOCOL_VERSIONS",
     "GraphRuntimeConfig",
     "McpGraphServer",
-    "build_http_server",
     "handle_tool_call",
     "negotiate_protocol_version",
-    "serve_http",
-    "serve_stdio",
 ]

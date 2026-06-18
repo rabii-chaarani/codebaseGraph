@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import json
 import os
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
 from codebase_graph import paths as graph_paths
 from codebase_graph.ontology import ONTOLOGY_VERSION
 from codebase_graph.reasoning.context_profiles import load_context_profile_config, merge_context_profiles
+from codebase_graph.version import rust_package_version
 
 CONFIG_NAME = graph_paths.CONFIG_NAME
 DEFAULT_STATE_DIR = graph_paths.DEFAULT_STATE_DIR
@@ -124,10 +124,7 @@ def _package_version() -> str:
     Returns:
         Formatted text returned to the caller.
     """
-    try:
-        return version("codebase-graph")
-    except PackageNotFoundError:
-        return "0.1.0"
+    return rust_package_version()
 
 
 def _read_json_if_exists(path: Path) -> dict[str, Any] | None:

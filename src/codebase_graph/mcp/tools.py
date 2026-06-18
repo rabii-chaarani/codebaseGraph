@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from typing import Any
 
 from codebase_graph.db import LadybugCodeGraphStore
 from codebase_graph.diagnostics import log_event
+from codebase_graph.native_binary import resolve_native_product_binary
 from codebase_graph.ontology import QUERY_HELPERS, schema_payload
 from codebase_graph.reasoning import CompactContextBuilder, DEFAULT_CONTEXT_LIMIT, architecture_query_catalog
 from codebase_graph.retrieval import DETAIL_LEVELS, SearchRequest, SearchService, serialize_graph_block
 
 from .graph_commands import MAX_GRAPH_QUERY_LIMIT, graph_tool_specs
-from .runtime import GraphRuntimeConfig, open_graph_store
+from .runtime import GraphRuntimeConfig
 
 READ_ONLY_DENY_RE = re.compile(
     r"\b("
@@ -20,6 +22,8 @@ READ_ONLY_DENY_RE = re.compile(
     r")\b",
     re.IGNORECASE,
 )
+
+RUST_OWNED_TOOLS = {"graph_health", "graph_search", "graph_context", "graph_query"}
 
 
 class UnknownToolError(ValueError):
@@ -41,8 +45,11 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
     Raises:
         UnknownToolError: Raised when validation or runtime preconditions fail.
     """
-    if name == "graph_health":
-        return _health(runtime)
+    if name in RUST_OWNED_TOOLS:
+        resolved_runtime = _require_runtime(runtime, name)
+        if name == "graph_query":
+            _validate_native_graph_query_arguments(arguments)
+        return _require_native_tool_payload(name, arguments, resolved_runtime)
     if name == "graph_schema":
         profiles = runtime.context_profiles if runtime is not None else None
         return schema_payload(context_profiles=profiles)
@@ -50,27 +57,6 @@ def handle_tool_call(name: str, arguments: dict[str, Any], *, runtime: GraphRunt
         return {"query_helpers": [helper.as_dict() for helper in QUERY_HELPERS]}
     if name == "graph_architecture_queries":
         return architecture_query_catalog(group=_optional_str(arguments.get("group")))
-    if name == "graph_search":
-        resolved_runtime = _require_runtime(runtime, name)
-        with open_graph_store(resolved_runtime) as store:
-            request = _search_request(arguments, profile_catalog=resolved_runtime.context_profiles)
-            return SearchService(
-                store,
-                repo_root=resolved_runtime.repo_root,
-                profile_catalog=resolved_runtime.context_profiles,
-            ).search(request).as_dict(detail=request.detail)
-    if name == "graph_context":
-        resolved_runtime = _require_runtime(runtime, name)
-        context_arguments = {
-            **arguments,
-            "_repo_root": resolved_runtime.repo_root,
-            "_profile_catalog": resolved_runtime.context_profiles,
-        }
-        with open_graph_store(resolved_runtime) as store:
-            return _context_payload(store, context_arguments)
-    if name == "graph_query":
-        with open_graph_store(_require_runtime(runtime, name)) as store:
-            return _query_payload(store, arguments)
     raise UnknownToolError(f"Unknown codebaseGraph MCP tool: {name}")
 
 
@@ -194,43 +180,113 @@ def tool_specs() -> list[dict[str, Any]]:
     return graph_tool_specs()
 
 
-def _health(runtime: GraphRuntimeConfig) -> dict[str, Any]:
-    """Manage MCP server and transport state.
-
-    Args:
-        runtime: Resolved runtime paths and graph database settings.
-
-    Returns:
-        Structured mapping that follows the MCP server and transport surface response contract.
-    """
-    payload: dict[str, Any] = {
-        "ok": False,
-        "repo_root": runtime.repo_root.as_posix(),
-        "database_path": runtime.db_path.as_posix(),
-        "manifest_path": runtime.manifest_path.as_posix() if runtime.manifest_path else None,
-        "database_exists": runtime.db_path.exists(),
-        "manifest_exists": runtime.manifest_path.exists() if runtime.manifest_path else None,
-    }
-    if not runtime.db_path.exists():
-        return payload
-    try:
-        with open_graph_store(runtime) as store:
-            rows = store.execute("MATCH (n) RETURN count(n) AS total_nodes LIMIT 1").get_n(1)
-    except Exception as exc:
-        payload["graph_readable"] = False
-        payload["error"] = {"type": exc.__class__.__name__, "message": str(exc)}
-        log_event(
-            "mcp.graph_health_failed",
-            level="WARNING",
-            database_path=runtime.db_path.as_posix(),
-            error_type=exc.__class__.__name__,
-            message=str(exc),
+def _require_native_tool_payload(name: str, arguments: dict[str, Any], runtime: GraphRuntimeConfig) -> dict[str, Any]:
+    """Return the Rust-owned MCP payload or fail without a Python DB fallback."""
+    native_binary = _native_product_binary()
+    if native_binary is None:
+        raise RuntimeError(
+            "Rust native CLI binary is required for codebaseGraph MCP DB tools; "
+            "build or install `codebase-graph`, or set CODEBASE_GRAPH_NATIVE_CLI."
         )
-        return payload
-    payload["ok"] = True
-    payload["graph_readable"] = True
-    payload["total_nodes"] = _json_safe(rows[0][0]) if rows and rows[0] else 0
+    command = [native_binary, *_native_tool_command(name, arguments), *_native_runtime_args(runtime)]
+    completed = subprocess.run(command, capture_output=True, text=True, check=False)
+    if completed.returncode != 0:
+        details = (completed.stderr or completed.stdout).strip()
+        suffix = f": {details}" if details else ""
+        raise RuntimeError(f"Rust native MCP tool {name} failed with exit code {completed.returncode}{suffix}")
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Rust native MCP tool {name} returned invalid JSON") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(f"Rust native MCP tool {name} returned a non-object payload")
     return payload
+
+
+def _native_tool_command(name: str, arguments: dict[str, Any]) -> list[str]:
+    if name == "graph_health":
+        return ["graph-health", "--json"]
+    if name == "graph_search":
+        command = ["graph-search", str(arguments.get("query") or ""), "--json"]
+        _extend_native_search_args(command, arguments)
+        return command
+    if name == "graph_context":
+        query = arguments.get("query")
+        command = ["graph-context"]
+        if query:
+            command.append(str(query))
+        node_id = arguments.get("node_id")
+        node_type = arguments.get("node_type")
+        if node_id is not None:
+            command.extend(["--node-id", str(node_id)])
+        if node_type is not None:
+            command.extend(["--node-type", str(node_type)])
+        command.append("--json")
+        _extend_native_search_args(command, arguments)
+        return command
+    if name == "graph_query":
+        statement = str(arguments.get("statement") or arguments.get("query") or "")
+        command = [
+            "graph-query",
+            statement,
+            "--parameters",
+            json.dumps(arguments.get("parameters") or {}),
+            "--limit",
+            str(arguments.get("limit") or MAX_GRAPH_QUERY_LIMIT),
+            "--json",
+        ]
+        return command
+    raise UnknownToolError(f"Unknown codebaseGraph MCP tool: {name}")
+
+
+def _validate_native_graph_query_arguments(arguments: dict[str, Any]) -> None:
+    statement = str(arguments.get("statement") or arguments.get("query") or "").strip()
+    if not statement:
+        raise ValueError("graph_query requires a non-empty statement")
+    _validate_read_only_statement(statement)
+    parameters = arguments.get("parameters") or {}
+    if not isinstance(parameters, dict):
+        raise ValueError("graph_query parameters must be a JSON object")
+    _graph_query_limit(arguments)
+
+
+def _extend_native_search_args(command: list[str], arguments: dict[str, Any]) -> None:
+    for key, option in (
+        ("limit", "--limit"),
+        ("profile", "--profile"),
+        ("budget", "--budget"),
+        ("context_limit", "--context-limit"),
+        ("max_depth", "--max-depth"),
+        ("detail", "--detail"),
+        ("snippet_context_lines", "--snippet-context-lines"),
+    ):
+        value = arguments.get(key)
+        if value is not None:
+            command.extend([option, str(value)])
+    if arguments.get("include_snippets"):
+        command.append("--include-snippets")
+    if arguments.get("include_semantic") is False:
+        command.append("--no-semantic")
+    if arguments.get("include_confidence") is False:
+        command.append("--no-confidence")
+    if arguments.get("include_evidence"):
+        command.append("--include-evidence")
+
+
+def _native_runtime_args(runtime: GraphRuntimeConfig) -> list[str]:
+    command = [
+        "--repo-root",
+        runtime.repo_root.as_posix(),
+        "--db",
+        runtime.db_path.as_posix(),
+    ]
+    if runtime.manifest_path is not None:
+        command.extend(["--manifest", runtime.manifest_path.as_posix()])
+    return command
+
+
+def _native_product_binary() -> str | None:
+    return resolve_native_product_binary(skip_current_script=False)
 
 
 def _search_request(arguments: dict[str, Any], *, profile_catalog: dict[str, Any] | None = None) -> SearchRequest:

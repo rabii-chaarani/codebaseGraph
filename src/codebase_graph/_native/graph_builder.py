@@ -31,18 +31,15 @@ class NativeGraphBuilderUnavailable(RuntimeError):
 def build_file_graph(
     bundle: ParseBundle,
     *,
-    fallback_builder: GraphBuilder | None = None,
-    strict: bool = False,
+    strict: bool = True,
 ) -> GraphBuildResult:
-    """Build a graph through the native capture-bundle prototype with Python fallback."""
+    """Build a graph through the native capture-bundle prototype."""
     if not bundle.captures:
-        return _fallback(bundle, fallback_builder, strict=strict, reason="native graph builder only supports captures")
-    if not strict and os.environ.get("CODEBASE_GRAPH_NATIVE") != "1":
-        return _fallback(bundle, fallback_builder, strict=False, reason="native graph builder is not enabled")
+        raise NativeGraphBuilderUnavailable("native graph builder only supports captures")
 
     command = _native_command(strict=strict)
     if command is None:
-        return _fallback(bundle, fallback_builder, strict=strict, reason="native graph builder command is unavailable")
+        raise NativeGraphBuilderUnavailable("native graph builder command is unavailable")
 
     payload = _encode_bundle(bundle)
     try:
@@ -57,7 +54,7 @@ def build_file_graph(
     except (OSError, subprocess.CalledProcessError) as exc:
         stderr = getattr(exc, "stderr", "")
         message = f"native graph builder failed: {stderr or exc}"
-        return _fallback(bundle, fallback_builder, strict=strict, reason=message)
+        raise NativeGraphBuilderUnavailable(message) from exc
 
     graph = _decode_graph(completed.stdout)
     if bundle.content_hash:
@@ -72,24 +69,8 @@ def build_file_graph(
     )
 
 
-def _fallback(
-    bundle: ParseBundle,
-    fallback_builder: GraphBuilder | None,
-    *,
-    strict: bool,
-    reason: str,
-) -> GraphBuildResult:
-    if strict:
-        raise NativeGraphBuilderUnavailable(reason)
-    builder = fallback_builder or GraphBuilder(
-        repository_label=bundle.repository_label,
-        source_root=bundle.source_root,
-    )
-    return builder.build_file_graph(bundle)
-
-
 def _native_command(*, strict: bool) -> list[str] | None:
-    configured = os.environ.get("CODEBASE_GRAPH_NATIVE_GRAPH_BUILDER")
+    configured = os.environ.get("CODEBASE_GRAPH_COMPAT_GRAPH_BUILDER")
     if configured:
         return [configured]
 

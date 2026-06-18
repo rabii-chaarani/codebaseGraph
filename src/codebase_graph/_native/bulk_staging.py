@@ -24,11 +24,8 @@ class NativeBulkStagingResult:
     connector_rows: int
 
 
-def write_bulk_staging(payload: str, *, strict: bool = False) -> NativeBulkStagingResult | None:
+def write_bulk_staging(payload: str, *, strict: bool = True) -> NativeBulkStagingResult | None:
     """Run the native bulk staging writer for an already-normalized payload."""
-    if not strict and os.environ.get("CODEBASE_GRAPH_NATIVE") != "1":
-        return None
-
     command = _native_command(strict=strict)
     if command is None:
         if strict:
@@ -54,7 +51,7 @@ def write_bulk_staging(payload: str, *, strict: bool = False) -> NativeBulkStagi
 
 
 def _native_command(*, strict: bool) -> list[str] | None:
-    configured = os.environ.get("CODEBASE_GRAPH_NATIVE_BULK_STAGING")
+    configured = os.environ.get("CODEBASE_GRAPH_COMPAT_BULK_STAGING")
     if configured:
         return [configured]
 

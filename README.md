@@ -7,12 +7,13 @@ Using `codebaseGraph` helps agents orient and reason faster, reduce guesswork, k
 impact awareness. Because the graph stores local source, documentation, spans, and relationships together, it gives
 AI agents a compact evidence layer for safer edits, architecture review, dependency tracing, and onboarding while reducing token consumption and tool calling.
 
-Requires Python 3.10+
+The shipped CLI and MCP server are native Rust binaries. Python 3.10+ is only required for the development and test
+harness used by this repository.
 
 ## Quick start
 
 ```bash
-python -m pip install cbasegraph
+cargo install --path rust/crates/codebase_graph_native --bin codebase-graph
 codebase-graph setup --repo-root .
 codebase-graph graph-search SampleService --repo-root . --no-refresh
 ```
@@ -83,7 +84,6 @@ Stdio is the default transport for local MCP clients:
 
 ```bash
 codebase-graph mcp serve --config .codebaseGraph/config.json
-codebase-graph-mcp --config .codebaseGraph/config.json
 ```
 
 HTTP is available for local endpoint clients:
@@ -128,39 +128,30 @@ For coding-task architecture orientation, call `graph_architecture_queries` firs
 ## Development
 
 ```bash
-python -m pip install -e .[dev]
+python -m pip install -r requirements-dev.txt
 python -m pytest
 ruff check .
 ```
 
 ### Native Rust accelerators
 
-The Rust materialization path is experimental and remains opt-in. Python keeps ownership of the CLI, MCP server,
-configuration, graph state paths, atomic materialization flow, and public result shapes. Rust is used only as internal
-batch accelerators behind `codebase_graph._native` wrappers. In native mode, local-only semantic enrichment runs inside
-the PyO3 materialization batch; provider-backed semantic enrichment still falls back to the Python path.
+The Rust binary is the production CLI/MCP runtime. Python modules remain for compatibility imports, tests, and benchmark
+comparisons; they must not be used as production CLI/MCP fallbacks.
 
 Build the native helpers from the repository root with:
 
 ```bash
 cargo test --manifest-path rust/Cargo.toml
 cargo clippy --manifest-path rust/Cargo.toml -- -D warnings
+cargo build --manifest-path rust/Cargo.toml --locked --release --bin codebase-graph
 ```
 
-Use the native path by setting `CODEBASE_GRAPH_NATIVE=1` before setup, refresh, or benchmark commands:
-
-```bash
-CODEBASE_GRAPH_NATIVE=1 codebase-graph setup --repo-root .
-CODEBASE_GRAPH_NATIVE=1 python scripts/benchmark_materialization.py --repo-root . --mode full
-```
-
-If native helpers are unavailable or fail, Python wrappers fall back to the existing Python implementations unless a test
-or benchmark explicitly exercises strict native behavior. Keep Rust disabled by default until representative benchmarks
-show a completed semantic-enabled speedup.
+Use `rust/target/release/codebase-graph` for local production-path validation. If the native binary is unavailable,
+compatibility wrappers must fail explicitly instead of falling back to Python behavior.
 
 ## Release and security
 
-CI runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff, package-build checks,
+CI runs pytest across Linux, macOS, and Windows for Python 3.10 through 3.14, plus ruff, native package-build checks,
 supply-chain validation, and smoke tests. See [docs/release.md](docs/release.md) for the full release process and
 conda-forge checklist.
 
@@ -169,12 +160,12 @@ expectations, and the local-first MCP security boundary.
 
 ## Troubleshooting
 
-- Missing LadyBugDB: install a package build that includes `real_ladybug`; setup fails before creating `.codebaseGraph`
-  if the runtime cannot open a graph database.
+- Missing LadyBugDB: install or build the native `codebase-graph` binary from a release artifact or from `rust/Cargo.toml`;
+  setup fails before creating `.codebaseGraph` if the runtime cannot open a graph database.
 - Stale graph: rerun `codebase-graph setup --repo-root .` after material source or documentation changes.
 - Broken client config: rerun `codebase-graph mcp install --client <client> --verify`.
-- PATH or executable issues: run setup from the virtual environment that contains `codebase-graph`; the descriptor
-  prefers that absolute executable path.
+- PATH or executable issues: set `CODEBASE_GRAPH_NATIVE_CLI=/path/to/codebase-graph` or run setup with the native
+  `codebase-graph` binary on `PATH`; descriptors never target a Python environment script.
 - Unsupported files: binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, and `.codebaseGraph` paths are
   skipped.
 - Lock errors: stop other graph materialization or setup processes using the same

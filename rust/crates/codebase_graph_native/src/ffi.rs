@@ -6,28 +6,36 @@ use pyo3::prelude::*;
 use std::time::Instant;
 
 #[pyfunction]
-fn materialize_syntax_batch(payload: &str) -> PyResult<String> {
-    let decode_started = Instant::now();
-    let request: NativeSyntaxMaterializationRequest =
-        serde_json::from_str(payload).map_err(to_py_error)?;
-    let json_decode_seconds = decode_started.elapsed().as_secs_f64();
-    let mut response = crate::materialize_syntax_batch(&request).map_err(to_py_error)?;
-    response.add_phase_timing("rust_json_decode_seconds", json_decode_seconds);
-    if !response.skipped {
-        let database_write_started = Instant::now();
-        ladybug_writer::write_database_for_python(LadybugWriteRequest {
-            db_path: request.db_path,
-            include_fts: request.include_fts,
-            schema_statements: request.schema_statements,
-            copy_statements: response.copy_statements.clone(),
-        })?;
-        response.add_phase_timing(
-            "database_write_seconds",
-            database_write_started.elapsed().as_secs_f64(),
-        );
-        response.database_written = true;
-    }
-    serde_json::to_string(&response).map_err(to_py_error)
+fn materialize_syntax_batch(py: Python<'_>, payload: &str) -> PyResult<String> {
+    let payload = payload.to_owned();
+    py.allow_threads(move || {
+        let decode_started = Instant::now();
+        let request: NativeSyntaxMaterializationRequest =
+            serde_json::from_str(&payload).map_err(to_py_error)?;
+        let json_decode_seconds = decode_started.elapsed().as_secs_f64();
+        let mut response = crate::materialize_syntax_batch(&request).map_err(to_py_error)?;
+        response.add_phase_timing("rust_json_decode_seconds", json_decode_seconds);
+        if !response.skipped {
+            let database_write_started = Instant::now();
+            ladybug_writer::write_database_for_python(LadybugWriteRequest {
+                db_path: request.db_path,
+                include_fts: request.include_fts,
+                schema_statements: request.schema_statements,
+                replace_database: response.diff.force_rebuild,
+                delete_statements: ladybug_writer::partition_delete_statements(
+                    request.previous_manifest.as_ref(),
+                    &response.diff,
+                ),
+                copy_statements: response.copy_statements.clone(),
+            })?;
+            response.add_phase_timing(
+                "database_write_seconds",
+                database_write_started.elapsed().as_secs_f64(),
+            );
+            response.database_written = true;
+        }
+        serde_json::to_string(&response).map_err(to_py_error)
+    })
 }
 
 #[pymodule]

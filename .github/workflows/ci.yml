@@ -15,6 +15,7 @@ permissions:
 
 env:
   PIP_NO_CACHE_DIR: "1"
+  MACOSX_DEPLOYMENT_TARGET: "13.3"
 
 jobs:
   test:
@@ -46,10 +47,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package and test dependencies
+      - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          python -m pip install -r requirements-dev.txt
+
+      - name: Build Rust CLI for compatibility tests
+        run: cargo build --manifest-path rust/Cargo.toml --locked --bin codebase-graph
 
       - name: Run tests
         run: python -m pytest -q
@@ -73,10 +77,39 @@ jobs:
       - name: Install lint dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          python -m pip install -r requirements-dev.txt
 
       - name: Run ruff
         run: ruff check .
+
+  rust-native:
+    name: rust native (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-2022
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Run Rust tests
+        run: cargo test --manifest-path rust/Cargo.toml --locked
+
+      - name: Run Rust clippy
+        run: cargo clippy --manifest-path rust/Cargo.toml --all-targets --all-features --locked -- -D warnings
 
   supply-chain:
     name: supply chain
@@ -94,31 +127,43 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install package and supply-chain tools
+      - name: Install dev harness and supply-chain tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ".[dev]"
+          python -m pip install -r requirements-dev.txt
           python -m pip install cyclonedx-bom pip-audit
 
       - name: Check installed dependency consistency
         run: python -m pip check
 
       - name: Run vulnerability advisory scan
-        run: python -m pip_audit --strict . --progress-spinner off --cache-dir .pip-audit-cache
+        run: python -m pip_audit --strict -r requirements-dev.txt --progress-spinner off --cache-dir .pip-audit-cache
 
       - name: Generate CycloneDX SBOM
         run: |
           cyclonedx-py environment "$(which python)" \
-            --pyproject pyproject.toml \
             --mc-type library \
             --output-reproducible \
             --of JSON \
             -o codebase-graph-sbom.cdx.json
 
   package:
-    name: package
-    runs-on: ubuntu-latest
+    name: native package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: codebase-graph
+            archive: codebase-graph-linux-x86_64.tar.gz
+          - os: macos-latest
+            binary: codebase-graph
+            archive: codebase-graph-macos-universal.tar.gz
+          - os: windows-2022
+            binary: codebase-graph.exe
+            archive: codebase-graph-windows-x86_64.tar.gz
 
     steps:
       - name: Check out repository
@@ -126,34 +171,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.12"
-
-      - name: Build distributions
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install build twine
-          python -m build
-          python -m twine check dist/*
-
-      - name: Smoke-test built wheel
+      - name: Build Rust production binary
         shell: bash
         run: |
-          python -m venv /tmp/codebase-graph-wheel
-          /tmp/codebase-graph-wheel/bin/python -m pip install --upgrade pip
-          /tmp/codebase-graph-wheel/bin/python -m pip install dist/*.whl
-          /tmp/codebase-graph-wheel/bin/codebase-graph --help
-          /tmp/codebase-graph-wheel/bin/codebase-graph-mcp --help
-          /tmp/codebase-graph-wheel/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-wheel/bin/codebase-graph
+          cargo build --manifest-path rust/Cargo.toml --locked --release --bin codebase-graph
+          mkdir -p dist/smoke
+          cp "rust/target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
+          chmod +x "dist/smoke/${{ matrix.binary }}"
+          tar -C dist/smoke -czf "dist/${{ matrix.archive }}" "${{ matrix.binary }}"
 
-      - name: Smoke-test source distribution
+      - name: Smoke-test Rust production binary
         shell: bash
         run: |
-          python -m venv /tmp/codebase-graph-sdist
-          /tmp/codebase-graph-sdist/bin/python -m pip install --upgrade pip
-          /tmp/codebase-graph-sdist/bin/python -m pip install dist/*.tar.gz
-          /tmp/codebase-graph-sdist/bin/codebase-graph --help
-          /tmp/codebase-graph-sdist/bin/codebase-graph-mcp --help
-          /tmp/codebase-graph-sdist/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-sdist/bin/codebase-graph
+          "./dist/smoke/${{ matrix.binary }}" --help
+          "./dist/smoke/${{ matrix.binary }}" graph-schema --json
+          "./dist/smoke/${{ matrix.binary }}" setup --repo-root tests/fixtures/sample_project --mcp-client none --instructions-target skip --dry-run --json
+          "./dist/smoke/${{ matrix.binary }}" mcp --help
+          python scripts/smoke_native_artifact.py "./dist/smoke/${{ matrix.binary }}"

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from pathlib import Path
 
 try:
@@ -20,6 +19,7 @@ from codebase_graph.setup import SetupError, SetupOptions, run_setup
 from codebase_graph.setup.instructions import END_MARKER, START_MARKER, upsert_instruction_block
 from codebase_graph.setup.mcp_config import configure_mcp_client, server_entry
 from codebase_graph.setup.state import build_setup_config, derive_setup_paths, load_setup_config, write_setup_config
+from codebase_graph.version import rust_package_version
 
 
 def test_setup_cli_creates_state_db_mcp_config_instructions_and_searchable_docs(
@@ -178,20 +178,24 @@ def test_mcp_config_dry_run_preserves_existing_json_servers(tmp_path: Path) -> N
     assert set(payload["mcpServers"]) == {"otherServer", "codebase_graph"}
 
 
-def test_server_entry_prefers_current_environment_script(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    bin_dir = tmp_path / "venv" / "bin"
-    bin_dir.mkdir(parents=True)
-    python_path = bin_dir / "python"
-    script_path = bin_dir / "codebase-graph"
-    python_path.write_text("", encoding="utf-8")
-    script_path.write_text("", encoding="utf-8")
-    script_path.chmod(0o755)
-    monkeypatch.setattr(sys, "executable", python_path.as_posix())
+def test_server_entry_prefers_explicit_native_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    native_binary = tmp_path / "bin" / "codebase-graph"
+    native_binary.parent.mkdir(parents=True)
+    native_binary.write_text("", encoding="utf-8")
+    native_binary.chmod(0o755)
+    monkeypatch.setenv("CODEBASE_GRAPH_NATIVE_CLI", native_binary.as_posix())
     monkeypatch.setenv("PATH", "")
 
     entry = server_entry(tmp_path / ".codebaseGraph" / "config.json")
 
-    assert entry["command"] == script_path.as_posix()
+    assert entry["command"] == native_binary.as_posix()
+
+
+def test_descriptor_does_not_resolve_python_sibling_script() -> None:
+    text = Path("src/codebase_graph/setup/descriptor.py").read_text(encoding="utf-8")
+
+    assert "sys.executable" not in text
+    assert "with_name(\"codebase-graph\")" not in text
 
 
 def test_setup_preflight_failure_stops_before_state_creation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -326,6 +330,9 @@ def test_runtime_config_uses_repo_root_from_setup_config(tmp_path: Path) -> None
     repo_root = _fresh_repo(tmp_path)
     paths = derive_setup_paths(repo_root)
     payload = build_setup_config(paths, mcp_command=["codebase-graph", "mcp", "serve", "--config", paths.config_path.as_posix()])
+
+    assert payload["package_version"] == rust_package_version()
+
     write_setup_config(paths.config_path, payload)
     paths.db_path.write_text("", encoding="utf-8")
     paths.manifest_path.write_text("{}", encoding="utf-8")
@@ -392,21 +399,18 @@ def test_setup_config_rejects_database_path_outside_state_dir(tmp_path: Path) ->
         load_setup_config(paths.config_path)
 
 
-def test_packaging_requires_ladybug_and_namespaced_package_discovery() -> None:
+def test_pyproject_is_tool_config_without_python_package_metadata() -> None:
     payload = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-    dependencies = "\n".join(payload["project"]["dependencies"])
+    dev_requirements = Path("requirements-dev.txt").read_text(encoding="utf-8")
 
-    assert "real_ladybug>=0.15.3,<0.16" in dependencies
-    assert "tree-sitter>=0.25.2,<0.26" in dependencies
-    assert "tree-sitter-python>=0.25.0,<0.26" in dependencies
-    assert "setuptools>=77" in payload["build-system"]["requires"]
-    assert payload["project"]["license"] == "MIT"
-    assert payload["project"]["license-files"] == ["LICENSE"]
-    assert payload["project"]["scripts"]["codebase-graph"] == "codebase_graph.cli:main"
-    assert payload["project"]["scripts"]["codebase-graph-mcp"] == "codebase_graph.mcp.server:main"
-    assert payload["project"]["urls"]["Repository"] == "https://github.com/rabii-chaarani/codebaseGraph"
-    assert payload["project"]["urls"]["Issues"] == "https://github.com/rabii-chaarani/codebaseGraph/issues"
-    assert payload["tool"]["setuptools"]["packages"]["find"]["include"] == ["codebase_graph*"]
+    assert "real_ladybug>=0.15.3,<0.16" in dev_requirements
+    assert "tree-sitter>=0.25.2,<0.26" in dev_requirements
+    assert "tree-sitter-python>=0.25.0,<0.26" in dev_requirements
+    assert "build-system" not in payload
+    assert "project" not in payload
+    assert "maturin" not in payload["tool"]
+    assert "ruff" in payload["tool"]
+    assert "pytest" in payload["tool"]
 
 
 def _fresh_repo(tmp_path: Path) -> Path:

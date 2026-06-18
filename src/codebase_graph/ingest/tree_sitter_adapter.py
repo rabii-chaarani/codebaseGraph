@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib
 import json
-import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -256,13 +255,12 @@ def _run_native_profile_queries(
     *,
     source_bytes: bytes,
 ) -> ParserQueryResult | None:
-    if os.environ.get("CODEBASE_GRAPH_NATIVE") != "1":
-        return None
     try:
         from codebase_graph._native.tree_sitter_normalization import normalize_profiled_syntax
 
         output = normalize_profiled_syntax(
-            _encode_native_profiled_syntax(root_node, profile, source_bytes=source_bytes)
+            _encode_native_profiled_syntax(root_node, profile, source_bytes=source_bytes),
+            strict=True,
         )
         if output is None:
             return None
