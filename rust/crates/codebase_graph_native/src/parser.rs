@@ -20,20 +20,6 @@ pub(crate) fn parse_file(
     parse_source(&source, profile)
 }
 
-#[cfg_attr(not(feature = "python-extension"), allow(dead_code))]
-pub(crate) fn normalize_python_source_json(source: &str) -> Result<String, NativeError> {
-    let profile = LanguageProfile {
-        language: "python".to_string(),
-        suffixes: vec![".py".to_string()],
-        grammar_package: "tree_sitter_python".to_string(),
-        root_node_types: vec!["module".to_string()],
-        capture_mappings: Vec::new(),
-    };
-    let output = parse_source(source, &profile)?;
-    let value = syntax_node_to_contract_value(&output.root);
-    serde_json::to_string(&value).map_err(|error| NativeError::InvalidInput(error.to_string()))
-}
-
 fn parse_source(source: &str, profile: &LanguageProfile) -> Result<ParseOutput, NativeError> {
     if profile.language == "markdown" {
         return Ok(parse_markdown_source(source, profile));
@@ -53,11 +39,7 @@ fn parse_source(source: &str, profile: &LanguageProfile) -> Result<ParseOutput, 
     let tree = parser.parse(source_bytes, None).ok_or_else(|| {
         NativeError::InvalidInput("tree-sitter parser returned no tree".to_string())
     })?;
-    let mut root = if profile.language == "python" {
-        normalize_python_node(tree.root_node(), source_bytes, Vec::new())
-    } else {
-        normalize_tree_sitter_node(tree.root_node(), source_bytes)
-    };
+    let mut root = normalize_tree_sitter_node(tree.root_node(), source_bytes);
     let mut diagnostics = Vec::new();
     if !profile.root_node_types.is_empty()
         && !profile
@@ -70,9 +52,7 @@ fn parse_source(source: &str, profile: &LanguageProfile) -> Result<ParseOutput, 
             root.node_type, profile.language
         ));
     }
-    if profile.language != "python" {
-        mark_captures(&mut root, profile, &[]);
-    }
+    mark_captures(&mut root, profile, &[]);
     Ok(ParseOutput { root, diagnostics })
 }
 
@@ -108,354 +88,6 @@ fn normalize_tree_sitter_node(node: Node<'_>, source_bytes: &[u8]) -> SyntaxNode
         children,
         fields,
     }
-}
-
-fn normalize_python_node(
-    node: Node<'_>,
-    source_bytes: &[u8],
-    decorators: Vec<SyntaxNode>,
-) -> SyntaxNode {
-    if node.kind() == "decorated_definition" {
-        let converted_decorators = named_children(node)
-            .into_iter()
-            .filter(|child| child.kind() == "decorator")
-            .map(|child| normalize_python_node(child, source_bytes, Vec::new()))
-            .collect::<Vec<_>>();
-        for child in named_children(node) {
-            if matches!(child.kind(), "class_definition" | "function_definition") {
-                return normalize_python_node(child, source_bytes, converted_decorators);
-            }
-        }
-    }
-
-    let mut fields = BTreeMap::new();
-    let mut children: Option<Vec<SyntaxNode>> = None;
-    match node.kind() {
-        "module" => {
-            children = Some(
-                named_children(node)
-                    .into_iter()
-                    .map(|child| normalize_python_node(child, source_bytes, Vec::new()))
-                    .collect(),
-            );
-        }
-        "class_definition" => {
-            fields.insert(
-                "name".to_string(),
-                json!(field_text(node, "name", source_bytes)),
-            );
-            if !decorators.is_empty() {
-                fields.insert(
-                    "decorator_list".to_string(),
-                    Value::Array(
-                        decorators
-                            .iter()
-                            .map(syntax_node_to_contract_value)
-                            .collect(),
-                    ),
-                );
-            }
-            children = Some(python_body_children(node, source_bytes));
-        }
-        "function_definition" => {
-            fields.insert(
-                "name".to_string(),
-                json!(field_text(node, "name", source_bytes)),
-            );
-            if let Some(parameters) = node.child_by_field_name("parameters") {
-                let args = named_children(parameters)
-                    .into_iter()
-                    .map(|child| python_parameter_value(child, source_bytes))
-                    .collect::<Vec<_>>();
-                fields.insert(
-                    "args".to_string(),
-                    json!({"type": "arguments", "args": args}),
-                );
-            }
-            if let Some(return_type) = node.child_by_field_name("return_type") {
-                fields.insert(
-                    "returns".to_string(),
-                    syntax_node_to_contract_value(&normalize_python_node(
-                        return_type,
-                        source_bytes,
-                        Vec::new(),
-                    )),
-                );
-            }
-            if !decorators.is_empty() {
-                fields.insert(
-                    "decorator_list".to_string(),
-                    Value::Array(
-                        decorators
-                            .iter()
-                            .map(syntax_node_to_contract_value)
-                            .collect(),
-                    ),
-                );
-            }
-            children = Some(python_body_children(node, source_bytes));
-        }
-        "import_statement" | "import_from_statement" => {
-            add_python_contract_import_fields(node, source_bytes, &mut fields);
-        }
-        "call" => {
-            if let Some(function) = node.child_by_field_name("function") {
-                fields.insert(
-                    "func".to_string(),
-                    syntax_node_to_contract_value(&normalize_python_node(
-                        function,
-                        source_bytes,
-                        Vec::new(),
-                    )),
-                );
-            } else {
-                let text = node_text(node, source_bytes).unwrap_or_default();
-                fields.insert(
-                    "func".to_string(),
-                    json!({"type": "identifier", "id": text.split('(').next().unwrap_or("").trim()}),
-                );
-            }
-        }
-        "assignment" => {
-            if let Some(left) = node.child_by_field_name("left") {
-                fields.insert(
-                    "target".to_string(),
-                    syntax_node_to_contract_value(&normalize_python_node(
-                        left,
-                        source_bytes,
-                        Vec::new(),
-                    )),
-                );
-            }
-            if let Some(right) = node.child_by_field_name("right") {
-                fields.insert(
-                    "value".to_string(),
-                    syntax_node_to_contract_value(&normalize_python_node(
-                        right,
-                        source_bytes,
-                        Vec::new(),
-                    )),
-                );
-            }
-        }
-        "identifier" | "type_identifier" => {
-            fields.insert(
-                "id".to_string(),
-                json!(node_text(node, source_bytes).unwrap_or_default()),
-            );
-        }
-        "attribute" => {
-            add_python_attribute_fields(node, source_bytes, &mut fields);
-        }
-        "string" | "integer" | "float" | "true" | "false" | "none" => {
-            fields.insert(
-                "value".to_string(),
-                json!(node_text(node, source_bytes)
-                    .map(|value| strip_literal_delimiters(&value))
-                    .unwrap_or_default()),
-            );
-        }
-        _ => {}
-    }
-
-    let children = children.unwrap_or_else(|| python_semantic_children(node, source_bytes));
-    SyntaxNode {
-        node_type: node.kind().to_string(),
-        text: node_text(node, source_bytes).unwrap_or_default(),
-        line_start: Some((node.start_position().row + 1) as i64),
-        line_end: Some((node.end_position().row + 1) as i64),
-        byte_start: Some(node.start_byte() as i64),
-        byte_end: Some(node.end_byte() as i64),
-        capture_name: String::new(),
-        children,
-        fields,
-    }
-}
-
-fn python_body_children(node: Node<'_>, source_bytes: &[u8]) -> Vec<SyntaxNode> {
-    node.child_by_field_name("body")
-        .map(named_children)
-        .unwrap_or_default()
-        .into_iter()
-        .map(|child| normalize_python_node(child, source_bytes, Vec::new()))
-        .collect()
-}
-
-fn python_parameter_value(node: Node<'_>, source_bytes: &[u8]) -> Value {
-    let text = node_text(node, source_bytes).unwrap_or_default();
-    let name = text
-        .split_once(':')
-        .map(|(left, _)| left)
-        .unwrap_or(text.as_str())
-        .split_once('=')
-        .map(|(left, _)| left)
-        .unwrap_or_else(|| {
-            text.split_once(':')
-                .map(|(left, _)| left)
-                .unwrap_or(text.as_str())
-        })
-        .trim()
-        .trim_start_matches('*')
-        .to_string();
-    let mut object = Map::new();
-    object.insert("type".to_string(), json!("arg"));
-    object.insert("arg".to_string(), json!(name));
-    object.insert("text".to_string(), json!(text));
-    object.insert(
-        "line_start".to_string(),
-        json!((node.start_position().row + 1) as i64),
-    );
-    object.insert(
-        "line_end".to_string(),
-        json!((node.end_position().row + 1) as i64),
-    );
-    object.insert("byte_start".to_string(), json!(node.start_byte() as i64));
-    object.insert("byte_end".to_string(), json!(node.end_byte() as i64));
-    if let Some(annotation_node) = node.child_by_field_name("type") {
-        object.insert(
-            "annotation".to_string(),
-            syntax_node_to_contract_value(&normalize_python_node(
-                annotation_node,
-                source_bytes,
-                Vec::new(),
-            )),
-        );
-    } else if let Some(annotation) = parameter_annotation_from_text(node, source_bytes) {
-        object.insert(
-            "annotation".to_string(),
-            json!({
-                "type": "type",
-                "id": annotation,
-                "text": annotation,
-                "line_start": (node.start_position().row + 1) as i64,
-                "line_end": (node.end_position().row + 1) as i64,
-                "byte_start": node.start_byte() as i64,
-                "byte_end": node.end_byte() as i64,
-            }),
-        );
-    }
-    Value::Object(object)
-}
-
-fn add_python_contract_import_fields(
-    node: Node<'_>,
-    source_bytes: &[u8],
-    fields: &mut BTreeMap<String, Value>,
-) {
-    let text = node_text(node, source_bytes)
-        .unwrap_or_default()
-        .trim()
-        .to_string();
-    if node.kind() == "import_from_statement" {
-        if let Some(rest) = text.strip_prefix("from ") {
-            if let Some((module, names)) = rest.split_once(" import ") {
-                fields.insert("module".to_string(), json!(module));
-                fields.insert(
-                    "names".to_string(),
-                    Value::Array(names.split(',').map(python_import_alias_value).collect()),
-                );
-            }
-        }
-    } else if node.kind() == "import_statement" {
-        let imported = text.strip_prefix("import").unwrap_or("").trim();
-        fields.insert(
-            "names".to_string(),
-            Value::Array(imported.split(',').map(python_import_alias_value).collect()),
-        );
-    }
-}
-
-fn python_import_alias_value(raw_name: &str) -> Value {
-    let name = raw_name
-        .trim()
-        .split_once(" as ")
-        .map(|(left, _)| left)
-        .unwrap_or_else(|| raw_name.trim())
-        .trim();
-    json!({"type": "alias", "name": name})
-}
-
-fn add_python_attribute_fields(
-    node: Node<'_>,
-    source_bytes: &[u8],
-    fields: &mut BTreeMap<String, Value>,
-) {
-    let object_node = node.child_by_field_name("object");
-    let attribute_node = node.child_by_field_name("attribute");
-    if let (Some(object), Some(attribute)) = (object_node, attribute_node) {
-        fields.insert(
-            "value".to_string(),
-            syntax_node_to_contract_value(&normalize_python_node(object, source_bytes, Vec::new())),
-        );
-        fields.insert(
-            "attr".to_string(),
-            json!(node_text(attribute, source_bytes).unwrap_or_default()),
-        );
-        return;
-    }
-
-    let text = node_text(node, source_bytes).unwrap_or_default();
-    if let Some((base, attr)) = text.rsplit_once('.') {
-        fields.insert(
-            "value".to_string(),
-            json!({
-                "type": "identifier",
-                "id": base,
-                "text": base,
-                "line_start": (node.start_position().row + 1) as i64,
-                "line_end": (node.end_position().row + 1) as i64,
-                "byte_start": node.start_byte() as i64,
-                "byte_end": node.end_byte() as i64,
-            }),
-        );
-        fields.insert("attr".to_string(), json!(attr));
-    } else {
-        fields.insert("id".to_string(), json!(text));
-    }
-}
-
-fn python_semantic_children(node: Node<'_>, source_bytes: &[u8]) -> Vec<SyntaxNode> {
-    named_children(node)
-        .into_iter()
-        .filter(|child| {
-            !matches!(
-                child.kind(),
-                "identifier" | "type_identifier" | "parameters" | "decorator" | "block"
-            )
-        })
-        .map(|child| normalize_python_node(child, source_bytes, Vec::new()))
-        .collect()
-}
-
-fn syntax_node_to_contract_value(node: &SyntaxNode) -> Value {
-    let mut object = Map::new();
-    object.insert("type".to_string(), json!(node.node_type));
-    object.insert("text".to_string(), json!(node.text));
-    if let Some(line_start) = node.line_start {
-        object.insert("line_start".to_string(), json!(line_start));
-    }
-    if let Some(line_end) = node.line_end {
-        object.insert("line_end".to_string(), json!(line_end));
-    }
-    if let Some(byte_start) = node.byte_start {
-        object.insert("byte_start".to_string(), json!(byte_start));
-    }
-    if let Some(byte_end) = node.byte_end {
-        object.insert("byte_end".to_string(), json!(byte_end));
-    }
-    for (key, value) in &node.fields {
-        object.insert(key.clone(), value.clone());
-    }
-    object.insert(
-        "children".to_string(),
-        Value::Array(
-            node.children
-                .iter()
-                .map(syntax_node_to_contract_value)
-                .collect(),
-        ),
-    );
-    Value::Object(object)
 }
 
 fn tree_sitter_fields(node: Node<'_>, source_bytes: &[u8]) -> BTreeMap<String, Value> {
@@ -814,12 +446,6 @@ fn named_children(node: Node<'_>) -> Vec<Node<'_>> {
         .collect()
 }
 
-fn field_text(node: Node<'_>, field_name: &str, source_bytes: &[u8]) -> String {
-    node.child_by_field_name(field_name)
-        .and_then(|child| node_text(child, source_bytes))
-        .unwrap_or_default()
-}
-
 fn node_types(node: Node<'_>) -> BTreeSet<String> {
     let mut types = BTreeSet::new();
     collect_node_types(node, &mut types);
@@ -1149,12 +775,6 @@ mod tests {
                     mapping("reference.call", &["call_expression"], "CallExpression", ""),
                 ],
             ),
-            "python" => (
-                "tree_sitter_python",
-                vec![".py"],
-                vec!["module"],
-                Vec::new(),
-            ),
             other => panic!("unsupported test profile: {other}"),
         };
         LanguageProfile {
@@ -1219,116 +839,10 @@ mod tests {
         assert!(captures.contains(&("reference.call".to_string(), "fmt.Println".to_string())));
     }
 
-    #[test]
-    fn python_parser_normalizes_decorators_parameters_and_returns() {
-        let output = parse_source(
-            "@route('/items')\ndef handle(self, item: Item = default()) -> Response:\n    self.item = build(item)\n",
-            &profile("python"),
-        )
-        .expect("python parsing should succeed");
-        let tree = syntax_node_to_contract_value(&output.root);
-        let function = tree
-            .get("children")
-            .and_then(Value::as_array)
-            .and_then(|children| children.first())
-            .and_then(Value::as_object)
-            .expect("function child should exist");
-
-        assert_eq!(
-            function.get("type").and_then(Value::as_str),
-            Some("function_definition")
-        );
-        assert_eq!(function.get("name").and_then(Value::as_str), Some("handle"));
-        assert_eq!(
-            function
-                .get("decorator_list")
-                .and_then(Value::as_array)
-                .and_then(|decorators| decorators.first())
-                .and_then(|decorator| decorator.get("type"))
-                .and_then(Value::as_str),
-            Some("decorator")
-        );
-        assert_eq!(
-            function
-                .get("args")
-                .and_then(|args| args.get("args"))
-                .and_then(Value::as_array)
-                .and_then(|args| args.get(1))
-                .and_then(|parameter| parameter.get("annotation"))
-                .and_then(|annotation| annotation.get("text"))
-                .and_then(Value::as_str),
-            Some("Item")
-        );
-        assert_eq!(
-            function
-                .get("returns")
-                .and_then(|returns| returns.get("type"))
-                .and_then(Value::as_str),
-            Some("type")
-        );
-    }
-
-    #[test]
-    fn python_parser_normalizes_imports_calls_assignments_attributes_and_literals() {
-        let output = parse_source(
-            "from pkg.mod import thing as alias, other\nvalue = obj.call('x')\n",
-            &profile("python"),
-        )
-        .expect("python parsing should succeed");
-        let tree = syntax_node_to_contract_value(&output.root);
-        let children = tree
-            .get("children")
-            .and_then(Value::as_array)
-            .expect("module children should exist");
-        let import = children[0].as_object().expect("import should be an object");
-        assert_eq!(
-            import.get("module").and_then(Value::as_str),
-            Some("pkg.mod")
-        );
-        assert_eq!(
-            import
-                .get("names")
-                .and_then(Value::as_array)
-                .and_then(|names| names.first())
-                .and_then(|name| name.get("name"))
-                .and_then(Value::as_str),
-            Some("thing")
-        );
-        let assignment = find_node_type(&children[1], "assignment")
-            .and_then(Value::as_object)
-            .expect("assignment should be an object");
-        assert_eq!(
-            assignment
-                .get("target")
-                .and_then(|target| target.get("id"))
-                .and_then(Value::as_str),
-            Some("value")
-        );
-        assert_eq!(
-            assignment
-                .get("value")
-                .and_then(|value| value.get("func"))
-                .and_then(|func| func.get("attr"))
-                .and_then(Value::as_str),
-            Some("call")
-        );
-    }
-
     fn marked_captures(root: &SyntaxNode) -> Vec<(String, String)> {
         let mut captures = Vec::new();
         collect_marked_captures(root, &mut captures);
         captures
-    }
-
-    fn find_node_type<'a>(value: &'a Value, node_type: &str) -> Option<&'a Value> {
-        if value.get("type").and_then(Value::as_str) == Some(node_type) {
-            return Some(value);
-        }
-        value
-            .get("children")
-            .and_then(Value::as_array)?
-            .iter()
-            .find_map(|child| find_node_type(child, node_type))
     }
 
     fn collect_marked_captures(node: &SyntaxNode, captures: &mut Vec<(String, String)>) {

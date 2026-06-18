@@ -36,7 +36,7 @@ pub(crate) fn scan_source_state(
         if is_excluded(path, &source_root, &excluded_parts) {
             continue;
         }
-        if !entry.file_type().is_file() && !path.is_file() {
+        if !entry.file_type().is_file() {
             continue;
         }
         let relative_path = relative_path(path, &source_root)?;
