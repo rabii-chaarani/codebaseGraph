@@ -5667,6 +5667,113 @@ mod tests {
     }
 
     #[test]
+    fn setup_indexes_documented_language_defaults() {
+        let root = unique_temp_dir("codebase-graph-language-defaults");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub struct RustService;\nimpl RustService { pub fn run(&self) {} }\npub fn rust_helper() { RustService.run(); }\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("src/main.go"),
+            "package main\nimport \"fmt\"\nfunc GoHelper() { fmt.Println(\"ok\") }\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("src/service.c"),
+            "#include <stdio.h>\nstruct CService { int id; };\nint c_helper() { printf(\"ok\"); return 1; }\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("src/service.cpp"),
+            "#include <iostream>\nclass CppService { public: void run() { cpp_helper(); } };\nint cpp_helper() { return 1; }\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join("src/solver.f90"),
+            "module fortran_service\ncontains\nsubroutine fortran_helper()\nuse iso_fortran_env\ncall run()\nend subroutine fortran_helper\nend module fortran_service\n",
+        )
+        .unwrap();
+
+        let mut setup_output = Vec::new();
+        run(
+            [
+                "setup",
+                "--repo-root",
+                root.to_str().unwrap(),
+                "--mode",
+                "full",
+                "--mcp-client",
+                "none",
+                "--no-semantic-enrichment",
+                "--json",
+            ],
+            &mut setup_output,
+        )
+        .unwrap();
+        let setup_value: serde_json::Value = serde_json::from_slice(&setup_output).unwrap();
+        assert_eq!(setup_value["ok"], true);
+        let diagnostics = setup_value["diagnostics"].as_array().unwrap();
+        assert!(
+            diagnostics.iter().all(|diagnostic| !diagnostic
+                .as_str()
+                .unwrap()
+                .contains("Skipped unsupported file: src/")),
+            "supported language files should not be skipped: {diagnostics:?}"
+        );
+
+        let manifest_text = fs::read_to_string(root.join(".codebaseGraph/manifest.json")).unwrap();
+        let manifest: serde_json::Value = serde_json::from_str(&manifest_text).unwrap();
+        for path in [
+            "src/lib.rs",
+            "src/main.go",
+            "src/service.c",
+            "src/service.cpp",
+            "src/solver.f90",
+        ] {
+            assert!(
+                manifest["files"].get(path).is_some(),
+                "{path} should be materialized"
+            );
+        }
+
+        for symbol in [
+            "RustService",
+            "GoHelper",
+            "CService",
+            "CppService",
+            "fortran_service",
+        ] {
+            let mut search_output = Vec::new();
+            run(
+                [
+                    "graph-search",
+                    symbol,
+                    "--repo-root",
+                    root.to_str().unwrap(),
+                    "--limit",
+                    "5",
+                    "--json",
+                ],
+                &mut search_output,
+            )
+            .unwrap();
+            let search_value: serde_json::Value = serde_json::from_slice(&search_output).unwrap();
+            assert!(
+                search_value["results"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|hit| hit["label"] == symbol),
+                "{symbol} should be searchable: {search_value}"
+            );
+        }
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn graph_search_default_output_is_block() {
         let root = unique_temp_dir("codebase-graph-rust-search-block");
         fs::create_dir_all(&root).unwrap();

@@ -167,7 +167,9 @@ fn augment_field_metadata(
             fields.insert("module".to_string(), json!(module));
         }
     }
-    if node_type == "subroutine_call" && !fields.contains_key("function") {
+    if matches!(node_type, "call_expression" | "subroutine_call")
+        && !fields.contains_key("function")
+    {
         let function = first_descendant_text(node, source_bytes, &["identifier", "name"]);
         if !function.is_empty() {
             fields.insert("function".to_string(), json!(function));
@@ -324,7 +326,7 @@ fn syntax_label(node: Node<'_>, source_bytes: &[u8]) -> String {
 
 fn derived_name(node: Node<'_>, source_bytes: &[u8]) -> String {
     match node.kind() {
-        "function_definition" | "function_declaration" | "field_declaration" => {
+        "function_definition" | "function_declaration" | "field_declaration" | "declaration" => {
             declarator_name(node.child_by_field_name("declarator"), source_bytes)
         }
         "function_declarator" => declarator_name(Some(node), source_bytes),
@@ -721,88 +723,14 @@ fn summary(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::CaptureMapping;
+    use crate::profiles::ProfileSet;
+    use crate::protocol::LanguageProfile;
 
     fn profile(language: &str) -> LanguageProfile {
-        let (grammar_package, suffixes, root_node_types, mappings) = match language {
-            "rust" => (
-                "tree_sitter_rust",
-                vec![".rs"],
-                vec!["source_file"],
-                vec![
-                    mapping("definition.struct", &["struct_item"], "Class", ""),
-                    mapping(
-                        "definition.method",
-                        &["function_item"],
-                        "Method",
-                        "inside impl",
-                    ),
-                    mapping("definition.function", &["function_item"], "Function", ""),
-                    mapping(
-                        "reference.use",
-                        &["use_declaration"],
-                        "ImportDeclaration",
-                        "",
-                    ),
-                    mapping("reference.call", &["call_expression"], "CallExpression", ""),
-                    mapping(
-                        "reference.macro",
-                        &["macro_invocation"],
-                        "CallExpression",
-                        "",
-                    ),
-                ],
-            ),
-            "go" => (
-                "tree_sitter_go",
-                vec![".go"],
-                vec!["source_file"],
-                vec![
-                    mapping("definition.package", &["package_clause"], "Module", ""),
-                    mapping(
-                        "definition.function",
-                        &["function_declaration"],
-                        "Function",
-                        "",
-                    ),
-                    mapping("definition.method", &["method_declaration"], "Method", ""),
-                    mapping(
-                        "reference.import",
-                        &["import_declaration"],
-                        "ImportDeclaration",
-                        "",
-                    ),
-                    mapping("reference.call", &["call_expression"], "CallExpression", ""),
-                ],
-            ),
-            other => panic!("unsupported test profile: {other}"),
-        };
-        LanguageProfile {
-            language: language.to_string(),
-            suffixes: suffixes.into_iter().map(str::to_string).collect(),
-            grammar_package: grammar_package.to_string(),
-            root_node_types: root_node_types.into_iter().map(str::to_string).collect(),
-            capture_mappings: mappings,
-        }
-    }
-
-    fn mapping(
-        capture_name: &str,
-        parser_node_types: &[&str],
-        target_node_type: &str,
-        context_rule: &str,
-    ) -> CaptureMapping {
-        CaptureMapping {
-            capture_name: capture_name.to_string(),
-            parser_node_types: parser_node_types
-                .iter()
-                .map(|item| item.to_string())
-                .collect(),
-            target_node_type: target_node_type.to_string(),
-            relation_types: Vec::new(),
-            context_rule: context_rule.to_string(),
-            construct: String::new(),
-        }
+        ProfileSet::new(&[])
+            .profile_for_language(language)
+            .unwrap_or_else(|| panic!("{language} profile should exist"))
+            .clone()
     }
 
     #[test]
@@ -837,6 +765,54 @@ mod tests {
         assert!(captures.contains(&("reference.import".to_string(), "fmt".to_string())));
         assert!(captures.contains(&("definition.function".to_string(), "helper".to_string())));
         assert!(captures.contains(&("reference.call".to_string(), "fmt.Println".to_string())));
+    }
+
+    #[test]
+    fn c_tree_sitter_parser_marks_profile_captures() {
+        let output = parse_source(
+            "#include <stdio.h>\nstruct Service { int id; };\nint helper() { printf(\"ok\"); return 1; }\n",
+            &profile("c"),
+        )
+        .expect("c parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+
+        assert!(captures.contains(&("reference.include".to_string(), "stdio.h".to_string())));
+        assert!(captures.contains(&("definition.struct".to_string(), "Service".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "helper".to_string())));
+        assert!(captures.contains(&("reference.call".to_string(), "printf".to_string())));
+    }
+
+    #[test]
+    fn cpp_tree_sitter_parser_marks_profile_captures() {
+        let output = parse_source(
+            "#include <iostream>\nclass Service { public: void run() { helper(); } };\nint helper() { return 1; }\n",
+            &profile("cpp"),
+        )
+        .expect("cpp parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+
+        assert!(captures.contains(&("reference.include".to_string(), "iostream".to_string())));
+        assert!(captures.contains(&("definition.class".to_string(), "Service".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "helper".to_string())));
+        assert!(captures.contains(&("reference.call".to_string(), "helper".to_string())));
+    }
+
+    #[test]
+    fn fortran_tree_sitter_parser_marks_profile_captures() {
+        let output = parse_source(
+            "module service_mod\ncontains\nsubroutine helper()\nuse iso_fortran_env\ncall run()\nend subroutine helper\nend module service_mod\n",
+            &profile("fortran"),
+        )
+        .expect("fortran parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+
+        assert!(captures.contains(&("definition.module".to_string(), "service_mod".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "helper".to_string())));
+        assert!(captures.contains(&("reference.use".to_string(), "iso_fortran_env".to_string())));
+        assert!(captures.contains(&("reference.call".to_string(), "run".to_string())));
     }
 
     fn marked_captures(root: &SyntaxNode) -> Vec<(String, String)> {

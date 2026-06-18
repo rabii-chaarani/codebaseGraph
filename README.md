@@ -1,8 +1,8 @@
 # codebaseGraph
 
-`codebaseGraph` is a local knowledge graph for AI coding agents. It builds a graph from Python, Rust, Go, C, C++,
-Fortran, Markdown, and MDX files into a LadyBugDB-backed graph, then exposes search, compact context, schema, query
-helpers, and read-only MCP tools.
+`codebaseGraph` is a local knowledge graph for AI coding agents. It builds a syntax-level searchable graph from
+Python, Rust, Go, C, C++, Fortran, Markdown, and MDX files into a LadyBugDB-backed graph, then exposes search,
+compact context, schema, query helpers, and read-only MCP tools.
 
 The shipped CLI and MCP server are native Rust binaries.
 
