@@ -345,7 +345,10 @@ pub(super) fn import_module(node: Node<'_>, source_bytes: &[u8]) -> String {
 
 pub(super) fn named_children(node: Node<'_>) -> Vec<Node<'_>> {
     (0..node.named_child_count())
-        .filter_map(|index| node.named_child(index))
+        .filter_map(|index| {
+            let index = u32::try_from(index).ok()?;
+            node.named_child(index)
+        })
         .collect()
 }
 
