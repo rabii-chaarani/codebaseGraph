@@ -86,6 +86,14 @@ impl WatchEventFilter {
             if let Ok(relative) = absolute.strip_prefix(&self.source_root) {
                 return Some(relative.to_path_buf());
             }
+            #[cfg(windows)]
+            {
+                let absolute = normalize_windows_verbatim_path(&absolute);
+                let source_root = normalize_windows_verbatim_path(&self.source_root);
+                if let Ok(relative) = absolute.strip_prefix(source_root) {
+                    return Some(relative.to_path_buf());
+                }
+            }
             return Some(path.to_path_buf());
         }
         None
@@ -99,6 +107,18 @@ impl WatchEventFilter {
         }
         watch_matches_any_pattern(relative_path, &self.ignore_patterns)
             || watch_matches_any_pattern(relative_path, &self.exclude_patterns)
+    }
+}
+
+#[cfg(windows)]
+fn normalize_windows_verbatim_path(path: &Path) -> PathBuf {
+    let normalized = path.to_string_lossy().replace('\\', "/");
+    if let Some(stripped) = normalized.strip_prefix("//?/UNC/") {
+        PathBuf::from(format!("//{stripped}"))
+    } else if let Some(stripped) = normalized.strip_prefix("//?/") {
+        PathBuf::from(stripped)
+    } else {
+        PathBuf::from(normalized.as_ref())
     }
 }
 

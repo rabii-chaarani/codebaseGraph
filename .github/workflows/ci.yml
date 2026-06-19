@@ -36,16 +36,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-2022
+        include:
+          - os: ubuntu-latest
+            rustflags: ""
+          - os: macos-latest
+            rustflags: "-C link-arg=-Wl,-multiply_defined,suppress"
+          - os: windows-2022
+            rustflags: ""
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
       - name: Run tests
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
         run: cargo test --workspace --locked
 
   clippy:
@@ -97,21 +102,27 @@ jobs:
           - os: ubuntu-latest
             binary: codebase-graph
             archive: codebase-graph-linux-x86_64.tar.gz
+            rustflags: ""
           - os: macos-latest
             binary: codebase-graph
             archive: codebase-graph-macos-arm64.tar.gz
+            rustflags: "-C link-arg=-Wl,-multiply_defined,suppress"
           - os: macos-15-intel
             binary: codebase-graph
             archive: codebase-graph-macos-x86_64.tar.gz
+            rustflags: ""
           - os: windows-2022
             binary: codebase-graph.exe
             archive: codebase-graph-windows-x86_64.tar.gz
+            rustflags: ""
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
       - name: Build Rust production binary
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
         shell: bash
         run: |
           mkdir -p dist/smoke

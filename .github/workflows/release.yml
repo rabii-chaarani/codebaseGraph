@@ -97,15 +97,19 @@ jobs:
           - os: ubuntu-latest
             binary: codebase-graph
             artifact-suffix: linux-x86_64
+            rustflags: ""
           - os: macos-latest
             binary: codebase-graph
             artifact-suffix: macos-arm64
+            rustflags: "-C link-arg=-Wl,-multiply_defined,suppress"
           - os: macos-15-intel
             binary: codebase-graph
             artifact-suffix: macos-x86_64
+            rustflags: ""
           - os: windows-2022
             binary: codebase-graph.exe
             artifact-suffix: windows-x86_64
+            rustflags: ""
     env:
       RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
     steps:
@@ -118,6 +122,8 @@ jobs:
         shell: bash
         run: cargo run -p xtask -- verify-release-version "$RELEASE_TAG"
       - name: Build Rust production binary
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
         shell: bash
         run: |
           mkdir -p dist/smoke
