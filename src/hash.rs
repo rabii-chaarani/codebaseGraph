@@ -1,4 +1,5 @@
 use sha2::{Digest, Sha256};
+use std::fmt::Write as _;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
@@ -16,7 +17,8 @@ pub fn sha256_file(path: &std::path::Path) -> Result<String, std::io::Error> {
         }
         hasher.update(&buffer[..bytes_read]);
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    let digest = hasher.finalize();
+    Ok(hex_lower(digest.as_ref()))
 }
 
 pub fn partition_id(path: &str) -> String {
@@ -25,10 +27,15 @@ pub fn partition_id(path: &str) -> String {
 
 fn sha1_hex(bytes: &[u8]) -> String {
     let digest = sha1(bytes);
-    digest[..10]
-        .iter()
-        .map(|byte| format!("{:02x}", byte))
-        .collect()
+    hex_lower(&digest[..10])
+}
+
+fn hex_lower(bytes: &[u8]) -> String {
+    let mut output = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        write!(&mut output, "{byte:02x}").expect("writing to a String cannot fail");
+    }
+    output
 }
 
 fn sha1(input: &[u8]) -> [u8; 20] {
@@ -102,7 +109,8 @@ fn sha1(input: &[u8]) -> [u8; 20] {
 
 #[cfg(test)]
 fn sha256_hex(input: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(input))
+    let digest = Sha256::digest(input);
+    hex_lower(digest.as_ref())
 }
 
 #[cfg(test)]
