@@ -3,7 +3,7 @@ use super::output::{materialization_payload, serialize_plan_block};
 use super::request::{build_request, MaterializeOptions};
 use crate::cli::format::{materialize_help, plan_help, schema_statements_from_copy_statements};
 use crate::cli::setup::GraphStatePaths;
-use crate::ladybug_writer::{write_database, LadybugWriteRequest};
+use crate::db_writer::{write_database, LadybugWriteRequest};
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
 use std::io::Write;
 use std::path::Path;
@@ -52,7 +52,7 @@ pub(in crate::cli) fn materialize(
             include_fts: request.include_fts,
             schema_statements,
             replace_database: response.diff.force_rebuild,
-            delete_statements: crate::ladybug_writer::partition_delete_statements(
+            delete_statements: crate::db_writer::partition_delete_statements(
                 request.previous_manifest.as_ref(),
                 &response.diff,
             ),

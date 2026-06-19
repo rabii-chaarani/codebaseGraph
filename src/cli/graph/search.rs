@@ -25,7 +25,7 @@ pub(in crate::cli) fn execute_graph_search(
     })?;
     let conn =
         Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
-    crate::ladybug_writer::preseed_ladybug_extensions(true).map_err(|error| error.to_string())?;
+    crate::db_writer::preseed_ladybug_extensions(true).map_err(|error| error.to_string())?;
     conn.query("LOAD fts")
         .map_err(|error| format!("failed to load FTS extension for graph search: {error}"))?;
     let schema = metadata_payload(GRAPH_SCHEMA_JSON)?;
