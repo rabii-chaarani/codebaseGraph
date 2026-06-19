@@ -38,6 +38,7 @@ pub fn materialize_syntax_batch(
     let mut progress_events = Vec::new();
     let rebuild_paths = diff.rebuild_paths();
     let rebuild_total = rebuild_paths.len();
+    let (retained_nodes, retained_edges) = retained_manifest_ids(request, &diff, &rebuild_paths);
     let mut partitions = Vec::new();
 
     for (index, result) in build_partitions(request, &scan, &rebuild_paths)?
@@ -74,7 +75,7 @@ pub fn materialize_syntax_batch(
             edge_ids.insert(edge_id.clone());
         }
         let staging_started = Instant::now();
-        staging_accumulator.add_partition(&partition);
+        staging_accumulator.add_partition_filtered(&partition, &retained_nodes, &retained_edges);
         staging_seconds += elapsed_seconds(staging_started);
         if request.progress {
             progress_events.push(ProgressEvent {
@@ -107,6 +108,35 @@ pub fn materialize_syntax_batch(
     );
     response.progress_events = progress_events;
     Ok(response)
+}
+
+fn retained_manifest_ids(
+    request: &NativeSyntaxMaterializationRequest,
+    diff: &crate::protocol::ManifestDiff,
+    rebuild_paths: &[String],
+) -> (BTreeSet<String>, BTreeSet<String>) {
+    if diff.force_rebuild {
+        return (BTreeSet::new(), BTreeSet::new());
+    }
+    let Some(previous) = request.previous_manifest.as_ref() else {
+        return (BTreeSet::new(), BTreeSet::new());
+    };
+    let touched = diff
+        .deleted
+        .iter()
+        .chain(rebuild_paths.iter())
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut retained_nodes = BTreeSet::new();
+    let mut retained_edges = BTreeSet::new();
+    for (path, entry) in &previous.files {
+        if touched.contains(path) {
+            continue;
+        }
+        retained_nodes.extend(entry.node_ids.iter().cloned());
+        retained_edges.extend(entry.edge_ids.iter().cloned());
+    }
+    (retained_nodes, retained_edges)
 }
 
 pub fn materialize_syntax_batch_json(payload: &str) -> Result<String, NativeError> {

@@ -12,6 +12,7 @@ fn mcp_graph_query_binds_json_parameters() {
         config: None,
         db: None,
         manifest: None,
+        refresh: None,
     };
     let result = mcp_call_tool_result(
         "graph_query",
@@ -105,6 +106,7 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         config: None,
         db: None,
         manifest: None,
+        refresh: None,
     };
     let mut output = Vec::new();
     serve_mcp_stdio(&options, std::io::Cursor::new(input), &mut output).unwrap();
@@ -129,6 +131,11 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
 
     assert_eq!(responses[2]["result"]["isError"], false);
     assert_eq!(responses[2]["result"]["structuredContent"]["ok"], true);
+    assert_eq!(
+        responses[2]["result"]["structuredContent"]["refresh"]["enabled"],
+        true
+    );
+    assert!(responses[2]["result"]["structuredContent"]["refresh"]["backend"].is_string());
     assert!(responses[2]["result"]["content"][0]["text"]
         .as_str()
         .unwrap()

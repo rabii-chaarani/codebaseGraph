@@ -44,6 +44,7 @@ pub(super) fn test_http_options(root: PathBuf, auth_token: Option<&str>) -> McpH
             config: None,
             db: None,
             manifest: None,
+            refresh: None,
         },
         host: "127.0.0.1".to_string(),
         port: 8765,

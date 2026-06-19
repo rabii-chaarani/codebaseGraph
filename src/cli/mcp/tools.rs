@@ -80,6 +80,18 @@ pub(in crate::cli) fn mcp_tool_payload(
     arguments: &serde_json::Value,
     options: &McpServeOptions,
 ) -> Result<serde_json::Value, String> {
+    let _refresh_read_guard = if matches!(
+        tool_name,
+        "graph_health" | "graph_search" | "graph_context" | "graph_query"
+    ) {
+        options
+            .refresh
+            .as_ref()
+            .map(|refresh| refresh.read_guard())
+            .transpose()?
+    } else {
+        None
+    };
     match tool_name {
         "graph_health" => graph_health_payload(options),
         "graph_schema" => metadata_payload(GRAPH_SCHEMA_JSON),
@@ -194,6 +206,7 @@ pub(in crate::cli) fn graph_health_payload(
         "manifest_exists": manifest_exists,
         "graph_readable": graph_readable,
         "total_nodes": total_nodes,
+        "refresh": options.refresh.as_ref().map(|refresh| refresh.as_json()),
         "error": error_message,
     }))
 }

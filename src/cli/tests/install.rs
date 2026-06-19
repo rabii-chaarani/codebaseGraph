@@ -1,6 +1,61 @@
 use super::*;
 
 #[test]
+fn install_skips_materialization_when_graph_state_already_exists() {
+    let root = unique_temp_dir("codebase-graph-rust-install-idempotent");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+
+    fs::write(root.join("service.py"), "def helper():\n    return 2\n").unwrap();
+    let mut output = Vec::new();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["database_written"], false);
+    assert_eq!(value["materialization"]["skipped"], true);
+    assert_eq!(
+        value["materialization"]["skip_reason"],
+        "existing_graph_state"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn mcp_install_writes_generic_client_config() {
     let root = unique_temp_dir("codebase-graph-rust-mcp-install");
     fs::create_dir_all(&root).unwrap();

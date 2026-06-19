@@ -6,7 +6,7 @@ use super::{
     types::{WatchMessage, WatchProbeOutcome},
     WatchLoopConfig,
 };
-use crate::cli::build::{materialize, MaterializeOptions};
+use crate::cli::build::{materialize_candidate_paths, MaterializeOptions};
 use notify::{Event, RecursiveMode, Watcher};
 use std::{
     collections::VecDeque,
@@ -63,7 +63,10 @@ pub(in crate::cli) fn run_native_watch<W: Write>(
             Some(batch) => batch,
             None => continue,
         };
-        let (_, response) = materialize(materialize_options)?;
+        let (_, response) = materialize_candidate_paths(
+            materialize_options,
+            batch.paths.iter().cloned().collect(),
+        )?;
         write_watch_event(
             stdout,
             "refreshed",

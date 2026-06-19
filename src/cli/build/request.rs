@@ -32,7 +32,11 @@ pub(in crate::cli) fn build_request(
     let mut exclude_patterns = config_rules.exclude_patterns;
     exclude_patterns.extend(options.exclude_patterns.clone());
     let ignore_patterns = read_codebase_graph_ignore(&source_root)?;
-    let candidate_paths = git_candidate_paths(&source_root, options)?;
+    let candidate_paths = if options.candidate_paths.is_empty() {
+        git_candidate_paths(&source_root, options)?
+    } else {
+        normalized_candidate_paths(&options.candidate_paths)
+    };
     let staging_dir = paths.state_dir.join("native-staging");
     Ok(NativeSyntaxMaterializationRequest {
         source_root: source_root.to_string_lossy().to_string(),
@@ -173,6 +177,17 @@ pub(in crate::cli) fn git_paths(source_root: &Path, args: &[&str]) -> Result<Vec
         .collect())
 }
 
+pub(in crate::cli) fn normalized_candidate_paths(paths: &[String]) -> Vec<String> {
+    let mut paths = paths
+        .iter()
+        .map(|path| path.trim().trim_start_matches("./").replace('\\', "/"))
+        .filter(|path| !path.is_empty())
+        .collect::<Vec<_>>();
+    paths.sort();
+    paths.dedup();
+    paths
+}
+
 pub(in crate::cli) fn default_excluded_parts() -> Vec<String> {
     [
         ".bzr",
@@ -212,6 +227,7 @@ pub(in crate::cli) struct MaterializeOptions {
     pub(in crate::cli) git_base: Option<String>,
     pub(in crate::cli) include_patterns: Vec<String>,
     pub(in crate::cli) exclude_patterns: Vec<String>,
+    pub(in crate::cli) candidate_paths: Vec<String>,
     pub(in crate::cli) parallel: bool,
     pub(in crate::cli) progress: bool,
     pub(in crate::cli) plan_only: bool,

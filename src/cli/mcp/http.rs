@@ -1,6 +1,7 @@
 use super::{
     options::McpHttpOptions,
     protocol::{handle_mcp_message, is_supported_protocol_version, parse_mcp_payload, rpc_error},
+    refresh::start_auto_refresh,
 };
 use crate::cli::{constants::MAX_HTTP_BODY_BYTES, install::McpHttpState};
 use serde_json::json;
@@ -12,7 +13,9 @@ use std::{
 
 pub(in crate::cli) fn serve_mcp_http(options: &McpHttpOptions) -> Result<(), String> {
     let listener = options.bind_listener()?;
-    serve_mcp_http_listener(options, listener, None)
+    let mut options = options.clone();
+    options.serve.refresh = Some(start_auto_refresh(&options.serve));
+    serve_mcp_http_listener(&options, listener, None)
 }
 
 pub(in crate::cli) fn serve_mcp_http_listener(

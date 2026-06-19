@@ -2,6 +2,7 @@ mod commands;
 mod http;
 mod options;
 mod protocol;
+mod refresh;
 mod stdio;
 mod tools;
 

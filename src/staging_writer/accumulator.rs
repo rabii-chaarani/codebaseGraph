@@ -9,7 +9,8 @@ use super::rows::{edge_fields, node_fields, EdgeRowsById, NodeRowsById};
 use crate::error::NativeError;
 use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::partition_builder::GraphPartition;
-use std::collections::HashMap;
+use serde_json::Value;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::path::PathBuf;
 
@@ -20,6 +21,12 @@ pub(crate) struct StagingAccumulator {
     pub(super) node_types_by_id: HashMap<String, String>,
     pub(super) edge_connectors: Vec<EdgeConnector>,
     pub(super) connectors: ConnectorBucketsByTable,
+    relation_constraints: RelationConstraints,
+}
+
+#[derive(Debug, Default)]
+struct RelationConstraints {
+    pairs_by_relation: BTreeMap<String, (BTreeSet<String>, BTreeSet<String>)>,
 }
 
 impl StagingAccumulator {
@@ -31,19 +38,59 @@ impl StagingAccumulator {
             node_types_by_id: HashMap::new(),
             edge_connectors: Vec::new(),
             connectors: HashMap::new(),
+            relation_constraints: RelationConstraints::from_declared_schema(),
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn add_partition(&mut self, partition: &GraphPartition) {
+        self.add_partition_filtered(partition, &BTreeSet::new(), &BTreeSet::new());
+    }
+
+    pub(crate) fn add_partition_filtered(
+        &mut self,
+        partition: &GraphPartition,
+        retained_nodes: &BTreeSet<String>,
+        retained_edges: &BTreeSet<String>,
+    ) {
         for node in &partition.nodes {
+            self.node_types_by_id
+                .entry(node.id.clone())
+                .or_insert_with(|| node.table.clone());
+            if retained_nodes.contains(&node.id) {
+                continue;
+            }
             self.add_node(
                 node,
                 (node.table == "File").then_some(partition.entry.content_hash.as_str()),
             );
         }
         for edge in &partition.edges {
+            if retained_edges.contains(&edge.id) {
+                continue;
+            }
+            if !self.edge_allowed(edge) {
+                continue;
+            }
             self.add_edge(edge);
         }
+    }
+
+    fn edge_allowed(&self, edge: &GraphEdgeRow) -> bool {
+        let Some((source_types, target_types)) = self
+            .relation_constraints
+            .pairs_by_relation
+            .get(&edge.edge_type)
+        else {
+            return true;
+        };
+        let Some(source_type) = self.node_types_by_id.get(&edge.source_id) else {
+            return true;
+        };
+        let Some(target_type) = self.node_types_by_id.get(&edge.target_id) else {
+            return true;
+        };
+        source_types.contains(source_type) && target_types.contains(target_type)
     }
 
     pub(crate) fn finish(mut self) -> Result<StagingResult, NativeError> {
@@ -150,4 +197,41 @@ impl StagingAccumulator {
             connector_rows,
         })
     }
+}
+
+impl RelationConstraints {
+    fn from_declared_schema() -> Self {
+        let Ok(schema) =
+            serde_json::from_str::<Value>(include_str!("../../assets/graph_schema.json"))
+        else {
+            return Self::default();
+        };
+        let pairs_by_relation = schema
+            .get("relation_types")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(|relation| {
+                let name = relation.get("name").and_then(Value::as_str)?.to_string();
+                let source_types = json_string_set(relation, "source_types");
+                let target_types = json_string_set(relation, "target_types");
+                if source_types.is_empty() || target_types.is_empty() {
+                    return None;
+                }
+                Some((name, (source_types, target_types)))
+            })
+            .collect();
+        Self { pairs_by_relation }
+    }
+}
+
+fn json_string_set(value: &Value, key: &str) -> BTreeSet<String> {
+    value
+        .get(key)
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .map(str::to_string)
+        .collect()
 }

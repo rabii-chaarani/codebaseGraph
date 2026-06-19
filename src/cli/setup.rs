@@ -51,6 +51,8 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
     let config_payload = setup_config_payload(&paths, &source_root);
     let instructions_path = instruction_target_path(&source_root, &options.instructions_target)?;
     let state_dir_existed = paths.state_dir.exists();
+    let graph_state_existed =
+        paths.config_path.exists() && paths.db_path.exists() && paths.manifest_path.exists();
     let previous_config = snapshot_file(&paths.config_path)?;
     let previous_instructions = match instructions_path.as_ref() {
         Some(path) => Some((path.clone(), snapshot_file(path)?)),
@@ -89,13 +91,18 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
                 &options.instructions_target,
                 &paths.config_path,
             )?;
-            let (_, response) = materialize(&materialize_options)?;
+            let materialization = if graph_state_existed {
+                existing_graph_materialization_payload(&materialize_options.mode, &paths)
+            } else {
+                let (_, response) = materialize(&materialize_options)?;
+                materialization_payload(&response, &materialize_options.mode, &paths)
+            };
             let mcp_config = setup_mcp_config(&options, &paths, false)?;
             Ok::<_, String>((
                 config_action.to_string(),
                 instructions,
                 mcp_config,
-                materialization_payload(&response, &materialize_options.mode, &paths),
+                materialization,
             ))
         })();
         match result {
@@ -139,6 +146,27 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
     )
     .map_err(|error| error.to_string())?;
     Ok(())
+}
+
+fn existing_graph_materialization_payload(
+    mode: &str,
+    paths: &GraphStatePaths,
+) -> serde_json::Value {
+    json!({
+        "mode": mode,
+        "database_path": paths.db_path,
+        "manifest_path": paths.manifest_path,
+        "database_written": false,
+        "skipped": true,
+        "skip_reason": "existing_graph_state",
+        "rebuilt": 0,
+        "deleted": 0,
+        "node_rows": 0,
+        "edge_rows": 0,
+        "connector_rows": 0,
+        "diagnostics": [],
+        "phase_timings": {},
+    })
 }
 pub(super) fn setup_mcp_config(
     options: &SetupOptions,

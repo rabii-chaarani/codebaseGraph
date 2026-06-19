@@ -1,6 +1,7 @@
 use super::{
     options::McpServeOptions,
     protocol::{handle_mcp_message, parse_mcp_payload, rpc_error, McpSession},
+    refresh::start_auto_refresh,
 };
 use serde_json::json;
 use std::io::{BufRead, Write};
@@ -10,9 +11,11 @@ pub(in crate::cli) fn serve_mcp_stdio<R: BufRead, W: Write>(
     mut input: R,
     output: &mut W,
 ) -> Result<(), String> {
+    let mut options = options.clone();
+    options.refresh = Some(start_auto_refresh(&options));
     let mut session = McpSession::default();
     while let Some(message) = read_mcp_message(&mut input, output)? {
-        if let Some(response) = handle_mcp_message(message, &mut session, options) {
+        if let Some(response) = handle_mcp_message(message, &mut session, &options) {
             write_mcp_message(output, &response)?;
         }
     }

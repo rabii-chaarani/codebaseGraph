@@ -37,28 +37,42 @@ pub(in crate::cli) fn materialize(
         Some(request_path) => read_request(request_path)?,
         None => build_request(options)?,
     };
+    materialize_request(options, request)
+}
+
+pub(in crate::cli) fn materialize_candidate_paths(
+    options: &MaterializeOptions,
+    candidate_paths: Vec<String>,
+) -> Result<
+    (
+        NativeSyntaxMaterializationRequest,
+        NativeSyntaxMaterializationResponse,
+    ),
+    String,
+> {
+    let mut request = build_request(options)?;
+    request.candidate_paths = candidate_paths;
+    request.atomic_rebuild = false;
+    materialize_request(options, request)
+}
+
+pub(in crate::cli) fn materialize_request(
+    options: &MaterializeOptions,
+    request: NativeSyntaxMaterializationRequest,
+) -> Result<
+    (
+        NativeSyntaxMaterializationRequest,
+        NativeSyntaxMaterializationResponse,
+    ),
+    String,
+> {
     let started = Instant::now();
+    let final_request = request;
     let mut response =
-        crate::materialize_syntax_batch(&request).map_err(|error| error.to_string())?;
+        crate::materialize_syntax_batch(&final_request).map_err(|error| error.to_string())?;
     if !response.skipped {
         let database_started = Instant::now();
-        let schema_statements = if request.schema_statements.is_empty() {
-            schema_statements_from_copy_statements(request.include_fts, &response.copy_statements)
-        } else {
-            request.schema_statements.clone()
-        };
-        write_database(LadybugWriteRequest {
-            db_path: request.db_path.clone(),
-            include_fts: request.include_fts,
-            schema_statements,
-            replace_database: response.diff.force_rebuild,
-            delete_statements: crate::db_writer::partition_delete_statements(
-                request.previous_manifest.as_ref(),
-                &response.diff,
-            ),
-            copy_statements: response.copy_statements.clone(),
-        })
-        .map_err(|error| error.to_string())?;
+        write_materialized_database(&final_request, &response)?;
         response.phase_timings.insert(
             "database_write_seconds".to_string(),
             database_started.elapsed().as_secs_f64(),
@@ -73,13 +87,36 @@ pub(in crate::cli) fn materialize(
     if let Some(manifest_path) = request_manifest_path(options).as_ref() {
         write_manifest(
             manifest_path,
-            &request,
+            &final_request,
             &response.rebuilt_entries,
             &response.diff,
         )?;
     }
 
-    Ok((request, response))
+    Ok((final_request, response))
+}
+
+fn write_materialized_database(
+    request: &NativeSyntaxMaterializationRequest,
+    response: &NativeSyntaxMaterializationResponse,
+) -> Result<(), String> {
+    let schema_statements = if request.schema_statements.is_empty() {
+        schema_statements_from_copy_statements(request.include_fts, &response.copy_statements)
+    } else {
+        request.schema_statements.clone()
+    };
+    write_database(LadybugWriteRequest {
+        db_path: request.db_path.clone(),
+        include_fts: request.include_fts,
+        schema_statements,
+        replace_database: response.diff.force_rebuild,
+        delete_statements: crate::db_writer::partition_delete_statements(
+            request.previous_manifest.as_ref(),
+            &response.diff,
+        ),
+        copy_statements: response.copy_statements.clone(),
+    })
+    .map_err(|error| error.to_string())
 }
 
 pub(in crate::cli) fn run_plan<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {

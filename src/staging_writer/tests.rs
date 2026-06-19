@@ -85,13 +85,14 @@ fn deterministic_output_sorts_rows_connectors_and_copy_statements() {
         vec![
             node("sym:b", "Symbol", "b"),
             node("file:z", "File", "z.py"),
+            node("ref:z", "Reference", "a"),
             node("sym:a", "Symbol", "a"),
             node("file:a", "File", "a.py"),
         ],
         vec![
             edge("edge:b", "Contains", "file:z", "sym:b"),
             edge("edge:a", "Contains", "file:a", "sym:a"),
-            edge("edge:r", "References", "file:z", "sym:a"),
+            edge("edge:r", "References", "ref:z", "sym:a"),
         ],
     );
 
@@ -108,6 +109,7 @@ fn deterministic_output_sorts_rows_connectors_and_copy_statements() {
         statement_tables,
         vec![
             "COPY `File`",
+            "COPY `Reference`",
             "COPY `Symbol`",
             "COPY `Contains`",
             "COPY `References`",
@@ -147,7 +149,7 @@ fn deterministic_output_sorts_rows_connectors_and_copy_statements() {
         ]
     );
     assert!(staging_dir
-        .join("from_references__file__references.csv")
+        .join("from_references__reference__references.csv")
         .exists());
     assert!(staging_dir
         .join("to_references__references__symbol.csv")

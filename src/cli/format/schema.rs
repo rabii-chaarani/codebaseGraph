@@ -7,19 +7,9 @@ pub(in crate::cli) fn schema_statements_from_copy_statements(
     copy_statements: &[String],
 ) -> Vec<String> {
     let tables = copy_tables(copy_statements);
-    let relation_names = relation_names(&tables);
-    let mut node_tables: Vec<String> = tables
-        .iter()
-        .filter(|table| {
-            !table.starts_with("FROM_")
-                && !table.starts_with("TO_")
-                && !relation_names.contains(*table)
-        })
-        .cloned()
-        .collect();
-    let mut relation_tables: Vec<String> = relation_names.into_iter().collect();
+    let (mut node_tables, relation_schemas) =
+        declared_graph_schema().unwrap_or_else(|| dynamic_graph_schema_from_copy_tables(&tables));
     node_tables.sort();
-    relation_tables.sort();
 
     let mut statements = vec!["INSTALL json".to_string(), "LOAD json".to_string()];
     if include_fts {
@@ -31,21 +21,21 @@ pub(in crate::cli) fn schema_statements_from_copy_statements(
             .map(|table| node_table_sql(table, node_fields(table))),
     );
     statements.extend(
-        relation_tables
+        relation_schemas
             .iter()
-            .map(|table| node_table_sql(table, edge_fields())),
+            .map(|relation| node_table_sql(&relation.name, edge_fields())),
     );
-    for relation in &relation_tables {
+    for relation in &relation_schemas {
         statements.push(relation_table_sql(
-            &format!("FROM_{relation}"),
-            &node_tables,
-            &[relation.to_string()],
+            &format!("FROM_{}", relation.name),
+            &relation.source_types,
+            std::slice::from_ref(&relation.name),
             "source",
         ));
         statements.push(relation_table_sql(
-            &format!("TO_{relation}"),
-            &[relation.to_string()],
-            &node_tables,
+            &format!("TO_{}", relation.name),
+            std::slice::from_ref(&relation.name),
+            &relation.target_types,
             "target",
         ));
     }
@@ -53,6 +43,82 @@ pub(in crate::cli) fn schema_statements_from_copy_statements(
         statements.extend(fts_index_statements(&node_tables));
     }
     statements
+}
+
+#[derive(Debug, Clone)]
+struct RelationSchema {
+    name: String,
+    source_types: Vec<String>,
+    target_types: Vec<String>,
+}
+
+fn declared_graph_schema() -> Option<(Vec<String>, Vec<RelationSchema>)> {
+    let schema = metadata_payload(GRAPH_SCHEMA_JSON).ok()?;
+    let mut node_tables = value_array(&schema, "node_types")
+        .iter()
+        .map(|node| value_str(node, "name").to_string())
+        .filter(|name| !name.is_empty())
+        .collect::<BTreeSet<_>>();
+    let mut relation_schemas = value_array(&schema, "relation_types")
+        .iter()
+        .filter_map(|relation| {
+            let name = value_str(relation, "name").to_string();
+            if name.is_empty() {
+                return None;
+            }
+            let source_types = string_array(relation, "source_types");
+            let target_types = string_array(relation, "target_types");
+            if source_types.is_empty() || target_types.is_empty() {
+                return None;
+            }
+            node_tables.extend(source_types.iter().cloned());
+            node_tables.extend(target_types.iter().cloned());
+            Some(RelationSchema {
+                name,
+                source_types,
+                target_types,
+            })
+        })
+        .collect::<Vec<_>>();
+    relation_schemas.sort_by(|left, right| left.name.cmp(&right.name));
+    Some((node_tables.into_iter().collect(), relation_schemas))
+}
+
+fn dynamic_graph_schema_from_copy_tables(
+    tables: &BTreeSet<String>,
+) -> (Vec<String>, Vec<RelationSchema>) {
+    let relation_names = relation_names(tables);
+    let node_tables = tables
+        .iter()
+        .filter(|table| {
+            !table.starts_with("FROM_")
+                && !table.starts_with("TO_")
+                && !relation_names.contains(*table)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let relation_schemas = relation_names
+        .into_iter()
+        .map(|name| RelationSchema {
+            name,
+            source_types: node_tables.clone(),
+            target_types: node_tables.clone(),
+        })
+        .collect();
+    (node_tables, relation_schemas)
+}
+
+fn string_array(value: &serde_json::Value, key: &str) -> Vec<String> {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(serde_json::Value::as_str)
+        .map(str::to_string)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 pub(in crate::cli) fn fts_index_statements(node_tables: &[String]) -> Vec<String> {

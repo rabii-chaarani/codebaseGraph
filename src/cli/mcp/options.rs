@@ -1,13 +1,15 @@
 use super::http::is_local_host;
+use super::refresh::McpRefreshState;
 use crate::cli::{format::mcp_help, graph::HealthOptions, util::required_arg};
-use std::{env, net::TcpListener, path::PathBuf};
+use std::{env, net::TcpListener, path::PathBuf, sync::Arc};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(in crate::cli) struct McpServeOptions {
     pub(in crate::cli) repo_root: PathBuf,
     pub(in crate::cli) config: Option<PathBuf>,
     pub(in crate::cli) db: Option<PathBuf>,
     pub(in crate::cli) manifest: Option<PathBuf>,
+    pub(in crate::cli) refresh: Option<Arc<McpRefreshState>>,
 }
 
 impl McpServeOptions {
@@ -17,6 +19,7 @@ impl McpServeOptions {
             config: None,
             db: None,
             manifest: None,
+            refresh: None,
         };
         let mut index = 0;
         while index < args.len() {
@@ -61,7 +64,7 @@ impl McpServeOptions {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(in crate::cli) struct McpHttpOptions {
     pub(in crate::cli) serve: McpServeOptions,
     pub(in crate::cli) host: String,
@@ -79,6 +82,7 @@ impl McpHttpOptions {
                 config: None,
                 db: None,
                 manifest: None,
+                refresh: None,
             },
             host: "127.0.0.1".to_string(),
             port: 8765,
