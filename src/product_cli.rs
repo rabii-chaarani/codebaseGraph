@@ -8,7 +8,7 @@ use notify::{
     Event, EventKind, RecursiveMode, Watcher,
 };
 use serde_json::json;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::env;
 use std::fs;
 use std::io::{self, BufRead, Read, Write};
@@ -212,6 +212,13 @@ fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
         writeln!(stdout, "{}", watch_help()).map_err(|error| error.to_string())?;
         return Ok(());
     }
+    let backend = options.backend;
+    let loop_config = WatchLoopConfig {
+        poll_ms: options.poll_ms,
+        debounce_ms: options.debounce_ms,
+        max_iterations: options.max_iterations,
+    };
+    let once = options.once;
     let mut materialize_options = options.materialize;
     let source_root = materialize_options
         .source_root
@@ -221,11 +228,56 @@ fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
         .map_err(|error| format!("failed to resolve source root: {error}"))?;
     materialize_options.source_root = Some(source_root.clone());
     let filter = WatchEventFilter::from_options(&source_root, &materialize_options)?;
-    if options.once {
+    if once {
         let (_, response) = materialize(&materialize_options)?;
-        write_watch_event(stdout, "refreshed", 0, 0, &response)?;
+        write_watch_event(stdout, "refreshed", None, 0, 0, &response)?;
         return Ok(());
     }
+    match backend {
+        WatchBackend::Poll => run_poll_watch(stdout, loop_config, &materialize_options, &filter),
+        WatchBackend::Native => {
+            let (watcher, rx) = start_native_watcher(&source_root)?;
+            run_native_watch(
+                stdout,
+                loop_config,
+                &materialize_options,
+                &filter,
+                watcher,
+                rx,
+                VecDeque::new(),
+            )
+        }
+        WatchBackend::Auto => match start_native_watcher(&source_root) {
+            Ok((watcher, rx)) => {
+                let probe = probe_native_watcher(&source_root, &filter, &rx)?;
+                if probe.delivered {
+                    run_native_watch(
+                        stdout,
+                        loop_config,
+                        &materialize_options,
+                        &filter,
+                        watcher,
+                        rx,
+                        probe.queued,
+                    )
+                } else {
+                    drop(watcher);
+                    write_watch_status(stdout, "fallback", "poll", probe.reason.as_deref())?;
+                    run_poll_watch(stdout, loop_config, &materialize_options, &filter)
+                }
+            }
+            Err(error) => {
+                write_watch_status(stdout, "fallback", "poll", Some("watcher_start_failed"))?;
+                let _ = error;
+                run_poll_watch(stdout, loop_config, &materialize_options, &filter)
+            }
+        },
+    }
+}
+
+fn start_native_watcher(
+    source_root: &Path,
+) -> Result<(notify::RecommendedWatcher, Receiver<WatchMessage>), String> {
     let (tx, rx) = mpsc::channel();
     let mut watcher = notify::recommended_watcher(move |result: notify::Result<Event>| {
         let message = match result {
@@ -236,33 +288,88 @@ fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
     })
     .map_err(|error| format!("failed to start filesystem watcher: {error}"))?;
     watcher
-        .watch(&source_root, RecursiveMode::Recursive)
+        .watch(source_root, RecursiveMode::Recursive)
         .map_err(|error| format!("failed to watch {}: {error}", source_root.display()))?;
+    Ok((watcher, rx))
+}
+
+fn run_native_watch<W: Write>(
+    stdout: &mut W,
+    loop_config: WatchLoopConfig,
+    materialize_options: &MaterializeOptions,
+    filter: &WatchEventFilter,
+    _watcher: notify::RecommendedWatcher,
+    rx: Receiver<WatchMessage>,
+    mut queued: VecDeque<WatchMessage>,
+) -> Result<(), String> {
     let mut refreshes = 0_usize;
     loop {
-        let first = rx
-            .recv()
-            .map_err(|error| format!("filesystem watcher stopped: {error}"))?;
+        let first = match queued.pop_front() {
+            Some(message) => message,
+            None => rx
+                .recv()
+                .map_err(|error| format!("filesystem watcher stopped: {error}"))?,
+        };
         let batch = match collect_watch_batch(
             first,
             &rx,
-            &filter,
-            Duration::from_millis(options.debounce_ms),
-            watch_max_wait(options.debounce_ms),
+            &mut queued,
+            filter,
+            Duration::from_millis(loop_config.debounce_ms),
+            watch_max_wait(loop_config.debounce_ms),
         )? {
             Some(batch) => batch,
             None => continue,
         };
-        let (_, response) = materialize(&materialize_options)?;
+        let (_, response) = materialize(materialize_options)?;
         write_watch_event(
             stdout,
             "refreshed",
+            Some("native"),
             batch.event_count,
             batch.paths.len(),
             &response,
         )?;
         refreshes += 1;
-        if options.max_iterations.is_some_and(|max| refreshes >= max) {
+        if loop_config
+            .max_iterations
+            .is_some_and(|max| refreshes >= max)
+        {
+            return Ok(());
+        }
+    }
+}
+
+fn run_poll_watch<W: Write>(
+    stdout: &mut W,
+    loop_config: WatchLoopConfig,
+    materialize_options: &MaterializeOptions,
+    filter: &WatchEventFilter,
+) -> Result<(), String> {
+    let mut previous_snapshot = watch_file_snapshot(filter)?;
+    let mut refreshes = 0_usize;
+    loop {
+        let batch = collect_poll_batch(
+            filter,
+            &mut previous_snapshot,
+            Duration::from_millis(loop_config.poll_ms),
+            Duration::from_millis(loop_config.debounce_ms),
+            watch_max_wait(loop_config.debounce_ms),
+        )?;
+        let (_, response) = materialize(materialize_options)?;
+        write_watch_event(
+            stdout,
+            "refreshed",
+            Some("poll"),
+            batch.event_count,
+            batch.paths.len(),
+            &response,
+        )?;
+        refreshes += 1;
+        if loop_config
+            .max_iterations
+            .is_some_and(|max| refreshes >= max)
+        {
             return Ok(());
         }
     }
@@ -1920,16 +2027,43 @@ fn materialize_like_help(command_name: &str) -> &'static str {
 #[derive(Debug)]
 struct WatchOptions {
     materialize: MaterializeOptions,
-    _poll_ms: u64,
+    backend: WatchBackend,
+    poll_ms: u64,
     debounce_ms: u64,
     max_iterations: Option<usize>,
     once: bool,
     help: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WatchBackend {
+    Auto,
+    Native,
+    Poll,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct WatchLoopConfig {
+    poll_ms: u64,
+    debounce_ms: u64,
+    max_iterations: Option<usize>,
+}
+
+impl WatchBackend {
+    fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "auto" => Ok(Self::Auto),
+            "native" => Ok(Self::Native),
+            "poll" => Ok(Self::Poll),
+            _ => Err("--watch-backend must be auto, native, or poll".to_string()),
+        }
+    }
+}
+
 impl WatchOptions {
     fn parse(args: &[String]) -> Result<Self, String> {
         let mut materialize_args = Vec::new();
+        let mut backend = WatchBackend::Auto;
         let mut poll_ms = 500_u64;
         let mut debounce_ms = 250_u64;
         let mut max_iterations = None;
@@ -1949,6 +2083,13 @@ impl WatchOptions {
                     poll_ms = value
                         .parse()
                         .map_err(|error| format!("--poll-ms must be an integer: {error}"))?;
+                    index += 2;
+                }
+                "--watch-backend" => {
+                    let value = args.get(index + 1).ok_or_else(|| {
+                        "--watch-backend requires auto, native, or poll".to_string()
+                    })?;
+                    backend = WatchBackend::parse(value)?;
                     index += 2;
                 }
                 "--debounce-ms" => {
@@ -1981,7 +2122,8 @@ impl WatchOptions {
         }
         Ok(Self {
             materialize: MaterializeOptions::parse_with_command(&materialize_args, "watch")?,
-            _poll_ms: poll_ms,
+            backend,
+            poll_ms,
             debounce_ms,
             max_iterations,
             once,
@@ -2297,6 +2439,21 @@ struct WatchChangeBatch {
     event_count: usize,
 }
 
+#[derive(Debug, Default)]
+struct WatchProbeOutcome {
+    delivered: bool,
+    queued: VecDeque<WatchMessage>,
+    reason: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct WatchFileState {
+    modified_nanos: u128,
+    len: u64,
+}
+
+type WatchFileSnapshot = BTreeMap<String, WatchFileState>;
+
 #[derive(Debug)]
 struct WatchEventFilter {
     source_root: PathBuf,
@@ -2392,9 +2549,102 @@ fn watch_event_refreshes(event: &Event) -> bool {
     )
 }
 
+fn probe_native_watcher(
+    source_root: &Path,
+    filter: &WatchEventFilter,
+    rx: &Receiver<WatchMessage>,
+) -> Result<WatchProbeOutcome, String> {
+    let timeout = watch_probe_timeout();
+    let probe_dir = source_root.join(".codebaseGraph").join("watch-probe");
+    let probe_path = probe_dir.join(format!(
+        "probe-{}-{}.tmp",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or(0)
+    ));
+    if !watch_probe_skip_write() {
+        fs::create_dir_all(&probe_dir)
+            .map_err(|error| format!("failed to create watch probe directory: {error}"))?;
+        fs::write(&probe_path, b"probe")
+            .map_err(|error| format!("failed to write watch probe: {error}"))?;
+    }
+
+    let started = Instant::now();
+    let mut outcome = WatchProbeOutcome::default();
+    while started.elapsed() < timeout {
+        let remaining = timeout.saturating_sub(started.elapsed());
+        match rx.recv_timeout(remaining) {
+            Ok(WatchMessage::Event(event)) => {
+                outcome.delivered = true;
+                if !watch_event_is_under_dir(&event, &probe_dir, source_root, &filter.current_dir) {
+                    outcome.queued.push_back(WatchMessage::Event(event));
+                }
+            }
+            Ok(WatchMessage::Error(error)) => {
+                outcome.reason = Some("watcher_error".to_string());
+                outcome.queued.push_back(WatchMessage::Error(error));
+                break;
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => break,
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err("filesystem watcher stopped during health probe".to_string())
+            }
+        }
+    }
+    let _ = fs::remove_file(&probe_path);
+    if !outcome.delivered && outcome.reason.is_none() {
+        outcome.reason = Some("probe_timeout".to_string());
+    }
+    Ok(outcome)
+}
+
+fn watch_probe_timeout() -> Duration {
+    env::var("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS")
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .map(Duration::from_millis)
+        .unwrap_or_else(|| Duration::from_millis(750))
+}
+
+fn watch_probe_skip_write() -> bool {
+    env::var("CODEBASE_GRAPH_WATCH_PROBE_SKIP_WRITE").is_ok_and(|value| value == "1")
+}
+
+fn watch_event_is_under_dir(
+    event: &Event,
+    directory: &Path,
+    source_root: &Path,
+    current_dir: &Path,
+) -> bool {
+    !event.paths.is_empty()
+        && event
+            .paths
+            .iter()
+            .all(|path| watch_path_is_under_dir(path, directory, source_root, current_dir))
+}
+
+fn watch_path_is_under_dir(
+    path: &Path,
+    directory: &Path,
+    source_root: &Path,
+    current_dir: &Path,
+) -> bool {
+    if path.starts_with(directory) {
+        return true;
+    }
+    if path.is_relative() {
+        return current_dir.join(path).starts_with(directory)
+            || source_root.join(path).starts_with(directory);
+    }
+    false
+}
+
 fn collect_watch_batch(
     first: WatchMessage,
     rx: &Receiver<WatchMessage>,
+    queued: &mut VecDeque<WatchMessage>,
     filter: &WatchEventFilter,
     debounce: Duration,
     max_wait: Duration,
@@ -2419,7 +2669,11 @@ fn collect_watch_batch(
         let timeout = debounce
             .saturating_sub(quiet_elapsed)
             .min(max_wait.saturating_sub(elapsed));
-        match rx.recv_timeout(timeout) {
+        let message = match queued.pop_front() {
+            Some(message) => Ok(message),
+            None => rx.recv_timeout(timeout),
+        };
+        match message {
             Ok(message) => {
                 let before = batch.paths.len();
                 let before_events = batch.event_count;
@@ -2452,6 +2706,125 @@ fn apply_watch_message(
         }
         WatchMessage::Error(error) => Err(format!("filesystem watcher error: {error}")),
     }
+}
+
+fn collect_poll_batch(
+    filter: &WatchEventFilter,
+    previous_snapshot: &mut WatchFileSnapshot,
+    poll_interval: Duration,
+    debounce: Duration,
+    max_wait: Duration,
+) -> Result<WatchChangeBatch, String> {
+    loop {
+        std::thread::sleep(poll_interval);
+        let current_snapshot = watch_file_snapshot(filter)?;
+        let changed_paths = watch_snapshot_diff(previous_snapshot, &current_snapshot);
+        *previous_snapshot = current_snapshot;
+        if changed_paths.is_empty() {
+            continue;
+        }
+
+        let started = Instant::now();
+        let mut last_relevant = started;
+        let mut batch = WatchChangeBatch {
+            paths: changed_paths,
+            event_count: 1,
+        };
+        loop {
+            let elapsed = started.elapsed();
+            if elapsed >= max_wait {
+                return Ok(batch);
+            }
+            let quiet_elapsed = last_relevant.elapsed();
+            if quiet_elapsed >= debounce {
+                return Ok(batch);
+            }
+            let timeout = poll_interval
+                .min(debounce.saturating_sub(quiet_elapsed))
+                .min(max_wait.saturating_sub(elapsed));
+            std::thread::sleep(timeout);
+            let current_snapshot = watch_file_snapshot(filter)?;
+            let changed_paths = watch_snapshot_diff(previous_snapshot, &current_snapshot);
+            *previous_snapshot = current_snapshot;
+            if !changed_paths.is_empty() {
+                batch.paths.extend(changed_paths);
+                batch.event_count += 1;
+                last_relevant = Instant::now();
+            }
+        }
+    }
+}
+
+fn watch_file_snapshot(filter: &WatchEventFilter) -> Result<WatchFileSnapshot, String> {
+    let mut snapshot = BTreeMap::new();
+    watch_file_snapshot_inner(filter, &filter.source_root, &mut snapshot)?;
+    Ok(snapshot)
+}
+
+fn watch_file_snapshot_inner(
+    filter: &WatchEventFilter,
+    directory: &Path,
+    snapshot: &mut WatchFileSnapshot,
+) -> Result<(), String> {
+    let entries = fs::read_dir(directory)
+        .map_err(|error| format!("failed to read directory {}: {error}", directory.display()))?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let name = path
+                .file_name()
+                .and_then(|value| value.to_str())
+                .unwrap_or("");
+            if filter.excluded_parts.contains(name) {
+                continue;
+            }
+            watch_file_snapshot_inner(filter, &path, snapshot)?;
+        } else if path.is_file() {
+            let Some(relative_path) = filter.relevant_path(&path) else {
+                continue;
+            };
+            let metadata = match fs::metadata(&path) {
+                Ok(metadata) => metadata,
+                Err(_) => continue,
+            };
+            let modified_nanos = metadata
+                .modified()
+                .ok()
+                .and_then(|modified| {
+                    modified
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .ok()
+                        .map(|duration| duration.as_nanos())
+                })
+                .unwrap_or(0);
+            snapshot.insert(
+                relative_path,
+                WatchFileState {
+                    modified_nanos,
+                    len: metadata.len(),
+                },
+            );
+        }
+    }
+    Ok(())
+}
+
+fn watch_snapshot_diff(
+    previous: &WatchFileSnapshot,
+    current: &WatchFileSnapshot,
+) -> BTreeSet<String> {
+    let mut changed_paths = BTreeSet::new();
+    for (path, state) in current {
+        if previous.get(path) != Some(state) {
+            changed_paths.insert(path.clone());
+        }
+    }
+    for path in previous.keys() {
+        if !current.contains_key(path) {
+            changed_paths.insert(path.clone());
+        }
+    }
+    changed_paths
 }
 
 fn watch_max_wait(debounce_ms: u64) -> Duration {
@@ -2520,14 +2893,19 @@ fn watch_wildcard_match(text: &str, pattern: &str) -> bool {
 fn write_watch_event<W: Write>(
     stdout: &mut W,
     event: &str,
+    backend: Option<&str>,
     event_count: usize,
     changed_paths: usize,
     response: &NativeSyntaxMaterializationResponse,
 ) -> Result<(), String> {
+    let backend = backend
+        .map(|backend| format!(" backend={backend}"))
+        .unwrap_or_default();
     writeln!(
         stdout,
-        "watch event={} event_count={} changed_paths={} rebuilt={} deleted={} skipped={} database_written={}",
+        "watch event={}{} event_count={} changed_paths={} rebuilt={} deleted={} skipped={} database_written={}",
         event,
+        backend,
         event_count,
         changed_paths,
         response.diff.rebuild_paths().len(),
@@ -2535,6 +2913,23 @@ fn write_watch_event<W: Write>(
         response.skipped,
         response.database_written
     )
+    .map_err(|error| error.to_string())
+}
+
+fn write_watch_status<W: Write>(
+    stdout: &mut W,
+    event: &str,
+    backend: &str,
+    reason: Option<&str>,
+) -> Result<(), String> {
+    if let Some(reason) = reason {
+        writeln!(
+            stdout,
+            "watch event={event} backend={backend} reason={reason}"
+        )
+    } else {
+        writeln!(stdout, "watch event={event} backend={backend}")
+    }
     .map_err(|error| error.to_string())
 }
 
@@ -5858,7 +6253,7 @@ fn plan_help() -> &'static str {
 }
 
 fn watch_help() -> &'static str {
-    "codebase-graph watch\n\nUSAGE:\n  codebase-graph watch [--source-root <path>|--repo-root <path>] [--mode full|changed] [--poll-ms <n>] [--debounce-ms <n>]\n\nOPTIONS:\n  --source-root <path>      Repository or source root to watch recursively\n  --repo-root <path>        Alias for --source-root\n  --mode <mode>             full or changed; defaults to changed\n  --poll-ms <n>             Accepted for compatibility; OS watcher mode does not poll\n  --debounce-ms <n>         Quiet-window debounce interval in milliseconds; defaults to 250\n  --max-iterations <n>      Stop after n refreshes, useful for tests\n  --once                    Run one refresh immediately and exit\n  --no-git                  Disable Git file discovery and scan the filesystem\n  --git-diff                Refresh files from git diff plus untracked files\n  --git-base <rev>          Revision used by --git-diff; defaults to HEAD\n  --include <glob>          Include only paths matching the glob; repeatable\n  --exclude <glob>          Exclude paths matching the glob; repeatable\n  --parallel                Parse independent files concurrently\n  --progress                Include progress events in JSON output"
+    "codebase-graph watch\n\nUSAGE:\n  codebase-graph watch [--source-root <path>|--repo-root <path>] [--mode full|changed] [--watch-backend auto|native|poll] [--poll-ms <n>] [--debounce-ms <n>]\n\nOPTIONS:\n  --source-root <path>      Repository or source root to watch recursively\n  --repo-root <path>        Alias for --source-root\n  --mode <mode>             full or changed; defaults to changed\n  --watch-backend <backend> auto, native, or poll; defaults to auto\n  --poll-ms <n>             Poll interval for poll backend or auto fallback; defaults to 500\n  --debounce-ms <n>         Quiet-window debounce interval in milliseconds; defaults to 250\n  --max-iterations <n>      Stop after n refreshes, useful for tests\n  --once                    Run one refresh immediately and exit\n  --no-git                  Disable Git file discovery and scan the filesystem\n  --git-diff                Refresh files from git diff plus untracked files\n  --git-base <rev>          Revision used by --git-diff; defaults to HEAD\n  --include <glob>          Include only paths matching the glob; repeatable\n  --exclude <glob>          Exclude paths matching the glob; repeatable\n  --parallel                Parse independent files concurrently\n  --progress                Include progress events in JSON output"
 }
 
 fn setup_help() -> &'static str {
@@ -6882,6 +7277,7 @@ mod tests {
             &["b.py"],
         )))
         .unwrap();
+        let mut queued = VecDeque::new();
 
         let batch = collect_watch_batch(
             WatchMessage::Event(watch_test_event(
@@ -6890,6 +7286,7 @@ mod tests {
                 &["a.py"],
             )),
             &rx,
+            &mut queued,
             &filter,
             Duration::from_millis(10),
             Duration::from_secs(1),
@@ -6927,6 +7324,7 @@ mod tests {
         });
 
         let started = Instant::now();
+        let mut queued = VecDeque::new();
         let batch = collect_watch_batch(
             WatchMessage::Event(watch_test_event(
                 &root,
@@ -6934,6 +7332,7 @@ mod tests {
                 &["initial.py"],
             )),
             &rx,
+            &mut queued,
             &filter,
             Duration::from_millis(100),
             Duration::from_millis(30),
@@ -6964,10 +7363,12 @@ mod tests {
             )))
             .unwrap();
         }
+        let mut queued = VecDeque::new();
 
         let batch = collect_watch_batch(
             rx.recv().unwrap(),
             &rx,
+            &mut queued,
             &filter,
             Duration::from_millis(10),
             Duration::from_secs(1),
@@ -6993,9 +7394,11 @@ mod tests {
         fs::create_dir_all(&root).unwrap();
         let filter = watch_filter_for(&root, &[]);
         let (_tx, rx) = mpsc::channel();
+        let mut queued = VecDeque::new();
         let error = collect_watch_batch(
             WatchMessage::Error("backend failed".to_string()),
             &rx,
+            &mut queued,
             &filter,
             Duration::from_millis(1),
             Duration::from_millis(1),
@@ -7004,6 +7407,266 @@ mod tests {
 
         assert!(error.contains("filesystem watcher error: backend failed"));
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_probe_succeeds_when_notify_event_arrives() {
+        let _guard = watch_test_env_lock();
+        set_test_env("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS", "5");
+        let root = unique_temp_dir("codebase-graph-rust-watch-probe-success");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let (tx, rx) = mpsc::channel();
+        tx.send(WatchMessage::Event(watch_test_event(
+            &root,
+            EventKind::Create(notify::event::CreateKind::File),
+            &[".codebaseGraph/watch-probe/probe-test.tmp"],
+        )))
+        .unwrap();
+
+        let outcome = probe_native_watcher(&root.canonicalize().unwrap(), &filter, &rx).unwrap();
+
+        assert!(outcome.delivered);
+        assert!(outcome.queued.is_empty());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_probe_falls_back_after_timeout() {
+        let _guard = watch_test_env_lock();
+        set_test_env("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS", "1");
+        let root = unique_temp_dir("codebase-graph-rust-watch-probe-timeout");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let (_tx, rx) = mpsc::channel();
+
+        let outcome = probe_native_watcher(&root.canonicalize().unwrap(), &filter, &rx).unwrap();
+
+        assert!(!outcome.delivered);
+        assert_eq!(outcome.reason.as_deref(), Some("probe_timeout"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_probe_discards_probe_events_and_queues_real_events() {
+        let _guard = watch_test_env_lock();
+        set_test_env("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS", "5");
+        let root = unique_temp_dir("codebase-graph-rust-watch-probe-queue");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let (tx, rx) = mpsc::channel();
+        tx.send(WatchMessage::Event(watch_test_event(
+            &root,
+            EventKind::Create(notify::event::CreateKind::File),
+            &[".codebaseGraph/watch-probe/probe-test.tmp"],
+        )))
+        .unwrap();
+        tx.send(WatchMessage::Event(watch_test_event(
+            &root,
+            EventKind::Create(notify::event::CreateKind::File),
+            &["src/lib.rs"],
+        )))
+        .unwrap();
+
+        let outcome = probe_native_watcher(&root.canonicalize().unwrap(), &filter, &rx).unwrap();
+
+        assert!(outcome.delivered);
+        assert_eq!(outcome.queued.len(), 1);
+        let mut batch = WatchChangeBatch::default();
+        apply_watch_message(
+            outcome.queued.into_iter().next().unwrap(),
+            &filter,
+            &mut batch,
+        )
+        .unwrap();
+        assert_eq!(batch.paths, BTreeSet::from(["src/lib.rs".to_string()]));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_poll_snapshot_honors_filters() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-poll-filter");
+        fs::create_dir_all(root.join(".codebaseGraph")).unwrap();
+        fs::create_dir_all(root.join("target")).unwrap();
+        fs::write(root.join("keep.py"), "def keep():\n    return 1\n").unwrap();
+        fs::write(root.join("ignored.py"), "def ignored():\n    return 1\n").unwrap();
+        fs::write(root.join("config_skip.py"), "def skip():\n    return 1\n").unwrap();
+        fs::write(root.join("cli_skip.py"), "def skip():\n    return 1\n").unwrap();
+        fs::write(
+            root.join("target").join("build.py"),
+            "def build():\n    return 1\n",
+        )
+        .unwrap();
+        fs::write(
+            root.join(".codebaseGraph").join("internal.py"),
+            "def internal():\n    return 1\n",
+        )
+        .unwrap();
+        fs::write(root.join(".codebaseGraphignore"), "ignored.py\n").unwrap();
+        fs::write(
+            root.join(".codebaseGraph").join("config.json"),
+            r#"{"materialization":{"exclude":["config_skip.py"]}}"#,
+        )
+        .unwrap();
+        let filter = watch_filter_for(&root, &["--exclude", "cli_skip.py"]);
+
+        let snapshot = watch_file_snapshot(&filter).unwrap();
+
+        assert!(snapshot.contains_key("keep.py"));
+        assert!(!snapshot.contains_key("ignored.py"));
+        assert!(!snapshot.contains_key("config_skip.py"));
+        assert!(!snapshot.contains_key("cli_skip.py"));
+        assert!(!snapshot.contains_key("target/build.py"));
+        assert!(!snapshot.contains_key(".codebaseGraph/internal.py"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_poll_snapshot_detects_create_modify_and_delete() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-poll-diff");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("modify.py"), "def value():\n    return 1\n").unwrap();
+        fs::write(root.join("delete.py"), "def gone():\n    return 1\n").unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let previous = watch_file_snapshot(&filter).unwrap();
+
+        fs::write(root.join("modify.py"), "def value():\n    return 100\n").unwrap();
+        fs::write(root.join("create.py"), "def new():\n    return 2\n").unwrap();
+        fs::remove_file(root.join("delete.py")).unwrap();
+        let current = watch_file_snapshot(&filter).unwrap();
+        let diff = watch_snapshot_diff(&previous, &current);
+
+        assert_eq!(
+            diff,
+            BTreeSet::from([
+                "create.py".to_string(),
+                "delete.py".to_string(),
+                "modify.py".to_string()
+            ])
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_poll_batch_flushes_under_sustained_churn() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-poll-churn");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let mut previous = watch_file_snapshot(&filter).unwrap();
+        let writer_root = root.clone();
+        let writer = std::thread::spawn(move || {
+            for index in 0..20 {
+                fs::write(
+                    writer_root.join(format!("churn-{index}.py")),
+                    format!("def churn_{index}():\n    return {index}\n"),
+                )
+                .unwrap();
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        });
+
+        let started = Instant::now();
+        let batch = collect_poll_batch(
+            &filter,
+            &mut previous,
+            Duration::from_millis(5),
+            Duration::from_millis(100),
+            Duration::from_millis(30),
+        )
+        .unwrap();
+        writer.join().unwrap();
+
+        assert!(started.elapsed() < Duration::from_millis(200));
+        assert!(batch.event_count > 1);
+        assert!(!batch.paths.is_empty());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_poll_backend_refreshes_after_create() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-poll-cli");
+        fs::create_dir_all(&root).unwrap();
+        let watch_root = root.clone();
+        let handle = std::thread::spawn(move || {
+            let mut output = Vec::new();
+            run(
+                [
+                    "watch",
+                    "--source-root",
+                    watch_root.to_str().unwrap(),
+                    "--watch-backend",
+                    "poll",
+                    "--poll-ms",
+                    "10",
+                    "--debounce-ms",
+                    "10",
+                    "--max-iterations",
+                    "1",
+                    "--no-git",
+                    "--no-fts",
+                    "--no-semantic-enrichment",
+                ],
+                &mut output,
+            )
+            .unwrap();
+            String::from_utf8(output).unwrap()
+        });
+        std::thread::sleep(Duration::from_millis(30));
+        fs::write(root.join("created.py"), "def created():\n    return 1\n").unwrap();
+        let text = handle.join().unwrap();
+
+        assert!(text.contains("watch event=refreshed backend=poll"));
+        assert!(text.contains("changed_paths=1"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_auto_backend_falls_back_to_poll_when_probe_times_out() {
+        let _guard = watch_test_env_lock();
+        set_test_env("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS", "1");
+        set_test_env("CODEBASE_GRAPH_WATCH_PROBE_SKIP_WRITE", "1");
+        let root = unique_temp_dir("codebase-graph-rust-watch-auto-fallback");
+        fs::create_dir_all(&root).unwrap();
+        let watch_root = root.clone();
+        let handle = std::thread::spawn(move || {
+            let mut output = Vec::new();
+            run(
+                [
+                    "watch",
+                    "--source-root",
+                    watch_root.to_str().unwrap(),
+                    "--watch-backend",
+                    "auto",
+                    "--poll-ms",
+                    "10",
+                    "--debounce-ms",
+                    "10",
+                    "--max-iterations",
+                    "1",
+                    "--no-git",
+                    "--no-fts",
+                    "--no-semantic-enrichment",
+                ],
+                &mut output,
+            )
+            .unwrap();
+            String::from_utf8(output).unwrap()
+        });
+        std::thread::sleep(Duration::from_millis(50));
+        fs::write(root.join("created.py"), "def created():\n    return 1\n").unwrap();
+        let text = handle.join().unwrap();
+
+        assert!(text.contains("watch event=fallback backend=poll reason=probe_timeout"));
+        assert!(text.contains("watch event=refreshed backend=poll"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_backend_parser_accepts_native_without_fallback() {
+        let options =
+            WatchOptions::parse(&["--watch-backend".to_string(), "native".to_string()]).unwrap();
+
+        assert_eq!(options.backend, WatchBackend::Native);
     }
 
     #[test]
@@ -7883,6 +8546,29 @@ mod tests {
             paths: paths.iter().map(|path| root.join(path)).collect(),
             attrs: Default::default(),
         }
+    }
+
+    struct WatchTestEnvGuard {
+        _guard: std::sync::MutexGuard<'static, ()>,
+    }
+
+    impl Drop for WatchTestEnvGuard {
+        fn drop(&mut self) {
+            env::remove_var("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS");
+            env::remove_var("CODEBASE_GRAPH_WATCH_PROBE_SKIP_WRITE");
+        }
+    }
+
+    fn watch_test_env_lock() -> WatchTestEnvGuard {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let guard = LOCK.lock().unwrap();
+        env::remove_var("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS");
+        env::remove_var("CODEBASE_GRAPH_WATCH_PROBE_SKIP_WRITE");
+        WatchTestEnvGuard { _guard: guard }
+    }
+
+    fn set_test_env(key: &str, value: &str) {
+        env::set_var(key, value);
     }
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {
