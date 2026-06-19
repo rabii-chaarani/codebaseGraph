@@ -3,7 +3,10 @@ use crate::protocol::{
     NativeManifest, NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse,
 };
 use lbug::{Connection, Database, SystemConfig, Value};
-use notify::{Event, EventKind, RecursiveMode, Watcher};
+use notify::{
+    event::{AccessKind, AccessMode},
+    Event, EventKind, RecursiveMode, Watcher,
+};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
@@ -2297,6 +2300,7 @@ struct WatchChangeBatch {
 #[derive(Debug)]
 struct WatchEventFilter {
     source_root: PathBuf,
+    current_dir: PathBuf,
     excluded_parts: BTreeSet<String>,
     include_patterns: Vec<String>,
     exclude_patterns: Vec<String>,
@@ -2313,6 +2317,7 @@ impl WatchEventFilter {
         exclude_patterns.extend(options.exclude_patterns.clone());
         Ok(Self {
             source_root: source_root.to_path_buf(),
+            current_dir: env::current_dir().unwrap_or_else(|_| source_root.to_path_buf()),
             excluded_parts: default_excluded_parts().into_iter().collect(),
             include_patterns,
             exclude_patterns,
@@ -2332,7 +2337,7 @@ impl WatchEventFilter {
     }
 
     fn relevant_path(&self, path: &Path) -> Option<String> {
-        let relative = path.strip_prefix(&self.source_root).ok()?;
+        let relative = self.relative_event_path(path)?;
         if relative.as_os_str().is_empty() {
             return None;
         }
@@ -2350,6 +2355,20 @@ impl WatchEventFilter {
         }
     }
 
+    fn relative_event_path(&self, path: &Path) -> Option<PathBuf> {
+        if let Ok(relative) = path.strip_prefix(&self.source_root) {
+            return Some(relative.to_path_buf());
+        }
+        if path.is_relative() {
+            let absolute = self.current_dir.join(path);
+            if let Ok(relative) = absolute.strip_prefix(&self.source_root) {
+                return Some(relative.to_path_buf());
+            }
+            return Some(path.to_path_buf());
+        }
+        None
+    }
+
     fn ignored_by_patterns(&self, relative_path: &str) -> bool {
         if !self.include_patterns.is_empty()
             && !watch_matches_any_pattern(relative_path, &self.include_patterns)
@@ -2364,7 +2383,12 @@ impl WatchEventFilter {
 fn watch_event_refreshes(event: &Event) -> bool {
     matches!(
         event.kind,
-        EventKind::Any | EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
+        EventKind::Any
+            | EventKind::Create(_)
+            | EventKind::Modify(_)
+            | EventKind::Remove(_)
+            | EventKind::Other
+            | EventKind::Access(AccessKind::Close(AccessMode::Write))
     )
 }
 
@@ -6708,14 +6732,32 @@ mod tests {
         fs::create_dir_all(root.join("target")).unwrap();
         let filter = watch_filter_for(&root, &[]);
 
-        let access = watch_test_event(
+        let read_access = watch_test_event(
             &root,
             EventKind::Access(notify::event::AccessKind::Open(
                 notify::event::AccessMode::Read,
             )),
             &["src/lib.rs"],
         );
-        assert!(filter.relevant_paths(&access).is_empty());
+        assert!(filter.relevant_paths(&read_access).is_empty());
+
+        let write_close = watch_test_event(
+            &root,
+            EventKind::Access(notify::event::AccessKind::Close(
+                notify::event::AccessMode::Write,
+            )),
+            &["src/lib.rs"],
+        );
+        assert_eq!(
+            filter.relevant_paths(&write_close),
+            BTreeSet::from(["src/lib.rs".to_string()])
+        );
+
+        let backend_other = watch_test_event(&root, EventKind::Other, &["src/lib.rs"]);
+        assert_eq!(
+            filter.relevant_paths(&backend_other),
+            BTreeSet::from(["src/lib.rs".to_string()])
+        );
 
         let state_dir = watch_test_event(
             &root,
@@ -6788,6 +6830,40 @@ mod tests {
         assert_eq!(
             filter.relevant_paths(&event),
             BTreeSet::from(["notes.txt".to_string()])
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_filter_accepts_relative_notify_paths() {
+        let root = unique_workspace_dir("codebase-graph-rust-watch-relative");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let cwd_relative_path = root
+            .strip_prefix(env::current_dir().unwrap())
+            .unwrap()
+            .join("cwd_relative.py");
+
+        let cwd_relative = Event {
+            kind: EventKind::Create(notify::event::CreateKind::File),
+            paths: vec![cwd_relative_path],
+            attrs: Default::default(),
+        };
+        assert_eq!(
+            filter.relevant_paths(&cwd_relative),
+            BTreeSet::from(["cwd_relative.py".to_string()])
+        );
+
+        let root_relative = Event {
+            kind: EventKind::Modify(notify::event::ModifyKind::Data(
+                notify::event::DataChange::Content,
+            )),
+            paths: vec![PathBuf::from("root_relative.py")],
+            attrs: Default::default(),
+        };
+        assert_eq!(
+            filter.relevant_paths(&root_relative),
+            BTreeSet::from(["root_relative.py".to_string()])
         );
         let _ = fs::remove_dir_all(root);
     }
@@ -7812,6 +7888,17 @@ mod tests {
     fn unique_temp_dir(prefix: &str) -> PathBuf {
         env::temp_dir().join(format!(
             "{prefix}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ))
+    }
+
+    fn unique_workspace_dir(prefix: &str) -> PathBuf {
+        env::current_dir().unwrap().join(format!(
+            ".{prefix}-{}-{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
