@@ -354,7 +354,7 @@ pub(super) fn instruction_block(config_path: &Path) -> String {
 - For architecture orientation, use MCP `graph_architecture_queries`, then execute selected read-only statements with MCP `graph_query`.\n\
 - Use MCP `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.\n\
 - If MCP tools are unavailable, fall back to CLI: `{command} codebase-search <query> --repo-root . --no-refresh --detail slim --context-limit 1`, `{command} codebase-context <query> --repo-root . --profile <profile> --no-refresh --detail slim --context-limit 2`, `{command} codebase-architecture-queries`, `{command} graph-query \"<statement>\" --repo-root .`, `{command} schema`, and `{command} query-helpers`.\n\
-- Refresh the graph with `{command} install --repo-root . --mcp-client none` when files change materially. Setup config: `{config_path}`.\n\
+- Do not rerun install to refresh the graph. The MCP server started from this setup config watches the repo and refreshes automatically; use `{command} build --repo-root . --mode full` only for explicit manual rebuilds. Setup config: `{config_path}`.\n\
 <!-- codebaseGraph:end -->\n",
         command = server_command(),
         config_path = config_path.to_string_lossy(),

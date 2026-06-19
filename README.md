@@ -11,7 +11,7 @@ The shipped CLI and MCP server are native Rust binaries.
 ```bash
 cargo install codebase-graph
 codebase-graph install --repo-root .
-codebase-graph codebase-search SampleService --repo-root . --no-refresh
+codebase-graph mcp start --config .codebaseGraph/config.json
 ```
 
 For local development from this checkout:
@@ -29,8 +29,10 @@ Install creates:
   <repositoryName>_graph.ldb
 ```
 
-The install command materializes the graph, writes or updates one marked codebaseGraph block in `AGENTS.md` or
-`CLAUDE.md`, and installs a Codex MCP client entry unless skipped.
+The install command performs first-time setup: it materializes the initial graph, writes or updates one marked
+codebaseGraph block in `AGENTS.md` or `CLAUDE.md`, and installs a Codex MCP client entry unless skipped. After setup,
+the MCP server watches the repo and refreshes the graph automatically; rerunning `install` is not part of the refresh
+workflow.
 
 ## MCP Install
 
@@ -84,13 +86,14 @@ codebase-graph graph-query "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" --
 Retrieval commands emit block format by default for agent-facing output. Use `--json --pretty` or `--format json` for
 structured inspection.
 
-Freshness commands use the same manifest hashing as install/build, with Git as an optional file-selection layer:
+Freshness is automatic while `codebase-graph mcp start` or `codebase-graph watch` is running. Use `build` only for an
+explicit manual rebuild, and use `plan` to inspect what a manual build would touch:
 
 ```bash
 codebase-graph plan --repo-root . --json
 codebase-graph plan --repo-root . --git-diff --git-base main --json
 codebase-graph watch --repo-root . --debounce-ms 250
-codebase-graph build --repo-root . --parallel --progress --json
+codebase-graph build --repo-root . --mode full --parallel --progress --json
 ```
 
 Use `.codebaseGraphignore`, `--include`, `--exclude`, or `.codebaseGraph/config.json` materialization include/exclude
@@ -123,7 +126,7 @@ expectations, and the local-first MCP security boundary.
 ## Troubleshooting
 
 - Missing LadyBugDB: install `codebase-graph` from crates.io, a release artifact, or this checkout.
-- Stale graph: rerun `codebase-graph install --repo-root .` after material source or documentation changes.
+- Stale graph: ensure `codebase-graph mcp start --config .codebaseGraph/config.json` or `codebase-graph watch --repo-root .` is running; use `codebase-graph build --repo-root . --mode full` only for an explicit manual rebuild.
 - Broken client config: rerun `codebase-graph mcp install --client <client> --verify`.
 - PATH or executable issues: ensure the native `codebase-graph` binary is on `PATH`.
 - Unsupported files: binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, and `.codebaseGraph` paths are skipped.
