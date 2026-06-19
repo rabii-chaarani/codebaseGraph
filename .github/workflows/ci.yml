@@ -99,7 +99,10 @@ jobs:
             archive: codebase-graph-linux-x86_64.tar.gz
           - os: macos-latest
             binary: codebase-graph
-            archive: codebase-graph-macos-universal.tar.gz
+            archive: codebase-graph-macos-arm64.tar.gz
+          - os: macos-15-intel
+            binary: codebase-graph
+            archive: codebase-graph-macos-x86_64.tar.gz
           - os: windows-2022
             binary: codebase-graph.exe
             archive: codebase-graph-windows-x86_64.tar.gz
@@ -112,18 +115,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/smoke
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            rustup target add x86_64-apple-darwin aarch64-apple-darwin
-            cargo build --locked --release --bin codebase-graph --target x86_64-apple-darwin
-            cargo build --locked --release --bin codebase-graph --target aarch64-apple-darwin
-            lipo -create \
-              "target/x86_64-apple-darwin/release/${{ matrix.binary }}" \
-              "target/aarch64-apple-darwin/release/${{ matrix.binary }}" \
-              -output "dist/smoke/${{ matrix.binary }}"
-          else
-            cargo build --locked --release --bin codebase-graph
-            cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
-          fi
+          cargo build --locked --release --bin codebase-graph
+          cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
           chmod +x "dist/smoke/${{ matrix.binary }}"
           tar -C dist/smoke -czf "dist/${{ matrix.archive }}" "${{ matrix.binary }}"
       - name: Smoke-test Rust production binary

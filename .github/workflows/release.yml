@@ -99,7 +99,10 @@ jobs:
             artifact-suffix: linux-x86_64
           - os: macos-latest
             binary: codebase-graph
-            artifact-suffix: macos-universal
+            artifact-suffix: macos-arm64
+          - os: macos-15-intel
+            binary: codebase-graph
+            artifact-suffix: macos-x86_64
           - os: windows-2022
             binary: codebase-graph.exe
             artifact-suffix: windows-x86_64
@@ -118,18 +121,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/smoke
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            rustup target add x86_64-apple-darwin aarch64-apple-darwin
-            cargo build --locked --release --bin codebase-graph --target x86_64-apple-darwin
-            cargo build --locked --release --bin codebase-graph --target aarch64-apple-darwin
-            lipo -create \
-              "target/x86_64-apple-darwin/release/${{ matrix.binary }}" \
-              "target/aarch64-apple-darwin/release/${{ matrix.binary }}" \
-              -output "dist/smoke/${{ matrix.binary }}"
-          else
-            cargo build --locked --release --bin codebase-graph
-            cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
-          fi
+          cargo build --locked --release --bin codebase-graph
+          cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
           chmod +x "dist/smoke/${{ matrix.binary }}"
           archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"
           tar -C dist/smoke -czf "dist/${archive}" "${{ matrix.binary }}"

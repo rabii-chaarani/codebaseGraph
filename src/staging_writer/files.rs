@@ -70,5 +70,7 @@ pub(super) fn stage_file_stem(name: &str) -> String {
 }
 
 pub(super) fn copy_path(path: &Path) -> String {
-    path.to_string_lossy().replace('"', "\\\"")
+    path.to_string_lossy()
+        .replace('\\', "/")
+        .replace('"', "\\\"")
 }

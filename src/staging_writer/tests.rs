@@ -8,6 +8,16 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[test]
+fn copy_path_normalizes_windows_separators_for_ladybug() {
+    let path = Path::new(r#"C:\Users\runner\AppData\Local\Temp\thing "one".json"#);
+
+    assert_eq!(
+        super::files::copy_path(path),
+        r#"C:/Users/runner/AppData/Local/Temp/thing \"one\".json"#
+    );
+}
+
+#[test]
 fn writes_typed_rows_and_connectors_without_bulk_protocol() {
     let staging_dir = temp_staging_dir("typed_rows_and_connectors");
     let partition = partition(

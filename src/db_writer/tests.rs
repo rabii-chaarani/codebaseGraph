@@ -128,5 +128,7 @@ fn unique_temp_dir(prefix: &str) -> PathBuf {
 }
 
 fn copy_path(path: &Path) -> String {
-    path.to_string_lossy().replace('"', "\\\"")
+    path.to_string_lossy()
+        .replace('\\', "/")
+        .replace('"', "\\\"")
 }

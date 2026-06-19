@@ -417,16 +417,19 @@ fn run_checked<'a, I>(executable: &Path, args: I) -> Result<(), String>
 where
     I: IntoIterator<Item = &'a str>,
 {
-    let status = Command::new(executable)
+    let output = Command::new(executable)
         .args(args)
-        .status()
+        .output()
         .map_err(|error| error.to_string())?;
-    if status.success() {
+    if output.status.success() {
         Ok(())
     } else {
         Err(format!(
-            "command failed with status {status}: {}",
-            executable.display()
+            "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            executable.display(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
         ))
     }
 }
@@ -440,7 +443,13 @@ where
         .output()
         .map_err(|error| error.to_string())?;
     if !output.status.success() {
-        return Err(format!("command failed with status {}", output.status));
+        return Err(format!(
+            "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            executable.display(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ));
     }
     String::from_utf8(output.stdout).map_err(|error| error.to_string())
 }
