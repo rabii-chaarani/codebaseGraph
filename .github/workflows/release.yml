@@ -101,7 +101,7 @@ jobs:
           - os: macos-latest
             binary: codebase-graph
             artifact-suffix: macos-arm64
-            rustflags: "-C link-arg=-Wl,-multiply_defined,suppress"
+            rustflags: "-C link-arg=-Wl,-ld_classic -C link-arg=-Wl,-multiply_defined,suppress"
           - os: macos-15-intel
             binary: codebase-graph
             artifact-suffix: macos-x86_64

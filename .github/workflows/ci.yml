@@ -106,7 +106,7 @@ jobs:
           - os: macos-latest
             binary: codebase-graph
             archive: codebase-graph-macos-arm64.tar.gz
-            rustflags: "-C link-arg=-Wl,-multiply_defined,suppress"
+            rustflags: "-C link-arg=-Wl,-ld_classic -C link-arg=-Wl,-multiply_defined,suppress"
           - os: macos-15-intel
             binary: codebase-graph
             archive: codebase-graph-macos-x86_64.tar.gz
