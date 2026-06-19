@@ -3,6 +3,7 @@ use crate::protocol::{
     NativeManifest, NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse,
 };
 use lbug::{Connection, Database, SystemConfig, Value};
+use notify::{Event, EventKind, RecursiveMode, Watcher};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
@@ -11,7 +12,8 @@ use std::io::{self, BufRead, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::{Duration, Instant, SystemTime};
+use std::sync::mpsc::{self, Receiver};
+use std::time::{Duration, Instant};
 
 const GRAPH_SCHEMA_JSON: &str = include_str!("../assets/graph_schema.json");
 const QUERY_HELPERS_JSON: &str = include_str!("../assets/query_helpers.json");
@@ -215,25 +217,49 @@ fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
         .canonicalize()
         .map_err(|error| format!("failed to resolve source root: {error}"))?;
     materialize_options.source_root = Some(source_root.clone());
-    let mut previous_snapshot = watch_file_snapshot(&source_root)?;
-    let mut iterations = 0_usize;
+    let filter = WatchEventFilter::from_options(&source_root, &materialize_options)?;
+    if options.once {
+        let (_, response) = materialize(&materialize_options)?;
+        write_watch_event(stdout, "refreshed", 0, 0, &response)?;
+        return Ok(());
+    }
+    let (tx, rx) = mpsc::channel();
+    let mut watcher = notify::recommended_watcher(move |result: notify::Result<Event>| {
+        let message = match result {
+            Ok(event) => WatchMessage::Event(event),
+            Err(error) => WatchMessage::Error(error.to_string()),
+        };
+        let _ = tx.send(message);
+    })
+    .map_err(|error| format!("failed to start filesystem watcher: {error}"))?;
+    watcher
+        .watch(&source_root, RecursiveMode::Recursive)
+        .map_err(|error| format!("failed to watch {}: {error}", source_root.display()))?;
+    let mut refreshes = 0_usize;
     loop {
-        if options.once {
-            let (_, response) = materialize(&materialize_options)?;
-            write_watch_event(stdout, "refreshed", &response)?;
-            return Ok(());
-        }
-        std::thread::sleep(Duration::from_millis(options.poll_ms));
-        let current_snapshot = watch_file_snapshot(&source_root)?;
-        if current_snapshot != previous_snapshot {
-            std::thread::sleep(Duration::from_millis(options.debounce_ms));
-            let debounced_snapshot = watch_file_snapshot(&source_root)?;
-            previous_snapshot = debounced_snapshot;
-            let (_, response) = materialize(&materialize_options)?;
-            write_watch_event(stdout, "refreshed", &response)?;
-        }
-        iterations += 1;
-        if options.max_iterations.is_some_and(|max| iterations >= max) {
+        let first = rx
+            .recv()
+            .map_err(|error| format!("filesystem watcher stopped: {error}"))?;
+        let batch = match collect_watch_batch(
+            first,
+            &rx,
+            &filter,
+            Duration::from_millis(options.debounce_ms),
+            watch_max_wait(options.debounce_ms),
+        )? {
+            Some(batch) => batch,
+            None => continue,
+        };
+        let (_, response) = materialize(&materialize_options)?;
+        write_watch_event(
+            stdout,
+            "refreshed",
+            batch.event_count,
+            batch.paths.len(),
+            &response,
+        )?;
+        refreshes += 1;
+        if options.max_iterations.is_some_and(|max| refreshes >= max) {
             return Ok(());
         }
     }
@@ -1891,7 +1917,7 @@ fn materialize_like_help(command_name: &str) -> &'static str {
 #[derive(Debug)]
 struct WatchOptions {
     materialize: MaterializeOptions,
-    poll_ms: u64,
+    _poll_ms: u64,
     debounce_ms: u64,
     max_iterations: Option<usize>,
     once: bool,
@@ -1952,7 +1978,7 @@ impl WatchOptions {
         }
         Ok(Self {
             materialize: MaterializeOptions::parse_with_command(&materialize_args, "watch")?,
-            poll_ms,
+            _poll_ms: poll_ms,
             debounce_ms,
             max_iterations,
             once,
@@ -2256,62 +2282,230 @@ fn append_plan_path_lines(lines: &mut Vec<String>, label: &str, paths: &[serde_j
     }
 }
 
-fn watch_file_snapshot(source_root: &Path) -> Result<BTreeMap<String, u128>, String> {
-    let mut snapshot = BTreeMap::new();
-    watch_file_snapshot_inner(source_root, source_root, &mut snapshot)?;
-    Ok(snapshot)
+#[derive(Debug)]
+enum WatchMessage {
+    Event(Event),
+    Error(String),
 }
 
-fn watch_file_snapshot_inner(
-    root: &Path,
-    directory: &Path,
-    snapshot: &mut BTreeMap<String, u128>,
-) -> Result<(), String> {
-    let entries = fs::read_dir(directory)
-        .map_err(|error| format!("failed to read directory {}: {error}", directory.display()))?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let name = path
-            .file_name()
-            .and_then(|value| value.to_str())
-            .unwrap_or("");
-        if default_excluded_parts().iter().any(|part| part == name) {
-            continue;
+#[derive(Debug, Default, PartialEq, Eq)]
+struct WatchChangeBatch {
+    paths: BTreeSet<String>,
+    event_count: usize,
+}
+
+#[derive(Debug)]
+struct WatchEventFilter {
+    source_root: PathBuf,
+    excluded_parts: BTreeSet<String>,
+    include_patterns: Vec<String>,
+    exclude_patterns: Vec<String>,
+    ignore_patterns: Vec<String>,
+}
+
+impl WatchEventFilter {
+    fn from_options(source_root: &Path, options: &MaterializeOptions) -> Result<Self, String> {
+        let paths = GraphStatePaths::derive(source_root);
+        let config_rules = read_materialization_config_rules(&paths.config_path)?;
+        let mut include_patterns = config_rules.include_patterns;
+        include_patterns.extend(options.include_patterns.clone());
+        let mut exclude_patterns = config_rules.exclude_patterns;
+        exclude_patterns.extend(options.exclude_patterns.clone());
+        Ok(Self {
+            source_root: source_root.to_path_buf(),
+            excluded_parts: default_excluded_parts().into_iter().collect(),
+            include_patterns,
+            exclude_patterns,
+            ignore_patterns: read_codebase_graph_ignore(source_root)?,
+        })
+    }
+
+    fn relevant_paths(&self, event: &Event) -> BTreeSet<String> {
+        if !watch_event_refreshes(event) {
+            return BTreeSet::new();
         }
-        if path.is_dir() {
-            watch_file_snapshot_inner(root, &path, snapshot)?;
-        } else if path.is_file() {
-            let relative = path
-                .strip_prefix(root)
-                .unwrap_or(&path)
-                .to_string_lossy()
-                .replace('\\', "/");
-            let modified = fs::metadata(&path)
-                .and_then(|metadata| metadata.modified())
-                .ok()
-                .and_then(system_time_nanos)
-                .unwrap_or(0);
-            snapshot.insert(relative, modified);
+        event
+            .paths
+            .iter()
+            .filter_map(|path| self.relevant_path(path))
+            .collect()
+    }
+
+    fn relevant_path(&self, path: &Path) -> Option<String> {
+        let relative = path.strip_prefix(&self.source_root).ok()?;
+        if relative.as_os_str().is_empty() {
+            return None;
+        }
+        if relative.components().any(|component| {
+            self.excluded_parts
+                .contains(component.as_os_str().to_string_lossy().as_ref())
+        }) {
+            return None;
+        }
+        let relative = relative.to_string_lossy().replace('\\', "/");
+        if self.ignored_by_patterns(&relative) {
+            None
+        } else {
+            Some(relative)
         }
     }
-    Ok(())
+
+    fn ignored_by_patterns(&self, relative_path: &str) -> bool {
+        if !self.include_patterns.is_empty()
+            && !watch_matches_any_pattern(relative_path, &self.include_patterns)
+        {
+            return true;
+        }
+        watch_matches_any_pattern(relative_path, &self.ignore_patterns)
+            || watch_matches_any_pattern(relative_path, &self.exclude_patterns)
+    }
 }
 
-fn system_time_nanos(time: SystemTime) -> Option<u128> {
-    time.duration_since(SystemTime::UNIX_EPOCH)
-        .ok()
-        .map(|duration| duration.as_nanos())
+fn watch_event_refreshes(event: &Event) -> bool {
+    matches!(
+        event.kind,
+        EventKind::Any | EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
+    )
+}
+
+fn collect_watch_batch(
+    first: WatchMessage,
+    rx: &Receiver<WatchMessage>,
+    filter: &WatchEventFilter,
+    debounce: Duration,
+    max_wait: Duration,
+) -> Result<Option<WatchChangeBatch>, String> {
+    let mut batch = WatchChangeBatch::default();
+    apply_watch_message(first, filter, &mut batch)?;
+    if batch.paths.is_empty() {
+        return Ok(None);
+    }
+
+    let started = Instant::now();
+    let mut last_relevant = started;
+    loop {
+        let elapsed = started.elapsed();
+        if elapsed >= max_wait {
+            return Ok(Some(batch));
+        }
+        let quiet_elapsed = last_relevant.elapsed();
+        if quiet_elapsed >= debounce {
+            return Ok(Some(batch));
+        }
+        let timeout = debounce
+            .saturating_sub(quiet_elapsed)
+            .min(max_wait.saturating_sub(elapsed));
+        match rx.recv_timeout(timeout) {
+            Ok(message) => {
+                let before = batch.paths.len();
+                let before_events = batch.event_count;
+                apply_watch_message(message, filter, &mut batch)?;
+                if batch.paths.len() != before || batch.event_count != before_events {
+                    last_relevant = Instant::now();
+                }
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => return Ok(Some(batch)),
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err("filesystem watcher stopped".to_string())
+            }
+        }
+    }
+}
+
+fn apply_watch_message(
+    message: WatchMessage,
+    filter: &WatchEventFilter,
+    batch: &mut WatchChangeBatch,
+) -> Result<(), String> {
+    match message {
+        WatchMessage::Event(event) => {
+            let paths = filter.relevant_paths(&event);
+            if !paths.is_empty() {
+                batch.event_count += 1;
+                batch.paths.extend(paths);
+            }
+            Ok(())
+        }
+        WatchMessage::Error(error) => Err(format!("filesystem watcher error: {error}")),
+    }
+}
+
+fn watch_max_wait(debounce_ms: u64) -> Duration {
+    Duration::from_secs(5).max(Duration::from_millis(debounce_ms.saturating_mul(10)))
+}
+
+fn watch_matches_any_pattern(path: &str, patterns: &[String]) -> bool {
+    patterns
+        .iter()
+        .map(|pattern| pattern.trim())
+        .filter(|pattern| !pattern.is_empty() && !pattern.starts_with('#'))
+        .any(|pattern| watch_glob_matches(path, pattern))
+}
+
+fn watch_glob_matches(path: &str, pattern: &str) -> bool {
+    let pattern = watch_normalize_pattern(pattern);
+    if pattern.ends_with('/') {
+        return path.starts_with(pattern.trim_end_matches('/'));
+    }
+    if !pattern.contains('/')
+        && watch_wildcard_match(path.rsplit('/').next().unwrap_or(path), &pattern)
+    {
+        return true;
+    }
+    watch_wildcard_match(path, &pattern)
+}
+
+fn watch_normalize_pattern(pattern: &str) -> String {
+    pattern
+        .trim()
+        .trim_start_matches("./")
+        .replace('\\', "/")
+        .to_string()
+}
+
+fn watch_wildcard_match(text: &str, pattern: &str) -> bool {
+    let (mut text_index, mut pattern_index) = (0_usize, 0_usize);
+    let mut star_index = None;
+    let mut match_index = 0_usize;
+    let text = text.as_bytes();
+    let pattern = pattern.as_bytes();
+    while text_index < text.len() {
+        if pattern_index < pattern.len()
+            && (pattern[pattern_index] == b'?' || pattern[pattern_index] == text[text_index])
+        {
+            text_index += 1;
+            pattern_index += 1;
+        } else if pattern_index < pattern.len() && pattern[pattern_index] == b'*' {
+            star_index = Some(pattern_index);
+            match_index = text_index;
+            pattern_index += 1;
+        } else if let Some(star) = star_index {
+            pattern_index = star + 1;
+            match_index += 1;
+            text_index = match_index;
+        } else {
+            return false;
+        }
+    }
+    while pattern_index < pattern.len() && pattern[pattern_index] == b'*' {
+        pattern_index += 1;
+    }
+    pattern_index == pattern.len()
 }
 
 fn write_watch_event<W: Write>(
     stdout: &mut W,
     event: &str,
+    event_count: usize,
+    changed_paths: usize,
     response: &NativeSyntaxMaterializationResponse,
 ) -> Result<(), String> {
     writeln!(
         stdout,
-        "watch event={} rebuilt={} deleted={} skipped={} database_written={}",
+        "watch event={} event_count={} changed_paths={} rebuilt={} deleted={} skipped={} database_written={}",
         event,
+        event_count,
+        changed_paths,
         response.diff.rebuild_paths().len(),
         response.diff.deleted.len(),
         response.skipped,
@@ -5620,7 +5814,7 @@ fn block_value(value: &str) -> String {
 }
 
 fn top_level_help() -> &'static str {
-    "codebase-graph native CLI\n\nUSAGE:\n  codebase-graph <command> [options]\n\nCOMMANDS:\n  setup                       Materialize graph state and write .codebaseGraph/config.json\n  materialize                 Materialize a graph through the Rust native engine\n  plan                        Preview files that would rebuild, delete, skip, or ignore\n  watch                       Poll for file changes and refresh after a debounce window\n  graph-health                Check whether the native graph database is readable\n  graph-schema                Return ontology schema, indexes, profiles, and helpers\n  graph-query-helpers         Return named read-only graph query helpers\n  graph-architecture-queries  Return the architecture-discovery query catalog\n  graph-search, search        Search the code graph with compact context\n  graph-context, context      Return compact graph context\n  graph-query                 Execute a restricted read-only graph query\n  mcp                         Serve codebaseGraph MCP over stdio or HTTP\n\nRun `codebase-graph <command> --help` for command options."
+    "codebase-graph native CLI\n\nUSAGE:\n  codebase-graph <command> [options]\n\nCOMMANDS:\n  setup                       Materialize graph state and write .codebaseGraph/config.json\n  materialize                 Materialize a graph through the Rust native engine\n  plan                        Preview files that would rebuild, delete, skip, or ignore\n  watch                       Watch for file changes and refresh after a debounce window\n  graph-health                Check whether the native graph database is readable\n  graph-schema                Return ontology schema, indexes, profiles, and helpers\n  graph-query-helpers         Return named read-only graph query helpers\n  graph-architecture-queries  Return the architecture-discovery query catalog\n  graph-search, search        Search the code graph with compact context\n  graph-context, context      Return compact graph context\n  graph-query                 Execute a restricted read-only graph query\n  mcp                         Serve codebaseGraph MCP over stdio or HTTP\n\nRun `codebase-graph <command> --help` for command options."
 }
 
 fn mcp_help() -> &'static str {
@@ -5640,7 +5834,7 @@ fn plan_help() -> &'static str {
 }
 
 fn watch_help() -> &'static str {
-    "codebase-graph watch\n\nUSAGE:\n  codebase-graph watch [--source-root <path>|--repo-root <path>] [--mode full|changed] [--poll-ms <n>] [--debounce-ms <n>]\n\nOPTIONS:\n  --source-root <path>      Repository or source root to watch\n  --repo-root <path>        Alias for --source-root\n  --mode <mode>             full or changed; defaults to changed\n  --poll-ms <n>             Poll interval in milliseconds; defaults to 500\n  --debounce-ms <n>         Debounce interval in milliseconds; defaults to 250\n  --max-iterations <n>      Stop after n poll iterations, useful for tests\n  --once                    Run one refresh immediately and exit\n  --no-git                  Disable Git file discovery and scan the filesystem\n  --git-diff                Refresh files from git diff plus untracked files\n  --git-base <rev>          Revision used by --git-diff; defaults to HEAD\n  --include <glob>          Include only paths matching the glob; repeatable\n  --exclude <glob>          Exclude paths matching the glob; repeatable\n  --parallel                Parse independent files concurrently\n  --progress                Include progress events in JSON output"
+    "codebase-graph watch\n\nUSAGE:\n  codebase-graph watch [--source-root <path>|--repo-root <path>] [--mode full|changed] [--poll-ms <n>] [--debounce-ms <n>]\n\nOPTIONS:\n  --source-root <path>      Repository or source root to watch recursively\n  --repo-root <path>        Alias for --source-root\n  --mode <mode>             full or changed; defaults to changed\n  --poll-ms <n>             Accepted for compatibility; OS watcher mode does not poll\n  --debounce-ms <n>         Quiet-window debounce interval in milliseconds; defaults to 250\n  --max-iterations <n>      Stop after n refreshes, useful for tests\n  --once                    Run one refresh immediately and exit\n  --no-git                  Disable Git file discovery and scan the filesystem\n  --git-diff                Refresh files from git diff plus untracked files\n  --git-base <rev>          Revision used by --git-diff; defaults to HEAD\n  --include <glob>          Include only paths matching the glob; repeatable\n  --exclude <glob>          Exclude paths matching the glob; repeatable\n  --parallel                Parse independent files concurrently\n  --progress                Include progress events in JSON output"
 }
 
 fn setup_help() -> &'static str {
@@ -6508,6 +6702,262 @@ mod tests {
     }
 
     #[test]
+    fn watch_filter_ignores_excluded_parts_and_access_events() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-filter-excluded");
+        fs::create_dir_all(root.join(".codebaseGraph")).unwrap();
+        fs::create_dir_all(root.join("target")).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+
+        let access = watch_test_event(
+            &root,
+            EventKind::Access(notify::event::AccessKind::Open(
+                notify::event::AccessMode::Read,
+            )),
+            &["src/lib.rs"],
+        );
+        assert!(filter.relevant_paths(&access).is_empty());
+
+        let state_dir = watch_test_event(
+            &root,
+            EventKind::Modify(notify::event::ModifyKind::Data(
+                notify::event::DataChange::Content,
+            )),
+            &[".codebaseGraph/manifest.json"],
+        );
+        assert!(filter.relevant_paths(&state_dir).is_empty());
+
+        let target_dir = watch_test_event(
+            &root,
+            EventKind::Create(notify::event::CreateKind::File),
+            &["target/debug/build.log"],
+        );
+        assert!(filter.relevant_paths(&target_dir).is_empty());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_filter_honors_ignore_config_and_cli_excludes() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-filter-rules");
+        fs::create_dir_all(root.join(".codebaseGraph")).unwrap();
+        fs::write(root.join(".codebaseGraphignore"), "ignored.py\n").unwrap();
+        fs::write(
+            root.join(".codebaseGraph").join("config.json"),
+            r#"{"materialization":{"exclude":["config_skip.py"]}}"#,
+        )
+        .unwrap();
+        let filter = watch_filter_for(&root, &["--exclude", "cli_skip.py"]);
+
+        for path in ["ignored.py", "config_skip.py", "cli_skip.py"] {
+            let event = watch_test_event(
+                &root,
+                EventKind::Modify(notify::event::ModifyKind::Data(
+                    notify::event::DataChange::Content,
+                )),
+                &[path],
+            );
+            assert!(filter.relevant_paths(&event).is_empty());
+        }
+
+        let event = watch_test_event(
+            &root,
+            EventKind::Modify(notify::event::ModifyKind::Data(
+                notify::event::DataChange::Content,
+            )),
+            &["keep.py"],
+        );
+        assert_eq!(
+            filter.relevant_paths(&event),
+            BTreeSet::from(["keep.py".to_string()])
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_filter_keeps_unsupported_files_when_unignored() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-filter-unsupported");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let event = watch_test_event(
+            &root,
+            EventKind::Modify(notify::event::ModifyKind::Data(
+                notify::event::DataChange::Content,
+            )),
+            &["notes.txt"],
+        );
+
+        assert_eq!(
+            filter.relevant_paths(&event),
+            BTreeSet::from(["notes.txt".to_string()])
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_batch_coalesces_burst_events_until_quiet() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-burst");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let (tx, rx) = mpsc::channel();
+        tx.send(WatchMessage::Event(watch_test_event(
+            &root,
+            EventKind::Modify(notify::event::ModifyKind::Data(
+                notify::event::DataChange::Content,
+            )),
+            &["b.py"],
+        )))
+        .unwrap();
+
+        let batch = collect_watch_batch(
+            WatchMessage::Event(watch_test_event(
+                &root,
+                EventKind::Create(notify::event::CreateKind::File),
+                &["a.py"],
+            )),
+            &rx,
+            &filter,
+            Duration::from_millis(10),
+            Duration::from_secs(1),
+        )
+        .unwrap()
+        .unwrap();
+
+        assert_eq!(batch.event_count, 2);
+        assert_eq!(
+            batch.paths,
+            BTreeSet::from(["a.py".to_string(), "b.py".to_string()])
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_batch_flushes_under_sustained_churn() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-churn");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let (tx, rx) = mpsc::channel();
+        let sender_root = root.clone();
+        let sender = std::thread::spawn(move || {
+            for index in 0..20 {
+                tx.send(WatchMessage::Event(watch_test_event(
+                    &sender_root,
+                    EventKind::Modify(notify::event::ModifyKind::Data(
+                        notify::event::DataChange::Content,
+                    )),
+                    &[&format!("churn-{index}.py")],
+                )))
+                .unwrap();
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        });
+
+        let started = Instant::now();
+        let batch = collect_watch_batch(
+            WatchMessage::Event(watch_test_event(
+                &root,
+                EventKind::Create(notify::event::CreateKind::File),
+                &["initial.py"],
+            )),
+            &rx,
+            &filter,
+            Duration::from_millis(100),
+            Duration::from_millis(30),
+        )
+        .unwrap()
+        .unwrap();
+        sender.join().unwrap();
+
+        assert!(started.elapsed() < Duration::from_millis(200));
+        assert!(batch.event_count > 1);
+        assert!(batch.paths.contains("initial.py"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_batch_coalesces_queued_events_into_follow_up_refresh() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-queued");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let (tx, rx) = mpsc::channel();
+        for path in ["during-a.py", "during-b.py", "during-c.py"] {
+            tx.send(WatchMessage::Event(watch_test_event(
+                &root,
+                EventKind::Modify(notify::event::ModifyKind::Data(
+                    notify::event::DataChange::Content,
+                )),
+                &[path],
+            )))
+            .unwrap();
+        }
+
+        let batch = collect_watch_batch(
+            rx.recv().unwrap(),
+            &rx,
+            &filter,
+            Duration::from_millis(10),
+            Duration::from_secs(1),
+        )
+        .unwrap()
+        .unwrap();
+
+        assert_eq!(batch.event_count, 3);
+        assert_eq!(
+            batch.paths,
+            BTreeSet::from([
+                "during-a.py".to_string(),
+                "during-b.py".to_string(),
+                "during-c.py".to_string()
+            ])
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_batch_propagates_watcher_errors() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-error");
+        fs::create_dir_all(&root).unwrap();
+        let filter = watch_filter_for(&root, &[]);
+        let (_tx, rx) = mpsc::channel();
+        let error = collect_watch_batch(
+            WatchMessage::Error("backend failed".to_string()),
+            &rx,
+            &filter,
+            Duration::from_millis(1),
+            Duration::from_millis(1),
+        )
+        .unwrap_err();
+
+        assert!(error.contains("filesystem watcher error: backend failed"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn watch_once_runs_single_refresh_and_exits() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-once");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+
+        let mut output = Vec::new();
+        run(
+            [
+                "watch",
+                "--source-root",
+                root.to_str().unwrap(),
+                "--once",
+                "--no-git",
+                "--no-fts",
+                "--no-semantic-enrichment",
+            ],
+            &mut output,
+        )
+        .unwrap();
+        let text = String::from_utf8(output).unwrap();
+
+        assert!(text.contains("watch event=refreshed event_count=0 changed_paths=0"));
+        assert!(root.join(".codebaseGraph").join("manifest.json").exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn git_diff_plan_scopes_to_changed_paths() {
         if Command::new("git").arg("--version").output().is_err() {
             return;
@@ -7335,6 +7785,28 @@ mod tests {
             .unwrap()
             .iter()
             .any(|item| item.as_str() == Some(expected))
+    }
+
+    fn watch_filter_for(root: &Path, extra_args: &[&str]) -> WatchEventFilter {
+        fs::create_dir_all(root).unwrap();
+        let source_root = root.canonicalize().unwrap();
+        let mut args = vec![
+            "--source-root".to_string(),
+            source_root.to_string_lossy().to_string(),
+            "--no-git".to_string(),
+        ];
+        args.extend(extra_args.iter().map(|arg| arg.to_string()));
+        let options = MaterializeOptions::parse_with_command(&args, "watch").unwrap();
+        WatchEventFilter::from_options(&source_root, &options).unwrap()
+    }
+
+    fn watch_test_event(root: &Path, kind: EventKind, paths: &[&str]) -> Event {
+        let root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+        Event {
+            kind,
+            paths: paths.iter().map(|path| root.join(path)).collect(),
+            attrs: Default::default(),
+        }
     }
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {
