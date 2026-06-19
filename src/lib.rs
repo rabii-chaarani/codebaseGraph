@@ -1,3 +1,4 @@
+pub mod cli;
 pub mod error;
 mod graph_rows;
 mod hash;
@@ -5,7 +6,6 @@ pub mod ladybug_writer;
 mod normalize;
 mod parser;
 mod partition_builder;
-pub mod product_cli;
 mod profiles;
 pub mod protocol;
 mod scan;

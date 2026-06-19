@@ -229,7 +229,7 @@ fn check_no_legacy_surfaces(issues: &mut Vec<String>) {
     for path in [
         "Cargo.toml",
         "src/lib.rs",
-        "src/product_cli.rs",
+        "src/cli/mod.rs",
         "src/ladybug_writer.rs",
     ] {
         let text = fs::read_to_string(path).unwrap_or_default();
