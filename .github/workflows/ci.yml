@@ -15,6 +15,7 @@ permissions:
 
 env:
   MACOSX_DEPLOYMENT_TARGET: "13.3"
+  CARGO_HTTP_MULTIPLEXING: "false"
 
 jobs:
   fmt:
