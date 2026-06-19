@@ -16,6 +16,7 @@ permissions:
 env:
   MACOSX_DEPLOYMENT_TARGET: "13.3"
   CARGO_HTTP_MULTIPLEXING: "false"
+  CARGO_NET_RETRY: "10"
 
 jobs:
   fmt:
@@ -103,24 +104,47 @@ jobs:
           - os: ubuntu-latest
             binary: codebase-graph
             archive: codebase-graph-linux-x86_64.tar.gz
+            prebuilt_lbug: false
             rustflags: ""
           - os: macos-latest
             binary: codebase-graph
             archive: codebase-graph-macos-arm64.tar.gz
-            rustflags: "-C link-arg=-Wl,-ld_classic -C link-arg=-Wl,-multiply_defined,suppress"
+            prebuilt_lbug: true
+            rustflags: ""
           - os: macos-15-intel
             binary: codebase-graph
             archive: codebase-graph-macos-x86_64.tar.gz
+            prebuilt_lbug: false
             rustflags: ""
           - os: windows-2022
             binary: codebase-graph.exe
             archive: codebase-graph-windows-x86_64.tar.gz
+            prebuilt_lbug: false
             rustflags: ""
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+      - name: Prepare prebuilt liblbug
+        if: ${{ matrix.prebuilt_lbug }}
+        shell: bash
+        run: |
+          set -eu
+          lib_dir="$PWD/.cache/lbug-prebuilt"
+          archive="liblbug-static-osx-arm64.tar.gz"
+          lbug_version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
+          mkdir -p "$lib_dir"
+          curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
+            "https://github.com/LadybugDB/ladybug/releases/download/v${lbug_version}/${archive}" \
+            -o "$RUNNER_TEMP/$archive"
+          tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
+          test -f "$lib_dir/liblbug.a"
+          test -f "$lib_dir/lbug.h"
+          {
+            echo "LBUG_LIBRARY_DIR=$lib_dir"
+            echo "LBUG_INCLUDE_DIR=$lib_dir"
+          } >> "$GITHUB_ENV"
       - name: Build Rust production binary
         env:
           RUSTFLAGS: ${{ matrix.rustflags }}
