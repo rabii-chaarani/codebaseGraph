@@ -14,146 +14,176 @@ permissions:
   contents: read
 
 env:
-  PIP_NO_CACHE_DIR: "1"
+  MACOSX_DEPLOYMENT_TARGET: "13.3"
+  CARGO_HTTP_MULTIPLEXING: "false"
+  CARGO_NET_RETRY: "10"
 
 jobs:
+  fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+      - name: Check formatting
+        run: cargo fmt --check
+
   test:
-    name: pytest (${{ matrix.os }}, py${{ matrix.python-version }})
+    name: cargo test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-2022
-        python-version:
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14"
-
+        include:
+          - os: ubuntu-latest
+            rustflags: ""
+            prebuilt_lbug: false
+            lbug_archive: ""
+          - os: macos-latest
+            rustflags: ""
+            prebuilt_lbug: true
+            lbug_archive: liblbug-static-osx-arm64.tar.gz
+          - os: windows-2022
+            rustflags: ""
+            prebuilt_lbug: false
+            lbug_archive: ""
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install package and test dependencies
+      - name: Prepare prebuilt liblbug
+        if: ${{ matrix.prebuilt_lbug }}
+        shell: bash
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
-
+          set -eu
+          lib_dir="$PWD/.cache/lbug-prebuilt"
+          archive="${{ matrix.lbug_archive }}"
+          lbug_version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
+          mkdir -p "$lib_dir"
+          curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
+            "https://github.com/LadybugDB/ladybug/releases/download/v${lbug_version}/${archive}" \
+            -o "$RUNNER_TEMP/$archive"
+          tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
+          test -f "$lib_dir/liblbug.a"
+          test -f "$lib_dir/lbug.h"
+          {
+            echo "LBUG_LIBRARY_DIR=$lib_dir"
+            echo "LBUG_INCLUDE_DIR=$lib_dir"
+          } >> "$GITHUB_ENV"
       - name: Run tests
-        run: python -m pytest -q
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
+        run: cargo test --workspace --locked
 
-  lint:
-    name: ruff
+  clippy:
+    name: cargo clippy
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.12"
-
-      - name: Install lint dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
-
-      - name: Run ruff
-        run: ruff check .
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
   supply-chain:
-    name: supply chain
+    name: cargo audit
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Run Rust advisory scan
+        run: cargo audit
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+  publish-dry-run:
+    name: cargo publish dry-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          python-version: "3.12"
-
-      - name: Install package and supply-chain tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install ".[dev]"
-          python -m pip install cyclonedx-bom pip-audit
-
-      - name: Check installed dependency consistency
-        run: python -m pip check
-
-      - name: Run vulnerability advisory scan
-        run: python -m pip_audit --strict . --progress-spinner off --cache-dir .pip-audit-cache
-
-      - name: Generate CycloneDX SBOM
-        run: |
-          cyclonedx-py environment "$(which python)" \
-            --pyproject pyproject.toml \
-            --mc-type library \
-            --output-reproducible \
-            --of JSON \
-            -o codebase-graph-sbom.cdx.json
+          fetch-depth: 0
+      - name: Verify crates.io package
+        run: cargo publish --dry-run --locked
 
   package:
-    name: package
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    name: native package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary: codebase-graph
+            archive: codebase-graph-linux-x86_64.tar.gz
+            prebuilt_lbug: false
+            lbug_archive: ""
+            rustflags: ""
+          - os: macos-latest
+            binary: codebase-graph
+            archive: codebase-graph-macos-arm64.tar.gz
+            prebuilt_lbug: true
+            lbug_archive: liblbug-static-osx-arm64.tar.gz
+            rustflags: ""
+          - os: macos-15-intel
+            binary: codebase-graph
+            archive: codebase-graph-macos-x86_64.tar.gz
+            prebuilt_lbug: true
+            lbug_archive: liblbug-static-osx-x86_64.tar.gz
+            rustflags: ""
+          - os: windows-2022
+            binary: codebase-graph.exe
+            archive: codebase-graph-windows-x86_64.tar.gz
+            prebuilt_lbug: false
+            lbug_archive: ""
+            rustflags: ""
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.12"
-
-      - name: Build distributions
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install build twine
-          python -m build
-          python -m twine check dist/*
-
-      - name: Smoke-test built wheel
+      - name: Prepare prebuilt liblbug
+        if: ${{ matrix.prebuilt_lbug }}
         shell: bash
         run: |
-          python -m venv /tmp/codebase-graph-wheel
-          /tmp/codebase-graph-wheel/bin/python -m pip install --upgrade pip
-          /tmp/codebase-graph-wheel/bin/python -m pip install dist/*.whl
-          /tmp/codebase-graph-wheel/bin/codebase-graph --help
-          /tmp/codebase-graph-wheel/bin/codebase-graph-mcp --help
-          /tmp/codebase-graph-wheel/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-wheel/bin/codebase-graph
-
-      - name: Smoke-test source distribution
+          set -eu
+          lib_dir="$PWD/.cache/lbug-prebuilt"
+          archive="${{ matrix.lbug_archive }}"
+          lbug_version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
+          mkdir -p "$lib_dir"
+          curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
+            "https://github.com/LadybugDB/ladybug/releases/download/v${lbug_version}/${archive}" \
+            -o "$RUNNER_TEMP/$archive"
+          tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
+          test -f "$lib_dir/liblbug.a"
+          test -f "$lib_dir/lbug.h"
+          {
+            echo "LBUG_LIBRARY_DIR=$lib_dir"
+            echo "LBUG_INCLUDE_DIR=$lib_dir"
+          } >> "$GITHUB_ENV"
+      - name: Build Rust production binary
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
         shell: bash
         run: |
-          python -m venv /tmp/codebase-graph-sdist
-          /tmp/codebase-graph-sdist/bin/python -m pip install --upgrade pip
-          /tmp/codebase-graph-sdist/bin/python -m pip install dist/*.tar.gz
-          /tmp/codebase-graph-sdist/bin/codebase-graph --help
-          /tmp/codebase-graph-sdist/bin/codebase-graph-mcp --help
-          /tmp/codebase-graph-sdist/bin/python scripts/smoke_built_wheel.py /tmp/codebase-graph-sdist/bin/codebase-graph
+          mkdir -p dist/smoke
+          cargo build --locked --release --bin codebase-graph
+          cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
+          chmod +x "dist/smoke/${{ matrix.binary }}"
+          tar -C dist/smoke -czf "dist/${{ matrix.archive }}" "${{ matrix.binary }}"
+      - name: Smoke-test Rust production binary
+        shell: bash
+        run: cargo run -p xtask -- smoke-artifact "./dist/smoke/${{ matrix.binary }}"

@@ -1,0 +1,6623 @@
+{
+  "context_profiles": {
+    "brief": {
+      "description": "Smallest useful context: matched nodes plus direct defining file/module.",
+      "max_depth": 1,
+      "relations": [
+        "Contains",
+        "Defines",
+        "EvidencedBy"
+      ]
+    },
+    "callgraph": {
+      "description": "Callable neighborhood for callers, callees, and call expressions.",
+      "max_depth": 2,
+      "relations": [
+        "Calls",
+        "References",
+        "ResolvesTo"
+      ]
+    },
+    "change_impact": {
+      "description": "Context for likely downstream impact of changing a symbol, including documentation and evidence.",
+      "max_depth": 3,
+      "relations": [
+        "Defines",
+        "References",
+        "Calls",
+        "RoutesTo",
+        "ExecutesQuery",
+        "UsesSecret",
+        "DependsOn",
+        "Documents",
+        "EvidencedBy"
+      ]
+    },
+    "definitions": {
+      "description": "Definition-oriented context for symbols and scopes.",
+      "max_depth": 2,
+      "relations": [
+        "Defines",
+        "Declares",
+        "HasScope",
+        "HasParameter",
+        "HasReturnType",
+        "HasTypeAnnotation"
+      ]
+    },
+    "dependencies": {
+      "description": "Import and dependency context.",
+      "max_depth": 2,
+      "relations": [
+        "Imports",
+        "DependsOn",
+        "References",
+        "ResolvesTo"
+      ]
+    },
+    "docs": {
+      "description": "Documentation context connected to code artifacts.",
+      "max_depth": 1,
+      "relations": [
+        "Documents",
+        "EvidencedBy"
+      ]
+    },
+    "runtime": {
+      "description": "Runtime surface context for routes, endpoints, queries, and secrets.",
+      "max_depth": 2,
+      "relations": [
+        "RoutesTo",
+        "Exposes",
+        "ExecutesQuery",
+        "UsesSecret"
+      ]
+    }
+  },
+  "node_types": [
+    {
+      "constraints": [],
+      "description": "A version-controlled repository or source tree boundary.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Repository",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A configured root scanned for source, docs, manifests, and generated evidence.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "SourceRoot",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A source, manifest, configuration, or documentation file.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        },
+        {
+          "description": "Hash of file content at extraction time.",
+          "name": "content_hash",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "File size in bytes at extraction time.",
+          "name": "size_bytes",
+          "required": false,
+          "type": "integer"
+        }
+      ],
+      "name": "File",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A language-level compilation or namespace unit derived from a source file.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Module",
+      "parser_node_types": [
+        "module",
+        "program",
+        "source_file",
+        "Module"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "An import/include/use/require declaration.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        },
+        {
+          "description": "Imported module, package, symbol, or path.",
+          "name": "imported_name",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "name": "ImportDeclaration",
+      "parser_node_types": [
+        "import_statement",
+        "import_from_statement",
+        "import_declaration",
+        "Import",
+        "ImportFrom"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "An exported symbol or module boundary declaration.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "ExportDeclaration",
+      "parser_node_types": [
+        "export_statement",
+        "export_clause",
+        "export_declaration"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A named code artifact when the exact semantic subtype is unresolved.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Symbol",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A lexical or semantic boundary for name resolution.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Scope",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A class, struct, trait, interface, enum class, or similar type container.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Class",
+      "parser_node_types": [
+        "class_definition",
+        "class_declaration",
+        "struct_item",
+        "ClassDef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A standalone function, lambda with stable name, or callable declaration.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Function",
+      "parser_node_types": [
+        "function_definition",
+        "function_declaration",
+        "FunctionDef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A function declared inside a class, trait, component, or object scope.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Method",
+      "parser_node_types": [
+        "method_definition",
+        "method_declaration",
+        "FunctionDef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A callable parameter.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Parameter",
+      "parser_node_types": [
+        "parameter",
+        "typed_parameter",
+        "arg"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A callable return type annotation.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "ReturnType",
+      "parser_node_types": [
+        "return_type",
+        "returns"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A type annotation attached to a symbol, parameter, assignment, or return value.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "TypeAnnotation",
+      "parser_node_types": [
+        "type",
+        "type_identifier",
+        "type_annotation",
+        "annotation"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A named alias for a type expression.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "TypeAlias",
+      "parser_node_types": [
+        "type_alias",
+        "type_alias_declaration"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A mutable or local named binding.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Variable",
+      "parser_node_types": [
+        "variable_declaration",
+        "Name"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A named binding treated as stable or immutable by convention or syntax.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Constant",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A class-level attribute or static field.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "ClassAttribute",
+      "parser_node_types": [
+        "AnnAssign",
+        "field_declaration"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "An instance-level attribute or field assignment.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "InstanceAttribute",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A computed or decorated property exposed as an attribute.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Property",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A decorator, annotation, macro, or attribute attached to a declaration.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Decorator",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A call, constructor invocation, message send, or macro invocation.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "CallExpression",
+      "parser_node_types": [
+        "call",
+        "Call"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "An assignment, binding, or destructuring declaration.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Assignment",
+      "parser_node_types": [
+        "assignment",
+        "Assign",
+        "AnnAssign"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A name or member reference that may resolve to another node.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Reference",
+      "parser_node_types": [
+        "identifier",
+        "Name"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A literal value from source code.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Literal",
+      "parser_node_types": [
+        "string",
+        "integer",
+        "float",
+        "Constant"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A non-literal expression worth preserving for context or reasoning.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Expression",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A branch, loop, match, switch, or guard block.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "ControlFlowBlock",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A raise, throw, try, catch, except, rescue, or finally flow unit.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "ExceptionFlow",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A network, RPC, CLI, event, or message endpoint exposed by code.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "APIEndpoint",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A UI, service, package, or runtime component represented in source.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Component",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A route pattern, path binding, or router entry.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Route",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A database, search, analytics, or graph query string/expression.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Query",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A reference to a secret, credential, token, key, or sensitive environment variable.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "SecretRef",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "An external package, library, framework, service, or runtime dependency.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        },
+        {
+          "description": "Declared version or version constraint.",
+          "name": "version",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Dependency ecosystem such as pypi, npm, cargo, or go.",
+          "name": "ecosystem",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "name": "Dependency",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A documentation file or generated documentation artifact.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "DocumentationSource",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "A chunk or heading-level section of documentation.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "DocumentationChunk",
+      "parser_node_types": []
+    },
+    {
+      "constraints": [],
+      "description": "Raw parser evidence preserving the concrete syntax node and capture name.",
+      "fields": [
+        {
+          "description": "Stable unique node identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Short human-readable node label.",
+          "name": "label",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Ontology-specific subtype or parser-derived role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source language when the node is code-derived.",
+          "name": "language",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Repository-relative source path.",
+          "name": "path",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Best-effort language-neutral qualified name.",
+          "name": "qualified_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Containing lexical or semantic scope id.",
+          "name": "scope_id",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "One-based start line in the source file.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based end line in the source file.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based start byte in the source file.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based end byte in the source file.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Raw parser node type that produced this node.",
+          "name": "tree_sitter_node_type",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Tree-sitter query capture name when available.",
+          "name": "capture_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Compact text summary used for context assembly.",
+          "name": "summary",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Structured extractor-specific details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        },
+        {
+          "description": "Optional S-expression or compact parse-tree fragment.",
+          "name": "sexp",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Optional source text captured for this syntax node.",
+          "name": "text",
+          "required": false,
+          "type": "string"
+        }
+      ],
+      "name": "SyntaxCapture",
+      "parser_node_types": []
+    }
+  ],
+  "ontology": "code_ontology_v1",
+  "parser_node_mappings": [
+    {
+      "captures": [
+        "module",
+        "source_file"
+      ],
+      "context_rule": "",
+      "description": "Create one Module node per parser root or language namespace root.",
+      "name": "module",
+      "parser_node_types": [
+        "module",
+        "program",
+        "source_file",
+        "Module"
+      ],
+      "relation_types": [
+        "Contains",
+        "Defines",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Module"
+      ]
+    },
+    {
+      "captures": [
+        "import",
+        "reference.import",
+        "reference.include",
+        "reference.require",
+        "reference.use"
+      ],
+      "context_rule": "",
+      "description": "Normalize import-like declarations across languages and attach imported names as metadata.",
+      "name": "imports",
+      "parser_node_types": [
+        "import_statement",
+        "import_from_statement",
+        "import_declaration",
+        "Import",
+        "ImportFrom"
+      ],
+      "relation_types": [
+        "Imports",
+        "DependsOn",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "ImportDeclaration"
+      ]
+    },
+    {
+      "captures": [
+        "export",
+        "definition.export"
+      ],
+      "context_rule": "",
+      "description": "Capture public export declarations and declarations marked as exported.",
+      "name": "exports",
+      "parser_node_types": [
+        "export_statement",
+        "export_clause",
+        "export_declaration"
+      ],
+      "relation_types": [
+        "Exports",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "ExportDeclaration"
+      ]
+    },
+    {
+      "captures": [
+        "definition.class",
+        "definition.struct",
+        "definition.interface"
+      ],
+      "context_rule": "",
+      "description": "Map class-like containers to Class nodes with a child Scope.",
+      "name": "classes",
+      "parser_node_types": [
+        "class_definition",
+        "class_declaration",
+        "struct_item",
+        "interface_declaration",
+        "ClassDef"
+      ],
+      "relation_types": [
+        "Defines",
+        "Declares",
+        "HasScope",
+        "DecoratedBy",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Class"
+      ]
+    },
+    {
+      "captures": [
+        "definition.function",
+        "definition.method"
+      ],
+      "context_rule": "enclosing Class or Component changes the target node from Function to Method",
+      "description": "Create Function for module-level callables and Method when the callable is enclosed by Class or Component.",
+      "name": "functions_and_methods",
+      "parser_node_types": [
+        "function_definition",
+        "function_declaration",
+        "method_definition",
+        "method_declaration",
+        "FunctionDef"
+      ],
+      "relation_types": [
+        "Defines",
+        "Declares",
+        "HasScope",
+        "HasParameter",
+        "HasReturnType",
+        "DecoratedBy",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Function",
+        "Method"
+      ]
+    },
+    {
+      "captures": [
+        "definition.parameter",
+        "parameter"
+      ],
+      "context_rule": "",
+      "description": "Create Parameter nodes for callable parameter declarations.",
+      "name": "parameters",
+      "parser_node_types": [
+        "parameter",
+        "typed_parameter",
+        "default_parameter",
+        "arg"
+      ],
+      "relation_types": [
+        "HasParameter",
+        "HasTypeAnnotation",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Parameter"
+      ]
+    },
+    {
+      "captures": [
+        "type.return",
+        "return_type"
+      ],
+      "context_rule": "",
+      "description": "Capture explicit return type annotations.",
+      "name": "return_types",
+      "parser_node_types": [
+        "return_type",
+        "type",
+        "type_identifier",
+        "returns"
+      ],
+      "relation_types": [
+        "HasReturnType",
+        "HasTypeAnnotation",
+        "References",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "ReturnType"
+      ]
+    },
+    {
+      "captures": [
+        "type",
+        "type.annotation",
+        "reference.type"
+      ],
+      "context_rule": "",
+      "description": "Capture type annotation expressions attached to declarations.",
+      "name": "type_annotations",
+      "parser_node_types": [
+        "type",
+        "type_identifier",
+        "type_annotation",
+        "annotation",
+        "Name"
+      ],
+      "relation_types": [
+        "HasTypeAnnotation",
+        "References",
+        "ResolvesTo",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "TypeAnnotation"
+      ]
+    },
+    {
+      "captures": [
+        "definition.type_alias"
+      ],
+      "context_rule": "",
+      "description": "Capture named type aliases.",
+      "name": "type_aliases",
+      "parser_node_types": [
+        "type_alias",
+        "type_alias_declaration"
+      ],
+      "relation_types": [
+        "Defines",
+        "HasTypeAnnotation",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "TypeAlias"
+      ]
+    },
+    {
+      "captures": [
+        "definition.variable",
+        "definition.constant",
+        "assignment"
+      ],
+      "context_rule": "",
+      "description": "Normalize assignments; scope, naming convention, and receiver decide variable, constant, or attribute node type.",
+      "name": "assignments",
+      "parser_node_types": [
+        "assignment",
+        "assignment_expression",
+        "variable_declaration",
+        "Assign",
+        "AnnAssign"
+      ],
+      "relation_types": [
+        "Defines",
+        "Declares",
+        "Assigns",
+        "HasTypeAnnotation",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Assignment",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property"
+      ]
+    },
+    {
+      "captures": [
+        "decorator",
+        "definition.decorator"
+      ],
+      "context_rule": "",
+      "description": "Capture decorators, annotations, macros, or framework markers that modify declarations.",
+      "name": "decorators",
+      "parser_node_types": [
+        "decorator",
+        "attribute_item",
+        "annotation",
+        "Call",
+        "Name"
+      ],
+      "relation_types": [
+        "DecoratedBy",
+        "Calls",
+        "References",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Decorator"
+      ]
+    },
+    {
+      "captures": [
+        "reference.call",
+        "call"
+      ],
+      "context_rule": "",
+      "description": "Create call-expression nodes and optionally resolve them to callable targets.",
+      "name": "calls",
+      "parser_node_types": [
+        "call",
+        "call_expression",
+        "invocation_expression",
+        "Call"
+      ],
+      "relation_types": [
+        "Calls",
+        "References",
+        "ResolvesTo",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "CallExpression"
+      ]
+    },
+    {
+      "captures": [
+        "reference",
+        "reference.identifier",
+        "reference.member"
+      ],
+      "context_rule": "",
+      "description": "Capture name and member references before or after semantic resolution.",
+      "name": "references",
+      "parser_node_types": [
+        "identifier",
+        "field_identifier",
+        "attribute",
+        "Name",
+        "Attribute"
+      ],
+      "relation_types": [
+        "References",
+        "ResolvesTo",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Reference"
+      ]
+    },
+    {
+      "captures": [
+        "literal",
+        "string",
+        "number"
+      ],
+      "context_rule": "",
+      "description": "Capture literals that are useful for docs, routes, queries, secrets, or assignment values.",
+      "name": "literals",
+      "parser_node_types": [
+        "string",
+        "integer",
+        "float",
+        "true",
+        "false",
+        "null",
+        "none",
+        "Constant"
+      ],
+      "relation_types": [
+        "Contains",
+        "References",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Literal"
+      ]
+    },
+    {
+      "captures": [
+        "control_flow"
+      ],
+      "context_rule": "",
+      "description": "Capture branch and loop blocks when they affect reasoning or dependency paths.",
+      "name": "control_flow",
+      "parser_node_types": [
+        "if_statement",
+        "for_statement",
+        "while_statement",
+        "match_statement",
+        "switch_statement"
+      ],
+      "relation_types": [
+        "Contains",
+        "References",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "ControlFlowBlock"
+      ]
+    },
+    {
+      "captures": [
+        "exception",
+        "raises",
+        "handles"
+      ],
+      "context_rule": "",
+      "description": "Capture exception raising and handling paths.",
+      "name": "exception_flow",
+      "parser_node_types": [
+        "try_statement",
+        "except_clause",
+        "catch_clause",
+        "raise_statement",
+        "throw_statement"
+      ],
+      "relation_types": [
+        "Raises",
+        "Handles",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "ExceptionFlow"
+      ]
+    },
+    {
+      "captures": [
+        "entrypoint.api",
+        "route",
+        "endpoint"
+      ],
+      "context_rule": "",
+      "description": "Create APIEndpoint and Route nodes from framework route declarations or decorated handlers.",
+      "name": "routes_and_endpoints",
+      "parser_node_types": [
+        "decorator",
+        "call",
+        "route_declaration",
+        "handler_definition"
+      ],
+      "relation_types": [
+        "RoutesTo",
+        "Exposes",
+        "DecoratedBy",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "APIEndpoint",
+        "Route"
+      ]
+    },
+    {
+      "captures": [
+        "definition.component",
+        "component"
+      ],
+      "context_rule": "",
+      "description": "Capture UI, service, runtime, or package components when extractor rules identify them.",
+      "name": "components",
+      "parser_node_types": [
+        "class_definition",
+        "function_definition",
+        "jsx_element",
+        "component_declaration"
+      ],
+      "relation_types": [
+        "Defines",
+        "Contains",
+        "Exposes",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Component"
+      ]
+    },
+    {
+      "captures": [
+        "query.sql",
+        "query.graph",
+        "query.search"
+      ],
+      "context_rule": "",
+      "description": "Capture query strings or query builder expressions.",
+      "name": "queries",
+      "parser_node_types": [
+        "string",
+        "template_string",
+        "call",
+        "Call"
+      ],
+      "relation_types": [
+        "ExecutesQuery",
+        "References",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "Query"
+      ]
+    },
+    {
+      "captures": [
+        "secret",
+        "secret.env",
+        "secret.ref"
+      ],
+      "context_rule": "",
+      "description": "Capture secret-looking names, environment references, keys, and credential handles.",
+      "name": "secrets",
+      "parser_node_types": [
+        "identifier",
+        "string",
+        "attribute",
+        "Name",
+        "Constant"
+      ],
+      "relation_types": [
+        "UsesSecret",
+        "References",
+        "DerivedFrom"
+      ],
+      "target_node_types": [
+        "SecretRef"
+      ]
+    },
+    {
+      "captures": [
+        "doc",
+        "doc.string",
+        "doc.comment"
+      ],
+      "context_rule": "",
+      "description": "Capture documentation sources and chunks from docs, comments, and docstrings.",
+      "name": "documentation",
+      "parser_node_types": [
+        "comment",
+        "string",
+        "docstring",
+        "DocumentationSource",
+        "DocumentationChunk"
+      ],
+      "relation_types": [
+        "Documents",
+        "EvidencedBy"
+      ],
+      "target_node_types": [
+        "DocumentationSource",
+        "DocumentationChunk"
+      ]
+    }
+  ],
+  "query_helpers": [
+    {
+      "description": "List high-level source roots, files, modules, dependencies, and runtime surfaces.",
+      "name": "repository_overview",
+      "parameters": [],
+      "query": "MATCH (n) WHERE n:SourceRoot OR n:File OR n:Module OR n:Dependency OR n:APIEndpoint OR n:Component RETURN n.id, n.label, n.path LIMIT 100",
+      "returns": [
+        "id",
+        "label",
+        "path"
+      ]
+    },
+    {
+      "description": "Find concrete semantic definitions by label or qualified name.",
+      "name": "symbol_lookup",
+      "parameters": [
+        "name"
+      ],
+      "query": "MATCH (s:Class) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Function) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Method) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Variable) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Constant) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:ClassAttribute) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:InstanceAttribute) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Property) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:Parameter) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path UNION ALL MATCH (s:TypeAlias) WHERE s.label = $name OR s.qualified_name = $name RETURN s.id, s.label, s.qualified_name, s.path LIMIT 25",
+      "returns": [
+        "id",
+        "label",
+        "qualified_name",
+        "path"
+      ]
+    },
+    {
+      "description": "Find a named class, function, method, variable, or constant definition.",
+      "name": "definition_context",
+      "parameters": [],
+      "query": "MATCH (d) WHERE d:Class OR d:Function OR d:Method OR d:Variable OR d:Constant RETURN d.id, d.label, d.kind, d.path LIMIT 50",
+      "returns": [
+        "id",
+        "label",
+        "kind",
+        "path"
+      ]
+    },
+    {
+      "description": "Find call expressions and resolved callable targets near a symbol.",
+      "name": "callgraph_neighborhood",
+      "parameters": [],
+      "query": "MATCH (c:CallExpression)-[:FROM_ResolvesTo]->(:ResolvesTo)-[:TO_ResolvesTo]->(target) RETURN c.id, c.path, target.id, target.label LIMIT 50",
+      "returns": [
+        "call_id",
+        "path",
+        "target_id",
+        "target_label"
+      ]
+    },
+    {
+      "description": "Inspect imports and dependencies.",
+      "name": "dependency_map",
+      "parameters": [],
+      "query": "MATCH (i:ImportDeclaration)-[:FROM_DependsOn]->(:DependsOn)-[:TO_DependsOn]->(d:Dependency) RETURN i.id, i.label, d.id, d.label LIMIT 100",
+      "returns": [
+        "import_id",
+        "import_label",
+        "dependency_id",
+        "dependency_label"
+      ]
+    },
+    {
+      "description": "Inspect routes, endpoints, executed queries, and secret use.",
+      "name": "runtime_surface",
+      "parameters": [],
+      "query": "MATCH (r:Route)-[:FROM_RoutesTo]->(:RoutesTo)-[:TO_RoutesTo]->(e:APIEndpoint) RETURN r.id, r.label, e.id, e.label LIMIT 100",
+      "returns": [
+        "route_id",
+        "route_label",
+        "endpoint_id",
+        "endpoint_label"
+      ]
+    },
+    {
+      "description": "Find documentation chunks connected to code nodes.",
+      "name": "documentation_context",
+      "parameters": [],
+      "query": "MATCH (d:DocumentationChunk)-[:FROM_Documents]->(:Documents)-[:TO_Documents]->(n) RETURN d.id, d.label, n.id, n.label LIMIT 50",
+      "returns": [
+        "doc_id",
+        "doc_label",
+        "node_id",
+        "node_label"
+      ]
+    },
+    {
+      "description": "Find references that have not been resolved to a semantic target.",
+      "name": "unresolved_references",
+      "parameters": [],
+      "query": "MATCH (r:Reference) WHERE NOT EXISTS { MATCH (r)-[:FROM_ResolvesTo]->(:ResolvesTo)-[:TO_ResolvesTo]->() } RETURN r.id, r.label, r.path, r.line_start LIMIT 100",
+      "returns": [
+        "id",
+        "label",
+        "path",
+        "line_start"
+      ]
+    }
+  ],
+  "relation_types": [
+    {
+      "constraints": [],
+      "description": "Structural containment between repository, files, scopes, declarations, and syntax-derived units.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Contains",
+      "source_types": [
+        "Repository",
+        "SourceRoot",
+        "File",
+        "Module",
+        "Scope",
+        "Class",
+        "Function",
+        "Method",
+        "Component"
+      ],
+      "target_types": [
+        "SourceRoot",
+        "File",
+        "Module",
+        "Scope",
+        "ImportDeclaration",
+        "ExportDeclaration",
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Parameter",
+        "ReturnType",
+        "TypeAnnotation",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Decorator",
+        "Assignment",
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef",
+        "CallExpression",
+        "Assignment",
+        "Reference",
+        "Literal",
+        "Expression",
+        "ControlFlowBlock",
+        "ExceptionFlow",
+        "Query",
+        "SecretRef",
+        "DocumentationSource",
+        "DocumentationChunk"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A file, module, scope, or component defines a semantic code node.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Defines",
+      "source_types": [
+        "File",
+        "Module",
+        "Scope",
+        "Class",
+        "Function",
+        "Method",
+        "Component"
+      ],
+      "target_types": [
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Parameter",
+        "ReturnType",
+        "TypeAnnotation",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Decorator",
+        "Assignment",
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A source unit imports, includes, requires, or uses another unit.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Imports",
+      "source_types": [
+        "File",
+        "Module",
+        "Scope"
+      ],
+      "target_types": [
+        "ImportDeclaration",
+        "Dependency",
+        "Module",
+        "Symbol"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A source unit exports a declaration or public surface.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Exports",
+      "source_types": [
+        "File",
+        "Module",
+        "Scope",
+        "Component"
+      ],
+      "target_types": [
+        "ExportDeclaration",
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Parameter",
+        "ReturnType",
+        "TypeAnnotation",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Decorator",
+        "Assignment",
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A declaration site introduces a named symbol or subordinate declaration.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Declares",
+      "source_types": [
+        "Module",
+        "Scope",
+        "Class",
+        "Function",
+        "Method",
+        "Assignment"
+      ],
+      "target_types": [
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Parameter",
+        "ReturnType",
+        "TypeAnnotation",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Decorator",
+        "Assignment",
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "Connects a node to the lexical or semantic scope used for resolution.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "HasScope",
+      "source_types": [
+        "File",
+        "Module",
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Parameter",
+        "ReturnType",
+        "TypeAnnotation",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Decorator",
+        "Assignment",
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef",
+        "CallExpression",
+        "Assignment",
+        "Reference",
+        "Literal",
+        "Expression",
+        "ControlFlowBlock",
+        "ExceptionFlow",
+        "Query",
+        "SecretRef"
+      ],
+      "target_types": [
+        "Scope"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "Connects callables, endpoints, routes, or calls to their parameters or arguments.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "HasParameter",
+      "source_types": [
+        "Function",
+        "Method",
+        "APIEndpoint",
+        "Route",
+        "CallExpression"
+      ],
+      "target_types": [
+        "Parameter"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "Connects callables or endpoints to their return type node.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "HasReturnType",
+      "source_types": [
+        "Function",
+        "Method",
+        "APIEndpoint"
+      ],
+      "target_types": [
+        "ReturnType"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "Connects a typed code node to its annotation expression.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "HasTypeAnnotation",
+      "source_types": [
+        "Symbol",
+        "Parameter",
+        "ReturnType",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute"
+      ],
+      "target_types": [
+        "TypeAnnotation",
+        "Reference",
+        "Literal"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "Connects an assignment site or assigned symbol to the target or assigned value.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Assigns",
+      "source_types": [
+        "Assignment",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property"
+      ],
+      "target_types": [
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Literal",
+        "Expression",
+        "CallExpression"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A source reference mentions another semantic node without necessarily resolving to it.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "References",
+      "source_types": [
+        "Reference",
+        "Expression",
+        "CallExpression",
+        "Assignment",
+        "ControlFlowBlock",
+        "TypeAnnotation",
+        "Decorator",
+        "Query",
+        "SecretRef"
+      ],
+      "target_types": [
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Parameter",
+        "Module",
+        "Dependency"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A callable or call expression invokes another callable-like target.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Calls",
+      "source_types": [
+        "Function",
+        "Method",
+        "CallExpression",
+        "Decorator",
+        "APIEndpoint",
+        "Route",
+        "Component"
+      ],
+      "target_types": [
+        "CallExpression",
+        "Function",
+        "Method",
+        "Class",
+        "APIEndpoint"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A declaration is modified by a decorator, annotation, macro, or framework marker.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "DecoratedBy",
+      "source_types": [
+        "Class",
+        "Function",
+        "Method",
+        "Property",
+        "APIEndpoint",
+        "Route",
+        "Component"
+      ],
+      "target_types": [
+        "Decorator",
+        "CallExpression",
+        "Reference"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A resolver maps a syntactic reference to the best semantic target.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "ResolvesTo",
+      "source_types": [
+        "Reference",
+        "ImportDeclaration",
+        "CallExpression",
+        "TypeAnnotation",
+        "Decorator"
+      ],
+      "target_types": [
+        "Symbol",
+        "Module",
+        "Class",
+        "Function",
+        "Method",
+        "Variable",
+        "Constant",
+        "Dependency",
+        "Parameter"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A repository or code unit depends on an external or internal dependency.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "DependsOn",
+      "source_types": [
+        "Repository",
+        "SourceRoot",
+        "File",
+        "Module",
+        "ImportDeclaration",
+        "Dependency",
+        "Component"
+      ],
+      "target_types": [
+        "Dependency",
+        "Module",
+        "Component",
+        "SecretRef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "Documentation describes a repository, source unit, or semantic declaration.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Documents",
+      "source_types": [
+        "DocumentationSource",
+        "DocumentationChunk",
+        "Literal"
+      ],
+      "target_types": [
+        "Repository",
+        "File",
+        "Module",
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Parameter",
+        "ReturnType",
+        "TypeAnnotation",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Decorator",
+        "Assignment",
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A route or component dispatches to an endpoint or handler.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "RoutesTo",
+      "source_types": [
+        "Route",
+        "APIEndpoint",
+        "Component"
+      ],
+      "target_types": [
+        "APIEndpoint",
+        "Function",
+        "Method",
+        "Component"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A source unit exposes a public runtime or module surface.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Exposes",
+      "source_types": [
+        "Repository",
+        "Module",
+        "Component",
+        "APIEndpoint",
+        "Route"
+      ],
+      "target_types": [
+        "APIEndpoint",
+        "Route",
+        "Function",
+        "Method",
+        "Component",
+        "ExportDeclaration"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A code path executes or constructs a query.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "ExecutesQuery",
+      "source_types": [
+        "Function",
+        "Method",
+        "CallExpression",
+        "APIEndpoint",
+        "Component"
+      ],
+      "target_types": [
+        "Query"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A code path or dependency uses a secret or sensitive configuration value.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "UsesSecret",
+      "source_types": [
+        "Function",
+        "Method",
+        "CallExpression",
+        "Component",
+        "APIEndpoint",
+        "Dependency"
+      ],
+      "target_types": [
+        "SecretRef"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A code path raises or throws an exception flow.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Raises",
+      "source_types": [
+        "Function",
+        "Method",
+        "CallExpression",
+        "ControlFlowBlock"
+      ],
+      "target_types": [
+        "ExceptionFlow"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A code path handles or catches an exception flow.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "Handles",
+      "source_types": [
+        "Function",
+        "Method",
+        "ControlFlowBlock",
+        "ExceptionFlow"
+      ],
+      "target_types": [
+        "ExceptionFlow"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A semantic node was derived from a raw parser capture.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "DerivedFrom",
+      "source_types": [
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Parameter",
+        "ReturnType",
+        "TypeAnnotation",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Decorator",
+        "Assignment",
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef",
+        "CallExpression",
+        "Assignment",
+        "Reference",
+        "Literal",
+        "Expression",
+        "ControlFlowBlock",
+        "ExceptionFlow",
+        "Query",
+        "SecretRef",
+        "DocumentationSource",
+        "DocumentationChunk",
+        "Module",
+        "ImportDeclaration",
+        "ExportDeclaration"
+      ],
+      "target_types": [
+        "SyntaxCapture"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "A semantic claim is supported by parser, file, or documentation evidence.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "EvidencedBy",
+      "source_types": [
+        "Repository",
+        "File",
+        "Module",
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Parameter",
+        "ReturnType",
+        "TypeAnnotation",
+        "TypeAlias",
+        "Variable",
+        "Constant",
+        "ClassAttribute",
+        "InstanceAttribute",
+        "Property",
+        "Decorator",
+        "Assignment",
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef",
+        "CallExpression",
+        "Assignment",
+        "Reference",
+        "Literal",
+        "Expression",
+        "ControlFlowBlock",
+        "ExceptionFlow",
+        "Query",
+        "SecretRef",
+        "Dependency",
+        "DocumentationSource",
+        "DocumentationChunk"
+      ],
+      "target_types": [
+        "SyntaxCapture",
+        "File",
+        "DocumentationChunk"
+      ]
+    }
+  ],
+  "search_indexes": [
+    {
+      "fields": [
+        "label",
+        "qualified_name",
+        "summary"
+      ],
+      "name": "idx_code_symbols",
+      "node_types": [
+        "Symbol",
+        "Class",
+        "Function",
+        "Method",
+        "Variable",
+        "Constant"
+      ]
+    },
+    {
+      "fields": [
+        "label",
+        "path",
+        "summary"
+      ],
+      "name": "idx_source_units",
+      "node_types": [
+        "Repository",
+        "SourceRoot",
+        "File",
+        "Module"
+      ]
+    },
+    {
+      "fields": [
+        "label",
+        "qualified_name",
+        "summary"
+      ],
+      "name": "idx_dependencies",
+      "node_types": [
+        "ImportDeclaration",
+        "Dependency"
+      ]
+    },
+    {
+      "fields": [
+        "label",
+        "qualified_name",
+        "summary"
+      ],
+      "name": "idx_runtime_surface",
+      "node_types": [
+        "APIEndpoint",
+        "Component",
+        "Route",
+        "Query",
+        "SecretRef"
+      ]
+    },
+    {
+      "fields": [
+        "label",
+        "path",
+        "summary"
+      ],
+      "name": "idx_docs",
+      "node_types": [
+        "DocumentationSource",
+        "DocumentationChunk"
+      ]
+    }
+  ],
+  "version": "1.0.0"
+}
