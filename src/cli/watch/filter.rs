@@ -118,7 +118,7 @@ fn normalize_windows_verbatim_path(path: &Path) -> PathBuf {
     } else if let Some(stripped) = normalized.strip_prefix("//?/") {
         PathBuf::from(stripped)
     } else {
-        PathBuf::from(normalized.as_ref())
+        PathBuf::from(normalized)
     }
 }
 
