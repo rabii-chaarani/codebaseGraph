@@ -123,7 +123,7 @@ impl Drop for WatchTestEnvGuard {
 
 pub(super) fn watch_test_env_lock() -> WatchTestEnvGuard {
     static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-    let guard = LOCK.lock().unwrap();
+    let guard = LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     env::remove_var("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS");
     env::remove_var("CODEBASE_GRAPH_WATCH_PROBE_SKIP_WRITE");
     WatchTestEnvGuard { _guard: guard }

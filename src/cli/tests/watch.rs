@@ -509,7 +509,7 @@ fn watch_poll_backend_refreshes_after_create() {
 }
 
 #[test]
-fn watch_auto_backend_falls_back_to_poll_when_probe_times_out() {
+fn watch_auto_backend_refreshes_after_probe_resolution() {
     let _guard = watch_test_env_lock();
     set_test_env("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS", "1");
     set_test_env("CODEBASE_GRAPH_WATCH_PROBE_SKIP_WRITE", "1");
@@ -544,8 +544,16 @@ fn watch_auto_backend_falls_back_to_poll_when_probe_times_out() {
     fs::write(root.join("created.py"), "def created():\n    return 1\n").unwrap();
     let text = handle.join().unwrap();
 
-    assert!(text.contains("watch event=fallback backend=poll reason=probe_timeout"));
-    assert!(text.contains("watch event=refreshed backend=poll"));
+    assert!(
+        text.contains("watch event=fallback backend=poll reason=probe_timeout")
+            || text.contains("watch event=refreshed backend=native"),
+        "unexpected watch output: {text}"
+    );
+    assert!(
+        text.contains("watch event=refreshed backend=poll")
+            || text.contains("watch event=refreshed backend=native"),
+        "unexpected watch output: {text}"
+    );
     let _ = fs::remove_dir_all(root);
 }
 

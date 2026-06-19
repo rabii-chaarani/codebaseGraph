@@ -18,6 +18,16 @@ fn copy_path_normalizes_windows_separators_for_ladybug() {
 }
 
 #[test]
+fn copy_path_strips_windows_extended_prefix_for_ladybug() {
+    let path = Path::new(r#"\\?\C:\Users\runner\AppData\Local\Temp\thing.json"#);
+
+    assert_eq!(
+        super::files::copy_path(path),
+        "C:/Users/runner/AppData/Local/Temp/thing.json"
+    );
+}
+
+#[test]
 fn writes_typed_rows_and_connectors_without_bulk_protocol() {
     let staging_dir = temp_staging_dir("typed_rows_and_connectors");
     let partition = partition(
