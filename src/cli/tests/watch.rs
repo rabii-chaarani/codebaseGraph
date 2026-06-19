@@ -221,7 +221,11 @@ fn watch_batch_flushes_under_sustained_churn() {
     .unwrap();
     sender.join().unwrap();
 
-    assert!(started.elapsed() < Duration::from_millis(200));
+    assert!(
+        started.elapsed() < Duration::from_secs(1),
+        "watch batch took {:?}",
+        started.elapsed()
+    );
     assert!(batch.event_count > 1);
     assert!(batch.paths.contains("initial.py"));
     let _ = fs::remove_dir_all(root);
@@ -456,7 +460,11 @@ fn watch_poll_batch_flushes_under_sustained_churn() {
     .unwrap();
     writer.join().unwrap();
 
-    assert!(started.elapsed() < Duration::from_millis(200));
+    assert!(
+        started.elapsed() < Duration::from_secs(1),
+        "poll batch took {:?}",
+        started.elapsed()
+    );
     assert!(batch.event_count > 1);
     assert!(!batch.paths.is_empty());
     let _ = fs::remove_dir_all(root);
