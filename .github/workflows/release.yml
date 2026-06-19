@@ -100,21 +100,25 @@ jobs:
             binary: codebase-graph
             artifact-suffix: linux-x86_64
             prebuilt_lbug: false
+            lbug_archive: ""
             rustflags: ""
           - os: macos-latest
             binary: codebase-graph
             artifact-suffix: macos-arm64
             prebuilt_lbug: true
+            lbug_archive: liblbug-static-osx-arm64.tar.gz
             rustflags: ""
           - os: macos-15-intel
             binary: codebase-graph
             artifact-suffix: macos-x86_64
-            prebuilt_lbug: false
+            prebuilt_lbug: true
+            lbug_archive: liblbug-static-osx-x86_64.tar.gz
             rustflags: ""
           - os: windows-2022
             binary: codebase-graph.exe
             artifact-suffix: windows-x86_64
             prebuilt_lbug: false
+            lbug_archive: ""
             rustflags: ""
     env:
       RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
@@ -133,7 +137,7 @@ jobs:
         run: |
           set -eu
           lib_dir="$PWD/.cache/lbug-prebuilt"
-          archive="liblbug-static-osx-arm64.tar.gz"
+          archive="${{ matrix.lbug_archive }}"
           lbug_version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
           mkdir -p "$lib_dir"
           curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
