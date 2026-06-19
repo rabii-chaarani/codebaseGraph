@@ -229,6 +229,35 @@ fn materialize_honors_config_excludes() {
 }
 
 #[test]
+fn plan_includes_source_directories_named_build() {
+    let root = unique_temp_dir("codebase-graph-rust-build-source-dir");
+    let build_dir = root.join("src").join("cli").join("build");
+    fs::create_dir_all(&build_dir).unwrap();
+    fs::write(build_dir.join("mod.rs"), "fn helper() {}\n").unwrap();
+
+    let mut output = Vec::new();
+    run(
+        [
+            "plan",
+            "--source-root",
+            root.to_str().unwrap(),
+            "--no-git",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+
+    assert_json_array_contains(&value["would_rebuild"], "src/cli/build/mod.rs");
+    assert!(!json_array_contains(
+        &value["ignored_paths"],
+        "src/cli/build/mod.rs"
+    ));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn git_diff_plan_scopes_to_changed_paths() {
     if Command::new("git").arg("--version").output().is_err() {
         return;

@@ -1,10 +1,10 @@
 use super::{
+    build::{run_materialize, run_plan},
     format::top_level_help,
     graph::{
         run_graph_architecture_queries, run_graph_context, run_graph_health, run_graph_query,
         run_graph_query_helpers, run_graph_schema, run_graph_search,
     },
-    materialize::{run_materialize, run_plan},
     mcp::{run_mcp_command, serve_mcp_http, serve_mcp_stdio, McpHttpOptions, McpServeOptions},
     setup::run_setup,
     watch::run_watch,

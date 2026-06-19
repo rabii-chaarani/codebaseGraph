@@ -1,5 +1,5 @@
 use super::*;
-use super::{install::*, materialize::*, mcp::*, watch::*};
+use super::{build::*, install::*, mcp::*, watch::*};
 use notify::{Event, EventKind};
 use serde_json::json;
 use std::{

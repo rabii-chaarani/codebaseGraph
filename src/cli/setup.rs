@@ -1,11 +1,11 @@
 use super::{
-    constants::server_command,
-    format::setup_help,
-    install::{build_mcp_descriptor, install_mcp_client, McpInstallOptions},
-    materialize::{
+    build::{
         build_request, dry_run_materialization_payload, materialization_payload, materialize,
         MaterializeOptions,
     },
+    constants::server_command,
+    format::setup_help,
+    install::{build_mcp_descriptor, install_mcp_client, McpInstallOptions},
     util::{read_json_file, restore_file, snapshot_file},
     watch::SetupOptions,
 };

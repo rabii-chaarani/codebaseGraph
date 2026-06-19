@@ -1,6 +1,6 @@
 use super::helpers::watch_matches_any_pattern;
 use crate::cli::{
-    materialize::{
+    build::{
         default_excluded_parts, read_codebase_graph_ignore, read_materialization_config_rules,
         MaterializeOptions,
     },
