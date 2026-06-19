@@ -265,7 +265,7 @@ pub(in crate::cli) fn graph_context_options_from_mcp(
         .map(str::to_string);
     if node_id.is_some() != node_type.is_some() {
         return Err(
-            "graph-context explicit lookup requires both --node-id and --node-type".to_string(),
+            "codebase-context explicit lookup requires both --node-id and --node-type".to_string(),
         );
     }
     let search = graph_search_options_from_mcp(arguments, options, node_id.is_none())?;

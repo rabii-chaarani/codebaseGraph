@@ -289,13 +289,13 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     .map_err(|error| error.to_string())?;
 
     run_checked(executable, ["--help"])?;
-    let schema = run_capture(executable, ["graph-schema", "--json"])?;
+    let schema = run_capture(executable, ["schema", "--json"])?;
     serde_json::from_str::<Value>(&schema)
-        .map_err(|error| format!("graph-schema did not emit JSON: {error}"))?;
+        .map_err(|error| format!("schema did not emit JSON: {error}"))?;
     run_checked(
         executable,
         [
-            "setup",
+            "install",
             "--repo-root",
             temp.join("sample").to_str().ok_or("invalid temp path")?,
             "--mcp-client",
@@ -309,7 +309,7 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     run_checked(
         executable,
         [
-            "setup",
+            "install",
             "--repo-root",
             temp.join("sample").to_str().ok_or("invalid temp path")?,
             "--mcp-client",
@@ -322,7 +322,7 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     run_checked(
         executable,
         [
-            "graph-health",
+            "check-health",
             "--repo-root",
             temp.join("sample").to_str().ok_or("invalid temp path")?,
             "--json",
@@ -331,7 +331,7 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     run_checked(
         executable,
         [
-            "graph-search",
+            "codebase-search",
             "helper",
             "--repo-root",
             temp.join("sample").to_str().ok_or("invalid temp path")?,
@@ -344,7 +344,7 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
 
 fn smoke_mcp_stdio(executable: &Path, repo_root: &Path) -> Result<(), String> {
     let mut child = Command::new(executable)
-        .args(["mcp", "serve", "--repo-root"])
+        .args(["mcp", "start", "--repo-root"])
         .arg(repo_root)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

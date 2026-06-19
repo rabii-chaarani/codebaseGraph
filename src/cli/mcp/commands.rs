@@ -11,7 +11,7 @@ pub(in crate::cli) fn run_mcp_command<W: Write>(
             Ok(())
         }
         Some("install") => run_mcp_install(&args[1..], stdout),
-        Some("serve") => Err("mcp serve requires the process stdin/stdout transport; run it through the codebase-graph binary".to_string()),
+        Some("start") => Err("mcp start requires the process stdin/stdout transport; run it through the codebase-graph binary".to_string()),
         Some("http") => Err("mcp http starts a blocking HTTP server; run it through the codebase-graph binary".to_string()),
         Some(command) => Err(format!("unknown mcp command: {command}\n\n{}", mcp_help())),
     }

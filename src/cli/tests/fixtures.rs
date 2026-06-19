@@ -3,7 +3,7 @@ use super::*;
 pub(super) fn setup_fixture_repo(root: &Path) {
     run(
         [
-            "setup",
+            "install",
             "--repo-root",
             root.to_str().unwrap(),
             "--mode",
@@ -22,7 +22,7 @@ pub(super) fn setup_fixture_repo(root: &Path) {
 pub(super) fn setup_search_fixture_repo(root: &Path) {
     run(
         [
-            "setup",
+            "install",
             "--repo-root",
             root.to_str().unwrap(),
             "--mode",

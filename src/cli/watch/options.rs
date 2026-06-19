@@ -228,7 +228,10 @@ impl SetupOptions {
                     index += 1;
                 }
                 other => {
-                    return Err(format!("unknown setup option: {other}\n\n{}", setup_help()));
+                    return Err(format!(
+                        "unknown install option: {other}\n\n{}",
+                        setup_help()
+                    ));
                 }
             }
         }

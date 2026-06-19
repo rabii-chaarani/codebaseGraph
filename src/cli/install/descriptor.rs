@@ -111,7 +111,7 @@ pub(in crate::cli) fn build_mcp_descriptor(
             server_command(),
             vec![
                 "mcp".to_string(),
-                "serve".to_string(),
+                "start".to_string(),
                 "--config".to_string(),
                 config_path.to_string_lossy().to_string(),
             ],

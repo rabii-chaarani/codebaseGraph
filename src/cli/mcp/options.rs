@@ -40,7 +40,7 @@ impl McpServeOptions {
                 }
                 other => {
                     return Err(format!(
-                        "unknown mcp serve option: {other}\n\n{}",
+                        "unknown mcp start option: {other}\n\n{}",
                         mcp_help()
                     ));
                 }

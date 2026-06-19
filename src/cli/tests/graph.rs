@@ -3,14 +3,14 @@ use super::*;
 #[test]
 fn graph_schema_outputs_block_and_json() {
     let mut block = Vec::new();
-    run(["graph-schema"], &mut block).unwrap();
+    run(["schema"], &mut block).unwrap();
     let block_text = String::from_utf8(block).unwrap();
     assert!(block_text.starts_with("schema "));
     assert!(block_text.contains("helpers=8"));
     assert!(!block_text.trim_start().starts_with('{'));
 
     let mut json_output = Vec::new();
-    run(["graph-schema", "--json"], &mut json_output).unwrap();
+    run(["schema", "--json"], &mut json_output).unwrap();
     let json_text = String::from_utf8(json_output).unwrap();
     assert!(!json_text.contains("\n  "));
     let value: serde_json::Value = serde_json::from_str(&json_text).unwrap();
@@ -21,13 +21,13 @@ fn graph_schema_outputs_block_and_json() {
 #[test]
 fn graph_query_helpers_outputs_helper_catalog() {
     let mut block = Vec::new();
-    run(["graph-query-helpers"], &mut block).unwrap();
+    run(["query-helpers"], &mut block).unwrap();
     let block_text = String::from_utf8(block).unwrap();
     assert!(block_text.starts_with("query_helpers count=8"));
     assert!(block_text.contains("repository_overview"));
 
     let mut json_output = Vec::new();
-    run(["graph-query-helpers", "--json"], &mut json_output).unwrap();
+    run(["query-helpers", "--json"], &mut json_output).unwrap();
     let value: serde_json::Value = serde_json::from_slice(&json_output).unwrap();
     assert!(value["query_helpers"]
         .as_array()
@@ -41,7 +41,7 @@ fn graph_architecture_queries_filters_by_group() {
     let mut block = Vec::new();
     run(
         [
-            "graph-architecture-queries",
+            "codebase-architecture-queries",
             "--group",
             "overview",
             "--format",
@@ -58,7 +58,7 @@ fn graph_architecture_queries_filters_by_group() {
     let mut json_output = Vec::new();
     run(
         [
-            "graph-architecture-queries",
+            "codebase-architecture-queries",
             "--group",
             "overview",
             "--json",
@@ -87,7 +87,7 @@ fn graph_search_reads_native_fts_indexes() {
     let mut output = Vec::new();
     run(
         [
-            "graph-search",
+            "codebase-search",
             "SampleService",
             "--repo-root",
             root.to_str().unwrap(),
@@ -110,7 +110,7 @@ fn graph_search_reads_native_fts_indexes() {
     let mut top_output = Vec::new();
     run(
         [
-            "graph-search",
+            "codebase-search",
             "SampleService",
             "--repo-root",
             root.to_str().unwrap(),
@@ -159,7 +159,7 @@ fn setup_indexes_documented_language_defaults() {
     let mut setup_output = Vec::new();
     run(
         [
-            "setup",
+            "install",
             "--repo-root",
             root.to_str().unwrap(),
             "--mode",
@@ -208,7 +208,7 @@ fn setup_indexes_documented_language_defaults() {
         let mut search_output = Vec::new();
         run(
             [
-                "graph-search",
+                "codebase-search",
                 symbol,
                 "--repo-root",
                 root.to_str().unwrap(),
@@ -244,7 +244,7 @@ fn graph_search_default_output_is_block() {
     let mut output = Vec::new();
     run(
         [
-            "graph-search",
+            "codebase-search",
             "helper",
             "--repo-root",
             root.to_str().unwrap(),
@@ -274,7 +274,7 @@ fn graph_context_explicit_node_reads_neighbors() {
     let mut search_output = Vec::new();
     run(
         [
-            "graph-search",
+            "codebase-search",
             "SampleService",
             "--repo-root",
             root.to_str().unwrap(),
@@ -293,7 +293,7 @@ fn graph_context_explicit_node_reads_neighbors() {
     let mut output = Vec::new();
     run(
         [
-            "graph-context",
+            "codebase-context",
             "--node-id",
             node_id,
             "--node-type",
@@ -330,7 +330,7 @@ fn graph_context_query_mode_uses_search_payload() {
     let mut output = Vec::new();
     run(
         [
-            "graph-context",
+            "codebase-context",
             "helper",
             "--repo-root",
             root.to_str().unwrap(),
@@ -356,7 +356,7 @@ fn graph_health_reports_native_database() {
 
     run(
         [
-            "setup",
+            "install",
             "--repo-root",
             root.to_str().unwrap(),
             "--mode",
@@ -374,7 +374,7 @@ fn graph_health_reports_native_database() {
     let mut output = Vec::new();
     run(
         [
-            "graph-health",
+            "check-health",
             "--repo-root",
             root.to_str().unwrap(),
             "--json",

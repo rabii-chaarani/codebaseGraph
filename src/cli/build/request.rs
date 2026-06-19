@@ -221,7 +221,7 @@ pub(in crate::cli) struct MaterializeOptions {
 
 impl MaterializeOptions {
     pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
-        Self::parse_with_command(args, "materialize")
+        Self::parse_with_command(args, "build")
     }
 
     pub(in crate::cli) fn parse_with_command(

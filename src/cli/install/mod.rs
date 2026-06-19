@@ -19,6 +19,8 @@ pub(in crate::cli) use metadata::{
     supported_install_clients, supported_install_clients_with_all,
 };
 pub(in crate::cli) use options::McpInstallOptions;
-pub(in crate::cli) use render::{copilot_studio_metadata, render_client_config};
+pub(in crate::cli) use render::{
+    copilot_studio_metadata, remove_client_config, render_client_config,
+};
 pub(in crate::cli) use state::McpHttpState;
 pub(in crate::cli) use verify::attach_install_verification;

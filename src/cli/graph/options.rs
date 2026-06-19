@@ -65,7 +65,7 @@ impl HealthOptions {
                 }
                 other => {
                     return Err(format!(
-                        "unknown graph-health option: {other}\n\n{}",
+                        "unknown check-health option: {other}\n\n{}",
                         graph_health_help()
                     ));
                 }
@@ -310,7 +310,7 @@ impl ArchitectureQueryOptions {
             }
         }
         Ok(Self {
-            output: MetadataOutputOptions::parse(&metadata_args, "graph-architecture-queries")?,
+            output: MetadataOutputOptions::parse(&metadata_args, "codebase-architecture-queries")?,
             group,
         })
     }
@@ -432,20 +432,20 @@ impl GraphSearchOptions {
                 }
                 other if other.starts_with('-') => {
                     return Err(format!(
-                        "unknown graph-search option: {other}\n\n{}",
+                        "unknown codebase-search option: {other}\n\n{}",
                         graph_search_help()
                     ));
                 }
                 value => {
                     if query.is_some() {
-                        return Err("graph-search accepts exactly one query".to_string());
+                        return Err("codebase-search accepts exactly one query".to_string());
                     }
                     query = Some(value.to_string());
                     index += 1;
                 }
             }
         }
-        let output = MetadataOutputOptions::parse(&output_args, "graph-search")?;
+        let output = MetadataOutputOptions::parse(&output_args, "codebase-search")?;
         if output.help {
             return Ok(Self {
                 query: String::new(),
@@ -523,7 +523,8 @@ impl GraphContextOptions {
             search.query.clear();
         } else if node_id.is_some() || node_type.is_some() {
             return Err(
-                "graph-context explicit lookup requires both --node-id and --node-type".to_string(),
+                "codebase-context explicit lookup requires both --node-id and --node-type"
+                    .to_string(),
             );
         }
         Ok(Self {

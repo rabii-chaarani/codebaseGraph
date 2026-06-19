@@ -214,7 +214,7 @@ pub(super) fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) ->
             "command": [
                 server_command(),
                 "mcp",
-                "serve",
+                "start",
                 "--config",
                 paths.config_path.to_string_lossy()
             ]
@@ -246,7 +246,7 @@ pub(super) fn write_setup_config(
     let text = serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())?;
     fs::write(&paths.config_path, format!("{text}\n")).map_err(|error| {
         format!(
-            "failed to write setup config {}: {error}",
+            "failed to write install config {}: {error}",
             paths.config_path.display()
         )
     })?;
@@ -325,8 +325,8 @@ pub(super) fn instruction_block(config_path: &Path) -> String {
 - Use MCP `graph_context` with `profile: \"<profile>\"`, `detail: \"slim\"`, and `context_limit: 2` when relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.\n\
 - For architecture orientation, use MCP `graph_architecture_queries`, then execute selected read-only statements with MCP `graph_query`.\n\
 - Use MCP `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.\n\
-- If MCP tools are unavailable, fall back to CLI: `{command} graph-search <query> --repo-root . --no-refresh --detail slim --context-limit 1`, `{command} graph-context <query> --repo-root . --profile <profile> --no-refresh --detail slim --context-limit 2`, `{command} graph-architecture-queries`, `{command} graph-query \"<statement>\" --repo-root .`, `{command} graph-schema`, and `{command} graph-query-helpers`.\n\
-- Refresh the graph with `{command} setup --repo-root . --mcp-client none` when files change materially. Setup config: `{config_path}`.\n\
+- If MCP tools are unavailable, fall back to CLI: `{command} codebase-search <query> --repo-root . --no-refresh --detail slim --context-limit 1`, `{command} codebase-context <query> --repo-root . --profile <profile> --no-refresh --detail slim --context-limit 2`, `{command} codebase-architecture-queries`, `{command} graph-query \"<statement>\" --repo-root .`, `{command} schema`, and `{command} query-helpers`.\n\
+- Refresh the graph with `{command} install --repo-root . --mcp-client none` when files change materially. Setup config: `{config_path}`.\n\
 <!-- codebaseGraph:end -->\n",
         command = server_command(),
         config_path = config_path.to_string_lossy(),
@@ -374,6 +374,27 @@ pub(super) fn upsert_instruction_text(
     .to_string()
         + "\n";
     (text, "updated")
+}
+
+pub(super) fn remove_instruction_text(existing: &str) -> (String, bool) {
+    const START: &str = "<!-- codebaseGraph:start -->";
+    const END: &str = "<!-- codebaseGraph:end -->";
+    let Some(start) = existing.find(START) else {
+        return (existing.to_string(), false);
+    };
+    let Some(end) = existing[start..].find(END).map(|index| start + index) else {
+        return (existing.to_string(), false);
+    };
+    let after_end = end + END.len();
+    let before = existing[..start].trim_end();
+    let after = existing[after_end..].trim_start();
+    let text = match (before.is_empty(), after.is_empty()) {
+        (true, true) => String::new(),
+        (true, false) => format!("{after}\n"),
+        (false, true) => format!("{before}\n"),
+        (false, false) => format!("{before}\n\n{after}"),
+    };
+    (text, true)
 }
 #[derive(Debug)]
 pub(super) struct GraphStatePaths {

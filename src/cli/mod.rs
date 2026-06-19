@@ -6,6 +6,7 @@ mod graph;
 mod install;
 mod mcp;
 mod setup;
+mod uninstall;
 mod util;
 mod watch;
 

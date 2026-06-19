@@ -6,7 +6,7 @@ fn prints_top_level_help() {
     run(["--help"], &mut output).unwrap();
     let text = String::from_utf8(output).unwrap();
     assert!(text.contains("codebase-graph native CLI"));
-    assert!(text.contains("materialize"));
+    assert!(text.contains("build"));
 }
 
 #[test]
@@ -19,11 +19,32 @@ fn prints_top_level_help_without_args() {
 }
 
 #[test]
+fn old_command_names_are_rejected() {
+    for command in [
+        "setup",
+        "materialize",
+        "graph-health",
+        "graph-schema",
+        "graph-query-helpers",
+        "graph-architecture-queries",
+        "graph-search",
+        "search",
+        "graph-context",
+        "context",
+    ] {
+        let error = run([command], &mut Vec::new()).unwrap_err();
+        assert!(error.contains("unknown command"), "{command}: {error}");
+    }
+    let error = run(["mcp", "serve"], &mut Vec::new()).unwrap_err();
+    assert!(error.contains("unknown mcp command"));
+}
+
+#[test]
 fn materialize_help_is_product_command_help() {
     let mut output = Vec::new();
-    run(["materialize", "--help"], &mut output).unwrap();
+    run(["build", "--help"], &mut output).unwrap();
     let text = String::from_utf8(output).unwrap();
-    assert!(text.contains("codebase-graph materialize"));
+    assert!(text.contains("codebase-graph build"));
     assert!(text.contains("--native-request"));
     assert!(text.contains("local_only only"));
     assert!(!text.contains("opportunistic"));
@@ -33,9 +54,9 @@ fn materialize_help_is_product_command_help() {
 #[test]
 fn setup_help_is_product_command_help() {
     let mut output = Vec::new();
-    run(["setup", "--help"], &mut output).unwrap();
+    run(["install", "--help"], &mut output).unwrap();
     let text = String::from_utf8(output).unwrap();
-    assert!(text.contains("codebase-graph setup"));
+    assert!(text.contains("codebase-graph install"));
     assert!(text.contains("--mcp-client"));
     assert!(text.contains("local_only only"));
     assert!(!text.contains("opportunistic"));
@@ -104,7 +125,7 @@ fn materialize_empty_project_from_native_request() {
     let mut output = Vec::new();
     run(
         [
-            "materialize",
+            "build",
             "--native-request",
             request_path.to_str().unwrap(),
             "--manifest",
@@ -132,7 +153,7 @@ fn materialize_python_source_root_without_python_request() {
     let mut output = Vec::new();
     run(
         [
-            "materialize",
+            "build",
             "--source-root",
             root.to_str().unwrap(),
             "--db",
@@ -292,7 +313,7 @@ fn git_diff_plan_scopes_to_changed_paths() {
     setup_fixture_repo(&root);
     run(
         [
-            "materialize",
+            "build",
             "--source-root",
             root.to_str().unwrap(),
             "--mode",
@@ -335,7 +356,7 @@ fn parallel_materialize_reports_progress_events() {
     let mut output = Vec::new();
     run(
         [
-            "materialize",
+            "build",
             "--source-root",
             root.to_str().unwrap(),
             "--no-git",
@@ -365,7 +386,7 @@ fn setup_materializes_graph_and_writes_config() {
     let mut output = Vec::new();
     run(
         [
-            "setup",
+            "install",
             "--repo-root",
             root.to_str().unwrap(),
             "--mode",

@@ -10,8 +10,8 @@ The shipped CLI and MCP server are native Rust binaries.
 
 ```bash
 cargo install codebase-graph
-codebase-graph setup --repo-root .
-codebase-graph graph-search SampleService --repo-root . --no-refresh
+codebase-graph install --repo-root .
+codebase-graph codebase-search SampleService --repo-root . --no-refresh
 ```
 
 For local development from this checkout:
@@ -20,7 +20,7 @@ For local development from this checkout:
 cargo install --path . --bin codebase-graph
 ```
 
-Setup creates:
+Install creates:
 
 ```text
 .codebaseGraph/
@@ -29,7 +29,7 @@ Setup creates:
   <repositoryName>_graph.ldb
 ```
 
-The setup command materializes the graph, writes or updates one marked codebaseGraph block in `AGENTS.md` or
+The install command materializes the graph, writes or updates one marked codebaseGraph block in `AGENTS.md` or
 `CLAUDE.md`, and installs a Codex MCP client entry unless skipped.
 
 ## MCP Install
@@ -50,7 +50,7 @@ Studio onboarding and do not provision a hosted connector, TLS, OAuth, or remote
 Stdio is the default transport for local MCP clients:
 
 ```bash
-codebase-graph mcp serve --config .codebaseGraph/config.json
+codebase-graph mcp start --config .codebaseGraph/config.json
 ```
 
 HTTP is available for local endpoint clients:
@@ -76,21 +76,21 @@ Available MCP tools:
 ## CLI Workflow
 
 ```bash
-codebase-graph graph-health --repo-root .
-codebase-graph graph-context SampleService --repo-root . --profile definitions
+codebase-graph check-health --repo-root .
+codebase-graph codebase-context SampleService --repo-root . --profile definitions
 codebase-graph graph-query "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" --repo-root .
 ```
 
 Retrieval commands emit block format by default for agent-facing output. Use `--json --pretty` or `--format json` for
 structured inspection.
 
-Freshness commands use the same manifest hashing as setup/materialize, with Git as an optional file-selection layer:
+Freshness commands use the same manifest hashing as install/build, with Git as an optional file-selection layer:
 
 ```bash
 codebase-graph plan --repo-root . --json
 codebase-graph plan --repo-root . --git-diff --git-base main --json
 codebase-graph watch --repo-root . --debounce-ms 250
-codebase-graph materialize --repo-root . --parallel --progress --json
+codebase-graph build --repo-root . --parallel --progress --json
 ```
 
 Use `.codebaseGraphignore`, `--include`, `--exclude`, or `.codebaseGraph/config.json` materialization include/exclude
@@ -123,8 +123,8 @@ expectations, and the local-first MCP security boundary.
 ## Troubleshooting
 
 - Missing LadyBugDB: install `codebase-graph` from crates.io, a release artifact, or this checkout.
-- Stale graph: rerun `codebase-graph setup --repo-root .` after material source or documentation changes.
+- Stale graph: rerun `codebase-graph install --repo-root .` after material source or documentation changes.
 - Broken client config: rerun `codebase-graph mcp install --client <client> --verify`.
 - PATH or executable issues: ensure the native `codebase-graph` binary is on `PATH`.
 - Unsupported files: binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, and `.codebaseGraph` paths are skipped.
-- Lock errors: stop other graph materialization or setup processes using the same `.codebaseGraph/<repositoryName>_graph.ldb`.
+- Lock errors: stop other graph build or install processes using the same `.codebaseGraph/<repositoryName>_graph.ldb`.

@@ -83,7 +83,7 @@ pub(in crate::cli) fn run_graph_schema<W: Write>(
     args: &[String],
     stdout: &mut W,
 ) -> Result<(), String> {
-    let options = MetadataOutputOptions::parse(args, "graph-schema")?;
+    let options = MetadataOutputOptions::parse(args, "schema")?;
     if options.help {
         writeln!(stdout, "{}", graph_schema_help()).map_err(|error| error.to_string())?;
         return Ok(());
@@ -96,7 +96,7 @@ pub(in crate::cli) fn run_graph_query_helpers<W: Write>(
     args: &[String],
     stdout: &mut W,
 ) -> Result<(), String> {
-    let options = MetadataOutputOptions::parse(args, "graph-query-helpers")?;
+    let options = MetadataOutputOptions::parse(args, "query-helpers")?;
     if options.help {
         writeln!(stdout, "{}", graph_query_helpers_help()).map_err(|error| error.to_string())?;
         return Ok(());
