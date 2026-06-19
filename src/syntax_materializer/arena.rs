@@ -1,4 +1,6 @@
-use super::*;
+use super::json_value_label;
+use crate::normalize::SyntaxNode;
+use serde_json::Value;
 
 pub(super) struct NativeSyntaxArena<'a> {
     pub(super) nodes: Vec<NativeSyntaxNode<'a>>,

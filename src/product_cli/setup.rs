@@ -1,4 +1,20 @@
-use super::*;
+use super::{
+    constants::server_command,
+    format::setup_help,
+    install::{build_mcp_descriptor, install_mcp_client, McpInstallOptions},
+    materialize::{
+        build_request, dry_run_materialization_payload, materialization_payload, materialize,
+        MaterializeOptions,
+    },
+    util::{read_json_file, restore_file, snapshot_file},
+    watch::SetupOptions,
+};
+use serde_json::json;
+use std::{
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
     let options = SetupOptions::parse(args)?;

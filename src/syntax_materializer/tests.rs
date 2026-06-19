@@ -1,5 +1,7 @@
 use super::*;
 use serde_json::json;
+use serde_json::Value;
+use std::collections::BTreeMap;
 
 #[test]
 fn syntax_materializer_builds_python_class_and_method_rows() {

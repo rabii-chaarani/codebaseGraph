@@ -1,4 +1,6 @@
-use super::*;
+use super::{is_declaration, is_documentation, is_expression, is_symbol_target};
+use serde::Deserialize;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Deserialize)]
 pub(super) struct RelationSpecPayload {

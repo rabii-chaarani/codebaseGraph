@@ -1,4 +1,26 @@
-use super::*;
+use super::{
+    format::{
+        block_value, materialize_help, plan_help, schema_statements_from_copy_statements,
+        value_array, value_str, watch_help,
+    },
+    setup::GraphStatePaths,
+    watch::scan_source_snapshots,
+};
+use crate::{
+    ladybug_writer::{write_database, LadybugWriteRequest},
+    protocol::{
+        NativeManifest, NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse,
+    },
+};
+use serde_json::json;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+    process::Command,
+    time::Instant,
+};
 
 pub(super) fn run_materialize<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
     let options = MaterializeOptions::parse(args)?;

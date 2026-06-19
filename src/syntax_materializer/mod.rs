@@ -1,8 +1,6 @@
-use crate::graph_rows::{BuiltGraphRows, GraphEdgeRow, GraphNodeRow};
+use crate::graph_rows::BuiltGraphRows;
 use crate::normalize::SyntaxNode;
-use serde::Deserialize;
-use serde_json::{Map, Value};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 
 pub(crate) fn build_syntax_tree_graph_rows(
     meta: BTreeMap<String, String>,
