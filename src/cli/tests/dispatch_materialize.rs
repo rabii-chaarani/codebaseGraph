@@ -57,6 +57,11 @@ fn setup_help_is_product_command_help() {
     run(["install", "--help"], &mut output).unwrap();
     let text = String::from_utf8(output).unwrap();
     assert!(text.contains("codebase-graph install"));
+    assert!(text.contains("codebase-graph install [--mode full|changed]"));
+    assert!(text.contains(
+        "--repo-root <path>          Repository root to initialize; defaults to current directory"
+    ));
+    assert!(!text.contains("codebase-graph install [--repo-root <path>]"));
     assert!(text.contains("--mcp-client"));
     assert!(text.contains("local_only only"));
     assert!(!text.contains("opportunistic"));
@@ -83,6 +88,14 @@ fn setup_rejects_provider_backed_semantic_modes() {
     let error = SetupOptions::parse(&args).unwrap_err();
 
     assert!(error.contains("--semantic-provider-mode must be local_only"));
+}
+
+#[test]
+fn setup_defaults_repo_root_to_current_directory() {
+    let args = Vec::new();
+    let options = SetupOptions::parse(&args).unwrap();
+
+    assert_eq!(options.repo_root, PathBuf::from("."));
 }
 
 #[test]

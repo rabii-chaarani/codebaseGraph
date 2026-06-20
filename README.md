@@ -10,7 +10,7 @@ The shipped CLI and MCP server are native Rust binaries.
 
 ```bash
 cargo install codebase-graph
-codebase-graph install --repo-root .
+codebase-graph install
 codebase-graph mcp start --config .codebaseGraph/config.json
 ```
 
