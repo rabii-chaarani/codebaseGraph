@@ -80,7 +80,7 @@ pub(in crate::cli) fn setup_payload(options: &SetupOptions) -> Result<serde_json
             "action": if instructions_path.is_some() { "dry_run" } else { "skipped" },
             "path": instructions_path.as_ref().map(|path| path.to_string_lossy().to_string()),
         });
-        let mcp_config = setup_mcp_config(&options, &paths, true)?;
+        let mcp_config = setup_mcp_config(options, &paths, true)?;
         (
             config_action.to_string(),
             instructions,
@@ -107,7 +107,7 @@ pub(in crate::cli) fn setup_payload(options: &SetupOptions) -> Result<serde_json
                 let (_, response) = materialize(&materialize_options)?;
                 materialization_payload(&response, &materialize_options.mode, &paths)
             };
-            let mcp_config = setup_mcp_config(&options, &paths, false)?;
+            let mcp_config = setup_mcp_config(options, &paths, false)?;
             Ok::<_, String>((
                 config_action.to_string(),
                 instructions,
