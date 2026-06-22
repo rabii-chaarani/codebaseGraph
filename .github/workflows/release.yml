@@ -54,10 +54,10 @@ jobs:
       contents: read
     env:
       RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
-      CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT: ${{ vars.CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT }}
-      CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN: ${{ vars.CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN }}
-      CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING: ${{ vars.CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING }}
-      CODEBASE_GRAPH_REQUIRE_CONDA: ${{ vars.CODEBASE_GRAPH_REQUIRE_CONDA }}
+      CODEBASE_GRAPH_REPO_CONFIRM_RELEASE_ENVIRONMENT: ${{ vars.CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT }}
+      CODEBASE_GRAPH_REPO_CONFIRM_HOSTED_CI_GREEN: ${{ vars.CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN }}
+      CODEBASE_GRAPH_REPO_CONFIRM_PRIVATE_VULNERABILITY_REPORTING: ${{ vars.CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING }}
+      CODEBASE_GRAPH_REPO_REQUIRE_CONDA: ${{ vars.CODEBASE_GRAPH_REQUIRE_CONDA }}
     steps:
       - name: Check out release tag
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -68,16 +68,20 @@ jobs:
         shell: bash
         run: |
           args=(release-gate --production)
-          if [[ "${CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT}" == "true" ]]; then
+          confirm_release_environment="${CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT:-${CODEBASE_GRAPH_REPO_CONFIRM_RELEASE_ENVIRONMENT}}"
+          confirm_hosted_ci_green="${CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN:-${CODEBASE_GRAPH_REPO_CONFIRM_HOSTED_CI_GREEN}}"
+          confirm_private_vulnerability_reporting="${CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING:-${CODEBASE_GRAPH_REPO_CONFIRM_PRIVATE_VULNERABILITY_REPORTING}}"
+          require_conda="${CODEBASE_GRAPH_REQUIRE_CONDA:-${CODEBASE_GRAPH_REPO_REQUIRE_CONDA}}"
+          if [[ "${confirm_release_environment}" == "true" ]]; then
             args+=(--confirm release-environment)
           fi
-          if [[ "${CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN}" == "true" ]]; then
+          if [[ "${confirm_hosted_ci_green}" == "true" ]]; then
             args+=(--confirm hosted-ci-green)
           fi
-          if [[ "${CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING}" == "true" ]]; then
+          if [[ "${confirm_private_vulnerability_reporting}" == "true" ]]; then
             args+=(--confirm private-vulnerability-reporting)
           fi
-          if [[ "${CODEBASE_GRAPH_REQUIRE_CONDA}" == "true" ]]; then
+          if [[ "${require_conda}" == "true" ]]; then
             args+=(--require-conda)
           fi
           cargo run -p xtask -- "${args[@]}"

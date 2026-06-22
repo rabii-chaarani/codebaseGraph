@@ -2,7 +2,7 @@ use super::{expand_path, McpInstallOptions};
 use crate::cli::{
     constants::server_command,
     setup::{safe_name, GraphStatePaths},
-    util::read_json_file,
+    util::{read_json_file, resolve_repo_root},
 };
 use serde_json::json;
 use std::path::Path;
@@ -54,10 +54,11 @@ impl NativeMcpDescriptor {
 pub(in crate::cli) fn build_mcp_descriptor(
     options: &McpInstallOptions,
 ) -> Result<NativeMcpDescriptor, String> {
-    let config_path = options.config_path.clone().unwrap_or_else(|| {
-        GraphStatePaths::derive(&expand_path(options.repo_root.to_string_lossy().as_ref()))
-            .config_path
-    });
+    let resolved_repo_root = resolve_repo_root(options.repo_root.as_deref())?;
+    let config_path = options
+        .config_path
+        .clone()
+        .unwrap_or_else(|| GraphStatePaths::derive(&resolved_repo_root).config_path);
     let setup_config = if config_path.exists() {
         Some(read_json_file(&config_path)?)
     } else {
@@ -73,7 +74,7 @@ pub(in crate::cli) fn build_mcp_descriptor(
                 .parent()
                 .and_then(Path::parent)
                 .map(Path::to_path_buf)
-                .unwrap_or_else(|| options.repo_root.clone())
+                .unwrap_or_else(|| resolved_repo_root.clone())
         });
     let repo_name = setup_config
         .as_ref()
