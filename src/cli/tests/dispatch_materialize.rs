@@ -7,6 +7,7 @@ fn prints_top_level_help() {
     let text = String::from_utf8(output).unwrap();
     assert!(text.contains("codebase-graph native CLI"));
     assert!(text.contains("build"));
+    assert!(text.contains("reinstall"));
 }
 
 #[test]
@@ -62,6 +63,19 @@ fn setup_help_is_product_command_help() {
         "--repo-root <path>          Repository root to initialize; defaults to current directory"
     ));
     assert!(!text.contains("codebase-graph install [--repo-root <path>]"));
+    assert!(text.contains("--mcp-client"));
+    assert!(text.contains("local_only only"));
+    assert!(!text.contains("opportunistic"));
+    assert!(!text.contains("provider_first"));
+}
+
+#[test]
+fn reinstall_help_is_product_command_help() {
+    let mut output = Vec::new();
+    run(["reinstall", "--help"], &mut output).unwrap();
+    let text = String::from_utf8(output).unwrap();
+    assert!(text.contains("codebase-graph reinstall"));
+    assert!(text.contains("Remove existing graph state and run install again"));
     assert!(text.contains("--mcp-client"));
     assert!(text.contains("local_only only"));
     assert!(!text.contains("opportunistic"));

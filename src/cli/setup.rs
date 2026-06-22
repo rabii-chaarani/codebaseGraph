@@ -22,7 +22,17 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
         writeln!(stdout, "{}", setup_help()).map_err(|error| error.to_string())?;
         return Ok(());
     }
+    let output = setup_payload(&options)?;
+    writeln!(
+        stdout,
+        "{}",
+        serde_json::to_string_pretty(&output).map_err(|error| error.to_string())?
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(())
+}
 
+pub(in crate::cli) fn setup_payload(options: &SetupOptions) -> Result<serde_json::Value, String> {
     let source_root = options
         .repo_root
         .canonicalize()
@@ -119,7 +129,7 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
             }
         }
     };
-    let output = json!({
+    Ok(json!({
         "ok": true,
         "repo_root": source_root,
         "repo_name": paths.repo_name,
@@ -138,14 +148,7 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
         "edge_rows": materialization.get("edge_rows").cloned().unwrap_or(json!(0)),
         "connector_rows": materialization.get("connector_rows").cloned().unwrap_or(json!(0)),
         "diagnostics": materialization.get("diagnostics").cloned().unwrap_or(json!([])),
-    });
-    writeln!(
-        stdout,
-        "{}",
-        serde_json::to_string_pretty(&output).map_err(|error| error.to_string())?
-    )
-    .map_err(|error| error.to_string())?;
-    Ok(())
+    }))
 }
 
 fn existing_graph_materialization_payload(

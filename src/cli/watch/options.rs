@@ -128,6 +128,14 @@ pub(in crate::cli) struct SetupOptions {
 
 impl SetupOptions {
     pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
+        Self::parse_with_help(args, "install", setup_help())
+    }
+
+    pub(in crate::cli) fn parse_with_help(
+        args: &[String],
+        command_name: &str,
+        help: &str,
+    ) -> Result<Self, String> {
         let mut options = Self {
             repo_root: PathBuf::from("."),
             mode: "changed".to_string(),
@@ -228,10 +236,7 @@ impl SetupOptions {
                     index += 1;
                 }
                 other => {
-                    return Err(format!(
-                        "unknown install option: {other}\n\n{}",
-                        setup_help()
-                    ));
+                    return Err(format!("unknown {command_name} option: {other}\n\n{help}"));
                 }
             }
         }
