@@ -1,6 +1,6 @@
 [package]
 name = "codebase-graph"
-version = "0.5.0"
+version = "1.0.0"
 edition = "2021"
 rust-version = "1.82"
 description = "Native codebaseGraph CLI and MCP server for local code knowledge graphs."
@@ -23,7 +23,7 @@ lbug = "0.17.1"
 notify = "8.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.10"
+sha2 = "0.11"
 tree-sitter = "0.25"
 tree-sitter-c = "0.24.2"
 tree-sitter-cpp = "0.23.4"
