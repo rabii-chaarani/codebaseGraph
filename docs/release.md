@@ -7,10 +7,10 @@ crates.io as `codebase-graph`.
 
 ## One-Time Setup
 
-Create the protected `release` GitHub environment before the first release. Use required reviewers when release approval
+Create the protected `cargo` GitHub environment before the first release. Use required reviewers when release approval
 should be manual.
 
-Set these `release` environment variables to `true` only after the corresponding owner-controlled gate is verified:
+Set these `cargo` environment variables to `true` only after the corresponding owner-controlled gate is verified:
 
 - `CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT`
 - `CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN`
