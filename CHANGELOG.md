@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.4...v1.1.5) (2026-06-22)
+
+
+### Bug Fixes
+
+* **release:** shrink crates.io package ([07c2e3c](https://github.com/rabii-chaarani/codebaseGraph/commit/07c2e3cc17a0e68593335373cf2a3f11b8964904))
+
 ## [1.1.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.3...v1.1.4) (2026-06-22)
 
 
