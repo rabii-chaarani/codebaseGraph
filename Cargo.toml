@@ -10,6 +10,7 @@ homepage = "https://github.com/rabii-chaarani/codebaseGraph"
 readme = "README.md"
 keywords = ["codebase", "graph", "mcp", "cli", "analysis"]
 categories = ["command-line-utilities", "development-tools"]
+exclude = ["assets/ladybug-extensions/0.17.0/win_amd64/**"]
 
 [workspace]
 members = [".", "crates/xtask"]
@@ -17,6 +18,9 @@ resolver = "2"
 
 [lib]
 name = "codebase_graph"
+
+[features]
+bundled-windows-extensions = []
 
 [dependencies]
 lbug = "0.17.1"

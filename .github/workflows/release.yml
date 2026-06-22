@@ -42,10 +42,45 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  release-target:
+    name: resolve release target
+    needs: release-please
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || needs.release-please.result == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-publish: ${{ steps.resolve.outputs.should-publish }}
+      tag-name: ${{ steps.resolve.outputs.tag-name }}
+    steps:
+      - name: Resolve release tag
+        id: resolve
+        shell: bash
+        env:
+          PUBLISH_EXISTING_TAG: ${{ inputs.publish-existing-tag }}
+          RELEASE_CREATED: ${{ needs.release-please.outputs.release-created }}
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
+        run: |
+          if [[ -n "${PUBLISH_EXISTING_TAG}" ]]; then
+            {
+              echo "should-publish=true"
+              echo "tag-name=${PUBLISH_EXISTING_TAG}"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "${RELEASE_CREATED}" == "true" ]]; then
+            {
+              echo "should-publish=true"
+              echo "tag-name=${RELEASE_TAG}"
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "should-publish=false"
+              echo "tag-name="
+            } >> "$GITHUB_OUTPUT"
+          fi
+
   production-gate:
     name: production release gate
-    needs: release-please
-    if: needs.release-please.outputs.release-created == 'true'
+    needs: release-target
+    if: needs.release-target.outputs.should-publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -53,7 +88,7 @@ jobs:
     permissions:
       contents: read
     env:
-      RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
+      RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
     steps:
       - name: Check out release tag
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -86,9 +121,9 @@ jobs:
   build:
     name: build native release artifacts (${{ matrix.os }})
     needs:
-      - release-please
+      - release-target
       - production-gate
-    if: needs.release-please.outputs.release-created == 'true'
+    if: needs.release-target.outputs.should-publish == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     permissions:
@@ -103,26 +138,30 @@ jobs:
             prebuilt_lbug: false
             lbug_archive: ""
             rustflags: ""
+            cargo_features: ""
           - os: macos-latest
             binary: codebase-graph
             artifact-suffix: macos-arm64
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-arm64.tar.gz
             rustflags: ""
+            cargo_features: ""
           - os: macos-15-intel
             binary: codebase-graph
             artifact-suffix: macos-x86_64
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-x86_64.tar.gz
             rustflags: ""
+            cargo_features: ""
           - os: windows-2022
             binary: codebase-graph.exe
             artifact-suffix: windows-x86_64
             prebuilt_lbug: false
             lbug_archive: ""
             rustflags: ""
+            cargo_features: "--features bundled-windows-extensions"
     env:
-      RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
+      RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
     steps:
       - name: Check out release tag
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -154,10 +193,11 @@ jobs:
       - name: Build Rust production binary
         env:
           RUSTFLAGS: ${{ matrix.rustflags }}
+          CARGO_FEATURES: ${{ matrix.cargo_features }}
         shell: bash
         run: |
           mkdir -p dist/smoke
-          cargo build --locked --release --bin codebase-graph
+          cargo build --locked --release --bin codebase-graph ${CARGO_FEATURES}
           cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
           chmod +x "dist/smoke/${{ matrix.binary }}"
           archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"

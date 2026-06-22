@@ -110,7 +110,11 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     }
 }
 
-#[cfg(all(target_os = "windows", target_arch = "x86_64"))]
+#[cfg(all(
+    target_os = "windows",
+    target_arch = "x86_64",
+    feature = "bundled-windows-extensions"
+))]
 fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
@@ -128,7 +132,11 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     all(target_os = "linux", target_arch = "aarch64"),
     all(target_os = "macos", target_arch = "x86_64"),
     all(target_os = "macos", target_arch = "aarch64"),
-    all(target_os = "windows", target_arch = "x86_64")
+    all(
+        target_os = "windows",
+        target_arch = "x86_64",
+        feature = "bundled-windows-extensions"
+    )
 )))]
 fn bundled_extension_bytes(_extension: &str) -> Option<&'static [u8]> {
     None
