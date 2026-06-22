@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.1...v1.1.2) (2026-06-22)
+
+
+### Bug Fixes
+
+* **ci:** use cargo release environment ([ede151f](https://github.com/rabii-chaarani/codebaseGraph/commit/ede151f8a52897d58f753a9dbed8190f6bdb10f9))
+
 ## [1.1.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.0...v1.1.1) (2026-06-22)
 
 
