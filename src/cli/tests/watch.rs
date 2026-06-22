@@ -465,7 +465,8 @@ fn watch_poll_batch_flushes_under_sustained_churn() {
         "poll batch took {:?}",
         started.elapsed()
     );
-    assert!(batch.paths.len() > 1);
+    assert!(batch.event_count > 1);
+    assert!(!batch.paths.is_empty());
     let _ = fs::remove_dir_all(root);
 }
 

@@ -10,7 +10,7 @@ The shipped CLI and MCP server are native Rust binaries.
 
 ```bash
 cargo install codebase-graph
-codebase-graph install
+codebase-graph install --repo-root .
 codebase-graph mcp start --config .codebaseGraph/config.json
 ```
 
@@ -33,10 +33,6 @@ The install command performs first-time setup: it materializes the initial graph
 codebaseGraph block in `AGENTS.md` or `CLAUDE.md`, and installs a Codex MCP client entry unless skipped. After setup,
 the MCP server watches the repo and refreshes the graph automatically; rerunning `install` is not part of the refresh
 workflow.
-
-Use `codebase-graph reinstall` only when local setup state needs to be recreated. It moves aside the existing
-`.codebaseGraph` state, runs install again, and refreshes the selected MCP registration without removing unrelated MCP
-client entries.
 
 ## MCP Install
 
@@ -131,8 +127,7 @@ expectations, and the local-first MCP security boundary.
 
 - Missing LadyBugDB: install `codebase-graph` from crates.io, a release artifact, or this checkout.
 - Stale graph: ensure `codebase-graph mcp start --config .codebaseGraph/config.json` or `codebase-graph watch --repo-root .` is running; use `codebase-graph build --repo-root . --mode full` only for an explicit manual rebuild.
-- Broken setup state: run `codebase-graph reinstall` to recreate `.codebaseGraph` and refresh the selected MCP registration.
-- Broken client config only: rerun `codebase-graph mcp install --client <client> --verify`.
+- Broken client config: rerun `codebase-graph mcp install --client <client> --verify`.
 - PATH or executable issues: ensure the native `codebase-graph` binary is on `PATH`.
 - Unsupported files: binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, and `.codebaseGraph` paths are skipped.
 - Lock errors: stop other graph build or install processes using the same `.codebaseGraph/<repositoryName>_graph.ldb`.

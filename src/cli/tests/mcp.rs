@@ -8,7 +8,7 @@ fn mcp_graph_query_binds_json_parameters() {
     setup_fixture_repo(&root);
 
     let options = McpServeOptions {
-        repo_root: Some(root.clone()),
+        repo_root: root.clone(),
         config: None,
         db: None,
         manifest: None,
@@ -102,7 +102,7 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         .join("\n")
         + "\n";
     let options = McpServeOptions {
-        repo_root: Some(root.clone()),
+        repo_root: root.clone(),
         config: None,
         db: None,
         manifest: None,
