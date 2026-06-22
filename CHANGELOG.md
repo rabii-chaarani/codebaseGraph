@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.2...v1.1.3) (2026-06-22)
+
+
+### Bug Fixes
+
+* **ci:** use portable release checksums ([54daa47](https://github.com/rabii-chaarani/codebaseGraph/commit/54daa476202bdbd352ca2a6753a2b836b3bca4f9))
+
 ## [1.1.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.1...v1.1.2) (2026-06-22)
 
 
