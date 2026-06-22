@@ -168,6 +168,7 @@ jobs:
         shell: bash
         run: cargo run -p xtask -- smoke-artifact "./dist/smoke/${{ matrix.binary }}"
       - name: Upload native artifacts to GitHub release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$RELEASE_TAG" dist/codebase-graph-*.tar.gz dist/codebase-graph-*.tar.gz.sha256 --clobber
