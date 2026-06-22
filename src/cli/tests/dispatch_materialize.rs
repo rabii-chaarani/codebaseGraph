@@ -47,9 +47,30 @@ fn materialize_help_is_product_command_help() {
     let text = String::from_utf8(output).unwrap();
     assert!(text.contains("codebase-graph build"));
     assert!(text.contains("--native-request"));
+    assert!(text.contains(
+        "--parallel                Parse independent files concurrently; default behavior"
+    ));
+    assert!(text.contains(
+        "--single-thread           Disable concurrent parsing and build partitions serially"
+    ));
     assert!(text.contains("local_only only"));
     assert!(!text.contains("opportunistic"));
     assert!(!text.contains("provider_first"));
+}
+
+#[test]
+fn watch_help_documents_parallel_default_and_opt_out() {
+    let mut output = Vec::new();
+    run(["watch", "--help"], &mut output).unwrap();
+    let text = String::from_utf8(output).unwrap();
+
+    assert!(text.contains("codebase-graph watch"));
+    assert!(text.contains(
+        "--parallel                Parse independent files concurrently; default behavior"
+    ));
+    assert!(text.contains(
+        "--single-thread           Disable concurrent parsing and build partitions serially"
+    ));
 }
 
 #[test]
@@ -102,6 +123,27 @@ fn setup_rejects_provider_backed_semantic_modes() {
     let error = SetupOptions::parse(&args).unwrap_err();
 
     assert!(error.contains("--semantic-provider-mode must be local_only"));
+}
+
+#[test]
+fn materialize_defaults_to_parallel_builds() {
+    let options = MaterializeOptions::parse(&[]).unwrap();
+
+    assert!(options.parallel);
+}
+
+#[test]
+fn materialize_single_thread_disables_parallel_builds() {
+    let options = MaterializeOptions::parse(&["--single-thread".to_string()]).unwrap();
+
+    assert!(!options.parallel);
+}
+
+#[test]
+fn materialize_parallel_flag_is_accepted_as_no_op() {
+    let options = MaterializeOptions::parse(&["--parallel".to_string()]).unwrap();
+
+    assert!(options.parallel);
 }
 
 #[test]

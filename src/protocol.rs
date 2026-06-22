@@ -37,7 +37,7 @@ pub struct NativeSyntaxMaterializationRequest {
     pub atomic_rebuild: bool,
     #[serde(default)]
     pub strict: bool,
-    #[serde(default)]
+    #[serde(default = "default_parallel")]
     pub parallel: bool,
     #[serde(default)]
     pub progress: bool,
@@ -45,6 +45,10 @@ pub struct NativeSyntaxMaterializationRequest {
 
 fn default_semantic_provider_mode() -> String {
     "local_only".to_string()
+}
+
+fn default_parallel() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -261,5 +265,44 @@ where
             })
             .collect(),
         _ => Err(D::Error::custom("manifest files must be a list or object")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::NativeSyntaxMaterializationRequest;
+
+    fn request_json(parallel_field: &str) -> String {
+        format!(
+            r#"{{
+  "source_root": "/repo",
+  "repository_label": "repo",
+  "mode": "changed",
+  "parser_version": "native-test",
+  "manifest_schema_version": 1,
+  "ontology": "code_ontology_v1",
+  "profiles": [],
+  "excluded_parts": [],
+  "db_path": "/repo/.codebaseGraph/graph.lbug",
+  "include_fts": true,
+  "staging_dir": "/repo/.codebaseGraph/native-staging"{parallel_field}
+}}"#
+        )
+    }
+
+    #[test]
+    fn native_materialization_request_defaults_parallel_to_true() {
+        let request: NativeSyntaxMaterializationRequest =
+            serde_json::from_str(&request_json("")).unwrap();
+
+        assert!(request.parallel);
+    }
+
+    #[test]
+    fn native_materialization_request_preserves_explicit_parallel_false() {
+        let request: NativeSyntaxMaterializationRequest =
+            serde_json::from_str(&request_json(r#", "parallel": false"#)).unwrap();
+
+        assert!(!request.parallel);
     }
 }
