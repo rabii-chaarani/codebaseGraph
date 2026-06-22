@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.3...v1.1.4) (2026-06-22)
+
+
+### Bug Fixes
+
+* **ci:** use bash for release artifact upload ([276606c](https://github.com/rabii-chaarani/codebaseGraph/commit/276606c005b3e9e59b5cfee9f36bf8e943bdd859))
+
 ## [1.1.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.2...v1.1.3) (2026-06-22)
 
 
