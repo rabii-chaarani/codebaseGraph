@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.5.0...v1.0.0) (2026-06-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* Rust version of codebaseGraph ([#26](https://github.com/rabii-chaarani/codebaseGraph/issues/26))
+
+### Features
+
+* Rust version of codebaseGraph ([#26](https://github.com/rabii-chaarani/codebaseGraph/issues/26)) ([712c757](https://github.com/rabii-chaarani/codebaseGraph/commit/712c75724c4bf353904a537bba1a4894c6969551))
+
 ## [0.5.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.4.0...v0.5.0) (2026-06-15)
 
 
