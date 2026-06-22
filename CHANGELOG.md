@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.0...v1.1.1) (2026-06-22)
+
+
+### Bug Fixes
+
+* **ci:** read release confirmations at step scope ([c1000de](https://github.com/rabii-chaarani/codebaseGraph/commit/c1000de52a600d0a1a9ba31756d3b25bbc49f5c2))
+
 ## [1.1.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.0.0...v1.1.0) (2026-06-22)
 
 
