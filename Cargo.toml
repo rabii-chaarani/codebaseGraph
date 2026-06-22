@@ -1,6 +1,6 @@
 [package]
 name = "codebase-graph"
-version = "1.1.3"
+version = "1.1.4"
 edition = "2021"
 rust-version = "1.82"
 description = "Native codebaseGraph CLI and MCP server for local code knowledge graphs."
