@@ -113,7 +113,7 @@ impl WatchOptions {
 
 #[derive(Debug)]
 pub(in crate::cli) struct SetupOptions {
-    pub(in crate::cli) repo_root: PathBuf,
+    pub(in crate::cli) repo_root: Option<PathBuf>,
     pub(in crate::cli) mode: String,
     pub(in crate::cli) include_fts: bool,
     pub(in crate::cli) semantic_enrichment: bool,
@@ -137,7 +137,7 @@ impl SetupOptions {
         help: &str,
     ) -> Result<Self, String> {
         let mut options = Self {
-            repo_root: PathBuf::from("."),
+            repo_root: None,
             mode: "changed".to_string(),
             include_fts: true,
             semantic_enrichment: true,
@@ -160,7 +160,7 @@ impl SetupOptions {
                     let value = args
                         .get(index + 1)
                         .ok_or_else(|| "--repo-root requires a path".to_string())?;
-                    options.repo_root = PathBuf::from(value);
+                    options.repo_root = Some(PathBuf::from(value));
                     index += 2;
                 }
                 "--mode" => {

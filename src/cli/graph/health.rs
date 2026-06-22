@@ -1,5 +1,8 @@
 use super::options::HealthOptions;
-use crate::cli::{setup::GraphStatePaths, util::read_json_file};
+use crate::cli::{
+    setup::GraphStatePaths,
+    util::{read_json_file, resolve_repo_root},
+};
 use lbug::{Connection, Database, SystemConfig, Value};
 use std::path::{Path, PathBuf};
 
@@ -13,11 +16,8 @@ pub(in crate::cli) struct HealthRuntime {
 pub(in crate::cli) fn resolve_health_runtime(
     options: &HealthOptions,
 ) -> Result<HealthRuntime, String> {
-    let requested_repo_root = options.repo_root.clone();
-    let initial_repo_root = requested_repo_root
-        .canonicalize()
-        .unwrap_or_else(|_| requested_repo_root.clone());
-    let default_paths = GraphStatePaths::derive(&initial_repo_root);
+    let repo_root = resolve_repo_root(options.repo_root.as_deref())?;
+    let default_paths = GraphStatePaths::derive(&repo_root);
     let config_path = options
         .config
         .clone()
@@ -27,18 +27,6 @@ pub(in crate::cli) fn resolve_health_runtime(
     } else {
         None
     };
-    let repo_root = if requested_repo_root == Path::new(".") {
-        config
-            .as_ref()
-            .and_then(|value| value.get("repo_root"))
-            .and_then(serde_json::Value::as_str)
-            .map(PathBuf::from)
-            .and_then(|path| path.canonicalize().ok().or(Some(path)))
-            .unwrap_or(initial_repo_root)
-    } else {
-        initial_repo_root
-    };
-    let default_paths = GraphStatePaths::derive(&repo_root);
     let db_path = options
         .db
         .clone()

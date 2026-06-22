@@ -6,7 +6,7 @@ use super::{
     constants::server_command,
     format::setup_help,
     install::{build_mcp_descriptor, install_mcp_client, McpInstallOptions},
-    util::{read_json_file, restore_file, snapshot_file},
+    util::{read_json_file, resolve_repo_root, restore_file, snapshot_file},
     watch::SetupOptions,
 };
 use serde_json::json;
@@ -33,10 +33,7 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
 }
 
 pub(in crate::cli) fn setup_payload(options: &SetupOptions) -> Result<serde_json::Value, String> {
-    let source_root = options
-        .repo_root
-        .canonicalize()
-        .map_err(|error| format!("failed to resolve repo root: {error}"))?;
+    let source_root = resolve_repo_root(options.repo_root.as_deref())?;
     let paths = GraphStatePaths::derive(&source_root);
     if source_root
         .components()
@@ -182,11 +179,13 @@ pub(super) fn setup_mcp_config(
         name: Some("codebase_graph".to_string()),
         config_path: Some(paths.config_path.clone()),
         client_config_path: None,
-        repo_root: paths
-            .state_dir
-            .parent()
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|| PathBuf::from(".")),
+        repo_root: Some(
+            paths
+                .state_dir
+                .parent()
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| PathBuf::from(".")),
+        ),
         dry_run: true,
         verify: false,
         json: true,
@@ -215,11 +214,13 @@ pub(super) fn setup_mcp_config(
         name: Some("codebase_graph".to_string()),
         config_path: Some(paths.config_path.clone()),
         client_config_path: options.mcp_config_path.clone(),
-        repo_root: paths
-            .state_dir
-            .parent()
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|| PathBuf::from(".")),
+        repo_root: Some(
+            paths
+                .state_dir
+                .parent()
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| PathBuf::from(".")),
+        ),
         dry_run,
         verify: false,
         json: true,
@@ -356,8 +357,8 @@ pub(super) fn instruction_block(config_path: &Path) -> String {
 - Use MCP `graph_context` with `profile: \"<profile>\"`, `detail: \"slim\"`, and `context_limit: 2` when relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.\n\
 - For architecture orientation, use MCP `graph_architecture_queries`, then execute selected read-only statements with MCP `graph_query`.\n\
 - Use MCP `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.\n\
-- If MCP tools are unavailable, fall back to CLI: `{command} codebase-search <query> --repo-root . --no-refresh --detail slim --context-limit 1`, `{command} codebase-context <query> --repo-root . --profile <profile> --no-refresh --detail slim --context-limit 2`, `{command} codebase-architecture-queries`, `{command} graph-query \"<statement>\" --repo-root .`, `{command} schema`, and `{command} query-helpers`.\n\
-- Do not rerun install to refresh the graph. The MCP server started from this setup config watches the repo and refreshes automatically; use `{command} build --repo-root . --mode full` only for explicit manual rebuilds. Setup config: `{config_path}`.\n\
+- If MCP tools are unavailable, fall back to CLI: `{command} codebase-search <query> --no-refresh --detail slim --context-limit 1`, `{command} codebase-context <query> --profile <profile> --no-refresh --detail slim --context-limit 2`, `{command} codebase-architecture-queries`, `{command} graph-query \"<statement>\"`, `{command} schema`, and `{command} query-helpers`.\n\
+- Do not rerun install to refresh the graph. The MCP server started from this setup config watches the repo and refreshes automatically; use `{command} build --mode full` only for explicit manual rebuilds. Setup config: `{config_path}`.\n\
 <!-- codebaseGraph:end -->\n",
         command = server_command(),
         config_path = config_path.to_string_lossy(),

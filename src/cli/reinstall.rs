@@ -1,6 +1,7 @@
 use super::{
     format::reinstall_help,
     setup::{setup_payload, GraphStatePaths},
+    util::resolve_repo_root,
     watch::SetupOptions,
 };
 use serde_json::json;
@@ -20,10 +21,7 @@ pub(in crate::cli) fn run_reinstall<W: Write>(
         return Ok(());
     }
 
-    let repo_root = options
-        .repo_root
-        .canonicalize()
-        .map_err(|error| format!("failed to resolve repo root: {error}"))?;
+    let repo_root = resolve_repo_root(options.repo_root.as_deref())?;
     if repo_root
         .components()
         .any(|component| component.as_os_str() == ".codebaseGraph")

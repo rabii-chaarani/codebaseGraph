@@ -40,7 +40,7 @@ pub(super) fn setup_search_fixture_repo(root: &Path) {
 pub(super) fn test_http_options(root: PathBuf, auth_token: Option<&str>) -> McpHttpOptions {
     McpHttpOptions {
         serve: McpServeOptions {
-            repo_root: root,
+            repo_root: Some(root),
             config: None,
             db: None,
             manifest: None,

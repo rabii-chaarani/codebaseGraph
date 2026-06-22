@@ -60,7 +60,7 @@ fn setup_help_is_product_command_help() {
     assert!(text.contains("codebase-graph install"));
     assert!(text.contains("codebase-graph install [--mode full|changed]"));
     assert!(text.contains(
-        "--repo-root <path>          Repository root to initialize; defaults to current directory"
+        "--repo-root <path>          Repository root override; auto-detected when omitted"
     ));
     assert!(!text.contains("codebase-graph install [--repo-root <path>]"));
     assert!(text.contains("--mcp-client"));
@@ -105,11 +105,11 @@ fn setup_rejects_provider_backed_semantic_modes() {
 }
 
 #[test]
-fn setup_defaults_repo_root_to_current_directory() {
+fn setup_defaults_repo_root_to_auto_detection() {
     let args = Vec::new();
     let options = SetupOptions::parse(&args).unwrap();
 
-    assert_eq!(options.repo_root, PathBuf::from("."));
+    assert_eq!(options.repo_root, None);
 }
 
 #[test]

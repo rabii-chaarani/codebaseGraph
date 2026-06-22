@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 #[derive(Debug)]
 pub(in crate::cli) struct HealthOptions {
-    pub(in crate::cli) repo_root: PathBuf,
+    pub(in crate::cli) repo_root: Option<PathBuf>,
     pub(in crate::cli) config: Option<PathBuf>,
     pub(in crate::cli) db: Option<PathBuf>,
     pub(in crate::cli) manifest: Option<PathBuf>,
@@ -17,7 +17,7 @@ pub(in crate::cli) struct HealthOptions {
 impl HealthOptions {
     pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
         let mut options = Self {
-            repo_root: PathBuf::from("."),
+            repo_root: None,
             config: None,
             db: None,
             manifest: None,
@@ -35,7 +35,7 @@ impl HealthOptions {
                     let value = args
                         .get(index + 1)
                         .ok_or_else(|| "--repo-root requires a path".to_string())?;
-                    options.repo_root = PathBuf::from(value);
+                    options.repo_root = Some(PathBuf::from(value));
                     index += 2;
                 }
                 "--config" => {
@@ -80,7 +80,7 @@ pub(in crate::cli) struct GraphQueryOptions {
     pub(in crate::cli) statement: String,
     pub(in crate::cli) parameters: serde_json::Map<String, serde_json::Value>,
     pub(in crate::cli) limit: usize,
-    pub(in crate::cli) repo_root: PathBuf,
+    pub(in crate::cli) repo_root: Option<PathBuf>,
     pub(in crate::cli) config: Option<PathBuf>,
     pub(in crate::cli) db: Option<PathBuf>,
     pub(in crate::cli) manifest: Option<PathBuf>,
@@ -93,7 +93,7 @@ impl GraphQueryOptions {
         let mut statement = None;
         let mut parameters = serde_json::Map::new();
         let mut limit = 100_usize;
-        let mut repo_root = PathBuf::from(".");
+        let mut repo_root = None;
         let mut config = None;
         let mut db = None;
         let mut manifest = None;
@@ -138,7 +138,7 @@ impl GraphQueryOptions {
                     let value = args
                         .get(index + 1)
                         .ok_or_else(|| "--repo-root requires a path".to_string())?;
-                    repo_root = PathBuf::from(value);
+                    repo_root = Some(PathBuf::from(value));
                     index += 2;
                 }
                 "--config" => {
@@ -325,7 +325,7 @@ pub(in crate::cli) struct GraphSearchOptions {
     pub(in crate::cli) context_limit: usize,
     pub(in crate::cli) max_depth: Option<usize>,
     pub(in crate::cli) detail: String,
-    pub(in crate::cli) repo_root: PathBuf,
+    pub(in crate::cli) repo_root: Option<PathBuf>,
     pub(in crate::cli) config: Option<PathBuf>,
     pub(in crate::cli) db: Option<PathBuf>,
     pub(in crate::cli) manifest: Option<PathBuf>,
@@ -341,7 +341,7 @@ impl GraphSearchOptions {
         let mut context_limit = 3_usize;
         let mut max_depth = None;
         let mut detail = "standard".to_string();
-        let mut repo_root = PathBuf::from(".");
+        let mut repo_root = None;
         let mut config = None;
         let mut db = None;
         let mut manifest = None;
@@ -408,7 +408,7 @@ impl GraphSearchOptions {
                     index += 2;
                 }
                 "--repo-root" | "--source-root" => {
-                    repo_root = PathBuf::from(required_arg(args, index, "--repo-root")?);
+                    repo_root = Some(PathBuf::from(required_arg(args, index, "--repo-root")?));
                     index += 2;
                 }
                 "--config" => {
