@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.0.0...v1.1.0) (2026-06-22)
+
+
+### Features
+
+* reduce graph build latency with parallel defaults ([#33](https://github.com/rabii-chaarani/codebaseGraph/issues/33)) ([4a2af02](https://github.com/rabii-chaarani/codebaseGraph/commit/4a2af027070950c02325cfab6a6326ab157cb7cf))
+
 ## [1.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v0.5.0...v1.0.0) (2026-06-19)
 
 
