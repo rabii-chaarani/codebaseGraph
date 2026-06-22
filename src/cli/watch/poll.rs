@@ -1,12 +1,12 @@
 use super::{
     helpers::watch_max_wait,
-    output::write_watch_event,
+    refresh::refresh_watch_batch,
     snapshot::{watch_file_snapshot, watch_snapshot_diff},
     types::WatchChangeBatch,
     types::WatchFileSnapshot,
     WatchEventFilter, WatchLoopConfig,
 };
-use crate::cli::build::{materialize_candidate_paths, MaterializeOptions};
+use crate::cli::build::MaterializeOptions;
 use std::{
     io::Write,
     time::{Duration, Instant},
@@ -28,18 +28,16 @@ pub(in crate::cli) fn run_poll_watch<W: Write>(
             Duration::from_millis(loop_config.debounce_ms),
             watch_max_wait(loop_config.debounce_ms),
         )?;
-        let (_, response) = materialize_candidate_paths(
-            materialize_options,
-            batch.paths.iter().cloned().collect(),
-        )?;
-        write_watch_event(
+        let refreshed = refresh_watch_batch(
             stdout,
-            "refreshed",
-            Some("poll"),
+            "poll",
+            materialize_options,
             batch.event_count,
-            batch.paths.len(),
-            &response,
+            &batch.paths,
         )?;
+        if !refreshed {
+            continue;
+        }
         refreshes += 1;
         if loop_config
             .max_iterations

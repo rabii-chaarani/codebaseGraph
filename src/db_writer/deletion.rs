@@ -1,5 +1,5 @@
 use super::cypher::{cypher_string_list, quote_identifier};
-use crate::protocol::{ManifestDiff, NativeManifest};
+use crate::protocol::{ManifestDiff, ManifestEntry, NativeManifest};
 use std::collections::{BTreeMap, BTreeSet};
 
 const DELETE_BATCH_SIZE: usize = 500;
@@ -51,6 +51,58 @@ pub fn partition_delete_statements(
     }
     edge_deletes.extend(node_deletes);
     edge_deletes
+}
+
+pub fn incoming_row_delete_statements(
+    previous_manifest: Option<&NativeManifest>,
+    diff: &ManifestDiff,
+    rebuilt_entries: &BTreeMap<String, ManifestEntry>,
+) -> Vec<String> {
+    if diff.force_rebuild || rebuilt_entries.is_empty() {
+        return Vec::new();
+    }
+    let (retained_nodes, retained_edges) = retained_manifest_ids(previous_manifest, diff);
+    let mut edge_deletes = Vec::new();
+    let mut node_deletes = Vec::new();
+    for entry in rebuilt_entries.values() {
+        edge_deletes.extend(delete_edge_statements(
+            &entry.edge_ids,
+            &entry.edge_types,
+            &retained_edges,
+        ));
+        node_deletes.extend(delete_node_statements(
+            &entry.node_ids,
+            &entry.node_types,
+            &retained_nodes,
+        ));
+    }
+    edge_deletes.extend(node_deletes);
+    edge_deletes
+}
+
+fn retained_manifest_ids(
+    previous_manifest: Option<&NativeManifest>,
+    diff: &ManifestDiff,
+) -> (BTreeSet<String>, BTreeSet<String>) {
+    let Some(manifest) = previous_manifest else {
+        return (BTreeSet::new(), BTreeSet::new());
+    };
+    let touched_paths = diff
+        .deleted
+        .iter()
+        .chain(diff.rebuild_paths().iter())
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut retained_nodes = BTreeSet::new();
+    let mut retained_edges = BTreeSet::new();
+    for (path, entry) in &manifest.files {
+        if touched_paths.contains(path) {
+            continue;
+        }
+        retained_nodes.extend(entry.node_ids.iter().cloned());
+        retained_edges.extend(entry.edge_ids.iter().cloned());
+    }
+    (retained_nodes, retained_edges)
 }
 
 fn delete_edge_statements(

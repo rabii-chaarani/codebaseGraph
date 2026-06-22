@@ -604,3 +604,49 @@ fn watch_once_runs_single_refresh_and_exits() {
     assert!(root.join(".codebaseGraph").join("manifest.json").exists());
     let _ = fs::remove_dir_all(root);
 }
+
+#[test]
+fn changed_build_recovers_when_manifest_loses_existing_file_entry() {
+    let root = unique_temp_dir("codebase-graph-rust-manifest-db-drift");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def service():\n    return 1\n").unwrap();
+    setup_fixture_repo(&root);
+
+    let manifest_path = root.join(".codebaseGraph").join("manifest.json");
+    let mut manifest: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&manifest_path).unwrap()).unwrap();
+    manifest
+        .get_mut("files")
+        .and_then(serde_json::Value::as_object_mut)
+        .unwrap()
+        .remove("service.py");
+    fs::write(
+        &manifest_path,
+        serde_json::to_string_pretty(&manifest).unwrap(),
+    )
+    .unwrap();
+
+    let mut output = Vec::new();
+    run(
+        [
+            "build",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "changed",
+            "--include",
+            "service.py",
+            "--no-git",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+    let text = String::from_utf8(output).unwrap();
+
+    assert!(text.contains("\"database_written\": true"));
+    assert!(text.contains("\"service.py\""));
+    let _ = fs::remove_dir_all(root);
+}

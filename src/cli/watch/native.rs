@@ -2,11 +2,11 @@ use super::{
     batch::collect_watch_batch,
     filter::WatchEventFilter,
     helpers::watch_max_wait,
-    output::write_watch_event,
+    refresh::refresh_watch_batch,
     types::{WatchMessage, WatchProbeOutcome},
     WatchLoopConfig,
 };
-use crate::cli::build::{materialize_candidate_paths, MaterializeOptions};
+use crate::cli::build::MaterializeOptions;
 use notify::{Event, RecursiveMode, Watcher};
 use std::{
     collections::VecDeque,
@@ -63,18 +63,16 @@ pub(in crate::cli) fn run_native_watch<W: Write>(
             Some(batch) => batch,
             None => continue,
         };
-        let (_, response) = materialize_candidate_paths(
-            materialize_options,
-            batch.paths.iter().cloned().collect(),
-        )?;
-        write_watch_event(
+        let refreshed = refresh_watch_batch(
             stdout,
-            "refreshed",
-            Some("native"),
+            "native",
+            materialize_options,
             batch.event_count,
-            batch.paths.len(),
-            &response,
+            &batch.paths,
         )?;
+        if !refreshed {
+            continue;
+        }
         refreshes += 1;
         if loop_config
             .max_iterations

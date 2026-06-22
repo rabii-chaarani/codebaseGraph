@@ -210,7 +210,7 @@ pub(in crate::cli) fn default_excluded_parts() -> Vec<String> {
     .collect()
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(in crate::cli) struct MaterializeOptions {
     pub(in crate::cli) native_request: Option<PathBuf>,
     pub(in crate::cli) source_root: Option<PathBuf>,

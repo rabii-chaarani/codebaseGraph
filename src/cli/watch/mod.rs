@@ -6,6 +6,7 @@ mod native;
 mod options;
 mod output;
 mod poll;
+mod refresh;
 mod snapshot;
 mod types;
 

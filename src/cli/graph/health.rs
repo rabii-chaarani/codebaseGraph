@@ -3,7 +3,10 @@ use crate::cli::{
     setup::GraphStatePaths,
     util::{read_json_file, resolve_repo_root},
 };
-use lbug::{Connection, Database, SystemConfig, Value};
+use crate::db_writer::{
+    connect_ladybug_database, open_ladybug_database, retry_transient_database, READ_RETRY_POLICY,
+};
+use lbug::Value;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
@@ -56,14 +59,9 @@ pub(in crate::cli) fn resolve_health_runtime(
     })
 }
 pub(in crate::cli) fn count_graph_nodes(db_path: &Path) -> Result<u64, String> {
-    let db = Database::new(db_path, SystemConfig::default().read_only(true)).map_err(|error| {
-        format!(
-            "failed to open graph database {}: {error}",
-            db_path.display()
-        )
-    })?;
-    let conn =
-        Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
+    let db = retry_transient_database(READ_RETRY_POLICY, || open_ladybug_database(db_path, true))
+        .map_err(|error| error.to_string())?;
+    let conn = connect_ladybug_database(&db).map_err(|error| error.to_string())?;
     let mut result = conn
         .query("MATCH (n) RETURN count(n) AS total_nodes LIMIT 1")
         .map_err(|error| format!("failed to query graph health: {error}"))?;

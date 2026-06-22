@@ -1,4 +1,7 @@
-use lbug::{Connection, Database, SystemConfig, Value};
+use crate::db_writer::{
+    connect_ladybug_database, open_ladybug_database, retry_transient_database, READ_RETRY_POLICY,
+};
+use lbug::Value;
 use serde_json::json;
 use std::path::Path;
 
@@ -114,14 +117,9 @@ pub(in crate::cli) fn execute_read_only_query(
     parameters: &serde_json::Map<String, serde_json::Value>,
     limit: usize,
 ) -> Result<(Vec<Vec<serde_json::Value>>, bool), String> {
-    let db = Database::new(db_path, SystemConfig::default().read_only(true)).map_err(|error| {
-        format!(
-            "failed to open graph database {}: {error}",
-            db_path.display()
-        )
-    })?;
-    let conn =
-        Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
+    let db = retry_transient_database(READ_RETRY_POLICY, || open_ladybug_database(db_path, true))
+        .map_err(|error| error.to_string())?;
+    let conn = connect_ladybug_database(&db).map_err(|error| error.to_string())?;
     let mut result = if parameters.is_empty() {
         conn.query(statement)
             .map_err(|error| format!("failed to execute graph query: {error}"))?

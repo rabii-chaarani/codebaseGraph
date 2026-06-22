@@ -105,15 +105,21 @@ fn write_materialized_database(
     } else {
         request.schema_statements.clone()
     };
+    let mut delete_statements = crate::db_writer::partition_delete_statements(
+        request.previous_manifest.as_ref(),
+        &response.diff,
+    );
+    delete_statements.extend(crate::db_writer::incoming_row_delete_statements(
+        request.previous_manifest.as_ref(),
+        &response.diff,
+        &response.rebuilt_entries,
+    ));
     write_database(LadybugWriteRequest {
         db_path: request.db_path.clone(),
         include_fts: request.include_fts,
         schema_statements,
         replace_database: response.diff.force_rebuild,
-        delete_statements: crate::db_writer::partition_delete_statements(
-            request.previous_manifest.as_ref(),
-            &response.diff,
-        ),
+        delete_statements,
         copy_statements: response.copy_statements.clone(),
     })
     .map_err(|error| error.to_string())
