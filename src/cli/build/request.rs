@@ -210,7 +210,7 @@ pub(in crate::cli) fn default_excluded_parts() -> Vec<String> {
     .collect()
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(in crate::cli) struct MaterializeOptions {
     pub(in crate::cli) native_request: Option<PathBuf>,
     pub(in crate::cli) source_root: Option<PathBuf>,
@@ -231,6 +231,32 @@ pub(in crate::cli) struct MaterializeOptions {
     pub(in crate::cli) plan_only: bool,
     pub(in crate::cli) help: bool,
     pub(in crate::cli) json_output: bool,
+}
+
+impl Default for MaterializeOptions {
+    fn default() -> Self {
+        Self {
+            native_request: None,
+            source_root: None,
+            db: None,
+            manifest: None,
+            mode: String::new(),
+            include_fts: false,
+            semantic_enrichment: false,
+            semantic_provider_mode: String::new(),
+            use_git: false,
+            git_diff: false,
+            git_base: None,
+            include_patterns: Vec::new(),
+            exclude_patterns: Vec::new(),
+            candidate_paths: Vec::new(),
+            parallel: true,
+            progress: false,
+            plan_only: false,
+            help: false,
+            json_output: false,
+        }
+    }
 }
 
 impl MaterializeOptions {

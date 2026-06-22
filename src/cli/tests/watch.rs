@@ -565,6 +565,20 @@ fn watch_backend_parser_accepts_native_without_fallback() {
 }
 
 #[test]
+fn watch_materialize_options_default_to_parallel_builds() {
+    let options = WatchOptions::parse(&[]).unwrap();
+
+    assert!(options.materialize.parallel);
+}
+
+#[test]
+fn watch_materialize_options_accept_single_thread_opt_out() {
+    let options = WatchOptions::parse(&["--single-thread".to_string()]).unwrap();
+
+    assert!(!options.materialize.parallel);
+}
+
+#[test]
 fn watch_once_runs_single_refresh_and_exits() {
     let root = unique_temp_dir("codebase-graph-rust-watch-once");
     fs::create_dir_all(&root).unwrap();
