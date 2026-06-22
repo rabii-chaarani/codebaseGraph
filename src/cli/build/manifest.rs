@@ -1,5 +1,5 @@
 use super::request::MaterializeOptions;
-use crate::cli::setup::GraphStatePaths;
+use crate::cli::{setup::GraphStatePaths, util::resolve_source_root};
 use crate::protocol::{NativeManifest, NativeSyntaxMaterializationRequest};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -16,11 +16,8 @@ pub(in crate::cli) fn request_manifest_path(options: &MaterializeOptions) -> Opt
     if options.native_request.is_some() {
         return options.manifest.clone();
     }
-    let source_root = options
-        .source_root
-        .clone()
-        .unwrap_or_else(|| PathBuf::from("."));
-    let source_root = source_root.canonicalize().unwrap_or(source_root);
+    let source_root =
+        resolve_source_root(options.source_root.as_deref()).unwrap_or_else(|_| PathBuf::from("."));
     Some(
         options
             .manifest

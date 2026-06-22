@@ -7,6 +7,7 @@ fn prints_top_level_help() {
     let text = String::from_utf8(output).unwrap();
     assert!(text.contains("codebase-graph native CLI"));
     assert!(text.contains("build"));
+    assert!(text.contains("reinstall"));
 }
 
 #[test]
@@ -57,6 +58,24 @@ fn setup_help_is_product_command_help() {
     run(["install", "--help"], &mut output).unwrap();
     let text = String::from_utf8(output).unwrap();
     assert!(text.contains("codebase-graph install"));
+    assert!(text.contains("codebase-graph install [--mode full|changed]"));
+    assert!(text.contains(
+        "--repo-root <path>          Repository root override; auto-detected when omitted"
+    ));
+    assert!(!text.contains("codebase-graph install [--repo-root <path>]"));
+    assert!(text.contains("--mcp-client"));
+    assert!(text.contains("local_only only"));
+    assert!(!text.contains("opportunistic"));
+    assert!(!text.contains("provider_first"));
+}
+
+#[test]
+fn reinstall_help_is_product_command_help() {
+    let mut output = Vec::new();
+    run(["reinstall", "--help"], &mut output).unwrap();
+    let text = String::from_utf8(output).unwrap();
+    assert!(text.contains("codebase-graph reinstall"));
+    assert!(text.contains("Remove existing graph state and run install again"));
     assert!(text.contains("--mcp-client"));
     assert!(text.contains("local_only only"));
     assert!(!text.contains("opportunistic"));
@@ -83,6 +102,14 @@ fn setup_rejects_provider_backed_semantic_modes() {
     let error = SetupOptions::parse(&args).unwrap_err();
 
     assert!(error.contains("--semantic-provider-mode must be local_only"));
+}
+
+#[test]
+fn setup_defaults_repo_root_to_auto_detection() {
+    let args = Vec::new();
+    let options = SetupOptions::parse(&args).unwrap();
+
+    assert_eq!(options.repo_root, None);
 }
 
 #[test]

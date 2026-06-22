@@ -5,8 +5,8 @@ use super::{
     output::{write_watch_event, write_watch_status},
     poll::run_poll_watch,
 };
-use crate::cli::{build::materialize, format::watch_help};
-use std::{collections::VecDeque, io::Write, path::PathBuf};
+use crate::cli::{build::materialize, format::watch_help, util::resolve_source_root};
+use std::{collections::VecDeque, io::Write};
 
 pub(in crate::cli) fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
     let options = WatchOptions::parse(args)?;
@@ -22,12 +22,7 @@ pub(in crate::cli) fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Re
     };
     let once = options.once;
     let mut materialize_options = options.materialize;
-    let source_root = materialize_options
-        .source_root
-        .clone()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .canonicalize()
-        .map_err(|error| format!("failed to resolve source root: {error}"))?;
+    let source_root = resolve_source_root(materialize_options.source_root.as_deref())?;
     materialize_options.source_root = Some(source_root.clone());
     let filter = WatchEventFilter::from_options(&source_root, &materialize_options)?;
     if once {

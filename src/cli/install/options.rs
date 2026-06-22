@@ -9,7 +9,7 @@ pub(in crate::cli) struct McpInstallOptions {
     pub(in crate::cli) name: Option<String>,
     pub(in crate::cli) config_path: Option<PathBuf>,
     pub(in crate::cli) client_config_path: Option<PathBuf>,
-    pub(in crate::cli) repo_root: PathBuf,
+    pub(in crate::cli) repo_root: Option<PathBuf>,
     pub(in crate::cli) dry_run: bool,
     pub(in crate::cli) verify: bool,
     pub(in crate::cli) json: bool,
@@ -24,7 +24,7 @@ impl McpInstallOptions {
             name: None,
             config_path: None,
             client_config_path: None,
-            repo_root: PathBuf::from("."),
+            repo_root: None,
             dry_run: false,
             verify: false,
             json: false,
@@ -78,7 +78,8 @@ impl McpInstallOptions {
                     index += 2;
                 }
                 "--repo-root" => {
-                    options.repo_root = expand_path(required_arg(args, index, "--repo-root")?);
+                    options.repo_root =
+                        Some(expand_path(required_arg(args, index, "--repo-root")?));
                     index += 2;
                 }
                 "--dry-run" => {

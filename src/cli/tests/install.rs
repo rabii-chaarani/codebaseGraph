@@ -56,6 +56,184 @@ fn install_skips_materialization_when_graph_state_already_exists() {
 }
 
 #[test]
+fn reinstall_recreates_graph_state_and_materializes_again() {
+    let root = unique_temp_dir("codebase-graph-rust-reinstall");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+
+    fs::write(root.join("service.py"), "def helper():\n    return 2\n").unwrap();
+    let mut output = Vec::new();
+    run(
+        [
+            "reinstall",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["ok"], true);
+    assert_eq!(value["state"]["action"], "backed_up");
+    assert_eq!(value["install"]["database_written"], true);
+    assert!(root.join(".codebaseGraph").join("config.json").exists());
+    assert!(!root.join(".codebaseGraph.reinstall-backup").exists());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn reinstall_dry_run_leaves_existing_graph_state() {
+    let root = unique_temp_dir("codebase-graph-rust-reinstall-dry-run");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+
+    let mut output = Vec::new();
+    run(
+        [
+            "reinstall",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--dry-run",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["state"]["action"], "dry_run");
+    assert_eq!(value["install"]["database_written"], false);
+    assert!(root.join(".codebaseGraph").exists());
+    let backup_path = PathBuf::from(value["state"]["backup_path"].as_str().unwrap());
+    assert!(!backup_path.exists());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn reinstall_preserves_unrelated_mcp_entries() {
+    let root = unique_temp_dir("codebase-graph-rust-reinstall-mcp");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+    let client_config = root.join("client").join("mcp.json");
+    fs::create_dir_all(client_config.parent().unwrap()).unwrap();
+    fs::write(
+        &client_config,
+        serde_json::to_string_pretty(&json!({
+            "mcpServers": {
+                "codebase_graph": {"command": "old", "args": []},
+                "other_server": {"command": "other", "args": ["keep"]}
+            }
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let mut output = Vec::new();
+    run(
+        [
+            "reinstall",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "generic",
+            "--mcp-config-path",
+            client_config.to_str().unwrap(),
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["install"]["mcp_config"]["action"], "updated");
+    let client_payload: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&client_config).unwrap()).unwrap();
+    assert_eq!(
+        client_payload["mcpServers"]["other_server"]["args"][0],
+        "keep"
+    );
+    assert_eq!(
+        client_payload["mcpServers"]["codebase_graph"]["args"][0],
+        "mcp"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn mcp_install_writes_generic_client_config() {
     let root = unique_temp_dir("codebase-graph-rust-mcp-install");
     fs::create_dir_all(&root).unwrap();

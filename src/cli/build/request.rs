@@ -1,6 +1,9 @@
 use super::manifest::read_manifest;
-use crate::cli::format::{materialize_help, plan_help, watch_help};
 use crate::cli::setup::GraphStatePaths;
+use crate::cli::{
+    format::{materialize_help, plan_help, watch_help},
+    util::resolve_source_root,
+};
 use crate::protocol::NativeSyntaxMaterializationRequest;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -9,12 +12,7 @@ use std::process::Command;
 pub(in crate::cli) fn build_request(
     options: &MaterializeOptions,
 ) -> Result<NativeSyntaxMaterializationRequest, String> {
-    let source_root = options
-        .source_root
-        .clone()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .canonicalize()
-        .map_err(|error| format!("failed to resolve source root: {error}"))?;
+    let source_root = resolve_source_root(options.source_root.as_deref())?;
     let paths = GraphStatePaths::derive(&source_root);
     let db_path = options.db.clone().unwrap_or_else(|| paths.db_path.clone());
     let manifest_path = options
