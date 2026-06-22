@@ -41,6 +41,10 @@ fn assert_success(output: &Output) {
     );
 }
 
+fn canonical_path(path: impl AsRef<Path>) -> PathBuf {
+    path.as_ref().canonicalize().unwrap()
+}
+
 fn setup_search_repo(root: &Path) {
     fs::create_dir_all(root).unwrap();
     fs::write(
@@ -87,8 +91,8 @@ fn graph_commands_auto_detect_installed_repo_root_from_nested_directory() {
     let health_value: serde_json::Value = serde_json::from_slice(&health.stdout).unwrap();
     assert_eq!(health_value["ok"], true);
     assert_eq!(
-        PathBuf::from(health_value["repo_root"].as_str().unwrap()),
-        root.canonicalize().unwrap()
+        canonical_path(PathBuf::from(health_value["repo_root"].as_str().unwrap())),
+        canonical_path(&root)
     );
 
     let query = run_cli(
@@ -189,8 +193,8 @@ fn install_auto_detects_git_root_from_nested_directory() {
     assert_success(&install);
     let install_value: serde_json::Value = serde_json::from_slice(&install.stdout).unwrap();
     assert_eq!(
-        PathBuf::from(install_value["repo_root"].as_str().unwrap()),
-        root.canonicalize().unwrap()
+        canonical_path(PathBuf::from(install_value["repo_root"].as_str().unwrap())),
+        canonical_path(&root)
     );
     assert!(root.join(".codebaseGraph").join("config.json").exists());
     assert!(!nested.join(".codebaseGraph").exists());
@@ -222,8 +226,10 @@ fn mcp_commands_auto_detect_installed_repo_root_from_nested_directory() {
     assert_success(&install);
     let install_value: serde_json::Value = serde_json::from_slice(&install.stdout).unwrap();
     assert_eq!(
-        PathBuf::from(install_value["descriptor"]["repo_root"].as_str().unwrap()),
-        root.canonicalize().unwrap()
+        canonical_path(PathBuf::from(
+            install_value["descriptor"]["repo_root"].as_str().unwrap()
+        )),
+        canonical_path(&root)
     );
 
     let mut start = Command::new(bin())
