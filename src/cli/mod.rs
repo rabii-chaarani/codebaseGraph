@@ -5,7 +5,6 @@ mod format;
 mod graph;
 mod install;
 mod mcp;
-mod reinstall;
 mod setup;
 mod uninstall;
 mod util;

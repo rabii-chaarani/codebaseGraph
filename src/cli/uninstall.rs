@@ -6,7 +6,7 @@ use super::{
         McpInstallOptions,
     },
     setup::{remove_instruction_text, GraphStatePaths},
-    util::{read_json_file, required_arg, resolve_repo_root},
+    util::{read_json_file, required_arg},
 };
 use serde_json::json;
 use std::{
@@ -17,7 +17,7 @@ use std::{
 
 #[derive(Debug)]
 pub(in crate::cli) struct UninstallOptions {
-    repo_root: Option<PathBuf>,
+    repo_root: PathBuf,
     config: Option<PathBuf>,
     mcp_client: String,
     client_config_path: Option<PathBuf>,
@@ -29,7 +29,7 @@ pub(in crate::cli) struct UninstallOptions {
 impl UninstallOptions {
     fn parse(args: &[String]) -> Result<Self, String> {
         let mut options = Self {
-            repo_root: None,
+            repo_root: PathBuf::from("."),
             config: None,
             mcp_client: "all".to_string(),
             client_config_path: None,
@@ -45,8 +45,7 @@ impl UninstallOptions {
                     index += 1;
                 }
                 "--repo-root" | "--source-root" => {
-                    options.repo_root =
-                        Some(PathBuf::from(required_arg(args, index, "--repo-root")?));
+                    options.repo_root = PathBuf::from(required_arg(args, index, "--repo-root")?);
                     index += 2;
                 }
                 "--config" => {
@@ -104,7 +103,10 @@ pub(in crate::cli) fn run_uninstall<W: Write>(
         writeln!(stdout, "{}", uninstall_help()).map_err(|error| error.to_string())?;
         return Ok(());
     }
-    let repo_root = resolve_repo_root(options.repo_root.as_deref())?;
+    let repo_root = options
+        .repo_root
+        .canonicalize()
+        .map_err(|error| format!("failed to resolve repo root: {error}"))?;
     let paths = GraphStatePaths::derive(&repo_root);
     let config_path = options
         .config
@@ -155,7 +157,7 @@ fn uninstall_server_name(repo_root: &Path, config_path: &Path) -> Result<String,
         name: None,
         config_path: Some(config_path.to_path_buf()),
         client_config_path: None,
-        repo_root: Some(repo_root.to_path_buf()),
+        repo_root: repo_root.to_path_buf(),
         dry_run: true,
         verify: false,
         json: true,
@@ -261,7 +263,7 @@ fn uninstall_mcp_client(
         name: Some(server_name.to_string()),
         config_path: Some(config_path.to_path_buf()),
         client_config_path: options.client_config_path.clone(),
-        repo_root: Some(repo_root.to_path_buf()),
+        repo_root: repo_root.to_path_buf(),
         dry_run: true,
         verify: false,
         json: true,

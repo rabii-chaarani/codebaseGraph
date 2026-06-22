@@ -6,7 +6,6 @@ use super::{
         run_graph_query_helpers, run_graph_schema, run_graph_search,
     },
     mcp::{run_mcp_command, serve_mcp_http, serve_mcp_stdio, McpHttpOptions, McpServeOptions},
-    reinstall::run_reinstall,
     setup::run_setup,
     uninstall::run_uninstall,
     watch::run_watch,
@@ -54,7 +53,6 @@ where
             Ok(())
         }
         Some("install") => run_setup(&args[1..], stdout),
-        Some("reinstall") => run_reinstall(&args[1..], stdout),
         Some("uninstall") => run_uninstall(&args[1..], stdout),
         Some("build") => run_materialize(&args[1..], stdout),
         Some("plan") => run_plan(&args[1..], stdout),
@@ -87,7 +85,6 @@ pub fn error_exit_code(error: &str) -> i32 {
         || error.starts_with("failed to resolve repo root")
         || error.starts_with("Repository root may not be inside")
         || error.starts_with("unknown install option:")
-        || error.starts_with("unknown reinstall option:")
         || error.starts_with("--mcp-client must be")
         || error.starts_with("--mcp-client requires")
         || error.starts_with("--instructions-target must be")

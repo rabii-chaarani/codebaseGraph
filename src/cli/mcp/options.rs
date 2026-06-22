@@ -5,7 +5,7 @@ use std::{env, net::TcpListener, path::PathBuf, sync::Arc};
 
 #[derive(Clone, Debug)]
 pub(in crate::cli) struct McpServeOptions {
-    pub(in crate::cli) repo_root: Option<PathBuf>,
+    pub(in crate::cli) repo_root: PathBuf,
     pub(in crate::cli) config: Option<PathBuf>,
     pub(in crate::cli) db: Option<PathBuf>,
     pub(in crate::cli) manifest: Option<PathBuf>,
@@ -15,7 +15,7 @@ pub(in crate::cli) struct McpServeOptions {
 impl McpServeOptions {
     pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
         let mut options = Self {
-            repo_root: None,
+            repo_root: PathBuf::from("."),
             config: None,
             db: None,
             manifest: None,
@@ -25,8 +25,7 @@ impl McpServeOptions {
         while index < args.len() {
             match args[index].as_str() {
                 "--repo-root" => {
-                    options.repo_root =
-                        Some(PathBuf::from(required_arg(args, index, "--repo-root")?));
+                    options.repo_root = PathBuf::from(required_arg(args, index, "--repo-root")?);
                     index += 2;
                 }
                 "--config" => {
@@ -79,7 +78,7 @@ impl McpHttpOptions {
     pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
         let mut options = Self {
             serve: McpServeOptions {
-                repo_root: None,
+                repo_root: PathBuf::from("."),
                 config: None,
                 db: None,
                 manifest: None,
@@ -96,7 +95,7 @@ impl McpHttpOptions {
             match args[index].as_str() {
                 "--repo-root" => {
                     options.serve.repo_root =
-                        Some(PathBuf::from(required_arg(args, index, "--repo-root")?));
+                        PathBuf::from(required_arg(args, index, "--repo-root")?);
                     index += 2;
                 }
                 "--config" => {
