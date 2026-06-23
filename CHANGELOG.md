@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.6](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.5...v1.1.6) (2026-06-23)
+
+
+### Bug Fixes
+
+* Recover live graph refresh after DB contention ([#40](https://github.com/rabii-chaarani/codebaseGraph/issues/40)) ([ee1754b](https://github.com/rabii-chaarani/codebaseGraph/commit/ee1754b66f98a69832b72dbd21224e7a87e97b19))
+
 ## [1.1.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.4...v1.1.5) (2026-06-22)
 
 
