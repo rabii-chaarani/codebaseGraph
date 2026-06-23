@@ -43,14 +43,17 @@ jobs:
             rustflags: ""
             prebuilt_lbug: false
             lbug_archive: ""
+            test_args: ""
           - os: macos-latest
             rustflags: ""
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-arm64.tar.gz
+            test_args: ""
           - os: windows-2022
             rustflags: ""
             prebuilt_lbug: false
             lbug_archive: ""
+            test_args: "--release"
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -78,7 +81,7 @@ jobs:
       - name: Run tests
         env:
           RUSTFLAGS: ${{ matrix.rustflags }}
-        run: cargo test --workspace --locked
+        run: cargo test --workspace --locked ${{ matrix.test_args }}
 
   clippy:
     name: cargo clippy

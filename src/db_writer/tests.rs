@@ -1,8 +1,13 @@
-use super::{partition_delete_statements, write_database, LadybugWriteRequest};
+use super::{
+    incoming_row_delete_statements, is_transient_database_error, partition_delete_statements,
+    retry_transient_database, write_database, LadybugWriteRequest, WRITE_RETRY_POLICY,
+};
+use crate::error::NativeError;
 use crate::protocol::{ManifestDiff, ManifestEntry, NativeManifest};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[test]
 fn native_writer_loads_json_staging_through_ladybug_copy() {
@@ -82,6 +87,90 @@ fn partition_delete_statements_skip_retained_shared_ids() {
             deleted: Vec::new(),
             force_rebuild: false,
         },
+    );
+    let joined = statements.join("\n");
+
+    assert!(joined.contains("Function:changed"));
+    assert!(joined.contains("Contains:changed"));
+    assert!(!joined.contains("Symbol:shared"));
+    assert!(!joined.contains("References:shared"));
+}
+
+#[test]
+fn transient_database_error_detection_matches_ladybug_lock_failures() {
+    assert!(is_transient_database_error(
+        "IO exception: Could not set lock on file graph.ldb (Lock is held by PID 123)"
+    ));
+    assert!(is_transient_database_error(
+        "Couldn't replay shadow pages under read-only mode"
+    ));
+    assert!(!is_transient_database_error(
+        "Copy exception: Found duplicated primary key value"
+    ));
+}
+
+#[test]
+fn transient_database_retry_replays_operation_until_success() {
+    let attempts = AtomicUsize::new(0);
+    retry_transient_database(WRITE_RETRY_POLICY, || {
+        if attempts.fetch_add(1, Ordering::SeqCst) == 0 {
+            Err(NativeError::Database(
+                "IO exception: Could not set lock on file".to_string(),
+            ))
+        } else {
+            Ok(())
+        }
+    })
+    .unwrap();
+
+    assert_eq!(attempts.load(Ordering::SeqCst), 2);
+}
+
+#[test]
+fn incoming_row_delete_statements_skip_retained_shared_ids() {
+    let mut previous_files = BTreeMap::new();
+    previous_files.insert(
+        "unchanged.py".to_string(),
+        entry(
+            &["Symbol:shared"],
+            &[("Symbol:shared", "Symbol")],
+            &["References:shared"],
+            &[("References:shared", "References")],
+        ),
+    );
+    let manifest = NativeManifest {
+        schema_version: 1,
+        ontology: "code_ontology_v1".to_string(),
+        parser_version: "test".to_string(),
+        files: previous_files,
+    };
+    let mut rebuilt_entries = BTreeMap::new();
+    rebuilt_entries.insert(
+        "changed.py".to_string(),
+        entry(
+            &["Function:changed", "Symbol:shared"],
+            &[
+                ("Function:changed", "Function"),
+                ("Symbol:shared", "Symbol"),
+            ],
+            &["Contains:changed", "References:shared"],
+            &[
+                ("Contains:changed", "Contains"),
+                ("References:shared", "References"),
+            ],
+        ),
+    );
+
+    let statements = incoming_row_delete_statements(
+        Some(&manifest),
+        &ManifestDiff {
+            added: Vec::new(),
+            modified: vec!["changed.py".to_string()],
+            unchanged: vec!["unchanged.py".to_string()],
+            deleted: Vec::new(),
+            force_rebuild: false,
+        },
+        &rebuilt_entries,
     );
     let joined = statements.join("\n");
 
