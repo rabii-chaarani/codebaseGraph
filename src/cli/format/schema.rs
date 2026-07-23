@@ -2,7 +2,7 @@ use super::{metadata_payload, value_array, value_str};
 use crate::cli::{constants::GRAPH_SCHEMA_JSON, graph::cypher_single_quoted};
 use std::collections::BTreeSet;
 
-pub(in crate::cli) fn schema_statements_from_copy_statements(
+pub(crate) fn schema_statements_from_copy_statements(
     include_fts: bool,
     copy_statements: &[String],
 ) -> Vec<String> {

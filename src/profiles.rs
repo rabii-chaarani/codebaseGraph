@@ -32,8 +32,19 @@ impl ProfileSet {
             .cloned()
     }
 
+    #[cfg(test)]
     pub(crate) fn profile_for_language(&self, language: &str) -> Option<&LanguageProfile> {
         self.by_language.get(language)
+    }
+
+    pub(crate) fn selected_profiles(
+        &self,
+        languages: &std::collections::BTreeSet<String>,
+    ) -> Vec<LanguageProfile> {
+        languages
+            .iter()
+            .filter_map(|language| self.by_language.get(language).cloned())
+            .collect()
     }
 }
 

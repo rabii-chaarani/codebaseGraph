@@ -1,19 +1,24 @@
 use crate::error::NativeError;
 use crate::hash;
 use crate::profiles::ProfileSet;
-use crate::protocol::{ManifestDiff, NativeSyntaxMaterializationRequest, SourceSnapshot};
+use crate::protocol::{
+    LanguageProfile, ManifestDiff, NativeSyntaxMaterializationRequest, SourceSnapshot,
+};
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 pub(crate) struct SourceScan {
+    pub(crate) input: NativeSyntaxMaterializationRequest,
+    pub(crate) profiles: Vec<LanguageProfile>,
     pub(crate) snapshots: BTreeMap<String, SourceSnapshot>,
     pub(crate) supported: BTreeMap<String, SourceSnapshot>,
     pub(crate) diagnostics: Vec<String>,
     pub(crate) diff: ManifestDiff,
 }
 
-pub(crate) fn scan_source_state(
+pub(crate) fn scan_sources(
     request: &NativeSyntaxMaterializationRequest,
 ) -> Result<SourceScan, NativeError> {
     let source_root = PathBuf::from(&request.source_root);
@@ -60,11 +65,17 @@ pub(crate) fn scan_source_state(
         if language.is_none() {
             diagnostics.push(format!("Skipped unsupported file: {relative_path}"));
         }
+        let source = if language.is_some() {
+            Some(fs::read_to_string(path)?)
+        } else {
+            None
+        };
         let snapshot = SourceSnapshot {
             path: relative_path.clone(),
             absolute_path: path.to_string_lossy().to_string(),
             content_hash,
             language,
+            source,
         };
         if snapshot.language.is_some() {
             supported.insert(relative_path.clone(), snapshot.clone());
@@ -73,7 +84,13 @@ pub(crate) fn scan_source_state(
     }
 
     let diff = compute_diff(request, &supported, &candidate_paths);
+    let selected_languages = supported
+        .values()
+        .filter_map(|snapshot| snapshot.language.clone())
+        .collect::<BTreeSet<_>>();
     Ok(SourceScan {
+        input: request.clone(),
+        profiles: profiles.selected_profiles(&selected_languages),
         snapshots,
         supported,
         diagnostics,

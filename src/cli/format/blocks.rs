@@ -1,4 +1,4 @@
-pub(in crate::cli) fn serialize_schema_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_schema_block(payload: &serde_json::Value) -> String {
     let node_types = value_array(payload, "node_types");
     let relation_types = value_array(payload, "relation_types");
     let parser_mappings = value_array(payload, "parser_node_mappings");
@@ -53,7 +53,7 @@ pub(in crate::cli) fn serialize_schema_block(payload: &serde_json::Value) -> Str
     format!("{}\n", lines.join("\n"))
 }
 
-pub(in crate::cli) fn serialize_query_helpers_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_query_helpers_block(payload: &serde_json::Value) -> String {
     let helpers = value_array(payload, "query_helpers");
     let mut lines = vec![format!("query_helpers count={}", helpers.len())];
     for helper in helpers {
@@ -62,7 +62,7 @@ pub(in crate::cli) fn serialize_query_helpers_block(payload: &serde_json::Value)
     format!("{}\n", lines.join("\n"))
 }
 
-pub(in crate::cli) fn serialize_architecture_queries_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_architecture_queries_block(payload: &serde_json::Value) -> String {
     let groups = value_array(payload, "groups");
     let mut lines = vec![format!(
         "architecture_queries workflow={} execution_tool={} groups={}",
@@ -87,7 +87,7 @@ pub(in crate::cli) fn serialize_architecture_queries_block(payload: &serde_json:
     format!("{}\n", lines.join("\n"))
 }
 
-pub(in crate::cli) fn serialize_health_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
     let mut lines = vec![format!(
         "health ok={} database_exists={} manifest_exists={} graph_readable={} total_nodes={}",
         value_bool(payload, "ok"),
@@ -108,7 +108,7 @@ pub(in crate::cli) fn serialize_health_block(payload: &serde_json::Value) -> Str
     format!("{}\n", lines.join("\n"))
 }
 
-pub(in crate::cli) fn serialize_search_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_search_block(payload: &serde_json::Value) -> String {
     let results = value_array(payload, "results");
     let mut lines = vec![format!("q {}", block_value(value_str(payload, "query")))];
     let mut current_path: Option<String> = None;
@@ -141,7 +141,7 @@ pub(in crate::cli) fn serialize_search_block(payload: &serde_json::Value) -> Str
     format!("{}\n", lines.join("\n"))
 }
 
-pub(in crate::cli) fn serialize_query_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_query_block(payload: &serde_json::Value) -> String {
     let rows = value_array(payload, "rows");
     let columns = query_columns(value_str(payload, "statement"));
     let mut lines = vec![format!(
@@ -273,7 +273,7 @@ pub(in crate::cli) fn block_json_value(value: &serde_json::Value) -> String {
     }
 }
 
-pub(in crate::cli) fn serialize_error_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_error_block(payload: &serde_json::Value) -> String {
     let error = payload.get("error").unwrap_or(payload);
     format!(
         "error tool={} type={} message={}\n",
@@ -283,7 +283,7 @@ pub(in crate::cli) fn serialize_error_block(payload: &serde_json::Value) -> Stri
     )
 }
 
-pub(in crate::cli) fn serialize_context_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_context_block(payload: &serde_json::Value) -> String {
     let mut lines = vec![format!(
         "context {} id={} profile={}",
         value_str(payload, "node_type"),
@@ -362,7 +362,7 @@ pub(in crate::cli) fn append_query_spec_lines(
     }
 }
 
-pub(in crate::cli) fn value_array<'a>(
+pub(crate) fn value_array<'a>(
     payload: &'a serde_json::Value,
     key: &str,
 ) -> &'a [serde_json::Value] {
@@ -373,7 +373,7 @@ pub(in crate::cli) fn value_array<'a>(
         .unwrap_or(&[])
 }
 
-pub(in crate::cli) fn value_str<'a>(payload: &'a serde_json::Value, key: &str) -> &'a str {
+pub(crate) fn value_str<'a>(payload: &'a serde_json::Value, key: &str) -> &'a str {
     payload
         .get(key)
         .and_then(serde_json::Value::as_str)
@@ -410,7 +410,7 @@ pub(in crate::cli) fn csv_values(value: Option<&serde_json::Value>) -> String {
         .unwrap_or_default()
 }
 
-pub(in crate::cli) fn block_value(value: &str) -> String {
+pub(crate) fn block_value(value: &str) -> String {
     if value.is_empty() {
         "\"\"".to_string()
     } else if value.chars().all(|character| {

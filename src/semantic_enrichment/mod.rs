@@ -34,7 +34,7 @@ struct SemanticOutput {
     fallbacks: Vec<SemFallback>,
 }
 
-pub(crate) fn enrich_partitions(
+pub(crate) fn enrich_semantics(
     partitions: &mut [GraphPartition],
     request: &NativeSyntaxMaterializationRequest,
 ) -> Result<SemanticEnrichmentStats, NativeError> {
@@ -296,7 +296,7 @@ mod tests {
             progress: false,
         };
 
-        let stats = enrich_partitions(&mut partitions, &request).unwrap();
+        let stats = enrich_semantics(&mut partitions, &request).unwrap();
 
         assert!(stats
             .phase_timings

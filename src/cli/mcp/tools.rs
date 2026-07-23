@@ -1,63 +1,119 @@
 use super::options::McpServeOptions;
-use crate::cli::{
-    constants::{ARCHITECTURE_QUERIES_JSON, GRAPH_SCHEMA_JSON, QUERY_HELPERS_JSON},
-    format::{
-        filter_architecture_group, metadata_payload, serialize_architecture_queries_block,
-        serialize_context_block, serialize_error_block, serialize_health_block,
-        serialize_query_block, serialize_query_helpers_block, serialize_schema_block,
-        serialize_search_block,
+use crate::api::{
+    contracts::{
+        ApiError, ContextRequest, HealthRequest, OperationRequest, OperationResponse, OutputFormat,
+        QueryRequest, RepoSelector, SearchRequest,
     },
-    graph::{
-        count_graph_nodes, execute_graph_context, execute_graph_search, execute_read_only_query,
-        resolve_health_runtime, validate_read_only_statement, GraphContextOptions,
-        GraphSearchOptions, MetadataOutputOptions,
-    },
+    CodebaseGraphApi, OperationDescriptor,
 };
+use crate::cli::format::serialize_error_block;
 use serde_json::json;
+use serde_json::Map;
+
+pub(in crate::cli) fn generate_mcp_specs() -> Result<serde_json::Value, String> {
+    let tools = CodebaseGraphApi::new()
+        .operation_descriptors()
+        .into_iter()
+        .filter(|operation| operation.surfaces.contains(&"mcp"))
+        .filter_map(operation_spec_from_descriptor)
+        .collect::<Vec<_>>();
+    Ok(json!({"tools": tools}))
+}
+
+fn operation_spec_from_descriptor(descriptor: OperationDescriptor) -> Option<serde_json::Value> {
+    let name = descriptor.mcp_tool_name?;
+    let properties = (descriptor.request_schema)();
+    let mut property_map: Map<String, serde_json::Value> =
+        properties.as_object().cloned().unwrap_or_default();
+    property_map.insert(
+        "output_format".to_string(),
+        json!({"type":"string","enum":["json","block"],"default":"block"}),
+    );
+    property_map.insert(
+        "include_structured_content".to_string(),
+        json!({"type":"boolean","default":false,"description":"Include the MCP structuredContent payload alongside the text result."}),
+    );
+
+    Some(json!({
+        "name": name,
+        "description": descriptor.summary,
+        "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": property_map,
+        },
+    }))
+}
+
+fn map_error_to_transport(tool_name: &str, error: &ApiError) -> serde_json::Value {
+    json!({
+        "error": {
+            "tool": tool_name,
+            "type": "ValueError",
+            "code": error.code,
+            "message": error.message,
+            "details": error.details,
+            "retryable": error.retryable,
+        }
+    })
+}
 
 pub(in crate::cli) fn mcp_call_tool_result(
     tool_name: &str,
     arguments: &serde_json::Value,
     options: &McpServeOptions,
 ) -> Result<serde_json::Value, String> {
-    let payload = mcp_tool_payload(tool_name, arguments, options);
     let output_format = arguments
         .get("output_format")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("block");
+    let output_format = match output_format {
+        "json" => "json",
+        "block" => "block",
+        _ => return Err("graph tool output_format must be \"json\" or \"block\"".to_string()),
+    };
+    let response = mcp_tool_payload(tool_name, arguments, options);
     let include_structured = arguments
         .get("include_structured_content")
         .and_then(serde_json::Value::as_bool)
         .unwrap_or(false);
-    match payload {
-        Ok(payload) => {
-            let text = if output_format == "json" {
-                serde_json::to_string(&payload).map_err(|error| error.to_string())?
+    match response {
+        Ok(response) => {
+            let payload = response.payload;
+            let (text, structured) = if output_format == "json" {
+                (
+                    serde_json::to_string(&payload).map_err(|error| error.to_string())?,
+                    payload.clone(),
+                )
             } else {
-                mcp_block_text(tool_name, &payload)
+                let text = payload
+                    .get("text")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or_else(|| "block response did not contain text".to_string())?
+                    .to_string();
+                let structured = payload
+                    .get("structured")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null);
+                (text, structured)
             };
             let mut result = json!({
                 "content": [{"type": "text", "text": text}],
                 "isError": false,
             });
             if include_structured {
-                result["structuredContent"] = payload;
+                result["structuredContent"] = structured;
             }
             Ok(result)
         }
         Err(error)
-            if tool_name.is_empty() || error.starts_with("Unknown codebaseGraph MCP tool") =>
+            if tool_name.is_empty()
+                || error.message.starts_with("Unknown codebaseGraph MCP tool") =>
         {
-            Err(error)
+            Err(error.message)
         }
         Err(error) => {
-            let payload = json!({
-                "error": {
-                    "tool": tool_name,
-                    "type": "ValueError",
-                    "message": error,
-                }
-            });
+            let payload = map_error_to_transport(tool_name, &error);
             let text = if output_format == "json" {
                 serde_json::to_string(&payload).map_err(|error| error.to_string())?
             } else {
@@ -79,7 +135,7 @@ pub(in crate::cli) fn mcp_tool_payload(
     tool_name: &str,
     arguments: &serde_json::Value,
     options: &McpServeOptions,
-) -> Result<serde_json::Value, String> {
+) -> Result<OperationResponse, ApiError> {
     let _refresh_read_guard = if matches!(
         tool_name,
         "graph_health" | "graph_search" | "graph_context" | "graph_query"
@@ -88,134 +144,128 @@ pub(in crate::cli) fn mcp_tool_payload(
             .refresh
             .as_ref()
             .map(|refresh| refresh.read_guard())
-            .transpose()?
+            .transpose()
+            .map_err(|error| ApiError::new("refresh_lock_failed", error))?
     } else {
         None
     };
-    match tool_name {
-        "graph_health" => graph_health_payload(options),
-        "graph_schema" => metadata_payload(GRAPH_SCHEMA_JSON),
-        "graph_query_helpers" => metadata_payload(QUERY_HELPERS_JSON),
-        "graph_architecture_queries" => {
-            let mut payload = metadata_payload(ARCHITECTURE_QUERIES_JSON)?;
-            if let Some(group) = arguments.get("group").and_then(serde_json::Value::as_str) {
-                filter_architecture_group(&mut payload, group)?;
-            }
-            Ok(payload)
+    let output_format = match arguments
+        .get("output_format")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("block")
+    {
+        "json" => OutputFormat::Typed,
+        "block" => OutputFormat::Block,
+        _ => {
+            return Err(ApiError::new(
+                "invalid_output_format",
+                "graph tool output_format must be \"json\" or \"block\"",
+            ))
         }
+    };
+    match tool_name {
+        "graph_health" => execute_api_request(OperationRequest::Health(HealthRequest {
+            repo: repo_selector_from_mcp_options(options),
+            refresh_status: options
+                .refresh
+                .as_ref()
+                .map(|refresh| serde_json::to_value(refresh.as_json()).unwrap_or_default()),
+            output_format,
+        })),
+        "graph_schema" => execute_api_request(OperationRequest::Catalog {
+            kind: "schema".to_string(),
+            group: None,
+            output_format,
+        }),
+        "graph_query_helpers" => execute_api_request(OperationRequest::Catalog {
+            kind: "query-helpers".to_string(),
+            group: None,
+            output_format,
+        }),
+        "graph_architecture_queries" => execute_api_request(OperationRequest::Catalog {
+            kind: "architecture-queries".to_string(),
+            group: arguments
+                .get("group")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string),
+            output_format,
+        }),
         "graph_search" => {
-            let search = graph_search_options_from_mcp(arguments, options, true)?;
-            let runtime = resolve_health_runtime(&options.health_options())?;
-            let results = execute_graph_search(&runtime.db_path, &search)?;
-            Ok(json!({
-                "query": search.query,
-                "profile": search.profile,
-                "limit": search.limit,
-                "budget": search.budget,
-                "results": results,
-            }))
+            let search = search_request_from_mcp(arguments, options, output_format, true)
+                .map_err(|error| ApiError::new("invalid_query", error))?;
+            execute_api_request(OperationRequest::Search(search))
         }
         "graph_context" => {
-            let context = graph_context_options_from_mcp(arguments, options)?;
-            let runtime = resolve_health_runtime(&options.health_options())?;
-            if let (Some(node_id), Some(node_type)) =
-                (context.node_id.as_ref(), context.node_type.as_ref())
-            {
-                let rows =
-                    execute_graph_context(&runtime.db_path, node_id, node_type, &context.search)?;
-                Ok(json!({
-                    "node_id": node_id,
-                    "node_type": node_type,
-                    "profile": context.search.profile,
-                    "context": rows,
-                }))
-            } else {
-                let results = execute_graph_search(&runtime.db_path, &context.search)?;
-                Ok(json!({
-                    "query": context.search.query,
-                    "profile": context.search.profile,
-                    "limit": context.search.limit,
-                    "budget": context.search.budget,
-                    "results": results,
-                }))
-            }
+            let context = context_request_from_mcp(arguments, options, output_format)
+                .map_err(|error| ApiError::new("invalid_context", error))?;
+            execute_api_request(OperationRequest::Context(context))
         }
         "graph_query" => {
             let statement = arguments
                 .get("statement")
-                .or_else(|| arguments.get("query"))
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("")
                 .trim();
             if statement.is_empty() {
-                return Err("graph_query requires a non-empty statement".to_string());
+                return Err(ApiError::new(
+                    "missing_query",
+                    "graph_query requires a non-empty statement",
+                ));
             }
-            validate_read_only_statement(statement)?;
             let parameters = arguments
                 .get("parameters")
                 .cloned()
                 .unwrap_or_else(|| json!({}));
-            let parameters = parameters
-                .as_object()
-                .ok_or_else(|| "graph_query parameters must be a JSON object".to_string())?;
+            let parameters = parameters.as_object().ok_or_else(|| {
+                ApiError::new(
+                    "invalid_parameters",
+                    "graph_query parameters must be a JSON object",
+                )
+            })?;
             let limit = arguments
                 .get("limit")
                 .and_then(serde_json::Value::as_u64)
                 .unwrap_or(100) as usize;
             if limit == 0 || limit > 1000 {
-                return Err("graph_query limit must be between 1 and 1000".to_string());
+                return Err(ApiError::new(
+                    "invalid_limit",
+                    "graph_query limit must be between 1 and 1000",
+                ));
             }
-            let runtime = resolve_health_runtime(&options.health_options())?;
-            let (rows, truncated) =
-                execute_read_only_query(&runtime.db_path, statement, parameters, limit)?;
-            Ok(json!({
-                "statement": statement,
-                "row_count": rows.len(),
-                "rows": rows,
-                "truncated": truncated,
+            execute_api_request(OperationRequest::Query(QueryRequest {
+                repo: repo_selector_from_mcp_options(options),
+                statement: statement.to_string(),
+                parameters: serde_json::Value::Object(parameters.clone()),
+                limit,
+                output_format,
             }))
         }
-        _ => Err(format!("Unknown codebaseGraph MCP tool: {tool_name}")),
+        _ => Err(ApiError::new(
+            "unknown_tool",
+            format!("Unknown codebaseGraph MCP tool: {tool_name}"),
+        )),
     }
 }
 
-pub(in crate::cli) fn graph_health_payload(
-    options: &McpServeOptions,
-) -> Result<serde_json::Value, String> {
-    let runtime = resolve_health_runtime(&options.health_options())?;
-    let database_exists = runtime.db_path.exists();
-    let manifest_exists = runtime.manifest_path.exists();
-    let mut graph_readable = false;
-    let mut total_nodes = 0_u64;
-    let mut error_message = None;
-    if database_exists {
-        match count_graph_nodes(&runtime.db_path) {
-            Ok(count) => {
-                graph_readable = true;
-                total_nodes = count;
-            }
-            Err(error) => error_message = Some(error),
-        }
-    }
-    Ok(json!({
-        "ok": database_exists && graph_readable,
-        "repo_root": runtime.repo_root,
-        "database_path": runtime.db_path,
-        "manifest_path": runtime.manifest_path,
-        "database_exists": database_exists,
-        "manifest_exists": manifest_exists,
-        "graph_readable": graph_readable,
-        "total_nodes": total_nodes,
-        "refresh": options.refresh.as_ref().map(|refresh| refresh.as_json()),
-        "error": error_message,
-    }))
+fn execute_api_request(request: OperationRequest) -> Result<OperationResponse, ApiError> {
+    CodebaseGraphApi::new().execute_operation(&request)
 }
 
-pub(in crate::cli) fn graph_search_options_from_mcp(
+fn repo_selector_from_mcp_options(options: &McpServeOptions) -> RepoSelector {
+    RepoSelector {
+        repo_root: options.repo_root.clone(),
+        config_path: options.config.clone(),
+        db_path: options.db.clone(),
+        manifest_path: options.manifest.clone(),
+    }
+}
+
+fn search_request_from_mcp(
     arguments: &serde_json::Value,
     options: &McpServeOptions,
+    output_format: OutputFormat,
     require_query: bool,
-) -> Result<GraphSearchOptions, String> {
+) -> Result<SearchRequest, String> {
     let query = arguments
         .get("query")
         .and_then(serde_json::Value::as_str)
@@ -231,7 +281,8 @@ pub(in crate::cli) fn graph_search_options_from_mcp(
     if detail != "standard" && detail != "slim" {
         return Err("--detail must be standard or slim".to_string());
     }
-    Ok(GraphSearchOptions {
+    Ok(SearchRequest {
+        repo: repo_selector_from_mcp_options(options),
         query,
         limit: json_usize(arguments, "limit", 3),
         profile: arguments
@@ -246,26 +297,15 @@ pub(in crate::cli) fn graph_search_options_from_mcp(
             .and_then(serde_json::Value::as_u64)
             .map(|value| value as usize),
         detail: detail.to_string(),
-        repo_root: options.repo_root.clone(),
-        config: options.config.clone(),
-        db: options.db.clone(),
-        manifest: options.manifest.clone(),
-        output: MetadataOutputOptions {
-            format: arguments
-                .get("output_format")
-                .and_then(serde_json::Value::as_str)
-                .unwrap_or("block")
-                .to_string(),
-            pretty: false,
-            help: false,
-        },
+        output_format,
     })
 }
 
-pub(in crate::cli) fn graph_context_options_from_mcp(
+fn context_request_from_mcp(
     arguments: &serde_json::Value,
     options: &McpServeOptions,
-) -> Result<GraphContextOptions, String> {
+    output_format: OutputFormat,
+) -> Result<ContextRequest, String> {
     let node_id = arguments
         .get("node_id")
         .and_then(serde_json::Value::as_str)
@@ -281,11 +321,23 @@ pub(in crate::cli) fn graph_context_options_from_mcp(
             "codebase-context explicit lookup requires both --node-id and --node-type".to_string(),
         );
     }
-    let search = graph_search_options_from_mcp(arguments, options, node_id.is_none())?;
-    Ok(GraphContextOptions {
-        search,
+    let search = search_request_from_mcp(arguments, options, output_format, node_id.is_none())?;
+    Ok(ContextRequest {
+        repo: search.repo,
+        query: if search.query.is_empty() {
+            None
+        } else {
+            Some(search.query)
+        },
+        profile: search.profile,
+        limit: search.limit,
+        budget: search.budget,
+        context_limit: search.context_limit,
+        max_depth: search.max_depth,
+        detail: search.detail,
         node_id,
         node_type,
+        output_format,
     })
 }
 
@@ -301,21 +353,52 @@ pub(in crate::cli) fn json_usize(
         .unwrap_or(default)
 }
 
-pub(in crate::cli) fn mcp_block_text(tool_name: &str, payload: &serde_json::Value) -> String {
-    match tool_name {
-        "graph_health" => serialize_health_block(payload),
-        "graph_schema" => serialize_schema_block(payload),
-        "graph_query_helpers" => serialize_query_helpers_block(payload),
-        "graph_architecture_queries" => serialize_architecture_queries_block(payload),
-        "graph_search" => serialize_search_block(payload),
-        "graph_context" => {
-            if payload.get("context").is_some() {
-                serialize_context_block(payload)
-            } else {
-                serialize_search_block(payload)
-            }
-        }
-        "graph_query" => serialize_query_block(payload),
-        _ => serde_json::to_string(payload).unwrap_or_default(),
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn public_errors_map_to_mcp_failures_without_changing_codes() {
+        let error = ApiError::new("graph_busy", "graph is busy")
+            .with_details(json!({"operation": "query"}))
+            .retryable(true);
+
+        let payload = map_error_to_transport("graph_query", &error);
+
+        assert_eq!(payload["error"]["tool"], "graph_query");
+        assert_eq!(payload["error"]["code"], "graph_busy");
+        assert_eq!(payload["error"]["message"], "graph is busy");
+        assert_eq!(payload["error"]["details"]["operation"], "query");
+        assert_eq!(payload["error"]["retryable"], true);
+    }
+
+    #[test]
+    fn mcp_specs_are_generated_from_registered_operation_metadata() {
+        let specs = generate_mcp_specs().expect("MCP specs should generate");
+        let tools = specs["tools"].as_array().expect("tools should be an array");
+        let names = tools
+            .iter()
+            .filter_map(|tool| tool["name"].as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            names,
+            vec![
+                "graph_architecture_queries",
+                "graph_context",
+                "graph_health",
+                "graph_query",
+                "graph_query_helpers",
+                "graph_schema",
+                "graph_search",
+            ]
+        );
+        let search = tools
+            .iter()
+            .find(|tool| tool["name"] == "graph_search")
+            .expect("search tool should be advertised");
+        assert_eq!(
+            search["inputSchema"]["properties"]["detail"]["enum"],
+            json!(["standard", "slim"])
+        );
     }
 }

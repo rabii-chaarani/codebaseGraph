@@ -5,7 +5,7 @@ use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializ
 use serde_json::json;
 use std::path::Path;
 
-pub(in crate::cli) fn materialization_payload(
+pub(crate) fn materialization_payload(
     response: &NativeSyntaxMaterializationResponse,
     mode: &str,
     paths: &GraphStatePaths,
@@ -54,7 +54,7 @@ pub(in crate::cli) fn materialization_payload(
     })
 }
 
-pub(in crate::cli) fn dry_run_materialization_payload(
+pub(crate) fn dry_run_materialization_payload(
     request: &NativeSyntaxMaterializationRequest,
     paths: &GraphStatePaths,
 ) -> serde_json::Value {
@@ -79,7 +79,7 @@ pub(in crate::cli) fn dry_run_materialization_payload(
     })
 }
 
-pub(in crate::cli) fn serialize_plan_block(payload: &serde_json::Value) -> String {
+pub(crate) fn serialize_plan_block(payload: &serde_json::Value) -> String {
     let mut lines = vec![format!(
         "plan mode={} scanned={} rebuild={} delete={} skip={} ignored={}",
         block_value(value_str(payload, "mode")),

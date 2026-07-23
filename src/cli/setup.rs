@@ -3,12 +3,15 @@ use super::{
     format::setup_help,
     install::{build_mcp_descriptor, install_mcp_client, McpInstallOptions},
     materialization::{
-        build_request, dry_run_materialization_payload, materialization_payload, materialize,
-        MaterializeOptions,
+        build_request, dry_run_materialization_payload, materialization_payload, MaterializeOptions,
     },
-    util::{read_json_file, resolve_repo_root, restore_file, snapshot_file},
+    util::{read_json_file, restore_file, snapshot_file},
     watch::SetupOptions,
 };
+use crate::api::contracts::RepositoryLifecycleRequest;
+use crate::api::contracts::{OperationRequest, RepoSelector};
+use crate::api::materialization::execute_materialization;
+use crate::api::CodebaseGraphApi;
 use serde_json::json;
 use std::{
     fs,
@@ -22,7 +25,29 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
         writeln!(stdout, "{}", setup_help()).map_err(|error| error.to_string())?;
         return Ok(());
     }
-    let output = setup_payload(&options)?;
+    let request = RepositoryLifecycleRequest {
+        repo: RepoSelector {
+            repo_root: options.repo_root.clone(),
+            config_path: None,
+            db_path: None,
+            manifest_path: None,
+        },
+        action: "setup".to_string(),
+        output_format: crate::api::contracts::OutputFormat::Typed,
+        dry_run: options.dry_run,
+        mcp_client: Some(options.mcp_client.clone()),
+        mcp_config_path: options.mcp_config_path.clone(),
+        instructions_target: Some(options.instructions_target.clone()),
+        skip_mcp_config: options.skip_mcp_config,
+        mode: options.mode.clone(),
+        include_fts: options.include_fts,
+        semantic_enrichment: options.semantic_enrichment,
+        semantic_provider_mode: options.semantic_provider_mode.clone(),
+    };
+    let output = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Setup(request))
+        .map_err(|error| error.message)?
+        .payload;
     writeln!(
         stdout,
         "{}",
@@ -32,8 +57,44 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
     Ok(())
 }
 
-pub(in crate::cli) fn setup_payload(options: &SetupOptions) -> Result<serde_json::Value, String> {
-    let source_root = resolve_repo_root(options.repo_root.as_deref())?;
+pub(crate) fn setup_payload_for_request(
+    request: &RepositoryLifecycleRequest,
+    source_root: &Path,
+) -> Result<serde_json::Value, String> {
+    let options = SetupOptions {
+        repo_root: request.repo.repo_root.clone(),
+        mode: request.mode.clone(),
+        include_fts: request.include_fts,
+        semantic_enrichment: request.semantic_enrichment,
+        semantic_provider_mode: request.semantic_provider_mode.clone(),
+        mcp_client: request
+            .mcp_client
+            .clone()
+            .unwrap_or_else(|| "codex".to_string()),
+        mcp_config_path: request.mcp_config_path.clone(),
+        skip_mcp_config: request.skip_mcp_config,
+        dry_run: request.dry_run,
+        instructions_target: request
+            .instructions_target
+            .clone()
+            .unwrap_or_else(|| "auto".to_string()),
+        help: false,
+    };
+    setup_payload_for_root(&options, source_root)
+}
+
+pub(crate) fn execute_setup_operation(
+    request: &RepositoryLifecycleRequest,
+    source_root: &Path,
+) -> Result<serde_json::Value, String> {
+    setup_payload_for_request(request, source_root)
+}
+
+pub(in crate::cli) fn setup_payload_for_root(
+    options: &SetupOptions,
+    source_root: &Path,
+) -> Result<serde_json::Value, String> {
+    let source_root = source_root.to_path_buf();
     let paths = GraphStatePaths::derive(&source_root);
     if source_root
         .components()
@@ -101,7 +162,7 @@ pub(in crate::cli) fn setup_payload(options: &SetupOptions) -> Result<serde_json
             let materialization = if graph_state_existed {
                 existing_graph_materialization_payload(&materialize_options.mode, &paths)
             } else {
-                let (_, response) = materialize(&materialize_options)?;
+                let (_, response) = execute_materialization(&materialize_options)?;
                 materialization_payload(&response, &materialize_options.mode, &paths)
             };
             let mcp_config = setup_mcp_config(options, &paths, false)?;
@@ -168,7 +229,7 @@ fn existing_graph_materialization_payload(
         "phase_timings": {},
     })
 }
-pub(super) fn setup_mcp_config(
+pub(in crate::cli) fn setup_mcp_config(
     options: &SetupOptions,
     paths: &GraphStatePaths,
     dry_run: bool,
@@ -227,7 +288,7 @@ pub(super) fn setup_mcp_config(
         help: false,
     })
 }
-pub(super) fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) -> serde_json::Value {
+pub(crate) fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) -> serde_json::Value {
     json!({
         "schema_version": 1,
         "repo_root": repo_root,
@@ -254,7 +315,7 @@ pub(super) fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) ->
     })
 }
 
-pub(super) fn write_setup_config(
+pub(crate) fn write_setup_config(
     paths: &GraphStatePaths,
     repo_root: &Path,
 ) -> Result<&'static str, String> {
@@ -285,7 +346,7 @@ pub(super) fn write_setup_config(
     Ok(action)
 }
 
-pub(super) fn json_file_would_change(
+pub(crate) fn json_file_would_change(
     path: &Path,
     payload: &serde_json::Value,
 ) -> Result<bool, String> {
@@ -295,7 +356,7 @@ pub(super) fn json_file_would_change(
     Ok(read_json_file(path)? != *payload)
 }
 
-pub(super) fn instruction_target_path(
+pub(crate) fn instruction_target_path(
     repo_root: &Path,
     target: &str,
 ) -> Result<Option<PathBuf>, String> {
@@ -318,7 +379,7 @@ pub(super) fn instruction_target_path(
     }
 }
 
-pub(super) fn upsert_instruction_block(
+pub(crate) fn upsert_instruction_block(
     repo_root: &Path,
     target: &str,
     config_path: &Path,
@@ -346,7 +407,7 @@ pub(super) fn upsert_instruction_block(
     Ok(json!({"action": action, "path": path.to_string_lossy()}))
 }
 
-pub(super) fn instruction_block(config_path: &Path) -> String {
+pub(crate) fn instruction_block(config_path: &Path) -> String {
     format!(
         "<!-- codebaseGraph:start -->\n\
 ## codebaseGraph workflow\n\
@@ -365,7 +426,7 @@ pub(super) fn instruction_block(config_path: &Path) -> String {
     )
 }
 
-pub(super) fn upsert_instruction_text(
+pub(crate) fn upsert_instruction_text(
     existing: &str,
     block: &str,
     created: bool,
@@ -408,7 +469,7 @@ pub(super) fn upsert_instruction_text(
     (text, "updated")
 }
 
-pub(super) fn remove_instruction_text(existing: &str) -> (String, bool) {
+pub(crate) fn remove_instruction_text(existing: &str) -> (String, bool) {
     const START: &str = "<!-- codebaseGraph:start -->";
     const END: &str = "<!-- codebaseGraph:end -->";
     let Some(start) = existing.find(START) else {
@@ -429,16 +490,16 @@ pub(super) fn remove_instruction_text(existing: &str) -> (String, bool) {
     (text, true)
 }
 #[derive(Debug)]
-pub(super) struct GraphStatePaths {
-    pub(super) repo_name: String,
-    pub(super) state_dir: PathBuf,
-    pub(super) db_path: PathBuf,
-    pub(super) manifest_path: PathBuf,
-    pub(super) config_path: PathBuf,
+pub(crate) struct GraphStatePaths {
+    pub(crate) repo_name: String,
+    pub(crate) state_dir: PathBuf,
+    pub(crate) db_path: PathBuf,
+    pub(crate) manifest_path: PathBuf,
+    pub(crate) config_path: PathBuf,
 }
 
 impl GraphStatePaths {
-    pub(super) fn derive(repo_root: &Path) -> Self {
+    pub(crate) fn derive(repo_root: &Path) -> Self {
         let repo_name = safe_name(
             repo_root
                 .file_name()
@@ -456,7 +517,7 @@ impl GraphStatePaths {
     }
 }
 
-pub(super) fn safe_name(value: &str) -> String {
+pub(crate) fn safe_name(value: &str) -> String {
     let normalized: String = value
         .chars()
         .map(|character| {

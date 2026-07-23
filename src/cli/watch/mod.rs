@@ -16,6 +16,7 @@ pub(in crate::cli) use filter::WatchEventFilter;
 pub(in crate::cli) use native::{probe_native_watcher, start_native_watcher};
 pub(in crate::cli) use options::{SetupOptions, WatchLoopConfig};
 pub(in crate::cli) use poll::collect_poll_batch;
+pub(in crate::cli) use refresh::execute_refresh_operation;
 pub(in crate::cli) use snapshot::{scan_source_snapshots, watch_file_snapshot};
 pub(in crate::cli) use types::WatchMessage;
 

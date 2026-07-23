@@ -10,15 +10,13 @@ use lbug::Value;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
-pub(in crate::cli) struct HealthRuntime {
-    pub(in crate::cli) repo_root: PathBuf,
-    pub(in crate::cli) db_path: PathBuf,
-    pub(in crate::cli) manifest_path: PathBuf,
+pub(crate) struct HealthRuntime {
+    pub(crate) repo_root: PathBuf,
+    pub(crate) db_path: PathBuf,
+    pub(crate) manifest_path: PathBuf,
 }
 
-pub(in crate::cli) fn resolve_health_runtime(
-    options: &HealthOptions,
-) -> Result<HealthRuntime, String> {
+pub(crate) fn resolve_health_runtime(options: &HealthOptions) -> Result<HealthRuntime, String> {
     let repo_root = resolve_repo_root(options.repo_root.as_deref())?;
     let default_paths = GraphStatePaths::derive(&repo_root);
     let config_path = options
@@ -58,7 +56,7 @@ pub(in crate::cli) fn resolve_health_runtime(
         manifest_path,
     })
 }
-pub(in crate::cli) fn count_graph_nodes(db_path: &Path) -> Result<u64, String> {
+pub(crate) fn count_graph_nodes(db_path: &Path) -> Result<u64, String> {
     let db = retry_transient_database(READ_RETRY_POLICY, || open_ladybug_database(db_path, true))
         .map_err(|error| error.to_string())?;
     let conn = connect_ladybug_database(&db).map_err(|error| error.to_string())?;
@@ -73,7 +71,7 @@ pub(in crate::cli) fn count_graph_nodes(db_path: &Path) -> Result<u64, String> {
         .ok_or_else(|| "graph health query returned a non-numeric node count".to_string())
 }
 
-pub(in crate::cli) fn value_to_u64(value: &Value) -> Option<u64> {
+pub(crate) fn value_to_u64(value: &Value) -> Option<u64> {
     match value {
         Value::Int64(value) if *value >= 0 => Some(*value as u64),
         Value::Int32(value) if *value >= 0 => Some(*value as u64),

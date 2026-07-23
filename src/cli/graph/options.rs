@@ -5,17 +5,17 @@ use crate::cli::{
 use std::path::PathBuf;
 
 #[derive(Debug)]
-pub(in crate::cli) struct HealthOptions {
-    pub(in crate::cli) repo_root: Option<PathBuf>,
-    pub(in crate::cli) config: Option<PathBuf>,
-    pub(in crate::cli) db: Option<PathBuf>,
-    pub(in crate::cli) manifest: Option<PathBuf>,
-    pub(in crate::cli) help: bool,
-    pub(in crate::cli) json: bool,
+pub(crate) struct HealthOptions {
+    pub(crate) repo_root: Option<PathBuf>,
+    pub(crate) config: Option<PathBuf>,
+    pub(crate) db: Option<PathBuf>,
+    pub(crate) manifest: Option<PathBuf>,
+    pub(crate) help: bool,
+    pub(crate) json: bool,
 }
 
 impl HealthOptions {
-    pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
+    pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         let mut options = Self {
             repo_root: None,
             config: None,
@@ -76,20 +76,20 @@ impl HealthOptions {
 }
 
 #[derive(Debug)]
-pub(in crate::cli) struct GraphQueryOptions {
-    pub(in crate::cli) statement: String,
-    pub(in crate::cli) parameters: serde_json::Map<String, serde_json::Value>,
-    pub(in crate::cli) limit: usize,
-    pub(in crate::cli) repo_root: Option<PathBuf>,
-    pub(in crate::cli) config: Option<PathBuf>,
-    pub(in crate::cli) db: Option<PathBuf>,
-    pub(in crate::cli) manifest: Option<PathBuf>,
-    pub(in crate::cli) help: bool,
-    pub(in crate::cli) json: bool,
+pub(crate) struct GraphQueryOptions {
+    pub(crate) statement: String,
+    pub(crate) parameters: serde_json::Map<String, serde_json::Value>,
+    pub(crate) limit: usize,
+    pub(crate) repo_root: Option<PathBuf>,
+    pub(crate) config: Option<PathBuf>,
+    pub(crate) db: Option<PathBuf>,
+    pub(crate) manifest: Option<PathBuf>,
+    pub(crate) help: bool,
+    pub(crate) json: bool,
 }
 
 impl GraphQueryOptions {
-    pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
+    pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         let mut statement = None;
         let mut parameters = serde_json::Map::new();
         let mut limit = 100_usize;
@@ -233,14 +233,14 @@ impl GraphQueryOptions {
 }
 
 #[derive(Debug)]
-pub(in crate::cli) struct MetadataOutputOptions {
-    pub(in crate::cli) format: String,
-    pub(in crate::cli) pretty: bool,
-    pub(in crate::cli) help: bool,
+pub(crate) struct MetadataOutputOptions {
+    pub(crate) format: String,
+    pub(crate) pretty: bool,
+    pub(crate) help: bool,
 }
 
 impl MetadataOutputOptions {
-    pub(in crate::cli) fn parse(args: &[String], command_name: &str) -> Result<Self, String> {
+    pub(crate) fn parse(args: &[String], command_name: &str) -> Result<Self, String> {
         let mut options = Self {
             format: "block".to_string(),
             pretty: false,
@@ -284,7 +284,7 @@ impl MetadataOutputOptions {
 }
 
 #[derive(Debug)]
-pub(in crate::cli) struct ArchitectureQueryOptions {
+pub(crate) struct ArchitectureQueryOptions {
     pub(in crate::cli) output: MetadataOutputOptions,
     pub(in crate::cli) group: Option<String>,
 }
@@ -317,23 +317,23 @@ impl ArchitectureQueryOptions {
 }
 
 #[derive(Debug)]
-pub(in crate::cli) struct GraphSearchOptions {
-    pub(in crate::cli) query: String,
-    pub(in crate::cli) limit: usize,
-    pub(in crate::cli) profile: String,
-    pub(in crate::cli) budget: usize,
-    pub(in crate::cli) context_limit: usize,
-    pub(in crate::cli) max_depth: Option<usize>,
-    pub(in crate::cli) detail: String,
-    pub(in crate::cli) repo_root: Option<PathBuf>,
-    pub(in crate::cli) config: Option<PathBuf>,
-    pub(in crate::cli) db: Option<PathBuf>,
-    pub(in crate::cli) manifest: Option<PathBuf>,
-    pub(in crate::cli) output: MetadataOutputOptions,
+pub(crate) struct GraphSearchOptions {
+    pub(crate) query: String,
+    pub(crate) limit: usize,
+    pub(crate) profile: String,
+    pub(crate) budget: usize,
+    pub(crate) context_limit: usize,
+    pub(crate) max_depth: Option<usize>,
+    pub(crate) detail: String,
+    pub(crate) repo_root: Option<PathBuf>,
+    pub(crate) config: Option<PathBuf>,
+    pub(crate) db: Option<PathBuf>,
+    pub(crate) manifest: Option<PathBuf>,
+    pub(crate) output: MetadataOutputOptions,
 }
 
 impl GraphSearchOptions {
-    pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
+    pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         let mut query = None;
         let mut limit = 3_usize;
         let mut profile = "brief".to_string();
@@ -484,7 +484,7 @@ impl GraphSearchOptions {
 }
 
 #[derive(Debug)]
-pub(in crate::cli) struct GraphContextOptions {
+pub(crate) struct GraphContextOptions {
     pub(in crate::cli) search: GraphSearchOptions,
     pub(in crate::cli) node_id: Option<String>,
     pub(in crate::cli) node_type: Option<String>,

@@ -1,8 +1,6 @@
 use super::{options::McpServeOptions, tools::mcp_call_tool_result};
-use crate::cli::{
-    constants::{LATEST_PROTOCOL_VERSION, MCP_TOOL_SPECS_JSON},
-    format::metadata_payload,
-};
+use crate::cli::constants::LATEST_PROTOCOL_VERSION;
+use crate::cli::mcp::tools::generate_mcp_specs;
 use serde_json::json;
 
 pub(in crate::cli) fn handle_mcp_message(
@@ -48,7 +46,7 @@ pub(in crate::cli) fn handle_mcp_message(
             }))
         }
         "ping" => Ok(json!({})),
-        "tools/list" => metadata_payload(MCP_TOOL_SPECS_JSON),
+        "tools/list" => generate_mcp_specs(),
         "tools/call" => {
             let params = message.get("params").cloned().unwrap_or_else(|| json!({}));
             let tool_name = params

@@ -1,8 +1,12 @@
 use super::{
     format::reinstall_help,
-    setup::{setup_payload, GraphStatePaths},
-    util::resolve_repo_root,
+    setup::{setup_payload_for_root, GraphStatePaths},
     watch::SetupOptions,
+};
+use crate::api::contracts::RepositoryLifecycleRequest;
+use crate::api::{
+    contracts::{OperationRequest, OutputFormat, RepoSelector},
+    CodebaseGraphApi,
 };
 use serde_json::json;
 use std::{
@@ -20,8 +24,78 @@ pub(in crate::cli) fn run_reinstall<W: Write>(
         writeln!(stdout, "{}", reinstall_help()).map_err(|error| error.to_string())?;
         return Ok(());
     }
+    let request = RepositoryLifecycleRequest {
+        repo: RepoSelector {
+            repo_root: options.repo_root.clone(),
+            config_path: None,
+            db_path: None,
+            manifest_path: None,
+        },
+        action: "reinstall".to_string(),
+        output_format: OutputFormat::Typed,
+        dry_run: options.dry_run,
+        mcp_client: Some(options.mcp_client.clone()),
+        mcp_config_path: options.mcp_config_path.clone(),
+        instructions_target: Some(options.instructions_target.clone()),
+        skip_mcp_config: options.skip_mcp_config,
+        mode: options.mode.clone(),
+        include_fts: options.include_fts,
+        semantic_enrichment: options.semantic_enrichment,
+        semantic_provider_mode: options.semantic_provider_mode.clone(),
+    };
+    let payload = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Reinstall(request))
+        .map_err(|error| error.message)?
+        .payload;
+    writeln!(
+        stdout,
+        "{}",
+        serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())?
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(())
+}
 
-    let repo_root = resolve_repo_root(options.repo_root.as_deref())?;
+pub(crate) fn execute_reinstall_operation(
+    request: &RepositoryLifecycleRequest,
+    repo_root: &Path,
+) -> Result<serde_json::Value, String> {
+    reinstall_payload_for_request(request, repo_root)
+}
+
+pub(crate) fn reinstall_payload_for_request(
+    request: &RepositoryLifecycleRequest,
+    repo_root: &Path,
+) -> Result<serde_json::Value, String> {
+    execute_reinstall_operation_from_options(
+        &SetupOptions {
+            repo_root: request.repo.repo_root.clone(),
+            mode: request.mode.clone(),
+            include_fts: request.include_fts,
+            semantic_enrichment: request.semantic_enrichment,
+            semantic_provider_mode: request.semantic_provider_mode.clone(),
+            mcp_client: request
+                .mcp_client
+                .clone()
+                .unwrap_or_else(|| "codex".to_string()),
+            mcp_config_path: request.mcp_config_path.clone(),
+            skip_mcp_config: request.skip_mcp_config,
+            dry_run: request.dry_run,
+            instructions_target: request
+                .instructions_target
+                .clone()
+                .unwrap_or_else(|| "auto".to_string()),
+            help: false,
+        },
+        repo_root,
+    )
+}
+
+fn execute_reinstall_operation_from_options(
+    options: &SetupOptions,
+    repo_root: &Path,
+) -> Result<serde_json::Value, String> {
+    let repo_root = repo_root.to_path_buf();
     if repo_root
         .components()
         .any(|component| component.as_os_str() == ".codebaseGraph")
@@ -35,9 +109,9 @@ pub(in crate::cli) fn run_reinstall<W: Write>(
     let paths = GraphStatePaths::derive(&repo_root);
     let state = reinstall_state(&paths, options.dry_run)?;
     let install = if options.dry_run {
-        setup_payload(&options)?
+        setup_payload_for_root(options, &repo_root)?
     } else {
-        match setup_payload(&options) {
+        match setup_payload_for_root(options, &repo_root) {
             Ok(payload) => {
                 remove_backup(state.backup_path.as_deref())?;
                 payload
@@ -56,13 +130,7 @@ pub(in crate::cli) fn run_reinstall<W: Write>(
         "state": state.payload,
         "install": install,
     });
-    writeln!(
-        stdout,
-        "{}",
-        serde_json::to_string_pretty(&output).map_err(|error| error.to_string())?
-    )
-    .map_err(|error| error.to_string())?;
-    Ok(())
+    Ok(output)
 }
 
 struct ReinstallState {

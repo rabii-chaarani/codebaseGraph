@@ -1,3 +1,4 @@
+pub mod api;
 pub mod cli;
 pub mod db_writer;
 pub mod error;
@@ -14,6 +15,6 @@ mod semantic_enrichment;
 mod staging_writer;
 mod syntax_materializer;
 
-pub use execution::{
-    materialize_syntax_batch, materialize_syntax_batch_json, plan_syntax_materialization,
-};
+pub use error::MaterializationError;
+pub use execution::{execute_materialization_pipeline, plan_materialization};
+pub use protocol::{MaterializationInput, MaterializationResult};

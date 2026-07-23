@@ -1,13 +1,13 @@
 use super::options::McpServeOptions;
+use crate::api::lifecycle::is_retryable_refresh_failure;
 use crate::cli::{
     graph::resolve_health_runtime,
-    materialization::{materialize_candidate_paths, MaterializeOptions},
+    materialization::MaterializeOptions,
     watch::{
-        collect_poll_batch, collect_watch_batch, probe_native_watcher, start_native_watcher,
-        watch_file_snapshot, WatchEventFilter, WatchLoopConfig, WatchMessage,
+        collect_poll_batch, collect_watch_batch, execute_refresh_operation, probe_native_watcher,
+        start_native_watcher, watch_file_snapshot, WatchEventFilter, WatchLoopConfig, WatchMessage,
     },
 };
-use crate::db_writer::is_transient_database_error;
 use crate::protocol::NativeSyntaxMaterializationResponse;
 use serde_json::json;
 use std::{
@@ -359,8 +359,7 @@ fn refresh_batch(
         return Ok(());
     }
     refresh_batch_with(state, backend, event_count, paths, |candidate_paths| {
-        materialize_candidate_paths(materialize_options, candidate_paths)
-            .map(|(_, response)| response)
+        execute_refresh_operation(materialize_options, candidate_paths)
     })
 }
 
@@ -397,7 +396,7 @@ fn refresh_batch_with(
                 return Ok(());
             }
             Err(error) => {
-                let retrying = is_transient_database_error(&error);
+                let retrying = is_retryable_refresh_failure(&error);
                 state.mark_refresh_error(backend, event_count, changed_paths, error, retrying);
                 if !retrying {
                     return Ok(());

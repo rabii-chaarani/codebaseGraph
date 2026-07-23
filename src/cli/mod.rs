@@ -1,13 +1,13 @@
-mod constants;
+pub(crate) mod constants;
 mod dispatch;
-mod format;
-mod graph;
+pub(crate) mod format;
+pub(crate) mod graph;
 mod install;
-mod materialization;
+pub(crate) mod materialization;
 mod mcp;
-mod reinstall;
-mod setup;
-mod uninstall;
+pub(crate) mod reinstall;
+pub(crate) mod setup;
+pub(crate) mod uninstall;
 mod util;
 mod watch;
 

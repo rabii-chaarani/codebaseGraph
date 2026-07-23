@@ -5,10 +5,7 @@ use lbug::Value;
 use serde_json::json;
 use std::path::Path;
 
-pub(in crate::cli) fn span_json(
-    line_start: Option<i64>,
-    line_end: Option<i64>,
-) -> serde_json::Value {
+pub(crate) fn span_json(line_start: Option<i64>, line_end: Option<i64>) -> serde_json::Value {
     let mut span = serde_json::Map::new();
     if let Some(line_start) = line_start {
         span.insert("line_start".to_string(), json!(line_start));
@@ -19,15 +16,15 @@ pub(in crate::cli) fn span_json(
     serde_json::Value::Object(span)
 }
 
-pub(in crate::cli) fn cypher_single_quoted(value: &str) -> String {
+pub(crate) fn cypher_single_quoted(value: &str) -> String {
     value.replace('\\', "\\\\").replace('\'', "\\'")
 }
 
-pub(in crate::cli) fn cypher_identifier(value: &str) -> String {
+pub(crate) fn cypher_identifier(value: &str) -> String {
     value.replace('`', "``")
 }
 
-pub(in crate::cli) fn value_to_string(value: Option<&Value>) -> String {
+pub(crate) fn value_to_string(value: Option<&Value>) -> String {
     match value {
         Some(Value::String(value)) => value.clone(),
         Some(Value::Int64(value)) => value.to_string(),
@@ -39,7 +36,7 @@ pub(in crate::cli) fn value_to_string(value: Option<&Value>) -> String {
     }
 }
 
-pub(in crate::cli) fn value_to_i64(value: Option<&Value>) -> Option<i64> {
+pub(crate) fn value_to_i64(value: Option<&Value>) -> Option<i64> {
     match value {
         Some(Value::Int64(value)) => Some(*value),
         Some(Value::Int32(value)) => Some(i64::from(*value)),
@@ -53,7 +50,7 @@ pub(in crate::cli) fn value_to_i64(value: Option<&Value>) -> Option<i64> {
     }
 }
 
-pub(in crate::cli) fn value_to_f64(value: Option<&Value>) -> f64 {
+pub(crate) fn value_to_f64(value: Option<&Value>) -> f64 {
     match value {
         Some(Value::Double(value)) => *value,
         Some(Value::Float(value)) => f64::from(*value),
@@ -65,7 +62,7 @@ pub(in crate::cli) fn value_to_f64(value: Option<&Value>) -> f64 {
     }
 }
 
-pub(in crate::cli) fn validate_read_only_statement(statement: &str) -> Result<(), String> {
+pub(crate) fn validate_read_only_statement(statement: &str) -> Result<(), String> {
     let stripped = statement.trim().trim_end_matches(';');
     if stripped.contains(';') {
         return Err("graph_query accepts one read-only statement at a time".to_string());
@@ -111,7 +108,7 @@ pub(in crate::cli) fn is_keyword_char(character: char) -> bool {
     character.is_ascii_alphanumeric() || character == '_'
 }
 
-pub(in crate::cli) fn execute_read_only_query(
+pub(crate) fn execute_read_only_query(
     db_path: &Path,
     statement: &str,
     parameters: &serde_json::Map<String, serde_json::Value>,
@@ -150,7 +147,7 @@ pub(in crate::cli) fn execute_read_only_query(
     Ok((rows, truncated))
 }
 
-pub(in crate::cli) fn lbug_query_parameters(
+pub(crate) fn lbug_query_parameters(
     parameters: &serde_json::Map<String, serde_json::Value>,
 ) -> Result<Vec<(String, Value)>, String> {
     let mut converted = Vec::with_capacity(parameters.len());
@@ -163,9 +160,7 @@ pub(in crate::cli) fn lbug_query_parameters(
     Ok(converted)
 }
 
-pub(in crate::cli) fn json_parameter_to_lbug_value(
-    value: &serde_json::Value,
-) -> Result<Value, String> {
+pub(crate) fn json_parameter_to_lbug_value(value: &serde_json::Value) -> Result<Value, String> {
     match value {
         serde_json::Value::Bool(value) => Ok(Value::Bool(*value)),
         serde_json::Value::Number(value) => {
@@ -186,7 +181,7 @@ pub(in crate::cli) fn json_parameter_to_lbug_value(
     }
 }
 
-pub(in crate::cli) fn json_safe_value(value: Value) -> serde_json::Value {
+pub(crate) fn json_safe_value(value: Value) -> serde_json::Value {
     match value {
         Value::Null(_) => serde_json::Value::Null,
         Value::Bool(value) => json!(value),

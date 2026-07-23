@@ -1,7 +1,11 @@
 use super::output::{write_watch_event, write_watch_status};
 use crate::{
-    cli::materialization::{materialize_candidate_paths, MaterializeOptions},
-    db_writer::is_transient_database_error,
+    api::{
+        contracts::{OperationRequest, OutputFormat, RefreshRequest, RepoSelector},
+        lifecycle::is_retryable_refresh_failure,
+        CodebaseGraphApi,
+    },
+    cli::materialization::MaterializeOptions,
     protocol::NativeSyntaxMaterializationResponse,
 };
 use std::{collections::BTreeSet, io::Write, thread, time::Duration};
@@ -17,9 +21,34 @@ pub(in crate::cli) fn refresh_watch_batch<W: Write>(
     paths: &BTreeSet<String>,
 ) -> Result<bool, String> {
     refresh_watch_batch_with(stdout, backend, event_count, paths, |candidate_paths| {
-        materialize_candidate_paths(materialize_options, candidate_paths)
-            .map(|(_, response)| response)
+        execute_refresh_operation(materialize_options, candidate_paths)
     })
+}
+
+pub(in crate::cli) fn execute_refresh_operation(
+    options: &MaterializeOptions,
+    paths: Vec<String>,
+) -> Result<NativeSyntaxMaterializationResponse, String> {
+    let response = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Refresh(RefreshRequest {
+            repo: RepoSelector {
+                repo_root: options.source_root.clone(),
+                config_path: None,
+                db_path: options.db.clone(),
+                manifest_path: options.manifest.clone(),
+            },
+            paths,
+            mode: options.mode.clone(),
+            include_fts: options.include_fts,
+            semantic_enrichment: options.semantic_enrichment,
+            semantic_provider_mode: options.semantic_provider_mode.clone(),
+            parallel: options.parallel,
+            progress: options.progress,
+            output_format: OutputFormat::Typed,
+        }))
+        .map_err(|error| error.message)?;
+    serde_json::from_value(response.payload)
+        .map_err(|error| format!("invalid refresh response: {error}"))
 }
 
 fn refresh_watch_batch_with<W: Write>(
@@ -44,7 +73,7 @@ fn refresh_watch_batch_with<W: Write>(
                 return Ok(true);
             }
             Err(error) => {
-                let transient = is_transient_database_error(&error);
+                let transient = is_retryable_refresh_failure(&error);
                 write_watch_status(
                     stdout,
                     if transient { "retrying" } else { "error" },

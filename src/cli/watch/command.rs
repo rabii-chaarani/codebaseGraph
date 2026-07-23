@@ -5,7 +5,7 @@ use super::{
     output::{write_watch_event, write_watch_status},
     poll::run_poll_watch,
 };
-use crate::cli::{format::watch_help, materialization::materialize, util::resolve_source_root};
+use crate::cli::{format::watch_help, util::resolve_source_root, watch::execute_refresh_operation};
 use std::{collections::VecDeque, io::Write};
 
 pub(in crate::cli) fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
@@ -26,7 +26,7 @@ pub(in crate::cli) fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Re
     materialize_options.source_root = Some(source_root.clone());
     let filter = WatchEventFilter::from_options(&source_root, &materialize_options)?;
     if once {
-        let (_, response) = materialize(&materialize_options)?;
+        let response = execute_refresh_operation(&materialize_options, Vec::new())?;
         write_watch_event(stdout, "refreshed", None, 0, 0, &response)?;
         return Ok(());
     }

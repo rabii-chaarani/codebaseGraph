@@ -13,7 +13,7 @@ use lbug::{Connection, Database, SystemConfig};
 use serde_json::json;
 use std::{collections::BTreeSet, path::Path};
 
-pub(in crate::cli) fn execute_graph_search(
+pub(crate) fn execute_graph_search(
     db_path: &Path,
     options: &GraphSearchOptions,
 ) -> Result<Vec<serde_json::Value>, String> {
@@ -85,7 +85,7 @@ pub(in crate::cli) fn execute_graph_search(
     Ok(payloads)
 }
 
-pub(in crate::cli) fn execute_graph_context(
+pub(crate) fn execute_graph_context(
     db_path: &Path,
     node_id: &str,
     node_type: &str,

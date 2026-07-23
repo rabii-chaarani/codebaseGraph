@@ -6,7 +6,11 @@ use super::{
         McpInstallOptions,
     },
     setup::{remove_instruction_text, GraphStatePaths},
-    util::{read_json_file, required_arg, resolve_repo_root},
+    util::{read_json_file, required_arg},
+};
+use crate::api::{
+    contracts::{OperationRequest, OutputFormat, RepositoryLifecycleRequest},
+    CodebaseGraphApi,
 };
 use serde_json::json;
 use std::{
@@ -104,38 +108,96 @@ pub(in crate::cli) fn run_uninstall<W: Write>(
         writeln!(stdout, "{}", uninstall_help()).map_err(|error| error.to_string())?;
         return Ok(());
     }
-    let repo_root = resolve_repo_root(options.repo_root.as_deref())?;
+    let request = RepositoryLifecycleRequest {
+        repo: crate::api::contracts::RepoSelector {
+            repo_root: options.repo_root.clone(),
+            config_path: options.config.clone(),
+            db_path: None,
+            manifest_path: None,
+        },
+        action: "uninstall".to_string(),
+        output_format: if options.json {
+            OutputFormat::Typed
+        } else {
+            OutputFormat::Block
+        },
+        dry_run: options.dry_run,
+        mcp_client: Some(options.mcp_client.clone()),
+        mcp_config_path: options.client_config_path.clone(),
+        instructions_target: None,
+        skip_mcp_config: false,
+        mode: "changed".to_string(),
+        include_fts: true,
+        semantic_enrichment: true,
+        semantic_provider_mode: "local_only".to_string(),
+    };
+    let payload = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Uninstall(request))
+        .map_err(|error| error.message)?
+        .payload;
+    if options.json {
+        writeln!(
+            stdout,
+            "{}",
+            serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())?
+        )
+        .map_err(|error| error.to_string())?;
+    } else {
+        let text = payload
+            .get("text")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| "block response did not contain text".to_string())?;
+        write!(stdout, "{text}").map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+pub(crate) fn execute_uninstall_operation(
+    request: &RepositoryLifecycleRequest,
+    repo_root: &Path,
+) -> Result<serde_json::Value, String> {
+    uninstall_payload_for_request(request, repo_root)
+}
+
+pub(crate) fn uninstall_payload_for_request(
+    request: &RepositoryLifecycleRequest,
+    repo_root: &Path,
+) -> Result<serde_json::Value, String> {
+    let repo_root = repo_root.to_path_buf();
     let paths = GraphStatePaths::derive(&repo_root);
-    let config_path = options
-        .config
+    let config_path = request
+        .repo
+        .config_path
         .clone()
         .unwrap_or_else(|| paths.config_path.clone());
+    let mcp_client = request
+        .mcp_client
+        .clone()
+        .unwrap_or_else(|| "all".to_string());
     let server_name = uninstall_server_name(&repo_root, &config_path)?;
-    let state = uninstall_state_dir(&paths.state_dir, options.dry_run)?;
-    let instructions = uninstall_instruction_blocks(&repo_root, options.dry_run)?;
+    let state = uninstall_state_dir(&paths.state_dir, request.dry_run)?;
+    let instructions = uninstall_instruction_blocks(&repo_root, request.dry_run)?;
+    let options = UninstallOptions {
+        repo_root: request.repo.repo_root.clone(),
+        config: request.repo.config_path.clone(),
+        mcp_client,
+        client_config_path: request.mcp_config_path.clone(),
+        dry_run: request.dry_run,
+        json: request.output_format == crate::api::contracts::OutputFormat::Typed,
+        help: false,
+    };
     let mcp_clients = uninstall_mcp_clients(&options, &repo_root, &config_path, &server_name)?;
     let output = json!({
         "ok": true,
         "repo_root": repo_root,
         "config_path": config_path,
         "server_name": server_name,
-        "dry_run": options.dry_run,
+        "dry_run": request.dry_run,
         "state": state,
         "instructions": instructions,
         "mcp_clients": mcp_clients,
     });
-    if options.json {
-        writeln!(
-            stdout,
-            "{}",
-            serde_json::to_string_pretty(&output).map_err(|error| error.to_string())?
-        )
-        .map_err(|error| error.to_string())?;
-    } else {
-        write!(stdout, "{}", serialize_uninstall_block(&output))
-            .map_err(|error| error.to_string())?;
-    }
-    Ok(())
+    Ok(output)
 }
 
 fn uninstall_server_name(repo_root: &Path, config_path: &Path) -> Result<String, String> {
@@ -293,7 +355,7 @@ fn uninstall_mcp_client(
     }))
 }
 
-fn serialize_uninstall_block(output: &serde_json::Value) -> String {
+pub(crate) fn serialize_uninstall_block(output: &serde_json::Value) -> String {
     let mut lines = vec![format!(
         "uninstall ok={} server_name={}",
         output["ok"].as_bool().unwrap_or(false),

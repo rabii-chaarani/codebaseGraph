@@ -12,7 +12,7 @@ pub(in crate::cli) fn read_manifest(path: &Path) -> Result<NativeManifest, Strin
         .map_err(|error| format!("failed to parse manifest {}: {error}", path.display()))
 }
 
-pub(in crate::cli) fn request_manifest_path(options: &MaterializeOptions) -> Option<PathBuf> {
+pub(crate) fn request_manifest_path(options: &MaterializeOptions) -> Option<PathBuf> {
     if options.native_request.is_some() {
         return options.manifest.clone();
     }
@@ -26,16 +26,14 @@ pub(in crate::cli) fn request_manifest_path(options: &MaterializeOptions) -> Opt
     )
 }
 
-pub(in crate::cli) fn read_request(
-    path: &Path,
-) -> Result<NativeSyntaxMaterializationRequest, String> {
+pub(crate) fn read_request(path: &Path) -> Result<NativeSyntaxMaterializationRequest, String> {
     let text = fs::read_to_string(path)
         .map_err(|error| format!("failed to read native request {}: {error}", path.display()))?;
     serde_json::from_str(&text)
         .map_err(|error| format!("failed to parse native request {}: {error}", path.display()))
 }
 
-pub(in crate::cli) fn write_manifest(
+pub(crate) fn write_manifest(
     path: &Path,
     request: &NativeSyntaxMaterializationRequest,
     rebuilt_entries: &BTreeMap<String, crate::protocol::ManifestEntry>,

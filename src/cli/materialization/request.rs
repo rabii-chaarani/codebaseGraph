@@ -9,7 +9,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub(in crate::cli) fn build_request(
+pub(crate) fn build_request(
     options: &MaterializeOptions,
 ) -> Result<NativeSyntaxMaterializationRequest, String> {
     let source_root = resolve_source_root(options.source_root.as_deref())?;
@@ -65,14 +65,12 @@ pub(in crate::cli) fn build_request(
 }
 
 #[derive(Default)]
-pub(in crate::cli) struct ConfigScanRules {
-    pub(in crate::cli) include_patterns: Vec<String>,
-    pub(in crate::cli) exclude_patterns: Vec<String>,
+pub(crate) struct ConfigScanRules {
+    pub(crate) include_patterns: Vec<String>,
+    pub(crate) exclude_patterns: Vec<String>,
 }
 
-pub(in crate::cli) fn read_materialization_config_rules(
-    path: &Path,
-) -> Result<ConfigScanRules, String> {
+pub(crate) fn read_materialization_config_rules(path: &Path) -> Result<ConfigScanRules, String> {
     if !path.exists() {
         return Ok(ConfigScanRules::default());
     }
@@ -95,7 +93,7 @@ pub(in crate::cli) fn read_materialization_config_rules(
     })
 }
 
-pub(in crate::cli) fn json_string_array(value: &serde_json::Value) -> Vec<String> {
+pub(crate) fn json_string_array(value: &serde_json::Value) -> Vec<String> {
     value
         .as_array()
         .map(|items| {
@@ -108,9 +106,7 @@ pub(in crate::cli) fn json_string_array(value: &serde_json::Value) -> Vec<String
         .unwrap_or_default()
 }
 
-pub(in crate::cli) fn read_codebase_graph_ignore(
-    source_root: &Path,
-) -> Result<Vec<String>, String> {
+pub(crate) fn read_codebase_graph_ignore(source_root: &Path) -> Result<Vec<String>, String> {
     let path = source_root.join(".codebaseGraphignore");
     if !path.exists() {
         return Ok(Vec::new());
@@ -125,7 +121,7 @@ pub(in crate::cli) fn read_codebase_graph_ignore(
         .collect())
 }
 
-pub(in crate::cli) fn git_candidate_paths(
+pub(crate) fn git_candidate_paths(
     source_root: &Path,
     options: &MaterializeOptions,
 ) -> Result<Vec<String>, String> {
@@ -158,7 +154,7 @@ pub(in crate::cli) fn git_candidate_paths(
     Ok(paths)
 }
 
-pub(in crate::cli) fn git_paths(source_root: &Path, args: &[&str]) -> Result<Vec<String>, String> {
+pub(crate) fn git_paths(source_root: &Path, args: &[&str]) -> Result<Vec<String>, String> {
     let output = Command::new("git")
         .args(args)
         .current_dir(source_root)
@@ -175,7 +171,7 @@ pub(in crate::cli) fn git_paths(source_root: &Path, args: &[&str]) -> Result<Vec
         .collect())
 }
 
-pub(in crate::cli) fn normalized_candidate_paths(paths: &[String]) -> Vec<String> {
+pub(crate) fn normalized_candidate_paths(paths: &[String]) -> Vec<String> {
     let mut paths = paths
         .iter()
         .map(|path| path.trim().trim_start_matches("./").replace('\\', "/"))
@@ -186,7 +182,7 @@ pub(in crate::cli) fn normalized_candidate_paths(paths: &[String]) -> Vec<String
     paths
 }
 
-pub(in crate::cli) fn default_excluded_parts() -> Vec<String> {
+pub(crate) fn default_excluded_parts() -> Vec<String> {
     [
         ".bzr",
         ".cache",
@@ -211,26 +207,26 @@ pub(in crate::cli) fn default_excluded_parts() -> Vec<String> {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::cli) struct MaterializeOptions {
-    pub(in crate::cli) native_request: Option<PathBuf>,
-    pub(in crate::cli) source_root: Option<PathBuf>,
-    pub(in crate::cli) db: Option<PathBuf>,
-    pub(in crate::cli) manifest: Option<PathBuf>,
-    pub(in crate::cli) mode: String,
-    pub(in crate::cli) include_fts: bool,
-    pub(in crate::cli) semantic_enrichment: bool,
-    pub(in crate::cli) semantic_provider_mode: String,
-    pub(in crate::cli) use_git: bool,
-    pub(in crate::cli) git_diff: bool,
-    pub(in crate::cli) git_base: Option<String>,
-    pub(in crate::cli) include_patterns: Vec<String>,
-    pub(in crate::cli) exclude_patterns: Vec<String>,
-    pub(in crate::cli) candidate_paths: Vec<String>,
-    pub(in crate::cli) parallel: bool,
-    pub(in crate::cli) progress: bool,
-    pub(in crate::cli) plan_only: bool,
-    pub(in crate::cli) help: bool,
-    pub(in crate::cli) json_output: bool,
+pub(crate) struct MaterializeOptions {
+    pub(crate) native_request: Option<PathBuf>,
+    pub(crate) source_root: Option<PathBuf>,
+    pub(crate) db: Option<PathBuf>,
+    pub(crate) manifest: Option<PathBuf>,
+    pub(crate) mode: String,
+    pub(crate) include_fts: bool,
+    pub(crate) semantic_enrichment: bool,
+    pub(crate) semantic_provider_mode: String,
+    pub(crate) use_git: bool,
+    pub(crate) git_diff: bool,
+    pub(crate) git_base: Option<String>,
+    pub(crate) include_patterns: Vec<String>,
+    pub(crate) exclude_patterns: Vec<String>,
+    pub(crate) candidate_paths: Vec<String>,
+    pub(crate) parallel: bool,
+    pub(crate) progress: bool,
+    pub(crate) plan_only: bool,
+    pub(crate) help: bool,
+    pub(crate) json_output: bool,
 }
 
 impl Default for MaterializeOptions {
@@ -260,14 +256,11 @@ impl Default for MaterializeOptions {
 }
 
 impl MaterializeOptions {
-    pub(in crate::cli) fn parse(args: &[String]) -> Result<Self, String> {
+    pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         Self::parse_with_command(args, "build")
     }
 
-    pub(in crate::cli) fn parse_with_command(
-        args: &[String],
-        command_name: &str,
-    ) -> Result<Self, String> {
+    pub(crate) fn parse_with_command(args: &[String], command_name: &str) -> Result<Self, String> {
         let mut options = Self {
             mode: "changed".to_string(),
             include_fts: true,
