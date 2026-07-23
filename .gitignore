@@ -26,3 +26,4 @@
 *.tmp
 *.lock
 !/Cargo.lock
+.claude/settings.local.json
