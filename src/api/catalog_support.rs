@@ -1,6 +1,44 @@
-use super::{metadata_payload, value_array, value_str};
-use crate::cli::{constants::GRAPH_SCHEMA_JSON, graph::cypher_single_quoted};
 use std::collections::BTreeSet;
+
+pub(crate) const GRAPH_SCHEMA_JSON: &str = include_str!("../../assets/graph_schema.json");
+pub(crate) const QUERY_HELPERS_JSON: &str = include_str!("../../assets/query_helpers.json");
+pub(crate) const ARCHITECTURE_QUERIES_JSON: &str =
+    include_str!("../../assets/architecture_queries.json");
+
+pub(crate) fn metadata_payload(source: &str) -> Result<serde_json::Value, String> {
+    serde_json::from_str(source)
+        .map_err(|error| format!("failed to parse embedded metadata: {error}"))
+}
+
+pub(crate) fn filter_architecture_group(
+    payload: &mut serde_json::Value,
+    group: &str,
+) -> Result<(), String> {
+    let groups = payload
+        .get("groups")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let selected: Vec<serde_json::Value> = groups
+        .iter()
+        .filter(|value| value.get("name").and_then(serde_json::Value::as_str) == Some(group))
+        .cloned()
+        .collect();
+    if selected.is_empty() {
+        let valid = groups
+            .iter()
+            .filter_map(|value| value.get("name").and_then(serde_json::Value::as_str))
+            .collect::<Vec<_>>()
+            .join(", ");
+        return Err(format!(
+            "Unknown architecture query group: {group}. Valid groups: {valid}"
+        ));
+    }
+    if let Some(object) = payload.as_object_mut() {
+        object.insert("groups".to_string(), serde_json::Value::Array(selected));
+    }
+    Ok(())
+}
 
 pub(crate) fn schema_statements_from_copy_statements(
     include_fts: bool,
@@ -121,7 +159,7 @@ fn string_array(value: &serde_json::Value, key: &str) -> Vec<String> {
         .collect()
 }
 
-pub(in crate::cli) fn fts_index_statements(node_tables: &[String]) -> Vec<String> {
+fn fts_index_statements(node_tables: &[String]) -> Vec<String> {
     let Ok(schema) = metadata_payload(GRAPH_SCHEMA_JSON) else {
         return Vec::new();
     };
@@ -158,7 +196,7 @@ pub(in crate::cli) fn fts_index_statements(node_tables: &[String]) -> Vec<String
     statements
 }
 
-pub(in crate::cli) fn copy_tables(copy_statements: &[String]) -> BTreeSet<String> {
+fn copy_tables(copy_statements: &[String]) -> BTreeSet<String> {
     copy_statements
         .iter()
         .filter_map(|statement| {
@@ -170,7 +208,7 @@ pub(in crate::cli) fn copy_tables(copy_statements: &[String]) -> BTreeSet<String
         .collect()
 }
 
-pub(in crate::cli) fn relation_names(tables: &BTreeSet<String>) -> BTreeSet<String> {
+fn relation_names(tables: &BTreeSet<String>) -> BTreeSet<String> {
     let mut relations = BTreeSet::new();
     for table in tables {
         if let Some(name) = table.strip_prefix("FROM_") {
@@ -183,10 +221,7 @@ pub(in crate::cli) fn relation_names(tables: &BTreeSet<String>) -> BTreeSet<Stri
     relations
 }
 
-pub(in crate::cli) fn node_table_sql(
-    table: &str,
-    fields: Vec<(&'static str, &'static str)>,
-) -> String {
+fn node_table_sql(table: &str, fields: Vec<(&'static str, &'static str)>) -> String {
     let columns: Vec<String> = fields
         .into_iter()
         .map(|(name, value_type)| {
@@ -200,7 +235,7 @@ pub(in crate::cli) fn node_table_sql(
     )
 }
 
-pub(in crate::cli) fn relation_table_sql(
+fn relation_table_sql(
     table: &str,
     from_tables: &[String],
     to_tables: &[String],
@@ -222,7 +257,7 @@ pub(in crate::cli) fn relation_table_sql(
     )
 }
 
-pub(in crate::cli) fn node_fields(table: &str) -> Vec<(&'static str, &'static str)> {
+fn node_fields(table: &str) -> Vec<(&'static str, &'static str)> {
     let mut fields = common_node_fields();
     if table == "File" {
         fields.push(("content_hash", "STRING"));
@@ -230,7 +265,7 @@ pub(in crate::cli) fn node_fields(table: &str) -> Vec<(&'static str, &'static st
     fields
 }
 
-pub(in crate::cli) fn common_node_fields() -> Vec<(&'static str, &'static str)> {
+fn common_node_fields() -> Vec<(&'static str, &'static str)> {
     vec![
         ("id", "STRING"),
         ("label", "STRING"),
@@ -250,7 +285,7 @@ pub(in crate::cli) fn common_node_fields() -> Vec<(&'static str, &'static str)> 
     ]
 }
 
-pub(in crate::cli) fn edge_fields() -> Vec<(&'static str, &'static str)> {
+fn edge_fields() -> Vec<(&'static str, &'static str)> {
     vec![
         ("id", "STRING"),
         ("kind", "STRING"),
@@ -259,8 +294,28 @@ pub(in crate::cli) fn edge_fields() -> Vec<(&'static str, &'static str)> {
         ("confidence", "DOUBLE"),
         ("line_start", "INT64"),
         ("line_end", "INT64"),
-        ("byte_start", "INT64"),
-        ("byte_end", "INT64"),
         ("metadata", "JSON"),
     ]
+}
+
+pub(crate) fn value_array<'a>(
+    payload: &'a serde_json::Value,
+    key: &str,
+) -> &'a [serde_json::Value] {
+    payload
+        .get(key)
+        .and_then(serde_json::Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or(&[])
+}
+
+pub(crate) fn value_str<'a>(payload: &'a serde_json::Value, key: &str) -> &'a str {
+    payload
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+}
+
+pub(crate) fn cypher_single_quoted(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('\'', "\\'")
 }

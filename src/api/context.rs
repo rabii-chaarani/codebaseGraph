@@ -12,12 +12,15 @@ pub(crate) struct RepoRuntime {
 
 #[derive(Debug, Clone)]
 pub(crate) struct RepoPaths {
-    pub db_path: PathBuf,
-    pub manifest_path: PathBuf,
+    pub(crate) repo_name: String,
+    pub(crate) state_dir: PathBuf,
+    pub(crate) db_path: PathBuf,
+    pub(crate) manifest_path: PathBuf,
+    pub(crate) config_path: PathBuf,
 }
 
 impl RepoPaths {
-    fn derive(repo_root: &Path) -> Self {
+    pub(crate) fn derive(repo_root: &Path) -> Self {
         let repo_name = safe_name(
             repo_root
                 .file_name()
@@ -26,8 +29,11 @@ impl RepoPaths {
         );
         let state_dir = repo_root.join(".codebaseGraph");
         Self {
+            repo_name: repo_name.clone(),
+            state_dir: state_dir.clone(),
             db_path: state_dir.join(format!("{repo_name}_graph.ldb")),
             manifest_path: state_dir.join("manifest.json"),
+            config_path: state_dir.join("config.json"),
         }
     }
 }
@@ -38,7 +44,7 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
     let config_path = selector
         .config_path
         .clone()
-        .unwrap_or_else(|| repo_root.join(".codebaseGraph").join("config.json"));
+        .unwrap_or_else(|| paths.config_path.clone());
     let config = if config_path.exists() {
         Some(read_json_file(&config_path)?)
     } else {
@@ -142,10 +148,19 @@ mod tests {
     #[test]
     fn graph_paths_are_deterministic() {
         let paths = RepoPaths::derive(&std::path::PathBuf::from("/tmp/demo"));
+        assert_eq!(paths.repo_name, "demo");
+        assert_eq!(
+            paths.state_dir,
+            std::path::PathBuf::from("/tmp/demo/.codebaseGraph")
+        );
         assert!(paths.db_path.to_string_lossy().ends_with("demo_graph.ldb"));
         assert_eq!(
             paths.manifest_path,
             std::path::PathBuf::from("/tmp/demo/.codebaseGraph/manifest.json")
+        );
+        assert_eq!(
+            paths.config_path,
+            std::path::PathBuf::from("/tmp/demo/.codebaseGraph/config.json")
         );
     }
 

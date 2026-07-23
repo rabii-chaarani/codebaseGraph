@@ -10,9 +10,12 @@ pub mod context;
 pub mod contracts;
 pub mod core;
 pub mod facade;
+pub(crate) mod graph_read;
 pub mod lifecycle;
 pub(crate) mod materialization;
+pub(crate) mod normalization;
 pub mod presenter;
+pub(crate) mod refresh;
 
 pub use contracts::{
     ApiError, ContextRequest, HealthRequest, MaterializationRequest, OperationRequest,

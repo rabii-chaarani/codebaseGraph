@@ -1,11 +1,11 @@
 use crate::api::contracts::{OperationResponse, OutputFormat};
-use crate::cli::format::{
+#[path = "presentation_support.rs"]
+mod support;
+use self::support::{
     serialize_architecture_queries_block, serialize_context_block, serialize_health_block,
-    serialize_query_block, serialize_query_helpers_block, serialize_schema_block,
-    serialize_search_block,
+    serialize_plan_block, serialize_query_block, serialize_query_helpers_block,
+    serialize_schema_block, serialize_search_block, serialize_uninstall_block,
 };
-use crate::cli::materialization::serialize_plan_block;
-use crate::cli::uninstall::serialize_uninstall_block;
 
 fn present_block(operation: &str, payload: &serde_json::Value) -> String {
     match operation {

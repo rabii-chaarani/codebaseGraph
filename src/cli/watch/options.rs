@@ -21,13 +21,6 @@ pub(in crate::cli) enum WatchBackend {
     Poll,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub(in crate::cli) struct WatchLoopConfig {
-    pub(in crate::cli) poll_ms: u64,
-    pub(in crate::cli) debounce_ms: u64,
-    pub(in crate::cli) max_iterations: Option<usize>,
-}
-
 impl WatchBackend {
     pub(in crate::cli) fn parse(value: &str) -> Result<Self, String> {
         match value {
@@ -138,10 +131,10 @@ impl SetupOptions {
     ) -> Result<Self, String> {
         let mut options = Self {
             repo_root: None,
-            mode: "changed".to_string(),
+            mode: String::new(),
             include_fts: true,
             semantic_enrichment: true,
-            semantic_provider_mode: "local_only".to_string(),
+            semantic_provider_mode: String::new(),
             mcp_client: "codex".to_string(),
             mcp_config_path: None,
             skip_mcp_config: false,
@@ -166,10 +159,7 @@ impl SetupOptions {
                 "--mode" => {
                     let value = args
                         .get(index + 1)
-                        .ok_or_else(|| "--mode requires full or changed".to_string())?;
-                    if value != "full" && value != "changed" {
-                        return Err("--mode must be full or changed".to_string());
-                    }
+                        .ok_or_else(|| "--mode requires a value".to_string())?;
                     options.mode = value.clone();
                     index += 2;
                 }
@@ -223,12 +213,9 @@ impl SetupOptions {
                     index += 1;
                 }
                 "--semantic-provider-mode" => {
-                    let value = args.get(index + 1).ok_or_else(|| {
-                        "--semantic-provider-mode requires local_only".to_string()
-                    })?;
-                    if value != "local_only" {
-                        return Err("--semantic-provider-mode must be local_only".to_string());
-                    }
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--semantic-provider-mode requires a value".to_string())?;
                     options.semantic_provider_mode = value.clone();
                     index += 2;
                 }

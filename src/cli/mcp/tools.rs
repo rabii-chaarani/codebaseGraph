@@ -1,4 +1,5 @@
 use super::options::McpServeOptions;
+use crate::api::normalization::required_fields;
 use crate::api::{
     contracts::{
         ApiError, ContextRequest, HealthRequest, OperationRequest, OperationResponse, OutputFormat,
@@ -41,6 +42,7 @@ fn operation_spec_from_descriptor(descriptor: OperationDescriptor) -> Option<ser
             "type": "object",
             "additionalProperties": false,
             "properties": property_map,
+            "required": required_fields(descriptor.id),
         },
     }))
 }
@@ -191,13 +193,11 @@ pub(in crate::cli) fn mcp_tool_payload(
             output_format,
         }),
         "graph_search" => {
-            let search = search_request_from_mcp(arguments, options, output_format, true)
-                .map_err(|error| ApiError::new("invalid_query", error))?;
+            let search = search_request_from_mcp(arguments, options, output_format);
             execute_api_request(OperationRequest::Search(search))
         }
         "graph_context" => {
-            let context = context_request_from_mcp(arguments, options, output_format)
-                .map_err(|error| ApiError::new("invalid_context", error))?;
+            let context = context_request_from_mcp(arguments, options, output_format);
             execute_api_request(OperationRequest::Context(context))
         }
         "graph_query" => {
@@ -205,37 +205,19 @@ pub(in crate::cli) fn mcp_tool_payload(
                 .get("statement")
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("")
-                .trim();
-            if statement.is_empty() {
-                return Err(ApiError::new(
-                    "missing_query",
-                    "graph_query requires a non-empty statement",
-                ));
-            }
+                .to_string();
             let parameters = arguments
                 .get("parameters")
                 .cloned()
                 .unwrap_or_else(|| json!({}));
-            let parameters = parameters.as_object().ok_or_else(|| {
-                ApiError::new(
-                    "invalid_parameters",
-                    "graph_query parameters must be a JSON object",
-                )
-            })?;
             let limit = arguments
                 .get("limit")
                 .and_then(serde_json::Value::as_u64)
                 .unwrap_or(100) as usize;
-            if limit == 0 || limit > 1000 {
-                return Err(ApiError::new(
-                    "invalid_limit",
-                    "graph_query limit must be between 1 and 1000",
-                ));
-            }
             execute_api_request(OperationRequest::Query(QueryRequest {
                 repo: repo_selector_from_mcp_options(options),
-                statement: statement.to_string(),
-                parameters: serde_json::Value::Object(parameters.clone()),
+                statement,
+                parameters,
                 limit,
                 output_format,
             }))
@@ -264,24 +246,17 @@ fn search_request_from_mcp(
     arguments: &serde_json::Value,
     options: &McpServeOptions,
     output_format: OutputFormat,
-    require_query: bool,
-) -> Result<SearchRequest, String> {
+) -> SearchRequest {
     let query = arguments
         .get("query")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("")
         .to_string();
-    if require_query && query.trim().is_empty() {
-        return Err("Search query must not be empty".to_string());
-    }
     let detail = arguments
         .get("detail")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("standard");
-    if detail != "standard" && detail != "slim" {
-        return Err("--detail must be standard or slim".to_string());
-    }
-    Ok(SearchRequest {
+    SearchRequest {
         repo: repo_selector_from_mcp_options(options),
         query,
         limit: json_usize(arguments, "limit", 3),
@@ -298,14 +273,14 @@ fn search_request_from_mcp(
             .map(|value| value as usize),
         detail: detail.to_string(),
         output_format,
-    })
+    }
 }
 
 fn context_request_from_mcp(
     arguments: &serde_json::Value,
     options: &McpServeOptions,
     output_format: OutputFormat,
-) -> Result<ContextRequest, String> {
+) -> ContextRequest {
     let node_id = arguments
         .get("node_id")
         .and_then(serde_json::Value::as_str)
@@ -316,13 +291,8 @@ fn context_request_from_mcp(
         .and_then(serde_json::Value::as_str)
         .filter(|value| !value.is_empty())
         .map(str::to_string);
-    if node_id.is_some() != node_type.is_some() {
-        return Err(
-            "codebase-context explicit lookup requires both --node-id and --node-type".to_string(),
-        );
-    }
-    let search = search_request_from_mcp(arguments, options, output_format, node_id.is_none())?;
-    Ok(ContextRequest {
+    let search = search_request_from_mcp(arguments, options, output_format);
+    ContextRequest {
         repo: search.repo,
         query: if search.query.is_empty() {
             None
@@ -338,7 +308,7 @@ fn context_request_from_mcp(
         node_id,
         node_type,
         output_format,
-    })
+    }
 }
 
 pub(in crate::cli) fn json_usize(
@@ -400,5 +370,6 @@ mod tests {
             search["inputSchema"]["properties"]["detail"]["enum"],
             json!(["standard", "slim"])
         );
+        assert_eq!(search["inputSchema"]["required"], json!(["query"]));
     }
 }

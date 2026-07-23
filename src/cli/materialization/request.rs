@@ -1,259 +1,6 @@
-use super::manifest::read_manifest;
-use crate::cli::setup::GraphStatePaths;
-use crate::cli::{
-    format::{materialize_help, plan_help, watch_help},
-    util::resolve_source_root,
-};
-use crate::protocol::NativeSyntaxMaterializationRequest;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::Command;
-
-pub(crate) fn build_request(
-    options: &MaterializeOptions,
-) -> Result<NativeSyntaxMaterializationRequest, String> {
-    let source_root = resolve_source_root(options.source_root.as_deref())?;
-    let paths = GraphStatePaths::derive(&source_root);
-    let db_path = options.db.clone().unwrap_or_else(|| paths.db_path.clone());
-    let manifest_path = options
-        .manifest
-        .clone()
-        .unwrap_or_else(|| paths.manifest_path.clone());
-    let previous_manifest = if manifest_path.exists() {
-        Some(read_manifest(&manifest_path)?)
-    } else {
-        None
-    };
-    let config_rules = read_materialization_config_rules(&paths.config_path)?;
-    let mut include_patterns = config_rules.include_patterns;
-    include_patterns.extend(options.include_patterns.clone());
-    let mut exclude_patterns = config_rules.exclude_patterns;
-    exclude_patterns.extend(options.exclude_patterns.clone());
-    let ignore_patterns = read_codebase_graph_ignore(&source_root)?;
-    let candidate_paths = if options.candidate_paths.is_empty() {
-        git_candidate_paths(&source_root, options)?
-    } else {
-        normalized_candidate_paths(&options.candidate_paths)
-    };
-    let staging_dir = paths.state_dir.join("native-staging");
-    Ok(NativeSyntaxMaterializationRequest {
-        source_root: source_root.to_string_lossy().to_string(),
-        repository_label: paths.repo_name,
-        mode: options.mode.clone(),
-        parser_version: "native-rust-cli-v1".to_string(),
-        manifest_schema_version: 1,
-        ontology: "code_ontology_v1".to_string(),
-        ontology_schema: Default::default(),
-        previous_manifest,
-        profiles: Vec::new(),
-        excluded_parts: default_excluded_parts(),
-        include_patterns,
-        exclude_patterns,
-        ignore_patterns,
-        candidate_paths,
-        db_path: db_path.to_string_lossy().to_string(),
-        include_fts: options.include_fts,
-        semantic_enrichment: options.semantic_enrichment,
-        semantic_provider_mode: options.semantic_provider_mode.clone(),
-        schema_statements: Vec::new(),
-        staging_dir: staging_dir.to_string_lossy().to_string(),
-        atomic_rebuild: true,
-        strict: true,
-        parallel: options.parallel,
-        progress: options.progress,
-    })
-}
-
-#[derive(Default)]
-pub(crate) struct ConfigScanRules {
-    pub(crate) include_patterns: Vec<String>,
-    pub(crate) exclude_patterns: Vec<String>,
-}
-
-pub(crate) fn read_materialization_config_rules(path: &Path) -> Result<ConfigScanRules, String> {
-    if !path.exists() {
-        return Ok(ConfigScanRules::default());
-    }
-    let text = fs::read_to_string(path)
-        .map_err(|error| format!("failed to read config {}: {error}", path.display()))?;
-    let value: serde_json::Value = serde_json::from_str(&text)
-        .map_err(|error| format!("failed to parse config {}: {error}", path.display()))?;
-    let materialization = value
-        .get("materialization")
-        .and_then(serde_json::Value::as_object);
-    Ok(ConfigScanRules {
-        include_patterns: materialization
-            .and_then(|payload| payload.get("include"))
-            .map(json_string_array)
-            .unwrap_or_default(),
-        exclude_patterns: materialization
-            .and_then(|payload| payload.get("exclude"))
-            .map(json_string_array)
-            .unwrap_or_default(),
-    })
-}
-
-pub(crate) fn json_string_array(value: &serde_json::Value) -> Vec<String> {
-    value
-        .as_array()
-        .map(|items| {
-            items
-                .iter()
-                .filter_map(serde_json::Value::as_str)
-                .map(str::to_string)
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-pub(crate) fn read_codebase_graph_ignore(source_root: &Path) -> Result<Vec<String>, String> {
-    let path = source_root.join(".codebaseGraphignore");
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let text = fs::read_to_string(&path)
-        .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
-    Ok(text
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .map(str::to_string)
-        .collect())
-}
-
-pub(crate) fn git_candidate_paths(
-    source_root: &Path,
-    options: &MaterializeOptions,
-) -> Result<Vec<String>, String> {
-    if !options.use_git {
-        return Ok(Vec::new());
-    }
-    let mut paths = if options.git_diff && options.plan_only {
-        let base = options.git_base.as_deref().unwrap_or("HEAD");
-        git_paths(
-            source_root,
-            &["diff", "--name-only", "--diff-filter=ACMRTD", base, "--"],
-        )
-        .unwrap_or_default()
-    } else {
-        git_paths(
-            source_root,
-            &["ls-files", "--cached", "--others", "--exclude-standard"],
-        )
-        .unwrap_or_default()
-    };
-    if options.git_diff && options.plan_only {
-        if let Ok(untracked) =
-            git_paths(source_root, &["ls-files", "--others", "--exclude-standard"])
-        {
-            paths.extend(untracked);
-        }
-    }
-    paths.sort();
-    paths.dedup();
-    Ok(paths)
-}
-
-pub(crate) fn git_paths(source_root: &Path, args: &[&str]) -> Result<Vec<String>, String> {
-    let output = Command::new("git")
-        .args(args)
-        .current_dir(source_root)
-        .output()
-        .map_err(|error| format!("failed to run git {}: {error}", args.join(" ")))?;
-    if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
-    }
-    Ok(String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .map(|line| line.replace('\\', "/"))
-        .collect())
-}
-
-pub(crate) fn normalized_candidate_paths(paths: &[String]) -> Vec<String> {
-    let mut paths = paths
-        .iter()
-        .map(|path| path.trim().trim_start_matches("./").replace('\\', "/"))
-        .filter(|path| !path.is_empty())
-        .collect::<Vec<_>>();
-    paths.sort();
-    paths.dedup();
-    paths
-}
-
-pub(crate) fn default_excluded_parts() -> Vec<String> {
-    [
-        ".bzr",
-        ".cache",
-        ".codebaseGraph",
-        ".direnv",
-        ".eggs",
-        ".git",
-        ".hg",
-        ".mypy_cache",
-        ".nox",
-        ".svn",
-        ".tox",
-        ".venv",
-        "dist",
-        "node_modules",
-        "target",
-        "venv",
-    ]
-    .into_iter()
-    .map(str::to_string)
-    .collect()
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct MaterializeOptions {
-    pub(crate) native_request: Option<PathBuf>,
-    pub(crate) source_root: Option<PathBuf>,
-    pub(crate) db: Option<PathBuf>,
-    pub(crate) manifest: Option<PathBuf>,
-    pub(crate) mode: String,
-    pub(crate) include_fts: bool,
-    pub(crate) semantic_enrichment: bool,
-    pub(crate) semantic_provider_mode: String,
-    pub(crate) use_git: bool,
-    pub(crate) git_diff: bool,
-    pub(crate) git_base: Option<String>,
-    pub(crate) include_patterns: Vec<String>,
-    pub(crate) exclude_patterns: Vec<String>,
-    pub(crate) candidate_paths: Vec<String>,
-    pub(crate) parallel: bool,
-    pub(crate) progress: bool,
-    pub(crate) plan_only: bool,
-    pub(crate) help: bool,
-    pub(crate) json_output: bool,
-}
-
-impl Default for MaterializeOptions {
-    fn default() -> Self {
-        Self {
-            native_request: None,
-            source_root: None,
-            db: None,
-            manifest: None,
-            mode: String::new(),
-            include_fts: false,
-            semantic_enrichment: false,
-            semantic_provider_mode: String::new(),
-            use_git: false,
-            git_diff: false,
-            git_base: None,
-            include_patterns: Vec::new(),
-            exclude_patterns: Vec::new(),
-            candidate_paths: Vec::new(),
-            parallel: true,
-            progress: false,
-            plan_only: false,
-            help: false,
-            json_output: false,
-        }
-    }
-}
+use crate::api::materialization::MaterializeOptions;
+use crate::cli::format::{materialize_help, plan_help, watch_help};
+use std::path::PathBuf;
 
 impl MaterializeOptions {
     pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
@@ -262,10 +9,8 @@ impl MaterializeOptions {
 
     pub(crate) fn parse_with_command(args: &[String], command_name: &str) -> Result<Self, String> {
         let mut options = Self {
-            mode: "changed".to_string(),
             include_fts: true,
             semantic_enrichment: true,
-            semantic_provider_mode: "local_only".to_string(),
             use_git: true,
             plan_only: command_name == "plan",
             ..Self::default()
@@ -308,10 +53,7 @@ impl MaterializeOptions {
                 "--mode" => {
                     let value = args
                         .get(index + 1)
-                        .ok_or_else(|| "--mode requires full or changed".to_string())?;
-                    if value != "full" && value != "changed" {
-                        return Err("--mode must be full or changed".to_string());
-                    }
+                        .ok_or_else(|| "--mode requires a value".to_string())?;
                     options.mode = value.clone();
                     index += 2;
                 }
@@ -324,12 +66,9 @@ impl MaterializeOptions {
                     index += 1;
                 }
                 "--semantic-provider-mode" => {
-                    let value = args.get(index + 1).ok_or_else(|| {
-                        "--semantic-provider-mode requires local_only".to_string()
-                    })?;
-                    if value != "local_only" {
-                        return Err("--semantic-provider-mode must be local_only".to_string());
-                    }
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--semantic-provider-mode requires a value".to_string())?;
                     options.semantic_provider_mode = value.clone();
                     index += 2;
                 }

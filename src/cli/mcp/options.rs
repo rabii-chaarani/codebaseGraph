@@ -1,6 +1,6 @@
 use super::http::is_local_host;
 use super::refresh::McpRefreshState;
-use crate::cli::{format::mcp_help, graph::HealthOptions, util::required_arg};
+use crate::cli::{format::mcp_help, util::required_arg};
 use std::{env, net::TcpListener, path::PathBuf, sync::Arc};
 
 #[derive(Clone, Debug)]
@@ -51,17 +51,6 @@ impl McpServeOptions {
             }
         }
         Ok(options)
-    }
-
-    pub(in crate::cli) fn health_options(&self) -> HealthOptions {
-        HealthOptions {
-            repo_root: self.repo_root.clone(),
-            config: self.config.clone(),
-            db: self.db.clone(),
-            manifest: self.manifest.clone(),
-            help: false,
-            json: false,
-        }
     }
 }
 

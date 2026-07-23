@@ -105,24 +105,24 @@ fn reinstall_help_is_product_command_help() {
 
 #[test]
 fn materialize_rejects_provider_backed_semantic_modes() {
-    let args = vec![
-        "--semantic-provider-mode".to_string(),
-        "provider_first".to_string(),
-    ];
-    let error = MaterializeOptions::parse(&args).unwrap_err();
+    let error = run(
+        ["build", "--semantic-provider-mode", "provider_first"],
+        &mut Vec::new(),
+    )
+    .unwrap_err();
 
-    assert!(error.contains("--semantic-provider-mode must be local_only"));
+    assert!(error.contains("materialization semantic provider mode must be local_only"));
 }
 
 #[test]
 fn setup_rejects_provider_backed_semantic_modes() {
-    let args = vec![
-        "--semantic-provider-mode".to_string(),
-        "opportunistic".to_string(),
-    ];
-    let error = SetupOptions::parse(&args).unwrap_err();
+    let error = run(
+        ["install", "--semantic-provider-mode", "opportunistic"],
+        &mut Vec::new(),
+    )
+    .unwrap_err();
 
-    assert!(error.contains("--semantic-provider-mode must be local_only"));
+    assert!(error.contains("setup semantic provider mode must be local_only"));
 }
 
 #[test]

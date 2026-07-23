@@ -126,12 +126,6 @@ impl GraphQueryOptions {
                     limit = value
                         .parse::<usize>()
                         .map_err(|error| format!("--limit must be an integer: {error}"))?;
-                    if limit == 0 {
-                        return Err("graph-query limit must be greater than zero".to_string());
-                    }
-                    if limit > 1000 {
-                        return Err("graph-query limit must be 1000 or less".to_string());
-                    }
                     index += 2;
                 }
                 "--repo-root" | "--source-root" => {
@@ -214,10 +208,7 @@ impl GraphQueryOptions {
                 json,
             });
         }
-        let statement = statement
-            .map(|value| value.trim().to_string())
-            .filter(|value| !value.is_empty())
-            .ok_or_else(|| "graph-query requires a non-empty statement".to_string())?;
+        let statement = statement.unwrap_or_default();
         Ok(Self {
             statement,
             parameters,
@@ -362,9 +353,6 @@ impl GraphSearchOptions {
                 }
                 "--limit" => {
                     limit = parse_usize_arg(args, index, "--limit")?;
-                    if limit == 0 {
-                        return Err("Search limit must be greater than zero".to_string());
-                    }
                     index += 2;
                 }
                 "--profile" => {
@@ -401,9 +389,6 @@ impl GraphSearchOptions {
                 }
                 "--detail" => {
                     let value = required_arg(args, index, "--detail")?;
-                    if value != "standard" && value != "slim" {
-                        return Err("--detail must be standard or slim".to_string());
-                    }
                     detail = value.to_string();
                     index += 2;
                 }
@@ -462,10 +447,7 @@ impl GraphSearchOptions {
                 output,
             });
         }
-        let query = query
-            .map(|value| value.trim().to_string())
-            .filter(|value| !value.is_empty())
-            .ok_or_else(|| "Search query must not be empty".to_string())?;
+        let query = query.unwrap_or_default();
         Ok(Self {
             query,
             limit,
@@ -512,20 +494,9 @@ impl GraphContextOptions {
                 }
             }
         }
-        if node_id.is_some()
-            && node_type.is_some()
-            && !search_args.iter().any(|arg| arg == "-h" || arg == "--help")
-        {
-            search_args.push("__explicit_context__".to_string());
-        }
         let mut search = GraphSearchOptions::parse(&search_args)?;
         if node_id.is_some() && node_type.is_some() {
             search.query.clear();
-        } else if node_id.is_some() || node_type.is_some() {
-            return Err(
-                "codebase-context explicit lookup requires both --node-id and --node-type"
-                    .to_string(),
-            );
         }
         Ok(Self {
             search,

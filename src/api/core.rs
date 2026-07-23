@@ -4,21 +4,19 @@ use crate::api::contracts::{
     ApiError, ContextRequest, HealthRequest, MaterializationRequest, OperationRequest,
     OperationResponse, OutputFormat, QueryRequest, SearchRequest,
 };
+use crate::api::graph_read::{
+    count_graph_nodes, execute_graph_context, execute_graph_search, execute_read_only_query,
+    validate_read_only_statement, GraphSearchRequest,
+};
 use crate::api::lifecycle::{
     refresh_repository, reinstall_repository, setup_repository, uninstall_repository,
 };
-use crate::api::materialization::execute_materialization_request;
-use crate::api::presenter::present_operation_response;
-use crate::cli::{
-    graph::{
-        count_graph_nodes, execute_graph_context, execute_graph_search, execute_read_only_query,
-        validate_read_only_statement,
-    },
-    materialization::{
-        build_request, materialization_payload as materialize_output_payload, read_request,
-        MaterializeOptions,
-    },
+use crate::api::materialization::{
+    build_request, execute_materialization_request, plan_materialization_payload, read_request,
+    MaterializeOptions,
 };
+use crate::api::normalization::{normalize_request, validate_request};
+use crate::api::presenter::present_operation_response;
 use crate::error::NativeError;
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
 use serde_json::json;
@@ -172,6 +170,8 @@ impl ApiCore {
     }
 
     pub fn execute(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError> {
+        let request = normalize_request(request);
+        validate_request(&request)?;
         let operation = self
             .resolve_operation(request.operation_name())
             .ok_or_else(|| {
@@ -185,7 +185,7 @@ impl ApiCore {
             .map(resolve_runtime)
             .transpose()
             .map_err(|error| ApiError::new("runtime_resolution_failed", error))?;
-        let response = dispatch_operation(request, &operation, runtime.as_ref())?;
+        let response = dispatch_operation(&request, &operation, runtime.as_ref())?;
         Ok(present_operation_response(
             response,
             request.output_format(),
@@ -509,14 +509,8 @@ fn execute_search(
     request: &SearchRequest,
     runtime: &RepoRuntime,
 ) -> Result<OperationResponse, ApiError> {
-    validate_search_request(
-        &request.query,
-        &request.detail,
-        request.limit,
-        request.context_limit,
-    )?;
     let output_format = request.output_format;
-    let options = crate::cli::graph::GraphSearchOptions {
+    let options = GraphSearchRequest {
         query: request.query.clone(),
         limit: request.limit,
         profile: request.profile.clone(),
@@ -524,19 +518,6 @@ fn execute_search(
         context_limit: request.context_limit,
         max_depth: request.max_depth,
         detail: request.detail.clone(),
-        repo_root: Some(runtime.repo_root.clone()),
-        config: runtime.config_path.clone(),
-        db: Some(runtime.db_path.clone()),
-        manifest: Some(runtime.manifest_path.clone()),
-        output: crate::cli::graph::MetadataOutputOptions {
-            format: if matches!(output_format, OutputFormat::Typed) {
-                "json".to_string()
-            } else {
-                "block".to_string()
-            },
-            pretty: false,
-            help: false,
-        },
     };
     let results = execute_graph_search(&runtime.db_path, &options)
         .map_err(|error| ApiError::new("search_execution_failed", error.to_string()))?;
@@ -558,28 +539,8 @@ fn execute_context(
     request: &ContextRequest,
     runtime: &RepoRuntime,
 ) -> Result<OperationResponse, ApiError> {
-    validate_search_request(
-        request.query.as_deref().unwrap_or_default(),
-        &request.detail,
-        request.limit,
-        request.context_limit,
-    )
-    .or_else(|error| {
-        if request.node_id.is_some() && request.node_type.is_some() && error.code == "missing_query"
-        {
-            Ok(())
-        } else {
-            Err(error)
-        }
-    })?;
-    if request.node_id.is_some() != request.node_type.is_some() {
-        return Err(ApiError::new(
-            "invalid_node_reference",
-            "context operation requires both node_id and node_type",
-        ));
-    }
     let output_format = request.output_format;
-    let search = crate::cli::graph::GraphSearchOptions {
+    let search = GraphSearchRequest {
         query: request.query.clone().unwrap_or_default(),
         profile: request.profile.clone(),
         limit: request.limit,
@@ -587,19 +548,6 @@ fn execute_context(
         context_limit: request.context_limit,
         max_depth: request.max_depth,
         detail: request.detail.clone(),
-        repo_root: Some(runtime.repo_root.clone()),
-        config: runtime.config_path.clone(),
-        db: Some(runtime.db_path.clone()),
-        manifest: Some(runtime.manifest_path.clone()),
-        output: crate::cli::graph::MetadataOutputOptions {
-            format: if matches!(output_format, OutputFormat::Typed) {
-                "json".to_string()
-            } else {
-                "block".to_string()
-            },
-            pretty: false,
-            help: false,
-        },
     };
     let payload = if let (Some(node_id), Some(node_type)) =
         (request.node_id.as_ref(), request.node_type.as_ref())
@@ -640,21 +588,14 @@ fn execute_query(
     request: &QueryRequest,
     runtime: &RepoRuntime,
 ) -> Result<OperationResponse, ApiError> {
-    if request.limit == 0 || request.limit > 1000 {
-        return Err(ApiError::new(
-            "invalid_limit",
-            "graph_query limit must be between 1 and 1000",
-        ));
-    }
     validate_read_only_statement(&request.statement)
         .map_err(|error| ApiError::new("query_validation_failed", error.to_string()))?;
     let output_format = request.output_format;
-    let parameters = request.parameters.as_object().cloned().ok_or_else(|| {
-        ApiError::new(
-            "query_invalid_parameters",
-            "query parameters must be an object",
-        )
-    })?;
+    let parameters = request
+        .parameters
+        .as_object()
+        .expect("normalized query parameters must be an object")
+        .clone();
     let (rows, truncated) = execute_read_only_query(
         &runtime.db_path,
         &request.statement,
@@ -675,33 +616,6 @@ fn execute_query(
     ))
 }
 
-fn validate_search_request(
-    query: &str,
-    detail: &str,
-    limit: usize,
-    _context_limit: usize,
-) -> Result<(), ApiError> {
-    if query.trim().is_empty() {
-        return Err(ApiError::new(
-            "missing_query",
-            "Search query must not be empty",
-        ));
-    }
-    if detail != "standard" && detail != "slim" {
-        return Err(ApiError::new(
-            "invalid_detail",
-            "detail must be standard or slim",
-        ));
-    }
-    if limit == 0 {
-        return Err(ApiError::new(
-            "invalid_limit",
-            "search limit must be greater than zero",
-        ));
-    }
-    Ok(())
-}
-
 fn execute_materialization(
     request: &MaterializationRequest,
     runtime: &RepoRuntime,
@@ -709,25 +623,10 @@ fn execute_materialization(
 ) -> Result<OperationResponse, ApiError> {
     let output_format = request.output_format;
     let mut materialize_options = MaterializeOptions {
-        source_root: request
-            .source_root
-            .as_ref()
-            .map(std::path::PathBuf::from)
-            .or_else(|| Some(runtime.repo_root.clone())),
-        db: Some(
-            request
-                .repo
-                .db_path
-                .clone()
-                .unwrap_or_else(|| runtime.db_path.clone()),
-        ),
-        manifest: Some(
-            request
-                .repo
-                .manifest_path
-                .clone()
-                .unwrap_or_else(|| runtime.manifest_path.clone()),
-        ),
+        source_root: Some(runtime.repo_root.clone()),
+        config: runtime.config_path.clone(),
+        db: Some(runtime.db_path.clone()),
+        manifest: Some(runtime.manifest_path.clone()),
         mode: request.mode.clone(),
         include_fts: request.include_fts,
         semantic_enrichment: request.semantic_enrichment,
@@ -763,7 +662,7 @@ fn execute_materialization(
             .map_err(|error| ApiError::new("materialization_failed", error))?
     };
 
-    let payload = materialization_payload(request, &response, &runtime.repo_root, dry_plan);
+    let payload = materialization_payload(request, &response, &runtime.manifest_path, dry_plan);
     let mut operation_response = OperationResponse::from_payload(
         if dry_plan { "plan" } else { "materialize" },
         output_format,
@@ -782,12 +681,11 @@ fn execute_plan_native(
 fn materialization_payload(
     request: &MaterializationRequest,
     response: &NativeSyntaxMaterializationResponse,
-    repo_root: &std::path::Path,
+    manifest_path: &std::path::Path,
     dry_plan: bool,
 ) -> serde_json::Value {
     if dry_plan {
-        let runtime_paths = crate::cli::setup::GraphStatePaths::derive(repo_root);
-        materialize_output_payload(response, &request.mode, &runtime_paths)
+        plan_materialization_payload(response, &request.mode, manifest_path)
     } else {
         serde_json::to_value(response).unwrap_or_else(|_| json!({}))
     }

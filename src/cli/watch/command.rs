@@ -1,12 +1,16 @@
 use super::{
-    filter::WatchEventFilter,
-    native::{probe_native_watcher, run_native_watch, start_native_watcher},
-    options::{WatchBackend, WatchLoopConfig, WatchOptions},
+    options::{WatchBackend, WatchOptions},
     output::{write_watch_event, write_watch_status},
-    poll::run_poll_watch,
 };
-use crate::cli::{format::watch_help, util::resolve_source_root, watch::execute_refresh_operation};
-use std::{collections::VecDeque, io::Write};
+use crate::{
+    api::refresh::{
+        run_refresh_watch, watch_error_reason, RefreshBackend, RefreshLoopConfig,
+        RefreshWatchConfig, RefreshWatchObserver,
+    },
+    cli::format::watch_help,
+    protocol::NativeSyntaxMaterializationResponse,
+};
+use std::{io::Write, time::Duration};
 
 pub(in crate::cli) fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
     let options = WatchOptions::parse(args)?;
@@ -14,60 +18,69 @@ pub(in crate::cli) fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Re
         writeln!(stdout, "{}", watch_help()).map_err(|error| error.to_string())?;
         return Ok(());
     }
-    let backend = options.backend;
-    let loop_config = WatchLoopConfig {
-        poll_ms: options.poll_ms,
-        debounce_ms: options.debounce_ms,
-        max_iterations: options.max_iterations,
+    let backend = match options.backend {
+        WatchBackend::Auto => RefreshBackend::Auto,
+        WatchBackend::Native => RefreshBackend::Native,
+        WatchBackend::Poll => RefreshBackend::Poll,
     };
-    let once = options.once;
-    let mut materialize_options = options.materialize;
-    let source_root = resolve_source_root(materialize_options.source_root.as_deref())?;
-    materialize_options.source_root = Some(source_root.clone());
-    let filter = WatchEventFilter::from_options(&source_root, &materialize_options)?;
-    if once {
-        let response = execute_refresh_operation(&materialize_options, Vec::new())?;
-        write_watch_event(stdout, "refreshed", None, 0, 0, &response)?;
-        return Ok(());
-    }
-    match backend {
-        WatchBackend::Poll => run_poll_watch(stdout, loop_config, &materialize_options, &filter),
-        WatchBackend::Native => {
-            let (watcher, rx) = start_native_watcher(&source_root)?;
-            run_native_watch(
-                stdout,
-                loop_config,
-                &materialize_options,
-                &filter,
-                watcher,
-                rx,
-                VecDeque::new(),
-            )
-        }
-        WatchBackend::Auto => match start_native_watcher(&source_root) {
-            Ok((watcher, rx)) => {
-                let probe = probe_native_watcher(&source_root, &filter, &rx)?;
-                if probe.delivered {
-                    run_native_watch(
-                        stdout,
-                        loop_config,
-                        &materialize_options,
-                        &filter,
-                        watcher,
-                        rx,
-                        probe.queued,
-                    )
-                } else {
-                    drop(watcher);
-                    write_watch_status(stdout, "fallback", "poll", probe.reason.as_deref())?;
-                    run_poll_watch(stdout, loop_config, &materialize_options, &filter)
-                }
-            }
-            Err(error) => {
-                write_watch_status(stdout, "fallback", "poll", Some("watcher_start_failed"))?;
-                let _ = error;
-                run_poll_watch(stdout, loop_config, &materialize_options, &filter)
-            }
+    let config = RefreshWatchConfig {
+        backend,
+        loop_config: RefreshLoopConfig {
+            poll_interval: Duration::from_millis(options.poll_ms),
+            debounce: Duration::from_millis(options.debounce_ms),
+            max_wait: Duration::from_secs(5).max(Duration::from_millis(
+                options.debounce_ms.saturating_mul(10),
+            )),
+            max_iterations: options.max_iterations,
         },
+        once: options.once,
+    };
+    run_refresh_watch(
+        &options.materialize,
+        config,
+        &mut CliRefreshObserver { stdout },
+    )
+}
+
+struct CliRefreshObserver<'a, W> {
+    stdout: &'a mut W,
+}
+
+impl<W: Write> RefreshWatchObserver for CliRefreshObserver<'_, W> {
+    fn on_success(
+        &mut self,
+        backend: Option<&str>,
+        response: &NativeSyntaxMaterializationResponse,
+        event_count: usize,
+        changed_paths: usize,
+    ) -> Result<(), String> {
+        write_watch_event(
+            self.stdout,
+            "refreshed",
+            backend,
+            event_count,
+            changed_paths,
+            response,
+        )
+    }
+
+    fn on_error(
+        &mut self,
+        backend: &str,
+        error: &str,
+        retrying: bool,
+        _event_count: usize,
+        _changed_paths: usize,
+    ) -> Result<(), String> {
+        write_watch_status(
+            self.stdout,
+            if retrying { "retrying" } else { "error" },
+            backend,
+            Some(&watch_error_reason(error)),
+        )
+    }
+
+    fn on_fallback(&mut self, backend: &str, reason: &str) -> Result<(), String> {
+        write_watch_status(self.stdout, "fallback", backend, Some(reason))
     }
 }
