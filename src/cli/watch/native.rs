@@ -6,7 +6,7 @@ use super::{
     types::{WatchMessage, WatchProbeOutcome},
     WatchLoopConfig,
 };
-use crate::cli::build::MaterializeOptions;
+use crate::cli::materialization::MaterializeOptions;
 use notify::{Event, RecursiveMode, Watcher};
 use std::{
     collections::VecDeque,

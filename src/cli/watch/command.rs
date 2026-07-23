@@ -5,7 +5,7 @@ use super::{
     output::{write_watch_event, write_watch_status},
     poll::run_poll_watch,
 };
-use crate::cli::{build::materialize, format::watch_help, util::resolve_source_root};
+use crate::cli::{format::watch_help, materialization::materialize, util::resolve_source_root};
 use std::{collections::VecDeque, io::Write};
 
 pub(in crate::cli) fn run_watch<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {

@@ -2,7 +2,7 @@ use super::{
     types::{WatchFileSnapshot, WatchFileState},
     WatchEventFilter,
 };
-use crate::cli::build::default_excluded_parts;
+use crate::cli::materialization::default_excluded_parts;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,

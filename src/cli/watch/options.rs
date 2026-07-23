@@ -1,5 +1,5 @@
 use crate::cli::{
-    build::MaterializeOptions, format::setup_help, install::supported_install_clients,
+    format::setup_help, install::supported_install_clients, materialization::MaterializeOptions,
 };
 use std::path::PathBuf;
 

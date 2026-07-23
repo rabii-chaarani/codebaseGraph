@@ -1,11 +1,11 @@
 use super::{
-    build::{
-        build_request, dry_run_materialization_payload, materialization_payload, materialize,
-        MaterializeOptions,
-    },
     constants::server_command,
     format::setup_help,
     install::{build_mcp_descriptor, install_mcp_client, McpInstallOptions},
+    materialization::{
+        build_request, dry_run_materialization_payload, materialization_payload, materialize,
+        MaterializeOptions,
+    },
     util::{read_json_file, resolve_repo_root, restore_file, snapshot_file},
     watch::SetupOptions,
 };

@@ -1,9 +1,9 @@
-mod build;
 mod constants;
 mod dispatch;
 mod format;
 mod graph;
 mod install;
+mod materialization;
 mod mcp;
 mod reinstall;
 mod setup;

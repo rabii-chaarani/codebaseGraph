@@ -1,6 +1,6 @@
 use super::output::{write_watch_event, write_watch_status};
 use crate::{
-    cli::build::{materialize_candidate_paths, MaterializeOptions},
+    cli::materialization::{materialize_candidate_paths, MaterializeOptions},
     db_writer::is_transient_database_error,
     protocol::NativeSyntaxMaterializationResponse,
 };

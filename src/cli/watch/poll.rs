@@ -6,7 +6,7 @@ use super::{
     types::WatchFileSnapshot,
     WatchEventFilter, WatchLoopConfig,
 };
-use crate::cli::build::MaterializeOptions;
+use crate::cli::materialization::MaterializeOptions;
 use std::{
     io::Write,
     time::{Duration, Instant},

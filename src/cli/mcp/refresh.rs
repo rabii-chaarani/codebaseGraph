@@ -1,7 +1,7 @@
 use super::options::McpServeOptions;
 use crate::cli::{
-    build::{materialize_candidate_paths, MaterializeOptions},
     graph::resolve_health_runtime,
+    materialization::{materialize_candidate_paths, MaterializeOptions},
     watch::{
         collect_poll_batch, collect_watch_batch, probe_native_watcher, start_native_watcher,
         watch_file_snapshot, WatchEventFilter, WatchLoopConfig, WatchMessage,
