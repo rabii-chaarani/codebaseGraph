@@ -1,5 +1,5 @@
+pub mod adapters;
 pub mod api;
-pub mod cli;
 pub mod db_writer;
 pub mod error;
 mod execution;
@@ -18,3 +18,5 @@ mod syntax_materializer;
 pub use error::MaterializationError;
 pub use execution::{execute_materialization_pipeline, plan_materialization};
 pub use protocol::{MaterializationInput, MaterializationResult};
+
+pub use adapters::cli;
