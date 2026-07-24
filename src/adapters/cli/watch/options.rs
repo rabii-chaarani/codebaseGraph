@@ -1,6 +1,4 @@
-use crate::adapters::cli::{
-    format::setup_help, install::supported_install_clients, materialization::MaterializeOptions,
-};
+use crate::adapters::cli::{format::setup_help, materialization::MaterializeOptions};
 use std::path::PathBuf;
 
 #[derive(Debug)]
@@ -167,12 +165,6 @@ impl SetupOptions {
                     let value = args
                         .get(index + 1)
                         .ok_or_else(|| "--mcp-client requires a client id".to_string())?;
-                    if value != "none" && !supported_install_clients().contains(&value.as_str()) {
-                        return Err(format!(
-                            "--mcp-client must be none or one of {}",
-                            supported_install_clients().join(", ")
-                        ));
-                    }
                     options.mcp_client = value.clone();
                     index += 2;
                 }

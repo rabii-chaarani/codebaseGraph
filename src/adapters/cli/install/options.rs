@@ -1,4 +1,3 @@
-use super::{expand_path, supported_install_clients, supported_install_clients_with_all};
 use crate::adapters::{cli::format::mcp_install_help, required_arg};
 use std::path::PathBuf;
 
@@ -39,25 +38,10 @@ impl McpInstallOptions {
                 }
                 "--client" => {
                     options.client = required_arg(args, index, "--client")?.to_string();
-                    if options.client != "all"
-                        && !supported_install_clients().contains(&options.client.as_str())
-                    {
-                        return Err(format!(
-                            "Unsupported MCP client: {}. Supported clients: {}",
-                            options.client,
-                            supported_install_clients_with_all().join(", ")
-                        ));
-                    }
                     index += 2;
                 }
                 "--scope" => {
                     options.scope = required_arg(args, index, "--scope")?.to_string();
-                    if !matches!(options.scope.as_str(), "local" | "user" | "project") {
-                        return Err(
-                            "Unsupported MCP install scope: expected local, user, or project"
-                                .to_string(),
-                        );
-                    }
                     index += 2;
                 }
                 "--name" => {
@@ -66,11 +50,11 @@ impl McpInstallOptions {
                 }
                 "--config-path" => {
                     options.config_path =
-                        Some(expand_path(required_arg(args, index, "--config-path")?));
+                        Some(PathBuf::from(required_arg(args, index, "--config-path")?));
                     index += 2;
                 }
                 "--client-config-path" => {
-                    options.client_config_path = Some(expand_path(required_arg(
+                    options.client_config_path = Some(PathBuf::from(required_arg(
                         args,
                         index,
                         "--client-config-path",
@@ -79,7 +63,7 @@ impl McpInstallOptions {
                 }
                 "--repo-root" => {
                     options.repo_root =
-                        Some(expand_path(required_arg(args, index, "--repo-root")?));
+                        Some(PathBuf::from(required_arg(args, index, "--repo-root")?));
                     index += 2;
                 }
                 "--dry-run" => {

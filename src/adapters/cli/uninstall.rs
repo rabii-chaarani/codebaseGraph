@@ -1,7 +1,4 @@
-use super::{
-    format::uninstall_help,
-    install::{supported_install_clients, supported_install_clients_with_all},
-};
+use super::format::uninstall_help;
 use crate::adapters::required_arg;
 use crate::api::{
     contracts::{OperationRequest, OutputFormat, RepoSelector, RepositoryLifecycleRequest},
@@ -49,12 +46,6 @@ impl UninstallOptions {
                 }
                 "--mcp-client" => {
                     let client = required_arg(args, index, "--mcp-client")?;
-                    if client != "all" && !supported_install_clients().contains(&client) {
-                        return Err(format!(
-                            "--mcp-client must be one of {}",
-                            supported_install_clients_with_all().join(", ")
-                        ));
-                    }
                     options.mcp_client = client.to_string();
                     index += 2;
                 }

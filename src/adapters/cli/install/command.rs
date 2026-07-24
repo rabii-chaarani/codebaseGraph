@@ -1,8 +1,9 @@
-use super::{
-    install_mcp_client, install_scope, options::McpInstallOptions, supported_install_clients,
-};
+use super::{attach_install_verification, options::McpInstallOptions};
 use crate::adapters::cli::format::mcp_install_help;
-use serde_json::json;
+use crate::api::{
+    contracts::{McpInstallRequest, OperationRequest, OutputFormat, RepoSelector},
+    CodebaseGraphApi,
+};
 use std::io::Write;
 
 pub(in crate::adapters::cli) fn run_mcp_install<W: Write>(
@@ -14,32 +15,24 @@ pub(in crate::adapters::cli) fn run_mcp_install<W: Write>(
         writeln!(stdout, "{}", mcp_install_help()).map_err(|error| error.to_string())?;
         return Ok(());
     }
-    let payload = if options.client == "all" {
-        let results = supported_install_clients()
-            .into_iter()
-            .map(|client| {
-                let mut client_options = options.clone();
-                client_options.client = client.to_string();
-                install_mcp_client(&client_options).unwrap_or_else(|error| {
-                    json!({
-                        "action": "failed",
-                        "client": client,
-                        "scope": install_scope(client, &client_options.scope),
-                        "server_name": client_options.name.clone().unwrap_or_else(|| "codebase_graph".to_string()),
-                        "method": serde_json::Value::Null,
-                        "path": serde_json::Value::Null,
-                        "command": serde_json::Value::Null,
-                        "descriptor": {},
-                        "entry": {},
-                        "error": error,
-                    })
-                })
-            })
-            .collect::<Vec<_>>();
-        json!({ "results": results })
-    } else {
-        install_mcp_client(&options)?
-    };
+    let request = OperationRequest::InstallMcp(McpInstallRequest {
+        repo: RepoSelector {
+            repo_root: options.repo_root.clone(),
+            config_path: options.config_path.clone(),
+            db_path: None,
+            manifest_path: None,
+        },
+        client: options.client.clone(),
+        scope: options.scope.clone(),
+        name: options.name.clone(),
+        client_config_path: options.client_config_path.clone(),
+        dry_run: options.dry_run,
+        output_format: OutputFormat::Typed,
+    });
+    let response = CodebaseGraphApi::new()
+        .execute_operation(&request)
+        .map_err(|error| error.message)?;
+    let payload = attach_install_verification(response.payload, &options);
     writeln!(
         stdout,
         "{}",

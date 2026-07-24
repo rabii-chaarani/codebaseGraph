@@ -5,8 +5,6 @@ use crate::api::contracts::{
 use crate::api::CodebaseGraphApi;
 use std::io::Write;
 
-pub(crate) use crate::api::lifecycle::{safe_name, GraphStatePaths};
-
 pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
     let options = SetupOptions::parse(args)?;
     if options.help {

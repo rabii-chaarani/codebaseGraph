@@ -18,12 +18,13 @@ pub mod presenter;
 pub(crate) mod refresh;
 
 pub use contracts::{
-    ApiError, ContextRequest, HealthRequest, MaterializationRequest, OperationRequest,
-    OperationResponse, OutputFormat, QueryRequest, RefreshRequest, RepoSelector,
+    ApiError, ContextRequest, HealthRequest, MaterializationRequest, McpInstallRequest,
+    OperationRequest, OperationResponse, OutputFormat, QueryRequest, RefreshRequest, RepoSelector,
     RepositoryLifecycleRequest, SearchRequest,
 };
 pub use core::OperationDescriptor;
 pub use facade::{CodebaseGraphApi, OperationExecutor};
+pub use lifecycle::supported_mcp_clients;
 
 #[cfg(test)]
 mod boundary_tests;

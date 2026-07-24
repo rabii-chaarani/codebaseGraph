@@ -317,6 +317,8 @@ pub fn error_exit_code(error: &str) -> i32 {
         || error.starts_with("unknown reinstall option:")
         || error.starts_with("--mcp-client must be")
         || error.starts_with("--mcp-client requires")
+        || error.starts_with("unsupported MCP client:")
+        || error.starts_with("MCP install scope must be")
         || error.starts_with("--instructions-target must be")
         || error.starts_with("--instructions-target requires")
     {

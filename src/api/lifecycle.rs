@@ -1,5 +1,7 @@
 use crate::api::context::RepoRuntime;
-use crate::api::contracts::{ApiError, RefreshRequest, RepositoryLifecycleRequest};
+use crate::api::contracts::{
+    ApiError, McpInstallRequest, RefreshRequest, RepositoryLifecycleRequest,
+};
 use crate::api::materialization::{
     build_request, default_excluded_parts, execute_candidate_materialization,
     execute_materialization, MaterializeOptions,
@@ -40,6 +42,49 @@ pub(crate) fn uninstall_repository(
     validate_lifecycle_action(request, "uninstall")?;
     uninstall_payload_for_request(request, &runtime.repo_root)
         .map_err(|error| ApiError::new("uninstall_failed", error))
+}
+
+pub(crate) fn install_mcp_client(
+    request: &McpInstallRequest,
+    runtime: &RepoRuntime,
+) -> Result<serde_json::Value, ApiError> {
+    let config_path = runtime.config_path.clone();
+    let install = |client: &str| {
+        apply_mcp_client_configuration(
+            client,
+            &request.scope,
+            request.name.clone(),
+            config_path.clone(),
+            request.client_config_path.clone(),
+            Some(runtime.repo_root.clone()),
+            request.dry_run,
+        )
+    };
+    if request.client == "all" {
+        let results = supported_mcp_clients()
+            .iter()
+            .copied()
+            .map(|client| {
+                install(client).unwrap_or_else(|error| {
+                    json!({
+                        "action": "failed",
+                        "client": client,
+                        "scope": install_scope(client, &request.scope),
+                        "server_name": request.name.clone().unwrap_or_else(|| "codebase_graph".to_string()),
+                        "method": serde_json::Value::Null,
+                        "path": serde_json::Value::Null,
+                        "command": serde_json::Value::Null,
+                        "descriptor": {},
+                        "entry": {},
+                        "error": error,
+                    })
+                })
+            })
+            .collect::<Vec<_>>();
+        Ok(json!({ "results": results }))
+    } else {
+        install(&request.client).map_err(|error| ApiError::new("mcp_install_failed", error))
+    }
 }
 
 fn validate_lifecycle_action(
@@ -517,7 +562,7 @@ fn setup_mcp_config(
         }));
     }
 
-    install_mcp_client(
+    apply_mcp_client_configuration(
         &options.mcp_client,
         if options.mcp_client == "claude-project" {
             "project"
@@ -610,8 +655,9 @@ fn uninstall_mcp_clients(
     dry_run: bool,
 ) -> Result<Vec<serde_json::Value>, String> {
     let clients = if mcp_client == "all" {
-        supported_install_clients()
-            .into_iter()
+        supported_mcp_clients()
+            .iter()
+            .copied()
             .map(str::to_string)
             .collect::<Vec<_>>()
     } else {
@@ -1213,7 +1259,7 @@ fn build_mcp_descriptor(
     })
 }
 
-fn install_mcp_client(
+fn apply_mcp_client_configuration(
     client: &str,
     scope: &str,
     name: Option<String>,
@@ -1402,8 +1448,8 @@ fn default_client_config_path(
     }
 }
 
-fn supported_install_clients() -> Vec<&'static str> {
-    vec![
+pub fn supported_mcp_clients() -> &'static [&'static str] {
+    &[
         "claude",
         "claude-project",
         "codex",
@@ -1975,7 +2021,7 @@ fn write_text_atomic(path: &Path, text: &str) -> Result<(), String> {
         .map_err(|error| format!("failed to replace config {}: {error}", path.display()))
 }
 
-fn expand_path(value: &str) -> PathBuf {
+pub(crate) fn expand_path(value: &str) -> PathBuf {
     if let Some(rest) = value.strip_prefix("~/") {
         return home_dir().join(rest);
     }

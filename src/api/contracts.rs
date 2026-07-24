@@ -32,6 +32,7 @@ pub enum OperationRequest {
     Setup(RepositoryLifecycleRequest),
     Reinstall(RepositoryLifecycleRequest),
     Uninstall(RepositoryLifecycleRequest),
+    InstallMcp(McpInstallRequest),
     Refresh(RefreshRequest),
 }
 
@@ -48,6 +49,7 @@ impl OperationRequest {
             Self::Setup(_) => "setup",
             Self::Reinstall(_) => "reinstall",
             Self::Uninstall(_) => "uninstall",
+            Self::InstallMcp(_) => "mcp-install",
             Self::Refresh(_) => "refresh",
         }
     }
@@ -64,6 +66,7 @@ impl OperationRequest {
             Self::Setup(request) => Some(&request.repo),
             Self::Reinstall(request) => Some(&request.repo),
             Self::Uninstall(request) => Some(&request.repo),
+            Self::InstallMcp(request) => Some(&request.repo),
             Self::Refresh(request) => Some(&request.repo),
         }
     }
@@ -80,6 +83,7 @@ impl OperationRequest {
             | Self::Setup(RepositoryLifecycleRequest { output_format, .. })
             | Self::Reinstall(RepositoryLifecycleRequest { output_format, .. })
             | Self::Uninstall(RepositoryLifecycleRequest { output_format, .. })
+            | Self::InstallMcp(McpInstallRequest { output_format, .. })
             | Self::Refresh(RefreshRequest { output_format, .. }) => *output_format,
         }
     }
@@ -170,6 +174,17 @@ pub struct RepositoryLifecycleRequest {
     pub include_fts: bool,
     pub semantic_enrichment: bool,
     pub semantic_provider_mode: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct McpInstallRequest {
+    pub repo: RepoSelector,
+    pub client: String,
+    pub scope: String,
+    pub name: Option<String>,
+    pub client_config_path: Option<PathBuf>,
+    pub dry_run: bool,
+    pub output_format: OutputFormat,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -338,6 +353,15 @@ mod tests {
             OperationRequest::Setup(lifecycle("setup")),
             OperationRequest::Reinstall(lifecycle("reinstall")),
             OperationRequest::Uninstall(lifecycle("uninstall")),
+            OperationRequest::InstallMcp(McpInstallRequest {
+                repo: repository(),
+                client: "generic".to_string(),
+                scope: "local".to_string(),
+                name: Some("codebase_graph".to_string()),
+                client_config_path: Some(PathBuf::from("/tmp/mcp.json")),
+                dry_run: true,
+                output_format: OutputFormat::Typed,
+            }),
             OperationRequest::Refresh(RefreshRequest {
                 repo: repository(),
                 paths: vec!["src/lib.rs".to_string()],

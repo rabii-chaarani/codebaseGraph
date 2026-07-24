@@ -1,6 +1,8 @@
 use crate::api::contracts::{
-    ApiError, MaterializationRequest, OperationRequest, RefreshRequest, RepositoryLifecycleRequest,
+    ApiError, MaterializationRequest, McpInstallRequest, OperationRequest, RefreshRequest,
+    RepositoryLifecycleRequest,
 };
+use crate::api::lifecycle::{expand_path, supported_mcp_clients};
 use crate::api::materialization::MaterializeOptions;
 
 const DEFAULT_PROFILE: &str = "brief";
@@ -38,6 +40,7 @@ pub(crate) fn normalize_request(request: &OperationRequest) -> OperationRequest 
         | OperationRequest::Uninstall(request) => {
             normalize_lifecycle(request);
         }
+        OperationRequest::InstallMcp(request) => normalize_mcp_install(request),
         OperationRequest::Refresh(request) => normalize_refresh(request),
         OperationRequest::Catalog { kind, group, .. } => {
             *kind = kind.trim().to_string();
@@ -113,6 +116,7 @@ pub(crate) fn validate_request(request: &OperationRequest) -> Result<(), ApiErro
         OperationRequest::Setup(request) => validate_lifecycle(request, "setup"),
         OperationRequest::Reinstall(request) => validate_lifecycle(request, "reinstall"),
         OperationRequest::Uninstall(request) => validate_lifecycle(request, "uninstall"),
+        OperationRequest::InstallMcp(request) => validate_mcp_install(request),
         OperationRequest::Catalog { kind, .. } => {
             if kind.is_empty() {
                 Err(ApiError::new(
@@ -167,6 +171,26 @@ fn normalize_lifecycle(request: &mut RepositoryLifecycleRequest) {
     );
     request.mcp_client = normalized_optional_string(request.mcp_client.take());
     request.instructions_target = normalized_optional_string(request.instructions_target.take());
+}
+
+fn normalize_mcp_install(request: &mut McpInstallRequest) {
+    request.client = request.client.trim().to_ascii_lowercase();
+    request.scope = request.scope.trim().to_ascii_lowercase();
+    request.name = normalized_optional_string(request.name.take());
+    request.client_config_path = request
+        .client_config_path
+        .take()
+        .map(|path| expand_path(&path.to_string_lossy()));
+    request.repo.repo_root = request
+        .repo
+        .repo_root
+        .take()
+        .map(|path| expand_path(&path.to_string_lossy()));
+    request.repo.config_path = request
+        .repo
+        .config_path
+        .take()
+        .map(|path| expand_path(&path.to_string_lossy()));
 }
 
 fn validate_search_fields(query: &str, detail: &str, limit: usize) -> Result<(), ApiError> {
@@ -232,7 +256,42 @@ fn validate_lifecycle(
         &request.mode,
         &request.semantic_provider_mode,
         expected_action,
-    )
+    )?;
+    if let Some(client) = request.mcp_client.as_deref() {
+        let special_allowed = match expected_action {
+            "uninstall" => client == "all",
+            _ => client == "none",
+        };
+        if !special_allowed && !supported_mcp_clients().contains(&client) {
+            return Err(ApiError::new(
+                "invalid_mcp_client",
+                format!("unsupported MCP client: {client}"),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_mcp_install(request: &McpInstallRequest) -> Result<(), ApiError> {
+    if request.client != "all" && !supported_mcp_clients().contains(&request.client.as_str()) {
+        return Err(ApiError::new(
+            "invalid_mcp_client",
+            format!("unsupported MCP client: {}", request.client),
+        ));
+    }
+    if !matches!(request.scope.as_str(), "local" | "user" | "project") {
+        return Err(ApiError::new(
+            "invalid_mcp_scope",
+            "MCP install scope must be local, user, or project",
+        ));
+    }
+    if request.client == "all" && request.client_config_path.is_some() {
+        return Err(ApiError::new(
+            "invalid_mcp_config_path",
+            "client_config_path requires one selected MCP client",
+        ));
+    }
+    Ok(())
 }
 
 fn default_string(value: &mut String, default: &str) {
@@ -263,8 +322,8 @@ fn normalize_paths(paths: &mut Vec<String>) {
 mod tests {
     use super::{normalize_request, required_fields, validate_request};
     use crate::api::contracts::{
-        ContextRequest, MaterializationRequest, OperationRequest, OutputFormat, RepoSelector,
-        SearchRequest,
+        ContextRequest, MaterializationRequest, McpInstallRequest, OperationRequest, OutputFormat,
+        RepoSelector, SearchRequest,
     };
 
     #[test]
@@ -335,6 +394,29 @@ mod tests {
         .expect_err("partial node reference should be rejected");
 
         assert_eq!(error.code, "invalid_node_reference");
+    }
+
+    #[test]
+    fn validate_request_rejects_unsupported_mcp_clients_and_scopes() {
+        let request = |client: &str, scope: &str| {
+            OperationRequest::InstallMcp(McpInstallRequest {
+                repo: RepoSelector::default(),
+                client: client.to_string(),
+                scope: scope.to_string(),
+                name: None,
+                client_config_path: None,
+                dry_run: true,
+                output_format: OutputFormat::Typed,
+            })
+        };
+
+        let client_error = validate_request(&request("unknown-client", "local"))
+            .expect_err("unsupported clients should be rejected by the API");
+        assert_eq!(client_error.code, "invalid_mcp_client");
+
+        let scope_error = validate_request(&request("generic", "unknown-scope"))
+            .expect_err("unsupported scopes should be rejected by the API");
+        assert_eq!(scope_error.code, "invalid_mcp_scope");
     }
 
     #[test]

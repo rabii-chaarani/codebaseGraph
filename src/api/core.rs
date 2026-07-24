@@ -9,7 +9,8 @@ use crate::api::graph_read::{
     validate_read_only_statement, GraphSearchRequest,
 };
 use crate::api::lifecycle::{
-    refresh_repository, reinstall_repository, setup_repository, uninstall_repository,
+    install_mcp_client, refresh_repository, reinstall_repository, setup_repository,
+    uninstall_repository,
 };
 use crate::api::materialization::{
     build_request, execute_materialization_request, plan_materialization_payload, read_request,
@@ -153,6 +154,14 @@ impl ApiCore {
                 mcp_tool_name: None,
             },
             OperationDescriptor {
+                id: "mcp-install",
+                summary: "Register the graph tool with a supported client",
+                request_schema: empty_request_schema,
+                surfaces: &["api", "cli"],
+                supported_outputs: &[OutputFormat::Typed, OutputFormat::Block],
+                mcp_tool_name: None,
+            },
+            OperationDescriptor {
                 id: "refresh",
                 summary: "Refresh changed paths via incremental materialization",
                 request_schema: empty_request_schema,
@@ -218,6 +227,7 @@ fn build_registry(descriptors: impl IntoIterator<Item = OperationDescriptor>) ->
             "setup" => handle_setup,
             "reinstall" => handle_reinstall,
             "uninstall" => handle_uninstall,
+            "mcp-install" => handle_mcp_install,
             "refresh" => handle_refresh,
             id => panic!("operation {id} does not have a handler registration"),
         };
@@ -440,6 +450,20 @@ fn handle_uninstall(
         "uninstall",
         OutputFormat::Typed,
         uninstall_repository(request, required_runtime("uninstall", runtime)?)?,
+    ))
+}
+
+fn handle_mcp_install(
+    request: &OperationRequest,
+    runtime: Option<&RepoRuntime>,
+) -> Result<OperationResponse, ApiError> {
+    let OperationRequest::InstallMcp(request) = request else {
+        return Err(invalid_request("mcp-install", request));
+    };
+    Ok(OperationResponse::from_payload(
+        "mcp-install",
+        OutputFormat::Typed,
+        install_mcp_client(request, required_runtime("mcp-install", runtime)?)?,
     ))
 }
 
@@ -693,8 +717,21 @@ fn materialization_payload(
 
 #[cfg(test)]
 mod tests {
-    use crate::api::contracts::OperationRequest;
+    use crate::api::contracts::{McpInstallRequest, OperationRequest, OutputFormat, RepoSelector};
     use crate::api::core::ApiCore;
+    use serde_json::json;
+    use std::{fs, path::PathBuf};
+
+    fn unique_temp_dir(prefix: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "{prefix}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ))
+    }
 
     #[test]
     fn operation_registry_is_unique_and_sorted() {
@@ -757,5 +794,50 @@ mod tests {
         )
         .expect("registered schema handler should execute");
         assert_eq!(response.operation, "schema");
+    }
+
+    #[test]
+    fn mcp_install_operation_preserves_unrelated_client_configuration() {
+        let root = unique_temp_dir("codebase-graph-api-mcp-install");
+        let client_config = root.join("client").join("mcp.json");
+        fs::create_dir_all(client_config.parent().unwrap()).unwrap();
+        fs::write(
+            &client_config,
+            serde_json::to_string_pretty(&json!({
+                "mcpServers": {
+                    "unrelated": {"command": "keep", "args": []}
+                }
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let response = ApiCore::new()
+            .execute(&OperationRequest::InstallMcp(McpInstallRequest {
+                repo: RepoSelector {
+                    repo_root: Some(root.clone()),
+                    config_path: None,
+                    db_path: None,
+                    manifest_path: None,
+                },
+                client: "generic".to_string(),
+                scope: "local".to_string(),
+                name: Some("codebase_graph_test".to_string()),
+                client_config_path: Some(client_config.clone()),
+                dry_run: false,
+                output_format: OutputFormat::Typed,
+            }))
+            .expect("API MCP install should succeed");
+
+        assert_eq!(response.operation, "mcp-install");
+        assert_eq!(response.payload["action"], "updated");
+        let payload: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&client_config).unwrap()).unwrap();
+        assert_eq!(payload["mcpServers"]["unrelated"]["command"], "keep");
+        assert_eq!(
+            payload["mcpServers"]["codebase_graph_test"]["command"],
+            "codebase-graph"
+        );
+        let _ = fs::remove_dir_all(root);
     }
 }

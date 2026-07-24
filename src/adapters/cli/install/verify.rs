@@ -1,29 +1,56 @@
-use super::{executable_in_path, McpInstallOptions, NativeMcpDescriptor};
+use super::McpInstallOptions;
 use crate::adapters::mcp::LATEST_PROTOCOL_VERSION;
 use serde_json::json;
 use std::{
     collections::{BTreeMap, BTreeSet},
+    env,
     io::Write,
+    path::Path,
     process::Command,
 };
 
 pub(in crate::adapters::cli) fn attach_install_verification(
     mut payload: serde_json::Value,
-    descriptor: &NativeMcpDescriptor,
     options: &McpInstallOptions,
-) -> Result<serde_json::Value, String> {
-    if options.verify && !options.dry_run {
-        payload["verification"] = verify_mcp_install(descriptor, &options.client);
+) -> serde_json::Value {
+    if !options.verify || options.dry_run {
+        return payload;
     }
-    Ok(payload)
+    if let Some(results) = payload
+        .get_mut("results")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for result in results {
+            attach_result_verification(result);
+        }
+    } else {
+        attach_result_verification(&mut payload);
+    }
+    payload
+}
+
+fn attach_result_verification(result: &mut serde_json::Value) {
+    if result.get("error").is_some() {
+        return;
+    }
+    let client = result
+        .get("client")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("generic");
+    let descriptor = result.get("descriptor").cloned().unwrap_or_default();
+    result["verification"] = verify_mcp_install(&descriptor, client);
 }
 
 pub(in crate::adapters::cli) fn verify_mcp_install(
-    descriptor: &NativeMcpDescriptor,
+    descriptor: &serde_json::Value,
     client: &str,
 ) -> serde_json::Value {
     let stdio = verify_stdio(descriptor);
-    let visibility = verify_client_visibility(client, &descriptor.name);
+    let server_name = descriptor
+        .get("name")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
+    let visibility = verify_client_visibility(client, server_name);
     json!({
         "ok": stdio.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(false)
             && visibility.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(true),
@@ -32,10 +59,14 @@ pub(in crate::adapters::cli) fn verify_mcp_install(
     })
 }
 
-pub(in crate::adapters::cli) fn verify_stdio(
-    descriptor: &NativeMcpDescriptor,
-) -> serde_json::Value {
-    let command = descriptor_command(descriptor);
+pub(in crate::adapters::cli) fn verify_stdio(descriptor: &serde_json::Value) -> serde_json::Value {
+    let Some(command) = descriptor_command(descriptor) else {
+        return json!({"ok": false, "error": "install response did not contain a valid descriptor"});
+    };
+    let descriptor_name = descriptor
+        .get("name")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
     let payload = [
         stdio_json_rpc_message(
             "initialize",
@@ -50,7 +81,7 @@ pub(in crate::adapters::cli) fn verify_stdio(
         ),
         stdio_json_rpc_message(
             "tools/call",
-            json!({"name": "graph_search", "arguments": {"query": descriptor.name, "limit": 1}}),
+            json!({"name": "graph_search", "arguments": {"query": descriptor_name, "limit": 1}}),
             4,
         ),
         stdio_json_rpc_message(
@@ -128,11 +159,18 @@ pub(in crate::adapters::cli) fn verify_client_visibility(
 }
 
 pub(in crate::adapters::cli) fn descriptor_command(
-    descriptor: &NativeMcpDescriptor,
-) -> Vec<String> {
-    let mut command = vec![descriptor.command.clone()];
-    command.extend(descriptor.args.clone());
-    command
+    descriptor: &serde_json::Value,
+) -> Option<Vec<String>> {
+    let mut command = vec![descriptor.get("command")?.as_str()?.to_string()];
+    command.extend(
+        descriptor
+            .get("args")?
+            .as_array()?
+            .iter()
+            .map(|value| value.as_str().map(str::to_string))
+            .collect::<Option<Vec<_>>>()?,
+    );
+    Some(command)
 }
 
 pub(in crate::adapters::cli) fn stdio_json_rpc_message(
@@ -233,4 +271,14 @@ pub(in crate::adapters::cli) fn visibility_command(client: &str) -> Option<Vec<S
         ]),
         _ => None,
     }
+}
+
+fn executable_in_path(executable: &str) -> bool {
+    let path = Path::new(executable);
+    if path.components().count() > 1 {
+        return path.is_file();
+    }
+    env::var_os("PATH")
+        .map(|paths| env::split_paths(&paths).any(|dir| dir.join(executable).is_file()))
+        .unwrap_or(false)
 }
