@@ -12,7 +12,7 @@ fn mcp_graph_query_binds_json_parameters() {
         config: None,
         db: None,
         manifest: None,
-        refresh: None,
+        api: None,
     };
     let result = mcp_call_tool_result(
         "graph_query",
@@ -106,7 +106,7 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         config: None,
         db: None,
         manifest: None,
-        refresh: None,
+        api: None,
     };
     let mut output = Vec::new();
     serve_mcp_stdio(&options, std::io::Cursor::new(input), &mut output).unwrap();

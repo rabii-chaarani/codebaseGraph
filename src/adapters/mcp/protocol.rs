@@ -1,8 +1,7 @@
 use super::tools::generate_mcp_specs;
 use super::{options::McpServeOptions, tools::mcp_call_tool_result};
+use crate::api::CodebaseGraphApi;
 use serde_json::json;
-
-pub(in crate::adapters) const LATEST_PROTOCOL_VERSION: &str = "2025-11-25";
 
 pub(in crate::adapters) fn handle_mcp_message(
     message: serde_json::Value,
@@ -86,7 +85,7 @@ pub(in crate::adapters) fn parse_mcp_payload(data: &[u8]) -> Result<serde_json::
 pub(in crate::adapters) fn negotiate_protocol_version(requested: &str) -> String {
     match requested {
         "2025-11-25" | "2025-06-18" | "2025-03-26" | "2024-11-05" => requested.to_string(),
-        _ => LATEST_PROTOCOL_VERSION.to_string(),
+        _ => CodebaseGraphApi::latest_mcp_protocol_version().to_string(),
     }
 }
 

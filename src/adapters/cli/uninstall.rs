@@ -1,8 +1,7 @@
 use super::format::uninstall_help;
 use crate::adapters::required_arg;
 use crate::api::{
-    contracts::{OperationRequest, OutputFormat, RepoSelector, RepositoryLifecycleRequest},
-    CodebaseGraphApi,
+    CodebaseGraphApi, OperationRequest, OutputFormat, RepoSelector, RepositoryLifecycleRequest,
 };
 use std::{io::Write, path::PathBuf};
 

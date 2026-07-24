@@ -1,7 +1,6 @@
 use super::{format::reinstall_help, watch::SetupOptions};
 use crate::api::{
-    contracts::{OperationRequest, OutputFormat, RepoSelector, RepositoryLifecycleRequest},
-    CodebaseGraphApi,
+    CodebaseGraphApi, OperationRequest, OutputFormat, RepoSelector, RepositoryLifecycleRequest,
 };
 use std::io::Write;
 

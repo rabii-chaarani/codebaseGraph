@@ -40,30 +40,148 @@ fn command_and_mcp_transports_are_peer_adapters() {
     assert!(source_root.join("adapters/mcp").is_dir());
     assert!(!source_root.join("cli").exists());
 
-    let mut pending = vec![source_root.join("adapters/mcp")];
-    let forbidden = [
-        ["crate", "::cli"].concat(),
-        ["crate", "::adapters::cli"].concat(),
+    let adapters = [
+        (
+            "MCP",
+            source_root.join("adapters/mcp"),
+            [
+                ["crate", "::cli"].concat(),
+                ["crate", "::adapters::cli"].concat(),
+            ],
+        ),
+        (
+            "CLI",
+            source_root.join("adapters/cli"),
+            [
+                ["crate", "::mcp"].concat(),
+                ["crate", "::adapters::mcp"].concat(),
+            ],
+        ),
     ];
+
+    for (name, root, forbidden) in adapters {
+        let mut pending = vec![root];
+        while let Some(path) = pending.pop() {
+            for entry in
+                std::fs::read_dir(&path).expect("transport adapter directory should be readable")
+            {
+                let path = entry
+                    .expect("transport adapter directory entry should be readable")
+                    .path();
+                if path.is_dir() {
+                    if path.file_name().and_then(std::ffi::OsStr::to_str) != Some("tests") {
+                        pending.push(path);
+                    }
+                    continue;
+                }
+                if path.extension().and_then(std::ffi::OsStr::to_str) != Some("rs") {
+                    continue;
+                }
+                let source = std::fs::read_to_string(&path)
+                    .expect("transport adapter source should be readable");
+                for adapter in &forbidden {
+                    assert!(
+                        !source.contains(adapter),
+                        "{} imports a peer adapter: {name}",
+                        path.display()
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn transport_adapters_use_only_the_public_api_facade() {
+    let forbidden = [
+        ["crate", "::api::contracts"].concat(),
+        ["crate", "::api::materialization"].concat(),
+        ["crate", "::api::normalization"].concat(),
+        ["crate", "::api::refresh"].concat(),
+        ["crate", "::protocol"].concat(),
+        ["crate", "::db_writer"].concat(),
+        ["crate", "::execution"].concat(),
+        ["crate", "::scan"].concat(),
+        ["crate", "::semantic_enrichment"].concat(),
+        ["crate", "::staging_writer"].concat(),
+    ];
+    let adapters_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/adapters");
+    let mut pending = vec![adapters_root];
+
     while let Some(path) = pending.pop() {
-        for entry in std::fs::read_dir(&path).expect("MCP adapter directory should be readable") {
+        for entry in
+            std::fs::read_dir(&path).expect("transport adapter directory should be readable")
+        {
             let path = entry
-                .expect("MCP adapter directory entry should be readable")
+                .expect("transport adapter directory entry should be readable")
                 .path();
             if path.is_dir() {
-                pending.push(path);
+                if path.file_name().and_then(std::ffi::OsStr::to_str) != Some("tests") {
+                    pending.push(path);
+                }
                 continue;
             }
             if path.extension().and_then(std::ffi::OsStr::to_str) != Some("rs") {
                 continue;
             }
-            let source =
-                std::fs::read_to_string(&path).expect("MCP adapter source should be readable");
-            for adapter in &forbidden {
+            let source = std::fs::read_to_string(&path)
+                .expect("transport adapter source should be readable");
+            for dependency in &forbidden {
                 assert!(
-                    !source.contains(adapter),
-                    "{} imports the CLI adapter",
+                    !source.contains(dependency),
+                    "{} bypasses CodebaseGraphApi through {dependency}",
                     path.display()
+                );
+            }
+        }
+    }
+
+    for source in [
+        include_str!("../adapters/cli/dispatch.rs"),
+        include_str!("../adapters/cli/setup.rs"),
+        include_str!("../adapters/cli/reinstall.rs"),
+        include_str!("../adapters/cli/uninstall.rs"),
+        include_str!("../adapters/cli/install/command.rs"),
+        include_str!("../adapters/cli/install/verify.rs"),
+        include_str!("../adapters/cli/materialization/command.rs"),
+        include_str!("../adapters/cli/watch/command.rs"),
+        include_str!("../adapters/mcp/refresh.rs"),
+        include_str!("../adapters/mcp/tools.rs"),
+    ] {
+        assert!(
+            source.contains("CodebaseGraphApi"),
+            "product-facing adapter does not use CodebaseGraphApi"
+        );
+    }
+}
+
+#[test]
+fn command_subadapters_do_not_import_sibling_behavior() {
+    let adapters = [
+        (
+            "watch",
+            [
+                include_str!("../adapters/cli/watch/command.rs"),
+                include_str!("../adapters/cli/watch/options.rs"),
+            ],
+            ["materialization::", "materialization::{"],
+        ),
+        (
+            "materialization",
+            [
+                include_str!("../adapters/cli/materialization/command.rs"),
+                include_str!("../adapters/cli/materialization/mod.rs"),
+            ],
+            ["watch::", "watch::{"],
+        ),
+    ];
+
+    for (name, sources, forbidden) in adapters {
+        for source in sources {
+            for dependency in forbidden {
+                assert!(
+                    !source.contains(dependency),
+                    "{name} adapter imports sibling behavior through {dependency}"
                 );
             }
         }

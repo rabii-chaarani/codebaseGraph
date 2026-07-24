@@ -1,5 +1,5 @@
 use super::McpInstallOptions;
-use crate::adapters::mcp::LATEST_PROTOCOL_VERSION;
+use crate::api::CodebaseGraphApi;
 use serde_json::json;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -70,7 +70,7 @@ pub(in crate::adapters::cli) fn verify_stdio(descriptor: &serde_json::Value) -> 
     let payload = [
         stdio_json_rpc_message(
             "initialize",
-            json!({"protocolVersion": LATEST_PROTOCOL_VERSION}),
+            json!({"protocolVersion": CodebaseGraphApi::latest_mcp_protocol_version()}),
             1,
         ),
         stdio_json_rpc_message("tools/list", json!({}), 2),
@@ -221,7 +221,7 @@ pub(in crate::adapters::cli) fn stdio_checks(
             .get(&1)
             .and_then(|value| value.pointer("/result/protocolVersion"))
             .and_then(serde_json::Value::as_str)
-            == Some(LATEST_PROTOCOL_VERSION),
+            == Some(CodebaseGraphApi::latest_mcp_protocol_version()),
     );
     checks.insert(
         "tools_list".to_string(),

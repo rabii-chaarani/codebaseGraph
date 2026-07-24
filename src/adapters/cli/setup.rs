@@ -1,8 +1,7 @@
 use super::{format::setup_help, watch::SetupOptions};
-use crate::api::contracts::{
-    OperationRequest, OutputFormat, RepoSelector, RepositoryLifecycleRequest,
+use crate::api::{
+    CodebaseGraphApi, OperationRequest, OutputFormat, RepoSelector, RepositoryLifecycleRequest,
 };
-use crate::api::CodebaseGraphApi;
 use std::io::Write;
 
 pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {

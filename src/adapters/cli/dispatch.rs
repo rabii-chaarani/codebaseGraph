@@ -1,7 +1,7 @@
 use super::{
     format::{
         graph_architecture_queries_help, graph_context_help, graph_health_help, graph_query_help,
-        graph_query_helpers_help, graph_schema_help, graph_search_help, mcp_help, top_level_help,
+        graph_query_helpers_help, graph_schema_help, graph_search_help, top_level_help,
     },
     graph::{
         ArchitectureQueryOptions, GraphContextOptions, GraphQueryOptions, GraphSearchOptions,
@@ -14,43 +14,11 @@ use super::{
     uninstall::run_uninstall,
     watch::run_watch,
 };
-use crate::adapters::mcp::{serve_mcp_http, serve_mcp_stdio, McpHttpOptions, McpServeOptions};
 use crate::api::{
-    contracts::{
-        ContextRequest, HealthRequest, OperationRequest, OutputFormat, QueryRequest, RepoSelector,
-        SearchRequest,
-    },
-    CodebaseGraphApi,
+    CodebaseGraphApi, ContextRequest, HealthRequest, OperationRequest, OperationResponse,
+    OutputFormat, QueryRequest, RepoSelector, SearchRequest,
 };
-use std::{
-    env,
-    io::{self, Write},
-};
-
-pub fn run_from_env() -> Result<(), String> {
-    let args: Vec<String> = env::args().skip(1).collect();
-    run_process_args(args)
-}
-
-pub fn run_process_args(args: Vec<String>) -> Result<(), String> {
-    if args.is_empty() {
-        return run(args, &mut io::stdout());
-    }
-    if args.first().map(String::as_str) == Some("mcp") {
-        match args.get(1).map(String::as_str) {
-            Some("start") => {
-                let options = McpServeOptions::parse(&args[2..], mcp_help())?;
-                return serve_mcp_stdio(&options, io::stdin().lock(), &mut io::stdout());
-            }
-            Some("http") => {
-                let options = McpHttpOptions::parse(&args[2..], mcp_help())?;
-                return serve_mcp_http(&options);
-            }
-            _ => {}
-        }
-    }
-    run(args, &mut io::stdout())
-}
+use std::io::Write;
 
 pub fn run<I, S, W>(args: I, stdout: &mut W) -> Result<(), String>
 where
@@ -253,9 +221,7 @@ fn run_graph_query<W: Write>(args: &[String], stdout: &mut W) -> Result<(), Stri
     write_api_response(stdout, &response.payload, &options.json, false)
 }
 
-fn execute_api_request(
-    request: OperationRequest,
-) -> Result<crate::api::contracts::OperationResponse, String> {
+fn execute_api_request(request: OperationRequest) -> Result<OperationResponse, String> {
     CodebaseGraphApi::new()
         .execute_operation(&request)
         .map_err(|error| error.message)

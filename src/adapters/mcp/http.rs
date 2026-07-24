@@ -13,10 +13,10 @@ use std::{
 
 const MAX_HTTP_BODY_BYTES: usize = 1_000_000;
 
-pub(in crate::adapters) fn serve_mcp_http(options: &McpHttpOptions) -> Result<(), String> {
+pub(crate) fn serve_mcp_http(options: &McpHttpOptions) -> Result<(), String> {
     let listener = options.bind_listener()?;
     let mut options = options.clone();
-    options.serve.refresh = Some(start_auto_refresh(&options.serve));
+    options.serve.api = Some(start_auto_refresh(&options.serve));
     serve_mcp_http_listener(&options, listener, None)
 }
 

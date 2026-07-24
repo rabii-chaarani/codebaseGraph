@@ -2,13 +2,10 @@ use super::{
     options::{WatchBackend, WatchOptions},
     output::{write_watch_event, write_watch_status},
 };
-use crate::{
-    api::refresh::{
-        run_refresh_watch, watch_error_reason, RefreshBackend, RefreshLoopConfig,
-        RefreshWatchConfig, RefreshWatchObserver,
-    },
-    cli::format::watch_help,
-    protocol::NativeSyntaxMaterializationResponse,
+use crate::adapters::cli::{format::watch_help, materialization_input::materialize_request};
+use crate::api::{
+    CodebaseGraphApi, OutputFormat, RefreshBackend, RefreshLoopConfig, RefreshWatchConfig,
+    RefreshWatchObserver, RefreshWatchSummary,
 };
 use std::{io::Write, time::Duration};
 
@@ -38,11 +35,10 @@ pub(in crate::adapters::cli) fn run_watch<W: Write>(
         },
         once: options.once,
     };
-    run_refresh_watch(
-        &options.materialize,
-        config,
-        &mut CliRefreshObserver { stdout },
-    )
+    let request = materialize_request(&options.materialize, OutputFormat::Typed);
+    CodebaseGraphApi::new()
+        .watch_repository(&request, config, &mut CliRefreshObserver { stdout })
+        .map_err(|error| error.message)
 }
 
 struct CliRefreshObserver<'a, W> {
@@ -53,7 +49,7 @@ impl<W: Write> RefreshWatchObserver for CliRefreshObserver<'_, W> {
     fn on_success(
         &mut self,
         backend: Option<&str>,
-        response: &NativeSyntaxMaterializationResponse,
+        summary: &RefreshWatchSummary,
         event_count: usize,
         changed_paths: usize,
     ) -> Result<(), String> {
@@ -63,7 +59,7 @@ impl<W: Write> RefreshWatchObserver for CliRefreshObserver<'_, W> {
             backend,
             event_count,
             changed_paths,
-            response,
+            summary,
         )
     }
 
@@ -79,11 +75,39 @@ impl<W: Write> RefreshWatchObserver for CliRefreshObserver<'_, W> {
             self.stdout,
             if retrying { "retrying" } else { "error" },
             backend,
-            Some(&watch_error_reason(error)),
+            Some(&error_reason(error)),
         )
     }
 
     fn on_fallback(&mut self, backend: &str, reason: &str) -> Result<(), String> {
         write_watch_status(self.stdout, "fallback", backend, Some(reason))
+    }
+}
+
+fn error_reason(error: &str) -> String {
+    let reason = error.lines().next().unwrap_or("refresh_failed").trim();
+    if reason.is_empty() {
+        "refresh_failed".to_string()
+    } else {
+        reason
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join("_")
+            .chars()
+            .take(160)
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::error_reason;
+
+    #[test]
+    fn watch_error_reason_compacts_multiline_errors() {
+        assert_eq!(
+            error_reason("IO exception: Could not set lock\nSee docs"),
+            "IO_exception:_Could_not_set_lock"
+        );
     }
 }

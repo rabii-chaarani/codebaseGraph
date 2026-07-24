@@ -1,8 +1,7 @@
 use super::{block::serialize_error_block, options::McpServeOptions};
-use crate::api::normalization::required_fields;
 use crate::api::{
-    contracts::{ApiError, OperationInvocation, OperationResponse, OutputFormat},
-    CodebaseGraphApi, OperationDescriptor,
+    ApiError, CodebaseGraphApi, OperationDescriptor, OperationInvocation, OperationResponse,
+    OutputFormat,
 };
 use serde_json::json;
 use serde_json::Map;
@@ -38,7 +37,7 @@ fn operation_spec_from_descriptor(descriptor: OperationDescriptor) -> Option<ser
             "type": "object",
             "additionalProperties": false,
             "properties": property_map,
-            "required": required_fields(descriptor.id),
+            "required": descriptor.required_fields(),
         },
     }))
 }
@@ -122,7 +121,7 @@ pub(in crate::adapters) fn mcp_tool_payload(
     options: &McpServeOptions,
     output_format: OutputFormat,
 ) -> Result<OperationResponse, ApiError> {
-    let api = CodebaseGraphApi::with_refresh_state(options.refresh.clone());
+    let api = options.api.clone().unwrap_or_default();
     let operation = api.resolve_mcp_operation(tool_name).ok_or_else(|| {
         ApiError::new(
             "unknown_tool",

@@ -1,26 +1,25 @@
 use super::http::is_local_host;
-use super::refresh::McpRefreshState;
 use crate::adapters::required_arg;
-use crate::api::RepoSelector;
-use std::{env, net::TcpListener, path::PathBuf, sync::Arc};
+use crate::api::{CodebaseGraphApi, RepoSelector};
+use std::{env, net::TcpListener, path::PathBuf};
 
 #[derive(Clone, Debug)]
-pub(in crate::adapters) struct McpServeOptions {
+pub(crate) struct McpServeOptions {
     pub(in crate::adapters) repo_root: Option<PathBuf>,
     pub(in crate::adapters) config: Option<PathBuf>,
     pub(in crate::adapters) db: Option<PathBuf>,
     pub(in crate::adapters) manifest: Option<PathBuf>,
-    pub(in crate::adapters) refresh: Option<Arc<McpRefreshState>>,
+    pub(in crate::adapters) api: Option<CodebaseGraphApi>,
 }
 
 impl McpServeOptions {
-    pub(in crate::adapters) fn parse(args: &[String], help: &str) -> Result<Self, String> {
+    pub(crate) fn parse(args: &[String], help: &str) -> Result<Self, String> {
         let mut options = Self {
             repo_root: None,
             config: None,
             db: None,
             manifest: None,
-            refresh: None,
+            api: None,
         };
         let mut index = 0;
         while index < args.len() {
@@ -62,7 +61,7 @@ impl McpServeOptions {
 }
 
 #[derive(Clone, Debug)]
-pub(in crate::adapters) struct McpHttpOptions {
+pub(crate) struct McpHttpOptions {
     pub(in crate::adapters) serve: McpServeOptions,
     pub(in crate::adapters) host: String,
     pub(in crate::adapters) port: u16,
@@ -72,14 +71,14 @@ pub(in crate::adapters) struct McpHttpOptions {
 }
 
 impl McpHttpOptions {
-    pub(in crate::adapters) fn parse(args: &[String], help: &str) -> Result<Self, String> {
+    pub(crate) fn parse(args: &[String], help: &str) -> Result<Self, String> {
         let mut options = Self {
             serve: McpServeOptions {
                 repo_root: None,
                 config: None,
                 db: None,
                 manifest: None,
-                refresh: None,
+                api: None,
             },
             host: "127.0.0.1".to_string(),
             port: 8765,

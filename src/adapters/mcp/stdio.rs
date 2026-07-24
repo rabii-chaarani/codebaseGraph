@@ -6,13 +6,13 @@ use super::{
 use serde_json::json;
 use std::io::{BufRead, Write};
 
-pub(in crate::adapters) fn serve_mcp_stdio<R: BufRead, W: Write>(
+pub(crate) fn serve_mcp_stdio<R: BufRead, W: Write>(
     options: &McpServeOptions,
     mut input: R,
     output: &mut W,
 ) -> Result<(), String> {
     let mut options = options.clone();
-    options.refresh = Some(start_auto_refresh(&options));
+    options.api = Some(start_auto_refresh(&options));
     let mut session = McpSession::default();
     while let Some(message) = read_mcp_message(&mut input, output)? {
         if let Some(response) = handle_mcp_message(message, &mut session, &options) {

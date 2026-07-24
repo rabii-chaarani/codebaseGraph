@@ -38,6 +38,12 @@ pub struct OperationDescriptor {
     pub mcp_tool_name: Option<&'static str>,
 }
 
+impl OperationDescriptor {
+    pub fn required_fields(&self) -> &'static [&'static str] {
+        crate::api::normalization::required_fields(self.id)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct OperationRegistry {
     pub(crate) operations: BTreeMap<&'static str, RegisteredOperation>,
@@ -696,27 +702,7 @@ fn execute_materialization(
     dry_plan: bool,
 ) -> Result<OperationResponse, ApiError> {
     let output_format = request.output_format;
-    let mut materialize_options = MaterializeOptions {
-        source_root: Some(runtime.repo_root.clone()),
-        config: runtime.config_path.clone(),
-        db: Some(runtime.db_path.clone()),
-        manifest: Some(runtime.manifest_path.clone()),
-        mode: request.mode.clone(),
-        include_fts: request.include_fts,
-        semantic_enrichment: request.semantic_enrichment,
-        semantic_provider_mode: request.semantic_provider_mode.clone(),
-        use_git: request.use_git,
-        git_diff: request.git_diff,
-        git_base: request.git_base.clone(),
-        include_patterns: request.include_patterns.clone(),
-        exclude_patterns: request.exclude_patterns.clone(),
-        candidate_paths: request.candidate_paths.clone(),
-        parallel: request.parallel,
-        progress: request.progress,
-        plan_only: dry_plan,
-        ..MaterializeOptions::default()
-    };
-    materialize_options.parallel = request.parallel;
+    let materialize_options = MaterializeOptions::from_request(request, runtime, dry_plan);
 
     let mut native_request = if let Some(request_path) = request.native_request_path.as_ref() {
         read_request(request_path)

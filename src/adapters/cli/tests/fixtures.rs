@@ -44,7 +44,7 @@ pub(super) fn test_http_options(root: PathBuf, auth_token: Option<&str>) -> McpH
             config: None,
             db: None,
             manifest: None,
-            refresh: None,
+            api: None,
         },
         host: "127.0.0.1".to_string(),
         port: 8765,
@@ -98,7 +98,8 @@ pub(super) fn watch_filter_for(root: &Path, extra_args: &[&str]) -> WatchEventFi
     ];
     args.extend(extra_args.iter().map(|arg| arg.to_string()));
     let options = MaterializeOptions::parse_with_command(&args, "watch").unwrap();
-    WatchEventFilter::from_options(&source_root, &options).unwrap()
+    let request = materialize_request(&options, crate::api::OutputFormat::Typed);
+    WatchEventFilter::from_request(&source_root, &request).unwrap()
 }
 
 pub(super) fn watch_test_event(root: &Path, kind: EventKind, paths: &[&str]) -> Event {

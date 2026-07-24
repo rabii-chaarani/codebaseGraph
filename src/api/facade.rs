@@ -1,9 +1,11 @@
 use crate::api::{
-    contracts::{ApiError, OperationInvocation, OperationRequest, OperationResponse},
+    contracts::{
+        ApiError, MaterializationRequest, OperationInvocation, OperationRequest, OperationResponse,
+        RefreshWatchConfig, RefreshWatchObserver, RepoSelector,
+    },
     core::{ApiCore, OperationDescriptor},
-    refresh::RefreshState,
+    refresh::{run_refresh_watch, start_refresh_service},
 };
-use std::sync::Arc;
 
 pub trait OperationExecutor {
     fn execute(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError>;
@@ -35,10 +37,24 @@ impl CodebaseGraphApi<ApiCore> {
         self.core.resolve_mcp_operation(tool_name)
     }
 
-    pub(crate) fn with_refresh_state(refresh: Option<Arc<RefreshState>>) -> Self {
+    pub(crate) fn with_auto_refresh(selector: RepoSelector) -> Self {
         Self {
-            core: ApiCore::with_refresh_state(refresh),
+            core: ApiCore::with_refresh_state(Some(start_refresh_service(selector))),
         }
+    }
+
+    pub(crate) fn watch_repository(
+        &self,
+        request: &MaterializationRequest,
+        config: RefreshWatchConfig,
+        observer: &mut impl RefreshWatchObserver,
+    ) -> Result<(), ApiError> {
+        run_refresh_watch(request, config, observer)
+            .map_err(|error| ApiError::new("refresh_watch_failed", error))
+    }
+
+    pub(crate) fn latest_mcp_protocol_version() -> &'static str {
+        "2025-11-25"
     }
 
     pub fn execute_invocation(

@@ -7,10 +7,10 @@ mod state;
 mod stdio;
 mod tools;
 
-pub(in crate::adapters) use http::serve_mcp_http;
-pub(in crate::adapters) use options::{McpHttpOptions, McpServeOptions};
-pub(in crate::adapters) use protocol::{McpSession, LATEST_PROTOCOL_VERSION};
-pub(in crate::adapters) use stdio::serve_mcp_stdio;
+pub(crate) use http::serve_mcp_http;
+pub(crate) use options::{McpHttpOptions, McpServeOptions};
+pub(in crate::adapters) use protocol::McpSession;
+pub(crate) use stdio::serve_mcp_stdio;
 
 #[cfg(test)]
 pub(super) use http::{handle_mcp_http_request, HttpRequest};

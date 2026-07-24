@@ -1,11 +1,8 @@
-use crate::adapters::cli::format::{materialize_help, plan_help};
-use crate::api::{
-    contracts::{MaterializationRequest, OperationRequest, OutputFormat},
-    materialization::{
-        materialization_request as build_public_materialization_request, MaterializeOptions,
-    },
-    CodebaseGraphApi,
+use crate::adapters::cli::{
+    format::{materialize_help, plan_help},
+    materialization_input::{materialize_request, MaterializeOptions},
 };
+use crate::api::{CodebaseGraphApi, OperationRequest, OutputFormat};
 use std::io::Write;
 
 pub(in crate::adapters::cli) fn run_materialize<W: Write>(
@@ -18,7 +15,7 @@ pub(in crate::adapters::cli) fn run_materialize<W: Write>(
         return Ok(());
     }
     let api = CodebaseGraphApi::new();
-    let request = materialize_request(&options, OutputFormat::Typed)?;
+    let request = materialize_request(&options, OutputFormat::Typed);
     let response = api
         .execute_operation(&OperationRequest::Materialize(request))
         .map_err(|error| error.message)?;
@@ -45,7 +42,7 @@ pub(in crate::adapters::cli) fn run_plan<W: Write>(
         } else {
             OutputFormat::Block
         },
-    )?;
+    );
     let response = api
         .execute_operation(&OperationRequest::Plan(request))
         .map_err(|error| error.message)?;
@@ -64,11 +61,4 @@ pub(in crate::adapters::cli) fn run_plan<W: Write>(
             .ok_or_else(|| "block response did not contain text".to_string())?;
         write!(stdout, "{text}").map_err(|error| error.to_string())
     }
-}
-
-fn materialize_request(
-    options: &MaterializeOptions,
-    output_format: OutputFormat,
-) -> Result<MaterializationRequest, String> {
-    build_public_materialization_request(options, output_format)
 }

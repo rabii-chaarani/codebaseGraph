@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::{path::PathBuf, time::Duration};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RepoSelector {
@@ -205,6 +205,57 @@ pub struct RefreshRequest {
     pub parallel: bool,
     pub progress: bool,
     pub output_format: OutputFormat,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct RefreshLoopConfig {
+    pub poll_interval: Duration,
+    pub debounce: Duration,
+    pub max_wait: Duration,
+    pub max_iterations: Option<usize>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RefreshBackend {
+    Auto,
+    Native,
+    Poll,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct RefreshWatchConfig {
+    pub backend: RefreshBackend,
+    pub loop_config: RefreshLoopConfig,
+    pub once: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RefreshWatchSummary {
+    pub rebuilt: usize,
+    pub deleted: usize,
+    pub skipped: bool,
+    pub database_written: bool,
+}
+
+pub trait RefreshWatchObserver {
+    fn on_success(
+        &mut self,
+        backend: Option<&str>,
+        summary: &RefreshWatchSummary,
+        event_count: usize,
+        changed_paths: usize,
+    ) -> Result<(), String>;
+
+    fn on_error(
+        &mut self,
+        backend: &str,
+        error: &str,
+        retrying: bool,
+        event_count: usize,
+        changed_paths: usize,
+    ) -> Result<(), String>;
+
+    fn on_fallback(&mut self, backend: &str, reason: &str) -> Result<(), String>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

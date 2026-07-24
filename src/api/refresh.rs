@@ -1,7 +1,10 @@
 use crate::{
     api::{
         context::{resolve_runtime, RepoPaths},
-        contracts::RepoSelector,
+        contracts::{
+            MaterializationRequest, RefreshBackend, RefreshLoopConfig, RefreshWatchConfig,
+            RefreshWatchObserver, RefreshWatchSummary, RepoSelector,
+        },
         lifecycle::is_retryable_refresh_failure,
         materialization::{
             default_excluded_parts, execute_candidate_materialization, read_codebase_graph_ignore,
@@ -39,19 +42,41 @@ pub(crate) struct WatchEventFilter {
 }
 
 impl WatchEventFilter {
+    #[cfg(test)]
+    pub(crate) fn from_request(
+        source_root: &Path,
+        request: &MaterializationRequest,
+    ) -> Result<Self, String> {
+        Self::from_patterns(
+            source_root,
+            request.repo.config_path.clone(),
+            request.include_patterns.clone(),
+            request.exclude_patterns.clone(),
+        )
+    }
+
     pub(crate) fn from_options(
         source_root: &Path,
         options: &MaterializeOptions,
     ) -> Result<Self, String> {
-        let config_path = options
-            .config
-            .clone()
-            .unwrap_or_else(|| config_path_for(source_root));
+        Self::from_patterns(
+            source_root,
+            options.config.clone(),
+            options.include_patterns.clone(),
+            options.exclude_patterns.clone(),
+        )
+    }
+
+    fn from_patterns(
+        source_root: &Path,
+        config_path: Option<PathBuf>,
+        mut include_patterns: Vec<String>,
+        mut exclude_patterns: Vec<String>,
+    ) -> Result<Self, String> {
+        let config_path = config_path.unwrap_or_else(|| config_path_for(source_root));
         let config_rules = read_materialization_config_rules(&config_path)?;
-        let mut include_patterns = config_rules.include_patterns;
-        include_patterns.extend(options.include_patterns.clone());
-        let mut exclude_patterns = config_rules.exclude_patterns;
-        exclude_patterns.extend(options.exclude_patterns.clone());
+        include_patterns.splice(0..0, config_rules.include_patterns);
+        exclude_patterns.splice(0..0, config_rules.exclude_patterns);
         Ok(Self {
             source_root: source_root.to_path_buf(),
             current_dir: env::current_dir().unwrap_or_else(|_| source_root.to_path_buf()),
@@ -476,70 +501,18 @@ pub(crate) fn collect_poll_batch(
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct RefreshLoopConfig {
-    pub(crate) poll_interval: Duration,
-    pub(crate) debounce: Duration,
-    pub(crate) max_wait: Duration,
-    pub(crate) max_iterations: Option<usize>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum RefreshBackend {
-    Auto,
-    Native,
-    Poll,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct RefreshWatchConfig {
-    pub(crate) backend: RefreshBackend,
-    pub(crate) loop_config: RefreshLoopConfig,
-    pub(crate) once: bool,
-}
-
-pub(crate) trait RefreshWatchObserver {
-    fn on_success(
-        &mut self,
-        backend: Option<&str>,
-        response: &NativeSyntaxMaterializationResponse,
-        event_count: usize,
-        changed_paths: usize,
-    ) -> Result<(), String>;
-
-    fn on_error(
-        &mut self,
-        backend: &str,
-        error: &str,
-        retrying: bool,
-        event_count: usize,
-        changed_paths: usize,
-    ) -> Result<(), String>;
-
-    fn on_fallback(&mut self, backend: &str, reason: &str) -> Result<(), String>;
-}
-
 pub(crate) fn run_refresh_watch(
-    options: &MaterializeOptions,
+    request: &MaterializationRequest,
     config: RefreshWatchConfig,
     observer: &mut impl RefreshWatchObserver,
 ) -> Result<(), String> {
-    let runtime = resolve_runtime(&RepoSelector {
-        repo_root: options.source_root.clone(),
-        config_path: options.config.clone(),
-        db_path: options.db.clone(),
-        manifest_path: options.manifest.clone(),
-    })?;
-    let mut materialize_options = options.clone();
+    let runtime = resolve_runtime(&request.repo)?;
+    let mut materialize_options = MaterializeOptions::from_request(request, &runtime, false);
     normalize_materialize_options(&mut materialize_options);
-    materialize_options.source_root = Some(runtime.repo_root.clone());
-    materialize_options.config = runtime.config_path;
-    materialize_options.db = Some(runtime.db_path);
-    materialize_options.manifest = Some(runtime.manifest_path);
 
     if config.once {
         let response = execute_refresh_operation(&materialize_options, Vec::new())?;
-        return observer.on_success(None, &response, 0, 0);
+        return observer.on_success(None, &refresh_watch_summary(&response), 0, 0);
     }
 
     let filter = WatchEventFilter::from_options(&runtime.repo_root, &materialize_options)?;
@@ -619,8 +592,12 @@ impl<O: RefreshWatchObserver> RefreshObserver for BoundRefreshWatchObserver<'_, 
         event_count: usize,
         changed_paths: usize,
     ) -> Result<(), String> {
-        self.observer
-            .on_success(Some(self.backend), response, event_count, changed_paths)
+        self.observer.on_success(
+            Some(self.backend),
+            &refresh_watch_summary(response),
+            event_count,
+            changed_paths,
+        )
     }
 
     fn on_error(
@@ -632,6 +609,15 @@ impl<O: RefreshWatchObserver> RefreshObserver for BoundRefreshWatchObserver<'_, 
     ) -> Result<(), String> {
         self.observer
             .on_error(self.backend, error, retrying, event_count, changed_paths)
+    }
+}
+
+fn refresh_watch_summary(response: &NativeSyntaxMaterializationResponse) -> RefreshWatchSummary {
+    RefreshWatchSummary {
+        rebuilt: response.diff.rebuild_paths().len(),
+        deleted: response.diff.deleted.len(),
+        skipped: response.skipped,
+        database_written: response.database_written,
     }
 }
 
@@ -772,21 +758,6 @@ pub(crate) fn execute_refresh_with_policy(
                 delay = delay.saturating_mul(2).min(policy.max_delay);
             }
         }
-    }
-}
-
-pub(crate) fn watch_error_reason(error: &str) -> String {
-    let reason = error.lines().next().unwrap_or("refresh_failed").trim();
-    if reason.is_empty() {
-        "refresh_failed".to_string()
-    } else {
-        reason
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join("_")
-            .chars()
-            .take(160)
-            .collect()
     }
 }
 
@@ -1351,13 +1322,5 @@ mod tests {
             vec![(false, "parser exploded".to_string(), 1, 1)]
         );
         assert!(observer.successes.is_empty());
-    }
-
-    #[test]
-    fn watch_error_reason_compacts_multiline_errors() {
-        assert_eq!(
-            watch_error_reason("IO exception: Could not set lock\nSee docs"),
-            "IO_exception:_Could_not_set_lock"
-        );
     }
 }

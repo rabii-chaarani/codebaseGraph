@@ -1,5 +1,6 @@
 pub mod adapters;
 pub mod api;
+mod bootstrap;
 pub mod db_writer;
 pub mod error;
 mod execution;
@@ -20,3 +21,4 @@ pub use execution::{execute_materialization_pipeline, plan_materialization};
 pub use protocol::{MaterializationInput, MaterializationResult};
 
 pub use adapters::cli;
+pub use bootstrap::run_from_env;

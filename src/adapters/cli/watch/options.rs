@@ -1,4 +1,4 @@
-use crate::adapters::cli::{format::setup_help, materialization::MaterializeOptions};
+use crate::adapters::cli::{format::setup_help, materialization_input::MaterializeOptions};
 use std::path::PathBuf;
 
 #[derive(Debug)]

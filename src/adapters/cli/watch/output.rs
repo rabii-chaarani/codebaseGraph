@@ -1,4 +1,4 @@
-use crate::protocol::NativeSyntaxMaterializationResponse;
+use crate::api::RefreshWatchSummary;
 use std::io::Write;
 
 pub(in crate::adapters::cli) fn write_watch_event<W: Write>(
@@ -7,7 +7,7 @@ pub(in crate::adapters::cli) fn write_watch_event<W: Write>(
     backend: Option<&str>,
     event_count: usize,
     changed_paths: usize,
-    response: &NativeSyntaxMaterializationResponse,
+    summary: &RefreshWatchSummary,
 ) -> Result<(), String> {
     let backend = backend
         .map(|backend| format!(" backend={backend}"))
@@ -19,10 +19,10 @@ pub(in crate::adapters::cli) fn write_watch_event<W: Write>(
         backend,
         event_count,
         changed_paths,
-        response.diff.rebuild_paths().len(),
-        response.diff.deleted.len(),
-        response.skipped,
-        response.database_written
+        summary.rebuilt,
+        summary.deleted,
+        summary.skipped,
+        summary.database_written
     )
     .map_err(|error| error.to_string())
 }

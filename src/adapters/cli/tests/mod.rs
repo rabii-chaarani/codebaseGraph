@@ -1,5 +1,5 @@
 use super::*;
-use super::{materialization::*, watch::*};
+use super::{materialization_input::*, watch::*};
 use crate::adapters::mcp::*;
 use notify::{Event, EventKind};
 use serde_json::json;

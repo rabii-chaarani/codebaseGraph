@@ -1,6 +1,8 @@
+#[cfg(test)]
+use crate::api::contracts::{OutputFormat, RepoSelector};
 use crate::api::{
-    context::{resolve_repository_root, RepoPaths},
-    contracts::{MaterializationRequest, OutputFormat, RepoSelector},
+    context::{resolve_repository_root, RepoPaths, RepoRuntime},
+    contracts::MaterializationRequest,
 };
 use crate::protocol::{
     ManifestDiff, ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
@@ -32,8 +34,6 @@ pub(crate) struct MaterializeOptions {
     pub(crate) parallel: bool,
     pub(crate) progress: bool,
     pub(crate) plan_only: bool,
-    pub(crate) help: bool,
-    pub(crate) json_output: bool,
 }
 
 impl Default for MaterializeOptions {
@@ -57,8 +57,35 @@ impl Default for MaterializeOptions {
             parallel: true,
             progress: false,
             plan_only: false,
-            help: false,
-            json_output: false,
+        }
+    }
+}
+
+impl MaterializeOptions {
+    pub(crate) fn from_request(
+        request: &MaterializationRequest,
+        runtime: &RepoRuntime,
+        plan_only: bool,
+    ) -> Self {
+        Self {
+            source_root: Some(runtime.repo_root.clone()),
+            config: runtime.config_path.clone(),
+            db: Some(runtime.db_path.clone()),
+            manifest: Some(runtime.manifest_path.clone()),
+            mode: request.mode.clone(),
+            include_fts: request.include_fts,
+            semantic_enrichment: request.semantic_enrichment,
+            semantic_provider_mode: request.semantic_provider_mode.clone(),
+            use_git: request.use_git,
+            git_diff: request.git_diff,
+            git_base: request.git_base.clone(),
+            include_patterns: request.include_patterns.clone(),
+            exclude_patterns: request.exclude_patterns.clone(),
+            candidate_paths: request.candidate_paths.clone(),
+            parallel: request.parallel,
+            progress: request.progress,
+            plan_only,
+            ..Self::default()
         }
     }
 }
@@ -69,6 +96,7 @@ pub(crate) struct ConfigScanRules {
     pub(crate) exclude_patterns: Vec<String>,
 }
 
+#[cfg(test)]
 pub(crate) fn materialization_request(
     options: &MaterializeOptions,
     output_format: OutputFormat,

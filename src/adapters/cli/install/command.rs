@@ -1,8 +1,7 @@
 use super::{attach_install_verification, options::McpInstallOptions};
 use crate::adapters::cli::format::mcp_install_help;
 use crate::api::{
-    contracts::{McpInstallRequest, OperationRequest, OutputFormat, RepoSelector},
-    CodebaseGraphApi,
+    CodebaseGraphApi, McpInstallRequest, OperationRequest, OutputFormat, RepoSelector,
 };
 use std::io::Write;
 
