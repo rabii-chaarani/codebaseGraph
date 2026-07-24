@@ -19,8 +19,8 @@ pub(crate) mod refresh;
 
 pub use contracts::{
     ApiError, ContextRequest, HealthRequest, MaterializationRequest, McpInstallRequest,
-    OperationRequest, OperationResponse, OutputFormat, QueryRequest, RefreshRequest, RepoSelector,
-    RepositoryLifecycleRequest, SearchRequest,
+    OperationInvocation, OperationRequest, OperationResponse, OutputFormat, QueryRequest,
+    RefreshRequest, RepoSelector, RepositoryLifecycleRequest, SearchRequest,
 };
 pub use core::OperationDescriptor;
 pub use facade::{CodebaseGraphApi, OperationExecutor};

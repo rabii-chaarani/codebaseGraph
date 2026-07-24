@@ -36,6 +36,13 @@ pub enum OperationRequest {
     Refresh(RefreshRequest),
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationInvocation {
+    pub repo: RepoSelector,
+    pub arguments: serde_json::Value,
+    pub output_format: OutputFormat,
+}
+
 impl OperationRequest {
     pub fn operation_name(&self) -> &str {
         match self {
@@ -421,5 +428,18 @@ mod tests {
         let source = include_str!("contracts.rs");
         assert!(!source.contains(&["crate", "::cli"].concat()));
         assert!(!source.contains(&["mcp", "::"].concat()));
+
+        let invocation = OperationInvocation {
+            repo: repository(),
+            arguments: json!({"query": "needle"}),
+            output_format: OutputFormat::Block,
+        };
+        let encoded = serde_json::to_value(&invocation).expect("invocation should serialize");
+        let decoded: OperationInvocation =
+            serde_json::from_value(encoded.clone()).expect("invocation should deserialize");
+        assert_eq!(
+            serde_json::to_value(decoded).expect("decoded invocation should serialize"),
+            encoded
+        );
     }
 }

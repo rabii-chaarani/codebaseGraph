@@ -115,6 +115,30 @@ fn transport_adapters_do_not_import_product_execution_services() {
 }
 
 #[test]
+fn mcp_tools_leave_product_request_and_refresh_policy_in_the_api() {
+    let source = include_str!("../adapters/mcp/tools.rs");
+    let forbidden = [
+        "SearchRequest",
+        "ContextRequest",
+        "QueryRequest",
+        ".read_guard()",
+        "\"graph_search\" =>",
+        "unwrap_or(\"brief\")",
+        "unwrap_or(\"standard\")",
+    ];
+
+    for policy in forbidden {
+        assert!(
+            !source.contains(policy),
+            "MCP tools contain API-owned product policy: {policy}"
+        );
+    }
+    assert!(source.contains("execute_invocation"));
+    assert!(source.contains("resolve_mcp_operation"));
+    assert!(!source.contains("mcp_tool_name == Some(tool_name)"));
+}
+
+#[test]
 fn only_graph_writer_submits_database_updates() {
     let graph_writer = include_str!("../staging_writer/writer.rs");
     assert!(graph_writer.contains(&["write", "_database("].concat()));

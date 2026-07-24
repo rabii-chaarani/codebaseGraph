@@ -1,6 +1,7 @@
 use super::http::is_local_host;
 use super::refresh::McpRefreshState;
 use crate::adapters::required_arg;
+use crate::api::RepoSelector;
 use std::{env, net::TcpListener, path::PathBuf, sync::Arc};
 
 #[derive(Clone, Debug)]
@@ -48,6 +49,15 @@ impl McpServeOptions {
             }
         }
         Ok(options)
+    }
+
+    pub(in crate::adapters) fn repo_selector(&self) -> RepoSelector {
+        RepoSelector {
+            repo_root: self.repo_root.clone(),
+            config_path: self.config.clone(),
+            db_path: self.db.clone(),
+            manifest_path: self.manifest.clone(),
+        }
     }
 }
 

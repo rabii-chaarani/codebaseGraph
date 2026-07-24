@@ -1,8 +1,8 @@
 use crate::api::catalog::{filter_catalog, load_catalog};
 use crate::api::context::{resolve_runtime, RepoRuntime};
 use crate::api::contracts::{
-    ApiError, ContextRequest, HealthRequest, MaterializationRequest, OperationRequest,
-    OperationResponse, OutputFormat, QueryRequest, SearchRequest,
+    ApiError, ContextRequest, HealthRequest, MaterializationRequest, OperationInvocation,
+    OperationRequest, OperationResponse, OutputFormat, QueryRequest, SearchRequest,
 };
 use crate::api::graph_read::{
     count_graph_nodes, execute_graph_context, execute_graph_search, execute_read_only_query,
@@ -16,12 +16,17 @@ use crate::api::materialization::{
     build_request, execute_materialization_request, plan_materialization_payload, read_request,
     MaterializeOptions,
 };
-use crate::api::normalization::{normalize_request, validate_request};
+use crate::api::normalization::{
+    normalize_request, prepare_operation_request, validate_request, DEFAULT_CONTEXT_LIMIT,
+    DEFAULT_DETAIL, DEFAULT_PROFILE, DEFAULT_QUERY_LIMIT, DEFAULT_SEARCH_BUDGET,
+    DEFAULT_SEARCH_LIMIT,
+};
 use crate::api::presenter::present_operation_response;
+use crate::api::refresh::RefreshState;
 use crate::error::NativeError;
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
 use serde_json::json;
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 #[derive(Debug, Clone, Copy)]
 pub struct OperationDescriptor {
@@ -48,11 +53,17 @@ pub(crate) struct RegisteredOperation {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct ApiCore;
+pub struct ApiCore {
+    refresh: Option<Arc<RefreshState>>,
+}
 
 impl ApiCore {
     pub fn new() -> Self {
-        Self
+        Self::default()
+    }
+
+    pub(crate) fn with_refresh_state(refresh: Option<Arc<RefreshState>>) -> Self {
+        Self { refresh }
     }
 
     pub(crate) fn register_operations(&self) -> OperationRegistry {
@@ -178,9 +189,29 @@ impl ApiCore {
         self.register_operations().operations.get(id).copied()
     }
 
+    pub(crate) fn resolve_mcp_operation(&self, tool_name: &str) -> Option<OperationDescriptor> {
+        self.operations()
+            .into_iter()
+            .find(|operation| operation.mcp_tool_name == Some(tool_name))
+    }
+
     pub fn execute(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError> {
-        let request = normalize_request(request);
+        let mut request = normalize_request(request);
+        if let (Some(refresh), OperationRequest::Health(health)) = (&self.refresh, &mut request) {
+            if health.refresh_status.is_none() {
+                health.refresh_status = Some(refresh.as_json());
+            }
+        }
         validate_request(&request)?;
+        let _refresh_read_guard = if operation_requires_consistent_graph_read(&request) {
+            self.refresh
+                .as_ref()
+                .map(|refresh| refresh.read_guard())
+                .transpose()
+                .map_err(|error| ApiError::new("refresh_lock_failed", error))?
+        } else {
+            None
+        };
         let operation = self
             .resolve_operation(request.operation_name())
             .ok_or_else(|| {
@@ -199,6 +230,15 @@ impl ApiCore {
             response,
             request.output_format(),
         ))
+    }
+
+    pub(crate) fn execute_invocation(
+        &self,
+        operation_id: &str,
+        invocation: &OperationInvocation,
+    ) -> Result<OperationResponse, ApiError> {
+        let request = prepare_operation_request(operation_id, invocation)?;
+        self.execute(&request)
     }
 
     pub(crate) fn operations(&self) -> Vec<OperationDescriptor> {
@@ -265,12 +305,12 @@ fn empty_request_schema() -> serde_json::Value {
 fn search_request_schema() -> serde_json::Value {
     json!({
         "query": {"type": "string"},
-        "limit": {"type": "integer", "minimum": 1},
-        "profile": {"type": "string"},
-        "budget": {"type": "integer", "minimum": 0},
-        "context_limit": {"type": "integer", "minimum": 0},
+        "limit": {"type": "integer", "minimum": 1, "default": DEFAULT_SEARCH_LIMIT},
+        "profile": {"type": "string", "default": DEFAULT_PROFILE},
+        "budget": {"type": "integer", "minimum": 0, "default": DEFAULT_SEARCH_BUDGET},
+        "context_limit": {"type": "integer", "minimum": 0, "default": DEFAULT_CONTEXT_LIMIT},
         "max_depth": {"type": "integer", "minimum": 0},
-        "detail": {"type": "string", "enum": ["standard", "slim"]},
+        "detail": {"type": "string", "enum": ["standard", "slim"], "default": DEFAULT_DETAIL},
     })
 }
 
@@ -279,12 +319,12 @@ fn context_request_schema() -> serde_json::Value {
         "query": {"type": "string"},
         "node_id": {"type": "string"},
         "node_type": {"type": "string"},
-        "limit": {"type": "integer", "minimum": 1},
-        "profile": {"type": "string"},
-        "budget": {"type": "integer", "minimum": 0},
-        "context_limit": {"type": "integer", "minimum": 0},
+        "limit": {"type": "integer", "minimum": 1, "default": DEFAULT_SEARCH_LIMIT},
+        "profile": {"type": "string", "default": DEFAULT_PROFILE},
+        "budget": {"type": "integer", "minimum": 0, "default": DEFAULT_SEARCH_BUDGET},
+        "context_limit": {"type": "integer", "minimum": 0, "default": DEFAULT_CONTEXT_LIMIT},
         "max_depth": {"type": "integer", "minimum": 0},
-        "detail": {"type": "string", "enum": ["standard", "slim"]},
+        "detail": {"type": "string", "enum": ["standard", "slim"], "default": DEFAULT_DETAIL},
     })
 }
 
@@ -293,7 +333,7 @@ fn query_request_schema() -> serde_json::Value {
         "statement": {"type": "string"},
         "parameters": {"type": "object"},
         "query": {"type": "string"},
-        "limit": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "limit": {"type": "integer", "minimum": 1, "maximum": 1000, "default": DEFAULT_QUERY_LIMIT},
     })
 }
 
@@ -309,6 +349,16 @@ fn dispatch_operation(
     runtime: Option<&RepoRuntime>,
 ) -> Result<OperationResponse, ApiError> {
     (operation.handler)(request, runtime)
+}
+
+fn operation_requires_consistent_graph_read(request: &OperationRequest) -> bool {
+    matches!(
+        request,
+        OperationRequest::Health(_)
+            | OperationRequest::Search(_)
+            | OperationRequest::Context(_)
+            | OperationRequest::Query(_)
+    )
 }
 
 fn required_runtime<'a>(
@@ -794,6 +844,45 @@ mod tests {
         )
         .expect("registered schema handler should execute");
         assert_eq!(response.operation, "schema");
+    }
+
+    #[test]
+    fn resolve_mcp_operation_uses_registered_operation_metadata() {
+        let core = ApiCore::new();
+        let operation = core
+            .resolve_mcp_operation("graph_search")
+            .expect("registered MCP operation should resolve");
+        assert_eq!(operation.id, "search");
+        assert!(core.resolve_mcp_operation("graph_missing").is_none());
+    }
+
+    #[test]
+    fn refresh_read_policy_covers_repository_graph_reads() {
+        let repo = RepoSelector::default();
+        let typed = OutputFormat::Typed;
+        assert!(super::operation_requires_consistent_graph_read(
+            &OperationRequest::Health(crate::api::contracts::HealthRequest {
+                repo: repo.clone(),
+                refresh_status: None,
+                output_format: typed,
+            })
+        ));
+        assert!(super::operation_requires_consistent_graph_read(
+            &OperationRequest::Query(crate::api::contracts::QueryRequest {
+                repo,
+                statement: "MATCH (n) RETURN n".to_string(),
+                parameters: json!({}),
+                limit: 1,
+                output_format: typed,
+            })
+        ));
+        assert!(!super::operation_requires_consistent_graph_read(
+            &OperationRequest::Catalog {
+                kind: "schema".to_string(),
+                group: None,
+                output_format: typed,
+            }
+        ));
     }
 
     #[test]

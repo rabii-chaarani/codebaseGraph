@@ -1,7 +1,9 @@
 use crate::api::{
-    contracts::{ApiError, OperationRequest, OperationResponse},
+    contracts::{ApiError, OperationInvocation, OperationRequest, OperationResponse},
     core::{ApiCore, OperationDescriptor},
+    refresh::RefreshState,
 };
+use std::sync::Arc;
 
 pub trait OperationExecutor {
     fn execute(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError>;
@@ -27,6 +29,24 @@ impl CodebaseGraphApi<ApiCore> {
 
     pub fn operation_descriptors(&self) -> Vec<OperationDescriptor> {
         self.core.operations()
+    }
+
+    pub fn resolve_mcp_operation(&self, tool_name: &str) -> Option<OperationDescriptor> {
+        self.core.resolve_mcp_operation(tool_name)
+    }
+
+    pub(crate) fn with_refresh_state(refresh: Option<Arc<RefreshState>>) -> Self {
+        Self {
+            core: ApiCore::with_refresh_state(refresh),
+        }
+    }
+
+    pub fn execute_invocation(
+        &self,
+        operation_id: &str,
+        invocation: &OperationInvocation,
+    ) -> Result<OperationResponse, ApiError> {
+        self.core.execute_invocation(operation_id, invocation)
     }
 }
 

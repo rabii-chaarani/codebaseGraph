@@ -1,14 +1,87 @@
 use crate::api::contracts::{
-    ApiError, MaterializationRequest, McpInstallRequest, OperationRequest, RefreshRequest,
-    RepositoryLifecycleRequest,
+    ApiError, ContextRequest, HealthRequest, MaterializationRequest, McpInstallRequest,
+    OperationInvocation, OperationRequest, QueryRequest, RefreshRequest,
+    RepositoryLifecycleRequest, SearchRequest,
 };
 use crate::api::lifecycle::{expand_path, supported_mcp_clients};
 use crate::api::materialization::MaterializeOptions;
+use serde_json::json;
 
-const DEFAULT_PROFILE: &str = "brief";
-const DEFAULT_DETAIL: &str = "standard";
+pub(crate) const DEFAULT_PROFILE: &str = "brief";
+pub(crate) const DEFAULT_DETAIL: &str = "standard";
+pub(crate) const DEFAULT_SEARCH_LIMIT: usize = 3;
+pub(crate) const DEFAULT_SEARCH_BUDGET: usize = 600;
+pub(crate) const DEFAULT_CONTEXT_LIMIT: usize = 3;
+pub(crate) const DEFAULT_QUERY_LIMIT: usize = 100;
 const DEFAULT_MATERIALIZATION_MODE: &str = "changed";
 const DEFAULT_SEMANTIC_PROVIDER_MODE: &str = "local_only";
+
+pub(crate) fn prepare_operation_request(
+    operation_id: &str,
+    invocation: &OperationInvocation,
+) -> Result<OperationRequest, ApiError> {
+    let arguments = &invocation.arguments;
+    let request = match operation_id {
+        "health" => OperationRequest::Health(HealthRequest {
+            repo: invocation.repo.clone(),
+            refresh_status: None,
+            output_format: invocation.output_format,
+        }),
+        "search" => OperationRequest::Search(SearchRequest {
+            repo: invocation.repo.clone(),
+            query: argument_string(arguments, "query"),
+            profile: argument_string(arguments, "profile"),
+            limit: argument_usize(arguments, "limit").unwrap_or(DEFAULT_SEARCH_LIMIT),
+            budget: argument_usize(arguments, "budget").unwrap_or(DEFAULT_SEARCH_BUDGET),
+            context_limit: argument_usize(arguments, "context_limit")
+                .unwrap_or(DEFAULT_CONTEXT_LIMIT),
+            max_depth: argument_usize(arguments, "max_depth"),
+            detail: argument_string(arguments, "detail"),
+            output_format: invocation.output_format,
+        }),
+        "context" => OperationRequest::Context(ContextRequest {
+            repo: invocation.repo.clone(),
+            query: argument_optional_string(arguments, "query"),
+            profile: argument_string(arguments, "profile"),
+            limit: argument_usize(arguments, "limit").unwrap_or(DEFAULT_SEARCH_LIMIT),
+            budget: argument_usize(arguments, "budget").unwrap_or(DEFAULT_SEARCH_BUDGET),
+            context_limit: argument_usize(arguments, "context_limit")
+                .unwrap_or(DEFAULT_CONTEXT_LIMIT),
+            max_depth: argument_usize(arguments, "max_depth"),
+            detail: argument_string(arguments, "detail"),
+            node_id: argument_optional_string(arguments, "node_id"),
+            node_type: argument_optional_string(arguments, "node_type"),
+            output_format: invocation.output_format,
+        }),
+        "query" => OperationRequest::Query(QueryRequest {
+            repo: invocation.repo.clone(),
+            statement: argument_string(arguments, "statement"),
+            parameters: arguments
+                .get("parameters")
+                .cloned()
+                .unwrap_or_else(|| json!({})),
+            limit: argument_usize(arguments, "limit").unwrap_or(DEFAULT_QUERY_LIMIT),
+            output_format: invocation.output_format,
+        }),
+        "schema" | "query-helpers" => OperationRequest::Catalog {
+            kind: operation_id.to_string(),
+            group: None,
+            output_format: invocation.output_format,
+        },
+        "architecture-queries" => OperationRequest::Catalog {
+            kind: operation_id.to_string(),
+            group: argument_optional_string(arguments, "group"),
+            output_format: invocation.output_format,
+        },
+        _ => {
+            return Err(ApiError::new(
+                "unsupported_operation",
+                format!("unsupported registered operation input: {operation_id}"),
+            ))
+        }
+    };
+    Ok(normalize_request(&request))
+}
 
 pub(crate) fn normalize_request(request: &OperationRequest) -> OperationRequest {
     let mut normalized = request.clone();
@@ -309,6 +382,28 @@ fn normalized_optional_string(value: Option<String>) -> Option<String> {
         .filter(|value| !value.is_empty())
 }
 
+fn argument_string(arguments: &serde_json::Value, key: &str) -> String {
+    arguments
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+        .to_string()
+}
+
+fn argument_optional_string(arguments: &serde_json::Value, key: &str) -> Option<String> {
+    arguments
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string)
+}
+
+fn argument_usize(arguments: &serde_json::Value, key: &str) -> Option<usize> {
+    arguments
+        .get(key)
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|value| usize::try_from(value).ok())
+}
+
 fn normalize_paths(paths: &mut Vec<String>) {
     for path in paths.iter_mut() {
         *path = path.trim().trim_start_matches("./").replace('\\', "/");
@@ -320,11 +415,16 @@ fn normalize_paths(paths: &mut Vec<String>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{normalize_request, required_fields, validate_request};
-    use crate::api::contracts::{
-        ContextRequest, MaterializationRequest, McpInstallRequest, OperationRequest, OutputFormat,
-        RepoSelector, SearchRequest,
+    use super::{
+        normalize_request, prepare_operation_request, required_fields, validate_request,
+        DEFAULT_CONTEXT_LIMIT, DEFAULT_DETAIL, DEFAULT_PROFILE, DEFAULT_QUERY_LIMIT,
+        DEFAULT_SEARCH_BUDGET, DEFAULT_SEARCH_LIMIT,
     };
+    use crate::api::contracts::{
+        ContextRequest, MaterializationRequest, McpInstallRequest, OperationInvocation,
+        OperationRequest, OutputFormat, RepoSelector, SearchRequest,
+    };
+    use serde_json::json;
 
     #[test]
     fn normalize_request_applies_canonical_defaults() {
@@ -374,6 +474,40 @@ mod tests {
             materialization.repo.repo_root,
             Some(std::path::PathBuf::from("./repository"))
         );
+    }
+
+    #[test]
+    fn prepare_operation_request_applies_canonical_registered_input_defaults() {
+        let invocation = OperationInvocation {
+            repo: RepoSelector::default(),
+            arguments: json!({"query": "needle"}),
+            output_format: OutputFormat::Typed,
+        };
+
+        let request = prepare_operation_request("search", &invocation)
+            .expect("registered search input should prepare");
+        let OperationRequest::Search(search) = request else {
+            panic!("registered search input should produce a search request");
+        };
+        assert_eq!(search.profile, DEFAULT_PROFILE);
+        assert_eq!(search.detail, DEFAULT_DETAIL);
+        assert_eq!(search.limit, DEFAULT_SEARCH_LIMIT);
+        assert_eq!(search.budget, DEFAULT_SEARCH_BUDGET);
+        assert_eq!(search.context_limit, DEFAULT_CONTEXT_LIMIT);
+
+        let query = prepare_operation_request(
+            "query",
+            &OperationInvocation {
+                arguments: json!({"statement": "MATCH (n) RETURN n"}),
+                ..invocation
+            },
+        )
+        .expect("registered query input should prepare");
+        let OperationRequest::Query(query) = query else {
+            panic!("registered query input should produce a query request");
+        };
+        assert_eq!(query.limit, DEFAULT_QUERY_LIMIT);
+        assert_eq!(query.parameters, json!({}));
     }
 
     #[test]
