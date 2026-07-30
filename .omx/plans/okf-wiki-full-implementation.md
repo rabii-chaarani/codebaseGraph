@@ -97,28 +97,34 @@ a later subsystem after the read model is stable.
 
 ```mermaid
 flowchart LR
-    R["Knowledge Reader"] --> W["Knowledge Wiki"]
-    H["MCP Host"] --> W
-    W --> S["Source Repository"]
-    W --> G["Graph Runtime public API"]
+    D["Developer or Agent"] --> SYS
+    H["MCP Host"] --> SYS
+    SYS --> S["Source Repository"]
 
-    subgraph W["Knowledge Wiki"]
-      CLI["Wiki CLI Adapter"] --> API["Wiki Public API"]
-      HTTP["Wiki HTTP Server"] --> API
-      MCP["Wiki Agent Adapter"] --> API
-      API --> REF["Refresh Coordinator"]
-      API --> STORE["Projection Store"]
-      API --> SEARCH["Concept Search"]
-      API --> CTX["Graph Context Adapter"]
-      API --> RENDER["Wiki Renderer"]
-      REF --> COMP["Knowledge Compiler"]
-      COMP --> READ["Bundle Reader"]
-      COMP --> VALID["Conformance Validator"]
-      COMP --> STORE
-      SEARCH --> STORE
-      RENDER --> STORE
+    subgraph SYS["codebaseGraph"]
+      G["Graph Runtime public API"]
+
+      subgraph W["Knowledge Wiki"]
+        CLI["Wiki CLI Adapter"] --> API["Wiki Public API"]
+        HTTP["Wiki HTTP Server"] --> API
+        MCP["Wiki Agent Adapter"] --> API
+        API --> REF["Refresh Coordinator"]
+        API --> STORE["Projection Store"]
+        API --> SEARCH["Concept Search"]
+        API --> CTX["Graph Context Adapter"]
+        API --> RENDER["Wiki Renderer"]
+        REF --> COMP["Knowledge Compiler"]
+        COMP --> READ["Bundle Reader"]
+        COMP --> VALID["Conformance Validator"]
+        COMP --> STORE
+        SEARCH --> STORE
+        RENDER --> STORE
+      end
     end
 
+    H --> W
+    W --> S
+    W --> G
     READ --> S
     REF --> S
     REF --> G
@@ -129,6 +135,8 @@ flowchart LR
 
 | Node | Scryer ID | Accountability |
 | --- | --- | --- |
+| Developer or Agent | `person-developer` | Uses repository graph and wiki capabilities |
+| codebaseGraph | `system-codebase-graph` | Exposes repository knowledge to developers and agents |
 | Knowledge Wiki | `node-164` | Deployable OKF publishing boundary |
 | Wiki Public API | `node-165` | Transport-neutral wiki operations |
 | Bundle Reader | `node-166` | Bundle discovery and lossless document reading |
@@ -623,7 +631,7 @@ Exit criteria:
 Scryer close: fold `resp-165` through `resp-167` and `resp-190` through
 `resp-192`.
 
-### Phase 6 — Secure renderer and reader experience
+### Phase 6 — Secure renderer and developer/agent experience
 
 Scryer responsibilities: `resp-193` through `resp-197`
 
@@ -791,8 +799,9 @@ Exit criteria:
 Final Scryer close:
 
 - Fold container responsibilities `resp-161` through `resp-164`.
-- Fold reader responsibility `resp-160`.
+- Fold actor responsibility `resp-1`.
 - Fold the broadened system responsibility `resp-5`.
+- Fold the restored actor-to-system relationship `link-developer-system`.
 - Fold all links whose endpoints are implemented.
 - Attach system-level end-to-end tests.
 - Run `validate_model`, `get_health(node-164)`, and `get_pending(chg-1)`.
