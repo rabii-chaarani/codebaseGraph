@@ -41,8 +41,8 @@ jobs:
         include:
           - os: ubuntu-latest
             rustflags: ""
-            prebuilt_lbug: false
-            lbug_archive: ""
+            prebuilt_lbug: true
+            lbug_archive: liblbug-static-linux-x86_64-compat.tar.gz
             test_args: ""
           - os: macos-latest
             rustflags: ""
@@ -145,8 +145,8 @@ jobs:
           - os: ubuntu-latest
             binary: codebase-graph
             archive: codebase-graph-linux-x86_64.tar.gz
-            prebuilt_lbug: false
-            lbug_archive: ""
+            prebuilt_lbug: true
+            lbug_archive: liblbug-static-linux-x86_64-compat.tar.gz
             rustflags: ""
           - os: macos-latest
             binary: codebase-graph
