@@ -2,7 +2,7 @@
 
 ## Plan status
 
-- Scryer change: `chg-1`
+- Scryer changes: `chg-1` (wiki subsystem), `chg-2` (controlled MCP authoring)
 - Scryer scope: `codebaseGraph / Knowledge Wiki` (`node-164`)
 - Model validation: structurally clean
 - Implementation status: not started
@@ -14,11 +14,12 @@ must not be changed until this plan is approved.
 
 ## Decision summary
 
-Build a new workspace package at `crates/okf-wiki/` as a separately deployable,
-read-only Rust wiki service. It owns OKF parsing, conformance, compilation,
-projection storage, search, rendering, refresh, HTTP, CLI, and agent-tool
-behavior. It consumes source-graph context exclusively through
-`CodebaseGraphApi`.
+Build a new workspace package at `crates/okf-wiki/` as a separately deployable
+Rust wiki service. It owns OKF parsing, conformance, compilation, controlled
+source authoring, projection storage, search, rendering, refresh, HTTP, CLI,
+and agent-tool behavior. Its MCP surface supports knowledge discovery plus
+bounded creation and population of OKF bundles and pages. It consumes
+source-graph context exclusively through `CodebaseGraphApi`.
 
 The package must not reinterpret `DocumentationSource` or
 `DocumentationChunk` as OKF concepts. The existing Markdown materializer only
@@ -47,14 +48,19 @@ citations, history, and permissive conformance.
 - Concept-aware full-text search.
 - Static site generation and a local read-only HTTP preview/API server.
 - CLI commands for validation, building, serving, inspection, and link checks.
-- Read-only MCP/agent tools over the same normalized wiki API.
+- Read-only MCP tools for bundles, directories, concepts, search, backlinks,
+  neighborhoods, diagnostics, and recent changes.
+- Controlled MCP tools for creating bundles, creating pages, and populating
+  page content.
 - Optional source-code context through the existing graph public API.
 - Accessibility, content sanitization, safe path handling, security headers,
   observability, release packaging, and performance verification.
 
 ### Excluded
 
-- Browser-based authoring or direct source mutation.
+- Browser-based authoring.
+- Arbitrary source mutation outside configured OKF bundle roots and declared
+  authoring operations.
 - Authentication-backed multi-user editing.
 - Pull-request creation.
 - Dataplex or other catalog synchronization.
@@ -62,9 +68,11 @@ citations, history, and permissive conformance.
 - Replacing the existing Markdown materializer or graph documentation nodes.
 - Changing existing graph `OperationRequest` variants or current MCP tool names.
 
-Authoring is excluded because it introduces a separate trust, authorization,
-conflict-resolution, and Git-governance product boundary. It can be planned as
-a later subsystem after the read model is stable.
+MCP authoring is intentionally narrower than a general editor: it accepts typed
+bundle and page operations, validates the resulting OKF content, enforces
+configured repository roots, detects stale writes, and publishes each source
+change atomically. Interactive editing, arbitrary file writes, Git operations,
+and multi-user conflict resolution remain outside this subsystem.
 
 ## Existing constraints
 
@@ -113,6 +121,9 @@ flowchart LR
         API --> SEARCH["Concept Search"]
         API --> CTX["Graph Context Adapter"]
         API --> RENDER["Wiki Renderer"]
+        API --> AUTHOR["Bundle Authoring"]
+        AUTHOR --> READ
+        AUTHOR --> VALID
         REF --> COMP["Knowledge Compiler"]
         COMP --> READ["Bundle Reader"]
         COMP --> VALID["Conformance Validator"]
@@ -127,6 +138,7 @@ flowchart LR
     W --> G
     READ --> S
     REF --> S
+    AUTHOR --> S
     REF --> G
     CTX --> G
 ```
@@ -137,10 +149,11 @@ flowchart LR
 | --- | --- | --- |
 | Developer or Agent | `person-developer` | Uses repository graph and wiki capabilities |
 | codebaseGraph | `system-codebase-graph` | Exposes repository knowledge to developers and agents |
-| Knowledge Wiki | `node-164` | Deployable OKF publishing boundary |
-| Wiki Public API | `node-165` | Transport-neutral wiki operations |
+| Knowledge Wiki | `node-164` | OKF publishing and controlled authoring boundary |
+| Wiki Public API | `node-165` | Transport-neutral read and authoring operations |
 | Bundle Reader | `node-166` | Bundle discovery and lossless document reading |
 | Conformance Validator | `node-167` | Normative and advisory OKF checks |
+| Bundle Authoring | `node-177` | Controlled bundle and page source writes |
 | Knowledge Compiler | `node-168` | Concepts, directories, relationships, and history |
 | Projection Store | `node-169` | Atomic versioned wiki artifacts |
 | Concept Search | `node-170` | Search ranking, facets, and snippets |
@@ -149,7 +162,7 @@ flowchart LR
 | Refresh Coordinator | `node-173` | Incremental rebuilds and refresh coordination |
 | Wiki CLI Adapter | `node-174` | Command transport |
 | Wiki HTTP Server | `node-175` | Local browser and JSON transport |
-| Wiki Agent Adapter | `node-176` | Read-only MCP server displayed as `Knowledge Wiki` |
+| Wiki Agent Adapter | `node-176` | Read/write MCP server displayed as `Knowledge Wiki` |
 
 ## Package and module layout
 
@@ -171,6 +184,11 @@ crates/okf-wiki/
       document.rs
       reserved.rs
     conformance.rs
+    authoring/
+      mod.rs
+      bundle.rs
+      page.rs
+      write.rs
     compiler/
       mod.rs
       identity.rs
@@ -212,6 +230,7 @@ crates/okf-wiki/
       multi_bundle/
     bundle_reader.rs
     conformance.rs
+    authoring.rs
     compilation.rs
     projection.rs
     search.rs
@@ -320,6 +339,9 @@ Create a parallel `OkfWikiApi`; do not add wiki variants to the graph
 WikiOperationRequest
   Health
   ValidateBundle
+  CreateBundle
+  CreatePage
+  PopulatePage
   BuildProjection
   ListBundles
   GetDirectory
@@ -346,10 +368,27 @@ for CLI, HTTP, and agent-tool metadata, mirroring the graph registry pattern at
 - Public errors must not contain absolute paths, source contents, secrets, or
   raw parser failures.
 - Stable error codes include:
-  `invalid_request`, `bundle_not_found`, `concept_not_found`,
-  `path_outside_repository`, `invalid_frontmatter`,
-  `projection_unavailable`, `build_in_progress`, `render_failed`, and
-  `graph_context_unavailable`.
+  `invalid_request`, `bundle_not_found`, `bundle_exists`,
+  `concept_not_found`, `concept_exists`, `path_outside_repository`,
+  `invalid_frontmatter`, `write_conflict`, `projection_unavailable`,
+  `build_in_progress`, `render_failed`, and `graph_context_unavailable`.
+
+### Authoring contract
+
+- `CreateBundle` initializes a bundle only under a configured repository root
+  and writes its root `index.md` with the selected OKF version.
+- `CreatePage` creates one concept from a validated bundle-relative path and
+  fails rather than overwriting an existing source file.
+- `PopulatePage` writes typed frontmatter and Markdown content to an existing
+  page while preserving unknown frontmatter fields unless explicitly replaced.
+- Populate requests carry the source revision or content hash observed by the
+  caller; a mismatch returns `write_conflict`.
+- All authoring paths are resolved beneath the selected bundle without
+  following escaping symlinks.
+- Content is validated before publication and written through a same-directory
+  temporary file plus atomic replacement.
+- A successful write enters the normal refresh pipeline; write tools do not
+  edit projection artifacts directly.
 
 ### Graph composition
 
@@ -500,7 +539,46 @@ Scryer close:
 - Attach every condition-shaped test to its matching responsibility.
 - Fold only `resp-168` through `resp-176`.
 
-### Phase 2 — Knowledge Compiler
+### Phase 2 — Controlled bundle and page authoring
+
+Scryer responsibilities: `resp-210` through `resp-215`
+
+Files:
+
+- `src/authoring/**`
+- `tests/authoring.rs`
+
+Work:
+
+1. Resolve every write against an explicitly configured repository and bundle
+   root.
+2. Implement `CreateBundle` with a conformant root index and fail-if-present
+   semantics.
+3. Implement `CreatePage` with bundle-relative identity validation and
+   fail-if-present semantics.
+4. Implement `PopulatePage` with typed frontmatter, Markdown content, extension
+   preservation, and an expected source revision or content hash.
+5. Validate authored content before replacing its destination.
+6. Write through a same-directory temporary file, flush it, and atomically
+   replace the destination.
+7. Reject absolute paths, traversal, escaping symlinks, invalid reserved-file
+   targets, stale revisions, and writes outside permitted roots.
+8. Notify the refresh coordinator only after a successful source write.
+
+Exit criteria:
+
+- Agents cannot write outside configured OKF roots or target arbitrary
+  repository files.
+- Creating an existing bundle or page fails without modifying it.
+- A stale populate request returns `write_conflict` without losing either
+  version.
+- Failure injection never leaves truncated or partially written Markdown.
+- Successful writes become readable through the normal projection pipeline.
+
+Scryer close: fold `resp-210` through `resp-215` with path-safety, conflict,
+validation, and atomic-write tests attached.
+
+### Phase 3 — Knowledge Compiler
 
 Scryer responsibilities: `resp-177` through `resp-181`
 
@@ -532,7 +610,7 @@ Exit criteria:
 Scryer close: fold `resp-177` through `resp-181` with unit and integration test
 attachments.
 
-### Phase 3 — Projection Store and incremental invalidation
+### Phase 4 — Projection Store and incremental invalidation
 
 Scryer responsibilities:
 
@@ -569,7 +647,7 @@ Exit criteria:
 Scryer close: fold the implemented store responsibilities and only the refresh
 responsibilities completed in this phase.
 
-### Phase 4 — Concept Search
+### Phase 5 — Concept Search
 
 Scryer responsibilities: `resp-186` through `resp-189`
 
@@ -596,7 +674,7 @@ Exit criteria:
 
 Scryer close: fold `resp-186` through `resp-189`.
 
-### Phase 5 — Wiki Public API and graph context
+### Phase 6 — Wiki Public API and graph context
 
 Scryer responsibilities:
 
@@ -614,7 +692,8 @@ Work:
 
 1. Implement typed request, response, selector, descriptor, and error contracts.
 2. Implement one registry and one facade execution path.
-3. Route build, read, search, diagnostics, changes, and render operations.
+3. Route authoring, build, read, search, diagnostics, changes, and render
+   operations.
 4. Implement optional source-graph context using only `CodebaseGraphApi`.
 5. Bound graph result count, context depth, and exposed fields.
 6. Add import-boundary tests preventing direct graph-core/storage access.
@@ -631,7 +710,7 @@ Exit criteria:
 Scryer close: fold `resp-165` through `resp-167` and `resp-190` through
 `resp-192`.
 
-### Phase 6 — Secure renderer and developer/agent experience
+### Phase 7 — Secure renderer and developer/agent experience
 
 Scryer responsibilities: `resp-193` through `resp-197`
 
@@ -673,7 +752,7 @@ Scryer visual gate:
 Scryer close: fold `resp-193` through `resp-197` with security, accessibility,
 and route tests attached.
 
-### Phase 7 — CLI, HTTP, and agent adapters
+### Phase 8 — CLI, HTTP, and agent adapters
 
 Scryer responsibilities:
 
@@ -697,20 +776,25 @@ okf-wiki inspect <bundle> --concept <concept-id>
 okf-wiki check-links <bundle> [--include-external]
 ```
 
-Publicly advertised read-only MCP tools:
+Publicly advertised MCP tools:
 
-| Tool identifier | Display name |
-| --- | --- |
-| `wiki_list_bundles` | `List Bundles` |
-| `wiki_get_concept` | `Get Concept` |
-| `wiki_search_concepts` | `Search Concepts` |
-| `wiki_get_backlinks` | `Get Backlinks` |
-| `wiki_get_diagnostics` | `Get Diagnostics` |
+| Tool identifier | Display name | Access |
+| --- | --- | --- |
+| `wiki_list_bundles` | `List Bundles` | Read |
+| `wiki_list_directory` | `List Directory` | Read |
+| `wiki_get_concept` | `Get Concept` | Read |
+| `wiki_search_concepts` | `Search Concepts` | Read |
+| `wiki_get_backlinks` | `Get Backlinks` | Read |
+| `wiki_get_neighborhood` | `Get Neighborhood` | Read |
+| `wiki_get_diagnostics` | `Get Diagnostics` | Read |
+| `wiki_get_recent_changes` | `Get Recent Changes` | Read |
+| `wiki_create_bundle` | `Create Bundle` | Write |
+| `wiki_create_page` | `Create Page` | Write |
+| `wiki_populate_page` | `Populate Page` | Write |
 
 The MCP initialization metadata must use the exact user-facing server display
 name `Knowledge Wiki`. Internal package, binary, and tool identifiers do not
-alter this display name. Directory, neighborhood, and recent-change operations
-remain internal API operations and are not advertised as initial MCP tools.
+alter this display name.
 
 Work:
 
@@ -721,19 +805,25 @@ Work:
 5. Apply CSP, `nosniff`, referrer, framing, and cache headers.
 6. Return safe error bodies without absolute paths.
 7. Preserve error codes across transports.
+8. Mark the eight discovery tools as read-only and the three authoring tools as
+   write operations in MCP metadata.
+9. Route every authoring tool through `OkfWikiApi` and `Bundle Authoring`;
+   adapters must never write repository files directly.
 
 Exit criteria:
 
 - Every adapter dispatches exactly once through `OkfWikiApi`.
-- Registry metadata advertises exactly the five identifiers and display names
-  declared above.
+- Registry metadata advertises exactly the eleven identifiers, display names,
+  and access modes declared above.
 - MCP clients display the server name exactly as `Knowledge Wiki`.
+- Write-tool tests cover allowed roots, traversal, symlink escape, existing
+  targets, stale revisions, validation failures, and atomic replacement.
 - HTTP and agent protocol conformance tests pass.
 - Remote binding is impossible without an explicit configuration gate.
 
 Scryer close: fold `resp-202` through `resp-209`.
 
-### Phase 8 — Coordinated refresh
+### Phase 9 — Coordinated refresh
 
 Scryer responsibility: `resp-199` plus any remaining `resp-198` through
 `resp-201`
@@ -765,7 +855,7 @@ Exit criteria:
 
 Scryer close: fold remaining refresh responsibilities.
 
-### Phase 9 — Packaging, release, performance, and end-to-end proof
+### Phase 10 — Packaging, release, performance, and end-to-end proof
 
 Files:
 
@@ -808,9 +898,10 @@ Final Scryer close:
 - Fold the restored actor-to-system relationship `link-developer-system`.
 - Fold all links whose endpoints are implemented.
 - Attach system-level end-to-end tests.
-- Run `validate_model`, `get_health(node-164)`, and `get_pending(chg-1)`.
-- Close `chg-1` only when its queue is empty and tests are attached to every
-  implemented condition-shaped claim.
+- Run `validate_model`, `get_health(node-164)`, `get_pending(chg-1)`, and
+  `get_pending(chg-2)`.
+- Close `chg-1` and `chg-2` only when both queues are empty and tests are
+  attached to every implemented condition-shaped claim.
 
 ## Acceptance criteria
 
@@ -850,6 +941,18 @@ Final Scryer close:
 24. Existing graph public requests, MCP names, block snapshots, and
     `.codebaseGraph` state remain backward compatible.
 25. Full and incremental performance budgets pass on the agreed CI runner.
+26. `wiki_create_bundle` creates a conformant bundle only beneath a configured
+    repository root and never overwrites an existing bundle.
+27. `wiki_create_page` creates one valid concept at a bundle-relative identity
+    and never overwrites an existing page.
+28. `wiki_populate_page` atomically updates validated frontmatter and Markdown
+    while preserving unknown fields.
+29. Write tools reject traversal, absolute paths, escaping symlinks, invalid
+    reserved-file targets, and destinations outside permitted bundle roots.
+30. Stale populate requests return `write_conflict` without changing source
+    content.
+31. MCP initialization advertises the exact server name, tool identifiers,
+    display names, and read/write access modes declared in Phase 8.
 
 ## Test strategy
 
@@ -865,6 +968,8 @@ Final Scryer close:
 - Search tokenization, field boosts, filtering, snippets, tie-breaking.
 - Cache keys and invalidation sets.
 - HTML sanitization and header construction.
+- Authoring path resolution, reserved-file rules, revision preconditions, and
+  temporary-file publication.
 
 ### Integration
 
@@ -873,6 +978,8 @@ Final Scryer close:
 - Incremental backlink and search updates.
 - Multi-bundle identity isolation.
 - Wiki public API registry and dispatch.
+- Bundle creation, page creation, page population, conflict rejection, and
+  post-write refresh.
 - Graph public API composition and degraded mode.
 - Static route manifest and output verification.
 - Transport parity across CLI, HTTP, and MCP.
@@ -881,6 +988,8 @@ Final Scryer close:
 
 - Validate, build, browse, search, follow links, inspect backlinks, view graph
   context, view changes, and inspect diagnostics.
+- Create a bundle and page through MCP, populate it, then read and search the
+  resulting concept through MCP.
 - Repeat with graph runtime unavailable.
 - Repeat with malformed and malicious fixtures.
 - Run on Windows path fixtures and symlink-capable Unix fixtures.
@@ -894,6 +1003,8 @@ Final Scryer close:
 - Cache hit ratio and output bytes.
 - Refresh generation, queue depth, coalesced event count, and last success.
 - Graph context latency and degraded-call count.
+- Authoring attempts, successful writes, validation failures, and write
+  conflicts without recording source content.
 
 ## Required verification commands
 
@@ -924,15 +1035,18 @@ rather than remaining undocumented one-off commands.
 | Unknown extensions are lost | Lossless value map and round-trip tests |
 | URLs change after refactors | Central route contract and snapshot tests |
 | Graph outages make wiki unreadable | Optional bounded context and explicit degraded responses |
+| Agent writes overwrite repository knowledge | Permitted roots, fail-if-present creation, revision preconditions, validation, and atomic replacement |
 | Remote HTTP is mistaken for multi-user security | Localhost default; separate approved security change for remote mode |
 | New package breaks release portability | Pure-Rust dependencies, cross-platform CI, isolated artifact smoke |
 | UI becomes the source of truth | Read-only UI; generated output remains disposable |
 
 ## Sign-off gate
 
-Approval of this plan authorizes implementation against Scryer change `chg-1`,
-phase by phase. It does not authorize browser authoring, direct source writes,
-remote multi-user serving, or catalog synchronization.
+Approval of this plan authorizes implementation against Scryer changes `chg-1`
+and `chg-2`, phase by phase. It authorizes only the declared MCP bundle/page
+source writes beneath configured roots; it does not authorize browser
+authoring, arbitrary file writes, Git operations, remote multi-user serving, or
+catalog synchronization.
 
 After approval, implementation must start with Phase 0 and must update Scryer
 with concrete symbols, anchors, and attached tests as each responsibility is
