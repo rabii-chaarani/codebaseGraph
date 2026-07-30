@@ -1,0 +1,32 @@
+[package]
+name = "okf-wiki"
+version = "1.1.6"
+edition = "2021"
+rust-version = "1.82"
+description = "OKF knowledge wiki, projection builder, and MCP service."
+license = "MIT"
+repository = "https://github.com/rabii-chaarani/codebaseGraph"
+publish = false
+
+[lib]
+name = "okf_wiki"
+
+[[bin]]
+name = "okf-wiki"
+path = "src/bin/okf-wiki.rs"
+
+[features]
+default = []
+graph-context = ["dep:codebase-graph"]
+
+[dependencies]
+ammonia = "4.1"
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
+codebase-graph = { version = "1.1.6", path = "../..", optional = true }
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11"
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+walkdir = "2"
+yaml_serde = "0.10"

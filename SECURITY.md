@@ -27,5 +27,8 @@ The production security boundary is local-first:
 - `--allow-remote` requires a bearer token. It does not add TLS, rate limiting, authorization scopes, or a multi-user session model.
 - HTTP tool calls require an initialized `Mcp-Session-Id`; one client's initialize request must not unlock tools for another client.
 - `graph_query` is intended to remain read-only. Do not relax query restrictions without a parser-level read-only proof or an explicit safe-procedure allowlist.
+- The Knowledge Wiki preview server is localhost-only. Remote binding requires a separate security design and is not enabled by a command-line override.
+- Knowledge Wiki authoring is limited to typed bundle/page operations beneath configured OKF roots. It must reject traversal, absolute paths, escaping symlinks, stale revisions, and arbitrary repository-file targets.
+- OKF Markdown, HTML, links, YAML, and SVG are untrusted input. Rendered output must be sanitized and public diagnostics must not expose absolute paths, source contents, secrets, or raw parser failures.
 
 Dependency vulnerability scanning runs in hosted CI and release workflows. Local setup commands must not call external advisory services implicitly.

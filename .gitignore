@@ -3,6 +3,8 @@
 
 # Local graph state
 /.codebaseGraph/
+/.kWiki/
+/.omx/state/
 /.scryer/
 /.codex/
 /.venv/

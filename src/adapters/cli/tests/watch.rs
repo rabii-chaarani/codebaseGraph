@@ -539,8 +539,21 @@ fn watch_auto_backend_refreshes_after_probe_resolution() {
         .unwrap();
         String::from_utf8(output).unwrap()
     });
-    std::thread::sleep(Duration::from_millis(50));
-    fs::write(root.join("created.py"), "def created():\n    return 1\n").unwrap();
+    for attempt in 0..100 {
+        std::thread::sleep(Duration::from_millis(20));
+        fs::write(
+            root.join("created.py"),
+            format!("def created():\n    return {attempt}\n"),
+        )
+        .unwrap();
+        if handle.is_finished() {
+            break;
+        }
+    }
+    assert!(
+        handle.is_finished(),
+        "watch did not observe a repository change"
+    );
     let text = handle.join().unwrap();
 
     assert!(

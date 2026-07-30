@@ -5,8 +5,8 @@
 - Scryer changes: `chg-1` (wiki subsystem), `chg-2` (controlled MCP authoring)
 - Scryer scope: `codebaseGraph / Knowledge Wiki` (`node-164`)
 - Model validation: structurally clean
-- Implementation status: not started
-- Sign-off status: awaiting user approval
+- Implementation status: in progress
+- Sign-off status: approved by user on 2026-07-30
 
 This plan turns the OKF v0.1 study into an implementable subsystem while
 preserving the existing graph runtime and public API contracts. Production code
