@@ -9,6 +9,8 @@ pub enum NativeError {
     Unsupported(String),
 }
 
+pub type MaterializationError = NativeError;
+
 impl fmt::Display for NativeError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

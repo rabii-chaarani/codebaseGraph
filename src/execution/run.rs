@@ -1,4 +1,4 @@
-use super::parallel::build_partitions;
+use super::parallel::build_execution_plan;
 use super::timing::elapsed_seconds;
 use crate::error::NativeError;
 use crate::protocol::{
@@ -9,13 +9,21 @@ use crate::{scan, semantic_enrichment, staging_writer};
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
 
-pub fn materialize_syntax_batch(
+pub fn execute_materialization_pipeline(
     request: &NativeSyntaxMaterializationRequest,
 ) -> Result<NativeSyntaxMaterializationResponse, NativeError> {
     let mut phase_timings = BTreeMap::new();
     let scan_started = Instant::now();
-    let scan = scan::scan_source_state(request)?;
+    let scan = scan::scan_sources(request)?;
     phase_timings.insert("scan_seconds".to_string(), elapsed_seconds(scan_started));
+    execute_scanned_materialization(scan, phase_timings)
+}
+
+fn execute_scanned_materialization(
+    scan: scan::SourceScan,
+    mut phase_timings: BTreeMap<String, f64>,
+) -> Result<NativeSyntaxMaterializationResponse, NativeError> {
+    let request = &scan.input;
     let diff = scan.diff.clone();
     if diff.rebuild_paths().is_empty() && diff.deleted.is_empty() {
         return Ok(NativeSyntaxMaterializationResponse::skipped(
@@ -41,7 +49,7 @@ pub fn materialize_syntax_batch(
     let (retained_nodes, retained_edges) = retained_manifest_ids(request, &diff, &rebuild_paths);
     let mut partitions = Vec::new();
 
-    for (index, result) in build_partitions(request, &scan, &rebuild_paths)?
+    for (index, result) in build_execution_plan(&scan, &rebuild_paths)?
         .into_iter()
         .enumerate()
     {
@@ -62,7 +70,7 @@ pub fn materialize_syntax_batch(
     phase_timings.insert("parse_seconds".to_string(), parse_seconds);
     phase_timings.insert("graph_build_seconds".to_string(), graph_build_seconds);
 
-    let semantic_stats = semantic_enrichment::enrich_partitions(&mut partitions, request)?;
+    let semantic_stats = semantic_enrichment::enrich_semantics(&mut partitions, request)?;
     for (phase, seconds) in semantic_stats.phase_timings {
         phase_timings.insert(phase, seconds);
     }
@@ -107,6 +115,13 @@ pub fn materialize_syntax_batch(
         phase_timings,
     );
     response.progress_events = progress_events;
+    let graph_write_started = Instant::now();
+    staging_writer::write_graph_rows(request, &response).map_err(NativeError::InvalidInput)?;
+    response.phase_timings.insert(
+        "database_write_seconds".to_string(),
+        elapsed_seconds(graph_write_started),
+    );
+    response.database_written = true;
     Ok(response)
 }
 
@@ -139,11 +154,67 @@ fn retained_manifest_ids(
     (retained_nodes, retained_edges)
 }
 
-pub fn materialize_syntax_batch_json(payload: &str) -> Result<String, NativeError> {
-    let decode_started = Instant::now();
-    let request: NativeSyntaxMaterializationRequest = serde_json::from_str(payload)?;
-    let json_decode_seconds = elapsed_seconds(decode_started);
-    let mut response = materialize_syntax_batch(&request)?;
-    response.add_phase_timing("rust_json_decode_seconds", json_decode_seconds);
-    Ok(serde_json::to_string(&response)?)
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::protocol::{NativeSyntaxMaterializationRequest, OntologySchema};
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn scanned_payload_completes_enrichment_and_graph_write_after_source_removal() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock should be after epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("codebase-graph-scanned-pipeline-{nonce}"));
+        let source_root = root.join("repository");
+        let state_root = root.join("state");
+        fs::create_dir_all(source_root.join("src")).expect("source directory should be created");
+        fs::create_dir_all(&state_root).expect("state directory should be created");
+        fs::write(
+            source_root.join("src/lib.rs"),
+            "pub fn scanned_pipeline() -> bool { true }\n",
+        )
+        .expect("source file should be written");
+        let db_path = state_root.join("graph.ldb");
+        let request = NativeSyntaxMaterializationRequest {
+            source_root: source_root.to_string_lossy().into_owned(),
+            repository_label: "scanned-pipeline".to_string(),
+            mode: "full".to_string(),
+            parser_version: "test".to_string(),
+            manifest_schema_version: 1,
+            ontology: "code_ontology_v1".to_string(),
+            ontology_schema: OntologySchema::default(),
+            previous_manifest: None,
+            profiles: Vec::new(),
+            excluded_parts: Vec::new(),
+            include_patterns: Vec::new(),
+            exclude_patterns: Vec::new(),
+            ignore_patterns: Vec::new(),
+            candidate_paths: Vec::new(),
+            db_path: db_path.to_string_lossy().into_owned(),
+            include_fts: false,
+            semantic_enrichment: true,
+            semantic_provider_mode: "local_only".to_string(),
+            schema_statements: Vec::new(),
+            staging_dir: state_root.join("staging").to_string_lossy().into_owned(),
+            atomic_rebuild: false,
+            strict: true,
+            parallel: false,
+            progress: false,
+        };
+        let mut timings = BTreeMap::new();
+        let scan = crate::scan::scan_sources(&request).expect("scan should succeed");
+        timings.insert("scan_seconds".to_string(), 0.0);
+
+        fs::remove_dir_all(&source_root).expect("source repository should be removed");
+
+        let response = execute_scanned_materialization(scan, timings)
+            .expect("scanned payload should complete the pipeline");
+        assert!(response.database_written);
+        assert_eq!(response.rebuilt_entries.len(), 1);
+        assert!(db_path.exists());
+        let _ = fs::remove_dir_all(root);
+    }
 }

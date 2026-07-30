@@ -43,6 +43,8 @@ pub struct NativeSyntaxMaterializationRequest {
     pub progress: bool,
 }
 
+pub type MaterializationInput = NativeSyntaxMaterializationRequest;
+
 fn default_semantic_provider_mode() -> String {
     "local_only".to_string()
 }
@@ -127,6 +129,8 @@ pub struct SourceSnapshot {
     pub absolute_path: String,
     pub content_hash: String,
     pub language: Option<String>,
+    #[serde(skip)]
+    pub source: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -147,7 +151,7 @@ impl ManifestDiff {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct NativeSyntaxMaterializationResponse {
     pub snapshots: BTreeMap<String, SourceSnapshot>,
     pub diff: ManifestDiff,
@@ -165,13 +169,15 @@ pub struct NativeSyntaxMaterializationResponse {
     pub database_written: bool,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+pub type MaterializationResult = NativeSyntaxMaterializationResponse;
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct GraphSummary {
     pub node_count: usize,
     pub edge_count: usize,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ProgressEvent {
     pub phase: String,
     pub current: usize,
@@ -230,10 +236,6 @@ impl NativeSyntaxMaterializationResponse {
             skipped: false,
             database_written: false,
         }
-    }
-
-    pub(crate) fn add_phase_timing(&mut self, phase: &str, seconds: f64) {
-        self.phase_timings.insert(phase.to_string(), seconds);
     }
 }
 

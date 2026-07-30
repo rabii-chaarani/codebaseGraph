@@ -6,7 +6,6 @@ mod tree_sitter;
 use crate::error::NativeError;
 use crate::normalize::SyntaxNode;
 use crate::protocol::{LanguageProfile, SourceSnapshot};
-use std::fs;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ParseOutput {
@@ -18,8 +17,13 @@ pub(crate) fn parse_file(
     snapshot: &SourceSnapshot,
     profile: &LanguageProfile,
 ) -> Result<ParseOutput, NativeError> {
-    let source = fs::read_to_string(&snapshot.absolute_path)?;
-    parse_source(&source, profile)
+    let source = snapshot.source.as_deref().ok_or_else(|| {
+        NativeError::InvalidInput(format!(
+            "missing source content for scanned file: {}",
+            snapshot.path
+        ))
+    })?;
+    parse_source(source, profile)
 }
 
 fn parse_source(source: &str, profile: &LanguageProfile) -> Result<ParseOutput, NativeError> {
