@@ -51,8 +51,8 @@ jobs:
             test_args: ""
           - os: windows-2022
             rustflags: ""
-            prebuilt_lbug: false
-            lbug_archive: ""
+            prebuilt_lbug: true
+            lbug_archive: liblbug-static-windows-x86_64.zip
             test_args: "--release"
     steps:
       - name: Check out repository
@@ -84,8 +84,20 @@ jobs:
           curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
             "https://github.com/LadybugDB/ladybug/releases/download/v${lbug_version}/${archive}" \
             -o "$RUNNER_TEMP/$archive"
-          tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
-          test -f "$lib_dir/liblbug.a"
+          case "$archive" in
+            *.tar.gz)
+              tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
+              test -f "$lib_dir/liblbug.a"
+              ;;
+            *.zip)
+              unzip -o "$RUNNER_TEMP/$archive" -d "$lib_dir"
+              test -f "$lib_dir/lbug.lib"
+              ;;
+            *)
+              echo "Unsupported liblbug archive: $archive" >&2
+              exit 1
+              ;;
+          esac
           test -f "$lib_dir/lbug.h"
           {
             echo "LBUG_LIBRARY_DIR=$lib_dir"
@@ -163,8 +175,8 @@ jobs:
           - os: windows-2022
             binary: codebase-graph.exe
             archive: codebase-graph-windows-x86_64.tar.gz
-            prebuilt_lbug: false
-            lbug_archive: ""
+            prebuilt_lbug: true
+            lbug_archive: liblbug-static-windows-x86_64.zip
             rustflags: ""
     steps:
       - name: Check out repository
@@ -196,8 +208,20 @@ jobs:
           curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
             "https://github.com/LadybugDB/ladybug/releases/download/v${lbug_version}/${archive}" \
             -o "$RUNNER_TEMP/$archive"
-          tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
-          test -f "$lib_dir/liblbug.a"
+          case "$archive" in
+            *.tar.gz)
+              tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
+              test -f "$lib_dir/liblbug.a"
+              ;;
+            *.zip)
+              unzip -o "$RUNNER_TEMP/$archive" -d "$lib_dir"
+              test -f "$lib_dir/lbug.lib"
+              ;;
+            *)
+              echo "Unsupported liblbug archive: $archive" >&2
+              exit 1
+              ;;
+          esac
           test -f "$lib_dir/lbug.h"
           {
             echo "LBUG_LIBRARY_DIR=$lib_dir"
