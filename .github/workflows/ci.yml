@@ -99,9 +99,13 @@ jobs:
               ;;
           esac
           test -f "$lib_dir/lbug.h"
+          lib_dir_env="$lib_dir"
+          if [ "${RUNNER_OS:-}" = "Windows" ]; then
+            lib_dir_env="$(cygpath -m "$lib_dir")"
+          fi
           {
-            echo "LBUG_LIBRARY_DIR=$lib_dir"
-            echo "LBUG_INCLUDE_DIR=$lib_dir"
+            echo "LBUG_LIBRARY_DIR=$lib_dir_env"
+            echo "LBUG_INCLUDE_DIR=$lib_dir_env"
           } >> "$GITHUB_ENV"
       - name: Run tests
         env:
@@ -223,9 +227,13 @@ jobs:
               ;;
           esac
           test -f "$lib_dir/lbug.h"
+          lib_dir_env="$lib_dir"
+          if [ "${RUNNER_OS:-}" = "Windows" ]; then
+            lib_dir_env="$(cygpath -m "$lib_dir")"
+          fi
           {
-            echo "LBUG_LIBRARY_DIR=$lib_dir"
-            echo "LBUG_INCLUDE_DIR=$lib_dir"
+            echo "LBUG_LIBRARY_DIR=$lib_dir_env"
+            echo "LBUG_INCLUDE_DIR=$lib_dir_env"
           } >> "$GITHUB_ENV"
       - name: Build Rust production binary
         env:
