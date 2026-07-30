@@ -149,7 +149,7 @@ flowchart LR
 | Refresh Coordinator | `node-173` | Incremental rebuilds and refresh coordination |
 | Wiki CLI Adapter | `node-174` | Command transport |
 | Wiki HTTP Server | `node-175` | Local browser and JSON transport |
-| Wiki Agent Adapter | `node-176` | Read-only agent tools |
+| Wiki Agent Adapter | `node-176` | Read-only MCP server displayed as `Knowledge Wiki` |
 
 ## Package and module layout
 
@@ -710,6 +710,10 @@ wiki_get_diagnostics
 wiki_get_recent_changes
 ```
 
+The MCP initialization metadata must use the exact user-facing server display
+name `Knowledge Wiki`. Internal package, binary, and tool identifiers do not
+alter this display name.
+
 Work:
 
 1. Generate transport schemas from the wiki operation registry.
@@ -724,6 +728,7 @@ Exit criteria:
 
 - Every adapter dispatches exactly once through `OkfWikiApi`.
 - Registry metadata and advertised tools match.
+- MCP clients display the server name exactly as `Knowledge Wiki`.
 - HTTP and agent protocol conformance tests pass.
 - Remote binding is impossible without an explicit configuration gate.
 
