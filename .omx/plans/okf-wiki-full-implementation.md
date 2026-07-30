@@ -14,7 +14,7 @@ must not be changed until this plan is approved.
 
 ## Decision summary
 
-Build a new workspace package at `crates/okf-wiki/` as a separately deployable
+Build a new workspace package at `crates/k-wiki/` as a separately deployable
 Rust wiki service. It owns OKF parsing, conformance, compilation, controlled
 source authoring, projection storage, search, rendering, refresh, HTTP, CLI,
 and agent-tool behavior. Its MCP surface supports knowledge discovery plus
@@ -77,7 +77,7 @@ and multi-user conflict resolution remain outside this subsystem.
 ## Existing constraints
 
 1. The workspace currently contains the root package and `crates/xtask`;
-   `crates/okf-wiki` must be added as a third member
+   `crates/k-wiki` must be added as a third member
    (`Cargo.toml:15-17`).
 2. `CodebaseGraphApi::execute_operation` is the stable embedded graph entry
    point (`src/api/facade.rs:20-75`).
@@ -167,7 +167,7 @@ flowchart LR
 ## Package and module layout
 
 ```text
-crates/okf-wiki/
+crates/k-wiki/
   Cargo.toml
   src/
     lib.rs
@@ -410,7 +410,7 @@ for CLI, HTTP, and agent-tool metadata, mirroring the graph registry pattern at
 Use a separate repository-local state root:
 
 ```text
-.okfWiki/
+.kWiki/
   manifest.json
   projections/
     <bundle-id>.json
@@ -429,7 +429,7 @@ the last successful generation.
 
 Publication protocol:
 
-1. Build into a uniquely named staging directory under `.okfWiki`.
+1. Build into a uniquely named staging directory under `.kWiki`.
 2. Validate all declared artifacts and route manifests.
 3. Atomically replace the published manifest and projection pointer.
 4. Remove obsolete staging data only after the new generation is visible.
@@ -469,15 +469,15 @@ Files:
 
 - `Cargo.toml`
 - `Cargo.lock`
-- `crates/okf-wiki/Cargo.toml`
-- `crates/okf-wiki/src/lib.rs`
-- `crates/okf-wiki/src/model.rs`
-- `crates/okf-wiki/src/diagnostic.rs`
-- `crates/okf-wiki/tests/fixtures/**`
+- `crates/k-wiki/Cargo.toml`
+- `crates/k-wiki/src/lib.rs`
+- `crates/k-wiki/src/model.rs`
+- `crates/k-wiki/src/diagnostic.rs`
+- `crates/k-wiki/tests/fixtures/**`
 
 Work:
 
-1. Add `crates/okf-wiki` to the workspace.
+1. Add `crates/k-wiki` to the workspace.
 2. Add library and `okf-wiki` binary targets.
 3. Define the normalized data model, diagnostics, schema version, and fixture
    corpus.
@@ -626,7 +626,7 @@ Files:
 
 Work:
 
-1. Define `.okfWiki` manifest and generation schemas.
+1. Define `.kWiki` manifest and generation schemas.
 2. Add content-hash cache keys and dependency-aware invalidation.
 3. Publish complete generations atomically.
 4. Preserve the last valid generation after failure.
@@ -1013,8 +1013,8 @@ cargo fmt --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo test --workspace --locked
 cargo test -p okf-wiki --all-features --locked
-cargo run -p okf-wiki -- validate crates/okf-wiki/tests/fixtures/comprehensive
-cargo run -p okf-wiki -- build crates/okf-wiki/tests/fixtures/comprehensive --out /tmp/okf-wiki-site
+cargo run -p okf-wiki -- validate crates/k-wiki/tests/fixtures/comprehensive
+cargo run -p okf-wiki -- build crates/k-wiki/tests/fixtures/comprehensive --out /tmp/okf-wiki-site
 cargo run -p xtask -- release-gate
 ```
 
