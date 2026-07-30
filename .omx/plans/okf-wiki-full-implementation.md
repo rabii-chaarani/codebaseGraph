@@ -697,22 +697,20 @@ okf-wiki inspect <bundle> --concept <concept-id>
 okf-wiki check-links <bundle> [--include-external]
 ```
 
-Agent tools:
+Publicly advertised read-only MCP tools:
 
-```text
-wiki_list_bundles
-wiki_list_directory
-wiki_get_concept
-wiki_search_concepts
-wiki_get_backlinks
-wiki_get_neighborhood
-wiki_get_diagnostics
-wiki_get_recent_changes
-```
+| Tool identifier | Display name |
+| --- | --- |
+| `wiki_list_bundles` | `List Bundles` |
+| `wiki_get_concept` | `Get Concept` |
+| `wiki_search_concepts` | `Search Concepts` |
+| `wiki_get_backlinks` | `Get Backlinks` |
+| `wiki_get_diagnostics` | `Get Diagnostics` |
 
 The MCP initialization metadata must use the exact user-facing server display
 name `Knowledge Wiki`. Internal package, binary, and tool identifiers do not
-alter this display name.
+alter this display name. Directory, neighborhood, and recent-change operations
+remain internal API operations and are not advertised as initial MCP tools.
 
 Work:
 
@@ -727,7 +725,8 @@ Work:
 Exit criteria:
 
 - Every adapter dispatches exactly once through `OkfWikiApi`.
-- Registry metadata and advertised tools match.
+- Registry metadata advertises exactly the five identifiers and display names
+  declared above.
 - MCP clients display the server name exactly as `Knowledge Wiki`.
 - HTTP and agent protocol conformance tests pass.
 - Remote binding is impossible without an explicit configuration gate.
