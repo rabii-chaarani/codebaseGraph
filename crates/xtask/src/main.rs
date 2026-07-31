@@ -136,7 +136,7 @@ fn check_rust_only_files(issues: &mut Vec<String>) {
         if text_path.contains("/target/")
             || text_path.contains("/.git/")
             || text_path.contains("/.codebaseGraph/")
-            || text_path.contains("/.kWiki/")
+            || text_path.contains("/.kwiki/")
         {
             continue;
         }
@@ -696,7 +696,7 @@ fn files_under(root: &Path) -> Vec<PathBuf> {
             .file_name()
             .and_then(|item| item.to_str())
             .unwrap_or_default();
-        if name == ".git" || name == "target" || name == ".codebaseGraph" || name == ".kWiki" {
+        if name == ".git" || name == "target" || name == ".codebaseGraph" || name == ".kwiki" {
             continue;
         }
         if path.is_dir() {

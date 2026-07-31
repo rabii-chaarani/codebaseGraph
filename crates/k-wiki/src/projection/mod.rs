@@ -17,7 +17,7 @@ use crate::{
     WIKI_SCHEMA_VERSION,
 };
 
-pub const STATE_ROOT_DIR: &str = ".kWiki";
+pub const STATE_ROOT_DIR: &str = ".kwiki";
 pub const STAGING_DIR: &str = "staging";
 pub const GENERATIONS_DIR: &str = "generations";
 pub const PROJECTIONS_DIR: &str = "projections";
@@ -299,6 +299,10 @@ impl ProjectionStore {
 
     pub fn state_root(&self) -> PathBuf {
         self.repository_root.join(STATE_ROOT_DIR)
+    }
+
+    pub fn initialize(&self) -> Result<(), ProjectionStoreError> {
+        self.ensure_layout()
     }
 
     pub fn begin_generation(&self) -> GenerationToken {

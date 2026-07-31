@@ -6,7 +6,7 @@ k-wiki
 
 USAGE:
   k-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
-  k-wiki install [--bin-dir <directory>] [--force]
+  k-wiki install [--repo-root <directory>]
   k-wiki build <bundle> --out <directory> [--base-url <path>]
   k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
   k-wiki inspect <bundle> --concept <concept-id>
@@ -24,8 +24,7 @@ pub enum ValidationProfile {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CliRequest {
     Install {
-        bin_dir: Option<PathBuf>,
-        force: bool,
+        repo_root: Option<PathBuf>,
     },
     Validate {
         bundle: PathBuf,
@@ -75,23 +74,18 @@ pub fn parse_args(args: &[String]) -> Result<CliAction, String> {
 }
 
 fn parse_install(args: &[String]) -> Result<CliAction, String> {
-    let mut bin_dir = None;
-    let mut force = false;
+    let mut repo_root = None;
     let mut index = 1;
     while index < args.len() {
         match args[index].as_str() {
-            "--bin-dir" => {
-                bin_dir = Some(PathBuf::from(required_value(args, index, "--bin-dir")?));
+            "--repo-root" => {
+                repo_root = Some(PathBuf::from(required_value(args, index, "--repo-root")?));
                 index += 2;
-            }
-            "--force" => {
-                force = true;
-                index += 1;
             }
             other => return Err(format!("unknown install option: {other}\n\n{HELP_TEXT}")),
         }
     }
-    Ok(CliAction::Request(CliRequest::Install { bin_dir, force }))
+    Ok(CliAction::Request(CliRequest::Install { repo_root }))
 }
 
 pub fn run<W, E, F>(

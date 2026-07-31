@@ -369,7 +369,7 @@ fn normalize_repository_path(path: &str) -> Option<String> {
 fn is_generated_path(path: &str) -> bool {
     matches!(
         path.split('/').next(),
-        Some(".git" | ".codebaseGraph" | ".kWiki" | "target")
+        Some(".git" | ".codebaseGraph" | ".kwiki" | "target")
     )
 }
 

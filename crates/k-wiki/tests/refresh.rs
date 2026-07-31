@@ -204,7 +204,7 @@ fn paths_are_partitioned_for_graph_wiki_or_both() {
         "src/lib.rs",
         "bundles/alpha/assets/diagram.svg",
         "bundles/alpha/concepts/alpha.md",
-        ".kWiki/manifest.json",
+        ".kwiki/manifest.json",
     ] {
         coordinator.enqueue(
             RepositoryEvent::Modified { path: path.into() },

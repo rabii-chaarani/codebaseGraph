@@ -2,7 +2,7 @@
 
 `k-wiki` turns one or more Open Knowledge Format (OKF) 0.1 bundles into a
 safe, searchable, deterministic repository wiki. Source Markdown remains the
-canonical record; generated state is disposable and lives under `.kWiki/`.
+canonical record; generated state is disposable and lives under `.kwiki/`.
 
 ## Trust boundary
 
@@ -32,7 +32,7 @@ bundle-relative path without `.md`.
 
 ```text
 k-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
-k-wiki install [--bin-dir <directory>] [--force]
+k-wiki install [--repo-root <directory>]
 k-wiki build <bundle> --out <directory> [--base-url <path>]
 k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
 k-wiki inspect <bundle> --concept <concept-id>
@@ -44,14 +44,14 @@ k-wiki mcp [bundle]
 Generated HTTP responses include restrictive content, framing, referrer, MIME,
 and cache policies.
 
-`install` copies the active `k-wiki` executable to `$HOME/.local/bin` by
-default (or `%USERPROFILE%/.local/bin` on Windows). Set `K_WIKI_BIN_DIR` or
-pass `--bin-dir` to select a destination. It refuses to overwrite an existing
-file unless `--force` is supplied.
+`install` initializes the repository-local `.kwiki/` state layout. It defaults
+to the current directory and accepts `--repo-root` for another repository. The
+source bundle remains separate; use controlled authoring to create it and pass
+its path to the remaining commands.
 
 ## State and rollback
 
-Successful builds publish complete versioned generations under `.kWiki/`.
+Successful builds publish complete versioned generations under `.kwiki/`.
 Compilation or rendering failures leave the last valid generation readable.
 An unchanged input is a cache hit; generation tokens prevent stale concurrent
 work from replacing newer output.

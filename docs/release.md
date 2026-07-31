@@ -72,7 +72,7 @@ Knowledge Wiki release evidence must also include deterministic projection,
 malicious-content, localhost binding, MCP schema, authoring path-safety, and
 package-owned fixture smoke results. Templates and assets must be loaded from
 the packaged artifact; a smoke run that relies on the repository checkout is
-not sufficient. Generated `.kWiki/` state is never included in an archive.
+not sufficient. Generated `.kwiki/` state is never included in an archive.
 
 To force a specific next version, merge a commit whose body contains a `Release-As: X.Y.Z` trailer.
 

@@ -171,21 +171,17 @@ fn cli_validate_and_build_use_the_integrated_public_api() {
 }
 
 #[test]
-fn install_command_copies_the_active_binary_and_protects_existing_destinations() {
+fn install_command_initializes_repository_local_wiki_state() {
     let temp = TestDir::new("k-wiki-install");
-    let bin_dir = temp.path().join("bin");
+    let repository = temp.path().join("repository");
+    fs::create_dir_all(&repository).expect("create repository");
     let binary = env!("CARGO_BIN_EXE_k-wiki");
-    let destination = bin_dir.join(if cfg!(windows) {
-        "k-wiki.exe"
-    } else {
-        "k-wiki"
-    });
 
     let install = Command::new(binary)
         .args([
             "install",
-            "--bin-dir",
-            bin_dir.to_str().expect("bin directory"),
+            "--repo-root",
+            repository.to_str().expect("repository root"),
         ])
         .output()
         .expect("run install");
@@ -194,26 +190,25 @@ fn install_command_copies_the_active_binary_and_protects_existing_destinations()
         "{}",
         String::from_utf8_lossy(&install.stderr)
     );
-    assert_eq!(
-        fs::read(binary).expect("read source binary"),
-        fs::read(&destination).expect("read installed binary")
-    );
+    for directory in [
+        ".kwiki/staging",
+        ".kwiki/generations",
+        ".kwiki/cache",
+        ".kwiki/site",
+    ] {
+        assert!(repository.join(directory).is_dir(), "missing {directory}");
+    }
 
-    fs::write(&destination, b"existing binary").expect("write existing binary");
-    let overwrite = Command::new(binary)
+    let repeat = Command::new(binary)
         .args([
             "install",
-            "--bin-dir",
-            bin_dir.to_str().expect("bin directory"),
+            "--repo-root",
+            repository.to_str().expect("repository root"),
         ])
         .output()
         .expect("rerun install");
-    assert!(!overwrite.status.success());
-    assert!(String::from_utf8_lossy(&overwrite.stderr).contains("--force"));
-    assert_eq!(
-        fs::read(&destination).expect("read protected binary"),
-        b"existing binary"
-    );
+    assert!(repeat.status.success());
+    assert!(String::from_utf8_lossy(&repeat.stdout).contains("already initialized"));
 }
 
 #[test]

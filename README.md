@@ -13,26 +13,25 @@ separate from the code graph; see [Knowledge Wiki](docs/k-wiki.md).
 
 ## Install k-wiki
 
-Release archives contain the `k-wiki` binary. Run its self-install command from
-the extracted archive to copy it into your user-local bin directory:
+Run the repository installer from its root to initialize managed wiki state:
 
 ```bash
-./k-wiki install
+k-wiki install
 ```
 
-By default, this installs to `$HOME/.local/bin` (`%USERPROFILE%/.local/bin` on
-Windows). Set `K_WIKI_BIN_DIR` or provide `--bin-dir <directory>` to choose a
-different destination. Existing files are protected; use `--force` only when
-you intend to replace an earlier installation.
+It creates the generated-state layout under `.kwiki/`, independently of
+`.codebaseGraph/`: `staging/`, `generations/`, `cache/`, and `site/`. Rerunning
+the command is safe. Use `--repo-root <directory>` to initialize another
+repository.
 
 ```bash
-./k-wiki install --bin-dir "$HOME/.local/bin" --force
-k-wiki validate ./knowledge --profile conformant
+k-wiki install --repo-root /path/to/repository
+k-wiki build /path/to/okf-bundle --out /path/to/repository/.kwiki/site
 ```
 
-If the installer reports that its destination is not on `PATH`, add that
-directory before opening a new shell. For development from this checkout, use
-`cargo run -p k-wiki -- install --bin-dir "$HOME/.local/bin"`.
+The installer prepares repository-local state only; OKF source bundles remain
+separate and can be created through the controlled authoring API. For
+development from this checkout, use `cargo run -p k-wiki -- install`.
 
 ## Quick Start
 

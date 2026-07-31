@@ -12,14 +12,12 @@ fn cli_parses_phase8_commands() {
     assert_eq!(
         cli::parse_args(&[
             "install".to_string(),
-            "--bin-dir".to_string(),
-            "bin".to_string(),
-            "--force".to_string(),
+            "--repo-root".to_string(),
+            "repository".to_string(),
         ])
         .unwrap(),
         CliAction::Request(CliRequest::Install {
-            bin_dir: Some(PathBuf::from("bin")),
-            force: true,
+            repo_root: Some(PathBuf::from("repository")),
         })
     );
 

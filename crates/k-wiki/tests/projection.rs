@@ -14,6 +14,14 @@ use k_wiki::{
 };
 
 #[test]
+fn projection_state_uses_the_repository_local_dot_kwiki_root() {
+    let temp = TestDir::new();
+    let store = ProjectionStore::new(temp.path());
+
+    assert_eq!(store.state_root(), temp.path().join(".kwiki"));
+}
+
+#[test]
 fn publish_generation_is_atomic_and_retains_last_valid_projection_on_failure() {
     let temp = TestDir::new();
     let store = ProjectionStore::new(temp.path());
@@ -179,7 +187,7 @@ fn newest_generation_wins_when_competing_builds_finish_out_of_order() {
     assert_eq!(manifest.generation.sequence, 2);
     let projection = fs::read_to_string(
         temp.path()
-            .join(".kWiki")
+            .join(".kwiki")
             .join("generations")
             .join(&manifest.generation.generation_id)
             .join("projections/alpha.json"),
