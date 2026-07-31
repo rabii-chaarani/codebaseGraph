@@ -19,19 +19,18 @@ Run the repository installer from its root to initialize managed wiki state:
 k-wiki install
 ```
 
-It creates the generated-state layout under `.kwiki/`, independently of
-`.codebaseGraph/`: `staging/`, `generations/`, `cache/`, and `site/`. Rerunning
-the command is safe. Use `--repo-root <directory>` to initialize another
-repository.
+It creates a conformant starter source bundle at `knowledge/index.md` and the
+generated-state layout under `.kwiki/`, independently of `.codebaseGraph/`:
+`staging/`, `generations/`, `cache/`, and `site/`. Rerunning the command is
+safe. Use `--repo-root <directory>` to initialize another repository.
 
 ```bash
 k-wiki install --repo-root /path/to/repository
-k-wiki build /path/to/okf-bundle --out /path/to/repository/.kwiki/site
+k-wiki build /path/to/repository/knowledge --out /path/to/repository/.kwiki/site
 ```
 
-The installer prepares repository-local state only; OKF source bundles remain
-separate and can be created through the controlled authoring API. For
-development from this checkout, use `cargo run -p k-wiki -- install`.
+The starter bundle is source-controlled Markdown, while `.kwiki/` is generated
+state. For development from this checkout, use `cargo run -p k-wiki -- install`.
 
 ## Quick Start
 

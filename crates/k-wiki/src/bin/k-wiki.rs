@@ -111,15 +111,20 @@ fn dispatch_cli(request: CliRequest) -> Result<TransportPayload, TransportError>
             let repo_root = repo_root.unwrap_or_else(|| PathBuf::from("."));
             let outcome = install::install_repository(&repo_root)
                 .map_err(|message| TransportError::new("installation_failed", message))?;
-            let (verb, state_root) = match outcome {
-                install::InstallOutcome::Initialized { state_root } => ("initialized", state_root),
-                install::InstallOutcome::AlreadyInitialized { state_root } => {
-                    ("already initialized", state_root)
-                }
+            let (verb, state_root, bundle_root) = match outcome {
+                install::InstallOutcome::Initialized {
+                    state_root,
+                    bundle_root,
+                } => ("initialized", state_root, bundle_root),
+                install::InstallOutcome::AlreadyInitialized {
+                    state_root,
+                    bundle_root,
+                } => ("already initialized", state_root, bundle_root),
             };
             Ok(TransportPayload::text(format!(
-                "k-wiki repository state {verb} at {}.",
-                state_root.display()
+                "k-wiki repository state {verb} at {}; source bundle: {}.",
+                state_root.display(),
+                bundle_root.display()
             )))
         }
         CliRequest::Validate {

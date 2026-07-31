@@ -1,11 +1,26 @@
 use std::path::{Path, PathBuf};
 
-use crate::projection::ProjectionStore;
+use crate::{
+    authoring::{
+        AuthoringConfig, AuthoringService, ConformanceAuthoringValidator, CreateBundleRequest,
+        NoopRefreshNotifier, RepositoryRoot,
+    },
+    projection::ProjectionStore,
+};
+
+const DEFAULT_BUNDLE_ID: &str = "knowledge";
+const DEFAULT_BUNDLE_PATH: &str = "knowledge";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InstallOutcome {
-    Initialized { state_root: PathBuf },
-    AlreadyInitialized { state_root: PathBuf },
+    Initialized {
+        state_root: PathBuf,
+        bundle_root: PathBuf,
+    },
+    AlreadyInitialized {
+        state_root: PathBuf,
+        bundle_root: PathBuf,
+    },
 }
 
 pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, String> {
@@ -16,6 +31,42 @@ pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, Stri
         return Err("the repository root is not a directory".to_string());
     }
 
+    let bundle_root = repository_root.join(DEFAULT_BUNDLE_PATH);
+    let bundle_already_exists = bundle_root.exists();
+    if bundle_already_exists {
+        if !bundle_root.is_dir() || !bundle_root.join("index.md").is_file() {
+            return Err(
+                "the default knowledge bundle already exists but is not a usable OKF bundle"
+                    .to_string(),
+            );
+        }
+    } else {
+        let authoring = AuthoringService::new(
+            AuthoringConfig {
+                repositories: vec![RepositoryRoot {
+                    id: "repository".to_string(),
+                    root_path: repository_root.clone(),
+                }],
+                bundles: Vec::new(),
+            },
+            ConformanceAuthoringValidator,
+            NoopRefreshNotifier,
+        )
+        .map_err(|_| "the repository could not be prepared for wiki authoring".to_string())?;
+        authoring
+            .create_bundle(CreateBundleRequest {
+                bundle_id: DEFAULT_BUNDLE_ID.to_string(),
+                repository_id: "repository".to_string(),
+                bundle_path: DEFAULT_BUNDLE_PATH.to_string(),
+                okf_version: "0.1".to_string(),
+                title: Some("Repository Knowledge".to_string()),
+                body_markdown: Some(
+                    "Add OKF concept pages here to document this repository.\n".to_string(),
+                ),
+            })
+            .map_err(|error| error.to_string())?;
+    }
+
     let store = ProjectionStore::new(repository_root);
     let state_root = store.state_root();
     let already_initialized = state_root.is_dir();
@@ -23,10 +74,16 @@ pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, Stri
         .initialize()
         .map_err(|_| "the .kwiki state directory could not be initialized".to_string())?;
 
-    Ok(if already_initialized {
-        InstallOutcome::AlreadyInitialized { state_root }
+    Ok(if already_initialized && bundle_already_exists {
+        InstallOutcome::AlreadyInitialized {
+            state_root,
+            bundle_root,
+        }
     } else {
-        InstallOutcome::Initialized { state_root }
+        InstallOutcome::Initialized {
+            state_root,
+            bundle_root,
+        }
     })
 }
 
@@ -53,6 +110,10 @@ mod tests {
         ] {
             assert!(root.join(directory).is_dir(), "missing {directory}");
         }
+        let source =
+            fs::read_to_string(root.join("knowledge/index.md")).expect("read starter bundle index");
+        assert!(source.contains("okf_version:"));
+        assert!(source.contains("Repository Knowledge"));
 
         let repeat = install_repository(&root).expect("reuse repository state");
         assert!(matches!(repeat, InstallOutcome::AlreadyInitialized { .. }));

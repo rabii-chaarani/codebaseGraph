@@ -44,10 +44,11 @@ k-wiki mcp [bundle]
 Generated HTTP responses include restrictive content, framing, referrer, MIME,
 and cache policies.
 
-`install` initializes the repository-local `.kwiki/` state layout. It defaults
-to the current directory and accepts `--repo-root` for another repository. The
-source bundle remains separate; use controlled authoring to create it and pass
-its path to the remaining commands.
+`install` creates a conformant starter source bundle at `knowledge/index.md`
+and initializes the repository-local `.kwiki/` state layout. It defaults to the
+current directory and accepts `--repo-root` for another repository. The starter
+bundle remains separate from generated state and can be passed to the remaining
+commands.
 
 ## State and rollback
 

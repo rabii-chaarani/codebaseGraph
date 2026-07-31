@@ -198,6 +198,10 @@ fn install_command_initializes_repository_local_wiki_state() {
     ] {
         assert!(repository.join(directory).is_dir(), "missing {directory}");
     }
+    let source = fs::read_to_string(repository.join("knowledge/index.md"))
+        .expect("read starter bundle index");
+    assert!(source.contains("okf_version:"));
+    assert!(source.contains("Repository Knowledge"));
 
     let repeat = Command::new(binary)
         .args([
