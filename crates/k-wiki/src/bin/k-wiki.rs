@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use okf_wiki::{
+use k_wiki::{
     adapters::{
         cli::{self, CliRequest},
         http, mcp, TransportError, TransportPayload,
@@ -30,7 +30,7 @@ fn main() {
             Some(path) if args.len() == 2 => PathBuf::from(path),
             None => PathBuf::from("."),
             _ => {
-                eprintln!("usage: okf-wiki mcp [bundle]");
+                eprintln!("usage: k-wiki mcp [bundle]");
                 std::process::exit(2);
             }
         };

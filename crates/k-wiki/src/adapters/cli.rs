@@ -2,15 +2,15 @@ use super::{http::HttpServeOptions, TransportError, TransportPayload};
 use std::{io::Write, path::PathBuf};
 
 const HELP_TEXT: &str = "\
-okf-wiki
+k-wiki
 
 USAGE:
-  okf-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
-  okf-wiki build <bundle> --out <directory> [--base-url <path>]
-  okf-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
-  okf-wiki inspect <bundle> --concept <concept-id>
-  okf-wiki check-links <bundle> [--include-external]
-  okf-wiki mcp [bundle]
+  k-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
+  k-wiki build <bundle> --out <directory> [--base-url <path>]
+  k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
+  k-wiki inspect <bundle> --concept <concept-id>
+  k-wiki check-links <bundle> [--include-external]
+  k-wiki mcp [bundle]
 ";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

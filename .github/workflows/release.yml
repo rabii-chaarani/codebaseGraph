@@ -134,7 +134,7 @@ jobs:
         include:
           - os: ubuntu-latest
             binary: codebase-graph
-            wiki_binary: okf-wiki
+            wiki_binary: k-wiki
             artifact-suffix: linux-x86_64
             prebuilt_lbug: false
             lbug_archive: ""
@@ -142,7 +142,7 @@ jobs:
             cargo_features: ""
           - os: macos-latest
             binary: codebase-graph
-            wiki_binary: okf-wiki
+            wiki_binary: k-wiki
             artifact-suffix: macos-arm64
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-arm64.tar.gz
@@ -150,7 +150,7 @@ jobs:
             cargo_features: ""
           - os: macos-15-intel
             binary: codebase-graph
-            wiki_binary: okf-wiki
+            wiki_binary: k-wiki
             artifact-suffix: macos-x86_64
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-x86_64.tar.gz
@@ -158,7 +158,7 @@ jobs:
             cargo_features: ""
           - os: windows-2022
             binary: codebase-graph.exe
-            wiki_binary: okf-wiki.exe
+            wiki_binary: k-wiki.exe
             artifact-suffix: windows-x86_64
             prebuilt_lbug: false
             lbug_archive: ""
@@ -202,7 +202,7 @@ jobs:
         run: |
           mkdir -p dist/smoke
           cargo build --locked --release --bin codebase-graph ${CARGO_FEATURES}
-          cargo build --locked --release -p okf-wiki --bin okf-wiki
+          cargo build --locked --release -p k-wiki --bin k-wiki
           cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
           cp "target/release/${{ matrix.wiki_binary }}" "dist/smoke/${{ matrix.wiki_binary }}"
           chmod +x "dist/smoke/${{ matrix.binary }}"

@@ -5,7 +5,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use okf_wiki::{
+use k_wiki::{
     diagnostic::Diagnostic,
     model::{Bundle, Concept, Link, LinkStatus},
     projection::BundleDependencyIndex,
@@ -403,7 +403,7 @@ impl TestDir {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos();
-        let path = std::env::temp_dir().join(format!("okf-wiki-refresh-{unique:x}"));
+        let path = std::env::temp_dir().join(format!("k-wiki-refresh-{unique:x}"));
         fs::create_dir_all(&path).expect("create temp directory");
         Self { path }
     }

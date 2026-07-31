@@ -6,10 +6,10 @@ compact context, schema, query helpers, and read-only MCP tools.
 
 The shipped CLI and MCP server are native Rust binaries.
 
-The workspace also includes `okf-wiki`, a local-first Open Knowledge Format
+The workspace also includes `k-wiki`, a local-first Open Knowledge Format
 (OKF) 0.1 reader, compiler, searchable static wiki, preview server, and
 controlled MCP authoring service. Its source and generated state remain
-separate from the code graph; see [Knowledge Wiki](docs/okf-wiki.md).
+separate from the code graph; see [Knowledge Wiki](docs/k-wiki.md).
 
 ## Quick Start
 

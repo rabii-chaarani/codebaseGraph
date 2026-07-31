@@ -4,7 +4,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use okf_wiki::{
+use k_wiki::{
     diagnostic::Diagnostic,
     model::{Bundle, Concept, Link, LinkStatus},
     projection::{
@@ -196,7 +196,7 @@ fn publish_bundle(
     title: &str,
     outbound_target: Option<&str>,
     search: Option<Vec<u8>>,
-) -> Result<okf_wiki::projection::PublishOutcome, ProjectionStoreError> {
+) -> Result<k_wiki::projection::PublishOutcome, ProjectionStoreError> {
     store.publish(PublishRequest {
         token: store.begin_generation(),
         generated_at: "2026-07-30T00:00:00Z".into(),
@@ -269,7 +269,7 @@ impl TestDir {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos();
-        let path = std::env::temp_dir().join(format!("okf-wiki-projection-{unique:x}"));
+        let path = std::env::temp_dir().join(format!("k-wiki-projection-{unique:x}"));
         fs::create_dir_all(&path).expect("create temp directory");
         Self { path }
     }

@@ -1,6 +1,6 @@
 # Knowledge Wiki
 
-`okf-wiki` turns one or more Open Knowledge Format (OKF) 0.1 bundles into a
+`k-wiki` turns one or more Open Knowledge Format (OKF) 0.1 bundles into a
 safe, searchable, deterministic repository wiki. Source Markdown remains the
 canonical record; generated state is disposable and lives under `.kWiki/`.
 
@@ -31,12 +31,12 @@ bundle-relative path without `.md`.
 ## Commands
 
 ```text
-okf-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
-okf-wiki build <bundle> --out <directory> [--base-url <path>]
-okf-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
-okf-wiki inspect <bundle> --concept <concept-id>
-okf-wiki check-links <bundle> [--include-external]
-okf-wiki mcp [bundle]
+k-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
+k-wiki build <bundle> --out <directory> [--base-url <path>]
+k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
+k-wiki inspect <bundle> --concept <concept-id>
+k-wiki check-links <bundle> [--include-external]
+k-wiki mcp [bundle]
 ```
 
 `serve` binds to the local machine by default and refuses remote hosts.

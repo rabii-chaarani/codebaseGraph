@@ -4,7 +4,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use okf_wiki::bundle::{discover_bundles, load_bundle, BundleEntryKind};
+use k_wiki::bundle::{discover_bundles, load_bundle, BundleEntryKind};
 use serde_json::json;
 
 fn fixture_root(name: &str) -> PathBuf {
@@ -15,9 +15,9 @@ fn fixture_root(name: &str) -> PathBuf {
 }
 
 fn bundle_entry<'a>(
-    bundle: &'a okf_wiki::bundle::LoadedBundle,
+    bundle: &'a k_wiki::bundle::LoadedBundle,
     source_path: &str,
-) -> &'a okf_wiki::bundle::BundleEntry {
+) -> &'a k_wiki::bundle::BundleEntry {
     bundle
         .entries
         .iter()
@@ -31,11 +31,7 @@ fn make_temp_dir(prefix: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("clock should be after unix epoch")
         .as_nanos();
-    path.push(format!(
-        "okf_wiki_{prefix}_{}_{}",
-        std::process::id(),
-        unique
-    ));
+    path.push(format!("k_wiki_{prefix}_{}_{}", std::process::id(), unique));
     fs::create_dir_all(&path).expect("create temp dir");
     path
 }

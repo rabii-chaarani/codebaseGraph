@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use okf_wiki::{
+use k_wiki::{
     compiler::{
         compile_bundle, compile_projection, concept_route_id, directory_route_id, CompileRequest,
         SourceBundle, SourceDocument,
@@ -9,7 +9,7 @@ use okf_wiki::{
 };
 use serde_json::json;
 
-fn compile_single_bundle(bundle: SourceBundle) -> okf_wiki::model::Bundle {
+fn compile_single_bundle(bundle: SourceBundle) -> k_wiki::model::Bundle {
     compile_bundle(bundle)
 }
 

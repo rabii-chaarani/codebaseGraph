@@ -1,5 +1,5 @@
 [package]
-name = "okf-wiki"
+name = "k-wiki"
 version = "1.1.6"
 edition = "2021"
 rust-version = "1.82"
@@ -9,11 +9,11 @@ repository = "https://github.com/rabii-chaarani/codebaseGraph"
 publish = false
 
 [lib]
-name = "okf_wiki"
+name = "k_wiki"
 
 [[bin]]
-name = "okf-wiki"
-path = "src/bin/okf-wiki.rs"
+name = "k-wiki"
+path = "src/bin/k-wiki.rs"
 
 [features]
 default = []

@@ -4,7 +4,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use okf_wiki::{
+use k_wiki::{
     diagnostic::Diagnostic,
     model::{
         Bundle, Citation, Concept, Directory, Heading, IndexSource, Link, LinkStatus, LogEntry,
@@ -75,7 +75,7 @@ fn rendered_site_writes_manifest_assets_and_enforces_output_root_containment() {
         .render_site(&sample_projection(), &sample_context())
         .expect("render site");
 
-    let output_root = unique_output_dir("okf-wiki-render");
+    let output_root = unique_output_dir("k-wiki-render");
     if output_root.exists() {
         fs::remove_dir_all(&output_root).expect("clear output dir");
     }
@@ -298,7 +298,7 @@ fn sample_context() -> RenderContext {
     let mut context = RenderContext::default();
     context.bundle_context.insert(
         "engineering handbook".into(),
-        vec![okf_wiki::render::RelatedContextItem {
+        vec![k_wiki::render::RelatedContextItem {
             kind: "graph".into(),
             title: "Runtime surface".into(),
             summary: "Bounded graph summary for the bundle.".into(),
@@ -309,7 +309,7 @@ fn sample_context() -> RenderContext {
         "engineering handbook".into(),
         [(
             "architecture/renderer".into(),
-            vec![okf_wiki::render::RelatedContextItem {
+            vec![k_wiki::render::RelatedContextItem {
                 kind: "definition".into(),
                 title: "Renderer runtime".into(),
                 summary: "Graph summary for renderer call paths.".into(),

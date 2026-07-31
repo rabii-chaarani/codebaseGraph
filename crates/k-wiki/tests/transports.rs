@@ -1,4 +1,4 @@
-use okf_wiki::adapters::{
+use k_wiki::adapters::{
     cli::{self, CliAction, CliRequest, ValidationProfile},
     http,
     mcp::{self, McpSession},

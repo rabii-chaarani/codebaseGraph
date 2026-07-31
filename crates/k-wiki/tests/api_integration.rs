@@ -6,7 +6,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use okf_wiki::{
+use k_wiki::{
     adapters::{http, mcp},
     api::mcp_operation_descriptor,
     authoring::{
@@ -20,7 +20,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[test]
 fn mcp_authoring_round_trip_creates_populates_reads_and_searches_a_concept() {
-    let temp = TestDir::new("okf-wiki-mcp-round-trip");
+    let temp = TestDir::new("k-wiki-mcp-round-trip");
     let repository = temp.path().join("repository");
     let bundle = repository.join("docs");
     fs::create_dir_all(&bundle).expect("create bundle");
@@ -129,9 +129,9 @@ fn mcp_authoring_round_trip_creates_populates_reads_and_searches_a_concept() {
 fn cli_validate_and_build_use_the_integrated_public_api() {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let fixture = manifest.join("tests/fixtures/comprehensive");
-    let temp = TestDir::new("okf-wiki-cli");
+    let temp = TestDir::new("k-wiki-cli");
     let output = temp.path().join("site");
-    let binary = env!("CARGO_BIN_EXE_okf-wiki");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
 
     let validation = Command::new(binary)
         .args([
@@ -172,7 +172,7 @@ fn cli_validate_and_build_use_the_integrated_public_api() {
 
 #[test]
 fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
-    let temp = TestDir::new("okf-wiki-mcp-binary");
+    let temp = TestDir::new("k-wiki-mcp-binary");
     let bundle = temp.path().join("docs");
     fs::create_dir_all(&bundle).expect("create bundle");
     fs::write(
@@ -181,7 +181,7 @@ fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
     )
     .expect("write bundle index");
 
-    let mut child = Command::new(env!("CARGO_BIN_EXE_okf-wiki"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_k-wiki"))
         .arg("mcp")
         .arg(&bundle)
         .stdin(Stdio::piped())
@@ -237,7 +237,7 @@ fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
 
 #[tokio::test]
 async fn preview_http_dispatches_health_and_serves_static_content_with_security_headers() {
-    let temp = TestDir::new("okf-wiki-http");
+    let temp = TestDir::new("k-wiki-http");
     let bundle = temp.path().join("docs");
     let site = temp.path().join("site");
     fs::create_dir_all(&bundle).expect("create bundle");
@@ -291,7 +291,7 @@ fn wiki_graph_context_and_service_do_not_import_graph_internals() {
 }
 
 fn call_tool(
-    api: &okf_wiki::api::OkfWikiApi<LocalWikiService>,
+    api: &k_wiki::api::OkfWikiApi<LocalWikiService>,
     session: &mut mcp::McpSession,
     id: u64,
     tool: &str,

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use okf_wiki::{
+use k_wiki::{
     bundle::load_bundle,
     conformance::{validate_bundle, ConformanceProfile},
 };
@@ -14,7 +14,7 @@ fn fixture_root(name: &str) -> PathBuf {
 }
 
 fn codes_for<'a>(
-    report: &'a okf_wiki::conformance::ConformanceReport,
+    report: &'a k_wiki::conformance::ConformanceReport,
     source_path: &str,
 ) -> Vec<(&'a str, Option<usize>)> {
     report

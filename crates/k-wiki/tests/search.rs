@@ -5,7 +5,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use okf_wiki::{
+use k_wiki::{
     model::{Bundle, Citation, Concept, Heading, WikiProjection},
     search::{SearchIndex, SearchQuery},
 };
@@ -148,7 +148,7 @@ impl TestDir {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos();
-        let path = std::env::temp_dir().join(format!("okf-wiki-search-{unique:x}"));
+        let path = std::env::temp_dir().join(format!("k-wiki-search-{unique:x}"));
         fs::create_dir_all(&path).expect("create temp directory");
         Self { path }
     }

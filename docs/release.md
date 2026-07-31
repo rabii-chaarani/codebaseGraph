@@ -2,7 +2,7 @@
 
 `codebaseGraph` releases are managed by release-please. Merging a release pull request creates a strict `vX.Y.Z` tag and
 GitHub Release. The release workflow then runs the Rust release gate, builds native archives from the tag, smoke-tests
-the archived `codebase-graph` and `okf-wiki` binary surfaces, uploads `.tar.gz` archives plus `.sha256` files, and
+the archived `codebase-graph` and `k-wiki` binary surfaces, uploads `.tar.gz` archives plus `.sha256` files, and
 publishes the same version to crates.io as `codebase-graph`.
 
 ## One-Time Setup
@@ -28,7 +28,7 @@ Pull requests and pushes to `main` or `codex/**` run:
 - `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
 - Rust advisory scanning with `cargo audit`
 - `cargo publish --dry-run --locked`
-- `cargo package -p okf-wiki --locked` and the isolated Knowledge Wiki smoke
+- `cargo package -p k-wiki --locked` and the isolated Knowledge Wiki smoke
 - Native package builds and `xtask` artifact smoke on Linux, macOS, and Windows
 
 ## Release Flow

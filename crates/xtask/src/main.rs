@@ -172,9 +172,9 @@ fn check_cargo_metadata(issues: &mut Vec<String>) {
     match fs::read_to_string(wiki_manifest) {
         Ok(wiki) => {
             for required in [
-                r#"name = "okf-wiki""#,
-                r#"name = "okf_wiki""#,
-                r#"name = "okf-wiki""#,
+                r#"name = "k-wiki""#,
+                r#"name = "k_wiki""#,
+                r#"name = "k-wiki""#,
                 r#"license = "MIT""#,
             ] {
                 if !wiki.contains(required) {
@@ -382,7 +382,7 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
             executable.display()
         )
     })?;
-    let temp = unique_temp_dir("okf_wiki_smoke")?;
+    let temp = unique_temp_dir("k_wiki_smoke")?;
     let bundle = temp.join("bundle");
     let concepts = bundle.join("concepts");
     let site = temp.join("site");

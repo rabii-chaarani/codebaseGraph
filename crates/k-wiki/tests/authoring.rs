@@ -5,7 +5,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use okf_wiki::authoring::{
+use k_wiki::authoring::{
     AuthoringConfig, AuthoringError, AuthoringService, AuthoringValidator, BundleRoot,
     ConformanceAuthoringValidator, CreateBundleRequest, CreatePageRequest, PageFrontmatter,
     PopulatePageRequest, RefreshEvent, RefreshNotifier, RefreshOperation, RepositoryRoot,
@@ -74,7 +74,7 @@ fn production_authoring_validator_enforces_required_frontmatter() {
 
 #[test]
 fn create_bundle_initializes_a_conformant_root_index_within_a_permitted_repository() {
-    let root = unique_temp_dir("okf-wiki-authoring-create-bundle");
+    let root = unique_temp_dir("k-wiki-authoring-create-bundle");
     fs::create_dir_all(&root).expect("create repository root");
     let notifier = RecordingNotifier::default();
     let service = service_with(
@@ -114,7 +114,7 @@ fn create_bundle_initializes_a_conformant_root_index_within_a_permitted_reposito
 
 #[test]
 fn create_bundle_fails_if_the_target_already_exists_without_modifying_it() {
-    let root = unique_temp_dir("okf-wiki-authoring-bundle-exists");
+    let root = unique_temp_dir("k-wiki-authoring-bundle-exists");
     let existing = root.join("knowledge/team-wiki");
     fs::create_dir_all(&existing).expect("create existing bundle");
     let service = service_with(
@@ -141,7 +141,7 @@ fn create_bundle_fails_if_the_target_already_exists_without_modifying_it() {
 
 #[test]
 fn create_page_creates_one_valid_concept_at_a_validated_bundle_relative_identity() {
-    let root = seeded_bundle_root("okf-wiki-authoring-create-page");
+    let root = seeded_bundle_root("k-wiki-authoring-create-page");
     let service = service_with_existing_bundle(&root, "docs");
 
     let created = service
@@ -169,7 +169,7 @@ fn create_page_creates_one_valid_concept_at_a_validated_bundle_relative_identity
 
 #[test]
 fn create_page_rejects_reserved_escape_and_absolute_targets() {
-    let root = seeded_bundle_root("okf-wiki-authoring-path-rejection");
+    let root = seeded_bundle_root("k-wiki-authoring-path-rejection");
     let service = service_with_existing_bundle(&root, "docs");
 
     let reserved = service
@@ -223,8 +223,8 @@ fn create_page_rejects_reserved_escape_and_absolute_targets() {
 fn create_page_rejects_symlink_paths_that_escape_the_bundle_root() {
     use std::os::unix::fs::symlink;
 
-    let root = seeded_bundle_root("okf-wiki-authoring-symlink-rejection");
-    let outside = unique_temp_dir("okf-wiki-authoring-symlink-outside");
+    let root = seeded_bundle_root("k-wiki-authoring-symlink-rejection");
+    let outside = unique_temp_dir("k-wiki-authoring-symlink-outside");
     fs::create_dir_all(&outside).expect("create outside directory");
     symlink(&outside, root.join("bundle/link")).expect("create symlink");
     let service = service_with_existing_bundle(&root, "docs");
@@ -248,7 +248,7 @@ fn create_page_rejects_symlink_paths_that_escape_the_bundle_root() {
 
 #[test]
 fn populate_page_writes_validated_frontmatter_and_markdown_atomically() {
-    let root = seeded_bundle_root("okf-wiki-authoring-populate");
+    let root = seeded_bundle_root("k-wiki-authoring-populate");
     let notifier = RecordingNotifier::default();
     let service = service_with_existing_bundle_and_notifier(
         &root,
@@ -307,7 +307,7 @@ fn populate_page_writes_validated_frontmatter_and_markdown_atomically() {
 
 #[test]
 fn populate_page_rejects_stale_writes_without_changing_source_content() {
-    let root = seeded_bundle_root("okf-wiki-authoring-write-conflict");
+    let root = seeded_bundle_root("k-wiki-authoring-write-conflict");
     let service = service_with_existing_bundle(&root, "docs");
 
     let created = service
@@ -358,7 +358,7 @@ fn populate_page_rejects_stale_writes_without_changing_source_content() {
 
 #[test]
 fn populate_page_preserves_unknown_frontmatter_fields_during_updates() {
-    let root = seeded_bundle_root("okf-wiki-authoring-preserve-extensions");
+    let root = seeded_bundle_root("k-wiki-authoring-preserve-extensions");
     let service = service_with_existing_bundle(&root, "docs");
     let page_path = root.join("bundle/notes/adr-3.md");
     write_file(
@@ -393,7 +393,7 @@ fn populate_page_preserves_unknown_frontmatter_fields_during_updates() {
 
 #[test]
 fn populate_page_validates_before_replacing_the_destination() {
-    let root = seeded_bundle_root("okf-wiki-authoring-validate-before-write");
+    let root = seeded_bundle_root("k-wiki-authoring-validate-before-write");
     let service = service_with_existing_bundle_and_notifier(
         &root,
         "docs",
