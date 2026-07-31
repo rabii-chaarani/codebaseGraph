@@ -45,7 +45,8 @@ Supported clients are `codex`, `claude`, `claude-project`, `github-copilot`,
 `microsoft-copilot`, and `all`. Use `--repo-root`, `--scope`, `--name`,
 `--client-config-path`, or `--dry-run` as needed. The `k-wiki` executable must
 be on `PATH` when the client launches it; set `K_WIKI_SERVER_COMMAND` before
-registration to record a different executable path.
+registration to record a different executable path. The default server name is
+`k_wiki`; use `--name` only when registering more than one wiki with a client.
 
 ## Quick Start
 

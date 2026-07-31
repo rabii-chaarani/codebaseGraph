@@ -269,12 +269,9 @@ fn mcp_install_command_registers_the_repository_knowledge_bundle() {
             .expect("parse client config");
     let repository = repository.canonicalize().expect("canonical repository");
     assert_eq!(configured["mcpServers"]["unrelated"]["command"], "keep");
+    assert_eq!(configured["mcpServers"]["k_wiki"]["command"], "k-wiki");
     assert_eq!(
-        configured["mcpServers"]["k_wiki_repository"]["command"],
-        "k-wiki"
-    );
-    assert_eq!(
-        configured["mcpServers"]["k_wiki_repository"]["args"],
+        configured["mcpServers"]["k_wiki"]["args"],
         json!([
             "mcp",
             repository.join("knowledge").to_string_lossy().to_string()

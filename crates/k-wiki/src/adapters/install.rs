@@ -125,16 +125,8 @@ pub fn install_mcp_client(request: McpInstallRequest) -> Result<serde_json::Valu
         );
     }
 
-    let repository_name = repository_root
-        .file_name()
-        .and_then(|name| name.to_str())
-        .map(install_safe_name)
-        .filter(|name| !name.is_empty())
-        .unwrap_or_else(|| "repository".to_string());
     let descriptor = McpServerDescriptor {
-        name: request
-            .name
-            .unwrap_or_else(|| format!("k_wiki_{repository_name}")),
+        name: request.name.unwrap_or_else(|| "k_wiki".to_string()),
         command: std::env::var("K_WIKI_SERVER_COMMAND").unwrap_or_else(|_| "k-wiki".to_string()),
         args: vec!["mcp".to_string(), bundle_root.to_string_lossy().to_string()],
         repo_root: repository_root,
@@ -152,21 +144,6 @@ pub fn install_mcp_client(request: McpInstallRequest) -> Result<serde_json::Valu
             dry_run: request.dry_run,
         },
     )
-}
-
-fn install_safe_name(value: &str) -> String {
-    let normalized: String = value
-        .trim()
-        .chars()
-        .map(|character| {
-            if character.is_ascii_alphanumeric() || character == '-' || character == '_' {
-                character.to_ascii_lowercase()
-            } else {
-                '_'
-            }
-        })
-        .collect();
-    normalized.trim_matches(['.', '_', '-']).to_string()
 }
 
 #[cfg(test)]

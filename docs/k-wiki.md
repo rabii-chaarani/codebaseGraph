@@ -70,7 +70,7 @@ with the client. It fails safely when the starter bundle is absent; run
 Registration is separate from repository bootstrap and does not start a
 persistent server. The registered command uses `k-wiki` by default; set
 `K_WIKI_SERVER_COMMAND` before registration to write a different executable
-path.
+path. It registers as `k_wiki` unless `--name` is supplied.
 
 ## State and rollback
 
