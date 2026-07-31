@@ -171,6 +171,52 @@ fn cli_validate_and_build_use_the_integrated_public_api() {
 }
 
 #[test]
+fn install_command_copies_the_active_binary_and_protects_existing_destinations() {
+    let temp = TestDir::new("k-wiki-install");
+    let bin_dir = temp.path().join("bin");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+    let destination = bin_dir.join(if cfg!(windows) {
+        "k-wiki.exe"
+    } else {
+        "k-wiki"
+    });
+
+    let install = Command::new(binary)
+        .args([
+            "install",
+            "--bin-dir",
+            bin_dir.to_str().expect("bin directory"),
+        ])
+        .output()
+        .expect("run install");
+    assert!(
+        install.status.success(),
+        "{}",
+        String::from_utf8_lossy(&install.stderr)
+    );
+    assert_eq!(
+        fs::read(binary).expect("read source binary"),
+        fs::read(&destination).expect("read installed binary")
+    );
+
+    fs::write(&destination, b"existing binary").expect("write existing binary");
+    let overwrite = Command::new(binary)
+        .args([
+            "install",
+            "--bin-dir",
+            bin_dir.to_str().expect("bin directory"),
+        ])
+        .output()
+        .expect("rerun install");
+    assert!(!overwrite.status.success());
+    assert!(String::from_utf8_lossy(&overwrite.stderr).contains("--force"));
+    assert_eq!(
+        fs::read(&destination).expect("read protected binary"),
+        b"existing binary"
+    );
+}
+
+#[test]
 fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
     let temp = TestDir::new("k-wiki-mcp-binary");
     let bundle = temp.path().join("docs");

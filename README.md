@@ -11,6 +11,29 @@ The workspace also includes `k-wiki`, a local-first Open Knowledge Format
 controlled MCP authoring service. Its source and generated state remain
 separate from the code graph; see [Knowledge Wiki](docs/k-wiki.md).
 
+## Install k-wiki
+
+Release archives contain the `k-wiki` binary. Run its self-install command from
+the extracted archive to copy it into your user-local bin directory:
+
+```bash
+./k-wiki install
+```
+
+By default, this installs to `$HOME/.local/bin` (`%USERPROFILE%/.local/bin` on
+Windows). Set `K_WIKI_BIN_DIR` or provide `--bin-dir <directory>` to choose a
+different destination. Existing files are protected; use `--force` only when
+you intend to replace an earlier installation.
+
+```bash
+./k-wiki install --bin-dir "$HOME/.local/bin" --force
+k-wiki validate ./knowledge --profile conformant
+```
+
+If the installer reports that its destination is not on `PATH`, add that
+directory before opening a new shell. For development from this checkout, use
+`cargo run -p k-wiki -- install --bin-dir "$HOME/.local/bin"`.
+
 ## Quick Start
 
 ```bash

@@ -32,6 +32,7 @@ bundle-relative path without `.md`.
 
 ```text
 k-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
+k-wiki install [--bin-dir <directory>] [--force]
 k-wiki build <bundle> --out <directory> [--base-url <path>]
 k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
 k-wiki inspect <bundle> --concept <concept-id>
@@ -42,6 +43,11 @@ k-wiki mcp [bundle]
 `serve` binds to the local machine by default and refuses remote hosts.
 Generated HTTP responses include restrictive content, framing, referrer, MIME,
 and cache policies.
+
+`install` copies the active `k-wiki` executable to `$HOME/.local/bin` by
+default (or `%USERPROFILE%/.local/bin` on Windows). Set `K_WIKI_BIN_DIR` or
+pass `--bin-dir` to select a destination. It refuses to overwrite an existing
+file unless `--force` is supplied.
 
 ## State and rollback
 

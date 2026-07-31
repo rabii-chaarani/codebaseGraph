@@ -7,7 +7,7 @@ use std::{
 use k_wiki::{
     adapters::{
         cli::{self, CliRequest},
-        http, mcp, TransportError, TransportPayload,
+        http, install, mcp, TransportError, TransportPayload,
     },
     api::{
         mcp_operation_descriptor, GetConceptRequest, GetDiagnosticsRequest, OkfWikiApi,
@@ -107,6 +107,39 @@ fn serve_mcp(bundle: &Path) -> Result<(), TransportError> {
 
 fn dispatch_cli(request: CliRequest) -> Result<TransportPayload, TransportError> {
     match request {
+        CliRequest::Install { bin_dir, force } => {
+            let source = std::env::current_exe().map_err(|_| {
+                TransportError::new(
+                    "installation_failed",
+                    "the active k-wiki executable could not be located",
+                )
+            })?;
+            let bin_dir = bin_dir
+                .map(Ok)
+                .unwrap_or_else(install::default_bin_dir)
+                .map_err(|message| TransportError::new("installation_failed", message))?;
+            let outcome = install::install_binary(&source, &bin_dir, force)
+                .map_err(|message| TransportError::new("installation_failed", message))?;
+            let (verb, destination, on_path) = match outcome {
+                install::InstallOutcome::Installed {
+                    destination,
+                    on_path,
+                } => ("installed", destination, on_path),
+                install::InstallOutcome::AlreadyInstalled {
+                    destination,
+                    on_path,
+                } => ("already installed", destination, on_path),
+            };
+            let path_note = if on_path {
+                ""
+            } else {
+                " Add its directory to PATH before invoking k-wiki from another shell."
+            };
+            Ok(TransportPayload::text(format!(
+                "k-wiki {verb} at {}.{path_note}",
+                destination.display()
+            )))
+        }
         CliRequest::Validate {
             bundle,
             profile,

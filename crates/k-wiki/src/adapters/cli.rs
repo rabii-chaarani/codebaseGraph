@@ -6,6 +6,7 @@ k-wiki
 
 USAGE:
   k-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
+  k-wiki install [--bin-dir <directory>] [--force]
   k-wiki build <bundle> --out <directory> [--base-url <path>]
   k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
   k-wiki inspect <bundle> --concept <concept-id>
@@ -22,6 +23,10 @@ pub enum ValidationProfile {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CliRequest {
+    Install {
+        bin_dir: Option<PathBuf>,
+        force: bool,
+    },
     Validate {
         bundle: PathBuf,
         profile: ValidationProfile,
@@ -59,6 +64,7 @@ pub fn help_text() -> &'static str {
 pub fn parse_args(args: &[String]) -> Result<CliAction, String> {
     match args.first().map(String::as_str) {
         None | Some("-h" | "--help" | "help") => Ok(CliAction::Help),
+        Some("install") => parse_install(args),
         Some("validate") => parse_validate(args),
         Some("build") => parse_build(args),
         Some("serve") => parse_serve(args),
@@ -66,6 +72,26 @@ pub fn parse_args(args: &[String]) -> Result<CliAction, String> {
         Some("check-links") => parse_check_links(args),
         Some(command) => Err(format!("unknown command: {command}\n\n{HELP_TEXT}")),
     }
+}
+
+fn parse_install(args: &[String]) -> Result<CliAction, String> {
+    let mut bin_dir = None;
+    let mut force = false;
+    let mut index = 1;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--bin-dir" => {
+                bin_dir = Some(PathBuf::from(required_value(args, index, "--bin-dir")?));
+                index += 2;
+            }
+            "--force" => {
+                force = true;
+                index += 1;
+            }
+            other => return Err(format!("unknown install option: {other}\n\n{HELP_TEXT}")),
+        }
+    }
+    Ok(CliAction::Request(CliRequest::Install { bin_dir, force }))
 }
 
 pub fn run<W, E, F>(

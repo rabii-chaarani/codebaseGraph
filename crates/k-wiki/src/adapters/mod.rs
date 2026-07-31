@@ -1,5 +1,6 @@
 pub mod cli;
 pub mod http;
+pub mod install;
 pub mod mcp;
 
 use serde_json::Value;
