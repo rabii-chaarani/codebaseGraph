@@ -1,4 +1,4 @@
-use super::{http::HttpServeOptions, TransportError, TransportPayload};
+use super::{http::HttpServeOptions, install::McpInstallRequest, TransportError, TransportPayload};
 use std::{io::Write, path::PathBuf};
 
 const HELP_TEXT: &str = "\
@@ -11,6 +11,7 @@ USAGE:
   k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
   k-wiki inspect <bundle> --concept <concept-id>
   k-wiki check-links <bundle> [--include-external]
+  k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run]
   k-wiki mcp [bundle]
 ";
 
@@ -25,6 +26,9 @@ pub enum ValidationProfile {
 pub enum CliRequest {
     Install {
         repo_root: Option<PathBuf>,
+    },
+    InstallMcp {
+        request: McpInstallRequest,
     },
     Validate {
         bundle: PathBuf,
@@ -64,6 +68,7 @@ pub fn parse_args(args: &[String]) -> Result<CliAction, String> {
     match args.first().map(String::as_str) {
         None | Some("-h" | "--help" | "help") => Ok(CliAction::Help),
         Some("install") => parse_install(args),
+        Some("mcp") => parse_mcp(args),
         Some("validate") => parse_validate(args),
         Some("build") => parse_build(args),
         Some("serve") => parse_serve(args),
@@ -71,6 +76,83 @@ pub fn parse_args(args: &[String]) -> Result<CliAction, String> {
         Some("check-links") => parse_check_links(args),
         Some(command) => Err(format!("unknown command: {command}\n\n{HELP_TEXT}")),
     }
+}
+
+fn parse_mcp(args: &[String]) -> Result<CliAction, String> {
+    match args.get(1).map(String::as_str) {
+        Some("install") => parse_mcp_install(&args[2..]),
+        _ => Err(format!("usage: k-wiki mcp [bundle]\n\n{HELP_TEXT}")),
+    }
+}
+
+fn parse_mcp_install(args: &[String]) -> Result<CliAction, String> {
+    let mut client = None;
+    let mut scope = "local".to_string();
+    let mut name = None;
+    let mut client_config_path = None;
+    let mut repo_root = None;
+    let mut dry_run = false;
+    let mut index = 0;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--client" => {
+                client = Some(required_value(args, index, "--client")?.to_string());
+                index += 2;
+            }
+            "--scope" => {
+                scope = required_value(args, index, "--scope")?.to_string();
+                index += 2;
+            }
+            "--name" => {
+                name = Some(required_value(args, index, "--name")?.to_string());
+                index += 2;
+            }
+            "--client-config-path" => {
+                client_config_path = Some(PathBuf::from(required_value(
+                    args,
+                    index,
+                    "--client-config-path",
+                )?));
+                index += 2;
+            }
+            "--repo-root" => {
+                repo_root = Some(PathBuf::from(required_value(args, index, "--repo-root")?));
+                index += 2;
+            }
+            "--dry-run" => {
+                dry_run = true;
+                index += 1;
+            }
+            other => {
+                return Err(format!(
+                    "unknown mcp install option: {other}\n\n{HELP_TEXT}"
+                ))
+            }
+        }
+    }
+    let client = client.ok_or_else(|| format!("--client is required\n\n{HELP_TEXT}"))?;
+    let normalized_client = client.trim().to_ascii_lowercase();
+    if normalized_client != "all"
+        && !codebase_graph::api::supported_mcp_clients().contains(&normalized_client.as_str())
+    {
+        return Err(format!("unsupported MCP client: {client}"));
+    }
+    if !matches!(
+        scope.trim().to_ascii_lowercase().as_str(),
+        "local" | "user" | "project"
+    ) {
+        return Err("MCP install scope must be local, user, or project".to_string());
+    }
+    Ok(CliAction::Request(CliRequest::InstallMcp {
+        request: McpInstallRequest {
+            client,
+            scope,
+            name,
+            client_config_path,
+            repo_root,
+            dry_run,
+        },
+    }))
 }
 
 fn parse_install(args: &[String]) -> Result<CliAction, String> {
@@ -105,7 +187,10 @@ where
             Ok(0)
         }
         CliAction::Request(request) => {
-            let machine_readable = matches!(&request, CliRequest::Validate { json: true, .. });
+            let machine_readable = matches!(
+                &request,
+                CliRequest::Validate { json: true, .. } | CliRequest::InstallMcp { .. }
+            );
             match dispatch(request) {
                 Ok(payload) => {
                     if machine_readable {

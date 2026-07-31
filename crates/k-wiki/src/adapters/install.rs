@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 
+use codebase_graph::api::{install_mcp_server, McpClientInstallOptions, McpServerDescriptor};
+
 use crate::{
     authoring::{
         AuthoringConfig, AuthoringService, ConformanceAuthoringValidator, CreateBundleRequest,
@@ -21,6 +23,16 @@ pub enum InstallOutcome {
         state_root: PathBuf,
         bundle_root: PathBuf,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct McpInstallRequest {
+    pub client: String,
+    pub scope: String,
+    pub name: Option<String>,
+    pub client_config_path: Option<PathBuf>,
+    pub repo_root: Option<PathBuf>,
+    pub dry_run: bool,
 }
 
 pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, String> {
@@ -85,6 +97,76 @@ pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, Stri
             bundle_root,
         }
     })
+}
+
+pub fn install_mcp_client(request: McpInstallRequest) -> Result<serde_json::Value, String> {
+    let repository_root = request
+        .repo_root
+        .unwrap_or_else(|| PathBuf::from("."))
+        .canonicalize()
+        .map_err(|_| "the repository root could not be located".to_string())?;
+    if !repository_root.is_dir() {
+        return Err("the repository root is not a directory".to_string());
+    }
+
+    let bundle_root = repository_root.join(DEFAULT_BUNDLE_PATH);
+    if !bundle_root.is_dir() || !bundle_root.join("index.md").is_file() {
+        return Err(
+            "the repository does not contain knowledge/index.md; run k-wiki install first"
+                .to_string(),
+        );
+    }
+    let bundle_root = bundle_root
+        .canonicalize()
+        .map_err(|_| "the repository knowledge bundle could not be located".to_string())?;
+    if !bundle_root.starts_with(&repository_root) {
+        return Err(
+            "the repository knowledge bundle must remain within the repository root".to_string(),
+        );
+    }
+
+    let repository_name = repository_root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .map(install_safe_name)
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| "repository".to_string());
+    let descriptor = McpServerDescriptor {
+        name: request
+            .name
+            .unwrap_or_else(|| format!("k_wiki_{repository_name}")),
+        command: std::env::var("K_WIKI_SERVER_COMMAND").unwrap_or_else(|_| "k-wiki".to_string()),
+        args: vec!["mcp".to_string(), bundle_root.to_string_lossy().to_string()],
+        repo_root: repository_root,
+        timeout: 60,
+        setup_config_path: None,
+        tool_policy: Some("knowledge_wiki".to_string()),
+        manual_http_metadata: None,
+    };
+    install_mcp_server(
+        &descriptor,
+        &McpClientInstallOptions {
+            client: request.client,
+            scope: request.scope,
+            client_config_path: request.client_config_path,
+            dry_run: request.dry_run,
+        },
+    )
+}
+
+fn install_safe_name(value: &str) -> String {
+    let normalized: String = value
+        .trim()
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || character == '-' || character == '_' {
+                character.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    normalized.trim_matches(['.', '_', '-']).to_string()
 }
 
 #[cfg(test)]

@@ -37,6 +37,7 @@ k-wiki build <bundle> --out <directory> [--base-url <path>]
 k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
 k-wiki inspect <bundle> --concept <concept-id>
 k-wiki check-links <bundle> [--include-external]
+k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run]
 k-wiki mcp [bundle]
 ```
 
@@ -49,6 +50,27 @@ and initializes the repository-local `.kwiki/` state layout. It defaults to the
 current directory and accepts `--repo-root` for another repository. The starter
 bundle remains separate from generated state and can be passed to the remaining
 commands.
+
+## MCP client registration
+
+After bootstrapping the repository, register the wiki's stdio server with a
+chosen MCP client:
+
+```text
+k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run]
+```
+
+`--client` is required and accepts `codex`, `claude`, `claude-project`,
+`github-copilot`, `lmstudio`, `hermes`, `openclaw`, `generic`,
+`copilot-studio`, `microsoft-copilot`, or `all`. The command resolves the
+canonical `knowledge/` bundle and records `k-wiki mcp <absolute-bundle-path>`
+with the client. It fails safely when the starter bundle is absent; run
+`k-wiki install` first.
+
+Registration is separate from repository bootstrap and does not start a
+persistent server. The registered command uses `k-wiki` by default; set
+`K_WIKI_SERVER_COMMAND` before registration to write a different executable
+path.
 
 ## State and rollback
 

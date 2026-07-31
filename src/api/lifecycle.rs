@@ -50,14 +50,19 @@ pub(crate) fn install_mcp_client(
 ) -> Result<serde_json::Value, ApiError> {
     let config_path = runtime.config_path.clone();
     let install = |client: &str| {
-        apply_mcp_client_configuration(
-            client,
-            &request.scope,
+        let descriptor = build_mcp_descriptor(
             request.name.clone(),
             config_path.clone(),
-            request.client_config_path.clone(),
             Some(runtime.repo_root.clone()),
-            request.dry_run,
+        )?;
+        install_mcp_server(
+            &descriptor,
+            &McpClientInstallOptions {
+                client: client.to_string(),
+                scope: request.scope.clone(),
+                client_config_path: request.client_config_path.clone(),
+                dry_run: request.dry_run,
+            },
         )
     };
     if request.client == "all" {
@@ -535,11 +540,8 @@ fn setup_mcp_config(
     dry_run: bool,
 ) -> Result<serde_json::Value, String> {
     let descriptor = build_mcp_descriptor(
-        "generic",
-        "local",
         Some("codebase_graph".to_string()),
         Some(paths.config_path.clone()),
-        None,
         Some(
             paths
                 .state_dir
@@ -562,24 +564,18 @@ fn setup_mcp_config(
         }));
     }
 
-    apply_mcp_client_configuration(
-        &options.mcp_client,
-        if options.mcp_client == "claude-project" {
-            "project"
-        } else {
-            "local"
+    install_mcp_server(
+        &descriptor,
+        &McpClientInstallOptions {
+            client: options.mcp_client.clone(),
+            scope: if options.mcp_client == "claude-project" {
+                "project".to_string()
+            } else {
+                "local".to_string()
+            },
+            client_config_path: options.mcp_config_path.clone(),
+            dry_run,
         },
-        Some("codebase_graph".to_string()),
-        Some(paths.config_path.clone()),
-        options.mcp_config_path.clone(),
-        Some(
-            paths
-                .state_dir
-                .parent()
-                .map(Path::to_path_buf)
-                .unwrap_or_else(|| PathBuf::from(".")),
-        ),
-        dry_run,
     )
 }
 
@@ -595,11 +591,8 @@ fn uninstall_server_name(repo_root: &Path, config_path: &Path) -> Result<String,
         }
     }
     Ok(build_mcp_descriptor(
-        "generic",
-        "local",
         None,
         Some(config_path.to_path_buf()),
-        None,
         Some(repo_root.to_path_buf()),
     )?
     .name)
@@ -710,11 +703,8 @@ fn uninstall_mcp_client(
         "local"
     };
     let descriptor = build_mcp_descriptor(
-        client,
-        scope,
         Some(server_name.to_string()),
         Some(config_path.to_path_buf()),
-        client_config_path.map(Path::to_path_buf),
         Some(repo_root.to_path_buf()),
     )?;
     let normalized_scope = install_scope(client, scope);
@@ -1139,32 +1129,34 @@ fn server_command() -> String {
 }
 
 #[derive(Debug, Clone)]
-struct NativeMcpDescriptor {
-    name: String,
-    command: String,
-    args: Vec<String>,
-    setup_config_path: String,
-    repo_root: String,
-    timeout: u64,
+pub struct McpServerDescriptor {
+    pub name: String,
+    pub command: String,
+    pub args: Vec<String>,
+    pub repo_root: PathBuf,
+    pub timeout: u64,
+    pub setup_config_path: Option<PathBuf>,
+    pub tool_policy: Option<String>,
+    pub manual_http_metadata: Option<serde_json::Value>,
 }
 
-impl NativeMcpDescriptor {
-    fn as_json(&self) -> serde_json::Value {
+impl McpServerDescriptor {
+    pub fn as_json(&self) -> serde_json::Value {
         json!({
-            "name": self.name,
+            "name": &self.name,
             "transport": "stdio",
-            "command": self.command,
-            "args": self.args,
+            "command": &self.command,
+            "args": &self.args,
             "env": {},
             "cwd": serde_json::Value::Null,
-            "setup_config_path": self.setup_config_path,
-            "repo_root": self.repo_root,
+            "setup_config_path": self.setup_config_path.as_ref().map(|path| path.to_string_lossy().to_string()),
+            "repo_root": self.repo_root.to_string_lossy(),
             "timeout": self.timeout,
-            "tool_policy": "graph_query_read_only",
+            "tool_policy": self.tool_policy,
         })
     }
 
-    fn stdio_entry(&self, include_type: bool, include_timeout: bool) -> serde_json::Value {
+    pub fn stdio_entry(&self, include_type: bool, include_timeout: bool) -> serde_json::Value {
         let mut entry = serde_json::Map::new();
         entry.insert("command".to_string(), json!(self.command));
         entry.insert("args".to_string(), json!(self.args));
@@ -1179,13 +1171,10 @@ impl NativeMcpDescriptor {
 }
 
 fn build_mcp_descriptor(
-    client: &str,
-    scope: &str,
     name: Option<String>,
     config_path: Option<PathBuf>,
-    client_config_path: Option<PathBuf>,
     repo_root: Option<PathBuf>,
-) -> Result<NativeMcpDescriptor, String> {
+) -> Result<McpServerDescriptor, String> {
     let resolved_repo_root = repo_root.unwrap_or_else(|| PathBuf::from("."));
     let config_path = config_path
         .clone()
@@ -1246,38 +1235,105 @@ fn build_mcp_descriptor(
             ],
         )
     };
-    let _ = client;
-    let _ = scope;
-    let _ = client_config_path;
-    Ok(NativeMcpDescriptor {
+    let manual_http_metadata = json!({
+        "url": "http://127.0.0.1:8765/mcp",
+        "start_command": [
+            command,
+            "mcp",
+            "http",
+            "--config",
+            config_path.to_string_lossy(),
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "8765",
+            "--path",
+            "/mcp"
+        ],
+        "host": "127.0.0.1",
+        "port": 8765,
+        "path": "/mcp",
+    });
+    Ok(McpServerDescriptor {
         name,
         command,
         args,
-        setup_config_path: config_path.to_string_lossy().to_string(),
-        repo_root: repo_root.to_string_lossy().to_string(),
+        setup_config_path: Some(config_path),
+        repo_root,
         timeout: 60,
+        tool_policy: Some("graph_query_read_only".to_string()),
+        manual_http_metadata: Some(manual_http_metadata),
     })
 }
 
-fn apply_mcp_client_configuration(
+#[derive(Debug, Clone)]
+pub struct McpClientInstallOptions {
+    pub client: String,
+    pub scope: String,
+    pub client_config_path: Option<PathBuf>,
+    pub dry_run: bool,
+}
+
+pub fn install_mcp_server(
+    descriptor: &McpServerDescriptor,
+    options: &McpClientInstallOptions,
+) -> Result<serde_json::Value, String> {
+    let client = options.client.trim().to_ascii_lowercase();
+    let scope = options.scope.trim().to_ascii_lowercase();
+    if client != "all" && !supported_mcp_clients().contains(&client.as_str()) {
+        return Err(format!("unsupported MCP client: {client}"));
+    }
+    if !matches!(scope.as_str(), "local" | "user" | "project") {
+        return Err("MCP install scope must be local, user, or project".to_string());
+    }
+    if client == "all" {
+        let results = supported_mcp_clients()
+            .iter()
+            .copied()
+            .map(|client| {
+                install_mcp_client_configuration(
+                    client,
+                    &scope,
+                    descriptor,
+                    options.client_config_path.clone(),
+                    options.dry_run,
+                )
+                .unwrap_or_else(|error| {
+                    json!({
+                        "action": "failed",
+                        "client": client,
+                        "scope": install_scope(client, &scope),
+                        "server_name": &descriptor.name,
+                        "method": serde_json::Value::Null,
+                        "path": serde_json::Value::Null,
+                        "command": serde_json::Value::Null,
+                        "descriptor": descriptor.as_json(),
+                        "entry": {},
+                        "error": error,
+                    })
+                })
+            })
+            .collect::<Vec<_>>();
+        return Ok(json!({ "results": results }));
+    }
+    install_mcp_client_configuration(
+        &client,
+        &scope,
+        descriptor,
+        options.client_config_path.clone(),
+        options.dry_run,
+    )
+}
+
+fn install_mcp_client_configuration(
     client: &str,
     scope: &str,
-    name: Option<String>,
-    config_path: Option<PathBuf>,
+    descriptor: &McpServerDescriptor,
     client_config_path: Option<PathBuf>,
-    repo_root: Option<PathBuf>,
     dry_run: bool,
 ) -> Result<serde_json::Value, String> {
-    let descriptor = build_mcp_descriptor(
-        client,
-        scope,
-        name,
-        config_path,
-        client_config_path.clone(),
-        repo_root,
-    )?;
     if client == "copilot-studio" || client == "microsoft-copilot" {
-        let metadata = copilot_studio_metadata(&descriptor);
+        let metadata = copilot_studio_metadata(descriptor);
         return Ok(json!({
             "action": if dry_run { "dry_run" } else { "reported" },
             "client": client,
@@ -1292,7 +1348,7 @@ fn apply_mcp_client_configuration(
         }));
     }
 
-    let native_command = native_client_command(client, &descriptor, scope);
+    let native_command = native_client_command(client, descriptor, scope);
     let native_available = native_command
         .as_ref()
         .and_then(|command| command.first())
@@ -1317,7 +1373,7 @@ fn apply_mcp_client_configuration(
             return file_adapter_result(
                 client,
                 &normalized_scope,
-                &descriptor,
+                descriptor,
                 None,
                 None,
                 dry_run,
@@ -1345,7 +1401,7 @@ fn apply_mcp_client_configuration(
         return file_adapter_result(
             client,
             &normalized_scope,
-            &descriptor,
+            descriptor,
             Some(command),
             Some(error),
             dry_run,
@@ -1365,7 +1421,7 @@ fn apply_mcp_client_configuration(
     file_adapter_result(
         client,
         &normalized_scope,
-        &descriptor,
+        descriptor,
         native_command,
         native_error,
         dry_run,
@@ -1376,7 +1432,7 @@ fn apply_mcp_client_configuration(
 fn file_adapter_result(
     client: &str,
     scope: &str,
-    descriptor: &NativeMcpDescriptor,
+    descriptor: &McpServerDescriptor,
     native_command: Option<Vec<String>>,
     native_error: Option<String>,
     dry_run: bool,
@@ -1419,7 +1475,7 @@ fn file_adapter_result(
 fn default_client_config_path(
     client: &str,
     scope: &str,
-    descriptor: &NativeMcpDescriptor,
+    descriptor: &McpServerDescriptor,
 ) -> PathBuf {
     let home = home_dir();
     match adapter_id(client, scope) {
@@ -1436,9 +1492,9 @@ fn default_client_config_path(
                 home.join(".config/claude/claude_desktop_config.json")
             }
         }
-        "claude-project" => PathBuf::from(&descriptor.repo_root).join(".mcp.json"),
+        "claude-project" => descriptor.repo_root.join(".mcp.json"),
         "lmstudio" => home.join(".lmstudio/mcp.json"),
-        "github-copilot" => PathBuf::from(&descriptor.repo_root).join(".vscode/mcp.json"),
+        "github-copilot" => descriptor.repo_root.join(".vscode/mcp.json"),
         "hermes" => home.join(".hermes/config.yaml"),
         "openclaw" => env::var_os("OPENCLAW_HOME")
             .map(PathBuf::from)
@@ -1481,38 +1537,34 @@ fn adapter_id<'a>(client: &'a str, scope: &str) -> &'a str {
 
 fn native_client_command(
     client: &str,
-    descriptor: &NativeMcpDescriptor,
+    descriptor: &McpServerDescriptor,
     scope: &str,
 ) -> Option<Vec<String>> {
     match client {
-        "codex" => Some(vec![
-            "codex".to_string(),
-            "mcp".to_string(),
-            "add".to_string(),
-            descriptor.name.clone(),
-            "--".to_string(),
-            descriptor.command.clone(),
-            descriptor.args[0].clone(),
-            descriptor.args[1].clone(),
-            descriptor.args[2].clone(),
-            descriptor.args[3].clone(),
-        ]),
-        "claude" | "claude-project" => Some(vec![
-            "claude".to_string(),
-            "mcp".to_string(),
-            "add".to_string(),
-            "--transport".to_string(),
-            "stdio".to_string(),
-            "--scope".to_string(),
-            install_scope(client, scope),
-            descriptor.name.clone(),
-            "--".to_string(),
-            descriptor.command.clone(),
-            descriptor.args[0].clone(),
-            descriptor.args[1].clone(),
-            descriptor.args[2].clone(),
-            descriptor.args[3].clone(),
-        ]),
+        "codex" => Some(native_stdio_command(
+            vec![
+                "codex".to_string(),
+                "mcp".to_string(),
+                "add".to_string(),
+                descriptor.name.clone(),
+                "--".to_string(),
+            ],
+            descriptor,
+        )),
+        "claude" | "claude-project" => Some(native_stdio_command(
+            vec![
+                "claude".to_string(),
+                "mcp".to_string(),
+                "add".to_string(),
+                "--transport".to_string(),
+                "stdio".to_string(),
+                "--scope".to_string(),
+                install_scope(client, scope),
+                descriptor.name.clone(),
+                "--".to_string(),
+            ],
+            descriptor,
+        )),
         "openclaw" => Some(vec![
             "openclaw".to_string(),
             "mcp".to_string(),
@@ -1522,6 +1574,12 @@ fn native_client_command(
         ]),
         _ => None,
     }
+}
+
+fn native_stdio_command(mut command: Vec<String>, descriptor: &McpServerDescriptor) -> Vec<String> {
+    command.push(descriptor.command.clone());
+    command.extend(descriptor.args.iter().cloned());
+    command
 }
 
 struct RenderedNativeConfig {
@@ -1543,7 +1601,7 @@ fn render_client_config(
     client: &str,
     scope: &str,
     existing: Option<&str>,
-    descriptor: &NativeMcpDescriptor,
+    descriptor: &McpServerDescriptor,
 ) -> Result<RenderedNativeConfig, String> {
     match adapter_id(client, scope) {
         "codex" => render_codex_config(existing, descriptor),
@@ -1574,7 +1632,7 @@ fn remove_client_config(
 fn render_json_config(
     adapter: &str,
     existing: Option<&str>,
-    descriptor: &NativeMcpDescriptor,
+    descriptor: &McpServerDescriptor,
 ) -> Result<RenderedNativeConfig, String> {
     let mut payload = existing
         .filter(|text| !text.trim().is_empty())
@@ -1655,7 +1713,7 @@ fn remove_json_config(
 
 fn render_codex_config(
     existing: Option<&str>,
-    descriptor: &NativeMcpDescriptor,
+    descriptor: &McpServerDescriptor,
 ) -> Result<RenderedNativeConfig, String> {
     let entry = descriptor.stdio_entry(false, true);
     let patch = codex_toml_block(descriptor);
@@ -1708,7 +1766,7 @@ fn remove_codex_config(
 
 fn render_hermes_config(
     existing: Option<&str>,
-    descriptor: &NativeMcpDescriptor,
+    descriptor: &McpServerDescriptor,
 ) -> Result<RenderedNativeConfig, String> {
     let entry = descriptor.stdio_entry(true, false);
     let patch = hermes_yaml_block(descriptor);
@@ -1796,37 +1854,22 @@ fn action_for_json(
     }
 }
 
-fn copilot_studio_metadata(descriptor: &NativeMcpDescriptor) -> serde_json::Value {
-    json!({
+fn copilot_studio_metadata(descriptor: &McpServerDescriptor) -> serde_json::Value {
+    let mut metadata = json!({
         "kind": "copilot_studio_manual_metadata",
         "stdio": descriptor.stdio_entry(true, false),
-        "http": {
-            "url": "http://127.0.0.1:8765/mcp",
-            "start_command": [
-                descriptor.command,
-                "mcp",
-                "http",
-                "--config",
-                descriptor.setup_config_path,
-                "--host",
-                "127.0.0.1",
-                "--port",
-                "8765",
-                "--path",
-                "/mcp"
-            ],
-            "host": "127.0.0.1",
-            "port": 8765,
-            "path": "/mcp",
-        },
         "notes": [
             "No local client configuration file is written for Copilot Studio.",
             "Remote Copilot Studio use requires user-managed endpoint exposure, bearer-token configuration, and TLS.",
         ],
-    })
+    });
+    if let Some(http) = &descriptor.manual_http_metadata {
+        metadata["http"] = http.clone();
+    }
+    metadata
 }
 
-fn codex_toml_block(descriptor: &NativeMcpDescriptor) -> String {
+fn codex_toml_block(descriptor: &McpServerDescriptor) -> String {
     format!(
         "[mcp_servers.{}]\ncommand = {}\nargs = {}\nstartup_timeout_sec = {}\n",
         descriptor.name,
@@ -1919,7 +1962,7 @@ fn remove_toml_block(existing: &str, server_name: &str) -> (String, Option<Strin
     (text, Some(previous))
 }
 
-fn hermes_yaml_block(descriptor: &NativeMcpDescriptor) -> String {
+fn hermes_yaml_block(descriptor: &McpServerDescriptor) -> String {
     let mut lines = vec![
         "# codebaseGraph MCP server start".to_string(),
         "mcp_servers:".to_string(),
@@ -2084,4 +2127,38 @@ fn install_safe_name(value: &str) -> String {
         })
         .collect();
     normalized.trim_matches(['.', '_', '-']).to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{native_client_command, McpServerDescriptor};
+    use std::path::PathBuf;
+
+    #[test]
+    fn native_client_commands_preserve_every_server_argument() {
+        let descriptor = McpServerDescriptor {
+            name: "k_wiki_repository".to_string(),
+            command: "k-wiki".to_string(),
+            args: vec!["mcp".to_string(), "/workspace/knowledge".to_string()],
+            repo_root: PathBuf::from("/workspace"),
+            timeout: 60,
+            setup_config_path: None,
+            tool_policy: None,
+            manual_http_metadata: None,
+        };
+
+        assert_eq!(
+            native_client_command("codex", &descriptor, "local"),
+            Some(vec![
+                "codex".to_string(),
+                "mcp".to_string(),
+                "add".to_string(),
+                "k_wiki_repository".to_string(),
+                "--".to_string(),
+                "k-wiki".to_string(),
+                "mcp".to_string(),
+                "/workspace/knowledge".to_string(),
+            ])
+        );
+    }
 }

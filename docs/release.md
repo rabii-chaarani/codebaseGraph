@@ -28,7 +28,9 @@ Pull requests and pushes to `main` or `codex/**` run:
 - `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
 - Rust advisory scanning with `cargo audit`
 - `cargo publish --dry-run --locked`
-- `cargo package -p k-wiki --locked` and the isolated Knowledge Wiki smoke
+- `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
+  unpublished wiki binary uses the in-tree codebase-graph registrar, while the preceding root
+  package check verifies that publishable shared API in isolation.
 - Native package builds and `xtask` artifact smoke on Linux, macOS, and Windows
 
 ## Release Flow

@@ -1,6 +1,7 @@
 use k_wiki::adapters::{
     cli::{self, CliAction, CliRequest, ValidationProfile},
     http,
+    install::McpInstallRequest,
     mcp::{self, McpSession},
     TransportError, TransportPayload,
 };
@@ -20,6 +21,66 @@ fn cli_parses_phase8_commands() {
             repo_root: Some(PathBuf::from("repository")),
         })
     );
+
+    assert_eq!(
+        cli::parse_args(&[
+            "mcp".to_string(),
+            "install".to_string(),
+            "--client".to_string(),
+            "generic".to_string(),
+            "--repo-root".to_string(),
+            "repository".to_string(),
+            "--scope".to_string(),
+            "project".to_string(),
+            "--name".to_string(),
+            "repository_wiki".to_string(),
+            "--client-config-path".to_string(),
+            "client.json".to_string(),
+            "--dry-run".to_string(),
+        ])
+        .unwrap(),
+        CliAction::Request(CliRequest::InstallMcp {
+            request: McpInstallRequest {
+                client: "generic".to_string(),
+                scope: "project".to_string(),
+                name: Some("repository_wiki".to_string()),
+                client_config_path: Some(PathBuf::from("client.json")),
+                repo_root: Some(PathBuf::from("repository")),
+                dry_run: true,
+            },
+        })
+    );
+
+    assert!(cli::parse_args(&["mcp".to_string(), "install".to_string()])
+        .unwrap_err()
+        .contains("--client is required"));
+    assert!(cli::parse_args(&[
+        "mcp".to_string(),
+        "install".to_string(),
+        "--client".to_string(),
+        "generic".to_string(),
+        "--verify".to_string(),
+    ])
+    .unwrap_err()
+    .contains("unknown mcp install option"));
+    assert!(cli::parse_args(&[
+        "mcp".to_string(),
+        "install".to_string(),
+        "--client".to_string(),
+        "unknown".to_string(),
+    ])
+    .unwrap_err()
+    .contains("unsupported MCP client"));
+    assert!(cli::parse_args(&[
+        "mcp".to_string(),
+        "install".to_string(),
+        "--client".to_string(),
+        "generic".to_string(),
+        "--scope".to_string(),
+        "invalid".to_string(),
+    ])
+    .unwrap_err()
+    .contains("MCP install scope must be local, user, or project"));
 
     assert_eq!(
         cli::parse_args(&[

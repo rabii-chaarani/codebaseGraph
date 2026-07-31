@@ -32,6 +32,21 @@ k-wiki build /path/to/repository/knowledge --out /path/to/repository/.kwiki/site
 The starter bundle is source-controlled Markdown, while `.kwiki/` is generated
 state. For development from this checkout, use `cargo run -p k-wiki -- install`.
 
+Register the bootstrapped wiki with an MCP client separately. This records a
+stdio command for `k-wiki mcp /absolute/path/to/repository/knowledge`; it does
+not start a persistent server process.
+
+```bash
+k-wiki mcp install --client codex
+```
+
+Supported clients are `codex`, `claude`, `claude-project`, `github-copilot`,
+`lmstudio`, `hermes`, `openclaw`, `generic`, `copilot-studio`,
+`microsoft-copilot`, and `all`. Use `--repo-root`, `--scope`, `--name`,
+`--client-config-path`, or `--dry-run` as needed. The `k-wiki` executable must
+be on `PATH` when the client launches it; set `K_WIKI_SERVER_COMMAND` before
+registration to record a different executable path.
+
 ## Quick Start
 
 ```bash

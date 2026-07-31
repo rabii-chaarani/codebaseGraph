@@ -216,6 +216,184 @@ fn install_command_initializes_repository_local_wiki_state() {
 }
 
 #[test]
+fn mcp_install_command_registers_the_repository_knowledge_bundle() {
+    let temp = TestDir::new("k-wiki-mcp-install");
+    let repository = temp.path().join("repository");
+    fs::create_dir_all(&repository).expect("create repository");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+    let client_config = temp.path().join("client").join("mcp.json");
+    fs::create_dir_all(client_config.parent().expect("client config parent"))
+        .expect("create client config parent");
+    fs::write(
+        &client_config,
+        serde_json::to_string_pretty(&json!({
+            "mcpServers": {"unrelated": {"command": "keep", "args": []}}
+        }))
+        .expect("serialize client config"),
+    )
+    .expect("write client config");
+
+    let bootstrap = Command::new(binary)
+        .args([
+            "install",
+            "--repo-root",
+            repository.to_str().expect("repository root"),
+        ])
+        .output()
+        .expect("bootstrap repository");
+    assert!(bootstrap.status.success());
+
+    let registration = Command::new(binary)
+        .args([
+            "mcp",
+            "install",
+            "--client",
+            "generic",
+            "--repo-root",
+            repository.to_str().expect("repository root"),
+            "--client-config-path",
+            client_config.to_str().expect("client config path"),
+        ])
+        .output()
+        .expect("register MCP client");
+    assert!(
+        registration.status.success(),
+        "{}",
+        String::from_utf8_lossy(&registration.stderr)
+    );
+    let result: Value = serde_json::from_slice(&registration.stdout).expect("registration JSON");
+    assert_eq!(result["action"], "updated");
+
+    let configured: Value =
+        serde_json::from_str(&fs::read_to_string(&client_config).expect("read client config"))
+            .expect("parse client config");
+    let repository = repository.canonicalize().expect("canonical repository");
+    assert_eq!(configured["mcpServers"]["unrelated"]["command"], "keep");
+    assert_eq!(
+        configured["mcpServers"]["k_wiki_repository"]["command"],
+        "k-wiki"
+    );
+    assert_eq!(
+        configured["mcpServers"]["k_wiki_repository"]["args"],
+        json!([
+            "mcp",
+            repository.join("knowledge").to_string_lossy().to_string()
+        ])
+    );
+
+    let repeat = Command::new(binary)
+        .args([
+            "mcp",
+            "install",
+            "--client",
+            "generic",
+            "--repo-root",
+            repository.to_str().expect("repository root"),
+            "--client-config-path",
+            client_config.to_str().expect("client config path"),
+        ])
+        .output()
+        .expect("reuse MCP registration");
+    assert!(repeat.status.success());
+    let repeat: Value = serde_json::from_slice(&repeat.stdout).expect("repeat registration JSON");
+    assert_eq!(repeat["action"], "unchanged");
+
+    let dry_run_config = temp.path().join("dry-run").join("mcp.json");
+    let dry_run = Command::new(binary)
+        .args([
+            "mcp",
+            "install",
+            "--client",
+            "generic",
+            "--repo-root",
+            repository.to_str().expect("repository root"),
+            "--client-config-path",
+            dry_run_config.to_str().expect("dry-run config path"),
+            "--dry-run",
+        ])
+        .output()
+        .expect("dry-run MCP registration");
+    assert!(dry_run.status.success());
+    let dry_run: Value = serde_json::from_slice(&dry_run.stdout).expect("dry-run JSON");
+    assert_eq!(dry_run["action"], "dry_run");
+    assert!(!dry_run_config.exists());
+}
+
+#[test]
+fn mcp_install_command_requires_an_initialized_knowledge_bundle() {
+    let temp = TestDir::new("k-wiki-mcp-install-missing-bundle");
+    let repository = temp.path().join("repository");
+    fs::create_dir_all(&repository).expect("create repository");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_k-wiki"))
+        .args([
+            "mcp",
+            "install",
+            "--client",
+            "generic",
+            "--repo-root",
+            repository.to_str().expect("repository root"),
+            "--client-config-path",
+            temp.path()
+                .join("mcp.json")
+                .to_str()
+                .expect("client config path"),
+        ])
+        .output()
+        .expect("run MCP installer");
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("run k-wiki install first"));
+}
+
+#[test]
+fn mcp_install_command_rejects_unsupported_clients_and_scopes() {
+    let temp = TestDir::new("k-wiki-mcp-install-invalid-options");
+    let repository = temp.path().join("repository");
+    fs::create_dir_all(&repository).expect("create repository");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+
+    let bootstrap = Command::new(binary)
+        .args([
+            "install",
+            "--repo-root",
+            repository.to_str().expect("repository root"),
+        ])
+        .output()
+        .expect("bootstrap repository");
+    assert!(bootstrap.status.success());
+
+    for (option, value, expected_error) in [
+        ("--client", "unknown", "unsupported MCP client"),
+        (
+            "--scope",
+            "invalid",
+            "MCP install scope must be local, user, or project",
+        ),
+    ] {
+        let output = Command::new(binary)
+            .args([
+                "mcp",
+                "install",
+                "--client",
+                "generic",
+                option,
+                value,
+                "--repo-root",
+                repository.to_str().expect("repository root"),
+                "--client-config-path",
+                temp.path()
+                    .join("mcp.json")
+                    .to_str()
+                    .expect("client config path"),
+            ])
+            .output()
+            .expect("run MCP installer");
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr).contains(expected_error));
+    }
+}
+
+#[test]
 fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
     let temp = TestDir::new("k-wiki-mcp-binary");
     let bundle = temp.path().join("docs");

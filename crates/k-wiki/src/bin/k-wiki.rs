@@ -25,7 +25,9 @@ use k_wiki::{
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.first().is_some_and(|argument| argument == "mcp") {
+    if args.first().is_some_and(|argument| argument == "mcp")
+        && args.get(1).is_none_or(|argument| argument != "install")
+    {
         let bundle = match args.get(1) {
             Some(path) if args.len() == 2 => PathBuf::from(path),
             None => PathBuf::from("."),
@@ -126,6 +128,14 @@ fn dispatch_cli(request: CliRequest) -> Result<TransportPayload, TransportError>
                 state_root.display(),
                 bundle_root.display()
             )))
+        }
+        CliRequest::InstallMcp { request } => {
+            let payload = install::install_mcp_client(request)
+                .map_err(|message| TransportError::new("mcp_installation_failed", message))?;
+            Ok(TransportPayload::structured(
+                "k-wiki MCP client registration completed",
+                payload,
+            ))
         }
         CliRequest::Validate {
             bundle,
