@@ -256,10 +256,11 @@ fn concurrent_materializations_use_isolated_staging_files() {
     let first_edges = read_json_array(&first_run.path().join("contains.json"));
     assert_eq!(first_edges.len(), 1);
     assert_eq!(first_edges[0]["id"], "edge:first");
+    let first_run_copy_path = super::files::copy_path(first_run.path());
     assert!(first_result
         .copy_statements
         .iter()
-        .all(|statement| statement.contains(first_run.path().to_string_lossy().as_ref())));
+        .all(|statement| statement.contains(&first_run_copy_path)));
 
     write_database(LadybugWriteRequest {
         db_path: staging_root
