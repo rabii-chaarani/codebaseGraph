@@ -286,6 +286,12 @@ fn install_command_initializes_repository_local_wiki_state() {
         .expect("read starter bundle index");
     assert!(source.contains("okf_version:"));
     assert!(source.contains("Repository Knowledge"));
+    for file_name in ["AGENTS.md", "CLAUDE.md"] {
+        let instructions =
+            fs::read_to_string(repository.join(file_name)).expect("read installer instructions");
+        assert!(instructions.contains("<!-- k-wiki:start -->"));
+        assert!(instructions.contains("wiki_validate"));
+    }
 
     let repeat = Command::new(binary)
         .args([

@@ -49,7 +49,9 @@ and cache policies.
 and initializes the repository-local `.kwiki/` state layout. It defaults to the
 current directory and accepts `--repo-root` for another repository. The starter
 bundle remains separate from generated state and can be passed to the remaining
-commands.
+commands. It also creates or updates a managed MCP-only k-wiki workflow block
+in both `AGENTS.md` and `CLAUDE.md`, preserving all instructions outside the
+`<!-- k-wiki:start -->` and `<!-- k-wiki:end -->` markers.
 
 ## MCP client registration
 

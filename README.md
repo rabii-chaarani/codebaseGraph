@@ -22,7 +22,9 @@ k-wiki install
 It creates a conformant starter source bundle at `knowledge/index.md` and the
 generated-state layout under `.kwiki/`, independently of `.codebaseGraph/`:
 `staging/`, `generations/`, `cache/`, and `site/`. Rerunning the command is
-safe. Use `--repo-root <directory>` to initialize another repository.
+safe. It also maintains an MCP-only k-wiki workflow block in both `AGENTS.md`
+and `CLAUDE.md`, preserving surrounding project instructions. Use `--repo-root
+<directory>` to initialize another repository.
 
 ```bash
 k-wiki install --repo-root /path/to/repository
