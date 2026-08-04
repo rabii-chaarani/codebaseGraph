@@ -1,6 +1,6 @@
 //! Optional, bounded composition with the public source-graph API.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde_json::Value;
 
@@ -139,11 +139,13 @@ fn translate_item(value: &Value) -> Option<GraphContextItem> {
 }
 
 fn is_safe_relative_path(path: &str) -> bool {
-    let path = PathBuf::from(path);
-    !path.is_absolute()
-        && !path
-            .components()
-            .any(|component| matches!(component, std::path::Component::ParentDir))
+    let bytes = path.as_bytes();
+    let has_drive_prefix = bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':';
+    !path.is_empty()
+        && !Path::new(path).is_absolute()
+        && !path.starts_with(['/', '\\'])
+        && !has_drive_prefix
+        && !path.split(['/', '\\']).any(|component| component == "..")
 }
 
 fn truncate(text: &str, max_chars: usize) -> String {
@@ -268,6 +270,23 @@ mod tests {
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.items[0].path, None);
         assert!(result.items[0].summary.as_ref().unwrap().ends_with('…'));
+    }
+
+    #[test]
+    fn path_safety_rejects_foreign_absolute_and_parent_paths() {
+        for path in [
+            "/secret/repo/src.rs",
+            r"\secret\repo\src.rs",
+            r"C:\secret\repo\src.rs",
+            "C:/secret/repo/src.rs",
+            "../secret/src.rs",
+            r"..\secret\src.rs",
+        ] {
+            assert!(!is_safe_relative_path(path), "accepted unsafe path {path}");
+        }
+        for path in ["src/lib.rs", r"src\lib.rs"] {
+            assert!(is_safe_relative_path(path), "rejected safe path {path}");
+        }
     }
 
     #[test]
