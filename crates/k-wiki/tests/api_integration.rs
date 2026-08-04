@@ -126,6 +126,112 @@ fn mcp_authoring_round_trip_creates_populates_reads_and_searches_a_concept() {
 }
 
 #[test]
+fn mcp_reads_bundles_discovered_by_list_bundles() {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let configured = manifest.join("tests/fixtures/minimal");
+    let discovered = manifest.join("tests/fixtures/comprehensive");
+    let api = LocalWikiService::new(vec![configured]).into_api();
+    let mut session = mcp_session();
+
+    let bundles = call_tool(
+        &api,
+        &mut session,
+        1,
+        "wiki_list_bundles",
+        json!({
+            "repository_roots": [discovered],
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        bundles["result"]["structuredContent"]["result"][0]["id"],
+        "comprehensive"
+    );
+
+    let active_bundles = call_tool(
+        &api,
+        &mut session,
+        2,
+        "wiki_list_bundles",
+        json!({"include_structured_content": true}),
+    );
+    assert_eq!(
+        active_bundles["result"]["structuredContent"]["result"]
+            .as_array()
+            .expect("active bundles")
+            .iter()
+            .map(|bundle| bundle["id"].as_str().expect("bundle id"))
+            .collect::<Vec<_>>(),
+        vec!["comprehensive", "minimal"]
+    );
+
+    let search = call_tool(
+        &api,
+        &mut session,
+        3,
+        "wiki_search_concepts",
+        json!({
+            "text": "Overview",
+            "bundle_id": "comprehensive",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        search["result"]["structuredContent"]["result"][0]["concept_id"],
+        "guides/overview"
+    );
+
+    let directory = call_tool(
+        &api,
+        &mut session,
+        4,
+        "wiki_list_directory",
+        json!({
+            "bundle_id": "comprehensive",
+            "path": "guides",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        directory["result"]["structuredContent"]["result"]["path"],
+        "guides"
+    );
+
+    let recent = call_tool(
+        &api,
+        &mut session,
+        5,
+        "wiki_get_recent_changes",
+        json!({
+            "bundle_id": "comprehensive",
+            "path": "guides",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        recent["result"]["structuredContent"]["kind"],
+        "recent_changes"
+    );
+    assert!(recent["result"]["structuredContent"]["result"].is_array());
+
+    let diagnostics = call_tool(
+        &api,
+        &mut session,
+        6,
+        "wiki_get_diagnostics",
+        json!({
+            "bundle_id": "comprehensive",
+            "profile": "recommended",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        diagnostics["result"]["structuredContent"]["kind"],
+        "diagnostics"
+    );
+}
+
+#[test]
 fn mcp_maintenance_tools_validate_check_links_and_build_a_site() {
     let temp = TestDir::new("k-wiki-mcp-maintenance");
     let bundle = temp.path().join("knowledge");
