@@ -4,6 +4,7 @@
 # Local graph state
 /.codebaseGraph/
 /.kWiki/
+/knowledge/.obsidian/
 /.omx/state/
 /.scryer/
 /.codex/
