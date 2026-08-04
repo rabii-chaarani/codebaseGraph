@@ -4,8 +4,8 @@ resource: repository-architecture
 tags:
 - architecture
 - k-wiki
-- okf
 - knowledge
+- okf
 - projection
 timestamp: 2026-08-04
 title: Knowledge Wiki Architecture
@@ -54,6 +54,7 @@ configured OKF bundle roots
 ## Trust boundary
 
 - Only configured bundle roots are readable or writable.
+- Bundle listing enumerates only configured bundle roots; it accepts no caller-supplied repository roots and performs no ad hoc repository scan.
 - Absolute paths, traversal, escaping symlinks, reserved-file misuse, stale revisions, and conflicting destinations are rejected.
 - Browser routes are read-only and bind locally by default with restrictive security headers.
 - Rendering sanitizes untrusted Markdown and HTML before publication.

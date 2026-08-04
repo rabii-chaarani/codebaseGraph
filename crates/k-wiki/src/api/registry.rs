@@ -152,7 +152,7 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
         ),
         descriptor(
             "list_bundles",
-            "List discovered OKF bundles.",
+            "List configured OKF bundles.",
             ALL_SURFACES,
             AccessMode::Read,
             Some(mcp("wiki_list_bundles", "List Bundles", 0)),
@@ -382,7 +382,6 @@ fn list_bundles_schema() -> Value {
     json!({
         "type": "object",
         "properties": {
-            "repository_roots": {"type": "array", "items": {"type": "string"}, "default": []},
             "include_structured_content": {"type": "boolean", "default": false}
         },
         "additionalProperties": false

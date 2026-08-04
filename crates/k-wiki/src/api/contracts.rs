@@ -65,10 +65,8 @@ pub struct BuildProjectionRequest {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-pub struct ListBundlesRequest {
-    #[serde(default)]
-    pub repository_roots: Vec<PathBuf>,
-}
+#[serde(deny_unknown_fields)]
+pub struct ListBundlesRequest {}
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct GetDirectoryRequest {

@@ -126,59 +126,64 @@ fn mcp_authoring_round_trip_creates_populates_reads_and_searches_a_concept() {
 }
 
 #[test]
-fn mcp_reads_bundles_discovered_by_list_bundles() {
+fn mcp_lists_only_configured_bundles_and_keeps_them_readable() {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let configured = manifest.join("tests/fixtures/minimal");
-    let discovered = manifest.join("tests/fixtures/comprehensive");
     let api = LocalWikiService::new(vec![configured]).into_api();
     let mut session = mcp_session();
+
+    let descriptor = mcp_operation_descriptor("wiki_list_bundles").expect("list bundles tool");
+    let schema = (descriptor.request_schema)();
+    assert!(schema["properties"].get("repository_roots").is_none());
+    assert_eq!(schema["additionalProperties"], false);
 
     let bundles = call_tool(
         &api,
         &mut session,
         1,
         "wiki_list_bundles",
-        json!({
-            "repository_roots": [discovered],
-            "include_structured_content": true
-        }),
-    );
-    assert_eq!(
-        bundles["result"]["structuredContent"]["result"][0]["id"],
-        "comprehensive"
-    );
-
-    let active_bundles = call_tool(
-        &api,
-        &mut session,
-        2,
-        "wiki_list_bundles",
         json!({"include_structured_content": true}),
     );
     assert_eq!(
-        active_bundles["result"]["structuredContent"]["result"]
+        bundles["result"]["structuredContent"]["result"]
             .as_array()
-            .expect("active bundles")
+            .expect("configured bundles")
             .iter()
             .map(|bundle| bundle["id"].as_str().expect("bundle id"))
             .collect::<Vec<_>>(),
-        vec!["comprehensive", "minimal"]
+        vec!["minimal"]
     );
 
     let search = call_tool(
         &api,
         &mut session,
-        3,
+        2,
         "wiki_search_concepts",
         json!({
-            "text": "Overview",
-            "bundle_id": "comprehensive",
+            "text": "parser",
+            "bundle_id": "minimal",
             "include_structured_content": true
         }),
     );
     assert_eq!(
         search["result"]["structuredContent"]["result"][0]["concept_id"],
-        "guides/overview"
+        "decisions/adr-001"
+    );
+
+    let concept = call_tool(
+        &api,
+        &mut session,
+        3,
+        "wiki_get_concept",
+        json!({
+            "bundle_id": "minimal",
+            "concept_id": "decisions/adr-001",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        concept["result"]["structuredContent"]["result"]["id"],
+        "decisions/adr-001"
     );
 
     let directory = call_tool(
@@ -187,24 +192,39 @@ fn mcp_reads_bundles_discovered_by_list_bundles() {
         4,
         "wiki_list_directory",
         json!({
-            "bundle_id": "comprehensive",
-            "path": "guides",
+            "bundle_id": "minimal",
+            "path": "decisions",
             "include_structured_content": true
         }),
     );
     assert_eq!(
         directory["result"]["structuredContent"]["result"]["path"],
-        "guides"
+        "decisions"
+    );
+
+    let diagnostics = call_tool(
+        &api,
+        &mut session,
+        5,
+        "wiki_get_diagnostics",
+        json!({
+            "bundle_id": "minimal",
+            "profile": "recommended",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        diagnostics["result"]["structuredContent"]["kind"],
+        "diagnostics"
     );
 
     let recent = call_tool(
         &api,
         &mut session,
-        5,
+        6,
         "wiki_get_recent_changes",
         json!({
-            "bundle_id": "comprehensive",
-            "path": "guides",
+            "bundle_id": "minimal",
             "include_structured_content": true
         }),
     );
@@ -214,21 +234,15 @@ fn mcp_reads_bundles_discovered_by_list_bundles() {
     );
     assert!(recent["result"]["structuredContent"]["result"].is_array());
 
-    let diagnostics = call_tool(
+    let rejected = call_tool(
         &api,
         &mut session,
-        6,
-        "wiki_get_diagnostics",
-        json!({
-            "bundle_id": "comprehensive",
-            "profile": "recommended",
-            "include_structured_content": true
-        }),
+        7,
+        "wiki_list_bundles",
+        json!({"repository_roots": [manifest]}),
     );
-    assert_eq!(
-        diagnostics["result"]["structuredContent"]["kind"],
-        "diagnostics"
-    );
+    assert_eq!(rejected["error"]["code"], -32602);
+    assert_eq!(rejected["error"]["message"], "tool arguments are invalid");
 }
 
 #[test]

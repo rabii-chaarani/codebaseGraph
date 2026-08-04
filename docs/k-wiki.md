@@ -101,6 +101,9 @@ Use the `k_wiki` MCP server for every wiki interaction; do not invoke the
    `wiki_search_concepts`. Read the most relevant entries with
    `wiki_get_concept`; use `wiki_list_directory`, `wiki_get_backlinks`, and
    `wiki_get_neighborhood` to understand related decisions.
+   `wiki_list_bundles` accepts no bundle-selection arguments and lists only the
+   bundle roots configured when the MCP server was registered. It never scans
+   caller-supplied repository paths.
 2. **Ground implementation work.** Use the wiki for architecture, terminology,
    invariants, ownership, and prior decisions. Verify changeable details with
    the repository's codebase-graph MCP tools. When code and wiki conflict,
