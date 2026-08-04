@@ -6,6 +6,56 @@ compact context, schema, query helpers, and read-only MCP tools.
 
 The shipped CLI and MCP server are native Rust binaries.
 
+The workspace also includes `k-wiki`, a local-first Open Knowledge Format
+(OKF) 0.1 reader, compiler, searchable static wiki, preview server, and
+controlled MCP authoring service. Its source and generated state remain
+separate from the code graph; see [Knowledge Wiki](docs/k-wiki.md).
+
+## Install k-wiki
+
+Run the repository installer from its root to initialize managed wiki state:
+
+```bash
+k-wiki install
+```
+
+It creates a conformant starter source bundle at `knowledge/index.md` and the
+generated-state layout under `.kwiki/`, independently of `.codebaseGraph/`:
+`staging/`, `generations/`, `cache/`, and `site/`. Rerunning the command is
+safe. It also maintains an MCP-only k-wiki workflow block in both `AGENTS.md`
+and `CLAUDE.md`, preserving surrounding project instructions. Use `--repo-root
+<directory>` to initialize another repository.
+
+```bash
+k-wiki install --repo-root /path/to/repository
+k-wiki build /path/to/repository/knowledge --out /path/to/repository/.kwiki/site
+```
+
+The starter bundle is source-controlled Markdown, while `.kwiki/` is generated
+state. For development from this checkout, use `cargo run -p k-wiki -- install`.
+
+Register the bootstrapped wiki with an MCP client separately. This records a
+stdio command for `k-wiki mcp /absolute/path/to/repository/knowledge`; it does
+not start a persistent server process.
+
+```bash
+k-wiki mcp install --client codex
+```
+
+Supported clients are `codex`, `claude`, `claude-project`, `github-copilot`,
+`lmstudio`, `hermes`, `openclaw`, `generic`, `copilot-studio`,
+`microsoft-copilot`, and `all`. Use `--repo-root`, `--scope`, `--name`,
+`--client-config-path`, or `--dry-run` as needed. The `k-wiki` executable must
+be on `PATH` when the client launches it; set `K_WIKI_SERVER_COMMAND` before
+registration to record a different executable path. The default server name is
+`k_wiki`; use `--name` only when registering more than one wiki with a client.
+
+Once registered, agents can use the `k_wiki` MCP server for the same wiki
+maintenance operations without shelling out: `wiki_validate` (the equivalent
+of `k-wiki validate`), `wiki_check_links` (the equivalent of `k-wiki
+check-links`), and `wiki_build` (the equivalent of `k-wiki build`). The build
+tool is marked as a write operation because it writes the static site.
+
 ## Quick Start
 
 ```bash

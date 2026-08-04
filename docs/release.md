@@ -2,8 +2,8 @@
 
 `codebaseGraph` releases are managed by release-please. Merging a release pull request creates a strict `vX.Y.Z` tag and
 GitHub Release. The release workflow then runs the Rust release gate, builds native archives from the tag, smoke-tests
-the archived binary surface, uploads `.tar.gz` archives plus `.sha256` files, and publishes the same version to
-crates.io as `codebase-graph`.
+the archived `codebase-graph` and `k-wiki` binary surfaces, uploads `.tar.gz` archives plus `.sha256` files, and
+publishes the same version to crates.io as `codebase-graph`.
 
 ## One-Time Setup
 
@@ -28,6 +28,9 @@ Pull requests and pushes to `main` or `codex/**` run:
 - `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
 - Rust advisory scanning with `cargo audit`
 - `cargo publish --dry-run --locked`
+- `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
+  unpublished wiki binary uses the in-tree codebase-graph registrar, while the preceding root
+  package check verifies that publishable shared API in isolation.
 - Native package builds and `xtask` artifact smoke on Linux, macOS, and Windows
 
 ## Release Flow
@@ -66,6 +69,12 @@ Add `--require-conda` when conda-forge submission is in scope for the release.
 
 Release notes should list native smoke evidence, benchmark evidence used for rollout recommendations, and graph
 compatibility changes that require users to refresh `.codebaseGraph` state.
+
+Knowledge Wiki release evidence must also include deterministic projection,
+malicious-content, localhost binding, MCP schema, authoring path-safety, and
+package-owned fixture smoke results. Templates and assets must be loaded from
+the packaged artifact; a smoke run that relies on the repository checkout is
+not sufficient. Generated `.kwiki/` state is never included in an archive.
 
 To force a specific next version, merge a commit whose body contains a `Release-As: X.Y.Z` trailer.
 

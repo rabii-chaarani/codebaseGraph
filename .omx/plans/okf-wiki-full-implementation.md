@@ -5,8 +5,8 @@
 - Scryer changes: `chg-1` (wiki subsystem), `chg-2` (controlled MCP authoring)
 - Scryer scope: `codebaseGraph / Knowledge Wiki` (`node-164`)
 - Model validation: structurally clean
-- Implementation status: not started
-- Sign-off status: awaiting user approval
+- Implementation status: in progress
+- Sign-off status: approved by user on 2026-07-30
 
 This plan turns the OKF v0.1 study into an implementable subsystem while
 preserving the existing graph runtime and public API contracts. Production code
@@ -218,7 +218,7 @@ crates/k-wiki/
       http.rs
       mcp.rs
     bin/
-      okf-wiki.rs
+      k-wiki.rs
   templates/
   assets/
   tests/
@@ -478,7 +478,7 @@ Files:
 Work:
 
 1. Add `crates/k-wiki` to the workspace.
-2. Add library and `okf-wiki` binary targets.
+2. Add library and `k-wiki` binary targets.
 3. Define the normalized data model, diagnostics, schema version, and fixture
    corpus.
 4. Record the attached OKF v0.1 draft as the conformance source.
@@ -763,17 +763,17 @@ Scryer responsibilities:
 Files:
 
 - `src/adapters/**`
-- `src/bin/okf-wiki.rs`
+- `src/bin/k-wiki.rs`
 - `tests/transports.rs`
 
 CLI:
 
 ```text
-okf-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
-okf-wiki build <bundle> --out <directory> [--base-url <path>]
-okf-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
-okf-wiki inspect <bundle> --concept <concept-id>
-okf-wiki check-links <bundle> [--include-external]
+k-wiki validate <bundle> [--profile consume|conformant|recommended] [--json]
+k-wiki build <bundle> --out <directory> [--base-url <path>]
+k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
+k-wiki inspect <bundle> --concept <concept-id>
+k-wiki check-links <bundle> [--include-external]
 ```
 
 Publicly advertised MCP tools:
@@ -861,7 +861,7 @@ Files:
 
 - `README.md`
 - `SECURITY.md`
-- `docs/okf-wiki.md`
+- `docs/k-wiki.md`
 - `docs/release.md`
 - `.github/workflows/**`
 - `crates/xtask/src/main.rs`
@@ -1012,9 +1012,9 @@ Final Scryer close:
 cargo fmt --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo test --workspace --locked
-cargo test -p okf-wiki --all-features --locked
-cargo run -p okf-wiki -- validate crates/k-wiki/tests/fixtures/comprehensive
-cargo run -p okf-wiki -- build crates/k-wiki/tests/fixtures/comprehensive --out /tmp/okf-wiki-site
+cargo test -p k-wiki --all-features --locked
+cargo run -p k-wiki -- validate crates/k-wiki/tests/fixtures/comprehensive
+cargo run -p k-wiki -- build crates/k-wiki/tests/fixtures/comprehensive --out /tmp/k-wiki-site
 cargo run -p xtask -- release-gate
 ```
 

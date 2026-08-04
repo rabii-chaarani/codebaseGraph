@@ -1,4 +1,28 @@
 use super::*;
+use std::io::Write;
+use std::sync::{Arc, Mutex};
+
+#[derive(Clone, Default)]
+struct SharedOutput {
+    bytes: Arc<Mutex<Vec<u8>>>,
+}
+
+impl SharedOutput {
+    fn text(&self) -> String {
+        String::from_utf8(self.bytes.lock().unwrap().clone()).unwrap()
+    }
+}
+
+impl Write for SharedOutput {
+    fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize> {
+        self.bytes.lock().unwrap().extend_from_slice(buffer);
+        Ok(buffer.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
 
 #[test]
 fn watch_filter_ignores_excluded_parts_and_access_events() {
@@ -515,8 +539,10 @@ fn watch_auto_backend_refreshes_after_probe_resolution() {
     let root = unique_temp_dir("codebase-graph-rust-watch-auto-fallback");
     fs::create_dir_all(&root).unwrap();
     let watch_root = root.clone();
+    let output = SharedOutput::default();
+    let watch_output = output.clone();
     let handle = std::thread::spawn(move || {
-        let mut output = Vec::new();
+        let mut output = watch_output;
         run(
             [
                 "watch",
@@ -537,10 +563,40 @@ fn watch_auto_backend_refreshes_after_probe_resolution() {
             &mut output,
         )
         .unwrap();
-        String::from_utf8(output).unwrap()
+        output.text()
     });
-    std::thread::sleep(Duration::from_millis(50));
-    fs::write(root.join("created.py"), "def created():\n    return 1\n").unwrap();
+
+    let fallback_deadline = Instant::now() + Duration::from_secs(10);
+    while !output.text().contains("watch event=fallback backend=poll") {
+        assert!(
+            !handle.is_finished(),
+            "watch stopped before selecting its fallback backend: {}",
+            output.text()
+        );
+        assert!(
+            Instant::now() < fallback_deadline,
+            "watch did not select its fallback backend: {}",
+            output.text()
+        );
+        std::thread::sleep(Duration::from_millis(10));
+    }
+
+    for attempt in 0..500 {
+        std::thread::sleep(Duration::from_millis(20));
+        fs::write(
+            root.join("created.py"),
+            format!("def created():\n    return {attempt}\n"),
+        )
+        .unwrap();
+        if handle.is_finished() {
+            break;
+        }
+    }
+    assert!(
+        handle.is_finished(),
+        "watch did not observe a repository change: {}",
+        output.text()
+    );
     let text = handle.join().unwrap();
 
     assert!(

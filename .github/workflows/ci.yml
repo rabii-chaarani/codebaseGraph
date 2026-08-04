@@ -149,6 +149,11 @@ jobs:
           fetch-depth: 0
       - name: Verify crates.io package
         run: cargo publish --dry-run --locked
+      - name: Verify Knowledge Wiki package archive
+        # k-wiki is an unpublished workspace binary that uses the in-tree
+        # codebase-graph registrar. The root package is verified above; this
+        # checks the wiki archive without resolving an older published API.
+        run: cargo package -p k-wiki --locked --no-verify
 
   package:
     name: native package (${{ matrix.os }})
@@ -160,24 +165,28 @@ jobs:
         include:
           - os: ubuntu-latest
             binary: codebase-graph
+            wiki_binary: k-wiki
             archive: codebase-graph-linux-x86_64.tar.gz
             prebuilt_lbug: true
             lbug_archive: liblbug-static-linux-x86_64-compat.tar.gz
             rustflags: ""
           - os: macos-latest
             binary: codebase-graph
+            wiki_binary: k-wiki
             archive: codebase-graph-macos-arm64.tar.gz
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-arm64.tar.gz
             rustflags: ""
           - os: macos-15-intel
             binary: codebase-graph
+            wiki_binary: k-wiki
             archive: codebase-graph-macos-x86_64.tar.gz
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-x86_64.tar.gz
             rustflags: ""
           - os: windows-2022
             binary: codebase-graph.exe
+            wiki_binary: k-wiki.exe
             archive: codebase-graph-windows-x86_64.tar.gz
             prebuilt_lbug: true
             lbug_archive: liblbug-static-windows-x86_64.zip
@@ -242,9 +251,14 @@ jobs:
         run: |
           mkdir -p dist/smoke
           cargo build --locked --release --bin codebase-graph
+          cargo build --locked --release -p k-wiki --bin k-wiki
           cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
+          cp "target/release/${{ matrix.wiki_binary }}" "dist/smoke/${{ matrix.wiki_binary }}"
           chmod +x "dist/smoke/${{ matrix.binary }}"
-          tar -C dist/smoke -czf "dist/${{ matrix.archive }}" "${{ matrix.binary }}"
+          chmod +x "dist/smoke/${{ matrix.wiki_binary }}"
+          tar -C dist/smoke -czf "dist/${{ matrix.archive }}" "${{ matrix.binary }}" "${{ matrix.wiki_binary }}"
       - name: Smoke-test Rust production binary
         shell: bash
-        run: cargo run -p xtask -- smoke-artifact "./dist/smoke/${{ matrix.binary }}"
+        run: |
+          cargo run -p xtask -- smoke-artifact "./dist/smoke/${{ matrix.binary }}"
+          cargo run -p xtask -- smoke-wiki-artifact "./dist/smoke/${{ matrix.wiki_binary }}"

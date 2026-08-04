@@ -283,7 +283,7 @@ rather than modifying the current documentation graph model in place.
    - Interface used by the wiki: `CodebaseGraphApi` and existing MCP/CLI
      surfaces (`src/api/mod.rs:1-26`, `src/api/facade.rs:16-39`).
 
-2. New `okf_wiki` library/service owns OKF semantics.
+2. New `k_wiki` library/service owns OKF semantics.
    - OKF bundle discovery.
    - Frontmatter parsing and lossless extension preservation.
    - Concept ID derivation.
@@ -293,7 +293,7 @@ rather than modifying the current documentation graph model in place.
    - Directory and concept page projection.
 
 3. Wiki backend/API composes both.
-   - Primary page data comes from `okf_wiki`.
+   - Primary page data comes from `k_wiki`.
    - Optional “code context” or “related implementation” panels use
      `CodebaseGraphApi::Search`, `Context`, and `Query`.
 
@@ -522,7 +522,7 @@ Exit criteria:
 
 ### Composition tests
 
-- `okf_wiki` uses `CodebaseGraphApi` only for optional implementation context.
+- `k_wiki` uses `CodebaseGraphApi` only for optional implementation context.
 - A failing graph query does not prevent concept rendering.
 - A malformed OKF bundle does not corrupt `.codebaseGraph` state.
 

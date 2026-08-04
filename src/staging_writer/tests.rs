@@ -1,4 +1,6 @@
-use super::StagingAccumulator;
+use super::{StagingAccumulator, StagingRunDirectory};
+use crate::api::catalog::schema_statements_from_copy_statements;
+use crate::db_writer::{write_database, LadybugWriteRequest};
 use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::partition_builder::GraphPartition;
 use crate::protocol::ManifestEntry;
@@ -220,6 +222,65 @@ fn connector_generation_allows_target_in_later_partition() {
     assert!(staging_dir
         .join("to_contains__contains__symbol.csv")
         .exists());
+}
+
+#[test]
+fn concurrent_materializations_use_isolated_staging_files() {
+    let staging_root = temp_staging_dir("isolated_materializations");
+    let first_run = StagingRunDirectory::create(&staging_root.to_string_lossy()).unwrap();
+    let second_run = StagingRunDirectory::create(&staging_root.to_string_lossy()).unwrap();
+    assert_ne!(first_run.path(), second_run.path());
+
+    let mut first = StagingAccumulator::new(&first_run.path().to_string_lossy());
+    first.add_partition(&partition(
+        "hash-1",
+        vec![
+            node("file:first", "File", "first.py"),
+            node("sym:first", "Symbol", "first"),
+        ],
+        vec![edge("edge:first", "Contains", "file:first", "sym:first")],
+    ));
+    let first_result = first.finish().unwrap();
+
+    let mut second = StagingAccumulator::new(&second_run.path().to_string_lossy());
+    second.add_partition(&partition(
+        "hash-2",
+        vec![
+            node("file:second", "File", "second.py"),
+            node("sym:second", "Symbol", "second"),
+        ],
+        vec![edge("edge:second", "Contains", "file:second", "sym:second")],
+    ));
+    second.finish().unwrap();
+
+    let first_edges = read_json_array(&first_run.path().join("contains.json"));
+    assert_eq!(first_edges.len(), 1);
+    assert_eq!(first_edges[0]["id"], "edge:first");
+    let first_run_copy_path = super::files::copy_path(first_run.path());
+    assert!(first_result
+        .copy_statements
+        .iter()
+        .all(|statement| statement.contains(&first_run_copy_path)));
+
+    write_database(LadybugWriteRequest {
+        db_path: staging_root
+            .join("first.ldb")
+            .to_string_lossy()
+            .into_owned(),
+        include_fts: false,
+        schema_statements: schema_statements_from_copy_statements(
+            false,
+            &first_result.copy_statements,
+        ),
+        replace_database: false,
+        delete_statements: Vec::new(),
+        copy_statements: first_result.copy_statements,
+    })
+    .expect("the first run's connectors should still resolve their staged edge rows");
+
+    first_run.cleanup();
+    second_run.cleanup();
+    let _ = fs::remove_dir_all(staging_root);
 }
 
 fn partition(

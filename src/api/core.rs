@@ -755,6 +755,7 @@ fn materialization_payload(
 mod tests {
     use crate::api::contracts::{McpInstallRequest, OperationRequest, OutputFormat, RepoSelector};
     use crate::api::core::ApiCore;
+    use crate::api::{install_mcp_server, McpClientInstallOptions, McpServerDescriptor};
     use serde_json::json;
     use std::{fs, path::PathBuf};
 
@@ -913,6 +914,55 @@ mod tests {
             payload["mcpServers"]["codebase_graph_test"]["command"],
             "codebase-graph"
         );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn generic_mcp_server_registration_preserves_configuration_with_short_arguments() {
+        let root = unique_temp_dir("codebase-graph-generic-mcp-server");
+        let client_config = root.join("client").join("mcp.json");
+        fs::create_dir_all(client_config.parent().unwrap()).unwrap();
+        fs::write(
+            &client_config,
+            serde_json::to_string_pretty(&json!({
+                "mcpServers": {
+                    "unrelated": {"command": "keep", "args": []}
+                }
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let knowledge = root.join("knowledge");
+        let descriptor = McpServerDescriptor {
+            name: "k_wiki_test".to_string(),
+            command: "k-wiki".to_string(),
+            args: vec!["mcp".to_string(), knowledge.to_string_lossy().to_string()],
+            repo_root: root.clone(),
+            timeout: 60,
+            setup_config_path: None,
+            tool_policy: Some("knowledge_wiki".to_string()),
+            manual_http_metadata: None,
+        };
+        let options = McpClientInstallOptions {
+            client: "generic".to_string(),
+            scope: "local".to_string(),
+            client_config_path: Some(client_config.clone()),
+            dry_run: false,
+        };
+
+        let response = install_mcp_server(&descriptor, &options).expect("register MCP server");
+        assert_eq!(response["action"], "updated");
+        let payload: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&client_config).unwrap()).unwrap();
+        assert_eq!(payload["mcpServers"]["unrelated"]["command"], "keep");
+        assert_eq!(payload["mcpServers"]["k_wiki_test"]["command"], "k-wiki");
+        assert_eq!(
+            payload["mcpServers"]["k_wiki_test"]["args"],
+            json!(["mcp", knowledge.to_string_lossy().to_string()])
+        );
+
+        let repeat = install_mcp_server(&descriptor, &options).expect("reuse MCP registration");
+        assert_eq!(repeat["action"], "unchanged");
         let _ = fs::remove_dir_all(root);
     }
 }

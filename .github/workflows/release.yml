@@ -134,6 +134,7 @@ jobs:
         include:
           - os: ubuntu-latest
             binary: codebase-graph
+            wiki_binary: k-wiki
             artifact-suffix: linux-x86_64
             prebuilt_lbug: false
             lbug_archive: ""
@@ -141,6 +142,7 @@ jobs:
             cargo_features: ""
           - os: macos-latest
             binary: codebase-graph
+            wiki_binary: k-wiki
             artifact-suffix: macos-arm64
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-arm64.tar.gz
@@ -148,6 +150,7 @@ jobs:
             cargo_features: ""
           - os: macos-15-intel
             binary: codebase-graph
+            wiki_binary: k-wiki
             artifact-suffix: macos-x86_64
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-x86_64.tar.gz
@@ -155,6 +158,7 @@ jobs:
             cargo_features: ""
           - os: windows-2022
             binary: codebase-graph.exe
+            wiki_binary: k-wiki.exe
             artifact-suffix: windows-x86_64
             prebuilt_lbug: false
             lbug_archive: ""
@@ -198,15 +202,20 @@ jobs:
         run: |
           mkdir -p dist/smoke
           cargo build --locked --release --bin codebase-graph ${CARGO_FEATURES}
+          cargo build --locked --release -p k-wiki --bin k-wiki
           cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
+          cp "target/release/${{ matrix.wiki_binary }}" "dist/smoke/${{ matrix.wiki_binary }}"
           chmod +x "dist/smoke/${{ matrix.binary }}"
+          chmod +x "dist/smoke/${{ matrix.wiki_binary }}"
           archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"
-          tar -C dist/smoke -czf "dist/${archive}" "${{ matrix.binary }}"
+          tar -C dist/smoke -czf "dist/${archive}" "${{ matrix.binary }}" "${{ matrix.wiki_binary }}"
           checksum_python="$(command -v python3 || command -v python)"
           "$checksum_python" -c 'import hashlib, pathlib, sys; path = pathlib.Path(sys.argv[1]); print(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.as_posix()}")' "dist/${archive}" > "dist/${archive}.sha256"
       - name: Smoke-test Rust production binary
         shell: bash
-        run: cargo run -p xtask -- smoke-artifact "./dist/smoke/${{ matrix.binary }}"
+        run: |
+          cargo run -p xtask -- smoke-artifact "./dist/smoke/${{ matrix.binary }}"
+          cargo run -p xtask -- smoke-wiki-artifact "./dist/smoke/${{ matrix.wiki_binary }}"
       - name: Upload native artifacts to GitHub release
         shell: bash
         env:

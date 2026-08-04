@@ -25,7 +25,9 @@ pub use contracts::{
 };
 pub use core::OperationDescriptor;
 pub use facade::{CodebaseGraphApi, OperationExecutor};
-pub use lifecycle::supported_mcp_clients;
+pub use lifecycle::{
+    install_mcp_server, supported_mcp_clients, McpClientInstallOptions, McpServerDescriptor,
+};
 
 #[cfg(test)]
 pub(crate) use refresh::{

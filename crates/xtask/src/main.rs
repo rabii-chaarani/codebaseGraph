@@ -2,10 +2,11 @@ use serde_json::{json, Value};
 use std::collections::BTreeSet;
 use std::env;
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{BufRead, BufReader, Read, Write};
+use std::net::TcpStream;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const CONFIRMATIONS: &[&str] = &[
     "release-environment",
@@ -30,6 +31,12 @@ fn run() -> Result<(), String> {
                 .ok_or_else(|| "smoke-artifact requires a binary path".to_string())?;
             smoke_artifact(Path::new(&executable))
         }
+        Some("smoke-wiki-artifact") => {
+            let executable = args
+                .next()
+                .ok_or_else(|| "smoke-wiki-artifact requires a binary path".to_string())?;
+            smoke_wiki_artifact(Path::new(&executable))
+        }
         Some("verify-release-version") => {
             let tag = args
                 .next()
@@ -38,7 +45,7 @@ fn run() -> Result<(), String> {
         }
         Some(command) => Err(format!("unknown xtask command: {command}")),
         None => Err(
-            "usage: cargo run -p xtask -- <release-gate|smoke-artifact|verify-release-version>"
+            "usage: cargo run -p xtask -- <release-gate|smoke-artifact|smoke-wiki-artifact|verify-release-version>"
                 .to_string(),
         ),
     }
@@ -129,6 +136,7 @@ fn check_rust_only_files(issues: &mut Vec<String>) {
         if text_path.contains("/target/")
             || text_path.contains("/.git/")
             || text_path.contains("/.codebaseGraph/")
+            || text_path.contains("/.kwiki/")
         {
             continue;
         }
@@ -159,6 +167,28 @@ fn check_cargo_metadata(issues: &mut Vec<String>) {
                 "FAIL: cargo-metadata-incomplete: Cargo.toml must contain {required}."
             ));
         }
+    }
+    let wiki_manifest = Path::new("crates/k-wiki/Cargo.toml");
+    match fs::read_to_string(wiki_manifest) {
+        Ok(wiki) => {
+            for required in [
+                r#"name = "k-wiki""#,
+                r#"name = "k_wiki""#,
+                r#"name = "k-wiki""#,
+                r#"license = "MIT""#,
+            ] {
+                if !wiki.contains(required) {
+                    issues.push(format!(
+                        "FAIL: cargo-metadata-incomplete: {} must contain {required}.",
+                        wiki_manifest.display()
+                    ));
+                }
+            }
+        }
+        Err(_) => issues.push(format!(
+            "FAIL: cargo-missing: {} is required.",
+            wiki_manifest.display()
+        )),
     }
 }
 
@@ -342,6 +372,169 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
+    if !executable.exists() {
+        return Err(format!("binary does not exist: {}", executable.display()));
+    }
+    let executable = executable.canonicalize().map_err(|error| {
+        format!(
+            "failed to resolve wiki binary {}: {error}",
+            executable.display()
+        )
+    })?;
+    let temp = unique_temp_dir("k_wiki_smoke")?;
+    let bundle = temp.join("bundle");
+    let concepts = bundle.join("concepts");
+    let site = temp.join("site");
+    fs::create_dir_all(&concepts).map_err(|error| error.to_string())?;
+    fs::write(
+        bundle.join("index.md"),
+        "---\nokf_version: \"0.1\"\ntitle: Smoke Bundle\n---\n# Smoke Bundle\n",
+    )
+    .map_err(|error| error.to_string())?;
+    fs::write(
+        concepts.join("welcome.md"),
+        "---\ntype: guide\ntitle: Welcome\ntags: [smoke]\n---\n# Welcome\n\nPackaged wiki smoke.\n",
+    )
+    .map_err(|error| error.to_string())?;
+
+    let bundle_text = bundle.to_str().ok_or("invalid bundle path")?;
+    let site_text = site.to_str().ok_or("invalid site path")?;
+    run_checked_in(&executable, ["--help"], &temp)?;
+    run_checked_in(&executable, ["validate", bundle_text, "--json"], &temp)?;
+    run_checked_in(
+        &executable,
+        ["build", bundle_text, "--out", site_text],
+        &temp,
+    )?;
+    if !site.join("index.html").is_file() {
+        return Err("wiki artifact smoke did not generate index.html".to_string());
+    }
+    smoke_wiki_http(&executable, &bundle, &temp)?;
+    smoke_wiki_mcp_stdio(&executable, &bundle, &temp)?;
+    Ok(())
+}
+
+fn smoke_wiki_http(executable: &Path, bundle: &Path, current_dir: &Path) -> Result<(), String> {
+    let mut child = Command::new(executable)
+        .args(["serve"])
+        .arg(bundle)
+        .args(["--host", "127.0.0.1", "--port", "0"])
+        .current_dir(current_dir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("failed to spawn wiki preview: {error}"))?;
+
+    let result = (|| {
+        let stderr = child.stderr.take().ok_or("missing wiki preview stderr")?;
+        let mut reader = BufReader::new(stderr);
+        let mut line = String::new();
+        reader
+            .read_line(&mut line)
+            .map_err(|error| format!("failed to read wiki preview address: {error}"))?;
+        let address = line
+            .trim()
+            .strip_prefix("Knowledge Wiki preview: http://")
+            .ok_or_else(|| format!("wiki preview did not report its address: {line:?}"))?;
+
+        for path in ["/healthz", "/", "/assets/wiki.css"] {
+            let response = wiki_http_get(address, path)?;
+            if !response.starts_with("HTTP/1.1 200") {
+                return Err(format!(
+                    "wiki preview returned a non-success response for {path}: {}",
+                    response.lines().next().unwrap_or_default()
+                ));
+            }
+        }
+        Ok(())
+    })();
+
+    let _ = child.kill();
+    let _ = child.wait();
+    result
+}
+
+fn wiki_http_get(address: &str, path: &str) -> Result<String, String> {
+    let mut stream = TcpStream::connect(address)
+        .map_err(|error| format!("failed to connect to wiki preview: {error}"))?;
+    stream
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .map_err(|error| error.to_string())?;
+    stream
+        .set_write_timeout(Some(Duration::from_secs(5)))
+        .map_err(|error| error.to_string())?;
+    write!(
+        stream,
+        "GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+    )
+    .map_err(|error| error.to_string())?;
+    let mut response = String::new();
+    stream
+        .read_to_string(&mut response)
+        .map_err(|error| error.to_string())?;
+    Ok(response)
+}
+
+fn smoke_wiki_mcp_stdio(
+    executable: &Path,
+    bundle: &Path,
+    current_dir: &Path,
+) -> Result<(), String> {
+    let mut child = Command::new(executable)
+        .arg("mcp")
+        .arg(bundle)
+        .current_dir(current_dir)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("failed to spawn wiki MCP server: {error}"))?;
+    {
+        let mut stdin = child.stdin.take().ok_or("missing wiki MCP stdin")?;
+        writeln!(
+            stdin,
+            "{}",
+            json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {"protocolVersion": "2025-11-25"}
+            })
+        )
+        .map_err(|error| error.to_string())?;
+        writeln!(
+            stdin,
+            "{}",
+            json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+        )
+        .map_err(|error| error.to_string())?;
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|error| error.to_string())?;
+    if !output.status.success() {
+        return Err(format!(
+            "wiki MCP smoke failed with status {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    let stdout = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
+    if !stdout.contains(r#""name":"Knowledge Wiki""#)
+        || !stdout.contains(r#""name":"wiki_get_concept""#)
+        || !stdout.contains(r#""name":"wiki_populate_page""#)
+        || !stdout.contains(r#""name":"wiki_validate""#)
+        || !stdout.contains(r#""name":"wiki_check_links""#)
+        || !stdout.contains(r#""name":"wiki_build""#)
+    {
+        return Err("wiki MCP smoke did not advertise the Knowledge Wiki schema".to_string());
+    }
+    Ok(())
+}
+
 fn smoke_mcp_stdio(executable: &Path, repo_root: &Path) -> Result<(), String> {
     let mut child = Command::new(executable)
         .args(["mcp", "start", "--repo-root"])
@@ -392,25 +585,34 @@ fn verify_release_version(tag: &str) -> Result<(), String> {
     {
         return Err(format!("release tag must match vX.Y.Z, got {tag:?}"));
     }
-    let actual = cargo_version()?;
+    let actual = cargo_version(Path::new("Cargo.toml"))?;
     if actual != expected {
         return Err(format!(
             "Cargo package version {actual} does not match release tag {tag}"
+        ));
+    }
+    let wiki = cargo_version(Path::new("crates/k-wiki/Cargo.toml"))?;
+    if wiki != expected {
+        return Err(format!(
+            "Knowledge Wiki package version {wiki} does not match release tag {tag}"
         ));
     }
     println!("{actual}");
     Ok(())
 }
 
-fn cargo_version() -> Result<String, String> {
-    let cargo = fs::read_to_string("Cargo.toml").map_err(|error| error.to_string())?;
+fn cargo_version(manifest: &Path) -> Result<String, String> {
+    let cargo = fs::read_to_string(manifest).map_err(|error| error.to_string())?;
     for line in cargo.lines() {
         let line = line.trim();
         if let Some(value) = line.strip_prefix("version = ") {
             return Ok(value.trim_matches('"').to_string());
         }
     }
-    Err("Cargo.toml does not contain package version".to_string())
+    Err(format!(
+        "{} does not contain package version",
+        manifest.display()
+    ))
 }
 
 fn run_checked<'a, I>(executable: &Path, args: I) -> Result<(), String>
@@ -419,6 +621,28 @@ where
 {
     let output = Command::new(executable)
         .args(args)
+        .output()
+        .map_err(|error| error.to_string())?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            executable.display(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ))
+    }
+}
+
+fn run_checked_in<'a, I>(executable: &Path, args: I, current_dir: &Path) -> Result<(), String>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    let output = Command::new(executable)
+        .args(args)
+        .current_dir(current_dir)
         .output()
         .map_err(|error| error.to_string())?;
     if output.status.success() {
@@ -475,7 +699,7 @@ fn files_under(root: &Path) -> Vec<PathBuf> {
             .file_name()
             .and_then(|item| item.to_str())
             .unwrap_or_default();
-        if name == ".git" || name == "target" || name == ".codebaseGraph" {
+        if name == ".git" || name == "target" || name == ".codebaseGraph" || name == ".kwiki" {
             continue;
         }
         if path.is_dir() {

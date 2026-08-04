@@ -13,7 +13,7 @@ categories = ["command-line-utilities", "development-tools"]
 exclude = ["assets/ladybug-extensions/0.17.0/win_amd64/**"]
 
 [workspace]
-members = [".", "crates/xtask"]
+members = [".", "crates/k-wiki", "crates/xtask"]
 resolver = "2"
 
 [lib]
