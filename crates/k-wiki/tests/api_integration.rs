@@ -126,6 +126,90 @@ fn mcp_authoring_round_trip_creates_populates_reads_and_searches_a_concept() {
 }
 
 #[test]
+fn mcp_maintenance_tools_validate_check_links_and_build_a_site() {
+    let temp = TestDir::new("k-wiki-mcp-maintenance");
+    let bundle = temp.path().join("knowledge");
+    let output = temp.path().join(".kwiki/site");
+    fs::create_dir_all(&bundle).expect("create bundle");
+    fs::write(
+        bundle.join("index.md"),
+        "---\nokf_version: '0.1'\ntitle: Knowledge\n---\n# Knowledge\n",
+    )
+    .expect("write root index");
+    let api = LocalWikiService::new(vec![bundle.clone()]).into_api();
+    let mut session = mcp_session();
+
+    let validation = call_tool(
+        &api,
+        &mut session,
+        1,
+        "wiki_validate",
+        json!({
+            "bundle_root": bundle,
+            "profile": "recommended",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(validation["result"]["isError"], false);
+    assert_eq!(
+        validation["result"]["structuredContent"]["kind"],
+        "validation"
+    );
+
+    let links = call_tool(
+        &api,
+        &mut session,
+        2,
+        "wiki_check_links",
+        json!({
+            "bundle_root": bundle,
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(links["result"]["isError"], false);
+    assert_eq!(links["result"]["structuredContent"]["kind"], "diagnostics");
+
+    let unconfigured_bundle = temp.path().join("other-knowledge");
+    fs::create_dir_all(&unconfigured_bundle).expect("create unconfigured bundle");
+    fs::write(
+        unconfigured_bundle.join("index.md"),
+        "---\nokf_version: '0.1'\ntitle: Other\n---\n# Other\n",
+    )
+    .expect("write unconfigured root index");
+    let denied = call_tool(
+        &api,
+        &mut session,
+        3,
+        "wiki_validate",
+        json!({"bundle_root": unconfigured_bundle, "profile": "recommended"}),
+    );
+    assert_eq!(denied["error"]["code"], -32602);
+    assert_eq!(
+        denied["error"]["message"],
+        "bundle is not configured for this wiki"
+    );
+
+    let build = call_tool(
+        &api,
+        &mut session,
+        4,
+        "wiki_build",
+        json!({
+            "bundle_root": bundle,
+            "output_root": output,
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(build["result"]["isError"], false);
+    assert_eq!(build["result"]["annotations"]["writeOperation"], true);
+    assert_eq!(
+        build["result"]["structuredContent"]["kind"],
+        "site_rendered"
+    );
+    assert!(output.join("index.html").is_file());
+}
+
+#[test]
 fn cli_validate_and_build_use_the_integrated_public_api() {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let fixture = manifest.join("tests/fixtures/comprehensive");
@@ -448,11 +532,14 @@ fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
     let tools = responses[1]["result"]["tools"]
         .as_array()
         .expect("tool list");
-    assert_eq!(tools.len(), 11);
+    assert_eq!(tools.len(), 14);
     assert!(tools
         .iter()
         .any(|tool| tool["name"] == "wiki_populate_page"
             && tool["annotations"]["wikiAccess"] == "write"));
+    assert!(tools
+        .iter()
+        .any(|tool| tool["name"] == "wiki_build" && tool["annotations"]["wikiAccess"] == "write"));
 }
 
 #[tokio::test]

@@ -162,7 +162,8 @@ impl WikiOperationExecutor for LocalWikiService {
                 }))
             }
             WikiOperationRequest::ValidateBundle(request) => {
-                let loaded = crate::bundle::load_bundle(&request.bundle_root).map_err(|_| {
+                let bundle_root = self.configured_bundle_root(&request.bundle_root)?;
+                let loaded = crate::bundle::load_bundle(&bundle_root).map_err(|_| {
                     WikiApiError::new("bundle_not_found", "bundle could not be loaded")
                 })?;
                 let report = validate_bundle(&loaded, validation_profile(request.profile));
@@ -170,6 +171,14 @@ impl WikiOperationExecutor for LocalWikiService {
                     accepted: report.accepted,
                     diagnostics: report.diagnostics,
                 }))
+            }
+            WikiOperationRequest::CheckLinks(request) => {
+                let bundle_root = self.configured_bundle_root(&request.bundle_root)?;
+                let loaded = crate::bundle::load_bundle(&bundle_root).map_err(|_| {
+                    WikiApiError::new("bundle_not_found", "bundle could not be loaded")
+                })?;
+                let report = validate_bundle(&loaded, ConformanceProfile::Conformant);
+                Ok(WikiOperationResponse::Diagnostics(report.diagnostics))
             }
             WikiOperationRequest::CreateBundle(request) => {
                 let result = self
@@ -318,6 +327,12 @@ impl WikiOperationExecutor for LocalWikiService {
                 changes.truncate(request.limit.clamp(1, 500));
                 Ok(WikiOperationResponse::RecentChanges(changes))
             }
+            WikiOperationRequest::BuildSite(request) => {
+                let bundle_root = self.configured_bundle_root(&request.bundle_root)?;
+                let projection =
+                    self.compile(std::slice::from_ref(&bundle_root), "runtime", None)?;
+                self.render_projection(projection, &request.output_root, &request.base_url)
+            }
             WikiOperationRequest::RenderSite(request) => {
                 let mut projection = self.projection()?;
                 if !request.bundle_ids.is_empty() {
@@ -332,23 +347,45 @@ impl WikiOperationExecutor for LocalWikiService {
                     }
                     projection.normalize();
                 }
-                let renderer = Renderer::new(RenderOptions {
-                    base_path: request.base_url.clone(),
-                })
-                .map_err(|_| WikiApiError::new("render_failed", "site could not be rendered"))?;
-                let site = renderer
-                    .render_site(&projection, &RenderContext::default())
-                    .map_err(|_| {
-                        WikiApiError::new("render_failed", "site could not be rendered")
-                    })?;
-                site.write_to(&request.output_root)
-                    .map_err(|_| WikiApiError::new("render_failed", "site could not be written"))?;
-                Ok(WikiOperationResponse::SiteRendered(SiteRenderedResponse {
-                    route_count: site.pages.len(),
-                    asset_count: site.assets.len(),
-                }))
+                self.render_projection(projection, &request.output_root, &request.base_url)
             }
         }
+    }
+}
+
+impl LocalWikiService {
+    fn configured_bundle_root(&self, requested: &std::path::Path) -> Result<PathBuf, WikiApiError> {
+        let requested = requested
+            .canonicalize()
+            .map_err(|_| WikiApiError::new("bundle_not_found", "bundle could not be loaded"))?;
+        self.bundle_roots
+            .iter()
+            .filter_map(|root| root.canonicalize().ok())
+            .find(|root| *root == requested)
+            .ok_or_else(|| {
+                WikiApiError::new("bundle_not_found", "bundle is not configured for this wiki")
+            })
+    }
+
+    fn render_projection(
+        &self,
+        projection: WikiProjection,
+        output_root: &std::path::Path,
+        base_url: &str,
+    ) -> Result<WikiOperationResponse, WikiApiError> {
+        let renderer = Renderer::new(RenderOptions {
+            base_path: base_url.to_string(),
+        })
+        .map_err(|_| WikiApiError::new("render_failed", "site could not be rendered"))?;
+        let site = renderer
+            .render_site(&projection, &RenderContext::default())
+            .map_err(|_| WikiApiError::new("render_failed", "site could not be rendered"))?;
+        site.write_to(output_root)
+            .map_err(|_| WikiApiError::new("render_failed", "site could not be written"))?;
+        Ok(WikiOperationResponse::SiteRendered(SiteRenderedResponse {
+            route_count: site.pages.len(),
+            asset_count: site.assets.len(),
+        }))
     }
 }
 

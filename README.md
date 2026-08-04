@@ -48,6 +48,12 @@ be on `PATH` when the client launches it; set `K_WIKI_SERVER_COMMAND` before
 registration to record a different executable path. The default server name is
 `k_wiki`; use `--name` only when registering more than one wiki with a client.
 
+Once registered, agents can use the `k_wiki` MCP server for the same wiki
+maintenance operations without shelling out: `wiki_validate` (the equivalent
+of `k-wiki validate`), `wiki_check_links` (the equivalent of `k-wiki
+check-links`), and `wiki_build` (the equivalent of `k-wiki build`). The build
+tool is marked as a write operation because it writes the static site.
+
 ## Quick Start
 
 ```bash

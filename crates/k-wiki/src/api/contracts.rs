@@ -26,6 +26,7 @@ pub enum ValidationProfile {
 pub enum WikiOperationRequest {
     Health(HealthRequest),
     ValidateBundle(ValidateBundleRequest),
+    CheckLinks(CheckLinksRequest),
     CreateBundle(CreateBundleRequest),
     CreatePage(CreatePageRequest),
     PopulatePage(PopulatePageRequest),
@@ -38,6 +39,7 @@ pub enum WikiOperationRequest {
     GetNeighborhood(GetNeighborhoodRequest),
     GetDiagnostics(GetDiagnosticsRequest),
     GetRecentChanges(GetRecentChangesRequest),
+    BuildSite(BuildSiteRequest),
     RenderSite(RenderSiteRequest),
 }
 
@@ -48,6 +50,11 @@ pub struct HealthRequest {}
 pub struct ValidateBundleRequest {
     pub bundle_root: PathBuf,
     pub profile: ValidationProfile,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct CheckLinksRequest {
+    pub bundle_root: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -136,6 +143,14 @@ fn default_change_limit() -> usize {
 pub struct RenderSiteRequest {
     #[serde(default)]
     pub bundle_ids: Vec<String>,
+    pub output_root: PathBuf,
+    #[serde(default)]
+    pub base_url: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct BuildSiteRequest {
+    pub bundle_root: PathBuf,
     pub output_root: PathBuf,
     #[serde(default)]
     pub base_url: String,

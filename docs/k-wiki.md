@@ -72,6 +72,23 @@ persistent server. The registered command uses `k-wiki` by default; set
 `K_WIKI_SERVER_COMMAND` before registration to write a different executable
 path. It registers as `k_wiki` unless `--name` is supplied.
 
+## MCP maintenance tools
+
+The MCP server exposes the same maintenance operations as the CLI, so agents
+can validate, check links, and build without invoking a shell:
+
+| CLI command | MCP tool | Required inputs |
+| --- | --- | --- |
+| `k-wiki validate knowledge --profile recommended --json` | `wiki_validate` | `bundle_root`, `profile` |
+| `k-wiki check-links knowledge` | `wiki_check_links` | `bundle_root` |
+| `k-wiki build knowledge --out .kwiki/site` | `wiki_build` | `bundle_root`, `output_root` |
+
+`wiki_build` is marked as a write operation because it writes the static site.
+All three tools accept `include_structured_content: true` when an agent needs
+the typed result as well as the standard MCP text response. `bundle_root` must
+identify the bundle configured when the server was registered; use its absolute
+`knowledge/` path when the MCP client's working directory is not the repository.
+
 ## State and rollback
 
 Successful builds publish complete versioned generations under `.kwiki/`.

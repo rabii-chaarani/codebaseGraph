@@ -10,8 +10,8 @@ use k_wiki::{
         http, install, mcp, TransportError, TransportPayload,
     },
     api::{
-        mcp_operation_descriptor, GetConceptRequest, GetDiagnosticsRequest, OkfWikiApi,
-        RenderSiteRequest, ValidateBundleRequest, ValidationProfile, WikiApiError,
+        mcp_operation_descriptor, BuildSiteRequest, CheckLinksRequest, GetConceptRequest,
+        OkfWikiApi, RenderSiteRequest, ValidateBundleRequest, ValidationProfile, WikiApiError,
         WikiOperationRequest, WikiOperationResponse,
     },
     authoring::{
@@ -179,11 +179,11 @@ fn dispatch_cli(request: CliRequest) -> Result<TransportPayload, TransportError>
             out,
             base_url,
         } => {
-            let (api, bundle_id) = api_and_bundle_id(&bundle)?;
+            let api = api_for_bundle(&bundle)?;
             let response = execute(
                 &api,
-                WikiOperationRequest::RenderSite(RenderSiteRequest {
-                    bundle_ids: vec![bundle_id],
+                WikiOperationRequest::BuildSite(BuildSiteRequest {
+                    bundle_root: bundle,
                     output_root: out,
                     base_url: base_url.unwrap_or_default(),
                 }),
@@ -206,12 +206,11 @@ fn dispatch_cli(request: CliRequest) -> Result<TransportPayload, TransportError>
             bundle,
             include_external: _,
         } => {
-            let (api, bundle_id) = api_and_bundle_id(&bundle)?;
+            let api = api_for_bundle(&bundle)?;
             let response = execute(
                 &api,
-                WikiOperationRequest::GetDiagnostics(GetDiagnosticsRequest {
-                    bundle_id,
-                    profile: ValidationProfile::Conformant,
+                WikiOperationRequest::CheckLinks(CheckLinksRequest {
+                    bundle_root: bundle,
                 }),
             )?;
             response_payload("link check complete", response)

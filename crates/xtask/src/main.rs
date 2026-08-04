@@ -526,6 +526,9 @@ fn smoke_wiki_mcp_stdio(
     if !stdout.contains(r#""name":"Knowledge Wiki""#)
         || !stdout.contains(r#""name":"wiki_get_concept""#)
         || !stdout.contains(r#""name":"wiki_populate_page""#)
+        || !stdout.contains(r#""name":"wiki_validate""#)
+        || !stdout.contains(r#""name":"wiki_check_links""#)
+        || !stdout.contains(r#""name":"wiki_build""#)
     {
         return Err("wiki MCP smoke did not advertise the Knowledge Wiki schema".to_string());
     }

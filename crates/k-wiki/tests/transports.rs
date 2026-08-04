@@ -279,7 +279,7 @@ fn mcp_initialize_uses_exact_server_display_name() {
 }
 
 #[test]
-fn mcp_tools_list_advertises_exact_phase8_metadata() {
+fn mcp_tools_list_advertises_declared_metadata() {
     let mut session = McpSession {
         protocol_version: Some("2025-11-25".to_string()),
         initialized: true,
@@ -322,6 +322,9 @@ fn mcp_tools_list_advertises_exact_phase8_metadata() {
             "wiki_create_bundle",
             "wiki_create_page",
             "wiki_populate_page",
+            "wiki_validate",
+            "wiki_check_links",
+            "wiki_build",
         ]
     );
     assert_eq!(tools[0]["title"], "List Bundles");
@@ -332,6 +335,11 @@ fn mcp_tools_list_advertises_exact_phase8_metadata() {
         tools[8]["inputSchema"]["properties"]["tool"]["const"],
         "wiki_create_bundle"
     );
+    assert_eq!(tools[11]["title"], "Validate Bundle");
+    assert_eq!(tools[11]["annotations"]["readOnlyHint"], true);
+    assert_eq!(tools[12]["title"], "Check Links");
+    assert_eq!(tools[13]["title"], "Build Site");
+    assert_eq!(tools[13]["annotations"]["readOnlyHint"], false);
 }
 
 #[test]

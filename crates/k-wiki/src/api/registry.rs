@@ -73,6 +73,7 @@ pub fn operation_id(request: &WikiOperationRequest) -> &'static str {
     match request {
         WikiOperationRequest::Health(_) => "health",
         WikiOperationRequest::ValidateBundle(_) => "validate_bundle",
+        WikiOperationRequest::CheckLinks(_) => "check_links",
         WikiOperationRequest::CreateBundle(_) => "create_bundle",
         WikiOperationRequest::CreatePage(_) => "create_page",
         WikiOperationRequest::PopulatePage(_) => "populate_page",
@@ -85,6 +86,7 @@ pub fn operation_id(request: &WikiOperationRequest) -> &'static str {
         WikiOperationRequest::GetNeighborhood(_) => "get_neighborhood",
         WikiOperationRequest::GetDiagnostics(_) => "get_diagnostics",
         WikiOperationRequest::GetRecentChanges(_) => "get_recent_changes",
+        WikiOperationRequest::BuildSite(_) => "build_site",
         WikiOperationRequest::RenderSite(_) => "render_site",
     }
 }
@@ -103,10 +105,18 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
         descriptor(
             "validate_bundle",
             "Validate one OKF bundle.",
-            RUST_CLI_HTTP,
+            ALL_SURFACES,
             AccessMode::Read,
-            None,
+            Some(mcp("wiki_validate", "Validate Bundle", 11)),
             validate_bundle_schema,
+        ),
+        descriptor(
+            "check_links",
+            "Check links in one OKF bundle.",
+            ALL_SURFACES,
+            AccessMode::Read,
+            Some(mcp("wiki_check_links", "Check Links", 12)),
+            check_links_schema,
         ),
         descriptor(
             "create_bundle",
@@ -212,6 +222,14 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
             None,
             render_site_schema,
         ),
+        descriptor(
+            "build_site",
+            "Build a static site from one OKF bundle.",
+            ALL_SURFACES,
+            AccessMode::Write,
+            Some(mcp("wiki_build", "Build Site", 13)),
+            build_site_schema,
+        ),
     ];
 
     for item in descriptors {
@@ -263,15 +281,22 @@ fn empty_schema() -> Value {
 }
 
 fn validate_bundle_schema() -> Value {
-    json!({
-        "type": "object",
-        "properties": {
+    schema_with_properties(
+        json!({
             "bundle_root": {"type": "string"},
             "profile": {"enum": ["consume", "conformant", "recommended"]}
-        },
-        "required": ["bundle_root", "profile"],
-        "additionalProperties": false
-    })
+        }),
+        &["bundle_root", "profile"],
+    )
+}
+
+fn check_links_schema() -> Value {
+    schema_with_properties(
+        json!({
+            "bundle_root": {"type": "string"}
+        }),
+        &["bundle_root"],
+    )
 }
 
 fn build_projection_schema() -> Value {
@@ -437,6 +462,17 @@ fn render_site_schema() -> Value {
     })
 }
 
+fn build_site_schema() -> Value {
+    schema_with_properties(
+        json!({
+            "bundle_root": {"type": "string"},
+            "output_root": {"type": "string"},
+            "base_url": {"type": "string", "default": ""}
+        }),
+        &["bundle_root", "output_root"],
+    )
+}
+
 fn schema_with_properties(mut properties: Value, required: &[&str]) -> Value {
     if let Some(entries) = properties.as_object_mut() {
         entries.insert(
@@ -463,7 +499,7 @@ mod tests {
         let mut sorted = ids.clone();
         sorted.sort_unstable();
         assert_eq!(ids, sorted);
-        assert_eq!(registry.len(), 15);
+        assert_eq!(registry.len(), 17);
 
         let tools = mcp_operation_descriptors()
             .into_iter()
@@ -483,6 +519,9 @@ mod tests {
                 "wiki_create_bundle",
                 "wiki_create_page",
                 "wiki_populate_page",
+                "wiki_validate",
+                "wiki_check_links",
+                "wiki_build",
             ]
         );
     }

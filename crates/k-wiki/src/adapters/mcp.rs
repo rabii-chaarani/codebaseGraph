@@ -272,6 +272,8 @@ fn request_for_tool(
     })?;
     let arguments = tool_arguments(arguments);
     match descriptor.id {
+        "validate_bundle" => deserialize(arguments).map(WikiOperationRequest::ValidateBundle),
+        "check_links" => deserialize(arguments).map(WikiOperationRequest::CheckLinks),
         "list_bundles" => deserialize(arguments).map(WikiOperationRequest::ListBundles),
         "get_directory" => deserialize(arguments).map(WikiOperationRequest::GetDirectory),
         "get_concept" => deserialize(arguments).map(WikiOperationRequest::GetConcept),
@@ -283,6 +285,7 @@ fn request_for_tool(
         "create_bundle" => deserialize(arguments).map(WikiOperationRequest::CreateBundle),
         "create_page" => deserialize(arguments).map(WikiOperationRequest::CreatePage),
         "populate_page" => deserialize(arguments).map(WikiOperationRequest::PopulatePage),
+        "build_site" => deserialize(arguments).map(WikiOperationRequest::BuildSite),
         _ => Err(TransportError::new(
             "unknown_tool",
             format!("Unknown Knowledge Wiki MCP tool: {tool_name}"),
