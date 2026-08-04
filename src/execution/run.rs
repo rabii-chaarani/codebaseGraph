@@ -35,7 +35,9 @@ fn execute_scanned_materialization(
         ));
     }
 
-    let mut staging_accumulator = staging_writer::StagingAccumulator::new(&request.staging_dir);
+    let staging_run = staging_writer::StagingRunDirectory::create(&request.staging_dir)?;
+    let mut staging_accumulator =
+        staging_writer::StagingAccumulator::new(&staging_run.path().to_string_lossy());
     let mut rebuilt_entries = BTreeMap::new();
     let mut node_ids = BTreeSet::new();
     let mut edge_ids = BTreeSet::new();
@@ -117,6 +119,7 @@ fn execute_scanned_materialization(
     response.progress_events = progress_events;
     let graph_write_started = Instant::now();
     staging_writer::write_graph_rows(request, &response).map_err(NativeError::InvalidInput)?;
+    staging_run.cleanup();
     response.phase_timings.insert(
         "database_write_seconds".to_string(),
         elapsed_seconds(graph_write_started),
@@ -215,6 +218,13 @@ mod tests {
         assert!(response.database_written);
         assert_eq!(response.rebuilt_entries.len(), 1);
         assert!(db_path.exists());
+        assert_eq!(
+            fs::read_dir(state_root.join("staging"))
+                .expect("staging root should remain readable")
+                .count(),
+            0,
+            "successful materialization should remove its isolated staging directory"
+        );
         let _ = fs::remove_dir_all(root);
     }
 }
