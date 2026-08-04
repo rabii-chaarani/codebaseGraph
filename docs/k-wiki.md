@@ -89,6 +89,37 @@ the typed result as well as the standard MCP text response. `bundle_root` must
 identify the bundle configured when the server was registered; use its absolute
 `knowledge/` path when the MCP client's working directory is not the repository.
 
+## AI-agent workflow
+
+Use the `k_wiki` MCP server for every wiki interaction; do not invoke the
+`k-wiki` CLI or edit generated state directly.
+
+1. **Orient before acting.** Treat `knowledge/` as curated repository intent,
+   not a substitute for current code. Start with `wiki_list_bundles`, then
+   `wiki_search_concepts`. Read the most relevant entries with
+   `wiki_get_concept`; use `wiki_list_directory`, `wiki_get_backlinks`, and
+   `wiki_get_neighborhood` to understand related decisions.
+2. **Ground implementation work.** Use the wiki for architecture, terminology,
+   invariants, ownership, and prior decisions. Verify changeable details with
+   the repository's codebase-graph MCP tools. When code and wiki conflict,
+   identify the conflict and use `wiki_populate_page` to record the clarified
+   intent rather than silently following stale content.
+3. **Author knowledge deliberately.** Create missing pages with
+   `wiki_create_page`; update existing pages with `wiki_populate_page`, always
+   supplying title, type, tags, useful Markdown, and `expected_content_hash`.
+   Record durable decisions, public contracts, runbooks, invariants, and
+   non-obvious trade-offs—not transient implementation noise or copied source.
+4. **Validate and publish after edits.** Call `wiki_validate` with
+   `profile: "recommended"` and `include_structured_content: true`, then call
+   `wiki_check_links`. Call `wiki_build` with the configured `bundle_root` and
+   the repository's `.kwiki/site` `output_root`; it is a write operation.
+   `knowledge/` is source, while `.kwiki/` is generated state and must never be
+   edited manually.
+5. **Close the loop.** Use `wiki_get_diagnostics` to inspect remaining issues
+   and `wiki_get_recent_changes` to see changes since prior work. In a handoff,
+   cite the updated concept paths and summarize decisions, uncertainties, and
+   validation results.
+
 ## State and rollback
 
 Successful builds publish complete versioned generations under `.kwiki/`.
