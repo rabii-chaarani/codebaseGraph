@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.2.0...v1.2.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* **ci:** unblock Windows release linking ([#53](https://github.com/rabii-chaarani/codebaseGraph/issues/53)) ([0edad59](https://github.com/rabii-chaarani/codebaseGraph/commit/0edad5908fd34503cf54a8097bcb9eeb8e0b4f12))
+
 ## [1.2.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.6...v1.2.0) (2026-08-04)
 
 
