@@ -66,13 +66,41 @@ k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|us
 `github-copilot`, `lmstudio`, `hermes`, `openclaw`, `generic`,
 `copilot-studio`, `microsoft-copilot`, or `all`. The command resolves the
 canonical `knowledge/` bundle and records `k-wiki mcp <absolute-bundle-path>`
-with the client. It fails safely when the starter bundle is absent; run
-`k-wiki install` first.
+with the client. Target locality depends on both client and scope:
+
+- Codex `local`/`project`, Claude project and `claude-project`, generic
+  `project`, and GitHub Copilot are `repository_local`.
+- Codex `user`, Claude `user`/`local`, generic `user`/`local`, LM Studio,
+  Hermes, and OpenClaw are `shared`.
+- Copilot Studio and Microsoft Copilot are `manual`.
+- For file-backed clients, an explicit config path overrides the default and is
+  `repository_local` only when it is inside the canonical repository root.
+
+Repository-local registrations use `k_wiki`. Shared and manual registrations
+derive `k_wiki_<sanitized-repo>_<hash8>` from the first eight SHA-256 hex
+characters of the normalized canonical repository path. Explicit names are
+preserved, except explicit `k_wiki` is rejected for shared/manual targets.
+Each client uses a file adapter with `RejectDifferent`: matching `command` and
+`args` are idempotent, while mismatches or unparseable managed entries fail
+without changing the file. It fails safely when the starter bundle is absent;
+run `k-wiki install` first.
+
+After a successful replacement, legacy shared `k_wiki` entries are removed
+regardless of their old bundle path. Same-file replacement is one atomic
+write. Cross-file migration writes the local entry first, then removes the
+shared entry; cleanup failure reports a partial migration and keeps the safe
+local entry. Manual results include explicit cleanup instructions. `--dry-run`
+reports registration and cleanup without writing. `--client all` resolves and
+names every client independently. Machine-readable results retain the existing
+fields and add `target_locality` and `legacy_cleanup`.
 
 Registration is separate from repository bootstrap and does not start a
 persistent server. The registered command uses `k-wiki` by default; set
 `K_WIKI_SERVER_COMMAND` before registration to write a different executable
-path. It registers as `k_wiki` unless `--name` is supplied.
+path. The runtime remains single-bundle: each server records one absolute
+`knowledge/` path, and `wiki_list_bundles` does not accept caller-selected
+`repository_roots`. After upgrading, rerun `k-wiki mcp install` in every
+repository and restart the MCP client to replace stale running registrations.
 
 ## MCP maintenance tools
 
