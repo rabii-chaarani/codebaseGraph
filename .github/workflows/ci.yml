@@ -153,7 +153,7 @@ jobs:
         # k-wiki is an unpublished workspace binary that uses the in-tree
         # codebase-graph registrar. The root package is verified above; this
         # checks the wiki archive without resolving an older published API.
-        run: cargo package -p k-wiki --locked --no-verify
+        run: cargo package -p k-wiki --locked --no-verify --config 'patch.crates-io.codebase-graph.path="."'
 
   package:
     name: native package (${{ matrix.os }})

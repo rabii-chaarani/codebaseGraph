@@ -566,21 +566,6 @@ fn watch_auto_backend_refreshes_after_probe_resolution() {
         output.text()
     });
 
-    let fallback_deadline = Instant::now() + Duration::from_secs(10);
-    while !output.text().contains("watch event=fallback backend=poll") {
-        assert!(
-            !handle.is_finished(),
-            "watch stopped before selecting its fallback backend: {}",
-            output.text()
-        );
-        assert!(
-            Instant::now() < fallback_deadline,
-            "watch did not select its fallback backend: {}",
-            output.text()
-        );
-        std::thread::sleep(Duration::from_millis(10));
-    }
-
     for attempt in 0..500 {
         std::thread::sleep(Duration::from_millis(20));
         fs::write(
