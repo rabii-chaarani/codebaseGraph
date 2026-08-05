@@ -26,7 +26,9 @@ pub use contracts::{
 pub use core::OperationDescriptor;
 pub use facade::{CodebaseGraphApi, OperationExecutor};
 pub use lifecycle::{
-    install_mcp_server, supported_mcp_clients, McpClientInstallOptions, McpServerDescriptor,
+    install_mcp_server, remove_mcp_server, resolve_mcp_target, supported_mcp_clients,
+    McpClientInstallOptions, McpClientRemovalOptions, McpExistingEntryPolicy, McpInstallMode,
+    McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
 };
 
 #[cfg(test)]

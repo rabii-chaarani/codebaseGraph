@@ -755,7 +755,10 @@ fn materialization_payload(
 mod tests {
     use crate::api::contracts::{McpInstallRequest, OperationRequest, OutputFormat, RepoSelector};
     use crate::api::core::ApiCore;
-    use crate::api::{install_mcp_server, McpClientInstallOptions, McpServerDescriptor};
+    use crate::api::{
+        install_mcp_server, McpClientInstallOptions, McpExistingEntryPolicy, McpInstallMode,
+        McpServerDescriptor,
+    };
     use serde_json::json;
     use std::{fs, path::PathBuf};
 
@@ -948,6 +951,9 @@ mod tests {
             scope: "local".to_string(),
             client_config_path: Some(client_config.clone()),
             dry_run: false,
+            install_method: McpInstallMode::Auto,
+            existing_entry_policy: McpExistingEntryPolicy::Replace,
+            legacy_server_names: Vec::new(),
         };
 
         let response = install_mcp_server(&descriptor, &options).expect("register MCP server");
