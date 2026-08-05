@@ -45,10 +45,28 @@ k-wiki mcp install --client codex
 Supported clients are `codex`, `claude`, `claude-project`, `github-copilot`,
 `lmstudio`, `hermes`, `openclaw`, `generic`, `copilot-studio`,
 `microsoft-copilot`, and `all`. Use `--repo-root`, `--scope`, `--name`,
-`--client-config-path`, or `--dry-run` as needed. The `k-wiki` executable must
-be on `PATH` when the client launches it; set `K_WIKI_SERVER_COMMAND` before
-registration to record a different executable path. The default server name is
-`k_wiki`; use `--name` only when registering more than one wiki with a client.
+`--client-config-path`, or `--dry-run` as needed. Codex `local`/`project`,
+Claude project, generic project, and GitHub Copilot targets are
+`repository_local`; Codex user, Claude user/local, generic user/local, LM
+Studio, Hermes, and OpenClaw targets are `shared`; Copilot Studio targets are
+`manual`. For file-backed clients, an explicit config path is
+`repository_local` only when it is inside the canonical repository root. Local
+registrations keep `k_wiki`; shared and manual registrations derive
+`k_wiki_<sanitized-repo>_<hash8>` from the
+canonical path's SHA-256. Explicit names are preserved, except `k_wiki` is
+rejected for shared/manual targets. Existing entries with different or
+unparseable `command`/`args` fail closed. Legacy shared `k_wiki` entries are
+removed atomically in the same file or after a safe local write; failed
+cross-file cleanup reports a partial migration without rolling back the local
+entry. `--dry-run` reports registration and cleanup without writing, and
+`--client all` resolves every client independently. Results include
+`target_locality` and `legacy_cleanup`; manual targets include cleanup
+instructions. The `k-wiki` executable must be on `PATH` when the client
+launches it; set `K_WIKI_SERVER_COMMAND` before registration to record a
+different executable path. The runtime remains single-bundle and
+`wiki_list_bundles` does not accept caller-selected `repository_roots`. After
+upgrading, rerun `k-wiki mcp install` in each repository and restart the MCP
+client.
 
 Once registered, agents can use the `k_wiki` MCP server for the same wiki
 maintenance operations without shelling out: `wiki_validate` (the equivalent

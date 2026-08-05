@@ -7,10 +7,12 @@ use crate::api::materialization::{
     execute_materialization, MaterializeOptions,
 };
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
 pub(crate) fn is_retryable_refresh_failure(error: &str) -> bool {
@@ -62,6 +64,9 @@ pub(crate) fn install_mcp_client(
                 scope: request.scope.clone(),
                 client_config_path: request.client_config_path.clone(),
                 dry_run: request.dry_run,
+                install_method: McpInstallMode::Auto,
+                existing_entry_policy: McpExistingEntryPolicy::Replace,
+                legacy_server_names: Vec::new(),
             },
         )
     };
@@ -575,6 +580,9 @@ fn setup_mcp_config(
             },
             client_config_path: options.mcp_config_path.clone(),
             dry_run,
+            install_method: McpInstallMode::Auto,
+            existing_entry_policy: McpExistingEntryPolicy::Replace,
+            legacy_server_names: Vec::new(),
         },
     )
 }
@@ -707,30 +715,13 @@ fn uninstall_mcp_client(
         Some(config_path.to_path_buf()),
         Some(repo_root.to_path_buf()),
     )?;
-    let normalized_scope = install_scope(client, scope);
-    let path = client_config_path
-        .map(Path::to_path_buf)
-        .unwrap_or_else(|| default_client_config_path(client, &normalized_scope, &descriptor));
-    let existing = fs::read_to_string(&path).ok();
-    let removed =
-        remove_client_config(client, &normalized_scope, existing.as_deref(), server_name)?;
-    if removed.action == "removed" && !dry_run {
-        write_text_atomic(&path, &removed.text)?;
-    }
-    let action = if removed.action == "removed" && dry_run {
-        "dry_run".to_string()
-    } else {
-        removed.action
-    };
-    Ok(json!({
-        "action": action,
-        "client": client,
-        "scope": normalized_scope,
-        "server_name": server_name,
-        "path": path,
-        "previous": removed.previous,
-        "payload": removed.payload,
-    }))
+    let target = resolve_mcp_target(
+        client,
+        scope,
+        &descriptor,
+        client_config_path.map(Path::to_path_buf),
+    )?;
+    remove_mcp_server(server_name, &McpClientRemovalOptions { target, dry_run })
 }
 
 pub(crate) fn remove_instruction_text(existing: &str) -> (String, bool) {
@@ -1140,6 +1131,35 @@ pub struct McpServerDescriptor {
     pub manual_http_metadata: Option<serde_json::Value>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum McpTargetLocality {
+    RepositoryLocal,
+    Shared,
+    Manual,
+}
+
+impl McpTargetLocality {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::RepositoryLocal => "repository_local",
+            Self::Shared => "shared",
+            Self::Manual => "manual",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum McpInstallMode {
+    Auto,
+    FileAdapter,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum McpExistingEntryPolicy {
+    Replace,
+    RejectDifferent,
+}
+
 impl McpServerDescriptor {
     pub fn as_json(&self) -> serde_json::Value {
         json!({
@@ -1272,6 +1292,23 @@ pub struct McpClientInstallOptions {
     pub scope: String,
     pub client_config_path: Option<PathBuf>,
     pub dry_run: bool,
+    pub install_method: McpInstallMode,
+    pub existing_entry_policy: McpExistingEntryPolicy,
+    pub legacy_server_names: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ResolvedMcpTarget {
+    pub client: String,
+    pub scope: String,
+    pub locality: McpTargetLocality,
+    pub path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone)]
+pub struct McpClientRemovalOptions {
+    pub target: ResolvedMcpTarget,
+    pub dry_run: bool,
 }
 
 pub fn install_mcp_server(
@@ -1291,53 +1328,53 @@ pub fn install_mcp_server(
             .iter()
             .copied()
             .map(|client| {
-                install_mcp_client_configuration(
-                    client,
-                    &scope,
-                    descriptor,
-                    options.client_config_path.clone(),
-                    options.dry_run,
-                )
-                .unwrap_or_else(|error| {
-                    json!({
-                        "action": "failed",
-                        "client": client,
-                        "scope": install_scope(client, &scope),
-                        "server_name": &descriptor.name,
-                        "method": serde_json::Value::Null,
-                        "path": serde_json::Value::Null,
-                        "command": serde_json::Value::Null,
-                        "descriptor": descriptor.as_json(),
-                        "entry": {},
-                        "error": error,
+                install_mcp_client_configuration(client, &scope, descriptor, options)
+                    .unwrap_or_else(|error| {
+                        json!({
+                            "action": "failed",
+                            "client": client,
+                            "scope": install_scope(client, &scope),
+                            "server_name": &descriptor.name,
+                            "method": serde_json::Value::Null,
+                            "path": serde_json::Value::Null,
+                            "command": serde_json::Value::Null,
+                            "descriptor": descriptor.as_json(),
+                            "entry": {},
+                            "target_locality": serde_json::Value::Null,
+                            "legacy_cleanup": {"action": "not_run"},
+                            "error": error,
+                        })
                     })
-                })
             })
             .collect::<Vec<_>>();
         return Ok(json!({ "results": results }));
     }
-    install_mcp_client_configuration(
-        &client,
-        &scope,
-        descriptor,
-        options.client_config_path.clone(),
-        options.dry_run,
-    )
+    install_mcp_client_configuration(&client, &scope, descriptor, options)
 }
 
 fn install_mcp_client_configuration(
     client: &str,
     scope: &str,
     descriptor: &McpServerDescriptor,
-    client_config_path: Option<PathBuf>,
-    dry_run: bool,
+    options: &McpClientInstallOptions,
 ) -> Result<serde_json::Value, String> {
-    if client == "copilot-studio" || client == "microsoft-copilot" {
+    let target = resolve_mcp_target(
+        client,
+        scope,
+        descriptor,
+        options.client_config_path.clone(),
+    )?;
+    let native_command = native_client_command(client, descriptor, &target.scope);
+    let native_available = native_command
+        .as_ref()
+        .and_then(|command| command.first())
+        .is_some_and(|executable| executable_in_path(executable));
+    if target.locality == McpTargetLocality::Manual {
         let metadata = copilot_studio_metadata(descriptor);
         return Ok(json!({
-            "action": if dry_run { "dry_run" } else { "reported" },
+            "action": if options.dry_run { "dry_run" } else { "reported" },
             "client": client,
-            "scope": scope,
+            "scope": target.scope,
             "server_name": descriptor.name,
             "method": "manual_metadata",
             "path": serde_json::Value::Null,
@@ -1345,39 +1382,39 @@ fn install_mcp_client_configuration(
             "descriptor": descriptor.as_json(),
             "entry": metadata["stdio"].clone(),
             "payload": metadata,
+            "target_locality": target.locality.as_str(),
+            "legacy_cleanup": manual_legacy_cleanup_payload(client, &options.legacy_server_names),
         }));
     }
 
-    let native_command = native_client_command(client, descriptor, scope);
-    let native_available = native_command
-        .as_ref()
-        .and_then(|command| command.first())
-        .is_some_and(|executable| executable_in_path(executable));
-    let normalized_scope = install_scope(client, scope);
+    let can_use_native = matches!(options.install_method, McpInstallMode::Auto)
+        && options.client_config_path.is_none()
+        && options.legacy_server_names.is_empty()
+        && target.locality == McpTargetLocality::Shared;
 
-    if dry_run && client_config_path.is_none() && native_available {
+    if can_use_native && options.dry_run && native_available {
         return Ok(json!({
             "action": "dry_run",
             "client": client,
-            "scope": normalized_scope,
+            "scope": target.scope,
             "server_name": descriptor.name,
             "method": "native_cli",
             "path": serde_json::Value::Null,
             "command": native_command,
             "descriptor": descriptor.as_json(),
             "entry": descriptor.stdio_entry(false, false),
+            "target_locality": target.locality.as_str(),
+            "legacy_cleanup": {"action": "unchanged", "requested": &options.legacy_server_names},
         }));
     }
-    if !dry_run && client_config_path.is_none() && native_available {
+    if can_use_native && !options.dry_run && native_available {
         let Some(command) = native_command.clone() else {
             return file_adapter_result(
-                client,
-                &normalized_scope,
+                &target,
                 descriptor,
-                None,
-                None,
-                dry_run,
-                client_config_path,
+                options.dry_run,
+                options.existing_entry_policy,
+                &options.legacy_server_names,
             );
         };
         let completed = Command::new(&command[0])
@@ -1388,25 +1425,28 @@ fn install_mcp_client_configuration(
             return Ok(json!({
                 "action": "updated",
                 "client": client,
-                "scope": normalized_scope,
+                "scope": target.scope,
                 "server_name": descriptor.name,
                 "method": "native_cli",
                 "path": serde_json::Value::Null,
                 "command": command,
                 "descriptor": descriptor.as_json(),
                 "entry": descriptor.stdio_entry(false, false),
+                "target_locality": target.locality.as_str(),
+                "legacy_cleanup": {"action": "unchanged", "requested": &options.legacy_server_names},
             }));
         }
         let error = subprocess_error(&completed);
-        return file_adapter_result(
-            client,
-            &normalized_scope,
+        let mut payload = file_adapter_result(
+            &target,
             descriptor,
-            Some(command),
-            Some(error),
-            dry_run,
-            client_config_path,
-        );
+            options.dry_run,
+            options.existing_entry_policy,
+            &options.legacy_server_names,
+        )?;
+        payload["native_command"] = json!(command);
+        payload["native_error"] = json!(error);
+        return Ok(payload);
     }
 
     let native_error = native_command.as_ref().and_then(|command| {
@@ -1418,51 +1458,13 @@ fn install_mcp_client_configuration(
             }
         })
     });
-    file_adapter_result(
-        client,
-        &normalized_scope,
+    let mut payload = file_adapter_result(
+        &target,
         descriptor,
-        native_command,
-        native_error,
-        dry_run,
-        client_config_path,
-    )
-}
-
-fn file_adapter_result(
-    client: &str,
-    scope: &str,
-    descriptor: &McpServerDescriptor,
-    native_command: Option<Vec<String>>,
-    native_error: Option<String>,
-    dry_run: bool,
-    client_config_path: Option<PathBuf>,
-) -> Result<serde_json::Value, String> {
-    let path =
-        client_config_path.unwrap_or_else(|| default_client_config_path(client, scope, descriptor));
-    let existing = fs::read_to_string(&path).ok();
-    let rendered = render_client_config(client, scope, existing.as_deref(), descriptor)?;
-    let action = if dry_run {
-        "dry_run".to_string()
-    } else {
-        rendered.action.clone()
-    };
-    if !dry_run {
-        write_text_atomic(&path, &rendered.text)?;
-    }
-    let mut payload = json!({
-        "action": action,
-        "client": client,
-        "scope": scope,
-        "server_name": descriptor.name,
-        "method": "file_adapter",
-        "path": path.to_string_lossy(),
-        "command": serde_json::Value::Null,
-        "descriptor": descriptor.as_json(),
-        "entry": rendered.entry,
-        "patch": rendered.patch,
-        "payload": rendered.payload,
-    });
+        options.dry_run,
+        options.existing_entry_policy,
+        &options.legacy_server_names,
+    )?;
     if let Some(command) = native_command {
         payload["native_command"] = json!(command);
     }
@@ -1472,34 +1474,311 @@ fn file_adapter_result(
     Ok(payload)
 }
 
-fn default_client_config_path(
+fn file_adapter_result(
+    target: &ResolvedMcpTarget,
+    descriptor: &McpServerDescriptor,
+    dry_run: bool,
+    existing_entry_policy: McpExistingEntryPolicy,
+    legacy_server_names: &[String],
+) -> Result<serde_json::Value, String> {
+    let path = target.path.clone().ok_or_else(|| {
+        format!(
+            "no file-backed MCP config target is available for {}",
+            target.client
+        )
+    })?;
+    let existing = read_optional_text(&path)?;
+    let adapter = adapter_id(&target.client, &target.scope);
+    let rendered = render_client_config(
+        adapter,
+        existing.as_deref(),
+        descriptor,
+        existing_entry_policy,
+        legacy_server_names,
+    )?;
+    let action = if dry_run {
+        "dry_run".to_string()
+    } else {
+        rendered.action.clone()
+    };
+    if !dry_run && rendered.action != "unchanged" {
+        write_text_atomic(&path, &rendered.text)?;
+    }
+    let payload = json!({
+        "action": action,
+        "client": target.client,
+        "scope": target.scope,
+        "server_name": descriptor.name,
+        "method": "file_adapter",
+        "path": path.to_string_lossy(),
+        "command": serde_json::Value::Null,
+        "descriptor": descriptor.as_json(),
+        "entry": rendered.entry,
+        "patch": rendered.patch,
+        "payload": rendered.payload,
+        "target_locality": target.locality.as_str(),
+        "legacy_cleanup": rendered.legacy_cleanup,
+    });
+    Ok(payload)
+}
+
+pub fn resolve_mcp_target(
     client: &str,
     scope: &str,
     descriptor: &McpServerDescriptor,
-) -> PathBuf {
-    let home = home_dir();
-    match adapter_id(client, scope) {
-        "codex" => env::var_os("CODEX_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| home.join(".codex"))
-            .join("config.toml"),
-        "claude" => {
-            let mac_path =
-                home.join("Library/Application Support/Claude/claude_desktop_config.json");
-            if mac_path.parent().is_some_and(Path::exists) {
-                mac_path
+    client_config_path: Option<PathBuf>,
+) -> Result<ResolvedMcpTarget, String> {
+    let client = client.trim().to_ascii_lowercase();
+    if client == "all" || !supported_mcp_clients().contains(&client.as_str()) {
+        return Err(format!("unsupported MCP client target: {client}"));
+    }
+    let requested_scope = scope.trim().to_ascii_lowercase();
+    if !matches!(requested_scope.as_str(), "local" | "user" | "project") {
+        return Err("MCP target scope must be local, user, or project".to_string());
+    }
+    let scope = install_scope(&client, &requested_scope);
+    let adapter = adapter_id(&client, &scope).to_string();
+    let locality = resolve_target_locality(
+        &adapter,
+        &scope,
+        client_config_path.as_deref(),
+        &descriptor.repo_root,
+    )?;
+    let path = match locality {
+        McpTargetLocality::Manual => None,
+        _ => Some(
+            client_config_path
+                .map(|path| absolutize_path(&path))
+                .unwrap_or_else(|| {
+                    default_client_config_path(&adapter, &scope, &descriptor.repo_root)
+                }),
+        ),
+    };
+    Ok(ResolvedMcpTarget {
+        client,
+        scope,
+        locality,
+        path,
+    })
+}
+
+pub fn remove_mcp_server(
+    server_name: &str,
+    options: &McpClientRemovalOptions,
+) -> Result<serde_json::Value, String> {
+    let target = &options.target;
+    if target.locality == McpTargetLocality::Manual {
+        return Ok(json!({
+            "action": "skipped",
+            "reason": "manual_metadata",
+            "client": target.client,
+            "scope": target.scope,
+            "server_name": server_name,
+            "path": serde_json::Value::Null,
+            "target_locality": target.locality.as_str(),
+            "payload": manual_legacy_cleanup_payload(&target.client, &[server_name.to_string()]),
+        }));
+    }
+    let path = target.path.clone().ok_or_else(|| {
+        format!(
+            "no file-backed MCP config target is available for {}",
+            target.client
+        )
+    })?;
+    let existing = read_optional_text(&path)?;
+    let removed = remove_client_config(
+        adapter_id(&target.client, &target.scope),
+        existing.as_deref(),
+        server_name,
+    )?;
+    if removed.action == "removed" && !options.dry_run {
+        write_text_atomic(&path, &removed.text)?;
+    }
+    let action = if removed.action == "removed" && options.dry_run {
+        "dry_run".to_string()
+    } else {
+        removed.action.clone()
+    };
+    Ok(json!({
+        "action": action,
+        "client": target.client,
+        "scope": target.scope,
+        "server_name": server_name,
+        "path": path.to_string_lossy(),
+        "target_locality": target.locality.as_str(),
+        "previous": removed.previous,
+        "payload": removed.payload,
+    }))
+}
+
+fn resolve_target_locality(
+    adapter: &str,
+    scope: &str,
+    explicit_path: Option<&Path>,
+    repo_root: &Path,
+) -> Result<McpTargetLocality, String> {
+    if manual_metadata_client(adapter) {
+        return Ok(McpTargetLocality::Manual);
+    }
+    if let Some(path) = explicit_path {
+        let repo_root = repo_root.canonicalize().map_err(|error| {
+            format!(
+                "failed to resolve repository root {}: {error}",
+                repo_root.display()
+            )
+        })?;
+        let absolute = normalize_existing_or_absolute_path(&absolutize_path(path));
+        return Ok(if absolute.starts_with(&repo_root) {
+            McpTargetLocality::RepositoryLocal
+        } else {
+            McpTargetLocality::Shared
+        });
+    }
+    Ok(match adapter {
+        "codex" => {
+            if scope == "user" {
+                McpTargetLocality::Shared
             } else {
-                home.join(".config/claude/claude_desktop_config.json")
+                McpTargetLocality::RepositoryLocal
             }
         }
-        "claude-project" => descriptor.repo_root.join(".mcp.json"),
+        "claude-project" | "github-copilot" => McpTargetLocality::RepositoryLocal,
+        "generic" => {
+            if scope == "project" {
+                McpTargetLocality::RepositoryLocal
+            } else {
+                McpTargetLocality::Shared
+            }
+        }
+        "claude" => {
+            if scope == "project" {
+                McpTargetLocality::RepositoryLocal
+            } else {
+                McpTargetLocality::Shared
+            }
+        }
+        "lmstudio" | "hermes" | "openclaw" => McpTargetLocality::Shared,
+        _ => McpTargetLocality::Shared,
+    })
+}
+
+fn manual_metadata_client(client: &str) -> bool {
+    matches!(client, "copilot-studio" | "microsoft-copilot")
+}
+
+fn manual_legacy_cleanup_payload(
+    client: &str,
+    legacy_server_names: &[String],
+) -> serde_json::Value {
+    let requested = legacy_server_names
+        .iter()
+        .filter(|name| !name.trim().is_empty())
+        .cloned()
+        .collect::<Vec<_>>();
+    json!({
+        "action": if requested.is_empty() { "unchanged" } else { "manual_required" },
+        "requested": requested,
+        "instructions": if requested.is_empty() {
+            Vec::<String>::new()
+        } else {
+            vec![format!(
+                "Remove legacy MCP server entries {:?} from the manual {} configuration.",
+                requested, client
+            )]
+        },
+    })
+}
+
+fn absolutize_path(path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join(path)
+    }
+}
+
+fn normalize_existing_or_absolute_path(path: &Path) -> PathBuf {
+    if let Ok(canonical) = path.canonicalize() {
+        return canonical;
+    }
+    let absolute = absolutize_path(path);
+    let mut candidate = absolute.as_path();
+    while let Some(parent) = candidate.parent() {
+        if let Ok(canonical_parent) = parent.canonicalize() {
+            if let Ok(suffix) = absolute.strip_prefix(parent) {
+                return normalize_path_components(&canonical_parent.join(suffix));
+            }
+            break;
+        }
+        candidate = parent;
+    }
+    normalize_path_components(&absolute)
+}
+
+fn normalize_path_components(path: &Path) -> PathBuf {
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if matches!(
+                    normalized.components().next_back(),
+                    Some(Component::Normal(_))
+                ) {
+                    normalized.pop();
+                }
+            }
+            Component::Prefix(_) | Component::RootDir | Component::Normal(_) => {
+                normalized.push(component.as_os_str());
+            }
+        }
+    }
+    normalized
+}
+
+fn default_client_config_path(adapter: &str, scope: &str, repo_root: &Path) -> PathBuf {
+    let home = home_dir();
+    match adapter {
+        "codex" => {
+            if scope == "user" {
+                env::var_os("CODEX_HOME")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| home.join(".codex"))
+                    .join("config.toml")
+            } else {
+                repo_root.join(".codex/config.toml")
+            }
+        }
+        "claude" => {
+            if scope == "project" {
+                repo_root.join(".mcp.json")
+            } else {
+                let mac_path =
+                    home.join("Library/Application Support/Claude/claude_desktop_config.json");
+                if mac_path.parent().is_some_and(Path::exists) {
+                    mac_path
+                } else {
+                    home.join(".config/claude/claude_desktop_config.json")
+                }
+            }
+        }
+        "claude-project" => repo_root.join(".mcp.json"),
         "lmstudio" => home.join(".lmstudio/mcp.json"),
-        "github-copilot" => descriptor.repo_root.join(".vscode/mcp.json"),
+        "github-copilot" => repo_root.join(".vscode/mcp.json"),
         "hermes" => home.join(".hermes/config.yaml"),
         "openclaw" => env::var_os("OPENCLAW_HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join(".openclaw"))
             .join("mcp.json5"),
+        "generic" => {
+            if scope == "project" {
+                repo_root.join(".mcp.json")
+            } else {
+                home.join(".config/mcp/mcp.json")
+            }
+        }
         _ => home.join(".config/mcp/mcp.json"),
     }
 }
@@ -1588,6 +1867,7 @@ struct RenderedNativeConfig {
     entry: serde_json::Value,
     patch: serde_json::Value,
     payload: serde_json::Value,
+    legacy_cleanup: serde_json::Value,
 }
 
 struct RemovedNativeConfig {
@@ -1597,42 +1877,105 @@ struct RemovedNativeConfig {
     payload: serde_json::Value,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ManagedStdioEntry {
+    command: String,
+    args: Vec<String>,
+}
+
+fn descriptor_signature(descriptor: &McpServerDescriptor) -> ManagedStdioEntry {
+    ManagedStdioEntry {
+        command: descriptor.command.clone(),
+        args: descriptor.args.clone(),
+    }
+}
+
 fn render_client_config(
-    client: &str,
-    scope: &str,
+    adapter: &str,
     existing: Option<&str>,
     descriptor: &McpServerDescriptor,
+    existing_entry_policy: McpExistingEntryPolicy,
+    legacy_server_names: &[String],
 ) -> Result<RenderedNativeConfig, String> {
-    match adapter_id(client, scope) {
-        "codex" => render_codex_config(existing, descriptor),
-        "hermes" => render_hermes_config(existing, descriptor),
+    let mut rendered = match adapter {
+        "codex" => render_codex_config(existing, descriptor, existing_entry_policy),
+        "hermes" => render_hermes_config(existing, descriptor, existing_entry_policy),
         "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
-            render_json_config(adapter_id(client, scope), existing, descriptor)
+            render_json_config(adapter, existing, descriptor, existing_entry_policy)
+        }
+        other => Err(format!("Unsupported MCP client adapter: {other}")),
+    }?;
+    rendered.legacy_cleanup = apply_legacy_cleanup(
+        adapter,
+        rendered.text.as_str(),
+        descriptor.name.as_str(),
+        legacy_server_names,
+    )?;
+    if let Some(cleaned_text) = rendered
+        .legacy_cleanup
+        .get("text")
+        .and_then(serde_json::Value::as_str)
+    {
+        rendered.text = cleaned_text.to_string();
+    }
+    if rendered.action == "unchanged"
+        && rendered
+            .legacy_cleanup
+            .get("action")
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|value| value != "unchanged")
+    {
+        rendered.action = "updated".to_string();
+    }
+    Ok(rendered)
+}
+
+fn remove_client_config(
+    adapter: &str,
+    existing: Option<&str>,
+    server_name: &str,
+) -> Result<RemovedNativeConfig, String> {
+    match adapter {
+        "codex" => remove_codex_config(existing, server_name),
+        "hermes" => remove_hermes_config(existing, server_name),
+        "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
+            remove_json_config(adapter, existing, server_name)
         }
         other => Err(format!("Unsupported MCP client adapter: {other}")),
     }
 }
 
-fn remove_client_config(
-    client: &str,
-    scope: &str,
-    existing: Option<&str>,
+fn apply_legacy_cleanup(
+    adapter: &str,
+    text: &str,
     server_name: &str,
-) -> Result<RemovedNativeConfig, String> {
-    match adapter_id(client, scope) {
-        "codex" => remove_codex_config(existing, server_name),
-        "hermes" => remove_hermes_config(existing, server_name),
-        "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
-            remove_json_config(adapter_id(client, scope), existing, server_name)
+    legacy_server_names: &[String],
+) -> Result<serde_json::Value, String> {
+    let mut current = text.to_string();
+    let mut removed = Vec::new();
+    for legacy_name in legacy_server_names {
+        if legacy_name == server_name {
+            continue;
         }
-        other => Err(format!("Unsupported MCP client adapter: {other}")),
+        let removed_config = remove_client_config(adapter, Some(&current), legacy_name)?;
+        if removed_config.action == "removed" {
+            removed.push(legacy_name.clone());
+            current = removed_config.text;
+        }
     }
+    Ok(json!({
+        "action": if removed.is_empty() { "unchanged" } else { "removed" },
+        "requested": legacy_server_names,
+        "removed": removed,
+        "text": current,
+    }))
 }
 
 fn render_json_config(
     adapter: &str,
     existing: Option<&str>,
     descriptor: &McpServerDescriptor,
+    existing_entry_policy: McpExistingEntryPolicy,
 ) -> Result<RenderedNativeConfig, String> {
     let mut payload = existing
         .filter(|text| !text.trim().is_empty())
@@ -1651,8 +1994,35 @@ fn render_json_config(
     let include_type = !matches!(adapter, "claude" | "generic");
     let entry = descriptor.stdio_entry(include_type, false);
     let previous = json_container_mut(&mut payload, &root_path)?
-        .insert(descriptor.name.clone(), entry.clone());
-    let action = action_for_json(previous.as_ref(), &entry, existing.is_some());
+        .get(&descriptor.name)
+        .cloned();
+    let matching_managed_entry = previous
+        .as_ref()
+        .and_then(|value| json_stdio_matches(value, descriptor).ok())
+        .unwrap_or(false);
+    if matches!(
+        existing_entry_policy,
+        McpExistingEntryPolicy::RejectDifferent
+    ) && previous.is_some()
+        && !matching_managed_entry
+    {
+        if let Some(previous) = previous.as_ref() {
+            json_stdio_matches(previous, descriptor)?;
+        }
+        return Err(format!(
+            "refusing to overwrite existing MCP server {} with a different command or args",
+            descriptor.name
+        ));
+    }
+    if !matching_managed_entry {
+        json_container_mut(&mut payload, &root_path)?
+            .insert(descriptor.name.clone(), entry.clone());
+    }
+    let action = if matching_managed_entry {
+        "unchanged".to_string()
+    } else {
+        action_for_json(previous.as_ref(), &entry, existing.is_some())
+    };
     let text = serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())? + "\n";
     let action = if existing == Some(text.as_str()) {
         "unchanged".to_string()
@@ -1665,6 +2035,7 @@ fn render_json_config(
         entry,
         patch: payload.clone(),
         payload,
+        legacy_cleanup: json!({"action": "unchanged", "requested": []}),
     })
 }
 
@@ -1714,9 +2085,44 @@ fn remove_json_config(
 fn render_codex_config(
     existing: Option<&str>,
     descriptor: &McpServerDescriptor,
+    existing_entry_policy: McpExistingEntryPolicy,
 ) -> Result<RenderedNativeConfig, String> {
     let entry = descriptor.stdio_entry(false, true);
     let patch = codex_toml_block(descriptor);
+    if let Some(previous) = find_toml_block(existing.unwrap_or_default(), &descriptor.name) {
+        match toml_stdio_matches(&previous, descriptor) {
+            Ok(true) => {
+                return Ok(RenderedNativeConfig {
+                    text: existing.unwrap_or_default().to_string(),
+                    action: "unchanged".to_string(),
+                    entry,
+                    patch: json!(previous),
+                    payload: json!(existing.unwrap_or_default()),
+                    legacy_cleanup: json!({"action": "unchanged", "requested": []}),
+                });
+            }
+            Ok(false)
+                if matches!(
+                    existing_entry_policy,
+                    McpExistingEntryPolicy::RejectDifferent
+                ) =>
+            {
+                return Err(format!(
+                    "refusing to overwrite existing MCP server {} with a different command or args",
+                    descriptor.name
+                ));
+            }
+            Err(error)
+                if matches!(
+                    existing_entry_policy,
+                    McpExistingEntryPolicy::RejectDifferent
+                ) =>
+            {
+                return Err(error);
+            }
+            Ok(false) | Err(_) => {}
+        }
+    }
     let (text, previous) =
         upsert_toml_block(existing.unwrap_or_default(), &descriptor.name, &patch);
     let action = if existing == Some(text.as_str()) {
@@ -1734,6 +2140,7 @@ fn render_codex_config(
         entry,
         patch: json!(patch),
         payload: json!(patch),
+        legacy_cleanup: json!({"action": "unchanged", "requested": []}),
     })
 }
 
@@ -1767,10 +2174,42 @@ fn remove_codex_config(
 fn render_hermes_config(
     existing: Option<&str>,
     descriptor: &McpServerDescriptor,
+    existing_entry_policy: McpExistingEntryPolicy,
 ) -> Result<RenderedNativeConfig, String> {
     let entry = descriptor.stdio_entry(true, false);
-    let patch = hermes_yaml_block(descriptor);
-    let (text, previous) = upsert_marked_block(existing.unwrap_or_default(), &patch);
+    let (mut managed, previous) = parse_hermes_managed_entries(existing.unwrap_or_default())?;
+    let matching_managed_entry = managed
+        .get(&descriptor.name)
+        .is_some_and(|value| value == &descriptor_signature(descriptor));
+    if matches!(
+        existing_entry_policy,
+        McpExistingEntryPolicy::RejectDifferent
+    ) {
+        if let Some(previous) = managed.get(&descriptor.name) {
+            if previous != &descriptor_signature(descriptor) {
+                return Err(format!(
+                    "refusing to overwrite existing MCP server {} with a different command or args",
+                    descriptor.name
+                ));
+            }
+        }
+    }
+    let already_uses_multi_server_block = previous
+        .as_deref()
+        .is_some_and(|block| block.contains("# codebaseGraph MCP servers start"));
+    if matching_managed_entry && already_uses_multi_server_block {
+        return Ok(RenderedNativeConfig {
+            text: existing.unwrap_or_default().to_string(),
+            action: "unchanged".to_string(),
+            entry,
+            patch: json!(previous.unwrap_or_default()),
+            payload: json!(existing.unwrap_or_default()),
+            legacy_cleanup: json!({"action": "unchanged", "requested": []}),
+        });
+    }
+    managed.insert(descriptor.name.clone(), descriptor_signature(descriptor));
+    let patch = hermes_yaml_block_from_entries(&managed);
+    let (text, _) = upsert_marked_block(existing.unwrap_or_default(), &patch);
     let action = if existing == Some(text.as_str()) {
         "unchanged".to_string()
     } else if previous.is_none() {
@@ -1786,6 +2225,7 @@ fn render_hermes_config(
         entry,
         patch: json!(patch),
         payload: json!(patch),
+        legacy_cleanup: json!({"action": "unchanged", "requested": []}),
     })
 }
 
@@ -1801,25 +2241,228 @@ fn remove_hermes_config(
             payload: json!(""),
         });
     };
-    let (text, previous) = remove_marked_block(existing);
-    let previous = previous.filter(|block| block.contains(&format!("  {server_name}:")));
+    let (mut managed, _) = parse_hermes_managed_entries(existing)?;
+    let previous = managed.remove(server_name);
     let action = if previous.is_some() {
         "removed".to_string()
     } else {
         "unchanged".to_string()
     };
-    Ok(RemovedNativeConfig {
-        text: if previous.is_some() {
-            text
+    let patch = if managed.is_empty() {
+        String::new()
+    } else {
+        hermes_yaml_block_from_entries(&managed)
+    };
+    let text = if previous.is_some() {
+        if patch.is_empty() {
+            remove_marked_block(existing).0
         } else {
-            existing.to_string()
-        },
+            upsert_marked_block(existing, &patch).0
+        }
+    } else {
+        existing.to_string()
+    };
+    Ok(RemovedNativeConfig {
+        text,
         action,
         previous: previous
-            .map(serde_json::Value::String)
+            .map(|entry| json!({"command": entry.command, "args": entry.args}))
             .unwrap_or(serde_json::Value::Null),
         payload: json!(existing),
     })
+}
+
+fn json_stdio_matches(
+    previous: &serde_json::Value,
+    descriptor: &McpServerDescriptor,
+) -> Result<bool, String> {
+    Ok(parse_json_stdio_entry(previous)? == descriptor_signature(descriptor))
+}
+
+fn parse_json_stdio_entry(value: &serde_json::Value) -> Result<ManagedStdioEntry, String> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| "existing MCP entry must be an object".to_string())?;
+    let command = object
+        .get("command")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| "existing MCP entry must define a string command".to_string())?;
+    let args = object
+        .get("args")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| "existing MCP entry must define a string args array".to_string())?
+        .iter()
+        .map(|value| {
+            value
+                .as_str()
+                .map(str::to_string)
+                .ok_or_else(|| "existing MCP entry args must be strings".to_string())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(ManagedStdioEntry {
+        command: command.to_string(),
+        args,
+    })
+}
+
+fn find_toml_block(existing: &str, server_name: &str) -> Option<String> {
+    let lines = existing.lines().collect::<Vec<_>>();
+    let header = format!("[mcp_servers.{server_name}]");
+    let env_header = format!("[mcp_servers.{server_name}.env]");
+    let start = lines
+        .iter()
+        .position(|line| line.trim() == header || line.trim() == env_header)?;
+    let end = lines[start + 1..]
+        .iter()
+        .position(|line| {
+            let trimmed = line.trim();
+            trimmed.starts_with('[')
+                && trimmed.ends_with(']')
+                && trimmed != header
+                && trimmed != env_header
+        })
+        .map(|index| start + 1 + index)
+        .unwrap_or(lines.len());
+    Some(lines[start..end].join("\n"))
+}
+
+fn toml_stdio_matches(block: &str, descriptor: &McpServerDescriptor) -> Result<bool, String> {
+    Ok(parse_toml_stdio_entry(block)? == descriptor_signature(descriptor))
+}
+
+fn parse_toml_stdio_entry(block: &str) -> Result<ManagedStdioEntry, String> {
+    let mut command = None;
+    let mut args = None;
+    for line in block.lines() {
+        let trimmed = line.trim();
+        if let Some(value) = trimmed.strip_prefix("command = ") {
+            command = Some(
+                serde_json::from_str::<String>(value)
+                    .map_err(|_| "existing MCP TOML command is not parseable".to_string())?,
+            );
+        } else if let Some(value) = trimmed.strip_prefix("args = ") {
+            args = Some(
+                serde_json::from_str::<Vec<String>>(value)
+                    .map_err(|_| "existing MCP TOML args are not parseable".to_string())?,
+            );
+        }
+    }
+    Ok(ManagedStdioEntry {
+        command: command.ok_or_else(|| "existing MCP TOML block is missing command".to_string())?,
+        args: args.ok_or_else(|| "existing MCP TOML block is missing args".to_string())?,
+    })
+}
+
+fn parse_hermes_managed_entries(
+    existing: &str,
+) -> Result<(BTreeMap<String, ManagedStdioEntry>, Option<String>), String> {
+    validate_hermes_managed_markers(existing)?;
+    let Some((start, end, start_marker, end_marker)) = find_marked_block(existing) else {
+        return Ok((BTreeMap::new(), None));
+    };
+    if end < start {
+        return Err("existing Hermes MCP block markers are out of order".to_string());
+    }
+    let after_end = end + end_marker.len();
+    let block = existing[start..after_end].trim_end().to_string();
+    let mut entries = BTreeMap::new();
+    let mut current_name: Option<String> = None;
+    let mut current_command: Option<String> = None;
+    let mut current_args: Vec<String> = Vec::new();
+    let mut current_args_seen = false;
+    let flush = |entries: &mut BTreeMap<String, ManagedStdioEntry>,
+                 current_name: &mut Option<String>,
+                 current_command: &mut Option<String>,
+                 current_args: &mut Vec<String>,
+                 current_args_seen: &mut bool|
+     -> Result<(), String> {
+        if let Some(name) = current_name.take() {
+            let command = current_command.take().ok_or_else(|| {
+                format!("existing Hermes MCP block is missing command for {name}")
+            })?;
+            if !*current_args_seen {
+                return Err(format!(
+                    "existing Hermes MCP block is missing args for {name}"
+                ));
+            }
+            entries.insert(
+                name,
+                ManagedStdioEntry {
+                    command,
+                    args: std::mem::take(current_args),
+                },
+            );
+            *current_args_seen = false;
+        }
+        Ok(())
+    };
+    for line in block.lines() {
+        if line.trim() == "mcp_servers:" {
+            continue;
+        }
+        if line.trim() == start_marker || line.trim() == end_marker {
+            continue;
+        }
+        if line.trim() == "args:" {
+            current_args_seen = true;
+            continue;
+        }
+        if line.starts_with("  ") && !line.starts_with("    ") {
+            if let Some(name) = line
+                .strip_prefix("  ")
+                .and_then(|value| value.strip_suffix(':'))
+            {
+                flush(
+                    &mut entries,
+                    &mut current_name,
+                    &mut current_command,
+                    &mut current_args,
+                    &mut current_args_seen,
+                )?;
+                current_name = Some(name.to_string());
+                continue;
+            }
+        }
+        if let Some(value) = line.trim().strip_prefix("command: ") {
+            current_command = Some(
+                serde_json::from_str::<String>(value)
+                    .map_err(|_| "existing Hermes MCP command is not parseable".to_string())?,
+            );
+            continue;
+        }
+        if let Some(value) = line.trim().strip_prefix("- ") {
+            current_args.push(
+                serde_json::from_str::<String>(value)
+                    .map_err(|_| "existing Hermes MCP arg is not parseable".to_string())?,
+            );
+        }
+    }
+    flush(
+        &mut entries,
+        &mut current_name,
+        &mut current_command,
+        &mut current_args,
+        &mut current_args_seen,
+    )?;
+    Ok((entries, Some(block)))
+}
+
+fn hermes_yaml_block_from_entries(entries: &BTreeMap<String, ManagedStdioEntry>) -> String {
+    let mut lines = vec![
+        "# codebaseGraph MCP servers start".to_string(),
+        "mcp_servers:".to_string(),
+    ];
+    for (name, entry) in entries {
+        lines.push(format!("  {name}:"));
+        lines.push("    type: stdio".to_string());
+        lines.push(format!("    command: {}", yaml_scalar(&entry.command)));
+        lines.push("    args:".to_string());
+        for arg in &entry.args {
+            lines.push(format!("      - {}", yaml_scalar(arg)));
+        }
+    }
+    lines.push("# codebaseGraph MCP servers end".to_string());
+    lines.join("\n") + "\n"
 }
 
 fn json_container_mut<'a>(
@@ -1962,35 +2605,60 @@ fn remove_toml_block(existing: &str, server_name: &str) -> (String, Option<Strin
     (text, Some(previous))
 }
 
-fn hermes_yaml_block(descriptor: &McpServerDescriptor) -> String {
-    let mut lines = vec![
-        "# codebaseGraph MCP server start".to_string(),
-        "mcp_servers:".to_string(),
-        format!("  {}:", descriptor.name),
-        "    type: stdio".to_string(),
-        format!("    command: {}", yaml_scalar(&descriptor.command)),
-        "    args:".to_string(),
-    ];
-    for arg in &descriptor.args {
-        lines.push(format!("      - {}", yaml_scalar(arg)));
-    }
-    lines.push("# codebaseGraph MCP server end".to_string());
-    lines.join("\n") + "\n"
-}
-
 fn yaml_scalar(value: &str) -> String {
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
 }
 
+fn validate_hermes_managed_markers(existing: &str) -> Result<(), String> {
+    let mut complete_blocks = 0;
+    for (start_marker, end_marker) in [
+        (
+            "# codebaseGraph MCP servers start",
+            "# codebaseGraph MCP servers end",
+        ),
+        (
+            "# codebaseGraph MCP server start",
+            "# codebaseGraph MCP server end",
+        ),
+    ] {
+        match (existing.find(start_marker), existing.find(end_marker)) {
+            (None, None) => {}
+            (Some(start), Some(end)) if end >= start => complete_blocks += 1,
+            _ => {
+                return Err(
+                    "existing Hermes MCP managed block has missing or out-of-order markers"
+                        .to_string(),
+                );
+            }
+        }
+    }
+    if complete_blocks > 1 {
+        return Err("existing Hermes config contains multiple managed MCP blocks".to_string());
+    }
+    Ok(())
+}
+
+fn find_marked_block(existing: &str) -> Option<(usize, usize, &'static str, &'static str)> {
+    [
+        (
+            "# codebaseGraph MCP servers start",
+            "# codebaseGraph MCP servers end",
+        ),
+        (
+            "# codebaseGraph MCP server start",
+            "# codebaseGraph MCP server end",
+        ),
+    ]
+    .into_iter()
+    .find_map(|(start_marker, end_marker)| {
+        let start = existing.find(start_marker)?;
+        let end = existing.find(end_marker)?;
+        Some((start, end, start_marker, end_marker))
+    })
+}
+
 fn upsert_marked_block(existing: &str, block: &str) -> (String, Option<String>) {
-    const START: &str = "# codebaseGraph MCP server start";
-    const END: &str = "# codebaseGraph MCP server end";
-    let Some(start) = existing.find(START) else {
-        let prefix = existing.trim_end();
-        let separator = if prefix.is_empty() { "" } else { "\n\n" };
-        return (format!("{prefix}{separator}{block}"), None);
-    };
-    let Some(end) = existing.find(END) else {
+    let Some((start, end, _start_marker, end_marker)) = find_marked_block(existing) else {
         let prefix = existing.trim_end();
         let separator = if prefix.is_empty() { "" } else { "\n\n" };
         return (format!("{prefix}{separator}{block}"), None);
@@ -2000,7 +2668,7 @@ fn upsert_marked_block(existing: &str, block: &str) -> (String, Option<String>) 
         let separator = if prefix.is_empty() { "" } else { "\n\n" };
         return (format!("{prefix}{separator}{block}"), None);
     }
-    let after_end = end + END.len();
+    let after_end = end + end_marker.len();
     let previous = existing[start..after_end].trim_end().to_string();
     let text = format!(
         "{}\n\n{}\n\n{}",
@@ -2015,18 +2683,13 @@ fn upsert_marked_block(existing: &str, block: &str) -> (String, Option<String>) 
 }
 
 fn remove_marked_block(existing: &str) -> (String, Option<String>) {
-    const START: &str = "# codebaseGraph MCP server start";
-    const END: &str = "# codebaseGraph MCP server end";
-    let Some(start) = existing.find(START) else {
-        return (existing.to_string(), None);
-    };
-    let Some(end) = existing.find(END) else {
+    let Some((start, end, _start_marker, end_marker)) = find_marked_block(existing) else {
         return (existing.to_string(), None);
     };
     if end < start {
         return (existing.to_string(), None);
     }
-    let after_end = end + END.len();
+    let after_end = end + end_marker.len();
     let previous = existing[start..after_end].trim_end().to_string();
     let before = existing[..start].trim_end();
     let after = existing[after_end..].trim_start();
@@ -2037,6 +2700,17 @@ fn remove_marked_block(existing: &str) -> (String, Option<String>) {
         (false, false) => format!("{before}\n\n{after}"),
     };
     (text, Some(previous))
+}
+
+fn read_optional_text(path: &Path) -> Result<Option<String>, String> {
+    match fs::read_to_string(path) {
+        Ok(text) => Ok(Some(text)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(format!(
+            "failed to read MCP client config {}: {error}",
+            path.display()
+        )),
+    }
 }
 
 fn write_text_atomic(path: &Path, text: &str) -> Result<(), String> {
@@ -2131,8 +2805,102 @@ fn install_safe_name(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{native_client_command, McpServerDescriptor};
-    use std::path::PathBuf;
+    use super::{
+        install_mcp_server, native_client_command, remove_mcp_server, resolve_mcp_target,
+        McpClientInstallOptions, McpClientRemovalOptions, McpExistingEntryPolicy, McpInstallMode,
+        McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
+    };
+    use serde_json::json;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::process;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    struct TestDir {
+        path: PathBuf,
+    }
+
+    impl TestDir {
+        fn new(label: &str) -> Self {
+            let unique = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "codebasegraph-lifecycle-{label}-{}-{unique}",
+                process::id()
+            ));
+            fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+
+        fn path(&self) -> &Path {
+            &self.path
+        }
+
+        fn join(&self, child: &str) -> PathBuf {
+            self.path.join(child)
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.path);
+        }
+    }
+
+    fn test_descriptor(repo_root: &Path, name: &str) -> McpServerDescriptor {
+        McpServerDescriptor {
+            name: name.to_string(),
+            command: "codebase-graph".to_string(),
+            args: vec![
+                "mcp".to_string(),
+                "start".to_string(),
+                "--config".to_string(),
+                repo_root
+                    .join(".codebaseGraph/config.json")
+                    .display()
+                    .to_string(),
+            ],
+            repo_root: repo_root.to_path_buf(),
+            timeout: 60,
+            setup_config_path: Some(repo_root.join(".codebaseGraph/config.json")),
+            tool_policy: Some("graph_query_read_only".to_string()),
+            manual_http_metadata: None,
+        }
+    }
+
+    fn install_options(
+        client: &str,
+        scope: &str,
+        client_config_path: PathBuf,
+    ) -> McpClientInstallOptions {
+        McpClientInstallOptions {
+            client: client.to_string(),
+            scope: scope.to_string(),
+            client_config_path: Some(client_config_path),
+            dry_run: false,
+            install_method: McpInstallMode::FileAdapter,
+            existing_entry_policy: McpExistingEntryPolicy::Replace,
+            legacy_server_names: Vec::new(),
+        }
+    }
+
+    fn hermes_block(name: &str, command: &str, args: &[&str]) -> String {
+        let mut lines = vec![
+            "# codebaseGraph MCP servers start".to_string(),
+            "mcp_servers:".to_string(),
+            format!("  {name}:"),
+            "    type: stdio".to_string(),
+            format!("    command: \"{command}\""),
+            "    args:".to_string(),
+        ];
+        for arg in args {
+            lines.push(format!("      - \"{arg}\""));
+        }
+        lines.push("# codebaseGraph MCP servers end".to_string());
+        lines.join("\n") + "\n"
+    }
 
     #[test]
     fn native_client_commands_preserve_every_server_argument() {
@@ -2160,5 +2928,457 @@ mod tests {
                 "/workspace/knowledge".to_string(),
             ])
         );
+    }
+
+    #[test]
+    fn resolve_mcp_target_uses_expected_default_locality_and_paths() {
+        let repo = TestDir::new("targets-default");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let home = std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("."));
+        let claude_user_path = {
+            let mac_path =
+                home.join("Library/Application Support/Claude/claude_desktop_config.json");
+            if mac_path.parent().is_some_and(Path::exists) {
+                mac_path
+            } else {
+                home.join(".config/claude/claude_desktop_config.json")
+            }
+        };
+        let openclaw_home = std::env::var_os("OPENCLAW_HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join(".openclaw"));
+        let codex_home = std::env::var_os("CODEX_HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join(".codex"));
+        let mut cases = vec![
+            (
+                "claude",
+                "project",
+                McpTargetLocality::RepositoryLocal,
+                Some(repo.join(".mcp.json")),
+            ),
+            (
+                "claude",
+                "user",
+                McpTargetLocality::Shared,
+                Some(claude_user_path.clone()),
+            ),
+            (
+                "claude-project",
+                "local",
+                McpTargetLocality::RepositoryLocal,
+                Some(repo.join(".mcp.json")),
+            ),
+            (
+                "codex",
+                "local",
+                McpTargetLocality::RepositoryLocal,
+                Some(repo.join(".codex/config.toml")),
+            ),
+            (
+                "codex",
+                "user",
+                McpTargetLocality::Shared,
+                Some(codex_home.join("config.toml")),
+            ),
+            (
+                "generic",
+                "project",
+                McpTargetLocality::RepositoryLocal,
+                Some(repo.join(".mcp.json")),
+            ),
+            (
+                "generic",
+                "user",
+                McpTargetLocality::Shared,
+                Some(home.join(".config/mcp/mcp.json")),
+            ),
+            (
+                "github-copilot",
+                "local",
+                McpTargetLocality::RepositoryLocal,
+                Some(repo.join(".vscode/mcp.json")),
+            ),
+            (
+                "hermes",
+                "user",
+                McpTargetLocality::Shared,
+                Some(home.join(".hermes/config.yaml")),
+            ),
+            (
+                "lmstudio",
+                "user",
+                McpTargetLocality::Shared,
+                Some(home.join(".lmstudio/mcp.json")),
+            ),
+            (
+                "openclaw",
+                "user",
+                McpTargetLocality::Shared,
+                Some(openclaw_home.join("mcp.json5")),
+            ),
+            ("copilot-studio", "user", McpTargetLocality::Manual, None),
+            ("microsoft-copilot", "user", McpTargetLocality::Manual, None),
+        ];
+        cases.extend([
+            (
+                "claude",
+                "local",
+                McpTargetLocality::Shared,
+                Some(claude_user_path.clone()),
+            ),
+            (
+                "codex",
+                "project",
+                McpTargetLocality::RepositoryLocal,
+                Some(repo.join(".codex/config.toml")),
+            ),
+            (
+                "generic",
+                "local",
+                McpTargetLocality::Shared,
+                Some(home.join(".config/mcp/mcp.json")),
+            ),
+        ]);
+        for scope in ["user", "project"] {
+            cases.push((
+                "claude-project",
+                scope,
+                McpTargetLocality::RepositoryLocal,
+                Some(repo.join(".mcp.json")),
+            ));
+            cases.push((
+                "github-copilot",
+                scope,
+                McpTargetLocality::RepositoryLocal,
+                Some(repo.join(".vscode/mcp.json")),
+            ));
+        }
+        for scope in ["local", "project"] {
+            cases.push((
+                "hermes",
+                scope,
+                McpTargetLocality::Shared,
+                Some(home.join(".hermes/config.yaml")),
+            ));
+            cases.push((
+                "lmstudio",
+                scope,
+                McpTargetLocality::Shared,
+                Some(home.join(".lmstudio/mcp.json")),
+            ));
+            cases.push((
+                "openclaw",
+                scope,
+                McpTargetLocality::Shared,
+                Some(openclaw_home.join("mcp.json5")),
+            ));
+            cases.push(("copilot-studio", scope, McpTargetLocality::Manual, None));
+            cases.push(("microsoft-copilot", scope, McpTargetLocality::Manual, None));
+        }
+
+        for (client, scope, expected_locality, expected_path) in cases {
+            let resolved = resolve_mcp_target(client, scope, &descriptor, None).unwrap();
+            assert_eq!(resolved.locality, expected_locality, "{client}:{scope}");
+            assert_eq!(resolved.path, expected_path, "{client}:{scope}");
+        }
+    }
+
+    #[test]
+    fn resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared() {
+        let repo = TestDir::new("targets-explicit");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let inside = repo.join("configs/inside.json");
+        let outside_root = TestDir::new("targets-explicit-outside");
+        let outside = outside_root.join("outside.json");
+        let escaping = repo.join("missing/../../escaped.json");
+
+        let inside_target =
+            resolve_mcp_target("generic", "user", &descriptor, Some(inside.clone())).unwrap();
+        let outside_target =
+            resolve_mcp_target("generic", "user", &descriptor, Some(outside.clone())).unwrap();
+        let escaping_target =
+            resolve_mcp_target("generic", "user", &descriptor, Some(escaping)).unwrap();
+
+        assert_eq!(inside_target.locality, McpTargetLocality::RepositoryLocal);
+        assert_eq!(inside_target.path, Some(inside));
+        assert_eq!(outside_target.locality, McpTargetLocality::Shared);
+        assert_eq!(outside_target.path, Some(outside));
+        assert_eq!(escaping_target.locality, McpTargetLocality::Shared);
+    }
+
+    #[test]
+    fn resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets() {
+        let repo = TestDir::new("targets-invalid");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+
+        assert!(resolve_mcp_target("all", "local", &descriptor, None).is_err());
+        assert!(resolve_mcp_target("unknown", "local", &descriptor, None).is_err());
+        assert!(resolve_mcp_target("codex", "workspace", &descriptor, None).is_err());
+    }
+
+    #[test]
+    fn json_reject_different_leaves_existing_file_byte_identical() {
+        let repo = TestDir::new("json-conflict");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let config_path = repo.join("generic.json");
+        let original = serde_json::to_string_pretty(&json!({
+            "mcpServers": {
+                "codebase_graph_repo": {
+                    "command": "other-binary",
+                    "args": ["serve"]
+                }
+            }
+        }))
+        .unwrap()
+            + "\n";
+        fs::write(&config_path, &original).unwrap();
+        let mut options = install_options("generic", "user", config_path.clone());
+        options.existing_entry_policy = McpExistingEntryPolicy::RejectDifferent;
+
+        let error = install_mcp_server(&descriptor, &options).unwrap_err();
+
+        assert!(error.contains("refusing to overwrite existing MCP server"));
+        assert_eq!(fs::read(&config_path).unwrap(), original.into_bytes());
+    }
+
+    #[test]
+    fn codex_toml_reject_different_leaves_existing_file_byte_identical() {
+        let repo = TestDir::new("codex-conflict");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let config_path = repo.join("config.toml");
+        let original = concat!(
+            "[mcp_servers.codebase_graph_repo]\n",
+            "command = \"other-binary\"\n",
+            "args = [\"serve\"]\n",
+            "startup_timeout_sec = 60\n",
+        );
+        fs::write(&config_path, original).unwrap();
+        let mut options = install_options("codex", "user", config_path.clone());
+        options.existing_entry_policy = McpExistingEntryPolicy::RejectDifferent;
+
+        let error = install_mcp_server(&descriptor, &options).unwrap_err();
+
+        assert!(error.contains("refusing to overwrite existing MCP server"));
+        assert_eq!(fs::read(&config_path).unwrap(), original.as_bytes());
+    }
+
+    #[test]
+    fn hermes_reject_different_leaves_existing_file_byte_identical() {
+        let repo = TestDir::new("hermes-conflict");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let config_path = repo.join("config.yaml");
+        let original = hermes_block("codebase_graph_repo", "other-binary", &["serve"]);
+        fs::write(&config_path, &original).unwrap();
+        let mut options = install_options("hermes", "user", config_path.clone());
+        options.existing_entry_policy = McpExistingEntryPolicy::RejectDifferent;
+
+        let error = install_mcp_server(&descriptor, &options).unwrap_err();
+
+        assert!(error.contains("refusing to overwrite existing MCP server"));
+        assert_eq!(fs::read(&config_path).unwrap(), original.into_bytes());
+    }
+
+    #[test]
+    fn matching_entries_remain_idempotent_across_json_codex_and_hermes_configs() {
+        let repo = TestDir::new("idempotent");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let json_path = repo.join("generic.json");
+        let codex_path = repo.join("config.toml");
+        let hermes_path = repo.join("config.yaml");
+
+        let json_text = serde_json::to_string_pretty(&json!({
+            "mcpServers": {
+                "codebase_graph_repo": descriptor.stdio_entry(true, false)
+            }
+        }))
+        .unwrap()
+            + "\n";
+        let codex_text = format!(
+            "[mcp_servers.codebase_graph_repo]\ncommand = \"{}\"\nargs = [\"{}\", \"{}\", \"{}\", \"{}\"]\nstartup_timeout_sec = 60\n",
+            descriptor.command,
+            descriptor.args[0],
+            descriptor.args[1],
+            descriptor.args[2],
+            descriptor.args[3],
+        );
+        let hermes_text = hermes_block(
+            "codebase_graph_repo",
+            &descriptor.command,
+            &[
+                descriptor.args[0].as_str(),
+                descriptor.args[1].as_str(),
+                descriptor.args[2].as_str(),
+                descriptor.args[3].as_str(),
+            ],
+        );
+        fs::write(&json_path, &json_text).unwrap();
+        fs::write(&codex_path, &codex_text).unwrap();
+        fs::write(&hermes_path, &hermes_text).unwrap();
+
+        let json_result = install_mcp_server(
+            &descriptor,
+            &install_options("generic", "user", json_path.clone()),
+        )
+        .unwrap();
+        let codex_result = install_mcp_server(
+            &descriptor,
+            &install_options("codex", "user", codex_path.clone()),
+        )
+        .unwrap();
+        let hermes_result = install_mcp_server(
+            &descriptor,
+            &install_options("hermes", "user", hermes_path.clone()),
+        )
+        .unwrap();
+
+        assert_eq!(json_result["action"], "unchanged");
+        assert_eq!(codex_result["action"], "unchanged");
+        assert_eq!(hermes_result["action"], "unchanged");
+        assert_eq!(fs::read(&json_path).unwrap(), json_text.into_bytes());
+        assert_eq!(fs::read(&codex_path).unwrap(), codex_text.into_bytes());
+        assert_eq!(fs::read(&hermes_path).unwrap(), hermes_text.into_bytes());
+    }
+
+    #[test]
+    fn install_removes_legacy_k_wiki_entry_in_the_same_file_update() {
+        let repo = TestDir::new("legacy-cleanup");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let config_path = repo.join("generic.json");
+        fs::write(
+            &config_path,
+            serde_json::to_string_pretty(&json!({
+                "mcpServers": {
+                    "k_wiki_repository": {
+                        "command": "k-wiki",
+                        "args": ["mcp", "/workspace/knowledge"]
+                    },
+                    "unrelated": {
+                        "command": "keep",
+                        "args": ["still-here"]
+                    }
+                }
+            }))
+            .unwrap()
+                + "\n",
+        )
+        .unwrap();
+        let mut options = install_options("generic", "user", config_path.clone());
+        options.legacy_server_names = vec!["k_wiki_repository".to_string()];
+
+        let payload = install_mcp_server(&descriptor, &options).unwrap();
+        let saved: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+
+        assert_eq!(payload["action"], "updated");
+        assert_eq!(payload["legacy_cleanup"]["action"], "removed");
+        assert_eq!(
+            payload["legacy_cleanup"]["removed"],
+            json!(["k_wiki_repository"])
+        );
+        assert!(saved["mcpServers"].get("k_wiki_repository").is_none());
+        assert_eq!(
+            saved["mcpServers"]["codebase_graph_repo"]["command"],
+            descriptor.command
+        );
+        assert_eq!(saved["mcpServers"]["unrelated"]["args"][0], "still-here");
+    }
+
+    #[test]
+    fn hermes_install_migrates_singular_marker_blocks_without_dropping_existing_entries() {
+        let repo = TestDir::new("hermes-migrate");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let config_path = repo.join("config.yaml");
+        let original = concat!(
+            "before\n\n",
+            "# codebaseGraph MCP server start\n",
+            "mcp_servers:\n",
+            "  k_wiki_repository:\n",
+            "    type: stdio\n",
+            "    command: \"k-wiki\"\n",
+            "    args:\n",
+            "      - \"mcp\"\n",
+            "      - \"/workspace/knowledge\"\n",
+            "# codebaseGraph MCP server end\n\n",
+            "after\n"
+        );
+        fs::write(&config_path, original).unwrap();
+
+        let payload = install_mcp_server(
+            &descriptor,
+            &install_options("hermes", "user", config_path.clone()),
+        )
+        .unwrap();
+        let updated = fs::read_to_string(&config_path).unwrap();
+
+        assert_eq!(payload["action"], "updated");
+        assert!(updated.contains("# codebaseGraph MCP servers start"));
+        assert!(updated.contains("# codebaseGraph MCP servers end"));
+        assert!(!updated.contains("# codebaseGraph MCP server start"));
+        assert!(!updated.contains("# codebaseGraph MCP server end"));
+        assert!(updated.contains("  k_wiki_repository:"));
+        assert!(updated.contains("  codebase_graph_repo:"));
+        assert!(updated.contains("before"));
+        assert!(updated.contains("after"));
+    }
+
+    #[test]
+    fn remove_mcp_server_dry_run_reports_previous_without_writing_and_write_removes_entry() {
+        let repo = TestDir::new("remove");
+        let config_path = repo.join("generic.json");
+        fs::write(
+            &config_path,
+            serde_json::to_string_pretty(&json!({
+                "mcpServers": {
+                    "codebase_graph_repo": {
+                        "command": "codebase-graph",
+                        "args": ["mcp", "start"]
+                    },
+                    "unrelated": {
+                        "command": "keep",
+                        "args": ["present"]
+                    }
+                }
+            }))
+            .unwrap()
+                + "\n",
+        )
+        .unwrap();
+        let target = ResolvedMcpTarget {
+            client: "generic".to_string(),
+            scope: "project".to_string(),
+            locality: McpTargetLocality::RepositoryLocal,
+            path: Some(config_path.clone()),
+        };
+        let before = fs::read(&config_path).unwrap();
+
+        let dry_run = remove_mcp_server(
+            "codebase_graph_repo",
+            &McpClientRemovalOptions {
+                target: target.clone(),
+                dry_run: true,
+            },
+        )
+        .unwrap();
+        let after_dry_run = fs::read(&config_path).unwrap();
+        let written = remove_mcp_server(
+            "codebase_graph_repo",
+            &McpClientRemovalOptions {
+                target,
+                dry_run: false,
+            },
+        )
+        .unwrap();
+        let saved: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+
+        assert_eq!(dry_run["action"], "dry_run");
+        assert_eq!(dry_run["previous"]["command"], "codebase-graph");
+        assert_eq!(before, after_dry_run);
+        assert_eq!(written["action"], "removed");
+        assert!(saved["mcpServers"].get("codebase_graph_repo").is_none());
+        assert_eq!(saved["mcpServers"]["unrelated"]["args"][0], "present");
     }
 }

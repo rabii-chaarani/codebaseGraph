@@ -1,6 +1,15 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+};
 
-use codebase_graph::api::{install_mcp_server, McpClientInstallOptions, McpServerDescriptor};
+use codebase_graph::api::{
+    install_mcp_server, remove_mcp_server, resolve_mcp_target, McpClientInstallOptions,
+    McpClientRemovalOptions, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
+    McpTargetLocality, ResolvedMcpTarget,
+};
+use serde_json::json;
+use sha2::{Digest, Sha256};
 
 use crate::{
     authoring::{
@@ -12,6 +21,7 @@ use crate::{
 
 const DEFAULT_BUNDLE_ID: &str = "knowledge";
 const DEFAULT_BUNDLE_PATH: &str = "knowledge";
+const DEFAULT_SERVER_NAME: &str = "k_wiki";
 const INSTRUCTION_START: &str = "<!-- k-wiki:start -->";
 const INSTRUCTION_END: &str = "<!-- k-wiki:end -->";
 
@@ -103,15 +113,22 @@ pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, Stri
 }
 
 fn install_instruction_blocks(repository_root: &Path) -> Result<(), String> {
+    install_instruction_blocks_with_servers(repository_root, &[])
+}
+
+fn install_instruction_blocks_with_servers(
+    repository_root: &Path,
+    server_names: &[String],
+) -> Result<(), String> {
     ["AGENTS.md", "CLAUDE.md"]
         .into_iter()
         .map(|file_name| repository_root.join(file_name))
-        .try_for_each(|path| upsert_instruction_block(&path))
+        .try_for_each(|path| upsert_instruction_block(&path, server_names))
 }
 
-fn upsert_instruction_block(path: &Path) -> Result<(), String> {
+fn upsert_instruction_block(path: &Path, server_names: &[String]) -> Result<(), String> {
     let existing = std::fs::read_to_string(path).unwrap_or_default();
-    let next = upsert_instruction_text(&existing, K_WIKI_WORKFLOW);
+    let next = upsert_instruction_text(&existing, &k_wiki_workflow(server_names));
     if next == existing {
         return Ok(());
     }
@@ -144,22 +161,28 @@ fn upsert_instruction_text(existing: &str, block: &str) -> String {
         + "\n"
 }
 
-const K_WIKI_WORKFLOW: &str = concat!(
-    "<!-- k-wiki:start -->\n",
-    "## k-wiki workflow\n",
-    "- Use the `k_wiki` MCP server for every wiki interaction; do not invoke the `k-wiki` CLI or edit generated state directly.\n",
-    "- Treat `knowledge/` as curated repository intent, not a substitute for current code. Start with `wiki_list_bundles`, then `wiki_search_concepts`; use `wiki_get_concept`, `wiki_list_directory`, `wiki_get_backlinks`, and `wiki_get_neighborhood` to understand related decisions.\n",
-    "- Use the wiki for architecture, terminology, invariants, ownership, and prior decisions. Verify changeable details with codebase-graph MCP tools. If code and wiki conflict, identify the conflict and use `wiki_populate_page` to record clarified intent.\n",
-    "- Create missing pages with `wiki_create_page`; update existing pages with `wiki_populate_page`, supplying title, type, tags, useful Markdown, and `expected_content_hash`. Record durable decisions, public contracts, runbooks, invariants, and non-obvious trade-offs—not transient implementation noise or copied source.\n",
-    "- After meaningful wiki edits, call `wiki_validate` with `profile: recommended` and `include_structured_content: true`, then `wiki_check_links`. Call `wiki_build` with the configured `bundle_root` and `.kwiki/site` output root; it is a write operation.\n",
-    "- `knowledge/` is source and `.kwiki/` is generated state. Never manually edit generated projections.\n",
-    "- Use `wiki_get_diagnostics` to inspect remaining issues and `wiki_get_recent_changes` to understand recent work. In handoffs, cite updated concept paths and summarize decisions, uncertainties, and validation results.\n",
-    "<!-- k-wiki:end -->\n",
-);
+fn k_wiki_workflow(server_names: &[String]) -> String {
+    let registration_line = if server_names.is_empty() {
+        "- Use the configured k-wiki MCP server for wiki interaction; do not invoke the `k-wiki` CLI or edit generated state directly.".to_string()
+    } else {
+        format!(
+            "- Use the configured k-wiki MCP server registration(s) for wiki interaction: {}; do not invoke the `k-wiki` CLI or edit generated state directly.",
+            server_names
+                .iter()
+                .map(|name| format!("`{name}`"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    };
+    format!(
+        "{INSTRUCTION_START}\n## k-wiki workflow\n{registration_line}\n- Treat `knowledge/` as curated repository intent, not a substitute for current code. Start with `wiki_list_bundles`, then `wiki_search_concepts`; use `wiki_get_concept`, `wiki_list_directory`, `wiki_get_backlinks`, and `wiki_get_neighborhood` to understand related decisions.\n- Use the wiki for architecture, terminology, invariants, ownership, and prior decisions. Verify changeable details with codebase-graph MCP tools. If code and wiki conflict, identify the conflict and use `wiki_populate_page` to record clarified intent.\n- Create missing pages with `wiki_create_page`; update existing pages with `wiki_populate_page`, supplying title, type, tags, useful Markdown, and `expected_content_hash`. Record durable decisions, public contracts, runbooks, invariants, and non-obvious trade-offs—not transient implementation noise or copied source.\n- After meaningful wiki edits, call `wiki_validate` with `profile: recommended` and `include_structured_content: true`, then `wiki_check_links`. Call `wiki_build` with the configured `bundle_root` and `.kwiki/site` output root; it is a write operation.\n- `knowledge/` is source and `.kwiki/` is generated state. Never manually edit generated projections.\n- Use `wiki_get_diagnostics` to inspect remaining issues and `wiki_get_recent_changes` to understand recent work. In handoffs, cite updated concept paths and summarize decisions, uncertainties, and validation results.\n{INSTRUCTION_END}\n"
+    )
+}
 
 pub fn install_mcp_client(request: McpInstallRequest) -> Result<serde_json::Value, String> {
     let repository_root = request
         .repo_root
+        .clone()
         .unwrap_or_else(|| PathBuf::from("."))
         .canonicalize()
         .map_err(|_| "the repository root could not be located".to_string())?;
@@ -183,25 +206,258 @@ pub fn install_mcp_client(request: McpInstallRequest) -> Result<serde_json::Valu
         );
     }
 
-    let descriptor = McpServerDescriptor {
-        name: request.name.unwrap_or_else(|| "k_wiki".to_string()),
+    let requested_client = request.client.trim().to_ascii_lowercase();
+    let clients = if requested_client == "all" {
+        codebase_graph::api::supported_mcp_clients()
+            .iter()
+            .copied()
+            .map(str::to_string)
+            .collect::<Vec<_>>()
+    } else {
+        vec![request.client.trim().to_string()]
+    };
+    let mut results = Vec::new();
+    let mut instruction_names = BTreeSet::new();
+    for client in clients {
+        match install_single_mcp_client(&repository_root, &bundle_root, &request, client.clone()) {
+            Ok(result) => {
+                if !request.dry_run {
+                    if let Some(name) = result
+                        .get("server_name")
+                        .and_then(serde_json::Value::as_str)
+                        .filter(|value| !value.trim().is_empty())
+                    {
+                        instruction_names.insert(name.to_string());
+                    }
+                }
+                results.push(result);
+            }
+            Err(error) if requested_client == "all" => {
+                results.push(json!({
+                    "action": "failed",
+                    "client": client,
+                    "scope": &request.scope,
+                    "server_name": &request.name,
+                    "method": "file_adapter",
+                    "path": serde_json::Value::Null,
+                    "target_locality": serde_json::Value::Null,
+                    "legacy_cleanup": {"action": "not_run"},
+                    "error": error,
+                }));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+
+    if !request.dry_run && !instruction_names.is_empty() {
+        install_instruction_blocks_with_servers(
+            &repository_root,
+            &instruction_names.into_iter().collect::<Vec<_>>(),
+        )?;
+    }
+
+    if requested_client == "all" {
+        Ok(json!({ "results": results }))
+    } else {
+        results
+            .into_iter()
+            .next()
+            .ok_or_else(|| "no MCP install result was produced".to_string())
+    }
+}
+
+fn install_single_mcp_client(
+    repository_root: &Path,
+    bundle_root: &Path,
+    request: &McpInstallRequest,
+    client: String,
+) -> Result<serde_json::Value, String> {
+    let normalized_scope = request.scope.trim().to_ascii_lowercase();
+    let probe_descriptor = build_descriptor(
+        DEFAULT_SERVER_NAME.to_string(),
+        bundle_root,
+        repository_root,
+    );
+    let resolved = resolve_mcp_target(
+        &client,
+        &normalized_scope,
+        &probe_descriptor,
+        request.client_config_path.clone(),
+    )?;
+    let server_name = resolve_server_name(request.name.as_deref(), &resolved, repository_root)?;
+    let descriptor = build_descriptor(server_name.clone(), bundle_root, repository_root);
+    let legacy_server_names = match resolved.locality {
+        McpTargetLocality::Shared | McpTargetLocality::Manual => {
+            vec![DEFAULT_SERVER_NAME.to_string()]
+        }
+        McpTargetLocality::RepositoryLocal => Vec::new(),
+    };
+    let mut payload = install_mcp_server(
+        &descriptor,
+        &McpClientInstallOptions {
+            client: client.clone(),
+            scope: normalized_scope.clone(),
+            client_config_path: request.client_config_path.clone(),
+            dry_run: request.dry_run,
+            install_method: McpInstallMode::FileAdapter,
+            existing_entry_policy: McpExistingEntryPolicy::RejectDifferent,
+            legacy_server_names,
+        },
+    )?;
+    if let Some(shared_cleanup) =
+        remove_shared_legacy_registration(&resolved, &descriptor, request.dry_run)?
+    {
+        let mut legacy_cleanup = payload
+            .get("legacy_cleanup")
+            .cloned()
+            .unwrap_or_else(|| json!({}));
+        legacy_cleanup["shared_target"] = shared_cleanup;
+        payload["legacy_cleanup"] = legacy_cleanup;
+    }
+    Ok(payload)
+}
+
+fn resolve_server_name(
+    requested_name: Option<&str>,
+    target: &ResolvedMcpTarget,
+    repository_root: &Path,
+) -> Result<String, String> {
+    if let Some(name) = requested_name
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        if matches!(
+            target.locality,
+            McpTargetLocality::Shared | McpTargetLocality::Manual
+        ) && name == DEFAULT_SERVER_NAME
+        {
+            return Err(format!(
+                "server name `{DEFAULT_SERVER_NAME}` is reserved for repository-local registrations"
+            ));
+        }
+        return Ok(name.to_string());
+    }
+    Ok(match target.locality {
+        McpTargetLocality::RepositoryLocal => DEFAULT_SERVER_NAME.to_string(),
+        McpTargetLocality::Shared | McpTargetLocality::Manual => {
+            format!(
+                "{DEFAULT_SERVER_NAME}_{}_{}",
+                sanitized_repo_name(repository_root),
+                repository_hash(repository_root)
+            )
+        }
+    })
+}
+
+fn build_descriptor(
+    name: String,
+    bundle_root: &Path,
+    repository_root: &Path,
+) -> McpServerDescriptor {
+    McpServerDescriptor {
+        name,
         command: std::env::var("K_WIKI_SERVER_COMMAND").unwrap_or_else(|_| "k-wiki".to_string()),
         args: vec!["mcp".to_string(), bundle_root.to_string_lossy().to_string()],
-        repo_root: repository_root,
+        repo_root: repository_root.to_path_buf(),
         timeout: 60,
         setup_config_path: None,
         tool_policy: Some("knowledge_wiki".to_string()),
         manual_http_metadata: None,
+    }
+}
+
+fn remove_shared_legacy_registration(
+    target: &ResolvedMcpTarget,
+    descriptor: &McpServerDescriptor,
+    dry_run: bool,
+) -> Result<Option<serde_json::Value>, String> {
+    if target.locality != McpTargetLocality::RepositoryLocal {
+        return Ok(None);
+    }
+    let Some(shared_target) = shared_cleanup_target(target, descriptor)? else {
+        return Ok(None);
     };
-    install_mcp_server(
-        &descriptor,
-        &McpClientInstallOptions {
-            client: request.client,
-            scope: request.scope,
-            client_config_path: request.client_config_path,
-            dry_run: request.dry_run,
+    if shared_target.path == target.path {
+        return Ok(None);
+    }
+    remove_mcp_server(
+        DEFAULT_SERVER_NAME,
+        &McpClientRemovalOptions {
+            target: shared_target,
+            dry_run,
         },
     )
+    .map(Some)
+    .map_err(|error| {
+        if dry_run {
+            format!(
+                "dry run could not inspect the shared legacy `{}` registration for {} {}: {error}. No files were changed",
+                DEFAULT_SERVER_NAME, target.client, target.scope
+            )
+        } else {
+            format!(
+                "partial migration: installed `{}` for {} {} but failed to remove shared legacy `{}` registration: {error}. The new local registration was kept and not rolled back",
+                descriptor.name, target.client, target.scope, DEFAULT_SERVER_NAME
+            )
+        }
+    })
+}
+
+fn shared_cleanup_target(
+    target: &ResolvedMcpTarget,
+    descriptor: &McpServerDescriptor,
+) -> Result<Option<ResolvedMcpTarget>, String> {
+    match target.client.as_str() {
+        "codex" => resolve_mcp_target("codex", "user", descriptor, None).map(Some),
+        "claude" | "claude-project" => {
+            resolve_mcp_target("claude", "local", descriptor, None).map(Some)
+        }
+        "generic" => resolve_mcp_target("generic", "local", descriptor, None).map(Some),
+        "hermes" | "lmstudio" | "openclaw" => {
+            resolve_mcp_target(&target.client, "user", descriptor, None).map(Some)
+        }
+        _ => Ok(None),
+    }
+}
+
+fn sanitized_repo_name(repository_root: &Path) -> String {
+    let source = repository_root
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("repository");
+    let normalized = source
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character.to_ascii_lowercase()
+            } else if character == '-' || character == '_' {
+                character
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>();
+    let trimmed = normalized.trim_matches(['.', '_', '-']);
+    if trimmed.is_empty() {
+        "repository".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn repository_hash(repository_root: &Path) -> String {
+    let normalized = repository_root.to_string_lossy().replace('\\', "/");
+    let normalized = if cfg!(windows) {
+        normalized.to_ascii_lowercase()
+    } else {
+        normalized
+    };
+    let digest = Sha256::digest(normalized.as_bytes());
+    digest
+        .iter()
+        .take(4)
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>()
 }
 
 #[cfg(test)]
