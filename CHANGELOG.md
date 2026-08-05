@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.6...v1.2.0) (2026-08-04)
+
+
+### Features
+
+* Implement the k-wiki knowledge management subsystem ([#51](https://github.com/rabii-chaarani/codebaseGraph/issues/51)) ([fd8fe8e](https://github.com/rabii-chaarani/codebaseGraph/commit/fd8fe8e5b1ae63d59f53b0b2825ccae503485ef8))
+
 ## [1.1.6](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.1.5...v1.1.6) (2026-06-23)
 
 
