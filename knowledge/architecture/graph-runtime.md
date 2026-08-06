@@ -3,10 +3,10 @@ description: Component boundaries and dependency direction inside the transport-
 resource: repository-architecture
 tags:
 - architecture
-- graph-runtime
 - components
+- graph-runtime
 - rust
-timestamp: 2026-08-04
+timestamp: 2026-08-06
 title: Graph Runtime Architecture
 type: architecture
 ---
@@ -20,14 +20,14 @@ The Graph Runtime is the product executable and embeddable library. It exposes o
 | --- | --- | --- |
 | Process and adapters | Process Bootstrap, CLI Adapter, Repository Lifecycle Adapter, CLI Materialization Adapter, Repository Refresh Adapter, MCP Server Adapter, Command Request Mapper | Select an interface, translate external input into public requests, and frame results without changing product semantics. |
 | Public boundary | Public API Contracts, Public API Facade, Unified API Core, Catalog Provider, Response Presenter | Define stable requests and responses, register operations once, dispatch them, and present typed or compact block output. |
-| Runtime preparation | Request Normalizer, Repository Runtime Resolver | Apply canonical defaults, reject invalid requests before execution, and resolve one repository/source/graph/configuration/manifest context. |
-| Application services | Graph Read Service, Materialization API, Repository Lifecycle Service, Repository Refresh Service | Execute graph reads, builds, installation lifecycle, and refresh behavior independently of transport. |
-| Build pipeline | Source Scanner, Execution Planner, Semantic Enricher, Graph Writer | Convert source snapshots into validated, enriched, deterministically merged graph rows. |
-| Persistence | Graph Store | Persist nodes and relationships and coordinate safe concurrent readers and writers. |
+| Runtime preparation | Request Normalizer, Repository Runtime Resolver | Apply canonical defaults, reject invalid requests, resolve schema-v1 versus storage-v2 state, and select Managed or Direct storage mode. |
+| Application services | Graph Read Service, Materialization API, Repository Lifecycle Service, Repository Refresh Service | Execute graph reads, generation builds, installation lifecycle, and refresh behavior independently of transport. |
+| Build pipeline | Source Scanner, Execution Planner, Semantic Enricher, Graph Writer | Revalidate inputs, reuse or rebuild raw partitions, enrich all partitions, and assemble deterministic candidate rows. |
+| Persistence | Graph Store | Own immutable generation publication, read leases, abandoned-run recovery, retirement, direct-mode recovery, and partition artifacts. |
 
 ## Dependency direction
 
-The adapters depend inward on the Public API Facade and Public API Contracts. The facade delegates to the Unified API Core. The core resolves runtime context and normalization before dispatching to application services. Application services may depend on the build pipeline and Graph Store; storage and pipeline components do not depend on CLI or MCP details.
+Adapters depend inward on the Public API Facade and Public API Contracts. The facade delegates exactly once to the Unified API Core. The core resolves runtime context and normalization before dispatching to application services. Application services may depend on the build pipeline and Graph Store; storage and pipeline components do not depend on CLI or MCP details.
 
 ```text
 CLI / MCP / embedded client
@@ -41,7 +41,7 @@ CLI / MCP / embedded client
 
 ## Public boundary
 
-`CodebaseGraphApi::execute_operation` in `src/api/facade.rs` is the stable library entry point. It delegates exactly once to the Unified API Core. The operation registry is authoritative for dispatch and MCP tool generation, preventing CLI, MCP, and embedded APIs from acquiring separate behavior catalogs.
+`CodebaseGraphApi::execute_operation` in `src/api/facade.rs` is the stable library entry point. The operation registry is authoritative for dispatch and MCP tool generation, preventing CLI, MCP, and embedded APIs from acquiring separate behavior catalogs.
 
 The core owns three cross-cutting duties:
 
@@ -53,11 +53,26 @@ The core owns three cross-cutting duties:
 
 The Graph Read Service reads health and metadata, performs ranked search and relationship traversal, and executes bounded read-only statements. `validate_read_only_statement` rejects empty, compound, or write-capable statements before `execute_read_only_query` reaches the Graph Store.
 
-Graph writes enter through the Materialization API and [Materialization Pipeline](./materialization-pipeline.md). The Graph Writer assembles deterministic updates; the Graph Store applies schema, deletions, and staged rows while serializing writers and retrying transient lock failures.
+A managed read resolves `active.json` under a shared state lock and holds a shared lease on that generation for the complete database operation. This lease, rather than a stale timestamp, prevents retirement while a reader is active.
+
+Graph writes enter through the Materialization API and [Materialization Pipeline](./materialization-pipeline.md). The Graph Writer produces a deterministic candidate; the Graph Store holds the exclusive writer lock for the complete mutation, validates the reopened candidate, and atomically publishes its generation pointer. It never applies source deltas to the active database.
+
+## Storage and recovery boundary
+
+The Graph Store owns the complete lifecycle described in [Graph Storage Lifecycle and Recovery](./graph-storage-lifecycle.md):
+
+- managed generation and run-workspace layout beneath the configured `storage_root`;
+- atomic `active.json` publication under the state lock;
+- lease-aware retirement with retryable `cleanup_pending` state;
+- journal-driven abandoned-run recovery and path-confined cleanup;
+- content-addressed raw partition artifacts and garbage collection;
+- checksummed paired publication recovery for explicit Direct-mode paths.
+
+The Materialization API requests these operations but does not publish paths itself. The Repository Runtime Resolver selects and recovers the appropriate storage mode before reads or writes. The Repository Lifecycle Service enforces schema-v1 read compatibility, typed mutation rejection, and reinstall rollback or immediate legacy deletion.
 
 ## Refresh behavior
 
-The Repository Refresh Service supports continuous and one-shot refresh. It filters and coalesces filesystem events into bounded batches, resolves canonical repository context, normalizes refresh options, and reuses incremental materialization. Transient failures are classified and retried with bounded backoff.
+The Repository Refresh Service supports continuous and one-shot refresh. It filters and coalesces filesystem events into bounded batches, resolves canonical repository context, normalizes refresh options, and reuses generation-backed materialization. Transient failures are classified and retried with bounded backoff. Runtime entry also gives the janitor an opportunity to recover abandoned work and retry retirement.
 
 ## Source evidence
 
@@ -69,6 +84,6 @@ The Repository Refresh Service supports continuous and one-shot refresh. It filt
 | Request preparation | `src/api/normalization.rs` and repository-runtime resolution under `src/api`. |
 | Materialization orchestration | `src/api/materialization.rs`; `src/execution/run.rs`. |
 | Refresh | `src/api/refresh.rs` and CLI watch adapters under `src/adapters/cli/watch`. |
-| Storage | `src/staging_writer`; `src/db_writer`. |
+| Generation storage, locking, artifacts, and recovery | Storage lifecycle and writer modules under `src/db_writer`, with deterministic staging under `src/staging_writer`. |
 
-See [Public Operations and Runtime Paths](./operation-paths.md) for request flow and [Repository Ownership Map](./repository-map.md) for change-oriented navigation.
+See [Public Operations and Runtime Paths](./operation-paths.md) for request flow, [Architecture Invariants](./invariants.md) for the governing constraints, and [Repository Ownership Map](./repository-map.md) for change-oriented navigation.
