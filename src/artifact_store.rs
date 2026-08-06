@@ -4,6 +4,7 @@ use crate::protocol::{
     LanguageProfile, NativeSyntaxMaterializationRequest, OntologySchema, SourceSnapshot,
     PROFILE_COMPATIBILITY_VERSION,
 };
+use crate::storage::atomic::sync_dir;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fmt::Write as _;
@@ -327,11 +328,6 @@ fn write_and_sync(path: &std::path::Path, bytes: &[u8]) -> Result<(), NativeErro
     let mut file = File::create(path)?;
     file.write_all(bytes)?;
     file.sync_all()?;
-    Ok(())
-}
-
-fn sync_dir(path: &std::path::Path) -> Result<(), NativeError> {
-    File::open(path)?.sync_all()?;
     Ok(())
 }
 
