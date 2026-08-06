@@ -89,7 +89,7 @@ pub(crate) fn serialize_architecture_queries_block(payload: &serde_json::Value) 
 
 pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
     let mut lines = vec![format!(
-        "health ok={} database_exists={} manifest_exists={} graph_readable={} total_nodes={}",
+        "health ok={} database_exists={} manifest_exists={} graph_readable={} total_nodes={} storage_format={} writable={} active_generation={} pending_runs={} cleanup_pending={} physical_database_bytes={} logical_database_bytes={}",
         value_bool(payload, "ok"),
         value_bool(payload, "database_exists"),
         value_bool(payload, "manifest_exists"),
@@ -97,10 +97,37 @@ pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
         payload
             .get("total_nodes")
             .and_then(serde_json::Value::as_u64)
+            .unwrap_or_default(),
+        block_value(value_str(payload, "storage_format")),
+        value_bool(payload, "writable"),
+        block_value(value_str(payload, "active_generation")),
+        payload
+            .get("pending_runs")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or_default(),
+        value_bool(payload, "cleanup_pending"),
+        payload
+            .get("physical_database_bytes")
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or_default(),
+        payload
+            .get("logical_database_bytes")
+            .and_then(serde_json::Value::as_u64)
             .unwrap_or_default()
     )];
-    for key in ["repo_root", "database_path", "manifest_path"] {
+    for key in [
+        "repo_root",
+        "database_path",
+        "manifest_path",
+        "storage_root",
+    ] {
         lines.push(format!("{key} {}", block_value(value_str(payload, key))));
+    }
+    if let Some(remediation) = payload
+        .get("remediation")
+        .and_then(serde_json::Value::as_str)
+    {
+        lines.push(format!("remediation {}", block_value(remediation)));
     }
     if let Some(error) = payload.get("error").and_then(serde_json::Value::as_str) {
         lines.push(format!("error {}", block_value(error)));

@@ -26,7 +26,7 @@ use crate::api::refresh::RefreshState;
 use crate::error::NativeError;
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
 use serde_json::json;
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, fs, path::Path, sync::Arc};
 
 #[derive(Debug, Clone, Copy)]
 pub struct OperationDescriptor {
@@ -226,11 +226,32 @@ impl ApiCore {
                     format!("unsupported operation: {}", request.operation_name()),
                 )
             })?;
-        let runtime = request
+        let mut runtime = request
             .repo_selector()
             .map(resolve_runtime)
             .transpose()
             .map_err(|error| ApiError::new("runtime_resolution_failed", error))?;
+        if operation_requires_graph_write(&request) {
+            if let Some(runtime) = runtime.as_mut() {
+                runtime.require_graph_write().map_err(|message| {
+                    ApiError::new("legacy_storage_requires_reinstall", message)
+                        .with_details(serde_json::json!({
+                            "schema_version": 1,
+                            "remediation": format!(
+                                "codebase-graph reinstall --repo-root {}",
+                                runtime.repo_root.display()
+                            ),
+                        }))
+                        .retryable(false)
+                })?;
+            }
+        }
+        if operation_may_replace_graph_state(&request) {
+            if let Some(runtime) = runtime.as_mut() {
+                runtime.active_read = None;
+                runtime.direct_read = None;
+            }
+        }
         let response = dispatch_operation(&request, &operation, runtime.as_ref())?;
         Ok(present_operation_response(
             response,
@@ -367,6 +388,23 @@ fn operation_requires_consistent_graph_read(request: &OperationRequest) -> bool 
     )
 }
 
+fn operation_requires_graph_write(request: &OperationRequest) -> bool {
+    matches!(
+        request,
+        OperationRequest::Materialize(_)
+            | OperationRequest::Setup(_)
+            | OperationRequest::Refresh(_)
+    )
+}
+
+fn operation_may_replace_graph_state(request: &OperationRequest) -> bool {
+    operation_requires_graph_write(request)
+        || matches!(
+            request,
+            OperationRequest::Reinstall(_) | OperationRequest::Uninstall(_)
+        )
+}
+
 fn required_runtime<'a>(
     operation: &str,
     runtime: Option<&'a RepoRuntime>,
@@ -474,10 +512,12 @@ fn handle_setup(
     let OperationRequest::Setup(request) = request else {
         return Err(invalid_request("setup", request));
     };
+    let runtime = required_runtime("setup", runtime)?;
+    reject_legacy_write_operation(runtime)?;
     Ok(OperationResponse::from_payload(
         "setup",
         OutputFormat::Typed,
-        setup_repository(request, required_runtime("setup", runtime)?)?,
+        setup_repository(request, runtime)?,
     ))
 }
 
@@ -530,10 +570,12 @@ fn handle_refresh(
     let OperationRequest::Refresh(request) = request else {
         return Err(invalid_request("refresh", request));
     };
+    let runtime = required_runtime("refresh", runtime)?;
+    reject_legacy_write_operation(runtime)?;
     Ok(OperationResponse::from_payload(
         "refresh",
         OutputFormat::Typed,
-        refresh_repository(request, required_runtime("refresh", runtime)?)?,
+        refresh_repository(request, runtime)?,
     ))
 }
 
@@ -548,6 +590,8 @@ fn execute_health(
     let mut error_message = None;
     let database_exists = runtime.db_path.exists();
     let manifest_exists = runtime.manifest_path.exists();
+    let physical_database_bytes = physical_database_bytes(runtime);
+    let logical_database_bytes = logical_database_bytes(runtime);
 
     if database_exists {
         match count_graph_nodes(&runtime.db_path) {
@@ -567,14 +611,23 @@ fn execute_health(
     }
 
     let payload = json!({
-        "ok": database_exists && graph_readable,
+        "ok": graph_readable,
         "repo_root": runtime.repo_root,
         "database_path": runtime.db_path,
         "manifest_path": runtime.manifest_path,
+        "storage_root": runtime.storage_root,
         "database_exists": database_exists,
         "manifest_exists": manifest_exists,
         "graph_readable": graph_readable,
         "total_nodes": total_nodes,
+        "storage_format": runtime.storage_format(),
+        "writable": runtime.writable,
+        "active_generation": runtime.active_generation,
+        "pending_runs": runtime.pending_runs,
+        "cleanup_pending": runtime.cleanup_pending,
+        "physical_database_bytes": physical_database_bytes,
+        "logical_database_bytes": logical_database_bytes,
+        "remediation": runtime.remediation(),
         "error": error_message,
         "refresh": request.refresh_status,
     });
@@ -701,6 +754,9 @@ fn execute_materialization(
     runtime: &RepoRuntime,
     dry_plan: bool,
 ) -> Result<OperationResponse, ApiError> {
+    if !dry_plan {
+        reject_legacy_write_operation(runtime)?;
+    }
     let output_format = request.output_format;
     let materialize_options = MaterializeOptions::from_request(request, runtime, dry_plan);
 
@@ -738,6 +794,95 @@ fn execute_plan_native(
     crate::plan_materialization(request)
 }
 
+fn reject_legacy_write_operation(runtime: &RepoRuntime) -> Result<(), ApiError> {
+    runtime.require_graph_write().map_err(|message| {
+        let remediation = runtime
+            .remediation()
+            .unwrap_or_else(|| "Run `codebase-graph reinstall`.".to_string());
+        ApiError::new("legacy_storage_requires_reinstall", message)
+            .with_details(json!({
+                "schema_version": runtime.legacy_schema_version().unwrap_or(1),
+                "remediation": remediation,
+            }))
+            .retryable(false)
+    })
+}
+
+fn physical_database_bytes(runtime: &RepoRuntime) -> u64 {
+    if let Some(active_read) = runtime.active_read.as_ref() {
+        return active_read.physical_size_bytes;
+    }
+    if runtime.storage_root.is_some() {
+        return physical_bundle_bytes(&runtime.db_path, &runtime.manifest_path);
+    }
+    physical_bundle_bytes(&runtime.db_path, &runtime.manifest_path)
+}
+
+fn logical_database_bytes(runtime: &RepoRuntime) -> u64 {
+    if let Some(active_read) = runtime.active_read.as_ref() {
+        active_read.logical_size_bytes
+    } else {
+        logical_bundle_bytes(&runtime.db_path, &runtime.manifest_path)
+    }
+}
+
+fn physical_bundle_bytes(db_path: &Path, manifest_path: &Path) -> u64 {
+    bundle_paths(db_path, manifest_path)
+        .into_iter()
+        .map(|path| allocated_or_len(&path))
+        .sum()
+}
+
+fn logical_bundle_bytes(db_path: &Path, manifest_path: &Path) -> u64 {
+    bundle_paths(db_path, manifest_path)
+        .into_iter()
+        .map(|path| file_len(&path))
+        .sum()
+}
+
+fn bundle_paths(db_path: &Path, manifest_path: &Path) -> Vec<std::path::PathBuf> {
+    let mut paths = vec![db_path.to_path_buf(), manifest_path.to_path_buf()];
+    for suffix in ["wal", "tmp", "lock"] {
+        paths.push(db_path_with_suffix(db_path, suffix));
+    }
+    paths
+}
+
+fn db_path_with_suffix(db_path: &Path, suffix: &str) -> std::path::PathBuf {
+    std::path::PathBuf::from(format!("{}.{}", db_path.display(), suffix))
+}
+
+fn file_len(path: &Path) -> u64 {
+    fs::symlink_metadata(path)
+        .ok()
+        .filter(|metadata| !metadata.file_type().is_symlink() && metadata.is_file())
+        .map(|metadata| metadata.len())
+        .unwrap_or(0)
+}
+
+#[cfg(unix)]
+fn allocated_or_len(path: &Path) -> u64 {
+    use std::os::unix::fs::MetadataExt;
+
+    fs::symlink_metadata(path)
+        .ok()
+        .filter(|metadata| !metadata.file_type().is_symlink() && metadata.is_file())
+        .map(|metadata| {
+            let allocated = metadata.blocks().saturating_mul(512);
+            if allocated == 0 {
+                metadata.len()
+            } else {
+                allocated
+            }
+        })
+        .unwrap_or(0)
+}
+
+#[cfg(not(unix))]
+fn allocated_or_len(path: &Path) -> u64 {
+    file_len(path)
+}
+
 fn materialization_payload(
     request: &MaterializationRequest,
     response: &NativeSyntaxMaterializationResponse,
@@ -753,7 +898,10 @@ fn materialization_payload(
 
 #[cfg(test)]
 mod tests {
-    use crate::api::contracts::{McpInstallRequest, OperationRequest, OutputFormat, RepoSelector};
+    use crate::api::contracts::{
+        MaterializationRequest, McpInstallRequest, OperationRequest, OutputFormat, RepoSelector,
+        RepositoryLifecycleRequest,
+    };
     use crate::api::core::ApiCore;
     use crate::api::{
         install_mcp_server, McpClientInstallOptions, McpExistingEntryPolicy, McpInstallMode,
@@ -771,6 +919,22 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ))
+    }
+
+    fn write_legacy_install_config(root: &PathBuf) {
+        let state = root.join(".codebaseGraph");
+        fs::create_dir_all(&state).unwrap();
+        fs::write(
+            state.join("config.json"),
+            serde_json::to_string_pretty(&json!({
+                "schema_version": 1,
+                "repo_root": root,
+                "database_path": state.join("legacy.ldb"),
+                "manifest_path": state.join("legacy-manifest.json"),
+            }))
+            .unwrap(),
+        )
+        .unwrap();
     }
 
     #[test]
@@ -815,6 +979,109 @@ mod tests {
             .expect_err("unknown operation should be rejected");
         assert_eq!(error.code, "unsupported_operation");
         assert!(!error.retryable);
+    }
+
+    #[test]
+    fn legacy_setup_returns_structured_reinstall_error() {
+        let root = unique_temp_dir("codebase-graph-api-legacy-setup");
+        fs::create_dir_all(&root).unwrap();
+        write_legacy_install_config(&root);
+
+        let error = ApiCore::new()
+            .execute(&OperationRequest::Setup(RepositoryLifecycleRequest {
+                repo: RepoSelector {
+                    repo_root: Some(root.clone()),
+                    config_path: None,
+                    db_path: None,
+                    manifest_path: None,
+                },
+                action: "setup".to_string(),
+                output_format: OutputFormat::Typed,
+                dry_run: false,
+                mcp_client: Some("none".to_string()),
+                mcp_config_path: None,
+                instructions_target: Some("skip".to_string()),
+                skip_mcp_config: true,
+                mode: "full".to_string(),
+                include_fts: false,
+                semantic_enrichment: false,
+                semantic_provider_mode: "local_only".to_string(),
+            }))
+            .expect_err("legacy setup should require reinstall");
+
+        assert_eq!(error.code, "legacy_storage_requires_reinstall");
+        assert!(!error.retryable);
+        assert!(error
+            .message
+            .contains("codebase-graph reinstall --repo-root"));
+        let details = error
+            .details
+            .expect("legacy rejection should include details");
+        assert_eq!(details["schema_version"], 1);
+        assert!(details["remediation"]
+            .as_str()
+            .unwrap()
+            .contains("codebase-graph reinstall --repo-root"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn legacy_materialize_rejects_but_plan_is_still_allowed() {
+        let root = unique_temp_dir("codebase-graph-api-legacy-plan");
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+        write_legacy_install_config(&root);
+        let repo = RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: None,
+            manifest_path: None,
+        };
+
+        let materialize_error = ApiCore::new()
+            .execute(&OperationRequest::Materialize(MaterializationRequest {
+                repo: repo.clone(),
+                native_request_path: None,
+                source_root: None,
+                mode: "full".to_string(),
+                include_fts: false,
+                semantic_enrichment: false,
+                semantic_provider_mode: "local_only".to_string(),
+                use_git: false,
+                git_diff: false,
+                git_base: None,
+                include_patterns: Vec::new(),
+                exclude_patterns: Vec::new(),
+                candidate_paths: Vec::new(),
+                parallel: false,
+                progress: false,
+                output_format: OutputFormat::Typed,
+            }))
+            .expect_err("legacy materialize should require reinstall");
+        assert_eq!(materialize_error.code, "legacy_storage_requires_reinstall");
+
+        let plan = ApiCore::new()
+            .execute(&OperationRequest::Plan(MaterializationRequest {
+                repo,
+                native_request_path: None,
+                source_root: None,
+                mode: "full".to_string(),
+                include_fts: false,
+                semantic_enrichment: false,
+                semantic_provider_mode: "local_only".to_string(),
+                use_git: false,
+                git_diff: false,
+                git_base: None,
+                include_patterns: Vec::new(),
+                exclude_patterns: Vec::new(),
+                candidate_paths: Vec::new(),
+                parallel: false,
+                progress: false,
+                output_format: OutputFormat::Typed,
+            }))
+            .expect("legacy plan should remain readable");
+        assert_eq!(plan.operation, "plan");
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]

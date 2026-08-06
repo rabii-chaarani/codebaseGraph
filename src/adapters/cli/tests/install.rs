@@ -52,6 +52,115 @@ fn install_skips_materialization_when_graph_state_already_exists() {
         value["materialization"]["skip_reason"],
         "existing_graph_state"
     );
+    assert_eq!(value["storage_format"], "managed_v2");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn install_writes_managed_v2_config_without_static_database_or_manifest_paths() {
+    let root = unique_temp_dir("codebase-graph-rust-install-managed-v2");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+
+    let mut output = Vec::new();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    let config: serde_json::Value = serde_json::from_str(
+        &fs::read_to_string(root.join(".codebaseGraph").join("config.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(config["schema_version"], 2);
+    assert!(config.get("database_path").is_none());
+    assert!(config.get("manifest_path").is_none());
+    let expected_storage_root =
+        fs::canonicalize(root.join(".codebaseGraph").join("storage")).unwrap();
+    let configured_storage_root = fs::canonicalize(
+        config["storage_root"]
+            .as_str()
+            .expect("config should contain storage_root"),
+    )
+    .unwrap();
+    assert_eq!(configured_storage_root, expected_storage_root);
+    assert_eq!(value["storage_format"], "managed_v2");
+    assert_eq!(value["writable"], true);
+    let response_storage_root = fs::canonicalize(
+        value["storage_root"]
+            .as_str()
+            .expect("response should contain storage_root"),
+    )
+    .unwrap();
+    assert_eq!(response_storage_root, expected_storage_root);
+    assert!(value["db_path"]
+        .as_str()
+        .unwrap()
+        .contains("/.codebaseGraph/storage/generations/gen-"));
+    assert!(value["manifest_path"]
+        .as_str()
+        .unwrap()
+        .contains("/.codebaseGraph/storage/generations/gen-"));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn install_rejects_legacy_v1_state_until_reinstall() {
+    let root = unique_temp_dir("codebase-graph-rust-install-legacy-v1");
+    let state = root.join(".codebaseGraph");
+    fs::create_dir_all(&state).unwrap();
+    fs::write(
+        state.join("config.json"),
+        serde_json::to_string_pretty(&json!({
+            "schema_version": 1,
+            "repo_root": root,
+            "database_path": state.join("legacy.ldb"),
+            "manifest_path": state.join("legacy-manifest.json"),
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let error = run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap_err();
+
+    assert!(error.contains("legacy installed graph storage requires reinstall before writes"));
+    let canonical_root = root.canonicalize().unwrap_or_else(|_| root.clone());
+    assert!(error.contains(&format!(
+        "codebase-graph reinstall --repo-root {}",
+        canonical_root.display()
+    )));
     let _ = fs::remove_dir_all(root);
 }
 
@@ -104,8 +213,20 @@ fn reinstall_recreates_graph_state_and_materializes_again() {
     assert_eq!(value["ok"], true);
     assert_eq!(value["state"]["action"], "backed_up");
     assert_eq!(value["install"]["database_written"], true);
+    assert_eq!(value["install"]["storage_format"], "managed_v2");
     assert!(root.join(".codebaseGraph").join("config.json").exists());
-    assert!(!root.join(".codebaseGraph.reinstall-backup").exists());
+    let backup_path = PathBuf::from(value["state"]["backup_path"].as_str().unwrap());
+    assert_eq!(
+        backup_path
+            .parent()
+            .and_then(|path| path.canonicalize().ok())
+            .or_else(|| backup_path.parent().map(PathBuf::from)),
+        root.parent()
+            .and_then(|path| path.canonicalize().ok())
+            .or_else(|| root.parent().map(PathBuf::from))
+    );
+    assert!(!backup_path.starts_with(&root));
+    assert!(!backup_path.exists());
     let _ = fs::remove_dir_all(root);
 }
 

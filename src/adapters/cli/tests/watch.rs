@@ -598,6 +598,47 @@ fn watch_auto_backend_refreshes_after_probe_resolution() {
 }
 
 #[test]
+fn watch_rejects_legacy_v1_before_creating_probe() {
+    let root = unique_temp_dir("codebase-graph-rust-watch-legacy-v1");
+    let state_dir = root.join(".codebaseGraph");
+    fs::create_dir_all(&state_dir).unwrap();
+    fs::write(
+        state_dir.join("config.json"),
+        serde_json::to_vec(&serde_json::json!({
+            "schema_version": 1,
+            "repo_root": root,
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let error = run(
+        [
+            "watch",
+            "--source-root",
+            root.to_str().unwrap(),
+            "--watch-backend",
+            "auto",
+            "--poll-ms",
+            "10",
+            "--debounce-ms",
+            "10",
+            "--max-iterations",
+            "1",
+            "--no-git",
+            "--no-fts",
+            "--no-semantic-enrichment",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap_err();
+
+    assert!(error.contains("legacy installed graph storage requires reinstall before writes"));
+    assert!(!state_dir.join("watch-probe").exists());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn watch_backend_parser_accepts_native_without_fallback() {
     let options =
         WatchOptions::parse(&["--watch-backend".to_string(), "native".to_string()]).unwrap();
@@ -653,7 +694,7 @@ fn changed_build_recovers_when_manifest_loses_existing_file_entry() {
     fs::write(root.join("service.py"), "def service():\n    return 1\n").unwrap();
     setup_fixture_repo(&root);
 
-    let manifest_path = root.join(".codebaseGraph").join("manifest.json");
+    let manifest_path = managed_active_manifest_path(&root);
     let mut manifest: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(&manifest_path).unwrap()).unwrap();
     manifest

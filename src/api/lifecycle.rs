@@ -1,12 +1,16 @@
-use crate::api::context::RepoRuntime;
+use crate::api::context::{
+    resolve_runtime, GraphInstallConfig, GraphInstallMaterializationConfig, GraphInstallMcpConfig,
+    RepoRuntime,
+};
 use crate::api::contracts::{
-    ApiError, McpInstallRequest, RefreshRequest, RepositoryLifecycleRequest,
+    ApiError, McpInstallRequest, RefreshRequest, RepoSelector, RepositoryLifecycleRequest,
 };
 use crate::api::materialization::{
     build_request, default_excluded_parts, execute_candidate_materialization,
     execute_materialization, MaterializeOptions,
 };
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
+use crate::storage::atomic::write_json_atomically;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -123,6 +127,7 @@ pub(crate) fn refresh_repository(
         config: runtime.config_path.clone(),
         db: Some(runtime.db_path.clone()),
         manifest: Some(runtime.manifest_path.clone()),
+        storage_root: runtime.storage_root.clone(),
         use_git: false,
         mode: request.mode.clone(),
         include_fts: request.include_fts,
@@ -202,8 +207,7 @@ fn setup_payload_for_root(
 
     let materialize_options = MaterializeOptions {
         source_root: Some(source_root.clone()),
-        db: Some(paths.db_path.clone()),
-        manifest: Some(paths.manifest_path.clone()),
+        config: Some(paths.config_path.clone()),
         mode: options.mode.clone(),
         include_fts: options.include_fts,
         semantic_enrichment: options.semantic_enrichment,
@@ -214,8 +218,7 @@ fn setup_payload_for_root(
     let config_payload = setup_config_payload(&paths, &source_root);
     let instructions_path = instruction_target_path(&source_root, &options.instructions_target)?;
     let state_dir_existed = paths.state_dir.exists();
-    let graph_state_existed =
-        paths.config_path.exists() && paths.db_path.exists() && paths.manifest_path.exists();
+    let graph_state_existed = managed_install_exists(&paths);
     let previous_config = snapshot_file(&paths.config_path)?;
     let previous_instructions = match instructions_path.as_ref() {
         Some(path) => Some((path.clone(), snapshot_file(path)?)),
@@ -277,22 +280,65 @@ fn setup_payload_for_root(
                     restore_file(path, previous.as_deref())?;
                 }
                 if !state_dir_existed {
-                    let _ = fs::remove_dir_all(&paths.state_dir);
+                    if let Err(cleanup_error) =
+                        remove_partial_state_tree(&source_root, &paths.state_dir)
+                    {
+                        return Err(format!(
+                            "{error}; cleanup failed for {}: {cleanup_error}",
+                            paths.state_dir.display()
+                        ));
+                    }
                 }
                 return Err(error);
             }
         }
     };
 
+    let runtime = resolved_install_runtime(&source_root);
     Ok(json!({
         "ok": true,
         "repo_root": source_root,
         "repo_name": paths.repo_name,
         "state_dir": paths.state_dir,
-        "db_path": paths.db_path,
-        "database_path": paths.db_path,
-        "manifest_path": paths.manifest_path,
+        "db_path": runtime
+            .as_ref()
+            .map(|runtime| runtime.db_path.clone())
+            .unwrap_or_else(|_| active_db_path(&paths)),
+        "database_path": runtime
+            .as_ref()
+            .map(|runtime| runtime.db_path.clone())
+            .unwrap_or_else(|_| active_db_path(&paths)),
+        "manifest_path": runtime
+            .as_ref()
+            .map(|runtime| runtime.manifest_path.clone())
+            .unwrap_or_else(|_| active_manifest_path(&paths)),
         "config_path": paths.config_path,
+        "storage_root": runtime
+            .as_ref()
+            .ok()
+            .and_then(|runtime| runtime.storage_root.clone())
+            .unwrap_or_else(|| paths.state_dir.join("storage")),
+        "storage_format": runtime
+            .as_ref()
+            .map(|runtime| runtime.storage_format())
+            .unwrap_or("managed_v2"),
+        "writable": runtime
+            .as_ref()
+            .map(|runtime| runtime.writable)
+            .unwrap_or(true),
+        "active_generation": runtime
+            .as_ref()
+            .ok()
+            .and_then(|runtime| runtime.active_generation.clone())
+            .or_else(|| active_generation_id(&paths)),
+        "pending_runs": runtime
+            .as_ref()
+            .map(|runtime| runtime.pending_runs)
+            .unwrap_or(0),
+        "cleanup_pending": runtime
+            .as_ref()
+            .map(|runtime| runtime.cleanup_pending)
+            .unwrap_or(false),
         "config_action": config_action,
         "mcp_config": mcp_config,
         "instructions": instructions,
@@ -315,20 +361,35 @@ fn reinstall_payload_for_request(
     reject_state_dir_root(&repo_root)?;
 
     let paths = GraphStatePaths::derive(&repo_root);
-    let state = reinstall_state(&paths, options.dry_run)?;
+    let state = reinstall_state(&repo_root, &paths, options.dry_run)?;
     let install = if options.dry_run {
         setup_payload_for_root(&options, &repo_root)?
     } else {
-        match setup_payload_for_root(&options, &repo_root) {
-            Ok(payload) => {
-                remove_backup(state.backup_path.as_deref())?;
-                payload
-            }
-            Err(error) => {
-                restore_backup(&paths.state_dir, state.backup_path.as_deref())?;
-                return Err(error);
-            }
-        }
+        run_reinstall_activation_boundary(
+            &repo_root,
+            &paths,
+            state.backup_path.as_deref(),
+            || {
+                let mut activation_options = options.clone();
+                activation_options.skip_mcp_config = true;
+                activation_options.instructions_target = "skip".to_string();
+                setup_payload_for_root(&activation_options, &repo_root)
+            },
+            |mut payload| {
+                let instructions = upsert_instruction_block(
+                    &repo_root,
+                    &options.instructions_target,
+                    &paths.config_path,
+                )?;
+                let mcp_config = setup_mcp_config(&options, &paths, false)?;
+                let payload_object = payload.as_object_mut().ok_or_else(|| {
+                    "reinstall activation payload must be a JSON object".to_string()
+                })?;
+                payload_object.insert("instructions".to_string(), instructions);
+                payload_object.insert("mcp_config".to_string(), mcp_config);
+                Ok(payload)
+            },
+        )?
     };
 
     Ok(json!({
@@ -356,7 +417,7 @@ fn uninstall_payload_for_request(
         .clone()
         .unwrap_or_else(|| "all".to_string());
     let server_name = uninstall_server_name(&repo_root, &config_path)?;
-    let state = uninstall_state_dir(&paths.state_dir, request.dry_run)?;
+    let state = uninstall_state_dir(&repo_root, &paths.state_dir, request.dry_run)?;
     let instructions = uninstall_instruction_blocks(&repo_root, request.dry_run)?;
     let mcp_clients = uninstall_mcp_clients(
         &mcp_client,
@@ -606,12 +667,16 @@ fn uninstall_server_name(repo_root: &Path, config_path: &Path) -> Result<String,
     .name)
 }
 
-fn uninstall_state_dir(path: &Path, dry_run: bool) -> Result<serde_json::Value, String> {
+fn uninstall_state_dir(
+    repo_root: &Path,
+    path: &Path,
+    dry_run: bool,
+) -> Result<serde_json::Value, String> {
     if !path.exists() {
         return Ok(json!({"action": "unchanged", "path": path}));
     }
     if !dry_run {
-        fs::remove_dir_all(path).map_err(|error| {
+        remove_partial_state_tree(repo_root, path).map_err(|error| {
             format!(
                 "failed to remove state directory {}: {error}",
                 path.display()
@@ -792,30 +857,29 @@ pub(crate) fn safe_name(value: &str) -> String {
 }
 
 fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) -> serde_json::Value {
-    json!({
-        "schema_version": 1,
-        "repo_root": repo_root,
-        "repo_name": paths.repo_name,
-        "state_dir": paths.state_dir,
-        "database_path": paths.db_path,
-        "manifest_path": paths.manifest_path,
-        "ontology_version": "code_ontology_v1",
-        "package_version": env!("CARGO_PKG_VERSION"),
-        "materialization": {
-            "include": [],
-            "exclude": []
-        },
-        "mcp": {
-            "server_name": "codebase_graph",
-            "command": [
+    serde_json::to_value(GraphInstallConfig {
+        schema_version: Some(2),
+        repo_root: Some(repo_root.to_path_buf()),
+        repo_name: Some(paths.repo_name.clone()),
+        state_dir: Some(paths.state_dir.clone()),
+        storage_root: Some(paths.state_dir.join("storage")),
+        database_path: None,
+        manifest_path: None,
+        ontology_version: Some("code_ontology_v1".to_string()),
+        package_version: Some(env!("CARGO_PKG_VERSION").to_string()),
+        materialization: GraphInstallMaterializationConfig::default(),
+        mcp: Some(GraphInstallMcpConfig {
+            server_name: "codebase_graph".to_string(),
+            command: vec![
                 server_command(),
-                "mcp",
-                "start",
-                "--config",
-                paths.config_path.to_string_lossy()
-            ]
-        }
+                "mcp".to_string(),
+                "start".to_string(),
+                "--config".to_string(),
+                paths.config_path.to_string_lossy().to_string(),
+            ],
+        }),
     })
+    .expect("managed install config should serialize")
 }
 
 fn write_setup_config(paths: &GraphStatePaths, repo_root: &Path) -> Result<&'static str, String> {
@@ -836,14 +900,59 @@ fn write_setup_config(paths: &GraphStatePaths, repo_root: &Path) -> Result<&'sta
             )
         })?;
     }
-    let text = serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())?;
-    fs::write(&paths.config_path, format!("{text}\n")).map_err(|error| {
+    write_json_atomically(&paths.config_path, &payload).map_err(|error| {
         format!(
-            "failed to write install config {}: {error}",
+            "failed to write install config {} atomically: {error}",
             paths.config_path.display()
         )
     })?;
     Ok(action)
+}
+
+fn managed_install_exists(paths: &GraphStatePaths) -> bool {
+    paths.config_path.exists() && paths.state_dir.join("storage").join("active.json").exists()
+}
+
+fn resolved_install_runtime(repo_root: &Path) -> Result<RepoRuntime, String> {
+    resolve_runtime(&RepoSelector {
+        repo_root: Some(repo_root.to_path_buf()),
+        config_path: None,
+        db_path: None,
+        manifest_path: None,
+    })
+}
+
+fn active_generation_id(paths: &GraphStatePaths) -> Option<String> {
+    let path = paths.state_dir.join("storage").join("active.json");
+    let value = read_json_file(&path).ok()?;
+    value
+        .get("generation_id")
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string)
+}
+
+fn active_db_path(paths: &GraphStatePaths) -> PathBuf {
+    match active_generation_id(paths) {
+        Some(generation) => paths
+            .state_dir
+            .join("storage")
+            .join("generations")
+            .join(format!("gen-{generation}"))
+            .join("graph.ldb"),
+        None => paths.db_path.clone(),
+    }
+}
+
+fn active_manifest_path(paths: &GraphStatePaths) -> PathBuf {
+    match active_generation_id(paths) {
+        Some(generation) => paths
+            .state_dir
+            .join("storage")
+            .join("generations")
+            .join(format!("gen-{generation}"))
+            .join("manifest.json"),
+        None => paths.manifest_path.clone(),
+    }
 }
 
 fn json_file_would_change(path: &Path, payload: &serde_json::Value) -> Result<bool, String> {
@@ -997,7 +1106,11 @@ struct ReinstallState {
     backup_path: Option<PathBuf>,
 }
 
-fn reinstall_state(paths: &GraphStatePaths, dry_run: bool) -> Result<ReinstallState, String> {
+fn reinstall_state(
+    repo_root: &Path,
+    paths: &GraphStatePaths,
+    dry_run: bool,
+) -> Result<ReinstallState, String> {
     if !paths.state_dir.exists() {
         return Ok(ReinstallState {
             payload: json!({
@@ -1008,7 +1121,7 @@ fn reinstall_state(paths: &GraphStatePaths, dry_run: bool) -> Result<ReinstallSt
             backup_path: None,
         });
     }
-    let backup_path = next_backup_path(&paths.state_dir)?;
+    let backup_path = next_backup_path(repo_root, &paths.state_dir)?;
     if dry_run {
         return Ok(ReinstallState {
             payload: json!({
@@ -1036,34 +1149,95 @@ fn reinstall_state(paths: &GraphStatePaths, dry_run: bool) -> Result<ReinstallSt
     })
 }
 
-fn next_backup_path(state_dir: &Path) -> Result<PathBuf, String> {
-    let parent = state_dir.parent().unwrap_or_else(|| Path::new("."));
-    let file_name = state_dir
+fn next_backup_path(repo_root: &Path, state_dir: &Path) -> Result<PathBuf, String> {
+    let parent = repo_root.parent().ok_or_else(|| {
+        format!(
+            "repository root {} must have a parent directory for reinstall backup",
+            repo_root.display()
+        )
+    })?;
+    let repo_name = repo_root
         .file_name()
         .and_then(|value| value.to_str())
-        .unwrap_or(".codebaseGraph");
+        .unwrap_or("repository");
     for index in 0..1000 {
         let suffix = if index == 0 {
             "reinstall-backup".to_string()
         } else {
             format!("reinstall-backup-{index}")
         };
-        let candidate = parent.join(format!("{file_name}.{suffix}"));
+        let candidate = parent.join(format!("{repo_name}.codebaseGraph.{suffix}"));
+        validate_reinstall_backup_path(repo_root, &candidate)?;
         if !candidate.exists() {
             return Ok(candidate);
         }
     }
     Err(format!(
-        "failed to choose backup path for {}",
+        "failed to choose reinstall backup path outside repository {} for {}",
+        repo_root.display(),
         state_dir.display()
     ))
 }
 
-fn remove_backup(path: Option<&Path>) -> Result<(), String> {
+fn validate_reinstall_backup_path(repo_root: &Path, candidate: &Path) -> Result<(), String> {
+    let repo_root = canonical_or_self(repo_root);
+    let repo_parent = repo_root.parent().ok_or_else(|| {
+        format!(
+            "repository root {} must have a parent directory for reinstall backup",
+            repo_root.display()
+        )
+    })?;
+    let candidate_parent = candidate.parent().ok_or_else(|| {
+        format!(
+            "reinstall backup path must have a parent directory: {}",
+            candidate.display()
+        )
+    })?;
+    if canonical_or_self(candidate_parent) != repo_parent {
+        return Err(format!(
+            "reinstall backup path must be a sibling of repository root {}: {}",
+            repo_root.display(),
+            candidate.display()
+        ));
+    }
+    let repo_name = repo_root
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("repository");
+    if !valid_backup_name(
+        candidate.file_name().and_then(|value| value.to_str()),
+        repo_name,
+    ) {
+        return Err(format!(
+            "reinstall backup path must use the managed backup filename for repository {}: {}",
+            repo_root.display(),
+            candidate.display()
+        ));
+    }
+    if let Ok(metadata) = fs::symlink_metadata(candidate) {
+        if metadata.file_type().is_symlink() {
+            return Err(format!(
+                "refusing to use symlinked reinstall backup path {}",
+                candidate.display()
+            ));
+        }
+    }
+    if candidate.starts_with(&repo_root) {
+        return Err(format!(
+            "reinstall backup path must live outside repository root {}: {}",
+            repo_root.display(),
+            candidate.display()
+        ));
+    }
+    Ok(())
+}
+
+fn remove_backup(repo_root: &Path, path: Option<&Path>) -> Result<(), String> {
     let Some(path) = path else {
         return Ok(());
     };
-    remove_path(path).map_err(|error| {
+    validate_reinstall_backup_path(repo_root, path)?;
+    remove_exact_path(path).map_err(|error| {
         format!(
             "failed to remove reinstall backup {} after successful setup: {error}",
             path.display()
@@ -1071,10 +1245,19 @@ fn remove_backup(path: Option<&Path>) -> Result<(), String> {
     })
 }
 
-fn restore_backup(state_dir: &Path, backup_path: Option<&Path>) -> Result<(), String> {
+fn remove_exact_path(path: &Path) -> std::io::Result<()> {
+    let metadata = fs::symlink_metadata(path)?;
+    remove_exact_path_with_metadata(path, &metadata)
+}
+
+fn restore_backup(
+    repo_root: &Path,
+    state_dir: &Path,
+    backup_path: Option<&Path>,
+) -> Result<(), String> {
     let Some(backup_path) = backup_path else {
         if state_dir.exists() {
-            remove_path(state_dir).map_err(|error| {
+            remove_partial_state_tree(repo_root, state_dir).map_err(|error| {
                 format!(
                     "failed to remove partial graph state {} after setup failure: {error}",
                     state_dir.display()
@@ -1084,7 +1267,7 @@ fn restore_backup(state_dir: &Path, backup_path: Option<&Path>) -> Result<(), St
         return Ok(());
     };
     if state_dir.exists() {
-        remove_path(state_dir).map_err(|error| {
+        remove_partial_state_tree(repo_root, state_dir).map_err(|error| {
             format!(
                 "failed to remove partial graph state {} before restore: {error}",
                 state_dir.display()
@@ -1100,12 +1283,82 @@ fn restore_backup(state_dir: &Path, backup_path: Option<&Path>) -> Result<(), St
     })
 }
 
-fn remove_path(path: &Path) -> std::io::Result<()> {
-    if path.is_dir() {
-        fs::remove_dir_all(path)
+fn remove_partial_state_tree(repo_root: &Path, state_dir: &Path) -> std::io::Result<()> {
+    validate_state_dir_path(repo_root, state_dir)
+        .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidInput, error))?;
+    remove_exact_path(state_dir)
+}
+
+fn validate_state_dir_path(repo_root: &Path, state_dir: &Path) -> Result<(), String> {
+    let expected = repo_root.join(".codebaseGraph");
+    if canonical_or_self(state_dir) != canonical_or_self(&expected) {
+        return Err(format!(
+            "refusing to remove unexpected state directory {}; expected {}",
+            state_dir.display(),
+            expected.display()
+        ));
+    }
+    Ok(())
+}
+
+fn remove_exact_path_with_metadata(path: &Path, metadata: &fs::Metadata) -> std::io::Result<()> {
+    let file_type = metadata.file_type();
+    if file_type.is_symlink() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!("refusing to remove symlink {}", path.display()),
+        ));
+    }
+    if file_type.is_dir() {
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let child = entry.path();
+            let child_metadata = fs::symlink_metadata(&child)?;
+            remove_exact_path_with_metadata(&child, &child_metadata)?;
+        }
+        fs::remove_dir(path)
     } else {
         fs::remove_file(path)
     }
+}
+
+fn canonical_or_self(path: &Path) -> PathBuf {
+    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+}
+
+fn valid_backup_name(candidate_name: Option<&str>, repo_name: &str) -> bool {
+    let Some(candidate_name) = candidate_name else {
+        return false;
+    };
+    let prefix = format!("{repo_name}.codebaseGraph.reinstall-backup");
+    if candidate_name == prefix {
+        return true;
+    }
+    candidate_name
+        .strip_prefix(&(prefix + "-"))
+        .is_some_and(|suffix| !suffix.is_empty() && suffix.chars().all(|ch| ch.is_ascii_digit()))
+}
+
+fn run_reinstall_activation_boundary<Activate, AfterActivate>(
+    repo_root: &Path,
+    paths: &GraphStatePaths,
+    backup_path: Option<&Path>,
+    activate: Activate,
+    after_activate: AfterActivate,
+) -> Result<serde_json::Value, String>
+where
+    Activate: FnOnce() -> Result<serde_json::Value, String>,
+    AfterActivate: FnOnce(serde_json::Value) -> Result<serde_json::Value, String>,
+{
+    let activation_payload = match activate() {
+        Ok(payload) => payload,
+        Err(error) => {
+            restore_backup(repo_root, &paths.state_dir, backup_path)?;
+            return Err(error);
+        }
+    };
+    remove_backup(repo_root, backup_path)?;
+    after_activate(activation_payload)
 }
 
 fn read_json_file(path: &Path) -> Result<serde_json::Value, String> {
@@ -2806,9 +3059,10 @@ fn install_safe_name(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        install_mcp_server, native_client_command, remove_mcp_server, resolve_mcp_target,
-        McpClientInstallOptions, McpClientRemovalOptions, McpExistingEntryPolicy, McpInstallMode,
-        McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
+        install_mcp_server, native_client_command, reinstall_state, remove_mcp_server,
+        remove_partial_state_tree, resolve_mcp_target, run_reinstall_activation_boundary,
+        GraphStatePaths, McpClientInstallOptions, McpClientRemovalOptions, McpExistingEntryPolicy,
+        McpInstallMode, McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::fs;
@@ -3380,5 +3634,93 @@ mod tests {
         assert_eq!(written["action"], "removed");
         assert!(saved["mcpServers"].get("codebase_graph_repo").is_none());
         assert_eq!(saved["mcpServers"]["unrelated"]["args"][0], "present");
+    }
+
+    #[test]
+    fn reinstall_activation_boundary_restores_backup_on_activation_failure() {
+        let repo = TestDir::new("reinstall-restore-on-activation-failure");
+        let repo_root = repo.path().to_path_buf();
+        let state_dir = repo_root.join(".codebaseGraph");
+        fs::create_dir_all(&state_dir).unwrap();
+        fs::write(state_dir.join("legacy.txt"), "legacy").unwrap();
+        let paths = GraphStatePaths::derive(&repo_root);
+        let state = reinstall_state(&repo_root, &paths, false).unwrap();
+        let backup_path = state.backup_path.clone().unwrap();
+
+        let error = run_reinstall_activation_boundary(
+            &repo_root,
+            &paths,
+            state.backup_path.as_deref(),
+            || Err("activation failed".to_string()),
+            Ok,
+        )
+        .unwrap_err();
+
+        assert_eq!(error, "activation failed");
+        assert!(state_dir.exists());
+        assert_eq!(
+            fs::read_to_string(state_dir.join("legacy.txt")).unwrap(),
+            "legacy"
+        );
+        assert!(!backup_path.exists());
+    }
+
+    #[test]
+    fn reinstall_activation_boundary_keeps_new_state_on_post_activation_failure() {
+        let repo = TestDir::new("reinstall-post-activation-failure");
+        let repo_root = repo.path().to_path_buf();
+        let state_dir = repo_root.join(".codebaseGraph");
+        fs::create_dir_all(&state_dir).unwrap();
+        fs::write(state_dir.join("legacy.txt"), "legacy").unwrap();
+        let paths = GraphStatePaths::derive(&repo_root);
+        let state = reinstall_state(&repo_root, &paths, false).unwrap();
+        let backup_path = state.backup_path.clone().unwrap();
+
+        let error = run_reinstall_activation_boundary(
+            &repo_root,
+            &paths,
+            state.backup_path.as_deref(),
+            || {
+                fs::create_dir_all(&state_dir).unwrap();
+                fs::write(state_dir.join("new.txt"), "new").unwrap();
+                Ok(json!({"ok": true}))
+            },
+            |payload| {
+                assert!(!backup_path.exists());
+                assert_eq!(
+                    fs::read_to_string(state_dir.join("new.txt")).unwrap(),
+                    "new"
+                );
+                Err(format!("post activation failed: {payload}"))
+            },
+        )
+        .unwrap_err();
+
+        assert!(error.starts_with("post activation failed:"));
+        assert!(state_dir.exists());
+        assert_eq!(
+            fs::read_to_string(state_dir.join("new.txt")).unwrap(),
+            "new"
+        );
+        assert!(!state_dir.join("legacy.txt").exists());
+        assert!(!backup_path.exists());
+    }
+
+    #[test]
+    fn remove_partial_state_tree_rejects_symlinks() {
+        #[cfg(unix)]
+        {
+            let repo = TestDir::new("reinstall-remove-symlink");
+            let repo_root = repo.path().to_path_buf();
+            let state_dir = repo_root.join(".codebaseGraph");
+            let outside = repo.join("outside.txt");
+            fs::create_dir_all(&state_dir).unwrap();
+            fs::write(&outside, "outside").unwrap();
+            std::os::unix::fs::symlink(&outside, state_dir.join("linked.txt")).unwrap();
+
+            let error = remove_partial_state_tree(&repo_root, &state_dir).unwrap_err();
+            assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
+            assert!(state_dir.exists());
+        }
     }
 }

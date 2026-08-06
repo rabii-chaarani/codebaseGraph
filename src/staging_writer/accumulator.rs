@@ -42,7 +42,6 @@ impl StagingAccumulator {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn add_partition(&mut self, partition: &GraphPartition) {
         self.add_partition_filtered(partition, &BTreeSet::new(), &BTreeSet::new());
     }

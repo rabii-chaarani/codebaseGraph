@@ -1,4 +1,5 @@
 use super::timing::elapsed_seconds;
+use crate::artifact_store::{ArtifactExpectations, ArtifactStore};
 use crate::error::NativeError;
 use crate::parser;
 use crate::partition_builder;
@@ -12,11 +13,13 @@ pub(super) struct PartitionBuildResult {
     pub(super) diagnostics: Vec<String>,
     pub(super) parse_seconds: f64,
     pub(super) graph_build_seconds: f64,
+    pub(super) reused_artifact: bool,
 }
 
 pub(super) fn build_execution_plan(
     scan: &scan::SourceScan,
     rebuild_paths: &[String],
+    artifact_store: &ArtifactStore,
 ) -> Result<Vec<PartitionBuildResult>, NativeError> {
     let request = &scan.input;
     if request.parallel && rebuild_paths.len() > 1 {
@@ -36,9 +39,21 @@ pub(super) fn build_execution_plan(
                 else {
                     continue;
                 };
-                handles.push(
-                    scope.spawn(move || build_partition_for_snapshot(request, snapshot, profile)),
-                );
+                let artifact_store = artifact_store.clone();
+                let previous_entry = request
+                    .previous_manifest
+                    .as_ref()
+                    .and_then(|manifest| manifest.files.get(path))
+                    .cloned();
+                handles.push(scope.spawn(move || {
+                    build_partition_for_snapshot(
+                        request,
+                        snapshot,
+                        profile,
+                        previous_entry.as_ref(),
+                        &artifact_store,
+                    )
+                }));
             }
             handles
                 .into_iter()
@@ -53,47 +68,99 @@ pub(super) fn build_execution_plan(
 
     let mut results = Vec::new();
     for path in rebuild_paths {
-        let Some(snapshot) = scan.supported.get(path) else {
-            continue;
-        };
-        let Some(language) = snapshot.language.as_deref() else {
-            continue;
-        };
-        let Some(profile) = scan
-            .profiles
-            .iter()
-            .find(|profile| profile.language == language)
-        else {
-            continue;
-        };
-        results.push(build_partition_for_snapshot(request, snapshot, profile)?);
+        results.push(build_partition_for_path(scan, path, artifact_store)?);
     }
     Ok(results)
+}
+
+pub(super) fn build_partition_for_path(
+    scan: &scan::SourceScan,
+    path: &str,
+    artifact_store: &ArtifactStore,
+) -> Result<PartitionBuildResult, NativeError> {
+    let Some(snapshot) = scan.supported.get(path) else {
+        return Err(NativeError::InvalidInput(format!(
+            "missing scanned source for artifact rebuild: {path}"
+        )));
+    };
+    let Some(language) = snapshot.language.as_deref() else {
+        return Err(NativeError::InvalidInput(format!(
+            "missing language for artifact rebuild: {path}"
+        )));
+    };
+    let Some(profile) = scan
+        .profiles
+        .iter()
+        .find(|profile| profile.language == language)
+    else {
+        return Err(NativeError::InvalidInput(format!(
+            "missing language profile for artifact rebuild: {path}"
+        )));
+    };
+
+    let previous_entry = scan
+        .input
+        .previous_manifest
+        .as_ref()
+        .and_then(|manifest| manifest.files.get(path));
+    build_partition_for_snapshot(
+        &scan.input,
+        snapshot,
+        profile,
+        previous_entry,
+        artifact_store,
+    )
 }
 
 fn build_partition_for_snapshot(
     request: &NativeSyntaxMaterializationRequest,
     snapshot: &SourceSnapshot,
     profile: &LanguageProfile,
+    previous_entry: Option<&crate::protocol::ManifestEntry>,
+    artifact_store: &ArtifactStore,
 ) -> Result<PartitionBuildResult, NativeError> {
+    let artifact_key = ArtifactStore::key_for_request(request, snapshot, Some(profile))?;
+    if previous_entry.and_then(|entry| entry.artifact_key.as_deref()) == Some(artifact_key.as_str())
+    {
+        if let Some(partition) = artifact_store.load_partition(
+            &artifact_key,
+            &ArtifactExpectations {
+                path: &snapshot.path,
+                content_hash: &snapshot.content_hash,
+                language: snapshot.language.as_deref().unwrap_or_default(),
+            },
+        )? {
+            return Ok(PartitionBuildResult {
+                partition,
+                diagnostics: Vec::new(),
+                parse_seconds: 0.0,
+                graph_build_seconds: 0.0,
+                reused_artifact: true,
+            });
+        }
+    }
     let parse_started = Instant::now();
     let parse = parser::parse_file(snapshot, profile)?;
     let parse_seconds = elapsed_seconds(parse_started);
     let diagnostics = parse.diagnostics.clone();
     let graph_build_started = Instant::now();
-    let partition = partition_builder::build_partition(request, snapshot, parse)?;
+    let mut partition = partition_builder::build_partition(request, snapshot, parse)?;
+    partition.set_artifact_key(artifact_key.clone());
     let graph_build_seconds = elapsed_seconds(graph_build_started);
+    let _ = artifact_store.store_partition(&artifact_key, &partition)?;
     Ok(PartitionBuildResult {
         partition,
         diagnostics,
         parse_seconds,
         graph_build_seconds,
+        reused_artifact: false,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::artifact_store::ArtifactStore;
     use crate::protocol::{NativeSyntaxMaterializationRequest, OntologySchema};
     use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -128,6 +195,10 @@ mod tests {
             exclude_patterns: Vec::new(),
             ignore_patterns: Vec::new(),
             candidate_paths: Vec::new(),
+            artifact_root: source_root
+                .join(".codebaseGraph/artifacts")
+                .to_string_lossy()
+                .into_owned(),
             db_path: source_root.join("graph").to_string_lossy().into_owned(),
             include_fts: false,
             semantic_enrichment: false,
@@ -141,10 +212,11 @@ mod tests {
         };
         let scan = crate::scan::scan_sources(&request).expect("scan should succeed");
         let rebuild_paths = scan.diff.rebuild_paths();
+        let artifact_store = ArtifactStore::new(request.resolved_artifact_root());
 
         fs::remove_dir_all(&source_root).expect("source repository should be removed");
 
-        let plan = build_execution_plan(&scan, &rebuild_paths)
+        let plan = build_execution_plan(&scan, &rebuild_paths, &artifact_store)
             .expect("planning should use the scanned source payload");
         assert_eq!(plan.len(), 1);
         assert_eq!(plan[0].partition.entry.path, "src/lib.rs");
