@@ -1,12 +1,13 @@
 ---
-description: Durable constraints that preserve transport neutrality, deterministic indexing, safe knowledge publication, and evidence integrity.
+description: Durable constraints for transport neutrality, immutable graph generations, run recovery, safe knowledge publication, and evidence integrity.
 resource: repository-architecture
 tags:
 - architecture
-- invariants
-- decisions
 - constraints
-timestamp: 2026-08-04
+- decisions
+- invariants
+- graph-storage
+timestamp: 2026-08-06
 title: Architecture Invariants
 type: architecture
 ---
@@ -18,36 +19,43 @@ These constraints are the shortest durable test for whether a change still fits 
 
 1. **All product interfaces share one operation model.** CLI, MCP, and embedded clients translate to public typed requests and must not implement separate product semantics.
 2. **The operation registry is authoritative.** Dispatch, schemas, catalog output, and MCP tool generation derive from one registered operation catalog.
-3. **Repository context is canonical per operation.** Source root, graph path, configuration, and manifest selection are resolved once and reused by the handler.
+3. **Repository context is canonical per operation.** Source root, storage mode, configuration, and manifest selection are resolved once and reused by the handler.
 4. **Validation precedes execution.** Canonical defaults and operation rules are applied before side effects or storage access.
 5. **Graph reads are bounded and non-mutating.** Raw statements are single, parameterized, read-only, and result-limited; adapters never bypass the Graph Read Service.
 6. **Materialization has one pipeline.** Explicit builds, setup, lifecycle refresh, and watch refresh converge on Source Scanner -> Execution Planner -> Semantic Enricher -> Graph Writer -> Graph Store.
 7. **Execution plans are self-contained.** Later stages do not depend on source files remaining present after scanning.
 8. **Output is deterministic across execution modes.** Parallel parsing, enrichment, and merging preserve stable identities and collection order.
 9. **Relationships carry evidence and satisfy the ontology.** Cross-file inference records evidence or fallback diagnostics, and relationship endpoints are validated before persistence.
-10. **Manifest publication follows graph success.** Failed writes do not advertise a newer repository manifest.
-11. **Graph concurrency is coordinated at the store.** Writers are serialized with stale-lock recovery; transient lock failures use bounded retry; readers use the same storage boundary.
-12. **Refresh orchestrates rather than reimplements.** Event filtering, batching, and retry wrap incremental materialization instead of duplicating indexing logic.
+10. **Managed graph generations are immutable.** Every mutation builds a fresh self-contained candidate; the active database is never partition-deleted, appended to, or replaced in place.
+11. **Publication is one atomic pointer change.** A candidate database, manifest, metadata, and readiness marker are validated before `active.json` advances under the state lock. Failure preserves the prior active generation.
+12. **Writer and reader lifetimes are explicit.** One exclusive writer lock covers the complete mutation. Each read holds a shared lease on exactly one generation until all database access is complete.
+13. **Retirement is lease-aware and immediate.** Superseded generations have no timed retention; they are deleted after the last reader releases, with retryable failures visible as `cleanup_pending`.
+14. **Run ownership is durable.** Every build has a leased, journaled `RunWorkspace`; explicit finish or abort reports cleanup errors, and later runtime entry deterministically recovers abandoned work.
+15. **Cleanup is confined and primary errors survive.** Cleanup rejects symlinks and escaping paths, is idempotent, and never masks the failure that caused abort.
+16. **Artifacts optimize parsing, not persistence correctness.** Raw partitions are content-addressed across every invalidation dimension; all partitions are assembled deterministically and global semantic enrichment always reruns.
+17. **Legacy state is read-only until explicit reinstall.** Schema-v1 reads remain available; mutations return `legacy_storage_requires_reinstall`. Successful reinstall deletes renamed legacy state immediately after validated v2 activation.
+18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.
 
 ## Knowledge invariants
 
-13. **Curated source is distinct from generated state.** `knowledge/` is authored intent; `.kwiki/` is disposable projection state; `.codebaseGraph/` is source-graph state.
-14. **OKF consumption is forward-compatible.** Unknown types, extensions, and links remain consumable and visible while required conformance errors are reported separately.
-15. **Wiki publication is generation-atomic.** Failed compilation or rendering preserves the last valid projection, and stale concurrent work cannot replace newer output.
-16. **Rendering treats bundle content as untrusted.** Markdown, HTML, links, fragments, and resource identifiers are sanitized before publication.
-17. **Authoring is confined and concurrency-safe.** Writes stay beneath configured bundle roots, reject traversal and escaping links, use atomic replacement, and reject stale content hashes.
-18. **HTTP is a read-only local preview boundary.** It binds locally by default, applies restrictive browser headers, and does not become an alternate authoring surface.
-19. **Graph context is optional.** The wiki calls only the Graph Runtime public API; graph failure returns explicit degraded context without blocking curated knowledge.
-20. **Stable identities and URLs outlive implementation refactors.** Concept IDs, directory projections, backlink targets, and published routes remain deterministic.
+19. **Curated source is distinct from generated state.** `knowledge/` is authored intent; `.kwiki/` is disposable projection state; `.codebaseGraph/` is source-graph state.
+20. **OKF consumption is forward-compatible.** Unknown types, extensions, and links remain consumable and visible while required conformance errors are reported separately.
+21. **Wiki publication is generation-atomic.** Failed compilation or rendering preserves the last valid projection, and stale concurrent work cannot replace newer output.
+22. **Rendering treats bundle content as untrusted.** Markdown, HTML, links, fragments, and resource identifiers are sanitized before publication.
+23. **Authoring is confined and concurrency-safe.** Writes stay beneath configured bundle roots, reject traversal and escaping links, use atomic replacement, and reject stale content hashes.
+24. **HTTP is a read-only local preview boundary.** It binds locally by default, applies restrictive browser headers, and does not become an alternate authoring surface.
+25. **Graph context is optional.** The wiki calls only the Graph Runtime public API; graph failure returns explicit degraded context without blocking curated knowledge.
+26. **Stable identities and URLs outlive implementation refactors.** Concept IDs, directory projections, backlink targets, and published routes remain deterministic.
 
 ## Verification invariants
 
-21. **Release checks exercise packaged behavior.** The separate Release Verifier validates repository policy, versions, workflows, CLI artifacts, and MCP negotiation as shipped.
-22. **Intent and implementation evidence remain separate.** Scryer is the authored responsibility model; the codebase graph and tests are evidence of the current implementation. Neither silently substitutes for the other.
-23. **Architecture documentation records durable boundaries, not transient counts.** Snapshot metrics may qualify confidence, but responsibilities, dependencies, failure modes, and recovery rules are what this wiki preserves.
+27. **Release checks exercise packaged behavior.** The separate Release Verifier validates repository policy, versions, workflows, CLI artifacts, and MCP negotiation as shipped.
+28. **Intent and implementation evidence remain separate.** Scryer is the authored responsibility model; the codebase graph and tests are evidence of the current implementation. Neither silently substitutes for the other.
+29. **Architecture documentation records durable boundaries, not transient counts.** Snapshot metrics may qualify confidence, but responsibilities, dependencies, failure modes, and recovery rules are what this wiki preserves.
+30. **Idle storage has a measurable acceptance state.** With no readers, managed v2 has exactly one generation, no run directories, no pending cleanup, stable graph results, and churn size within the greater of 10% or 8 MiB above a clean-control rebuild.
 
 ## When an invariant changes
 
 Update the Scryer model first for changed responsibilities or links, obtain the required architecture sign-off, implement and test the change, reconcile anchors and drift, then update the affected wiki concepts. If code evidence contradicts the wiki without an approved intent change, treat it as drift rather than rewriting the invariant around the implementation.
 
-Related: [Repository Architecture Overview](./overview.md), [Public Operations and Runtime Paths](./operation-paths.md), and [Repository Ownership Map](./repository-map.md).
+Related: [Repository Architecture Overview](./overview.md), [Graph Storage Lifecycle and Recovery](./graph-storage-lifecycle.md), [Public Operations and Runtime Paths](./operation-paths.md), and [Repository Ownership Map](./repository-map.md).
