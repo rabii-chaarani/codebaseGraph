@@ -54,8 +54,25 @@ pub(crate) fn write_json_atomically_with_fault<T: Serialize>(
 }
 
 pub(crate) fn sync_dir(path: &Path) -> Result<(), NativeError> {
-    let dir = File::open(path)?;
-    dir.sync_all()?;
+    let metadata = fs::metadata(path)?;
+    if !metadata.is_dir() {
+        return Err(NativeError::InvalidInput(format!(
+            "path {} is not a directory",
+            path.display()
+        )));
+    }
+
+    #[cfg(not(windows))]
+    {
+        let dir = File::open(path)?;
+        dir.sync_all()?;
+    }
+
+    // Windows intentionally stops after metadata validation: Rust's portable
+    // file API cannot flush a directory handle there. The file itself is
+    // synced before rename, so a successful commit must not become a false
+    // write failure during the unsupported directory-sync step.
+
     Ok(())
 }
 
