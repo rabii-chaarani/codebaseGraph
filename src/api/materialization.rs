@@ -1,18 +1,25 @@
-#[cfg(test)]
-use crate::api::contracts::{OutputFormat, RepoSelector};
+use crate::api::contracts::RepoSelector;
 use crate::api::{
     context::{resolve_repository_root, RepoPaths, RepoRuntime},
     contracts::MaterializationRequest,
 };
+use crate::artifact_store::ArtifactStore;
 use crate::protocol::{
-    ManifestDiff, ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
+    ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
     NativeSyntaxMaterializationResponse,
 };
+use crate::storage::direct::{DirectStore, DirectWriteSession};
+use crate::storage::layout::{DirectLayout, RepositoryLayout};
+use crate::storage::managed::{GraphStorage, ManagedStore, ManagedWriteSession, StorageMode};
+use crate::storage::run_workspace::{RunPhase, RunWorkspace};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Instant;
+
+#[cfg(test)]
+use crate::api::contracts::OutputFormat;
 
 #[derive(Clone, Debug)]
 pub(crate) struct MaterializeOptions {
@@ -21,6 +28,7 @@ pub(crate) struct MaterializeOptions {
     pub(crate) config: Option<PathBuf>,
     pub(crate) db: Option<PathBuf>,
     pub(crate) manifest: Option<PathBuf>,
+    pub(crate) storage_root: Option<PathBuf>,
     pub(crate) mode: String,
     pub(crate) include_fts: bool,
     pub(crate) semantic_enrichment: bool,
@@ -44,6 +52,7 @@ impl Default for MaterializeOptions {
             config: None,
             db: None,
             manifest: None,
+            storage_root: None,
             mode: String::new(),
             include_fts: false,
             semantic_enrichment: false,
@@ -72,6 +81,7 @@ impl MaterializeOptions {
             config: runtime.config_path.clone(),
             db: Some(runtime.db_path.clone()),
             manifest: Some(runtime.manifest_path.clone()),
+            storage_root: runtime.storage_root.clone(),
             mode: request.mode.clone(),
             include_fts: request.include_fts,
             semantic_enrichment: request.semantic_enrichment,
@@ -142,8 +152,7 @@ pub(crate) fn execute_materialization(
         Some(request_path) => read_request(request_path)?,
         None => build_request(options)?,
     };
-    let manifest_path = request_manifest_path(options);
-    execute_materialization_request_with_manifest(manifest_path.as_deref(), request)
+    execute_materialization_request(options, request)
 }
 
 pub(crate) fn execute_candidate_materialization(
@@ -158,9 +167,7 @@ pub(crate) fn execute_candidate_materialization(
 > {
     let mut request = build_request(options)?;
     request.candidate_paths = candidate_paths;
-    request.atomic_rebuild = false;
-    let manifest_path = request_manifest_path(options);
-    execute_materialization_request_with_manifest(manifest_path.as_deref(), request)
+    execute_materialization_request(options, request)
 }
 
 pub(crate) fn execute_materialization_request(
@@ -173,38 +180,24 @@ pub(crate) fn execute_materialization_request(
     ),
     String,
 > {
-    let manifest_path = request_manifest_path(options);
-    execute_materialization_request_with_manifest(manifest_path.as_deref(), request)
-}
-
-pub(crate) fn execute_materialization_request_with_manifest(
-    manifest_path: Option<&Path>,
-    request: NativeSyntaxMaterializationRequest,
-) -> Result<
-    (
-        NativeSyntaxMaterializationRequest,
-        NativeSyntaxMaterializationResponse,
-    ),
-    String,
-> {
+    let mut request = request;
+    let execution = prepare_storage_execution(options)?;
+    request.db_path = execution.request_db_path().to_string_lossy().into_owned();
+    request.staging_dir = execution.staging_root().to_string_lossy().into_owned();
+    request.previous_manifest = execution.previous_manifest().clone();
+    request.artifact_root = execution.artifact_root().to_string_lossy().into_owned();
+    request.manifest_schema_version = 2;
     let started = Instant::now();
     let final_request = request;
-    let mut response = crate::execute_materialization_pipeline(&final_request)
-        .map_err(|error| error.to_string())?;
+    let mut response = match crate::execute_materialization_pipeline(&final_request) {
+        Ok(response) => response,
+        Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
+    };
     response.phase_timings.insert(
         "native_cli_seconds".to_string(),
         started.elapsed().as_secs_f64(),
     );
-
-    if let Some(path) = manifest_path {
-        write_manifest(
-            path,
-            &final_request,
-            &response.rebuilt_entries,
-            &response.diff,
-        )?;
-    }
-
+    finalize_materialization(execution, &final_request, &mut response)?;
     Ok((final_request, response))
 }
 
@@ -252,6 +245,92 @@ pub(crate) fn plan_materialization_payload(
     })
 }
 
+#[derive(Debug)]
+enum StorageExecution {
+    Direct {
+        db_path: PathBuf,
+        manifest_path: PathBuf,
+        artifact_root: PathBuf,
+        session: DirectWriteSession,
+        workspace: RunWorkspace,
+        previous_manifest: Option<NativeManifest>,
+    },
+    Managed {
+        artifact_root: PathBuf,
+        session: ManagedWriteSession,
+        previous_manifest: Option<NativeManifest>,
+        store: ManagedStore,
+    },
+}
+
+impl StorageExecution {
+    fn request_db_path(&self) -> PathBuf {
+        match self {
+            Self::Direct { session, .. } => session.db_candidate_path(),
+            Self::Managed { session, .. } => session.candidate_db_path(),
+        }
+    }
+
+    fn request_manifest_path(&self) -> PathBuf {
+        match self {
+            Self::Direct { session, .. } => session.manifest_candidate_path(),
+            Self::Managed { session, .. } => session.candidate_manifest_path(),
+        }
+    }
+
+    fn staging_root(&self) -> PathBuf {
+        match self {
+            Self::Direct { workspace, .. } => workspace.staging_root(),
+            Self::Managed { session, .. } => session.staging_root().unwrap_or_else(|| {
+                run_root_from_candidate(session.candidate.paths().root()).join("staging")
+            }),
+        }
+    }
+
+    fn previous_manifest(&self) -> &Option<NativeManifest> {
+        match self {
+            Self::Direct {
+                previous_manifest, ..
+            }
+            | Self::Managed {
+                previous_manifest, ..
+            } => previous_manifest,
+        }
+    }
+
+    fn artifact_root(&self) -> &Path {
+        match self {
+            Self::Direct { artifact_root, .. } | Self::Managed { artifact_root, .. } => {
+                artifact_root
+            }
+        }
+    }
+
+    fn abort_with_cleanup(self, primary_error: String) -> String {
+        match self {
+            Self::Direct {
+                session, workspace, ..
+            } => {
+                let mut cleanup_errors = Vec::new();
+                if let Err(error) = cleanup_direct_candidate(&session) {
+                    cleanup_errors.push(error);
+                }
+                if let Err(error) = workspace.abort(Some(primary_error.clone())) {
+                    cleanup_errors.push(error.to_string());
+                }
+                append_cleanup_errors(primary_error, cleanup_errors)
+            }
+            Self::Managed { session, .. } => append_cleanup_error(
+                primary_error.clone(),
+                session
+                    .abort(Some(primary_error))
+                    .err()
+                    .map(|error| error.to_string()),
+            ),
+        }
+    }
+}
+
 pub(crate) fn build_request(
     options: &MaterializeOptions,
 ) -> Result<NativeSyntaxMaterializationRequest, String> {
@@ -262,7 +341,7 @@ pub(crate) fn build_request(
         .manifest
         .clone()
         .unwrap_or_else(|| paths.manifest_path.clone());
-    let previous_manifest = if manifest_path.exists() {
+    let previous_manifest = if options.plan_only && manifest_path.exists() {
         Some(read_manifest(&manifest_path)?)
     } else {
         None
@@ -283,13 +362,14 @@ pub(crate) fn build_request(
         normalized_candidate_paths(&options.candidate_paths)
     };
     let staging_dir = paths.state_dir.join("native-staging");
+    let artifact_root = paths.state_dir.join("artifacts");
 
     Ok(NativeSyntaxMaterializationRequest {
         source_root: source_root.to_string_lossy().to_string(),
         repository_label: paths.repo_name,
         mode: options.mode.clone(),
         parser_version: "native-rust-cli-v1".to_string(),
-        manifest_schema_version: 1,
+        manifest_schema_version: 2,
         ontology: "code_ontology_v1".to_string(),
         ontology_schema: Default::default(),
         previous_manifest,
@@ -299,6 +379,7 @@ pub(crate) fn build_request(
         exclude_patterns,
         ignore_patterns,
         candidate_paths,
+        artifact_root: artifact_root.to_string_lossy().into_owned(),
         db_path: db_path.to_string_lossy().to_string(),
         include_fts: options.include_fts,
         semantic_enrichment: options.semantic_enrichment,
@@ -448,6 +529,7 @@ pub(crate) fn default_excluded_parts() -> Vec<String> {
     .collect()
 }
 
+#[cfg(test)]
 pub(crate) fn request_manifest_path(options: &MaterializeOptions) -> Option<PathBuf> {
     if options.native_request.is_some() {
         return options.manifest.clone();
@@ -478,36 +560,15 @@ pub(crate) fn read_request(path: &Path) -> Result<NativeSyntaxMaterializationReq
 pub(crate) fn write_manifest(
     path: &Path,
     request: &NativeSyntaxMaterializationRequest,
-    rebuilt_entries: &BTreeMap<String, ManifestEntry>,
-    diff: &ManifestDiff,
-) -> Result<(), String> {
-    let mut files = if diff.force_rebuild {
-        BTreeMap::new()
-    } else {
-        request
-            .previous_manifest
-            .as_ref()
-            .map(|manifest| manifest.files.clone())
-            .unwrap_or_default()
-    };
-    let removed: BTreeSet<String> = diff
-        .deleted
-        .iter()
-        .chain(diff.rebuild_paths().iter())
-        .cloned()
-        .collect();
-    files.retain(|path, _| !removed.contains(path));
-    files.extend(
-        rebuilt_entries
-            .iter()
-            .map(|(path, entry)| (path.clone(), entry.clone())),
-    );
-
+    materialized_entries: &BTreeMap<String, ManifestEntry>,
+    graph_build_digest: Option<String>,
+) -> Result<NativeManifest, String> {
     let manifest = NativeManifest {
         schema_version: request.manifest_schema_version,
         ontology: request.ontology.clone(),
         parser_version: request.parser_version.clone(),
-        files,
+        graph_build_digest,
+        files: materialized_entries.clone(),
     };
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|error| {
@@ -519,7 +580,407 @@ pub(crate) fn write_manifest(
     }
     let text = serde_json::to_string_pretty(&manifest).map_err(|error| error.to_string())?;
     fs::write(path, format!("{text}\n"))
-        .map_err(|error| format!("failed to write manifest {}: {error}", path.display()))
+        .map_err(|error| format!("failed to write manifest {}: {error}", path.display()))?;
+    Ok(manifest)
+}
+
+fn prepare_storage_execution(options: &MaterializeOptions) -> Result<StorageExecution, String> {
+    let selector = RepoSelector {
+        repo_root: options.source_root.clone(),
+        config_path: options.config.clone(),
+        db_path: options.db.clone(),
+        manifest_path: options.manifest.clone(),
+    };
+    let mut runtime = crate::api::context::resolve_runtime(&selector)
+        .map_err(|error| format!("failed to resolve materialization storage target: {error}"))?;
+    runtime.active_read = None;
+    runtime.direct_read = None;
+    let managed_storage_root = options.storage_root.clone().or_else(|| {
+        matches!(runtime.storage_mode, StorageMode::ManagedV2)
+            .then(|| runtime.storage_root.clone())
+            .flatten()
+    });
+    match managed_storage_root {
+        Some(storage_root) => {
+            let store = GraphStorage::managed(storage_root.clone());
+            let session = store
+                .begin_write()
+                .map_err(|error| format!("failed to create managed write session: {error}"))?;
+            let previous_manifest = match session
+                .base_manifest_path()
+                .map_err(|error| error.to_string())?
+            {
+                Some(path) if path.exists() => Some(read_manifest(&path)?),
+                _ => None,
+            };
+            Ok(StorageExecution::Managed {
+                artifact_root: store.layout().artifacts_root(),
+                session,
+                previous_manifest,
+                store,
+            })
+        }
+        None => {
+            let layout = DirectLayout::new(runtime.db_path.clone(), runtime.manifest_path.clone());
+            let artifact_root = layout.artifact_root_path();
+            let store = DirectStore::new(layout.clone())
+                .map_err(|error| format!("failed to prepare direct storage target: {error}"))?;
+            let session = store
+                .begin_write()
+                .map_err(|error| format!("failed to create direct write session: {error}"))?;
+            let previous_manifest = if runtime.manifest_path.exists() {
+                Some(read_manifest(&runtime.manifest_path)?)
+            } else {
+                None
+            };
+            let workspace = RunWorkspace::create(
+                RepositoryLayout::new(&runtime.state_dir)
+                    .state_root()
+                    .join("direct-runs"),
+                None,
+            )
+            .map_err(|error| format!("failed to create direct run workspace: {error}"))?;
+            workspace
+                .mark_phase(RunPhase::Staged, None, None)
+                .map_err(|error| format!("failed to stage direct run workspace: {error}"))?;
+            Ok(StorageExecution::Direct {
+                db_path: runtime.db_path,
+                manifest_path: runtime.manifest_path,
+                artifact_root,
+                session,
+                workspace,
+                previous_manifest,
+            })
+        }
+    }
+}
+
+fn finalize_materialization(
+    execution: StorageExecution,
+    request: &NativeSyntaxMaterializationRequest,
+    response: &mut NativeSyntaxMaterializationResponse,
+) -> Result<(), String> {
+    let request_db_path = execution.request_db_path();
+    let request_manifest_path = execution.request_manifest_path();
+    let artifact_root = execution.artifact_root().to_path_buf();
+    let manifest = match write_manifest(
+        &request_manifest_path,
+        request,
+        &response.materialized_entries,
+        response.graph_build_digest.clone(),
+    ) {
+        Ok(manifest) => manifest,
+        Err(error) => return Err(execution.abort_with_cleanup(error)),
+    };
+    if let Err(error) = validate_candidate_bundle(
+        &request_db_path,
+        &request_manifest_path,
+        &artifact_root,
+        &manifest,
+        response,
+    ) {
+        return Err(execution.abort_with_cleanup(error));
+    }
+
+    match execution {
+        StorageExecution::Direct {
+            db_path,
+            manifest_path,
+            artifact_root,
+            mut session,
+            workspace,
+            ..
+        } => {
+            if let Err(error) = workspace.mark_phase(RunPhase::Publishing, None, None) {
+                return Err(append_cleanup_error(
+                    format!("failed to journal direct publication: {error}"),
+                    workspace
+                        .abort(Some(error.to_string()))
+                        .err()
+                        .map(|cleanup| cleanup.to_string()),
+                ));
+            }
+            if let Err(error) = session.publish() {
+                return Err(append_cleanup_error(
+                    format!("failed to publish direct graph candidate: {error}"),
+                    workspace
+                        .abort(Some(error.to_string()))
+                        .err()
+                        .map(|cleanup| cleanup.to_string()),
+                ));
+            }
+            if let Err(error) = workspace.mark_phase(RunPhase::Published, None, None) {
+                return Err(append_cleanup_error(
+                    format!("failed to journal completed direct publication: {error}"),
+                    workspace
+                        .abort(Some(error.to_string()))
+                        .err()
+                        .map(|cleanup| cleanup.to_string()),
+                ));
+            }
+            let published_manifest = match read_manifest(&manifest_path) {
+                Ok(manifest) => manifest,
+                Err(error) => {
+                    return Err(append_cleanup_error(
+                        error.clone(),
+                        workspace
+                            .abort(Some(error))
+                            .err()
+                            .map(|cleanup| cleanup.to_string()),
+                    ));
+                }
+            };
+            if let Err(error) = validate_candidate_bundle(
+                &db_path,
+                &manifest_path,
+                &artifact_root,
+                &published_manifest,
+                response,
+            ) {
+                return Err(append_cleanup_error(
+                    error.clone(),
+                    workspace
+                        .abort(Some(error))
+                        .err()
+                        .map(|cleanup| cleanup.to_string()),
+                ));
+            }
+            if let Err(error) = garbage_collect_artifacts(&artifact_root, &published_manifest) {
+                return Err(append_cleanup_error(
+                    error.clone(),
+                    workspace
+                        .abort(Some(error))
+                        .err()
+                        .map(|cleanup| cleanup.to_string()),
+                ));
+            }
+            response.storage_format = "direct".to_string();
+            response.active_generation = None;
+            response.cleanup_pending = false;
+            response.pending_runs = 0;
+            if !manifest_path.exists() {
+                return Err(format!(
+                    "direct manifest publication did not produce {}",
+                    manifest_path.display()
+                ));
+            }
+            workspace
+                .finish()
+                .map_err(|error| format!("failed to clean direct run workspace: {error}"))?;
+            session.finish();
+        }
+        StorageExecution::Managed {
+            artifact_root,
+            mut session,
+            store,
+            ..
+        } => {
+            let published_generation = session
+                .publish_with_stats(&response.graph_summary)
+                .map_err(|error| format!("failed to publish managed graph generation: {error}"))?;
+            let read = store
+                .open_read()
+                .map_err(|error| format!("failed to reopen managed graph generation: {error}"))?;
+            if read.generation_id != published_generation {
+                return Err(format!(
+                    "managed publish activated {}, but reopened generation was {}",
+                    published_generation, read.generation_id
+                ));
+            }
+            let published_manifest = read_manifest(&read.manifest_path)?;
+            validate_candidate_bundle(
+                &read.db_path,
+                &read.manifest_path,
+                &artifact_root,
+                &published_manifest,
+                response,
+            )?;
+            let cleanup = store
+                .recover_and_gc()
+                .map_err(|error| format!("failed to reconcile managed storage cleanup: {error}"))?;
+            if cleanup.run_recovery.skipped_locked == 0 {
+                garbage_collect_artifacts(&artifact_root, &published_manifest)?;
+            }
+            response.storage_format = "managed_v2".to_string();
+            response.active_generation = Some(published_generation);
+            response.cleanup_pending =
+                cleanup.retired_generations_pending > 0 || cleanup.run_recovery.skipped_locked > 0;
+            response.pending_runs = cleanup.run_recovery.skipped_locked;
+            session.finish();
+        }
+    }
+    Ok(())
+}
+
+fn run_root_from_candidate(candidate_root: &Path) -> PathBuf {
+    candidate_root
+        .parent()
+        .and_then(Path::parent)
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| candidate_root.to_path_buf())
+}
+
+fn validate_candidate_bundle(
+    db_path: &Path,
+    manifest_path: &Path,
+    artifact_root: &Path,
+    manifest: &NativeManifest,
+    response: &NativeSyntaxMaterializationResponse,
+) -> Result<(), String> {
+    if manifest.schema_version != 2 {
+        return Err(format!(
+            "published manifest {} has schema_version {}, expected 2",
+            manifest_path.display(),
+            manifest.schema_version
+        ));
+    }
+    if manifest.graph_build_digest != response.graph_build_digest {
+        return Err(format!(
+            "published manifest {} has graph_build_digest {:?}, expected {:?}",
+            manifest_path.display(),
+            manifest.graph_build_digest,
+            response.graph_build_digest
+        ));
+    }
+    if manifest.files != response.materialized_entries {
+        return Err(format!(
+            "published manifest {} does not match materialized entries",
+            manifest_path.display()
+        ));
+    }
+
+    let node_count = crate::api::graph_read::count_graph_nodes(db_path)?;
+    let edge_count = crate::api::graph_read::count_graph_edges(db_path)?;
+    let expected_physical_nodes = (response.node_rows + response.edge_rows) as u64;
+    let expected_physical_edges = response.connector_rows as u64;
+    if node_count != expected_physical_nodes || edge_count != expected_physical_edges {
+        return Err(format!(
+            "published graph counts were nodes={node_count}, edges={edge_count}; expected physical nodes={expected_physical_nodes}, edges={expected_physical_edges}"
+        ));
+    }
+
+    let artifact_store = ArtifactStore::new(artifact_root);
+    let artifact_keys = artifact_store
+        .list_keys()
+        .map_err(|error| {
+            format!(
+                "failed to list artifacts in {}: {error}",
+                artifact_root.display()
+            )
+        })?
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    for (path, entry) in &manifest.files {
+        let artifact_key = entry
+            .artifact_key
+            .as_deref()
+            .ok_or_else(|| format!("manifest entry {path} is missing an artifact_key"))?;
+        if artifact_key.is_empty() {
+            return Err(format!("manifest entry {path} has an empty artifact_key"));
+        }
+        if !artifact_keys.contains(artifact_key) {
+            return Err(format!(
+                "manifest entry {path} references missing artifact {artifact_key}"
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn garbage_collect_artifacts(
+    artifact_root: &Path,
+    active_manifest: &NativeManifest,
+) -> Result<(), String> {
+    let retained = active_manifest
+        .files
+        .values()
+        .filter_map(|entry| entry.artifact_key.clone())
+        .collect::<BTreeSet<_>>();
+    let store = ArtifactStore::new(artifact_root);
+    for key in store.list_keys().map_err(|error| {
+        format!(
+            "failed to list artifacts in {}: {error}",
+            artifact_root.display()
+        )
+    })? {
+        if retained.contains(&key) {
+            continue;
+        }
+        store
+            .delete_key(&key)
+            .map_err(|error| format!("failed to delete artifact {key}: {error}"))?;
+    }
+    Ok(())
+}
+
+fn cleanup_direct_candidate(session: &DirectWriteSession) -> Result<(), String> {
+    let mut cleanup_errors = Vec::new();
+    for path in [
+        session.db_candidate_path(),
+        session.manifest_candidate_path(),
+    ] {
+        if let Err(error) = remove_path_if_exists(&path) {
+            cleanup_errors.push(error);
+        }
+    }
+    for suffix in ["wal", "tmp", "lock"] {
+        let sidecar = PathBuf::from(format!(
+            "{}.{}",
+            session.db_candidate_path().display(),
+            suffix
+        ));
+        if let Err(error) = remove_path_if_exists(&sidecar) {
+            cleanup_errors.push(error);
+        }
+    }
+    if cleanup_errors.is_empty() {
+        Ok(())
+    } else {
+        Err(cleanup_errors.join("; "))
+    }
+}
+
+fn remove_path_if_exists(path: &Path) -> Result<(), String> {
+    if !path.exists() {
+        return Ok(());
+    }
+    let metadata = fs::symlink_metadata(path)
+        .map_err(|error| format!("failed to inspect {}: {error}", path.display()))?;
+    if metadata.file_type().is_symlink() {
+        return Err(format!(
+            "refusing to remove symlinked path {}",
+            path.display()
+        ));
+    }
+    if metadata.is_dir() {
+        Err(format!(
+            "refusing to remove unexpected directory {}",
+            path.display()
+        ))
+    } else {
+        fs::remove_file(path)
+            .map_err(|error| format!("failed to remove file {}: {error}", path.display()))
+    }
+}
+
+fn append_cleanup_error(primary_error: String, cleanup_error: Option<String>) -> String {
+    match cleanup_error {
+        Some(cleanup_error) if !cleanup_error.is_empty() => {
+            format!("{primary_error}; cleanup failed: {cleanup_error}")
+        }
+        _ => primary_error,
+    }
+}
+
+fn append_cleanup_errors(primary_error: String, cleanup_errors: Vec<String>) -> String {
+    if cleanup_errors.is_empty() {
+        primary_error
+    } else {
+        format!(
+            "{primary_error}; cleanup failed: {}",
+            cleanup_errors.join("; ")
+        )
+    }
 }
 
 fn resolved_source_root(options: &MaterializeOptions) -> Result<PathBuf, String> {
@@ -541,6 +1002,129 @@ mod tests {
                 .expect("clock should be after epoch")
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn artifact_gc_retains_active_manifest_keys_and_removes_stale_keys() {
+        let root = unique_temp_dir("codebase-graph-artifact-gc");
+        let retained_key = "a".repeat(64);
+        let stale_key = "b".repeat(64);
+        let retained_dir = root.join("aa").join(&retained_key);
+        let stale_dir = root.join("bb").join(&stale_key);
+        fs::create_dir_all(&retained_dir).unwrap();
+        fs::create_dir_all(&stale_dir).unwrap();
+        fs::write(retained_dir.join("partition.json"), "retained").unwrap();
+        fs::write(stale_dir.join("partition.json"), "stale").unwrap();
+        let manifest = NativeManifest {
+            schema_version: 2,
+            ontology: "code_ontology_v1".to_string(),
+            parser_version: "native".to_string(),
+            graph_build_digest: Some("digest".to_string()),
+            files: BTreeMap::from([(
+                "src/lib.rs".to_string(),
+                ManifestEntry {
+                    path: "src/lib.rs".to_string(),
+                    content_hash: "hash".to_string(),
+                    language: "rust".to_string(),
+                    partition_id: "partition".to_string(),
+                    artifact_key: Some(retained_key.clone()),
+                    node_ids: Vec::new(),
+                    edge_ids: Vec::new(),
+                    node_types: BTreeMap::new(),
+                    edge_types: BTreeMap::new(),
+                    materialized_at: "unix:0".to_string(),
+                },
+            )]),
+        };
+
+        garbage_collect_artifacts(&root, &manifest).unwrap();
+
+        assert!(retained_dir.exists());
+        assert!(!stale_dir.exists());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn prepublication_failures_clean_managed_and_direct_run_state() {
+        for phase in [
+            "parsing",
+            "enrichment",
+            "staging",
+            "database",
+            "candidate_validation",
+        ] {
+            let root = unique_temp_dir(&format!("codebase-graph-cleanup-{phase}"));
+            let managed_root = root.join("managed");
+            let managed_store = GraphStorage::managed(&managed_root);
+            let managed_session = managed_store.begin_write().unwrap();
+            fs::write(managed_session.candidate_db_path(), "partial-db").unwrap();
+            let managed_error = StorageExecution::Managed {
+                artifact_root: managed_store.layout().artifacts_root(),
+                session: managed_session,
+                previous_manifest: None,
+                store: managed_store.clone(),
+            }
+            .abort_with_cleanup(format!("{phase} failed"));
+            assert_eq!(managed_error, format!("{phase} failed"));
+            assert!(fs::read_dir(managed_store.layout().runs_root())
+                .unwrap()
+                .next()
+                .is_none());
+
+            let direct_layout =
+                DirectLayout::new(root.join("graph.ldb"), root.join("manifest.json"));
+            let direct_store = DirectStore::new(direct_layout.clone()).unwrap();
+            let direct_session = direct_store.begin_write().unwrap();
+            fs::write(direct_session.db_candidate_path(), "partial-db").unwrap();
+            let direct_workspace = RunWorkspace::create(root.join("direct-runs"), None).unwrap();
+            fs::write(direct_workspace.staging_root().join("partial.json"), "[]").unwrap();
+            let direct_error = StorageExecution::Direct {
+                db_path: direct_layout.db_path().to_path_buf(),
+                manifest_path: direct_layout.manifest_path().to_path_buf(),
+                artifact_root: direct_layout.artifact_root_path(),
+                session: direct_session,
+                workspace: direct_workspace,
+                previous_manifest: None,
+            }
+            .abort_with_cleanup(format!("{phase} failed"));
+            assert_eq!(direct_error, format!("{phase} failed"));
+            assert!(!direct_layout.db_candidate_path().exists());
+            assert!(!direct_layout.manifest_candidate_path().exists());
+            assert!(fs::read_dir(root.join("direct-runs"))
+                .unwrap()
+                .next()
+                .is_none());
+            let _ = fs::remove_dir_all(root);
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn cleanup_errors_are_appended_without_hiding_the_primary_failure() {
+        use std::os::unix::fs::symlink;
+
+        let root = unique_temp_dir("codebase-graph-cleanup-error-reporting");
+        let store = GraphStorage::managed(root.join("storage"));
+        let session = store.begin_write().unwrap();
+        let outside = root.join("outside.txt");
+        fs::write(&outside, "keep").unwrap();
+        symlink(
+            &outside,
+            run_root_from_candidate(session.candidate.paths().root()).join("blocked-link"),
+        )
+        .unwrap();
+
+        let error = StorageExecution::Managed {
+            artifact_root: store.layout().artifacts_root(),
+            session,
+            previous_manifest: None,
+            store,
+        }
+        .abort_with_cleanup("enrichment failed".to_string());
+
+        assert!(error.contains("enrichment failed"));
+        assert!(error.contains("cleanup failed"));
+        assert_eq!(fs::read_to_string(outside).unwrap(), "keep");
     }
 
     #[test]
@@ -615,6 +1199,7 @@ mod tests {
 
         let request = build_request(&MaterializeOptions {
             source_root: Some(root.clone()),
+            plan_only: true,
             mode: "full".to_string(),
             include_fts: true,
             semantic_enrichment: true,

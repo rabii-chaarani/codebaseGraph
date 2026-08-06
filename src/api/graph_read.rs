@@ -32,6 +32,21 @@ pub(crate) fn count_graph_nodes(db_path: &Path) -> Result<u64, String> {
         .ok_or_else(|| "graph health query returned a non-numeric node count".to_string())
 }
 
+pub(crate) fn count_graph_edges(db_path: &Path) -> Result<u64, String> {
+    let db = retry_transient_database(READ_RETRY_POLICY, || open_ladybug_database(db_path, true))
+        .map_err(|error| error.to_string())?;
+    let conn = connect_ladybug_database(&db).map_err(|error| error.to_string())?;
+    let mut result = conn
+        .query("MATCH ()-[r]->() RETURN count(r) AS total_edges LIMIT 1")
+        .map_err(|error| format!("failed to query graph edge count: {error}"))?;
+    let row = result
+        .next()
+        .ok_or_else(|| "graph edge count query returned no rows".to_string())?;
+    row.first()
+        .and_then(value_to_u64)
+        .ok_or_else(|| "graph edge count query returned a non-numeric count".to_string())
+}
+
 pub(crate) fn execute_graph_search(
     db_path: &Path,
     options: &GraphSearchRequest,

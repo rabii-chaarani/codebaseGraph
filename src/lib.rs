@@ -1,5 +1,6 @@
 pub mod adapters;
 pub mod api;
+mod artifact_store;
 mod bootstrap;
 pub mod db_writer;
 pub mod error;
@@ -14,6 +15,7 @@ pub mod protocol;
 mod scan;
 mod semantic_enrichment;
 mod staging_writer;
+mod storage;
 mod syntax_materializer;
 
 pub use error::MaterializationError;
