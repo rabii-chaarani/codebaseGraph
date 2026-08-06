@@ -259,6 +259,11 @@ fn remove_run_tree(root: &Path) -> Result<(), NativeError> {
 }
 
 fn remove_path_without_symlinks(path: &Path) -> Result<(), NativeError> {
+    validate_tree_has_no_symlinks(path)?;
+    remove_validated_path(path)
+}
+
+fn validate_tree_has_no_symlinks(path: &Path) -> Result<(), NativeError> {
     let metadata = fs::symlink_metadata(path)?;
     if metadata.file_type().is_symlink() {
         return Err(NativeError::InvalidInput(format!(
@@ -269,7 +274,24 @@ fn remove_path_without_symlinks(path: &Path) -> Result<(), NativeError> {
     if metadata.is_dir() {
         for entry in fs::read_dir(path)? {
             let entry = entry?;
-            remove_path_without_symlinks(&entry.path())?;
+            validate_tree_has_no_symlinks(&entry.path())?;
+        }
+    }
+    Ok(())
+}
+
+fn remove_validated_path(path: &Path) -> Result<(), NativeError> {
+    let metadata = fs::symlink_metadata(path)?;
+    if metadata.file_type().is_symlink() {
+        return Err(NativeError::InvalidInput(format!(
+            "refusing to remove symlinked path {}",
+            path.display()
+        )));
+    }
+    if metadata.is_dir() {
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            remove_validated_path(&entry.path())?;
         }
         fs::remove_dir(path)?;
     } else {
