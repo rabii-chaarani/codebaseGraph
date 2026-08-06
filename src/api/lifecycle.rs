@@ -1564,6 +1564,18 @@ pub struct McpClientRemovalOptions {
     pub dry_run: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct McpServerRegistration {
+    pub command: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct McpClientRenameOptions {
+    pub target: ResolvedMcpTarget,
+    pub dry_run: bool,
+}
+
 pub fn install_mcp_server(
     descriptor: &McpServerDescriptor,
     options: &McpClientInstallOptions,
@@ -1864,6 +1876,79 @@ pub fn remove_mcp_server(
     }))
 }
 
+pub fn inspect_mcp_server(
+    server_name: &str,
+    target: &ResolvedMcpTarget,
+) -> Result<Option<McpServerRegistration>, String> {
+    if target.locality == McpTargetLocality::Manual {
+        return Ok(None);
+    }
+    let path = target.path.as_ref().ok_or_else(|| {
+        format!(
+            "no file-backed MCP config target is available for {}",
+            target.client
+        )
+    })?;
+    let Some(existing) = read_optional_text(path)? else {
+        return Ok(None);
+    };
+    inspect_client_registration(
+        adapter_id(&target.client, &target.scope),
+        &existing,
+        server_name,
+    )
+    .map(|entry| {
+        entry.map(|entry| McpServerRegistration {
+            command: entry.command,
+            args: entry.args,
+        })
+    })
+}
+
+pub fn rename_mcp_server(
+    source_name: &str,
+    destination_name: &str,
+    options: &McpClientRenameOptions,
+) -> Result<serde_json::Value, String> {
+    let target = &options.target;
+    if target.locality == McpTargetLocality::Manual {
+        return Err("manual MCP registrations cannot be renamed automatically".to_string());
+    }
+    if source_name.trim().is_empty() || destination_name.trim().is_empty() {
+        return Err("MCP server names must not be empty".to_string());
+    }
+    if source_name == destination_name {
+        return Err("source and destination MCP server names must differ".to_string());
+    }
+    let path = target.path.clone().ok_or_else(|| {
+        format!(
+            "no file-backed MCP config target is available for {}",
+            target.client
+        )
+    })?;
+    let existing = read_optional_text(&path)?.unwrap_or_default();
+    let renamed = rename_client_registration(
+        adapter_id(&target.client, &target.scope),
+        &existing,
+        source_name,
+        destination_name,
+    )?;
+    if renamed.action != "unchanged" && !options.dry_run {
+        write_text_atomic(&path, &renamed.text)?;
+    }
+    Ok(json!({
+        "action": if options.dry_run && renamed.action != "unchanged" { "dry_run" } else { renamed.action.as_str() },
+        "planned_action": renamed.action,
+        "client": target.client,
+        "scope": target.scope,
+        "path": path.to_string_lossy(),
+        "target_locality": target.locality.as_str(),
+        "source_name": source_name,
+        "destination_name": destination_name,
+        "registration": renamed.registration.map(|entry| json!({"command": entry.command, "args": entry.args})),
+    }))
+}
+
 fn resolve_target_locality(
     adapter: &str,
     scope: &str,
@@ -2130,10 +2215,63 @@ struct RemovedNativeConfig {
     payload: serde_json::Value,
 }
 
+struct RenamedNativeConfig {
+    text: String,
+    action: String,
+    registration: Option<ManagedStdioEntry>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ManagedStdioEntry {
     command: String,
     args: Vec<String>,
+}
+
+fn inspect_client_registration(
+    adapter: &str,
+    existing: &str,
+    server_name: &str,
+) -> Result<Option<ManagedStdioEntry>, String> {
+    match adapter {
+        "codex" => find_toml_block(existing, server_name)
+            .map(|block| parse_toml_stdio_entry(&block))
+            .transpose(),
+        "hermes" => parse_hermes_managed_entries(existing)
+            .map(|(entries, _)| entries.get(server_name).cloned()),
+        "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
+            let payload = if existing.trim().is_empty() {
+                json!({})
+            } else {
+                serde_json::from_str::<serde_json::Value>(existing)
+                    .map_err(|error| format!("MCP config must contain a JSON object: {error}"))?
+            };
+            let root_path = json_adapter_root_path(adapter);
+            let Some(container) = json_container(&payload, &root_path)? else {
+                return Ok(None);
+            };
+            container
+                .get(server_name)
+                .map(parse_json_stdio_entry)
+                .transpose()
+        }
+        other => Err(format!("Unsupported MCP client adapter: {other}")),
+    }
+}
+
+fn rename_client_registration(
+    adapter: &str,
+    existing: &str,
+    source_name: &str,
+    destination_name: &str,
+) -> Result<RenamedNativeConfig, String> {
+    match adapter {
+        "codex" => rename_codex_registration(existing, source_name, destination_name),
+        "hermes" => rename_hermes_registration(existing, source_name, destination_name),
+        "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
+            rename_json_registration(adapter, existing, source_name, destination_name)
+        }
+        other => Err(format!("Unsupported MCP client adapter: {other}")),
+    }
 }
 
 fn descriptor_signature(descriptor: &McpServerDescriptor) -> ManagedStdioEntry {
@@ -2335,6 +2473,56 @@ fn remove_json_config(
     })
 }
 
+fn rename_json_registration(
+    adapter: &str,
+    existing: &str,
+    source_name: &str,
+    destination_name: &str,
+) -> Result<RenamedNativeConfig, String> {
+    let mut payload = if existing.trim().is_empty() {
+        json!({})
+    } else {
+        serde_json::from_str::<serde_json::Value>(existing)
+            .map_err(|error| format!("MCP config must contain a JSON object: {error}"))?
+    };
+    let root_path = json_adapter_root_path(adapter);
+    let container = json_container_mut(&mut payload, &root_path)?;
+    let Some(source) = container.get(source_name).cloned() else {
+        return Ok(RenamedNativeConfig {
+            text: existing.to_string(),
+            action: "unchanged".to_string(),
+            registration: None,
+        });
+    };
+    let registration = parse_json_stdio_entry(&source)?;
+    let action = if let Some(destination) = container.get(destination_name) {
+        let destination = parse_json_stdio_entry(destination)?;
+        if destination != registration {
+            return Err(format!(
+                "refusing to rename MCP server {source_name}: destination {destination_name} has a different command or args"
+            ));
+        }
+        "deduplicated"
+    } else {
+        container.insert(destination_name.to_string(), source);
+        "renamed"
+    };
+    container.remove(source_name);
+    Ok(RenamedNativeConfig {
+        text: serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())? + "\n",
+        action: action.to_string(),
+        registration: Some(registration),
+    })
+}
+
+fn json_adapter_root_path(adapter: &str) -> Vec<&'static str> {
+    match adapter {
+        "github-copilot" => vec!["servers"],
+        "openclaw" => vec!["mcp", "servers"],
+        _ => vec!["mcpServers"],
+    }
+}
+
 fn render_codex_config(
     existing: Option<&str>,
     descriptor: &McpServerDescriptor,
@@ -2421,6 +2609,49 @@ fn remove_codex_config(
             .map(serde_json::Value::String)
             .unwrap_or(serde_json::Value::Null),
         payload: json!(existing),
+    })
+}
+
+fn rename_codex_registration(
+    existing: &str,
+    source_name: &str,
+    destination_name: &str,
+) -> Result<RenamedNativeConfig, String> {
+    let Some(source_block) = find_toml_block(existing, source_name) else {
+        return Ok(RenamedNativeConfig {
+            text: existing.to_string(),
+            action: "unchanged".to_string(),
+            registration: None,
+        });
+    };
+    let registration = parse_toml_stdio_entry(&source_block)?;
+    if let Some(destination_block) = find_toml_block(existing, destination_name) {
+        if parse_toml_stdio_entry(&destination_block)? != registration {
+            return Err(format!(
+                "refusing to rename MCP server {source_name}: destination {destination_name} has a different command or args"
+            ));
+        }
+        return Ok(RenamedNativeConfig {
+            text: remove_toml_block(existing, source_name).0,
+            action: "deduplicated".to_string(),
+            registration: Some(registration),
+        });
+    }
+    let renamed_block = source_block
+        .replace(
+            &format!("[mcp_servers.{source_name}]"),
+            &format!("[mcp_servers.{destination_name}]"),
+        )
+        .replace(
+            &format!("[mcp_servers.{source_name}.env]"),
+            &format!("[mcp_servers.{destination_name}.env]"),
+        );
+    let without_source = remove_toml_block(existing, source_name).0;
+    let (text, _) = upsert_toml_block(&without_source, destination_name, &renamed_block);
+    Ok(RenamedNativeConfig {
+        text,
+        action: "renamed".to_string(),
+        registration: Some(registration),
     })
 }
 
@@ -2522,6 +2753,48 @@ fn remove_hermes_config(
             .map(|entry| json!({"command": entry.command, "args": entry.args}))
             .unwrap_or(serde_json::Value::Null),
         payload: json!(existing),
+    })
+}
+
+fn rename_hermes_registration(
+    existing: &str,
+    source_name: &str,
+    destination_name: &str,
+) -> Result<RenamedNativeConfig, String> {
+    let (mut managed, _) = parse_hermes_managed_entries(existing)?;
+    let Some(registration) = managed.get(source_name).cloned() else {
+        return Ok(RenamedNativeConfig {
+            text: existing.to_string(),
+            action: "unchanged".to_string(),
+            registration: None,
+        });
+    };
+    let action = if let Some(destination) = managed.get(destination_name) {
+        if destination != &registration {
+            return Err(format!(
+                "refusing to rename MCP server {source_name}: destination {destination_name} has a different command or args"
+            ));
+        }
+        "deduplicated"
+    } else {
+        managed.insert(destination_name.to_string(), registration.clone());
+        "renamed"
+    };
+    managed.remove(source_name);
+    let patch = if managed.is_empty() {
+        String::new()
+    } else {
+        hermes_yaml_block_from_entries(&managed)
+    };
+    let text = if patch.is_empty() {
+        remove_marked_block(existing).0
+    } else {
+        upsert_marked_block(existing, &patch).0
+    };
+    Ok(RenamedNativeConfig {
+        text,
+        action: action.to_string(),
+        registration: Some(registration),
     })
 }
 
@@ -2734,6 +3007,24 @@ fn json_container_mut<'a>(
             .ok_or_else(|| format!("MCP config key must contain an object: {}", path.join(".")))?;
     }
     Ok(cursor)
+}
+
+fn json_container<'a>(
+    payload: &'a serde_json::Value,
+    path: &[&str],
+) -> Result<Option<&'a serde_json::Map<String, serde_json::Value>>, String> {
+    let Some(mut cursor) = payload.as_object() else {
+        return Err("MCP config must contain a JSON object".to_string());
+    };
+    for key in path {
+        let Some(next) = cursor.get(*key) else {
+            return Ok(None);
+        };
+        cursor = next
+            .as_object()
+            .ok_or_else(|| format!("MCP config key must contain an object: {}", path.join(".")))?;
+    }
+    Ok(Some(cursor))
 }
 
 fn action_for_json(
@@ -3059,10 +3350,11 @@ fn install_safe_name(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        install_mcp_server, native_client_command, reinstall_state, remove_mcp_server,
-        remove_partial_state_tree, resolve_mcp_target, run_reinstall_activation_boundary,
-        GraphStatePaths, McpClientInstallOptions, McpClientRemovalOptions, McpExistingEntryPolicy,
-        McpInstallMode, McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
+        inspect_mcp_server, install_mcp_server, native_client_command, reinstall_state,
+        remove_mcp_server, remove_partial_state_tree, rename_mcp_server, resolve_mcp_target,
+        run_reinstall_activation_boundary, GraphStatePaths, McpClientInstallOptions,
+        McpClientRemovalOptions, McpClientRenameOptions, McpExistingEntryPolicy, McpInstallMode,
+        McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::fs;
@@ -3396,6 +3688,98 @@ mod tests {
 
         assert!(error.contains("refusing to overwrite existing MCP server"));
         assert_eq!(fs::read(&config_path).unwrap(), original.into_bytes());
+    }
+
+    #[test]
+    fn registration_rename_preserves_codex_entry_and_rejects_conflicting_destination() {
+        let repo = TestDir::new("rename-codex");
+        let config_path = repo.join("config.toml");
+        fs::write(
+            &config_path,
+            "model = \"example\"\n\n[mcp_servers.k_wiki]\ncommand = \"k-wiki\"\nargs = [\"mcp\", \"/repo/knowledge\"]\nstartup_timeout_sec = 60\n",
+        )
+        .unwrap();
+        let target = ResolvedMcpTarget {
+            client: "codex".to_string(),
+            scope: "user".to_string(),
+            locality: McpTargetLocality::Shared,
+            path: Some(config_path.clone()),
+        };
+        let inspected = inspect_mcp_server("k_wiki", &target).unwrap().unwrap();
+        assert_eq!(inspected.command, "k-wiki");
+        assert_eq!(inspected.args, vec!["mcp", "/repo/knowledge"]);
+        let renamed = rename_mcp_server(
+            "k_wiki",
+            "k_wiki_repo_deadbeef",
+            &McpClientRenameOptions {
+                target: target.clone(),
+                dry_run: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(renamed["action"], "renamed");
+        let text = fs::read_to_string(&config_path).unwrap();
+        assert!(text.contains("model = \"example\""));
+        assert!(text.contains("[mcp_servers.k_wiki_repo_deadbeef]"));
+        assert!(!text.contains("[mcp_servers.k_wiki]"));
+
+        let conflict = format!(
+            "{text}\n[mcp_servers.k_wiki]\ncommand = \"other\"\nargs = [\"mcp\", \"/other/knowledge\"]\n"
+        );
+        fs::write(&config_path, &conflict).unwrap();
+        let error = rename_mcp_server(
+            "k_wiki",
+            "k_wiki_repo_deadbeef",
+            &McpClientRenameOptions {
+                target,
+                dry_run: false,
+            },
+        )
+        .unwrap_err();
+        assert!(error.contains("different command or args"));
+        assert_eq!(fs::read_to_string(config_path).unwrap(), conflict);
+    }
+
+    #[test]
+    fn registration_rename_deduplicates_matching_json_destination_atomically() {
+        let repo = TestDir::new("rename-json");
+        let config_path = repo.join("mcp.json");
+        fs::write(
+            &config_path,
+            serde_json::to_string_pretty(&json!({
+                "unrelated": true,
+                "mcpServers": {
+                    "k_wiki": {"command": "k-wiki", "args": ["mcp", "/repo/knowledge"]},
+                    "k_wiki_repo_deadbeef": {"command": "k-wiki", "args": ["mcp", "/repo/knowledge"]}
+                }
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let target = ResolvedMcpTarget {
+            client: "generic".to_string(),
+            scope: "user".to_string(),
+            locality: McpTargetLocality::Shared,
+            path: Some(config_path.clone()),
+        };
+        let renamed = rename_mcp_server(
+            "k_wiki",
+            "k_wiki_repo_deadbeef",
+            &McpClientRenameOptions {
+                target,
+                dry_run: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(renamed["action"], "deduplicated");
+        let payload: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(config_path).unwrap()).unwrap();
+        assert_eq!(payload["unrelated"], true);
+        assert!(payload["mcpServers"]["k_wiki"].is_null());
+        assert_eq!(
+            payload["mcpServers"]["k_wiki_repo_deadbeef"]["command"],
+            "k-wiki"
+        );
     }
 
     #[test]

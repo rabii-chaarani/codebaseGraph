@@ -598,6 +598,102 @@ fn mcp_install_command_keeps_codex_project_and_local_registrations_repository_lo
 }
 
 #[test]
+fn mcp_install_command_verifies_the_registered_single_bundle_runtime() {
+    let temp = TestDir::new("k-wiki-mcp-install-verify");
+    let repository = temp.path().join("repository");
+    let fake_home = temp.path().join("home");
+    fs::create_dir_all(&repository).expect("create repository");
+    fs::create_dir_all(&fake_home).expect("create fake home");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+    bootstrap_repository(binary, &repository);
+
+    let output = run_mcp_install(
+        binary,
+        &repository,
+        &["--client", "codex", "--scope", "project", "--verify"],
+        &[
+            ("HOME", fake_home.as_path()),
+            ("CODEX_HOME", fake_home.join(".codex").as_path()),
+            ("K_WIKI_SERVER_COMMAND", Path::new(binary)),
+        ],
+    );
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let payload: Value = serde_json::from_slice(&output.stdout).expect("verification JSON");
+    assert_eq!(payload["method"], "file_adapter");
+    assert_eq!(payload["target_locality"], "repository_local");
+    assert_eq!(payload["verification"]["ok"], true);
+    assert_eq!(payload["verification"]["checks"]["server_name"], true);
+    assert_eq!(payload["verification"]["checks"]["configuration"], true);
+    assert_eq!(payload["verification"]["checks"]["mcp_startup"], true);
+    assert_eq!(payload["verification"]["checks"]["schema"], true);
+    assert_eq!(payload["verification"]["checks"]["bundle"], true);
+    assert_eq!(
+        payload["verification"]["checks"]["single_bundle_schema"],
+        true
+    );
+    assert_eq!(payload["verification"]["checks"]["configured_bundle"], true);
+
+    let dry_run = run_mcp_install(
+        binary,
+        &repository,
+        &[
+            "--client",
+            "codex",
+            "--scope",
+            "project",
+            "--dry-run",
+            "--verify",
+        ],
+        &[
+            ("HOME", fake_home.as_path()),
+            ("CODEX_HOME", fake_home.join(".codex").as_path()),
+            ("K_WIKI_SERVER_COMMAND", Path::new(binary)),
+        ],
+    );
+    assert!(dry_run.status.success());
+    let dry_run: Value = serde_json::from_slice(&dry_run.stdout).expect("dry-run JSON");
+    assert_eq!(dry_run["verification"]["ok"], true);
+    assert_eq!(dry_run["verification"]["skipped"], true);
+    assert_eq!(dry_run["verification"]["reason"], "dry_run");
+}
+
+#[test]
+fn mcp_install_command_keeps_registration_when_runtime_verification_fails() {
+    let temp = TestDir::new("k-wiki-mcp-install-unverified");
+    let repository = temp.path().join("repository");
+    let fake_home = temp.path().join("home");
+    fs::create_dir_all(&repository).expect("create repository");
+    fs::create_dir_all(&fake_home).expect("create fake home");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+    bootstrap_repository(binary, &repository);
+    let missing = repository.join("missing-k-wiki");
+
+    let output = run_mcp_install(
+        binary,
+        &repository,
+        &["--client", "codex", "--scope", "project", "--verify"],
+        &[
+            ("HOME", fake_home.as_path()),
+            ("CODEX_HOME", fake_home.join(".codex").as_path()),
+            ("K_WIKI_SERVER_COMMAND", missing.as_path()),
+        ],
+    );
+    assert!(!output.status.success());
+    let payload: Value = serde_json::from_slice(&output.stderr).expect("error JSON");
+    assert_eq!(payload["error"]["code"], "mcp_installation_unverified");
+    assert_eq!(
+        payload["error"]["details"]["action"],
+        "installed_but_unverified"
+    );
+    assert_eq!(payload["error"]["details"]["verification"]["ok"], false);
+    assert!(repository.join(".codex/config.toml").is_file());
+}
+
+#[test]
 fn mcp_install_command_uses_distinct_shared_names_for_same_basename_repositories() {
     let temp = TestDir::new("k-wiki-mcp-install-shared-same-basename");
     let repository_a = temp.path().join("group-a").join("repository");
@@ -1017,26 +1113,31 @@ fn mcp_install_command_dry_run_reports_per_client_targets_for_all_clients() {
 }
 
 #[test]
-fn mcp_install_command_moves_legacy_codex_registration_to_the_repository_config() {
+fn mcp_install_command_preserves_other_repository_legacy_codex_registration() {
     let temp = TestDir::new("k-wiki-mcp-install-cross-file-cleanup");
     let repository = temp.path().join("repository");
+    let structural_factory = temp.path().join("StructuralFactory");
     let fake_home = temp.path().join("home");
     let codex_home = fake_home.join(".codex");
     fs::create_dir_all(&repository).expect("create repository");
+    fs::create_dir_all(&structural_factory).expect("create legacy repository");
     fs::create_dir_all(&codex_home).expect("create fake Codex home");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+    bootstrap_repository(binary, &repository);
+    bootstrap_repository(binary, &structural_factory);
+    let legacy_bundle = structural_factory
+        .canonicalize()
+        .expect("canonical legacy repository")
+        .join("knowledge");
     fs::write(
         codex_home.join("config.toml"),
-        concat!(
-            "model = \"example\"\n\n",
-            "[mcp_servers.k_wiki]\n",
-            "command = \"k-wiki\"\n",
-            "args = [\"mcp\", \"/another/repository/knowledge\"]\n",
-            "startup_timeout_sec = 60\n",
+        format!(
+            "model = \"example\"\n\n[mcp_servers.k_wiki]\ncommand = \"k-wiki\"\nargs = [\"mcp\", {}]\nstartup_timeout_sec = 60\n",
+            serde_json::to_string(legacy_bundle.to_string_lossy().as_ref())
+                .expect("serialize legacy bundle path"),
         ),
     )
     .expect("seed shared Codex config");
-    let binary = env!("CARGO_BIN_EXE_k-wiki");
-    bootstrap_repository(binary, &repository);
 
     let output = run_mcp_install(
         binary,
@@ -1056,9 +1157,14 @@ fn mcp_install_command_moves_legacy_codex_registration_to_the_repository_config(
     let payload: Value = serde_json::from_slice(&output.stdout).expect("registration JSON");
     assert_eq!(payload["target_locality"], "repository_local");
     assert_eq!(
-        payload["legacy_cleanup"]["shared_target"]["action"],
-        "removed"
+        payload["legacy_cleanup"]["shared_target"]["planned_action"],
+        "renamed"
     );
+    assert_eq!(payload["legacy_cleanup"]["action"], "renamed");
+    let preserved_as = payload["legacy_cleanup"]["preserved_as"]
+        .as_str()
+        .expect("preserved server name");
+    assert!(preserved_as.starts_with("k_wiki_structuralfactory_"));
     let local = fs::read_to_string(repository.join(".codex/config.toml"))
         .expect("read repository Codex config");
     assert!(local.contains("[mcp_servers.k_wiki]"));
@@ -1074,10 +1180,122 @@ fn mcp_install_command_moves_legacy_codex_registration_to_the_repository_config(
         .expect("read cleaned shared Codex config");
     assert!(shared.contains("model = \"example\""));
     assert!(!shared.contains("[mcp_servers.k_wiki]"));
+    assert!(shared.contains(&format!("[mcp_servers.{preserved_as}]")));
+    assert!(shared.contains(legacy_bundle.to_string_lossy().as_ref()));
 }
 
 #[test]
-fn mcp_install_command_reports_partial_migration_without_rolling_back_local_registration() {
+fn mcp_install_command_removes_same_repository_legacy_codex_registration() {
+    let temp = TestDir::new("k-wiki-mcp-install-same-repo-legacy");
+    let repository = temp.path().join("repository");
+    let codex_home = temp.path().join("home/.codex");
+    fs::create_dir_all(&repository).expect("create repository");
+    fs::create_dir_all(&codex_home).expect("create Codex home");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+    bootstrap_repository(binary, &repository);
+    let bundle = repository
+        .canonicalize()
+        .expect("canonical repository")
+        .join("knowledge");
+    fs::write(
+        codex_home.join("config.toml"),
+        format!(
+            "model = \"example\"\n\n[mcp_servers.k_wiki]\ncommand = \"k-wiki\"\nargs = [\"mcp\", {}]\nstartup_timeout_sec = 60\n",
+            serde_json::to_string(bundle.to_string_lossy().as_ref()).expect("serialize bundle"),
+        ),
+    )
+    .expect("seed shared registration");
+
+    let output = run_mcp_install(
+        binary,
+        &repository,
+        &["--client", "codex", "--scope", "project"],
+        &[
+            ("HOME", temp.path().join("home").as_path()),
+            ("CODEX_HOME", codex_home.as_path()),
+        ],
+    );
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let payload: Value = serde_json::from_slice(&output.stdout).expect("install JSON");
+    assert_eq!(payload["legacy_cleanup"]["action"], "removed");
+    assert!(repository.join(".codex/config.toml").is_file());
+    let shared = fs::read_to_string(codex_home.join("config.toml")).expect("read shared config");
+    assert!(shared.contains("model = \"example\""));
+    assert!(!shared.contains("[mcp_servers.k_wiki]"));
+}
+
+#[test]
+fn mcp_install_command_rejects_conflicting_legacy_preservation_before_writing_local_config() {
+    let temp = TestDir::new("k-wiki-mcp-install-preservation-conflict");
+    let repository = temp.path().join("repository");
+    let legacy_repository = temp.path().join("legacy");
+    let codex_home = temp.path().join("home/.codex");
+    fs::create_dir_all(&repository).expect("create repository");
+    fs::create_dir_all(&legacy_repository).expect("create legacy repository");
+    fs::create_dir_all(&codex_home).expect("create Codex home");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+    bootstrap_repository(binary, &repository);
+    bootstrap_repository(binary, &legacy_repository);
+    let legacy_bundle = legacy_repository
+        .canonicalize()
+        .expect("canonical legacy repository")
+        .join("knowledge");
+    let config_path = codex_home.join("config.toml");
+    fs::write(
+        &config_path,
+        format!(
+            "[mcp_servers.k_wiki]\ncommand = \"k-wiki\"\nargs = [\"mcp\", {}]\nstartup_timeout_sec = 60\n",
+            serde_json::to_string(legacy_bundle.to_string_lossy().as_ref())
+                .expect("serialize legacy bundle"),
+        ),
+    )
+    .expect("seed legacy config");
+    let envs = [
+        ("HOME", temp.path().join("home")),
+        ("CODEX_HOME", codex_home.clone()),
+    ];
+    let env_refs = envs
+        .iter()
+        .map(|(key, value)| (*key, value.as_path()))
+        .collect::<Vec<_>>();
+    let dry_run = run_mcp_install(
+        binary,
+        &repository,
+        &["--client", "codex", "--scope", "project", "--dry-run"],
+        &env_refs,
+    );
+    assert!(dry_run.status.success());
+    let dry_run: Value = serde_json::from_slice(&dry_run.stdout).expect("dry-run JSON");
+    let preserved_as = dry_run["legacy_cleanup"]["preserved_as"]
+        .as_str()
+        .expect("preserved name");
+    let mut conflicting = fs::read_to_string(&config_path).expect("read config");
+    conflicting.push_str(&format!(
+        "\n[mcp_servers.{preserved_as}]\ncommand = \"other\"\nargs = [\"mcp\", \"/other/knowledge\"]\nstartup_timeout_sec = 60\n"
+    ));
+    fs::write(&config_path, &conflicting).expect("write conflict");
+
+    let output = run_mcp_install(
+        binary,
+        &repository,
+        &["--client", "codex", "--scope", "project"],
+        &env_refs,
+    );
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("destination"));
+    assert_eq!(
+        fs::read_to_string(&config_path).expect("read config after"),
+        conflicting
+    );
+    assert!(!repository.join(".codex/config.toml").exists());
+}
+
+#[test]
+fn mcp_install_command_rejects_unreadable_legacy_config_before_local_install() {
     let temp = TestDir::new("k-wiki-mcp-install-partial-migration");
     let repository = temp.path().join("repository");
     let fake_home = temp.path().join("home");
@@ -1100,19 +1318,40 @@ fn mcp_install_command_reports_partial_migration_without_rolling_back_local_regi
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("partial migration"), "{stderr}");
-    assert!(stderr.contains("kept and not rolled back"), "{stderr}");
-    let local = fs::read_to_string(repository.join(".codex/config.toml"))
-        .expect("safe local registration must remain");
-    assert!(local.contains("[mcp_servers.k_wiki]"));
-    assert!(local.contains(
-        repository
-            .canonicalize()
-            .expect("canonical repository")
-            .join("knowledge")
-            .to_string_lossy()
-            .as_ref()
-    ));
+    assert!(
+        stderr.contains("failed to read MCP client config"),
+        "{stderr}"
+    );
+    assert!(!repository.join(".codex/config.toml").exists());
+}
+
+#[test]
+fn mcp_install_command_rejects_malformed_legacy_registration_before_local_install() {
+    let temp = TestDir::new("k-wiki-mcp-install-malformed-legacy");
+    let repository = temp.path().join("repository");
+    let codex_home = temp.path().join("home/.codex");
+    fs::create_dir_all(&repository).expect("create repository");
+    fs::create_dir_all(&codex_home).expect("create Codex home");
+    fs::write(
+        codex_home.join("config.toml"),
+        "[mcp_servers.k_wiki]\ncommand = \"k-wiki\"\n",
+    )
+    .expect("write malformed registration");
+    let binary = env!("CARGO_BIN_EXE_k-wiki");
+    bootstrap_repository(binary, &repository);
+
+    let output = run_mcp_install(
+        binary,
+        &repository,
+        &["--client", "codex", "--scope", "project"],
+        &[
+            ("HOME", temp.path().join("home").as_path()),
+            ("CODEX_HOME", codex_home.as_path()),
+        ],
+    );
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("missing args"));
+    assert!(!repository.join(".codex/config.toml").exists());
 }
 
 #[test]

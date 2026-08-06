@@ -76,6 +76,8 @@ fn release_gate(args: Vec<String>) -> Result<(), String> {
     check_security_policy(&mut issues);
     check_rust_only_files(&mut issues);
     check_cargo_metadata(&mut issues);
+    check_release_version_sync(&mut issues);
+    check_release_please_config(&mut issues);
     check_workflows(&mut issues);
     check_no_legacy_surfaces(&mut issues);
     if require_conda {
@@ -189,6 +191,89 @@ fn check_cargo_metadata(issues: &mut Vec<String>) {
             "FAIL: cargo-missing: {} is required.",
             wiki_manifest.display()
         )),
+    }
+}
+
+fn check_release_version_sync(issues: &mut Vec<String>) {
+    let root = match cargo_version(Path::new("Cargo.toml")) {
+        Ok(version) => version,
+        Err(error) => {
+            issues.push(format!(
+                "FAIL: cargo-version-missing: could not read root version: {error}."
+            ));
+            return;
+        }
+    };
+    let wiki = match cargo_version(Path::new("crates/k-wiki/Cargo.toml")) {
+        Ok(version) => version,
+        Err(error) => {
+            issues.push(format!(
+                "FAIL: cargo-version-missing: could not read k-wiki version: {error}."
+            ));
+            return;
+        }
+    };
+    if root != wiki {
+        issues.push(format!(
+            "FAIL: release-version-divergence: root Cargo.toml version {root} does not match crates/k-wiki/Cargo.toml version {wiki}."
+        ));
+    }
+    match dependency_version(Path::new("crates/k-wiki/Cargo.toml"), "codebase-graph") {
+        Ok(version) if version != root => issues.push(format!(
+            "FAIL: release-version-divergence: crates/k-wiki/Cargo.toml depends on codebase-graph {version} but root Cargo.toml is {root}."
+        )),
+        Ok(_) => {}
+        Err(error) => issues.push(format!(
+            "FAIL: cargo-version-missing: could not read crates/k-wiki dependency version: {error}."
+        )),
+    }
+}
+
+fn check_release_please_config(issues: &mut Vec<String>) {
+    let Ok(text) = fs::read_to_string("release-please-config.json") else {
+        issues.push(
+            "FAIL: release-please-config-missing: release-please-config.json is required."
+                .to_string(),
+        );
+        return;
+    };
+    let Ok(parsed) = serde_json::from_str::<Value>(&text) else {
+        issues.push(
+            "FAIL: release-please-config-invalid: release-please-config.json must be valid JSON."
+                .to_string(),
+        );
+        return;
+    };
+    let Some(extra_files) = parsed
+        .get("packages")
+        .and_then(|packages| packages.get("."))
+        .and_then(|root| root.get("extra-files"))
+        .and_then(Value::as_array)
+    else {
+        issues.push(
+            "FAIL: release-please-config-incomplete: root package must declare extra-files for crates/k-wiki/Cargo.toml."
+                .to_string(),
+        );
+        return;
+    };
+    let required = [
+        ("crates/k-wiki/Cargo.toml", "$.package.version"),
+        (
+            "crates/k-wiki/Cargo.toml",
+            "$.dependencies['codebase-graph'].version",
+        ),
+    ];
+    for (path, jsonpath) in required {
+        let present = extra_files.iter().any(|entry| {
+            entry.get("type").and_then(Value::as_str) == Some("toml")
+                && entry.get("path").and_then(Value::as_str) == Some(path)
+                && entry.get("jsonpath").and_then(Value::as_str) == Some(jsonpath)
+        });
+        if !present {
+            issues.push(format!(
+                "FAIL: release-please-config-incomplete: root package extra-files must include {path} with {jsonpath}."
+            ));
+        }
     }
 }
 
@@ -397,9 +482,18 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
         "---\ntype: guide\ntitle: Welcome\ntags: [smoke]\n---\n# Welcome\n\nPackaged wiki smoke.\n",
     )
     .map_err(|error| error.to_string())?;
+    let repo_root = temp.join("repo");
+    let knowledge_root = repo_root.join("knowledge");
+    fs::create_dir_all(&knowledge_root).map_err(|error| error.to_string())?;
+    fs::write(
+        knowledge_root.join("index.md"),
+        "---\nokf_version: \"0.1\"\ntitle: Repo Knowledge\n---\n# Repo Knowledge\n",
+    )
+    .map_err(|error| error.to_string())?;
 
     let bundle_text = bundle.to_str().ok_or("invalid bundle path")?;
     let site_text = site.to_str().ok_or("invalid site path")?;
+    assert_version_surface(&executable, Path::new("crates/k-wiki/Cargo.toml"))?;
     run_checked_in(&executable, ["--help"], &temp)?;
     run_checked_in(&executable, ["validate", bundle_text, "--json"], &temp)?;
     run_checked_in(
@@ -407,6 +501,7 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
         ["build", bundle_text, "--out", site_text],
         &temp,
     )?;
+    assert_wiki_codex_project_install(&executable, &repo_root, &temp)?;
     if !site.join("index.html").is_file() {
         return Err("wiki artifact smoke did not generate index.html".to_string());
     }
@@ -535,6 +630,196 @@ fn smoke_wiki_mcp_stdio(
     Ok(())
 }
 
+fn assert_version_surface(executable: &Path, manifest: &Path) -> Result<(), String> {
+    let expected = cargo_version(manifest)?;
+    let output = run_capture_in(executable, ["--version"], Path::new("."))?;
+    let stdout = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
+    let actual = stdout.trim();
+    let expected_line = format!("k-wiki {expected}");
+    if actual != expected_line {
+        return Err(format!(
+            "unexpected version output: expected {expected_line:?}, got {actual:?}"
+        ));
+    }
+    Ok(())
+}
+
+fn assert_wiki_codex_project_install(
+    executable: &Path,
+    repo_root: &Path,
+    current_dir: &Path,
+) -> Result<(), String> {
+    let home = current_dir.join("isolated-home");
+    let codex_home = home.join(".codex");
+    let empty_path = current_dir.join("empty-path");
+    let legacy_repo = current_dir.join("StructuralFactory");
+    let legacy_bundle = legacy_repo.join("knowledge");
+    fs::create_dir_all(&codex_home).map_err(|error| error.to_string())?;
+    fs::create_dir_all(&empty_path).map_err(|error| error.to_string())?;
+    fs::create_dir_all(&legacy_bundle).map_err(|error| error.to_string())?;
+    fs::write(
+        legacy_bundle.join("index.md"),
+        "---\nokf_version: \"0.1\"\ntitle: Legacy Knowledge\n---\n# Legacy Knowledge\n",
+    )
+    .map_err(|error| error.to_string())?;
+    let legacy_bundle = legacy_bundle
+        .canonicalize()
+        .map_err(|error| format!("failed to canonicalize legacy bundle: {error}"))?;
+    fs::write(
+        codex_home.join("config.toml"),
+        format!(
+            "model = \"preserved\"\n\n[mcp_servers.k_wiki]\ncommand = \"legacy-k-wiki\"\nargs = [\"mcp\", {}]\nstartup_timeout_sec = 60\n",
+            serde_json::to_string(legacy_bundle.to_string_lossy().as_ref())
+                .map_err(|error| error.to_string())?,
+        ),
+    )
+    .map_err(|error| error.to_string())?;
+    let home_text = home.to_string_lossy().to_string();
+    let codex_home_text = codex_home.to_string_lossy().to_string();
+    let empty_path_text = empty_path.to_string_lossy().to_string();
+    let executable_text = executable.to_string_lossy().to_string();
+    let environment = [
+        ("HOME", home_text.as_str()),
+        ("CODEX_HOME", codex_home_text.as_str()),
+        ("PATH", empty_path_text.as_str()),
+        ("K_WIKI_SERVER_COMMAND", executable_text.as_str()),
+    ];
+    let output = run_capture_in_with_env(
+        executable,
+        [
+            "mcp",
+            "install",
+            "--client",
+            "codex",
+            "--scope",
+            "project",
+            "--repo-root",
+            repo_root.to_str().ok_or("invalid repo root path")?,
+            "--dry-run",
+            "--verify",
+        ],
+        current_dir,
+        &environment,
+    )?;
+    let stdout = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
+    let payload: Value = serde_json::from_str(stdout.trim()).map_err(|error| {
+        format!("dry-run MCP install did not return valid JSON: {error}; stdout: {stdout}")
+    })?;
+    let method = payload
+        .get("method")
+        .and_then(Value::as_str)
+        .ok_or("dry-run MCP install did not report method")?;
+    if method != "file_adapter" {
+        return Err(format!(
+            "dry-run MCP install expected method=file_adapter, got {method}"
+        ));
+    }
+    let locality = payload
+        .get("target_locality")
+        .and_then(Value::as_str)
+        .ok_or("dry-run MCP install did not report target_locality")?;
+    if locality != "repository_local" {
+        return Err(format!(
+            "dry-run MCP install expected repository_local locality, got {locality}"
+        ));
+    }
+    let expected_path = repo_root
+        .canonicalize()
+        .map_err(|error| format!("failed to canonicalize repo root for dry-run smoke: {error}"))?
+        .join(".codex/config.toml");
+    let reported_path = payload
+        .get("path")
+        .and_then(Value::as_str)
+        .ok_or("dry-run MCP install did not report path")?;
+    if Path::new(reported_path) != expected_path {
+        return Err(format!(
+            "dry-run MCP install expected path {}, got {}",
+            expected_path.display(),
+            reported_path
+        ));
+    }
+    if payload
+        .pointer("/verification/reason")
+        .and_then(Value::as_str)
+        != Some("dry_run")
+    {
+        return Err("dry-run MCP install did not report verification as skipped".to_string());
+    }
+
+    let install_args = [
+        "mcp",
+        "install",
+        "--client",
+        "codex",
+        "--scope",
+        "project",
+        "--repo-root",
+        repo_root.to_str().ok_or("invalid repo root path")?,
+        "--verify",
+    ];
+    let installed = run_capture_in_with_env(executable, install_args, current_dir, &environment)?;
+    let installed_stdout =
+        String::from_utf8(installed.stdout).map_err(|error| error.to_string())?;
+    let installed: Value = serde_json::from_str(installed_stdout.trim()).map_err(|error| {
+        format!("MCP install did not return valid JSON: {error}; stdout: {installed_stdout}")
+    })?;
+    if !matches!(
+        installed.get("action").and_then(Value::as_str),
+        Some("created" | "updated")
+    ) || installed
+        .pointer("/verification/ok")
+        .and_then(Value::as_bool)
+        != Some(true)
+        || installed
+            .pointer("/legacy_cleanup/action")
+            .and_then(Value::as_str)
+            != Some("renamed")
+    {
+        return Err(format!(
+            "packaged MCP install did not update, verify, and preserve the legacy entry: {installed}"
+        ));
+    }
+    let preserved_as = installed
+        .pointer("/legacy_cleanup/preserved_as")
+        .and_then(Value::as_str)
+        .ok_or("packaged MCP install did not report the preserved legacy name")?;
+    if !preserved_as.starts_with("k_wiki_structuralfactory_") {
+        return Err(format!("unexpected preserved legacy name: {preserved_as}"));
+    }
+    let local_config = fs::read_to_string(&expected_path).map_err(|error| error.to_string())?;
+    if !local_config.contains("[mcp_servers.k_wiki]")
+        || !local_config.contains(executable_text.as_str())
+    {
+        return Err("packaged MCP install did not write the repository-local registration".into());
+    }
+    let shared_config =
+        fs::read_to_string(codex_home.join("config.toml")).map_err(|error| error.to_string())?;
+    if !shared_config.contains("model = \"preserved\"")
+        || shared_config.contains("[mcp_servers.k_wiki]")
+        || !shared_config.contains(&format!("[mcp_servers.{preserved_as}]"))
+        || !shared_config.contains("command = \"legacy-k-wiki\"")
+    {
+        return Err("packaged MCP install did not preserve the shared legacy registration".into());
+    }
+
+    let repeated = run_capture_in_with_env(executable, install_args, current_dir, &environment)?;
+    let repeated_stdout = String::from_utf8(repeated.stdout).map_err(|error| error.to_string())?;
+    let repeated: Value = serde_json::from_str(repeated_stdout.trim()).map_err(|error| {
+        format!("repeat MCP install did not return valid JSON: {error}; stdout: {repeated_stdout}")
+    })?;
+    if repeated.get("action").and_then(Value::as_str) != Some("unchanged")
+        || repeated
+            .pointer("/verification/ok")
+            .and_then(Value::as_bool)
+            != Some(true)
+    {
+        return Err(format!(
+            "packaged MCP install was not idempotent: {repeated}"
+        ));
+    }
+    Ok(())
+}
+
 fn smoke_mcp_stdio(executable: &Path, repo_root: &Path) -> Result<(), String> {
     let mut child = Command::new(executable)
         .args(["mcp", "start", "--repo-root"])
@@ -597,6 +882,12 @@ fn verify_release_version(tag: &str) -> Result<(), String> {
             "Knowledge Wiki package version {wiki} does not match release tag {tag}"
         ));
     }
+    let dependency = dependency_version(Path::new("crates/k-wiki/Cargo.toml"), "codebase-graph")?;
+    if dependency != expected {
+        return Err(format!(
+            "Knowledge Wiki depends on codebase-graph {dependency} but release tag is {tag}"
+        ));
+    }
     println!("{actual}");
     Ok(())
 }
@@ -612,6 +903,29 @@ fn cargo_version(manifest: &Path) -> Result<String, String> {
     Err(format!(
         "{} does not contain package version",
         manifest.display()
+    ))
+}
+
+fn dependency_version(manifest: &Path, dependency: &str) -> Result<String, String> {
+    let cargo = fs::read_to_string(manifest).map_err(|error| error.to_string())?;
+    for line in cargo.lines() {
+        let line = line.trim();
+        if line.starts_with(&format!("{dependency} =")) {
+            if let Some(version_index) = line.find("version = ") {
+                let value = &line[(version_index + "version = ".len())..];
+                if let Some(first_quote) = value.find('"') {
+                    let rest = &value[(first_quote + 1)..];
+                    if let Some(end_quote) = rest.find('"') {
+                        return Ok(rest[..end_quote].to_string());
+                    }
+                }
+            }
+        }
+    }
+    Err(format!(
+        "{} does not contain dependency version for {}",
+        manifest.display(),
+        dependency
     ))
 }
 
@@ -634,6 +948,66 @@ where
             String::from_utf8_lossy(&output.stderr)
         ))
     }
+}
+
+fn run_capture_in<'a, I>(
+    executable: &Path,
+    args: I,
+    current_dir: &Path,
+) -> Result<std::process::Output, String>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    Command::new(executable)
+        .args(args)
+        .current_dir(current_dir)
+        .output()
+        .map_err(|error| error.to_string())
+        .and_then(|output| {
+            if output.status.success() {
+                Ok(output)
+            } else {
+                Err(format!(
+                    "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
+                    output.status,
+                    executable.display(),
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                ))
+            }
+        })
+}
+
+fn run_capture_in_with_env<'a, I>(
+    executable: &Path,
+    args: I,
+    current_dir: &Path,
+    env_pairs: &[(&str, &str)],
+) -> Result<std::process::Output, String>
+where
+    I: IntoIterator<Item = &'a str>,
+{
+    let mut command = Command::new(executable);
+    command.args(args).current_dir(current_dir);
+    for (key, value) in env_pairs {
+        command.env(key, value);
+    }
+    command
+        .output()
+        .map_err(|error| error.to_string())
+        .and_then(|output| {
+            if output.status.success() {
+                Ok(output)
+            } else {
+                Err(format!(
+                    "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
+                    output.status,
+                    executable.display(),
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                ))
+            }
+        })
 }
 
 fn run_checked_in<'a, I>(executable: &Path, args: I, current_dir: &Path) -> Result<(), String>
