@@ -206,7 +206,8 @@ fn materialize_empty_project_from_native_request() {
     .unwrap();
 
     let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
-    assert_eq!(value["skipped"], true);
+    assert_eq!(value["skipped"], false);
+    assert_eq!(value["database_written"], true);
     assert!(manifest_path.exists());
     let _ = fs::remove_dir_all(root);
 }
@@ -474,14 +475,18 @@ fn setup_materializes_graph_and_writes_config() {
     assert_eq!(value["ok"], true);
     assert_eq!(value["database_written"], true);
     assert!(root.join(".codebaseGraph").join("config.json").exists());
-    assert!(root.join(".codebaseGraph").join("manifest.json").exists());
+    assert!(value["manifest_path"]
+        .as_str()
+        .unwrap()
+        .contains("/.codebaseGraph/storage/generations/gen-"));
+    assert!(PathBuf::from(value["manifest_path"].as_str().unwrap()).exists());
     assert!(PathBuf::from(value["database_path"].as_str().unwrap()).exists());
 
     let config: serde_json::Value = serde_json::from_str(
         &fs::read_to_string(root.join(".codebaseGraph").join("config.json")).unwrap(),
     )
     .unwrap();
-    assert_eq!(config["schema_version"], 1);
+    assert_eq!(config["schema_version"], 2);
     assert_eq!(config["mcp"]["server_name"], "codebase_graph");
     let _ = fs::remove_dir_all(root);
 }

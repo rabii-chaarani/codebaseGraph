@@ -37,6 +37,21 @@ pub(super) fn setup_search_fixture_repo(root: &Path) {
     .unwrap();
 }
 
+pub(super) fn managed_active_manifest_path(root: &Path) -> PathBuf {
+    let storage_root = root.join(".codebaseGraph/storage");
+    let active: serde_json::Value = serde_json::from_slice(
+        &fs::read(storage_root.join("active.json")).expect("managed active pointer should exist"),
+    )
+    .expect("managed active pointer should parse");
+    let generation_id = active["generation_id"]
+        .as_str()
+        .expect("managed active pointer should contain generation_id");
+    storage_root
+        .join("generations")
+        .join(format!("gen-{generation_id}"))
+        .join("manifest.json")
+}
+
 pub(super) fn test_http_options(root: PathBuf, auth_token: Option<&str>) -> McpHttpOptions {
     McpHttpOptions {
         serve: McpServeOptions {

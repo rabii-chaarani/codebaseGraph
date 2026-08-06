@@ -49,6 +49,11 @@ impl CodebaseGraphApi<ApiCore> {
         config: RefreshWatchConfig,
         observer: &mut impl RefreshWatchObserver,
     ) -> Result<(), ApiError> {
+        let runtime = crate::api::context::resolve_runtime(&request.repo)
+            .map_err(|error| ApiError::new("runtime_resolution_failed", error))?;
+        runtime
+            .require_graph_write()
+            .map_err(|message| ApiError::new("legacy_storage_requires_reinstall", message))?;
         run_refresh_watch(request, config, observer)
             .map_err(|error| ApiError::new("refresh_watch_failed", error))
     }

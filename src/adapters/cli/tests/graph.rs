@@ -183,7 +183,7 @@ fn setup_indexes_documented_language_defaults() {
         "supported language files should not be skipped: {diagnostics:?}"
     );
 
-    let manifest_text = fs::read_to_string(root.join(".codebaseGraph/manifest.json")).unwrap();
+    let manifest_text = fs::read_to_string(managed_active_manifest_path(&root)).unwrap();
     let manifest: serde_json::Value = serde_json::from_str(&manifest_text).unwrap();
     for path in [
         "src/lib.rs",
@@ -388,7 +388,87 @@ fn graph_health_reports_native_database() {
     assert_eq!(value["database_exists"], true);
     assert_eq!(value["manifest_exists"], true);
     assert_eq!(value["graph_readable"], true);
+    assert_eq!(value["storage_format"], "managed_v2");
+    assert_eq!(value["writable"], true);
+    assert!(value["active_generation"].as_str().is_some());
+    assert_eq!(value["pending_runs"], 0);
+    assert_eq!(value["cleanup_pending"], false);
+    assert!(value["physical_database_bytes"].as_u64().unwrap() > 0);
+    assert!(value["logical_database_bytes"].as_u64().unwrap() > 0);
+    assert!(
+        value["physical_database_bytes"].as_u64().unwrap()
+            >= value["logical_database_bytes"].as_u64().unwrap()
+    );
+    assert_eq!(value["remediation"], serde_json::Value::Null);
     assert!(value["total_nodes"].as_u64().unwrap() > 0);
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn graph_health_keeps_legacy_storage_readable_but_requires_reinstall_for_writes() {
+    let root = unique_temp_dir("codebase-graph-rust-health-legacy");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+
+    let mut install_output = Vec::new();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut install_output,
+    )
+    .unwrap();
+    let install_value: serde_json::Value = serde_json::from_slice(&install_output).unwrap();
+    let state = root.join(".codebaseGraph");
+    fs::write(
+        state.join("config.json"),
+        serde_json::to_string_pretty(&json!({
+            "schema_version": 1,
+            "repo_root": root,
+            "database_path": install_value["db_path"],
+            "manifest_path": install_value["manifest_path"],
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let mut output = Vec::new();
+    run(
+        [
+            "check-health",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["ok"], true);
+    assert_eq!(value["storage_format"], "legacy_v1");
+    assert_eq!(value["writable"], false);
+    assert_eq!(value["graph_readable"], true);
+    assert!(value["physical_database_bytes"].as_u64().unwrap() > 0);
+    assert!(
+        value["physical_database_bytes"].as_u64().unwrap()
+            >= value["logical_database_bytes"].as_u64().unwrap()
+    );
+    assert!(value["remediation"]
+        .as_str()
+        .unwrap()
+        .contains("codebase-graph reinstall --repo-root"));
     let _ = fs::remove_dir_all(root);
 }
 

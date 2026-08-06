@@ -507,18 +507,20 @@ pub(crate) fn run_refresh_watch(
     observer: &mut impl RefreshWatchObserver,
 ) -> Result<(), String> {
     let runtime = resolve_runtime(&request.repo)?;
+    runtime.require_graph_write()?;
     let mut materialize_options = MaterializeOptions::from_request(request, &runtime, false);
     normalize_materialize_options(&mut materialize_options);
+    let execution = RefreshExecutionPlan::new(request.repo.clone(), materialize_options.clone());
 
     if config.once {
-        let response = execute_refresh_operation(&materialize_options, Vec::new())?;
+        let response = execution.execute(Vec::new())?;
         return observer.on_success(None, &refresh_watch_summary(&response), 0, 0);
     }
 
     let filter = WatchEventFilter::from_options(&runtime.repo_root, &materialize_options)?;
     match config.backend {
         RefreshBackend::Poll => run_poll_watch(config.loop_config, &filter, |batch| {
-            refresh_watch_batch(observer, "poll", &materialize_options, batch)
+            refresh_watch_batch(observer, "poll", &execution, batch)
         }),
         RefreshBackend::Native => {
             let (watcher, rx) = start_native_watcher(&runtime.repo_root)?;
@@ -528,7 +530,7 @@ pub(crate) fn run_refresh_watch(
                 watcher,
                 rx,
                 VecDeque::new(),
-                |batch| refresh_watch_batch(observer, "native", &materialize_options, batch),
+                |batch| refresh_watch_batch(observer, "native", &execution, batch),
             )
         }
         RefreshBackend::Auto => match start_native_watcher(&runtime.repo_root) {
@@ -541,23 +543,21 @@ pub(crate) fn run_refresh_watch(
                         watcher,
                         rx,
                         probe.queued,
-                        |batch| {
-                            refresh_watch_batch(observer, "native", &materialize_options, batch)
-                        },
+                        |batch| refresh_watch_batch(observer, "native", &execution, batch),
                     )
                 } else {
                     drop(watcher);
                     observer
                         .on_fallback("poll", probe.reason.as_deref().unwrap_or("probe_failed"))?;
                     run_poll_watch(config.loop_config, &filter, |batch| {
-                        refresh_watch_batch(observer, "poll", &materialize_options, batch)
+                        refresh_watch_batch(observer, "poll", &execution, batch)
                     })
                 }
             }
             Err(_) => {
                 observer.on_fallback("poll", "watcher_start_failed")?;
                 run_poll_watch(config.loop_config, &filter, |batch| {
-                    refresh_watch_batch(observer, "poll", &materialize_options, batch)
+                    refresh_watch_batch(observer, "poll", &execution, batch)
                 })
             }
         },
@@ -567,7 +567,7 @@ pub(crate) fn run_refresh_watch(
 fn refresh_watch_batch(
     observer: &mut impl RefreshWatchObserver,
     backend: &str,
-    materialize_options: &MaterializeOptions,
+    execution: &RefreshExecutionPlan,
     batch: &WatchChangeBatch,
 ) -> Result<bool, String> {
     let mut bound_observer = BoundRefreshWatchObserver { observer, backend };
@@ -576,7 +576,7 @@ fn refresh_watch_batch(
         batch.event_count,
         &batch.paths,
         RefreshRetryPolicy::default(),
-        |candidate_paths| execute_refresh_operation(materialize_options, candidate_paths),
+        |candidate_paths| execution.execute(candidate_paths),
     )
 }
 
@@ -689,6 +689,41 @@ pub(crate) fn execute_refresh_operation(
 ) -> Result<NativeSyntaxMaterializationResponse, String> {
     let (_request, response) = execute_candidate_materialization(options, paths)?;
     Ok(response)
+}
+
+#[derive(Clone, Debug)]
+struct RefreshExecutionPlan {
+    selector: RepoSelector,
+    base_options: MaterializeOptions,
+}
+
+impl RefreshExecutionPlan {
+    fn new(selector: RepoSelector, base_options: MaterializeOptions) -> Self {
+        Self {
+            selector,
+            base_options,
+        }
+    }
+
+    fn resolve_options(&self) -> Result<MaterializeOptions, String> {
+        let runtime = resolve_runtime(&self.selector)?;
+        runtime.require_graph_write()?;
+        let mut options = self.base_options.clone();
+        options.source_root = Some(runtime.repo_root);
+        options.config = runtime.config_path;
+        options.db = Some(runtime.db_path);
+        options.manifest = Some(runtime.manifest_path);
+        options.storage_root = runtime.storage_root;
+        Ok(options)
+    }
+
+    fn execute(
+        &self,
+        candidate_paths: Vec<String>,
+    ) -> Result<NativeSyntaxMaterializationResponse, String> {
+        let options = self.resolve_options()?;
+        execute_refresh_operation(&options, candidate_paths)
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -883,6 +918,17 @@ impl RefreshState {
         }
     }
 
+    pub(crate) fn disable(&self, backend: &str, error: String) {
+        if let Ok(mut status) = self.status.lock() {
+            status.backend = backend.to_string();
+            status.enabled = false;
+            status.refreshing = false;
+            status.pending = false;
+            status.last_error = Some(error);
+            status.last_error_count = status.last_error_count.saturating_add(1);
+        }
+    }
+
     pub(crate) fn mark_pending(&self) {
         if let Ok(mut status) = self.status.lock() {
             status.pending = true;
@@ -961,11 +1007,16 @@ pub(crate) fn start_refresh_service(selector: RepoSelector) -> Arc<RefreshState>
 
 fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Result<(), String> {
     let runtime = resolve_runtime(&selector)?;
+    if let Err(error) = runtime.require_graph_write() {
+        state.disable("disabled", error);
+        return Ok(());
+    }
     let materialize_options = MaterializeOptions {
         source_root: Some(runtime.repo_root.clone()),
         config: runtime.config_path,
         db: Some(runtime.db_path),
         manifest: Some(runtime.manifest_path),
+        storage_root: runtime.storage_root,
         mode: "changed".to_string(),
         include_fts: true,
         semantic_enrichment: true,
@@ -973,6 +1024,7 @@ fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Res
         use_git: false,
         ..MaterializeOptions::default()
     };
+    let execution = RefreshExecutionPlan::new(selector, materialize_options.clone());
     let filter = WatchEventFilter::from_options(&runtime.repo_root, &materialize_options)?;
     let loop_config = RefreshLoopConfig {
         poll_interval: Duration::from_millis(500),
@@ -989,7 +1041,7 @@ fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Res
                 match run_service_native_loop(
                     state,
                     loop_config,
-                    &materialize_options,
+                    &execution,
                     &filter,
                     watcher,
                     rx,
@@ -1002,7 +1054,7 @@ fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Res
                             &runtime.repo_root,
                             &materialize_options,
                         )?;
-                        run_service_poll_loop(state, loop_config, &materialize_options, &filter)
+                        run_service_poll_loop(state, loop_config, &execution, &filter)
                     }
                 }
             } else {
@@ -1013,12 +1065,12 @@ fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Res
                         .reason
                         .unwrap_or_else(|| "native probe failed".to_string()),
                 );
-                run_service_poll_loop(state, loop_config, &materialize_options, &filter)
+                run_service_poll_loop(state, loop_config, &execution, &filter)
             }
         }
         Err(error) => {
             state.set_error("poll", error);
-            run_service_poll_loop(state, loop_config, &materialize_options, &filter)
+            run_service_poll_loop(state, loop_config, &execution, &filter)
         }
     }
 }
@@ -1026,45 +1078,33 @@ fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Res
 fn run_service_native_loop(
     state: &Arc<RefreshState>,
     config: RefreshLoopConfig,
-    materialize_options: &MaterializeOptions,
+    execution: &RefreshExecutionPlan,
     filter: &WatchEventFilter,
     watcher: notify::RecommendedWatcher,
     rx: Receiver<WatchMessage>,
     queued: VecDeque<WatchMessage>,
 ) -> Result<(), String> {
     run_native_watch(config, filter, watcher, rx, queued, |batch| {
-        refresh_batch_with_state(
-            state,
-            "native",
-            materialize_options,
-            batch.event_count,
-            &batch.paths,
-        )
+        refresh_batch_with_state(state, "native", execution, batch.event_count, &batch.paths)
     })
 }
 
 fn run_service_poll_loop(
     state: &Arc<RefreshState>,
     config: RefreshLoopConfig,
-    materialize_options: &MaterializeOptions,
+    execution: &RefreshExecutionPlan,
     filter: &WatchEventFilter,
 ) -> Result<(), String> {
     state.set_backend("poll");
     run_poll_watch(config, filter, |batch| {
-        refresh_batch_with_state(
-            state,
-            "poll",
-            materialize_options,
-            batch.event_count,
-            &batch.paths,
-        )
+        refresh_batch_with_state(state, "poll", execution, batch.event_count, &batch.paths)
     })
 }
 
 fn refresh_batch_with_state(
     state: &Arc<RefreshState>,
     backend: &str,
-    materialize_options: &MaterializeOptions,
+    execution: &RefreshExecutionPlan,
     event_count: usize,
     paths: &BTreeSet<String>,
 ) -> Result<bool, String> {
@@ -1074,7 +1114,7 @@ fn refresh_batch_with_state(
         event_count,
         paths,
         RefreshRetryPolicy::default(),
-        |candidate_paths| execute_refresh_operation(materialize_options, candidate_paths),
+        |candidate_paths| execution.execute(candidate_paths),
     )
 }
 
@@ -1211,8 +1251,20 @@ mod tests {
     use crate::protocol::ManifestDiff;
     use std::{
         sync::atomic::{AtomicUsize, Ordering},
-        time::Duration,
+        thread,
+        time::{Duration, SystemTime, UNIX_EPOCH},
     };
+
+    fn unique_temp_dir(prefix: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "{prefix}-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("clock should be after epoch")
+                .as_nanos()
+        ))
+    }
 
     fn skipped_response() -> NativeSyntaxMaterializationResponse {
         NativeSyntaxMaterializationResponse::skipped(
@@ -1322,5 +1374,149 @@ mod tests {
             vec![(false, "parser exploded".to_string(), 1, 1)]
         );
         assert!(observer.successes.is_empty());
+    }
+
+    #[test]
+    fn refresh_execution_plan_reresolves_managed_v2_active_generation() {
+        let root = unique_temp_dir("codebase-graph-refresh-managed-reresolve");
+        let state = root.join(".codebaseGraph");
+        let storage = state.join("storage");
+        let generation_one = storage.join("generations").join("gen-one");
+        let generation_two = storage.join("generations").join("gen-two");
+        fs::create_dir_all(&generation_one).unwrap();
+        fs::create_dir_all(&generation_two).unwrap();
+        fs::write(generation_one.join("READY"), "ready\n").unwrap();
+        fs::write(generation_two.join("READY"), "ready\n").unwrap();
+        fs::write(generation_one.join("graph.ldb"), b"db-one").unwrap();
+        fs::write(generation_two.join("graph.ldb"), b"db-two").unwrap();
+        fs::write(generation_one.join("manifest.json"), "{}\n").unwrap();
+        fs::write(generation_two.join("manifest.json"), "{}\n").unwrap();
+        fs::write(
+            generation_one.join("metadata.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 2,
+                "generation_id": "one",
+                "created_at_ms": 0,
+                "published_at_ms": 0,
+                "logical_size_bytes": 0,
+                "physical_size_bytes": 0,
+                "node_count": 0,
+                "edge_count": 0
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            generation_two.join("metadata.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 2,
+                "generation_id": "two",
+                "created_at_ms": 0,
+                "published_at_ms": 0,
+                "logical_size_bytes": 0,
+                "physical_size_bytes": 0,
+                "node_count": 0,
+                "edge_count": 0
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            state.join("config.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 2,
+                "repo_root": root,
+                "storage_root": storage,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            storage.join("active.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 2,
+                "generation_id": "one",
+                "activated_at_ms": 0,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let selector = RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: None,
+            manifest_path: None,
+        };
+        let runtime = resolve_runtime(&selector).unwrap();
+        let plan = RefreshExecutionPlan::new(
+            selector,
+            MaterializeOptions {
+                source_root: Some(runtime.repo_root.clone()),
+                config: runtime.config_path.clone(),
+                db: Some(runtime.db_path.clone()),
+                manifest: Some(runtime.manifest_path.clone()),
+                mode: "changed".to_string(),
+                ..MaterializeOptions::default()
+            },
+        );
+
+        let first = plan.resolve_options().unwrap();
+        assert_eq!(first.db, Some(generation_one.join("graph.ldb")));
+        assert_eq!(first.manifest, Some(generation_one.join("manifest.json")));
+
+        fs::write(
+            storage.join("active.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 2,
+                "generation_id": "two",
+                "activated_at_ms": 1,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let second = plan.resolve_options().unwrap();
+        assert_eq!(second.db, Some(generation_two.join("graph.ldb")));
+        assert_eq!(second.manifest, Some(generation_two.join("manifest.json")));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn refresh_service_disables_legacy_v1_auto_refresh_with_remediation() {
+        let root = unique_temp_dir("codebase-graph-refresh-legacy-disabled");
+        let state_dir = root.join(".codebaseGraph");
+        fs::create_dir_all(&state_dir).unwrap();
+        fs::write(
+            state_dir.join("config.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 1,
+                "repo_root": root,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let state = start_refresh_service(RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: None,
+            manifest_path: None,
+        });
+
+        let mut snapshot = state.snapshot();
+        for _ in 0..50 {
+            if !snapshot.enabled {
+                break;
+            }
+            thread::sleep(Duration::from_millis(10));
+            snapshot = state.snapshot();
+        }
+
+        assert!(!snapshot.enabled);
+        assert_eq!(snapshot.backend, "disabled");
+        assert!(snapshot.last_error.as_deref().is_some_and(|error| error
+            .contains("legacy installed graph storage requires reinstall before writes")));
+        let _ = fs::remove_dir_all(root);
     }
 }
