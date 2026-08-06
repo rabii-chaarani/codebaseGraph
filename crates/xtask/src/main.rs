@@ -787,8 +787,14 @@ fn assert_wiki_codex_project_install(
         return Err(format!("unexpected preserved legacy name: {preserved_as}"));
     }
     let local_config = fs::read_to_string(&expected_path).map_err(|error| error.to_string())?;
+    let expected_command = format!(
+        "command = {}",
+        serde_json::to_string(&executable_text).map_err(|error| error.to_string())?
+    );
     if !local_config.contains("[mcp_servers.k_wiki]")
-        || !local_config.contains(executable_text.as_str())
+        || !local_config
+            .lines()
+            .any(|line| line.trim() == expected_command)
     {
         return Err("packaged MCP install did not write the repository-local registration".into());
     }
