@@ -136,7 +136,16 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
       - name: Run Rust advisory scan
-        run: cargo audit
+        shell: bash
+        run: |
+          time_features="$(cargo tree -e features -i time --locked)"
+          if grep -q 'time feature "parsing"' <<<"$time_features"; then
+            echo "time parsing is enabled; RUSTSEC-2026-0009 must not be ignored" >&2
+            exit 1
+          fi
+          # time >=0.3.47 requires Rust 1.88, while this project supports Rust 1.82.
+          # The vulnerable parsing API is not compiled through lbug's default features.
+          cargo audit --ignore RUSTSEC-2026-0009
 
   publish-dry-run:
     name: cargo publish dry-run
