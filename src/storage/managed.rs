@@ -9,7 +9,7 @@ use crate::storage::locks::{
 };
 use crate::storage::run_workspace::{RunJournal, RunPhase, RunWorkspace, RunWorkspaceRecovery};
 use serde::{Deserialize, Serialize};
-use std::fs::{self, File};
+use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -956,10 +956,8 @@ fn sync_parent_dir(path: &Path) -> Result<(), NativeError> {
     let parent = path.parent().ok_or_else(|| {
         NativeError::InvalidInput(format!("path {} has no parent", path.display()))
     })?;
+    sync_dir(path)?;
     sync_dir(parent)?;
-    if path.exists() {
-        File::open(path)?.sync_all()?;
-    }
     Ok(())
 }
 
