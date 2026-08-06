@@ -47,6 +47,11 @@ impl RepoRuntime {
         Ok(())
     }
 
+    pub(crate) fn release_read_leases(&mut self) {
+        self.active_read = None;
+        self.direct_read = None;
+    }
+
     pub(crate) fn legacy_schema_version(&self) -> Option<u64> {
         matches!(self.storage_mode, StorageMode::LegacyManagedV1).then_some(1)
     }
