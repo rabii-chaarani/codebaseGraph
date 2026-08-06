@@ -11,8 +11,9 @@ USAGE:
   k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
   k-wiki inspect <bundle> --concept <concept-id>
   k-wiki check-links <bundle> [--include-external]
-  k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run]
+  k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run] [--verify]
   k-wiki mcp [bundle]
+  k-wiki --version
 ";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -57,6 +58,7 @@ pub enum CliRequest {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CliAction {
     Help,
+    Version,
     Request(CliRequest),
 }
 
@@ -67,6 +69,7 @@ pub fn help_text() -> &'static str {
 pub fn parse_args(args: &[String]) -> Result<CliAction, String> {
     match args.first().map(String::as_str) {
         None | Some("-h" | "--help" | "help") => Ok(CliAction::Help),
+        Some("-V" | "--version") if args.len() == 1 => Ok(CliAction::Version),
         Some("install") => parse_install(args),
         Some("mcp") => parse_mcp(args),
         Some("validate") => parse_validate(args),
@@ -92,6 +95,7 @@ fn parse_mcp_install(args: &[String]) -> Result<CliAction, String> {
     let mut client_config_path = None;
     let mut repo_root = None;
     let mut dry_run = false;
+    let mut verify = false;
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
@@ -123,6 +127,10 @@ fn parse_mcp_install(args: &[String]) -> Result<CliAction, String> {
                 dry_run = true;
                 index += 1;
             }
+            "--verify" => {
+                verify = true;
+                index += 1;
+            }
             other => {
                 return Err(format!(
                     "unknown mcp install option: {other}\n\n{HELP_TEXT}"
@@ -151,6 +159,7 @@ fn parse_mcp_install(args: &[String]) -> Result<CliAction, String> {
             client_config_path,
             repo_root,
             dry_run,
+            verify,
         },
     }))
 }
@@ -184,6 +193,11 @@ where
     match parse_args(args)? {
         CliAction::Help => {
             writeln!(stdout, "{HELP_TEXT}").map_err(|error| error.to_string())?;
+            Ok(0)
+        }
+        CliAction::Version => {
+            writeln!(stdout, "k-wiki {}", env!("CARGO_PKG_VERSION"))
+                .map_err(|error| error.to_string())?;
             Ok(0)
         }
         CliAction::Request(request) => {

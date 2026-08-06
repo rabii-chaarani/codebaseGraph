@@ -1,12 +1,16 @@
 use std::{
     collections::BTreeSet,
+    io::Write,
     path::{Path, PathBuf},
+    process::{Command, Stdio},
+    time::{Duration, Instant},
 };
 
 use codebase_graph::api::{
-    install_mcp_server, remove_mcp_server, resolve_mcp_target, McpClientInstallOptions,
-    McpClientRemovalOptions, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
-    McpTargetLocality, ResolvedMcpTarget,
+    inspect_mcp_server, install_mcp_server, remove_mcp_server, rename_mcp_server,
+    resolve_mcp_target, McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
+    McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
+    ResolvedMcpTarget,
 };
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -45,6 +49,7 @@ pub struct McpInstallRequest {
     pub client_config_path: Option<PathBuf>,
     pub repo_root: Option<PathBuf>,
     pub dry_run: bool,
+    pub verify: bool,
 }
 
 pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, String> {
@@ -220,7 +225,8 @@ pub fn install_mcp_client(request: McpInstallRequest) -> Result<serde_json::Valu
     let mut instruction_names = BTreeSet::new();
     for client in clients {
         match install_single_mcp_client(&repository_root, &bundle_root, &request, client.clone()) {
-            Ok(result) => {
+            Ok(mut result) => {
+                attach_install_verification(&mut result, &request, &bundle_root);
                 if !request.dry_run {
                     if let Some(name) = result
                         .get("server_name")
@@ -266,6 +272,309 @@ pub fn install_mcp_client(request: McpInstallRequest) -> Result<serde_json::Valu
     }
 }
 
+pub fn has_verification_failure(payload: &serde_json::Value) -> bool {
+    let failed = |result: &serde_json::Value| {
+        result
+            .get("verification")
+            .and_then(|value| value.get("ok"))
+            .and_then(serde_json::Value::as_bool)
+            == Some(false)
+    };
+    payload
+        .get("results")
+        .and_then(serde_json::Value::as_array)
+        .map(|results| results.iter().any(failed))
+        .unwrap_or_else(|| failed(payload))
+}
+
+pub fn has_partial_migration_failure(payload: &serde_json::Value) -> bool {
+    let failed = |result: &serde_json::Value| {
+        result.get("action").and_then(serde_json::Value::as_str)
+            == Some("installed_but_migration_incomplete")
+    };
+    payload
+        .get("results")
+        .and_then(serde_json::Value::as_array)
+        .map(|results| results.iter().any(failed))
+        .unwrap_or_else(|| failed(payload))
+}
+
+fn attach_install_verification(
+    result: &mut serde_json::Value,
+    request: &McpInstallRequest,
+    bundle_root: &Path,
+) {
+    if !request.verify {
+        return;
+    }
+    if request.dry_run {
+        result["verification"] = json!({
+            "ok": true,
+            "skipped": true,
+            "reason": "dry_run",
+        });
+        return;
+    }
+    if result
+        .get("target_locality")
+        .and_then(serde_json::Value::as_str)
+        == Some("manual")
+    {
+        result["verification"] = json!({
+            "ok": true,
+            "skipped": true,
+            "reason": "manual_client",
+        });
+        return;
+    }
+    result["verification"] = verify_installed_server(result, bundle_root);
+    if result["verification"]["ok"].as_bool() == Some(false)
+        && result.get("action").and_then(serde_json::Value::as_str)
+            != Some("installed_but_migration_incomplete")
+    {
+        result["action"] = json!("installed_but_unverified");
+    }
+}
+
+fn verify_installed_server(result: &serde_json::Value, bundle_root: &Path) -> serde_json::Value {
+    let Some(descriptor) = result.get("descriptor") else {
+        return verification_error("install response did not contain a descriptor");
+    };
+    let Some(command) = descriptor
+        .get("command")
+        .and_then(serde_json::Value::as_str)
+    else {
+        return verification_error("installed descriptor did not contain a command");
+    };
+    let Some(args) = descriptor.get("args").and_then(serde_json::Value::as_array) else {
+        return verification_error("installed descriptor did not contain an args array");
+    };
+    let args = match args
+        .iter()
+        .map(|value| value.as_str().map(str::to_string))
+        .collect::<Option<Vec<_>>>()
+    {
+        Some(args) => args,
+        None => return verification_error("installed descriptor args were not strings"),
+    };
+    let Some(server_name) = result
+        .get("server_name")
+        .and_then(serde_json::Value::as_str)
+    else {
+        return verification_error("install response did not contain a server name");
+    };
+    let Some(client) = result.get("client").and_then(serde_json::Value::as_str) else {
+        return verification_error("install response did not contain a client name");
+    };
+    let Some(scope) = result.get("scope").and_then(serde_json::Value::as_str) else {
+        return verification_error("install response did not contain a scope");
+    };
+    let locality = match result
+        .get("target_locality")
+        .and_then(serde_json::Value::as_str)
+    {
+        Some("repository_local") => McpTargetLocality::RepositoryLocal,
+        Some("shared") => McpTargetLocality::Shared,
+        _ => return verification_error("install response reported an invalid target locality"),
+    };
+    let target = ResolvedMcpTarget {
+        client: client.to_string(),
+        scope: scope.to_string(),
+        locality,
+        path: result
+            .get("path")
+            .and_then(serde_json::Value::as_str)
+            .map(PathBuf::from),
+    };
+    let registration = match inspect_mcp_server(server_name, &target) {
+        Ok(Some(registration)) => registration,
+        Ok(None) => return verification_error("installed registration could not be read back"),
+        Err(error) => {
+            return verification_error(&format!(
+                "installed registration could not be inspected: {error}"
+            ))
+        }
+    };
+    if registration.command != command || registration.args != args {
+        return verification_error(
+            "installed registration does not match the requested descriptor",
+        );
+    }
+    let expected_bundle = match bundle_root.canonicalize() {
+        Ok(path) => path,
+        Err(error) => {
+            return verification_error(&format!("configured bundle could not be resolved: {error}"))
+        }
+    };
+    if args.len() != 2
+        || args.first().map(String::as_str) != Some("mcp")
+        || Path::new(&args[1]).canonicalize().ok().as_ref() != Some(&expected_bundle)
+    {
+        return verification_error("installed descriptor does not target the expected bundle");
+    }
+
+    let payloads = [
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "clientInfo": {"name": "k-wiki-installer", "version": env!("CARGO_PKG_VERSION")}
+            }
+        }),
+        json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}),
+        json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": "wiki_list_bundles",
+                "arguments": {"include_structured_content": true}
+            }
+        }),
+    ];
+    let mut child = match Command::new(command)
+        .args(&args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(error) => {
+            return verification_error(&format!("configured MCP command could not start: {error}"))
+        }
+    };
+    if let Some(mut stdin) = child.stdin.take() {
+        for payload in payloads {
+            if writeln!(stdin, "{payload}").is_err() {
+                let _ = child.kill();
+                let _ = child.wait();
+                return verification_error("verification request could not be written");
+            }
+        }
+    }
+    let timeout = descriptor
+        .get("timeout")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(60);
+    let deadline = Instant::now() + Duration::from_secs(timeout);
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) if Instant::now() < deadline => {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return verification_error("configured MCP command timed out");
+            }
+            Err(error) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return verification_error(&format!(
+                    "configured MCP command status could not be read: {error}"
+                ));
+            }
+        }
+    }
+    let output = match child.wait_with_output() {
+        Ok(output) => output,
+        Err(error) => {
+            return verification_error(&format!("configured MCP command did not finish: {error}"))
+        }
+    };
+    let responses = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .collect::<Vec<_>>();
+    if !output.status.success() {
+        return json!({
+            "ok": false,
+            "error": "configured MCP command exited unsuccessfully",
+            "returncode": output.status.code(),
+            "stderr": String::from_utf8_lossy(&output.stderr),
+        });
+    }
+
+    let initialize = response_for_id(&responses, 1);
+    let tools_response = response_for_id(&responses, 2);
+    let bundles_response = response_for_id(&responses, 3);
+    let server_name_ok = initialize
+        .and_then(|value| value.pointer("/result/serverInfo/name"))
+        .and_then(serde_json::Value::as_str)
+        == Some("Knowledge Wiki");
+    let tools = tools_response
+        .and_then(|value| value.pointer("/result/tools"))
+        .and_then(serde_json::Value::as_array);
+    let required_tools = [
+        "wiki_list_bundles",
+        "wiki_search_concepts",
+        "wiki_get_concept",
+        "wiki_populate_page",
+        "wiki_validate",
+        "wiki_check_links",
+        "wiki_build",
+    ];
+    let tools_ok = tools.is_some_and(|tools| {
+        required_tools.iter().all(|required| {
+            tools
+                .iter()
+                .any(|tool| tool.get("name").and_then(serde_json::Value::as_str) == Some(required))
+        })
+    });
+    let list_schema_is_bound = tools
+        .and_then(|tools| {
+            tools.iter().find(|tool| {
+                tool.get("name").and_then(serde_json::Value::as_str) == Some("wiki_list_bundles")
+            })
+        })
+        .and_then(|tool| tool.pointer("/inputSchema/properties"))
+        .and_then(serde_json::Value::as_object)
+        .is_some_and(|properties| !properties.contains_key("repository_roots"));
+    let expected_bundle_id = expected_bundle
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("knowledge");
+    let bundles = bundles_response
+        .and_then(|value| value.pointer("/result/structuredContent/result"))
+        .and_then(serde_json::Value::as_array);
+    let bundle_ok = bundles.is_some_and(|bundles| {
+        bundles.len() == 1
+            && bundles[0].get("id").and_then(serde_json::Value::as_str) == Some(expected_bundle_id)
+    });
+    let ok = server_name_ok && tools_ok && list_schema_is_bound && bundle_ok;
+    json!({
+        "ok": ok,
+        "checks": {
+            "configuration": true,
+            "mcp_startup": true,
+            "schema": tools_ok && list_schema_is_bound,
+            "bundle": bundle_ok,
+            "registration": true,
+            "server_name": server_name_ok,
+            "required_tools": tools_ok,
+            "single_bundle_schema": list_schema_is_bound,
+            "configured_bundle": bundle_ok,
+        },
+        "bundle_root": expected_bundle.to_string_lossy(),
+        "stderr": String::from_utf8_lossy(&output.stderr),
+    })
+}
+
+fn response_for_id(responses: &[serde_json::Value], id: u64) -> Option<&serde_json::Value> {
+    responses
+        .iter()
+        .find(|response| response.get("id").and_then(serde_json::Value::as_u64) == Some(id))
+}
+
+fn verification_error(message: &str) -> serde_json::Value {
+    json!({"ok": false, "error": message})
+}
+
 fn install_single_mcp_client(
     repository_root: &Path,
     bundle_root: &Path,
@@ -286,11 +595,11 @@ fn install_single_mcp_client(
     )?;
     let server_name = resolve_server_name(request.name.as_deref(), &resolved, repository_root)?;
     let descriptor = build_descriptor(server_name.clone(), bundle_root, repository_root);
-    let legacy_server_names = match resolved.locality {
-        McpTargetLocality::Shared | McpTargetLocality::Manual => {
-            vec![DEFAULT_SERVER_NAME.to_string()]
-        }
-        McpTargetLocality::RepositoryLocal => Vec::new(),
+    let legacy_migration = plan_legacy_migration(&resolved, &descriptor)?;
+    let legacy_server_names = if resolved.locality == McpTargetLocality::Manual {
+        vec![DEFAULT_SERVER_NAME.to_string()]
+    } else {
+        Vec::new()
     };
     let mut payload = install_mcp_server(
         &descriptor,
@@ -304,17 +613,53 @@ fn install_single_mcp_client(
             legacy_server_names,
         },
     )?;
-    if let Some(shared_cleanup) =
-        remove_shared_legacy_registration(&resolved, &descriptor, request.dry_run)?
-    {
-        let mut legacy_cleanup = payload
-            .get("legacy_cleanup")
-            .cloned()
-            .unwrap_or_else(|| json!({}));
-        legacy_cleanup["shared_target"] = shared_cleanup;
-        payload["legacy_cleanup"] = legacy_cleanup;
-    }
+    let migration_recovery = legacy_migration.recovery_payload(&payload);
+    let migration_result = apply_legacy_migration(legacy_migration, &descriptor, request.dry_run);
+    merge_legacy_migration_result(
+        &mut payload,
+        migration_result,
+        request.dry_run,
+        migration_recovery,
+    )?;
     Ok(payload)
+}
+
+fn merge_legacy_migration_result(
+    payload: &mut serde_json::Value,
+    migration_result: Result<Option<serde_json::Value>, String>,
+    dry_run: bool,
+    migration_recovery: serde_json::Value,
+) -> Result<(), String> {
+    match migration_result {
+        Ok(Some(shared_cleanup)) => {
+            let mut legacy_cleanup = payload
+                .get("legacy_cleanup")
+                .cloned()
+                .unwrap_or_else(|| json!({}));
+            if let Some(action) = shared_cleanup
+                .get("effective_action")
+                .and_then(serde_json::Value::as_str)
+            {
+                legacy_cleanup["action"] = json!(action);
+            }
+            if let Some(preserved_as) = shared_cleanup.get("preserved_as") {
+                legacy_cleanup["preserved_as"] = preserved_as.clone();
+            }
+            legacy_cleanup["shared_target"] = shared_cleanup;
+            payload["legacy_cleanup"] = legacy_cleanup;
+        }
+        Ok(None) => {}
+        Err(error) if !dry_run => {
+            payload["action"] = json!("installed_but_migration_incomplete");
+            payload["legacy_cleanup"] = json!({
+                "action": "failed",
+                "error": error,
+                "recovery": migration_recovery,
+            });
+        }
+        Err(error) => return Err(error),
+    }
+    Ok(())
 }
 
 fn resolve_server_name(
@@ -366,38 +711,143 @@ fn build_descriptor(
     }
 }
 
-fn remove_shared_legacy_registration(
+enum LegacyMigration {
+    None,
+    Remove {
+        target: ResolvedMcpTarget,
+    },
+    Rename {
+        target: ResolvedMcpTarget,
+        destination_name: String,
+    },
+}
+
+impl LegacyMigration {
+    fn recovery_payload(&self, install_payload: &serde_json::Value) -> serde_json::Value {
+        let (shared_target, preserved_as) = match self {
+            Self::None => return serde_json::Value::Null,
+            Self::Remove { target } => (target, None),
+            Self::Rename {
+                target,
+                destination_name,
+            } => (target, Some(destination_name.as_str())),
+        };
+        json!({
+            "instruction": "The repository-local registration is valid. Restore access to the shared configuration, resolve any destination conflict, and rerun the same install command; the local write is idempotent.",
+            "local_config": install_payload.get("path").cloned().unwrap_or(serde_json::Value::Null),
+            "shared_config": shared_target.path.as_ref().map(|path| path.to_string_lossy().to_string()),
+            "legacy_name": DEFAULT_SERVER_NAME,
+            "preserved_as": preserved_as,
+        })
+    }
+}
+
+fn plan_legacy_migration(
     target: &ResolvedMcpTarget,
+    descriptor: &McpServerDescriptor,
+) -> Result<LegacyMigration, String> {
+    if target.locality == McpTargetLocality::Manual {
+        return Ok(LegacyMigration::None);
+    }
+    let shared_target = if target.locality == McpTargetLocality::Shared {
+        target.clone()
+    } else {
+        let Some(shared_target) = shared_cleanup_target(target, descriptor)? else {
+            return Ok(LegacyMigration::None);
+        };
+        shared_target
+    };
+    let Some(legacy) = inspect_mcp_server(DEFAULT_SERVER_NAME, &shared_target)? else {
+        return Ok(LegacyMigration::None);
+    };
+    let legacy_bundle = configured_bundle_path(&legacy.args)?;
+    let current_bundle = configured_bundle_path(&descriptor.args)?;
+    if legacy_bundle == current_bundle {
+        return Ok(LegacyMigration::Remove {
+            target: shared_target,
+        });
+    }
+    let legacy_repository = legacy_bundle.parent().ok_or_else(|| {
+        "legacy k-wiki bundle does not have a repository parent directory".to_string()
+    })?;
+    let destination_name = format!(
+        "{DEFAULT_SERVER_NAME}_{}_{}",
+        sanitized_repo_name(legacy_repository),
+        repository_hash(legacy_repository)
+    );
+    rename_mcp_server(
+        DEFAULT_SERVER_NAME,
+        &destination_name,
+        &McpClientRenameOptions {
+            target: shared_target.clone(),
+            dry_run: true,
+        },
+    )?;
+    Ok(LegacyMigration::Rename {
+        target: shared_target,
+        destination_name,
+    })
+}
+
+fn configured_bundle_path(args: &[String]) -> Result<PathBuf, String> {
+    if args.len() != 2 || args.first().map(String::as_str) != Some("mcp") {
+        return Err(
+            "legacy k-wiki registration must use args [\"mcp\", \"<bundle-path>\"]".to_string(),
+        );
+    }
+    let bundle = PathBuf::from(&args[1]).canonicalize().map_err(|error| {
+        format!(
+            "legacy k-wiki bundle {} could not be resolved: {error}",
+            args[1]
+        )
+    })?;
+    if !bundle.is_dir() || !bundle.join("index.md").is_file() {
+        return Err(format!(
+            "legacy k-wiki bundle {} is not a usable OKF bundle",
+            bundle.display()
+        ));
+    }
+    Ok(bundle)
+}
+
+fn apply_legacy_migration(
+    migration: LegacyMigration,
     descriptor: &McpServerDescriptor,
     dry_run: bool,
 ) -> Result<Option<serde_json::Value>, String> {
-    if target.locality != McpTargetLocality::RepositoryLocal {
-        return Ok(None);
-    }
-    let Some(shared_target) = shared_cleanup_target(target, descriptor)? else {
-        return Ok(None);
+    let result = match migration {
+        LegacyMigration::None => return Ok(None),
+        LegacyMigration::Remove { target } => remove_mcp_server(
+            DEFAULT_SERVER_NAME,
+            &McpClientRemovalOptions { target, dry_run },
+        )
+        .map(|mut result| {
+            result["effective_action"] = json!("removed");
+            result
+        }),
+        LegacyMigration::Rename {
+            target,
+            destination_name,
+        } => rename_mcp_server(
+            DEFAULT_SERVER_NAME,
+            &destination_name,
+            &McpClientRenameOptions { target, dry_run },
+        )
+        .map(|mut result| {
+            result["effective_action"] = json!("renamed");
+            result["preserved_as"] = json!(destination_name);
+            result
+        }),
     };
-    if shared_target.path == target.path {
-        return Ok(None);
-    }
-    remove_mcp_server(
-        DEFAULT_SERVER_NAME,
-        &McpClientRemovalOptions {
-            target: shared_target,
-            dry_run,
-        },
-    )
-    .map(Some)
-    .map_err(|error| {
+    result.map(Some).map_err(|error| {
         if dry_run {
             format!(
-                "dry run could not inspect the shared legacy `{}` registration for {} {}: {error}. No files were changed",
-                DEFAULT_SERVER_NAME, target.client, target.scope
+                "dry run could not inspect the shared legacy `{DEFAULT_SERVER_NAME}` registration: {error}. No files were changed"
             )
         } else {
             format!(
-                "partial migration: installed `{}` for {} {} but failed to remove shared legacy `{}` registration: {error}. The new local registration was kept and not rolled back",
-                descriptor.name, target.client, target.scope, DEFAULT_SERVER_NAME
+                "partial migration: installed `{}` but failed to preserve the shared legacy `{DEFAULT_SERVER_NAME}` registration: {error}. The new registration was kept and not rolled back",
+                descriptor.name
             )
         }
     })
@@ -462,7 +912,11 @@ fn repository_hash(repository_root: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{install_repository, InstallOutcome, INSTRUCTION_START};
+    use super::{
+        has_partial_migration_failure, install_repository, merge_legacy_migration_result,
+        InstallOutcome, INSTRUCTION_START,
+    };
+    use serde_json::json;
     use std::{
         fs,
         path::PathBuf,
@@ -536,6 +990,33 @@ mod tests {
         }
 
         fs::remove_dir_all(root).expect("remove temp root");
+    }
+
+    #[test]
+    fn failed_post_install_migration_keeps_the_install_payload_and_recovery() {
+        let mut payload = json!({
+            "action": "created",
+            "path": "/repo/.codex/config.toml",
+            "legacy_cleanup": {"action": "unchanged"},
+        });
+        let recovery = json!({
+            "local_config": "/repo/.codex/config.toml",
+            "shared_config": "/home/.codex/config.toml",
+            "preserved_as": "k_wiki_structuralfactory_deadbeef",
+        });
+
+        merge_legacy_migration_result(
+            &mut payload,
+            Err("partial migration: shared config became unavailable".to_string()),
+            false,
+            recovery.clone(),
+        )
+        .expect("post-install migration failures should remain structured results");
+
+        assert_eq!(payload["action"], "installed_but_migration_incomplete");
+        assert_eq!(payload["legacy_cleanup"]["action"], "failed");
+        assert_eq!(payload["legacy_cleanup"]["recovery"], recovery);
+        assert!(has_partial_migration_failure(&payload));
     }
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {

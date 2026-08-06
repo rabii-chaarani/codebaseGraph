@@ -37,6 +37,7 @@ fn cli_parses_phase8_commands() {
             "--client-config-path".to_string(),
             "client.json".to_string(),
             "--dry-run".to_string(),
+            "--verify".to_string(),
         ])
         .unwrap(),
         CliAction::Request(CliRequest::InstallMcp {
@@ -47,6 +48,7 @@ fn cli_parses_phase8_commands() {
                 client_config_path: Some(PathBuf::from("client.json")),
                 repo_root: Some(PathBuf::from("repository")),
                 dry_run: true,
+                verify: true,
             },
         })
     );
@@ -54,15 +56,10 @@ fn cli_parses_phase8_commands() {
     assert!(cli::parse_args(&["mcp".to_string(), "install".to_string()])
         .unwrap_err()
         .contains("--client is required"));
-    assert!(cli::parse_args(&[
-        "mcp".to_string(),
-        "install".to_string(),
-        "--client".to_string(),
-        "generic".to_string(),
-        "--verify".to_string(),
-    ])
-    .unwrap_err()
-    .contains("unknown mcp install option"));
+    assert_eq!(
+        cli::parse_args(&["--version".to_string()]).unwrap(),
+        CliAction::Version
+    );
     assert!(cli::parse_args(&[
         "mcp".to_string(),
         "install".to_string(),
@@ -215,6 +212,26 @@ fn cli_run_emits_structured_validation_output_when_json_is_requested() {
     assert_eq!(
         serde_json::from_slice::<serde_json::Value>(&stdout.into_inner()).unwrap(),
         json!({"accepted": true, "diagnostics": []})
+    );
+}
+
+#[test]
+fn cli_run_reports_the_packaged_version_without_dispatching() {
+    let mut stdout = Cursor::new(Vec::new());
+    let mut stderr = Cursor::new(Vec::new());
+    let exit = cli::run(
+        &["--version".to_string()],
+        &mut stdout,
+        &mut stderr,
+        |_request| panic!("version output must not dispatch a request"),
+    )
+    .unwrap();
+
+    assert_eq!(exit, 0);
+    assert!(stderr.into_inner().is_empty());
+    assert_eq!(
+        String::from_utf8(stdout.into_inner()).unwrap(),
+        format!("k-wiki {}\n", env!("CARGO_PKG_VERSION"))
     );
 }
 

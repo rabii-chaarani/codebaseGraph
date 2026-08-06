@@ -56,17 +56,25 @@ registrations keep `k_wiki`; shared and manual registrations derive
 canonical path's SHA-256. Explicit names are preserved, except `k_wiki` is
 rejected for shared/manual targets. Existing entries with different or
 unparseable `command`/`args` fail closed. Legacy shared `k_wiki` entries are
-removed atomically in the same file or after a safe local write; failed
-cross-file cleanup reports a partial migration without rolling back the local
-entry. `--dry-run` reports registration and cleanup without writing, and
+removed when they target the same bundle; registrations for another valid
+repository are renamed to that repository's deterministic shared name. The
+installer preflights conflicts before writing, and failed cross-file cleanup
+reports a partial migration without rolling back the local entry. `--dry-run`
+reports registration and cleanup without writing, and
 `--client all` resolves every client independently. Results include
 `target_locality` and `legacy_cleanup`; manual targets include cleanup
 instructions. The `k-wiki` executable must be on `PATH` when the client
 launches it; set `K_WIKI_SERVER_COMMAND` before registration to record a
 different executable path. The runtime remains single-bundle and
 `wiki_list_bundles` does not accept caller-selected `repository_roots`. After
-upgrading, rerun `k-wiki mcp install` in each repository and restart the MCP
-client.
+upgrading, replace both `codebase-graph` and `k-wiki` from the same release
+archive, rerun `k-wiki mcp install --client codex --scope project --verify`
+in each repository, and restart the MCP client.
+
+Native release archives ship both binaries together plus `checksums.txt`,
+`install.sh`, and `install.ps1`. Extract the archive and run the installer that
+matches your platform to validate both binaries before replacing them in your
+chosen bin directory.
 
 Once registered, agents can use the `k_wiki` MCP server for the same wiki
 maintenance operations without shelling out: `wiki_validate` (the equivalent

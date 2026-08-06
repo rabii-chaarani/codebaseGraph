@@ -132,6 +132,20 @@ fn dispatch_cli(request: CliRequest) -> Result<TransportPayload, TransportError>
         CliRequest::InstallMcp { request } => {
             let payload = install::install_mcp_client(request)
                 .map_err(|message| TransportError::new("mcp_installation_failed", message))?;
+            if install::has_partial_migration_failure(&payload) {
+                return Err(TransportError::new(
+                    "mcp_installation_partial_migration",
+                    "the repository-local registration was installed, but legacy migration did not complete",
+                )
+                .with_details(payload));
+            }
+            if install::has_verification_failure(&payload) {
+                return Err(TransportError::new(
+                    "mcp_installation_unverified",
+                    "k-wiki MCP registration was installed but runtime verification failed",
+                )
+                .with_details(payload));
+            }
             Ok(TransportPayload::structured(
                 "k-wiki MCP client registration completed",
                 payload,
