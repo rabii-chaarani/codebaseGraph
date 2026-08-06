@@ -506,7 +506,7 @@ pub(crate) fn run_refresh_watch(
     config: RefreshWatchConfig,
     observer: &mut impl RefreshWatchObserver,
 ) -> Result<(), String> {
-    let runtime = resolve_runtime(&request.repo)?;
+    let runtime = resolve_refresh_runtime(&request.repo)?;
     runtime.require_graph_write()?;
     let mut materialize_options = MaterializeOptions::from_request(request, &runtime, false);
     normalize_materialize_options(&mut materialize_options);
@@ -562,6 +562,14 @@ pub(crate) fn run_refresh_watch(
             }
         },
     }
+}
+
+fn resolve_refresh_runtime(
+    selector: &RepoSelector,
+) -> Result<crate::api::context::RepoRuntime, String> {
+    let mut runtime = resolve_runtime(selector)?;
+    runtime.release_read_leases();
+    Ok(runtime)
 }
 
 fn refresh_watch_batch(
@@ -1006,17 +1014,17 @@ pub(crate) fn start_refresh_service(selector: RepoSelector) -> Arc<RefreshState>
 }
 
 fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Result<(), String> {
-    let runtime = resolve_runtime(&selector)?;
+    let runtime = resolve_refresh_runtime(&selector)?;
     if let Err(error) = runtime.require_graph_write() {
         state.disable("disabled", error);
         return Ok(());
     }
     let materialize_options = MaterializeOptions {
         source_root: Some(runtime.repo_root.clone()),
-        config: runtime.config_path,
-        db: Some(runtime.db_path),
-        manifest: Some(runtime.manifest_path),
-        storage_root: runtime.storage_root,
+        config: runtime.config_path.clone(),
+        db: Some(runtime.db_path.clone()),
+        manifest: Some(runtime.manifest_path.clone()),
+        storage_root: runtime.storage_root.clone(),
         mode: "changed".to_string(),
         include_fts: true,
         semantic_enrichment: true,
@@ -1249,6 +1257,8 @@ fn watch_wildcard_match(text: &str, pattern: &str) -> bool {
 mod tests {
     use super::*;
     use crate::protocol::ManifestDiff;
+    use crate::storage::layout::DirectLayout;
+    use crate::storage::locks::{try_open_locked, LockMode};
     use std::{
         sync::atomic::{AtomicUsize, Ordering},
         thread,
@@ -1517,6 +1527,95 @@ mod tests {
         assert_eq!(snapshot.backend, "disabled");
         assert!(snapshot.last_error.as_deref().is_some_and(|error| error
             .contains("legacy installed graph storage requires reinstall before writes")));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn refresh_runtime_releases_startup_read_lease_before_entering_a_watch_loop() {
+        let root = unique_temp_dir("codebase-graph-refresh-release-lease");
+        let state = root.join(".codebaseGraph");
+        let storage = state.join("storage");
+        let generation_one = storage.join("generations").join("gen-one");
+        fs::create_dir_all(&generation_one).unwrap();
+        fs::write(generation_one.join("READY"), "ready\n").unwrap();
+        fs::write(generation_one.join("graph.ldb"), b"db").unwrap();
+        fs::write(generation_one.join("manifest.json"), "{}\n").unwrap();
+        fs::write(generation_one.join("lease.lock"), b"").unwrap();
+        fs::write(
+            generation_one.join("metadata.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 2,
+                "generation_id": "one",
+                "created_at_ms": 0,
+                "published_at_ms": 0,
+                "logical_size_bytes": 0,
+                "physical_size_bytes": 0,
+                "node_count": 0,
+                "edge_count": 0
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            state.join("config.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 2,
+                "repo_root": root,
+                "storage_root": storage,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        fs::write(
+            storage.join("active.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 2,
+                "generation_id": "one",
+                "activated_at_ms": 0,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let runtime = resolve_refresh_runtime(&RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: None,
+            manifest_path: None,
+        })
+        .unwrap();
+        assert_eq!(runtime.active_generation.as_deref(), Some("one"));
+        let exclusive = try_open_locked(generation_one.join("lease.lock"), LockMode::Exclusive)
+            .unwrap()
+            .expect("refresh runtime must not retain a generation read lease");
+        drop(exclusive);
+        drop(runtime);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn refresh_runtime_releases_direct_read_lease_before_entering_a_watch_loop() {
+        let root = unique_temp_dir("codebase-graph-refresh-release-direct-lease");
+        fs::create_dir_all(&root).unwrap();
+        let db_path = root.join("graph.ldb");
+        let manifest_path = root.join("manifest.json");
+        fs::write(&db_path, b"db").unwrap();
+        fs::write(&manifest_path, "{}\n").unwrap();
+
+        let runtime = resolve_refresh_runtime(&RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: Some(db_path.clone()),
+            manifest_path: Some(manifest_path.clone()),
+        })
+        .unwrap();
+        assert_eq!(runtime.storage_format(), "direct");
+        let lock_path = DirectLayout::new(db_path, manifest_path).writer_lock_path();
+        let exclusive = try_open_locked(lock_path, LockMode::Exclusive)
+            .unwrap()
+            .expect("refresh runtime must not retain a direct read lease");
+        drop(exclusive);
+        drop(runtime);
         let _ = fs::remove_dir_all(root);
     }
 }
