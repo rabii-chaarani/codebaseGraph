@@ -37,8 +37,9 @@ k-wiki build <bundle> --out <directory> [--base-url <path>]
 k-wiki serve <bundle> [--host 127.0.0.1] [--port 4321]
 k-wiki inspect <bundle> --concept <concept-id>
 k-wiki check-links <bundle> [--include-external]
-k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run]
+k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run] [--verify]
 k-wiki mcp [bundle]
+k-wiki --version
 ```
 
 `serve` binds to the local machine by default and refuses remote hosts.
@@ -59,7 +60,7 @@ After bootstrapping the repository, register the wiki's stdio server with a
 chosen MCP client:
 
 ```text
-k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run]
+k-wiki mcp install --client <client> [--repo-root <directory>] [--scope local|user|project] [--name <name>] [--client-config-path <path>] [--dry-run] [--verify]
 ```
 
 `--client` is required and accepts `codex`, `claude`, `claude-project`,
@@ -85,14 +86,23 @@ Each client uses a file adapter with `RejectDifferent`: matching `command` and
 without changing the file. It fails safely when the starter bundle is absent;
 run `k-wiki install` first.
 
-After a successful replacement, legacy shared `k_wiki` entries are removed
-regardless of their old bundle path. Same-file replacement is one atomic
-write. Cross-file migration writes the local entry first, then removes the
-shared entry; cleanup failure reports a partial migration and keeps the safe
-local entry. Manual results include explicit cleanup instructions. `--dry-run`
+After a successful replacement, legacy shared `k_wiki` entries for the same
+bundle are removed. Entries for another valid repository are atomically renamed
+to that repository's deterministic shared name, preserving access without
+colliding with the new local `k_wiki`. Migration conflicts and malformed legacy
+entries fail during preflight. Cross-file migration writes the local entry
+first, then applies the preflighted shared migration; a later cleanup failure
+reports a partial migration and keeps the safe local entry. Manual results
+include explicit cleanup instructions. `--dry-run`
 reports registration and cleanup without writing. `--client all` resolves and
 names every client independently. Machine-readable results retain the existing
 fields and add `target_locality` and `legacy_cleanup`.
+
+`--verify` reads back the installed entry, starts its stdio command, and checks
+the Knowledge Wiki identity, required tool schema, single-bundle boundary, and
+configured bundle. A failed runtime check leaves the registration installed,
+returns `installed_but_unverified`, and exits unsuccessfully. With `--dry-run`,
+verification is reported as skipped.
 
 Registration is separate from repository bootstrap and does not start a
 persistent server. The registered command uses `k-wiki` by default; set

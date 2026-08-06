@@ -2,7 +2,7 @@
 
 `codebaseGraph` releases are managed by release-please. Merging a release pull request creates a strict `vX.Y.Z` tag and
 GitHub Release. The release workflow then runs the Rust release gate, builds native archives from the tag, smoke-tests
-the archived `codebase-graph` and `k-wiki` binary surfaces, uploads `.tar.gz` archives plus `.sha256` files, and
+the extracted `codebase-graph` and `k-wiki` artifact surfaces, uploads `.tar.gz` archives plus `.sha256` files, and
 publishes the same version to crates.io as `codebase-graph`.
 
 ## One-Time Setup
@@ -36,11 +36,14 @@ Pull requests and pushes to `main` or `codex/**` run:
 ## Release Flow
 
 1. Merge normal pull requests into `main` with Conventional Commit-style titles or squash commit messages.
-2. The `Release` workflow opens or updates a release pull request that updates `CHANGELOG.md` and `.release-please-manifest.json`.
+2. The `Release` workflow opens or updates a release pull request that updates `CHANGELOG.md`, `.release-please-manifest.json`,
+   root `Cargo.toml`, and `crates/k-wiki/Cargo.toml` together.
 3. Review and merge the release pull request when ready to publish.
 4. The `Release` workflow creates the `vX.Y.Z` tag and GitHub Release.
-5. The protected release jobs verify the tag against root `Cargo.toml`, run `xtask release-gate`, build native archives,
-   run `xtask smoke-artifact`, upload archives/checksums, and publish the crate with `cargo publish --locked`.
+5. The protected release jobs verify the tag against root `Cargo.toml` and `crates/k-wiki/Cargo.toml`, run
+   `xtask release-gate`, build native archives, dry-run the packaged install helper, run `xtask smoke-artifact` and
+   `xtask smoke-wiki-artifact` against the extracted archive contents, upload archives/checksums, and publish the crate
+   with `cargo publish --locked`.
 
 ## Release Gate
 
@@ -51,6 +54,7 @@ Before publishing a production release, confirm:
 - Golden graph fixtures or expected graph-contract tests are current.
 - `SECURITY.md` is present and vulnerability reporting expectations are current.
 - Root `Cargo.toml` has complete crates.io package metadata and matches the release tag.
+- `crates/k-wiki/Cargo.toml` matches the root version and points its `codebase-graph` dependency at the same release version.
 - The protected `release` GitHub environment and release-please token posture have been verified in GitHub settings.
 - Conda-forge submission is either out of scope or the recipe placeholders have been replaced with the release version,
   GitHub source archive SHA256, and chosen SPDX license.
@@ -75,6 +79,24 @@ malicious-content, localhost binding, MCP schema, authoring path-safety, and
 package-owned fixture smoke results. Templates and assets must be loaded from
 the packaged artifact; a smoke run that relies on the repository checkout is
 not sufficient. Generated `.kwiki/` state is never included in an archive.
+
+Each native archive must contain:
+
+- `codebase-graph` / `codebase-graph.exe`
+- `k-wiki` / `k-wiki.exe`
+- `checksums.txt` for the packaged binaries
+- `install.sh`
+- `install.ps1`
+
+The packaged installer validates both binaries against `checksums.txt`, runs
+`codebase-graph --help` plus `k-wiki --version`, and only then atomically
+replaces the selected target binaries.
+
+After upgrading from a release archive:
+
+1. Replace both binaries together from the same archive.
+2. Rerun `k-wiki mcp install --client codex --scope project --verify` in each repository that uses k-wiki.
+3. Restart Codex or the relevant MCP client so it reloads the updated repository-local registration.
 
 To force a specific next version, merge a commit whose body contains a `Release-As: X.Y.Z` trailer.
 

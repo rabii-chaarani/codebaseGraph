@@ -213,22 +213,62 @@ jobs:
           CARGO_FEATURES: ${{ matrix.cargo_features }}
         shell: bash
         run: |
-          mkdir -p dist/smoke
+          mkdir -p dist/package dist/smoke
           cargo build --locked --release --bin codebase-graph ${CARGO_FEATURES}
           cargo build --locked --release -p k-wiki --bin k-wiki
           cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
           cp "target/release/${{ matrix.wiki_binary }}" "dist/smoke/${{ matrix.wiki_binary }}"
           chmod +x "dist/smoke/${{ matrix.binary }}"
           chmod +x "dist/smoke/${{ matrix.wiki_binary }}"
-          archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"
-          tar -C dist/smoke -czf "dist/${archive}" "${{ matrix.binary }}" "${{ matrix.wiki_binary }}"
+          cp "dist/smoke/${{ matrix.binary }}" "dist/package/${{ matrix.binary }}"
+          cp "dist/smoke/${{ matrix.wiki_binary }}" "dist/package/${{ matrix.wiki_binary }}"
+          cp "release/install/install.sh" "dist/package/install.sh"
+          cp "release/install/install.ps1" "dist/package/install.ps1"
+          chmod +x "dist/package/${{ matrix.binary }}" "dist/package/${{ matrix.wiki_binary }}" "dist/package/install.sh"
           checksum_python="$(command -v python3 || command -v python)"
+          "$checksum_python" - <<'PY'
+from hashlib import sha256
+from pathlib import Path
+
+package_dir = Path("dist/package")
+binary_names = [
+    "${{ matrix.binary }}",
+    "${{ matrix.wiki_binary }}",
+]
+lines = []
+for name in binary_names:
+    path = package_dir / name
+    lines.append(f"{sha256(path.read_bytes()).hexdigest()}  {name}")
+(package_dir / "checksums.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+PY
+          archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"
+          tar -C dist/package -czf "dist/${archive}" .
           "$checksum_python" -c 'import hashlib, pathlib, sys; path = pathlib.Path(sys.argv[1]); print(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.as_posix()}")' "dist/${archive}" > "dist/${archive}.sha256"
-      - name: Smoke-test Rust production binary
+      - name: Extract packaged artifact
         shell: bash
         run: |
-          cargo run -p xtask -- smoke-artifact "./dist/smoke/${{ matrix.binary }}"
-          cargo run -p xtask -- smoke-wiki-artifact "./dist/smoke/${{ matrix.wiki_binary }}"
+          rm -rf dist/extracted
+          mkdir -p dist/extracted
+          archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"
+          tar -xzf "dist/${archive}" -C dist/extracted
+          test -f "dist/extracted/checksums.txt"
+          test -f "dist/extracted/install.sh"
+          test -f "dist/extracted/install.ps1"
+          test -f "dist/extracted/${{ matrix.binary }}"
+          test -f "dist/extracted/${{ matrix.wiki_binary }}"
+      - name: Dry-run packaged installer (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash ./dist/extracted/install.sh --source-dir ./dist/extracted --bin-dir ./dist/install-bin --dry-run
+      - name: Dry-run packaged installer (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./dist/extracted/install.ps1 -SourceDir ./dist/extracted -BinDir ./dist/install-bin -DryRun
+      - name: Smoke-test extracted artifact
+        shell: bash
+        run: |
+          cargo run -p xtask -- smoke-artifact "./dist/extracted/${{ matrix.binary }}"
+          cargo run -p xtask -- smoke-wiki-artifact "./dist/extracted/${{ matrix.wiki_binary }}"
       - name: Upload native artifacts to GitHub release
         shell: bash
         env:
