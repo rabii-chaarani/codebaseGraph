@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.2.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.2.1...v1.2.2) (2026-08-07)
+
+
+### Features
+
+* **k-wiki:** make repository memory durable and reviewable ([cbcbc71](https://github.com/rabii-chaarani/codebaseGraph/commit/cbcbc719cc9df462b4bd57593560517be6d2c73a))
+* **storage:** prevent graph growth with immutable generations ([e4f5c95](https://github.com/rabii-chaarani/codebaseGraph/commit/e4f5c95d62a7f8c318cac80b863844c17938ac6f))
+
+
+### Bug Fixes
+
+* **ci:** compare escaped Windows MCP commands ([0ba9f7e](https://github.com/rabii-chaarani/codebaseGraph/commit/0ba9f7ee8f3cbed2b90a8a87ddd144932809bfbc))
+* **ci:** make storage cleanup and audit checks portable ([81b699b](https://github.com/rabii-chaarani/codebaseGraph/commit/81b699ba404978c685047f36a3cf5caf24f9e7d0))
+* **ci:** make Windows lock and Hermes tests portable ([515a43c](https://github.com/rabii-chaarani/codebaseGraph/commit/515a43c4bdebdcf48bf8ea67e3ca906500be936a))
+* **ci:** prevent Windows test shard stalls ([89cb0f6](https://github.com/rabii-chaarani/codebaseGraph/commit/89cb0f6f693096f3290c55b2b039cb9858650a73))
+* **k-wiki:** manage memory guidance separately ([f82659d](https://github.com/rabii-chaarani/codebaseGraph/commit/f82659de1d8ed7bc9f5c95fc6f6587a3072f3446))
+* **k-wiki:** prevent cross-repository MCP routing ([6fc7bbf](https://github.com/rabii-chaarani/codebaseGraph/commit/6fc7bbf3b3dad629ab2ccb4bcb92d9e23a641865))
+* **k-wiki:** prevent cross-repository wiki routing ([87898aa](https://github.com/rabii-chaarani/codebaseGraph/commit/87898aa634c9e6ad7b2c730280bc6975bfa4881e))
+* **release:** restore release workflow execution ([#58](https://github.com/rabii-chaarani/codebaseGraph/issues/58)) ([1c3c481](https://github.com/rabii-chaarani/codebaseGraph/commit/1c3c481700cbb8ec503e481c4b58ed09db97faa8))
+* **storage:** avoid unsupported Windows directory sync ([3376c22](https://github.com/rabii-chaarani/codebaseGraph/commit/3376c2249abf2b200d359e6faf4f98d07f8bfe2f))
+* **storage:** release refresh leases before watcher idle ([096ed2e](https://github.com/rabii-chaarani/codebaseGraph/commit/096ed2e44e24b689eedc65750ad1a91f5723dd20))
+* **storage:** reuse portable artifact directory sync ([f092d77](https://github.com/rabii-chaarani/codebaseGraph/commit/f092d7769018d901c27dd12759ac4e1a9c025801))
+* **storage:** sync published generations portably ([df00bc3](https://github.com/rabii-chaarani/codebaseGraph/commit/df00bc3fc41c5a9eb9fbe4259b02a591584bb024))
+
 ## [1.2.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.2.0...v1.2.1) (2026-08-05)
 
 
