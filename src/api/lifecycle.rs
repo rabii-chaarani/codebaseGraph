@@ -3350,13 +3350,13 @@ fn install_safe_name(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        hermes_yaml_block_from_entries, inspect_mcp_server, install_mcp_server,
-        native_client_command, parse_hermes_managed_entries, reinstall_state, remove_mcp_server,
-        remove_partial_state_tree, rename_mcp_server, resolve_mcp_target,
-        run_reinstall_activation_boundary, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
-        McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
-        McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
-        ResolvedMcpTarget,
+        codex_toml_block, descriptor_signature, hermes_yaml_block_from_entries, inspect_mcp_server,
+        install_mcp_server, native_client_command, parse_hermes_managed_entries,
+        parse_toml_stdio_entry, reinstall_state, remove_mcp_server, remove_partial_state_tree,
+        rename_mcp_server, resolve_mcp_target, run_reinstall_activation_boundary, yaml_scalar,
+        GraphStatePaths, ManagedStdioEntry, McpClientInstallOptions, McpClientRemovalOptions,
+        McpClientRenameOptions, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
+        McpTargetLocality, ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -3449,6 +3449,29 @@ mod tests {
         }
         lines.push("# codebaseGraph MCP servers end".to_string());
         lines.join("\n") + "\n"
+    }
+
+    #[test]
+    fn codex_toml_block_round_trips_windows_style_arguments() {
+        let descriptor = McpServerDescriptor {
+            name: "codebase_graph_repo".to_string(),
+            command: r"C:\Program Files\codebase-graph.exe".to_string(),
+            args: vec![
+                "--config".to_string(),
+                r"C:\workspace\.codebaseGraph\config.json".to_string(),
+                "value \"quoted\"".to_string(),
+            ],
+            repo_root: PathBuf::from(r"C:\workspace"),
+            timeout: 60,
+            setup_config_path: Some(PathBuf::from(r"C:\workspace\.codebaseGraph\config.json")),
+            tool_policy: Some("graph_query_read_only".to_string()),
+            manual_http_metadata: None,
+        };
+
+        let block = codex_toml_block(&descriptor);
+        let parsed = parse_toml_stdio_entry(&block).unwrap();
+
+        assert_eq!(parsed, descriptor_signature(&descriptor));
     }
 
     #[test]
@@ -3856,14 +3879,7 @@ mod tests {
         }))
         .unwrap()
             + "\n";
-        let codex_text = format!(
-            "[mcp_servers.codebase_graph_repo]\ncommand = \"{}\"\nargs = [\"{}\", \"{}\", \"{}\", \"{}\"]\nstartup_timeout_sec = 60\n",
-            descriptor.command,
-            descriptor.args[0],
-            descriptor.args[1],
-            descriptor.args[2],
-            descriptor.args[3],
-        );
+        let codex_text = codex_toml_block(&descriptor);
         let hermes_text = hermes_block(
             "codebase_graph_repo",
             &descriptor.command,
