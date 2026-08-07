@@ -119,7 +119,8 @@ fn direct_materialization_uses_custom_paths_and_cleans_shadow_files() {
 
 #[test]
 fn managed_materialization_survives_ten_updates_without_generation_leaks() {
-    let repo = temp_repo("managed_materialization_survives_ten_updates_without_generation_leaks");
+    // Keep nested staging paths below the classic Windows MAX_PATH limit.
+    let repo = temp_repo("managed_generation_churn");
     write_managed_config(&repo);
     let storage_root = repo.join(".codebaseGraph").join("storage");
 
