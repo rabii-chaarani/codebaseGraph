@@ -283,6 +283,12 @@ fn check_workflows(issues: &mut Vec<String>) {
             issues.push(format!("FAIL: workflow-missing: {workflow} is required."));
             continue;
         };
+        if let Some(error) = workflow_yaml_error(&text) {
+            issues.push(format!(
+                "FAIL: workflow-yaml-invalid: {workflow} is not valid YAML: {error}."
+            ));
+            continue;
+        }
         let workflow_forbidden = [
             concat!("actions/setup-", "python"),
             concat!("python", " "),
@@ -322,6 +328,12 @@ fn check_workflows(issues: &mut Vec<String>) {
             ));
         }
     }
+}
+
+fn workflow_yaml_error(text: &str) -> Option<String> {
+    yaml_serde::from_str::<yaml_serde::Value>(text)
+        .err()
+        .map(|error| error.to_string())
 }
 
 fn check_no_legacy_surfaces(issues: &mut Vec<String>) {
@@ -1089,4 +1101,19 @@ fn files_under(root: &Path) -> Vec<PathBuf> {
         }
     }
     files
+}
+
+#[cfg(test)]
+mod tests {
+    use super::workflow_yaml_error;
+
+    #[test]
+    fn workflow_yaml_validation_rejects_unindented_heredoc_body() {
+        let invalid =
+            "jobs:\n  build:\n    steps:\n      - run: |\n          cat <<'EOF'\nbody\nEOF\n";
+        let valid = "jobs:\n  build:\n    steps:\n      - run: |\n          cat <<'EOF'\n          body\n          EOF\n";
+
+        assert!(workflow_yaml_error(invalid).is_some());
+        assert!(workflow_yaml_error(valid).is_none());
+    }
 }
