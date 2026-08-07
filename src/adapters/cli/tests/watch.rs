@@ -24,6 +24,42 @@ impl Write for SharedOutput {
     }
 }
 
+fn drive_watch_until_finished(
+    root: &Path,
+    handle: &std::thread::JoinHandle<Result<String, String>>,
+    output: &SharedOutput,
+) {
+    let deadline = Instant::now() + Duration::from_secs(15);
+    let mut attempt = 0_usize;
+    while !handle.is_finished() && Instant::now() < deadline {
+        fs::write(
+            root.join("created.py"),
+            format!(
+                "def created():\n    return {attempt}\n#{}\n",
+                "x".repeat(attempt)
+            ),
+        )
+        .unwrap();
+        attempt += 1;
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(
+        handle.is_finished(),
+        "watch did not observe a repository change within 15 seconds: {}",
+        output.text()
+    );
+}
+
+fn join_watch(
+    handle: std::thread::JoinHandle<Result<String, String>>,
+    output: &SharedOutput,
+) -> String {
+    handle
+        .join()
+        .expect("watch thread panicked")
+        .unwrap_or_else(|error| panic!("watch command failed: {error}; output: {}", output.text()))
+}
+
 #[test]
 fn watch_filter_ignores_excluded_parts_and_access_events() {
     let root = unique_temp_dir("codebase-graph-rust-watch-filter-excluded");
@@ -498,8 +534,10 @@ fn watch_poll_backend_refreshes_after_create() {
     let root = unique_temp_dir("codebase-graph-rust-watch-poll-cli");
     fs::create_dir_all(&root).unwrap();
     let watch_root = root.clone();
-    let handle = std::thread::spawn(move || {
-        let mut output = Vec::new();
+    let output = SharedOutput::default();
+    let watch_output = output.clone();
+    let handle = std::thread::spawn(move || -> Result<String, String> {
+        let mut output = watch_output;
         run(
             [
                 "watch",
@@ -518,13 +556,11 @@ fn watch_poll_backend_refreshes_after_create() {
                 "--no-semantic-enrichment",
             ],
             &mut output,
-        )
-        .unwrap();
-        String::from_utf8(output).unwrap()
+        )?;
+        Ok(output.text())
     });
-    std::thread::sleep(Duration::from_millis(30));
-    fs::write(root.join("created.py"), "def created():\n    return 1\n").unwrap();
-    let text = handle.join().unwrap();
+    drive_watch_until_finished(&root, &handle, &output);
+    let text = join_watch(handle, &output);
 
     assert!(text.contains("watch event=refreshed backend=poll"));
     assert!(text.contains("changed_paths=1"));
@@ -541,7 +577,7 @@ fn watch_auto_backend_refreshes_after_probe_resolution() {
     let watch_root = root.clone();
     let output = SharedOutput::default();
     let watch_output = output.clone();
-    let handle = std::thread::spawn(move || {
+    let handle = std::thread::spawn(move || -> Result<String, String> {
         let mut output = watch_output;
         run(
             [
@@ -561,28 +597,11 @@ fn watch_auto_backend_refreshes_after_probe_resolution() {
                 "--no-semantic-enrichment",
             ],
             &mut output,
-        )
-        .unwrap();
-        output.text()
+        )?;
+        Ok(output.text())
     });
-
-    for attempt in 0..500 {
-        std::thread::sleep(Duration::from_millis(20));
-        fs::write(
-            root.join("created.py"),
-            format!("def created():\n    return {attempt}\n"),
-        )
-        .unwrap();
-        if handle.is_finished() {
-            break;
-        }
-    }
-    assert!(
-        handle.is_finished(),
-        "watch did not observe a repository change: {}",
-        output.text()
-    );
-    let text = handle.join().unwrap();
+    drive_watch_until_finished(&root, &handle, &output);
+    let text = join_watch(handle, &output);
 
     assert!(
         text.contains("watch event=fallback backend=poll reason=probe_timeout")

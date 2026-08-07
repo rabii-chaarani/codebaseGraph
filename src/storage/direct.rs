@@ -5,7 +5,7 @@ use crate::storage::locks::{open_locked, LockMode, WriterLease};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
-use std::fs::{self, File};
+use std::fs::{self, OpenOptions};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -422,7 +422,11 @@ fn sync_parent(path: &Path) -> Result<(), NativeError> {
     })?;
     sync_dir(parent)?;
     if path.exists() {
-        File::open(path)?.sync_all()?;
+        OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path)?
+            .sync_all()?;
     }
     Ok(())
 }

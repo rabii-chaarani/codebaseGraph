@@ -475,12 +475,11 @@ fn setup_materializes_graph_and_writes_config() {
     assert_eq!(value["ok"], true);
     assert_eq!(value["database_written"], true);
     assert!(root.join(".codebaseGraph").join("config.json").exists());
-    assert!(value["manifest_path"]
-        .as_str()
-        .unwrap()
-        .contains("/.codebaseGraph/storage/generations/gen-"));
-    assert!(PathBuf::from(value["manifest_path"].as_str().unwrap()).exists());
-    assert!(PathBuf::from(value["database_path"].as_str().unwrap()).exists());
+    assert_managed_generation_paths(
+        &root,
+        &PathBuf::from(value["database_path"].as_str().unwrap()),
+        &PathBuf::from(value["manifest_path"].as_str().unwrap()),
+    );
 
     let config: serde_json::Value = serde_json::from_str(
         &fs::read_to_string(root.join(".codebaseGraph").join("config.json")).unwrap(),
