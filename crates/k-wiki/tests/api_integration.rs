@@ -705,8 +705,11 @@ fn mcp_install_command_keeps_codex_project_and_local_registrations_repository_lo
         let config = fs::read_to_string(repository.join(".codex/config.toml"))
             .expect("read repository codex config");
         let canonical = repository.canonicalize().expect("canonical repository");
+        let bundle_literal =
+            serde_json::to_string(canonical.join("knowledge").to_string_lossy().as_ref())
+                .expect("serialize repository bundle path");
         assert!(config.contains("[mcp_servers.k_wiki]"));
-        assert!(config.contains(canonical.join("knowledge").to_string_lossy().as_ref()));
+        assert!(config.contains(&bundle_literal));
     }
 }
 
@@ -1280,21 +1283,22 @@ fn mcp_install_command_preserves_other_repository_legacy_codex_registration() {
     assert!(preserved_as.starts_with("k_wiki_structuralfactory_"));
     let local = fs::read_to_string(repository.join(".codex/config.toml"))
         .expect("read repository Codex config");
+    let local_bundle = repository
+        .canonicalize()
+        .expect("canonical repository")
+        .join("knowledge");
+    let local_bundle_literal = serde_json::to_string(local_bundle.to_string_lossy().as_ref())
+        .expect("serialize local bundle path");
     assert!(local.contains("[mcp_servers.k_wiki]"));
-    assert!(local.contains(
-        repository
-            .canonicalize()
-            .expect("canonical repository")
-            .join("knowledge")
-            .to_string_lossy()
-            .as_ref()
-    ));
+    assert!(local.contains(&local_bundle_literal));
     let shared = fs::read_to_string(codex_home.join("config.toml"))
         .expect("read cleaned shared Codex config");
+    let legacy_bundle_literal = serde_json::to_string(legacy_bundle.to_string_lossy().as_ref())
+        .expect("serialize legacy bundle path");
     assert!(shared.contains("model = \"example\""));
     assert!(!shared.contains("[mcp_servers.k_wiki]"));
     assert!(shared.contains(&format!("[mcp_servers.{preserved_as}]")));
-    assert!(shared.contains(legacy_bundle.to_string_lossy().as_ref()));
+    assert!(shared.contains(&legacy_bundle_literal));
 }
 
 #[test]
