@@ -1,10 +1,10 @@
 ---
 description: Repository-scoped durable agent memory contract, lifecycle, recall rules, and trust boundaries.
 tags:
-- architecture
 - agents
-- memory
+- architecture
 - knowledge
+- memory
 title: AI Agent Memory
 type: architecture
 ---
@@ -25,6 +25,8 @@ All v1 memory is repository-scoped. User, agent, organization, and cross-reposit
 ## Source layout and contract
 
 Memory concepts live at `memory/{semantic|episodic|procedural}/<memory-id>.md` inside the configured OKF bundle and declare `type: agent-memory`.
+
+The repository installer initializes the memory source area with a frontmatter-free `memory/index.md`. Reinstallation preserves existing index content; kind directories are created when records are first written.
 
 The `agent_memory` extension carries:
 

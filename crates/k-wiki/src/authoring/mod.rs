@@ -9,7 +9,7 @@ pub use page::{
     CreateBundleRequest, CreateBundleResult, CreatePageRequest, CreatePageResult, PageFrontmatter,
     PopulatePageRequest, PopulatePageResult,
 };
-pub(crate) use write::content_hash;
+pub(crate) use write::{content_hash, write_atomically};
 pub use write::{
     AuthoringError, AuthoringValidator, ConformanceAuthoringValidator, NoopRefreshNotifier,
     NoopValidator, RefreshEvent, RefreshNotifier, RefreshOperation, ValidationTarget,
