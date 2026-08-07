@@ -2,6 +2,7 @@
 
 use std::{
     collections::BTreeMap,
+    fs,
     path::{Path, PathBuf},
     sync::Mutex,
 };
@@ -13,7 +14,7 @@ use crate::{
         WikiApiError, WikiOperationExecutor, WikiOperationRequest, WikiOperationResponse,
     },
     authoring::{
-        AuthoringError, AuthoringService, AuthoringValidator, CreateBundleRequest,
+        content_hash, AuthoringError, AuthoringService, AuthoringValidator, CreateBundleRequest,
         CreateBundleResult, CreatePageRequest, CreatePageResult, PopulatePageRequest,
         PopulatePageResult, RefreshNotifier,
     },
@@ -22,6 +23,13 @@ use crate::{
         compile_projection, CompileRequest, SourceBundle, SourceDocument, SourceDocumentKind,
     },
     conformance::{validate_bundle, ConformanceProfile},
+    memory::{
+        apply_transition, memory_page_path, metadata_for_record, metadata_from_concept,
+        metadata_to_yaml, record_from_concept, record_from_metadata, record_from_request,
+        validate_memory_id, validate_record_request, MemoryRecallResult, MemoryRecord,
+        MemoryStatus, RecallMemoryRequest, RecordMemoryRequest, TransitionMemoryRequest,
+        AGENT_MEMORY_EXTENSION, AGENT_MEMORY_TYPE,
+    },
     model::WikiProjection,
     render::{RenderContext, RenderOptions, Renderer},
     search::{SearchIndex, SearchQuery},
@@ -142,6 +150,184 @@ impl LocalWikiService {
             )
         })
     }
+
+    fn record_memory(&self, request: &RecordMemoryRequest) -> Result<MemoryRecord, WikiApiError> {
+        validate_record_request(request)
+            .map_err(|message| memory_error("invalid_memory_request", message))?;
+        let projection = self.compile(&self.bundle_roots, "runtime", None)?;
+        let bundle = projection
+            .bundles
+            .iter()
+            .find(|bundle| bundle.id == request.bundle_id)
+            .ok_or_else(|| WikiApiError::new("bundle_not_found", "bundle was not found"))?;
+        if bundle.concepts.iter().any(|concept| {
+            concept.concept_type == AGENT_MEMORY_TYPE
+                && concept.id.rsplit('/').next() == Some(request.memory_id.as_str())
+        }) {
+            return Err(WikiApiError::new(
+                "memory_exists",
+                "memory identity already exists in the bundle",
+            ));
+        }
+
+        let metadata = metadata_for_record(request);
+        let mut extensions = BTreeMap::new();
+        extensions.insert(
+            AGENT_MEMORY_EXTENSION.into(),
+            metadata_to_yaml(&metadata)
+                .map_err(|message| memory_error("invalid_memory_metadata", message))?,
+        );
+        let result = self
+            .authoring()?
+            .create_page(CreatePageRequest {
+                bundle_id: request.bundle_id.clone(),
+                page_path: memory_page_path(request.kind, &request.memory_id),
+                concept_type: AGENT_MEMORY_TYPE.into(),
+                title: Some(request.title.clone()),
+                description: request.description.clone(),
+                resource: None,
+                tags: request.tags.clone(),
+                timestamp: Some(request.created_at.clone()),
+                extensions,
+                body_markdown: Some(request.body_markdown.clone()),
+            })
+            .map_err(authoring_error)?;
+        self.invalidate_projection();
+        Ok(record_from_request(request, result.source_path))
+    }
+
+    fn recall_memory(
+        &self,
+        request: &RecallMemoryRequest,
+    ) -> Result<Vec<MemoryRecallResult>, WikiApiError> {
+        if request.bundle_id.trim().is_empty() {
+            return Err(WikiApiError::new(
+                "invalid_memory_request",
+                "bundle_id must not be empty",
+            ));
+        }
+        let projection = self.projection()?;
+        let bundle = projection
+            .bundles
+            .iter()
+            .find(|bundle| bundle.id == request.bundle_id)
+            .ok_or_else(|| WikiApiError::new("bundle_not_found", "bundle was not found"))?;
+        let mut records = bundle
+            .concepts
+            .iter()
+            .filter_map(|concept| record_from_concept(concept).ok())
+            .filter(|record| record.status == MemoryStatus::Active)
+            .filter(|record| request.kinds.is_empty() || request.kinds.contains(&record.kind))
+            .map(|record| (record.concept_id.clone(), record))
+            .collect::<BTreeMap<_, _>>();
+
+        let mut index = SearchIndex::build(&projection);
+        index.documents.retain(|document| {
+            document.bundle_id == request.bundle_id && records.contains_key(&document.concept_id)
+        });
+        let limit = if request.limit == 0 {
+            20
+        } else {
+            request.limit.min(20)
+        };
+        Ok(index
+            .search(&SearchQuery {
+                text: request.text.clone(),
+                bundle: Some(request.bundle_id.clone()),
+                concept_type: Some(AGENT_MEMORY_TYPE.into()),
+                tags: Vec::new(),
+                limit,
+            })
+            .into_iter()
+            .filter_map(|result| {
+                records.remove(&result.concept_id).map(|record| {
+                    MemoryRecallResult::from_record(
+                        record,
+                        result.score,
+                        result.matched_fields,
+                        result.snippet,
+                    )
+                })
+            })
+            .collect())
+    }
+
+    fn transition_memory(
+        &self,
+        request: &TransitionMemoryRequest,
+    ) -> Result<MemoryRecord, WikiApiError> {
+        validate_memory_id(&request.memory_id)
+            .map_err(|message| memory_error("invalid_memory_request", message))?;
+        let projection = self.compile(&self.bundle_roots, "runtime", None)?;
+        let concept = find_memory_concept(&projection, &request.bundle_id, &request.memory_id)?;
+        let mut metadata = metadata_from_concept(concept)
+            .map_err(|message| memory_error("invalid_memory_metadata", message))?;
+        let replacement = request
+            .replacement_id
+            .as_deref()
+            .map(|replacement_id| {
+                validate_memory_id(replacement_id)
+                    .map_err(|message| memory_error("invalid_memory_request", message))?;
+                let concept = find_memory_concept(&projection, &request.bundle_id, replacement_id)?;
+                record_from_concept(concept)
+                    .map_err(|message| memory_error("invalid_memory_metadata", message))
+            })
+            .transpose()?;
+        apply_transition(
+            &mut metadata,
+            &request.memory_id,
+            request,
+            replacement.as_ref(),
+        )
+        .map_err(|message| memory_error("invalid_memory_transition", message))?;
+
+        let mut extensions = concept
+            .extensions
+            .iter()
+            .map(|(key, value)| {
+                yaml_serde::to_value(value)
+                    .map(|value| (key.clone(), value))
+                    .map_err(|_| {
+                        WikiApiError::new(
+                            "invalid_memory_metadata",
+                            "memory extensions could not be serialized",
+                        )
+                    })
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        extensions.insert(
+            AGENT_MEMORY_EXTENSION.into(),
+            metadata_to_yaml(&metadata)
+                .map_err(|message| memory_error("invalid_memory_metadata", message))?,
+        );
+        let source_path = self
+            .bundle_root_for_id(&request.bundle_id)?
+            .join(&concept.source_path);
+        let expected_content_hash = fs::read(&source_path)
+            .map(|content| content_hash(&content))
+            .map_err(|_| WikiApiError::new("memory_not_found", "memory source was not found"))?;
+        self.authoring()?
+            .populate_page(PopulatePageRequest {
+                bundle_id: request.bundle_id.clone(),
+                page_path: concept.source_path.clone(),
+                frontmatter: crate::authoring::PageFrontmatter {
+                    concept_type: concept.concept_type.clone(),
+                    title: concept.title.clone(),
+                    description: concept.description.clone(),
+                    resource: concept.resource.clone(),
+                    tags: concept.tags.clone(),
+                    timestamp: concept.timestamp.clone(),
+                    extensions,
+                },
+                body_markdown: concept.body_markdown.clone(),
+                expected_content_hash: Some(expected_content_hash),
+            })
+            .map_err(authoring_error)?;
+        let record = record_from_metadata(concept, metadata)
+            .map_err(|message| memory_error("invalid_memory_metadata", message))?;
+        self.invalidate_projection();
+        Ok(record)
+    }
 }
 
 impl WikiOperationExecutor for LocalWikiService {
@@ -205,6 +391,15 @@ impl WikiOperationExecutor for LocalWikiService {
                 self.invalidate_projection();
                 Ok(WikiOperationResponse::PagePopulated(result))
             }
+            WikiOperationRequest::RecordMemory(request) => Ok(
+                WikiOperationResponse::MemoryRecorded(self.record_memory(request)?),
+            ),
+            WikiOperationRequest::RecallMemory(request) => Ok(
+                WikiOperationResponse::MemoryRecalled(self.recall_memory(request)?),
+            ),
+            WikiOperationRequest::TransitionMemory(request) => Ok(
+                WikiOperationResponse::MemoryTransitioned(self.transition_memory(request)?),
+            ),
             WikiOperationRequest::BuildProjection(request) => {
                 let roots = if request.bundle_roots.is_empty() {
                     &self.bundle_roots
@@ -364,6 +559,14 @@ impl LocalWikiService {
             })
     }
 
+    fn bundle_root_for_id(&self, bundle_id: &str) -> Result<PathBuf, WikiApiError> {
+        self.bundle_roots
+            .iter()
+            .filter_map(|root| root.canonicalize().ok())
+            .find(|root| root.file_name().and_then(|name| name.to_str()) == Some(bundle_id))
+            .ok_or_else(|| WikiApiError::new("bundle_not_found", "bundle was not found"))
+    }
+
     fn render_projection(
         &self,
         projection: WikiProjection,
@@ -450,6 +653,36 @@ fn find_concept<'a>(
                 .find(|concept| concept.id == concept_id)
         })
         .ok_or_else(|| WikiApiError::new("concept_not_found", "concept was not found"))
+}
+
+fn find_memory_concept<'a>(
+    projection: &'a WikiProjection,
+    bundle_id: &str,
+    memory_id: &str,
+) -> Result<&'a crate::model::Concept, WikiApiError> {
+    let bundle = projection
+        .bundles
+        .iter()
+        .find(|bundle| bundle.id == bundle_id)
+        .ok_or_else(|| WikiApiError::new("bundle_not_found", "bundle was not found"))?;
+    let mut matches = bundle.concepts.iter().filter(|concept| {
+        concept.concept_type == AGENT_MEMORY_TYPE
+            && concept.id.rsplit('/').next() == Some(memory_id)
+    });
+    let concept = matches
+        .next()
+        .ok_or_else(|| WikiApiError::new("memory_not_found", "memory was not found"))?;
+    if matches.next().is_some() {
+        return Err(WikiApiError::new(
+            "invalid_memory_request",
+            "memory identity is ambiguous across kinds",
+        ));
+    }
+    Ok(concept)
+}
+
+fn memory_error(code: &'static str, message: String) -> WikiApiError {
+    WikiApiError::new(code, message)
 }
 
 fn authoring_error(error: AuthoringError) -> WikiApiError {

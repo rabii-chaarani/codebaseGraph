@@ -176,7 +176,7 @@ where
             resource: request.resource,
             tags: request.tags,
             timestamp: request.timestamp,
-            extensions: BTreeMap::new(),
+            extensions: request.extensions,
         };
         let content =
             render_document(&serialize_frontmatter(frontmatter, BTreeMap::new())?, &body)?;
