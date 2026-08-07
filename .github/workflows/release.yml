@@ -227,20 +227,20 @@ jobs:
           chmod +x "dist/package/${{ matrix.binary }}" "dist/package/${{ matrix.wiki_binary }}" "dist/package/install.sh"
           checksum_python="$(command -v python3 || command -v python)"
           "$checksum_python" - <<'PY'
-from hashlib import sha256
-from pathlib import Path
+          from hashlib import sha256
+          from pathlib import Path
 
-package_dir = Path("dist/package")
-binary_names = [
-    "${{ matrix.binary }}",
-    "${{ matrix.wiki_binary }}",
-]
-lines = []
-for name in binary_names:
-    path = package_dir / name
-    lines.append(f"{sha256(path.read_bytes()).hexdigest()}  {name}")
-(package_dir / "checksums.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
-PY
+          package_dir = Path("dist/package")
+          binary_names = [
+              "${{ matrix.binary }}",
+              "${{ matrix.wiki_binary }}",
+          ]
+          lines = []
+          for name in binary_names:
+              path = package_dir / name
+              lines.append(f"{sha256(path.read_bytes()).hexdigest()}  {name}")
+          (package_dir / "checksums.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
           archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"
           tar -C dist/package -czf "dist/${archive}" .
           "$checksum_python" -c 'import hashlib, pathlib, sys; path = pathlib.Path(sys.argv[1]); print(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.as_posix()}")' "dist/${archive}" > "dist/${archive}.sha256"

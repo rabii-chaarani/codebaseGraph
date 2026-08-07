@@ -29,3 +29,5 @@
 *.tmp
 *.lock
 !/Cargo.lock
+AGENTS.md
+CLAUDE.md
