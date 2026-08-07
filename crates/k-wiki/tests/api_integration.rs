@@ -126,6 +126,119 @@ fn mcp_authoring_round_trip_creates_populates_reads_and_searches_a_concept() {
 }
 
 #[test]
+fn mcp_memory_round_trip_records_activates_and_recalls_repository_knowledge() {
+    let temp = TestDir::new("k-wiki-mcp-memory-round-trip");
+    let repository = temp.path().join("repository");
+    let bundle = repository.join("docs");
+    fs::create_dir_all(&bundle).expect("create bundle");
+    fs::write(
+        bundle.join("index.md"),
+        "---\nokf_version: '0.1'\ntitle: Docs\n---\n# Docs\n",
+    )
+    .expect("write root index");
+    let authoring = AuthoringService::new(
+        AuthoringConfig {
+            repositories: vec![RepositoryRoot {
+                id: "repo".into(),
+                root_path: repository,
+            }],
+            bundles: vec![BundleRoot {
+                id: "docs".into(),
+                repository_id: "repo".into(),
+                root_path: bundle.clone(),
+            }],
+        },
+        NoopValidator,
+        NoopRefreshNotifier,
+    )
+    .expect("configure authoring");
+    let api = LocalWikiService::new(vec![bundle])
+        .with_authoring(authoring)
+        .into_api();
+    let mut session = mcp_session();
+
+    let recorded = call_tool(
+        &api,
+        &mut session,
+        1,
+        "wiki_memory_record",
+        json!({
+            "bundle_id": "docs",
+            "memory_id": "release-contract",
+            "kind": "procedural",
+            "title": "Release Contract",
+            "description": "Required release verification",
+            "body_markdown": "Run the release gate before publishing.",
+            "owner": "repository-agent",
+            "created_at": "2026-08-07T09:00:00Z",
+            "sources": [{
+                "kind": "repository",
+                "reference": "docs/release.md",
+                "content_hash": "sha256:abc123"
+            }],
+            "tags": ["release"],
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        recorded["result"]["structuredContent"]["result"]["status"],
+        "candidate"
+    );
+
+    let before_review = call_tool(
+        &api,
+        &mut session,
+        2,
+        "wiki_memory_recall",
+        json!({
+            "bundle_id": "docs",
+            "text": "release gate",
+            "include_structured_content": true
+        }),
+    );
+    assert!(before_review["result"]["structuredContent"]["result"]
+        .as_array()
+        .expect("candidate recall results")
+        .is_empty());
+
+    let transitioned = call_tool(
+        &api,
+        &mut session,
+        3,
+        "wiki_memory_transition",
+        json!({
+            "bundle_id": "docs",
+            "memory_id": "release-contract",
+            "to_status": "active",
+            "actor": "reviewer",
+            "transitioned_at": "2026-08-07T10:00:00Z",
+            "reason": "verified against the release runbook",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        transitioned["result"]["structuredContent"]["result"]["status"],
+        "active"
+    );
+
+    let recalled = call_tool(
+        &api,
+        &mut session,
+        4,
+        "wiki_memory_recall",
+        json!({
+            "bundle_id": "docs",
+            "text": "release gate",
+            "include_structured_content": true
+        }),
+    );
+    assert_eq!(
+        recalled["result"]["structuredContent"]["result"][0]["memory_id"],
+        "release-contract"
+    );
+}
+
+#[test]
 fn mcp_lists_only_configured_bundles_and_keeps_them_readable() {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let configured = manifest.join("tests/fixtures/minimal");
@@ -1486,7 +1599,7 @@ fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
     let tools = responses[1]["result"]["tools"]
         .as_array()
         .expect("tool list");
-    assert_eq!(tools.len(), 14);
+    assert_eq!(tools.len(), 17);
     assert!(tools
         .iter()
         .any(|tool| tool["name"] == "wiki_populate_page"
@@ -1494,6 +1607,12 @@ fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
     assert!(tools
         .iter()
         .any(|tool| tool["name"] == "wiki_build" && tool["annotations"]["wikiAccess"] == "write"));
+    assert!(tools.iter().any(|tool| {
+        tool["name"] == "wiki_memory_recall" && tool["annotations"]["wikiAccess"] == "read"
+    }));
+    assert!(tools.iter().any(|tool| {
+        tool["name"] == "wiki_memory_record" && tool["annotations"]["wikiAccess"] == "write"
+    }));
 }
 
 #[tokio::test]

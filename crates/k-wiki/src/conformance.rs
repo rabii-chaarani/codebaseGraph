@@ -3,6 +3,7 @@
 use crate::{
     bundle::{BundleEntryKind, FrontmatterState, LoadedBundle},
     diagnostic::{Diagnostic, DiagnosticSeverity},
+    memory::{metadata_from_value, validate_memory_id, AGENT_MEMORY_EXTENSION, AGENT_MEMORY_TYPE},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -150,6 +151,34 @@ fn apply_recommended_guidance(bundle: &LoadedBundle, diagnostics: &mut Vec<Diagn
                         frontmatter.line_for("type").or(Some(1)),
                         "recommended profile expects concept documents to declare a description",
                     ));
+                }
+                if frontmatter.fields.type_name.as_deref() == Some(AGENT_MEMORY_TYPE) {
+                    let valid = frontmatter
+                        .extensions
+                        .get(AGENT_MEMORY_EXTENSION)
+                        .ok_or_else(|| "agent_memory extension is missing".to_string())
+                        .and_then(metadata_from_value)
+                        .and_then(|metadata| {
+                            let prefix = format!("memory/{}/", metadata.kind.path_segment());
+                            let memory_id = entry
+                                .source_path
+                                .strip_prefix(&prefix)
+                                .and_then(|path| path.strip_suffix(".md"))
+                                .filter(|path| !path.contains('/'))
+                                .ok_or_else(|| {
+                                    "source path does not match the declared memory kind"
+                                        .to_string()
+                                })?;
+                            validate_memory_id(memory_id)
+                        });
+                    if let Err(message) = valid {
+                        diagnostics.push(Diagnostic::warning(
+                            "recommended_agent_memory_invalid",
+                            entry.source_path.clone(),
+                            frontmatter.line_for(AGENT_MEMORY_EXTENSION).or(Some(1)),
+                            message,
+                        ));
+                    }
                 }
             }
             BundleEntryKind::Index if entry.is_root_index() => {

@@ -285,6 +285,9 @@ fn request_for_tool(
         "create_bundle" => deserialize(arguments).map(WikiOperationRequest::CreateBundle),
         "create_page" => deserialize(arguments).map(WikiOperationRequest::CreatePage),
         "populate_page" => deserialize(arguments).map(WikiOperationRequest::PopulatePage),
+        "record_memory" => deserialize(arguments).map(WikiOperationRequest::RecordMemory),
+        "recall_memory" => deserialize(arguments).map(WikiOperationRequest::RecallMemory),
+        "transition_memory" => deserialize(arguments).map(WikiOperationRequest::TransitionMemory),
         "build_site" => deserialize(arguments).map(WikiOperationRequest::BuildSite),
         _ => Err(TransportError::new(
             "unknown_tool",

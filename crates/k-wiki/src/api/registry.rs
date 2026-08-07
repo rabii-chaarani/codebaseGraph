@@ -44,6 +44,11 @@ const RUST_CLI_HTTP: &[OperationSurface] = &[
     OperationSurface::Cli,
     OperationSurface::Http,
 ];
+const RUST_HTTP_MCP: &[OperationSurface] = &[
+    OperationSurface::Rust,
+    OperationSurface::Http,
+    OperationSurface::Mcp,
+];
 
 pub fn operation_descriptors() -> &'static BTreeMap<&'static str, OperationDescriptor> {
     static REGISTRY: OnceLock<BTreeMap<&'static str, OperationDescriptor>> = OnceLock::new();
@@ -77,6 +82,9 @@ pub fn operation_id(request: &WikiOperationRequest) -> &'static str {
         WikiOperationRequest::CreateBundle(_) => "create_bundle",
         WikiOperationRequest::CreatePage(_) => "create_page",
         WikiOperationRequest::PopulatePage(_) => "populate_page",
+        WikiOperationRequest::RecordMemory(_) => "record_memory",
+        WikiOperationRequest::RecallMemory(_) => "recall_memory",
+        WikiOperationRequest::TransitionMemory(_) => "transition_memory",
         WikiOperationRequest::BuildProjection(_) => "build_projection",
         WikiOperationRequest::ListBundles(_) => "list_bundles",
         WikiOperationRequest::GetDirectory(_) => "get_directory",
@@ -107,7 +115,7 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
             "Validate one OKF bundle.",
             ALL_SURFACES,
             AccessMode::Read,
-            Some(mcp("wiki_validate", "Validate Bundle", 11)),
+            Some(mcp("wiki_validate", "Validate Bundle", 14)),
             validate_bundle_schema,
         ),
         descriptor(
@@ -115,7 +123,7 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
             "Check links in one OKF bundle.",
             ALL_SURFACES,
             AccessMode::Read,
-            Some(mcp("wiki_check_links", "Check Links", 12)),
+            Some(mcp("wiki_check_links", "Check Links", 15)),
             check_links_schema,
         ),
         descriptor(
@@ -123,7 +131,7 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
             "Create a conformant OKF bundle.",
             ALL_SURFACES,
             AccessMode::Write,
-            Some(mcp("wiki_create_bundle", "Create Bundle", 8)),
+            Some(mcp("wiki_create_bundle", "Create Bundle", 9)),
             create_bundle_schema,
         ),
         descriptor(
@@ -131,7 +139,7 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
             "Create a concept page.",
             ALL_SURFACES,
             AccessMode::Write,
-            Some(mcp("wiki_create_page", "Create Page", 9)),
+            Some(mcp("wiki_create_page", "Create Page", 10)),
             create_page_schema,
         ),
         descriptor(
@@ -139,8 +147,32 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
             "Populate a concept page.",
             ALL_SURFACES,
             AccessMode::Write,
-            Some(mcp("wiki_populate_page", "Populate Page", 10)),
+            Some(mcp("wiki_populate_page", "Populate Page", 11)),
             populate_page_schema,
+        ),
+        descriptor(
+            "record_memory",
+            "Record repository memory as a candidate.",
+            RUST_HTTP_MCP,
+            AccessMode::Write,
+            Some(mcp("wiki_memory_record", "Record Memory", 12)),
+            record_memory_schema,
+        ),
+        descriptor(
+            "recall_memory",
+            "Recall active repository memory.",
+            RUST_HTTP_MCP,
+            AccessMode::Read,
+            Some(mcp("wiki_memory_recall", "Recall Memory", 8)),
+            recall_memory_schema,
+        ),
+        descriptor(
+            "transition_memory",
+            "Transition repository memory through its governed lifecycle.",
+            RUST_HTTP_MCP,
+            AccessMode::Write,
+            Some(mcp("wiki_memory_transition", "Transition Memory", 13)),
+            transition_memory_schema,
         ),
         descriptor(
             "build_projection",
@@ -227,7 +259,7 @@ fn build_registry() -> BTreeMap<&'static str, OperationDescriptor> {
             "Build a static site from one OKF bundle.",
             ALL_SURFACES,
             AccessMode::Write,
-            Some(mcp("wiki_build", "Build Site", 13)),
+            Some(mcp("wiki_build", "Build Site", 16)),
             build_site_schema,
         ),
     ];
@@ -341,6 +373,7 @@ fn create_page_schema() -> Value {
             "resource": {"type": ["string", "null"]},
             "tags": {"type": "array", "items": {"type": "string"}, "default": []},
             "timestamp": {"type": ["string", "null"]},
+            "extensions": {"type": "object", "default": {}},
             "body_markdown": {"type": ["string", "null"]},
             "include_structured_content": {"type": "boolean", "default": false}
         },
@@ -376,6 +409,86 @@ fn populate_page_schema() -> Value {
         "required": ["bundle_id", "page_path", "frontmatter", "body_markdown"],
         "additionalProperties": false
     })
+}
+
+fn record_memory_schema() -> Value {
+    schema_with_properties(
+        json!({
+            "bundle_id": {"type": "string"},
+            "memory_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+            "kind": {"enum": ["semantic", "episodic", "procedural"]},
+            "title": {"type": "string"},
+            "description": {"type": ["string", "null"]},
+            "body_markdown": {"type": "string"},
+            "owner": {"type": "string"},
+            "created_at": {"type": "string"},
+            "sources": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "kind": {"type": "string"},
+                        "reference": {"type": "string"},
+                        "content_hash": {"type": ["string", "null"]}
+                    },
+                    "required": ["kind", "reference"],
+                    "additionalProperties": false
+                }
+            },
+            "tags": {"type": "array", "items": {"type": "string"}, "default": []},
+            "review_after": {"type": ["string", "null"]},
+            "supersedes": {"type": "array", "items": {"type": "string"}, "default": []}
+        }),
+        &[
+            "bundle_id",
+            "memory_id",
+            "kind",
+            "title",
+            "body_markdown",
+            "owner",
+            "created_at",
+            "sources",
+        ],
+    )
+}
+
+fn recall_memory_schema() -> Value {
+    schema_with_properties(
+        json!({
+            "bundle_id": {"type": "string"},
+            "text": {"type": "string"},
+            "kinds": {
+                "type": "array",
+                "items": {"enum": ["semantic", "episodic", "procedural"]},
+                "default": []
+            },
+            "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 20}
+        }),
+        &["bundle_id", "text"],
+    )
+}
+
+fn transition_memory_schema() -> Value {
+    schema_with_properties(
+        json!({
+            "bundle_id": {"type": "string"},
+            "memory_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+            "to_status": {"enum": ["candidate", "active", "superseded", "quarantined"]},
+            "actor": {"type": "string"},
+            "transitioned_at": {"type": "string"},
+            "reason": {"type": "string"},
+            "replacement_id": {"type": ["string", "null"]}
+        }),
+        &[
+            "bundle_id",
+            "memory_id",
+            "to_status",
+            "actor",
+            "transitioned_at",
+            "reason",
+        ],
+    )
 }
 
 fn list_bundles_schema() -> Value {
@@ -498,7 +611,7 @@ mod tests {
         let mut sorted = ids.clone();
         sorted.sort_unstable();
         assert_eq!(ids, sorted);
-        assert_eq!(registry.len(), 17);
+        assert_eq!(registry.len(), 20);
 
         let tools = mcp_operation_descriptors()
             .into_iter()
@@ -515,9 +628,12 @@ mod tests {
                 "wiki_get_neighborhood",
                 "wiki_get_diagnostics",
                 "wiki_get_recent_changes",
+                "wiki_memory_recall",
                 "wiki_create_bundle",
                 "wiki_create_page",
                 "wiki_populate_page",
+                "wiki_memory_record",
+                "wiki_memory_transition",
                 "wiki_validate",
                 "wiki_check_links",
                 "wiki_build",

@@ -11,6 +11,7 @@ pub mod compiler;
 pub mod conformance;
 pub mod diagnostic;
 pub mod graph_context;
+pub mod memory;
 pub mod model;
 pub mod projection;
 pub mod refresh;

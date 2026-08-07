@@ -154,6 +154,7 @@ fn create_page_creates_one_valid_concept_at_a_validated_bundle_relative_identity
             resource: None,
             tags: vec!["release".into()],
             timestamp: None,
+            extensions: Default::default(),
             body_markdown: None,
         })
         .expect("create page");
@@ -182,6 +183,7 @@ fn create_page_rejects_reserved_escape_and_absolute_targets() {
             resource: None,
             tags: Vec::new(),
             timestamp: None,
+            extensions: Default::default(),
             body_markdown: Some("ignored".into()),
         })
         .expect_err("reserved target must fail");
@@ -197,6 +199,7 @@ fn create_page_rejects_reserved_escape_and_absolute_targets() {
             resource: None,
             tags: Vec::new(),
             timestamp: None,
+            extensions: Default::default(),
             body_markdown: Some("ignored".into()),
         })
         .expect_err("traversal target must fail");
@@ -212,6 +215,7 @@ fn create_page_rejects_reserved_escape_and_absolute_targets() {
             resource: None,
             tags: Vec::new(),
             timestamp: None,
+            extensions: Default::default(),
             body_markdown: Some("ignored".into()),
         })
         .expect_err("absolute target must fail");
@@ -239,6 +243,7 @@ fn create_page_rejects_symlink_paths_that_escape_the_bundle_root() {
             resource: None,
             tags: Vec::new(),
             timestamp: None,
+            extensions: Default::default(),
             body_markdown: Some("ignored".into()),
         })
         .expect_err("escaping symlink must fail");
@@ -267,6 +272,7 @@ fn populate_page_writes_validated_frontmatter_and_markdown_atomically() {
             resource: None,
             tags: Vec::new(),
             timestamp: None,
+            extensions: Default::default(),
             body_markdown: Some("Initial body.\n".into()),
         })
         .expect("seed page");
@@ -320,6 +326,7 @@ fn populate_page_rejects_stale_writes_without_changing_source_content() {
             resource: None,
             tags: Vec::new(),
             timestamp: None,
+            extensions: Default::default(),
             body_markdown: Some("Original.\n".into()),
         })
         .expect("seed page");
@@ -413,6 +420,7 @@ fn populate_page_validates_before_replacing_the_destination() {
             resource: None,
             tags: Vec::new(),
             timestamp: None,
+            extensions: Default::default(),
             body_markdown: Some("Original body.\n".into()),
         })
         .expect("seed page");

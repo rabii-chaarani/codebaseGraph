@@ -336,9 +336,12 @@ fn mcp_tools_list_advertises_declared_metadata() {
             "wiki_get_neighborhood",
             "wiki_get_diagnostics",
             "wiki_get_recent_changes",
+            "wiki_memory_recall",
             "wiki_create_bundle",
             "wiki_create_page",
             "wiki_populate_page",
+            "wiki_memory_record",
+            "wiki_memory_transition",
             "wiki_validate",
             "wiki_check_links",
             "wiki_build",
@@ -346,17 +349,23 @@ fn mcp_tools_list_advertises_declared_metadata() {
     );
     assert_eq!(tools[0]["title"], "List Bundles");
     assert_eq!(tools[0]["annotations"]["readOnlyHint"], true);
-    assert_eq!(tools[8]["title"], "Create Bundle");
-    assert_eq!(tools[8]["annotations"]["readOnlyHint"], false);
+    assert_eq!(tools[8]["title"], "Recall Memory");
+    assert_eq!(tools[8]["annotations"]["readOnlyHint"], true);
+    assert_eq!(tools[9]["title"], "Create Bundle");
+    assert_eq!(tools[9]["annotations"]["readOnlyHint"], false);
     assert_eq!(
-        tools[8]["inputSchema"]["properties"]["tool"]["const"],
+        tools[9]["inputSchema"]["properties"]["tool"]["const"],
         "wiki_create_bundle"
     );
-    assert_eq!(tools[11]["title"], "Validate Bundle");
-    assert_eq!(tools[11]["annotations"]["readOnlyHint"], true);
-    assert_eq!(tools[12]["title"], "Check Links");
-    assert_eq!(tools[13]["title"], "Build Site");
+    assert_eq!(tools[12]["title"], "Record Memory");
+    assert_eq!(tools[12]["annotations"]["readOnlyHint"], false);
+    assert_eq!(tools[13]["title"], "Transition Memory");
     assert_eq!(tools[13]["annotations"]["readOnlyHint"], false);
+    assert_eq!(tools[14]["title"], "Validate Bundle");
+    assert_eq!(tools[14]["annotations"]["readOnlyHint"], true);
+    assert_eq!(tools[15]["title"], "Check Links");
+    assert_eq!(tools[16]["title"], "Build Site");
+    assert_eq!(tools[16]["annotations"]["readOnlyHint"], false);
 }
 
 #[test]

@@ -34,6 +34,8 @@ pub struct CreatePageRequest {
     #[serde(default)]
     pub tags: Vec<String>,
     pub timestamp: Option<String>,
+    #[serde(default)]
+    pub extensions: BTreeMap<String, YamlValue>,
     pub body_markdown: Option<String>,
 }
 
