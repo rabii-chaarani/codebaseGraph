@@ -3350,13 +3350,16 @@ fn install_safe_name(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        inspect_mcp_server, install_mcp_server, native_client_command, reinstall_state,
-        remove_mcp_server, remove_partial_state_tree, rename_mcp_server, resolve_mcp_target,
-        run_reinstall_activation_boundary, GraphStatePaths, McpClientInstallOptions,
-        McpClientRemovalOptions, McpClientRenameOptions, McpExistingEntryPolicy, McpInstallMode,
-        McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
+        hermes_yaml_block_from_entries, inspect_mcp_server, install_mcp_server,
+        native_client_command, parse_hermes_managed_entries, reinstall_state, remove_mcp_server,
+        remove_partial_state_tree, rename_mcp_server, resolve_mcp_target,
+        run_reinstall_activation_boundary, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
+        McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
+        McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
+        ResolvedMcpTarget,
     };
     use serde_json::json;
+    use std::collections::BTreeMap;
     use std::fs;
     use std::path::{Path, PathBuf};
     use std::process;
@@ -3438,14 +3441,33 @@ mod tests {
             "mcp_servers:".to_string(),
             format!("  {name}:"),
             "    type: stdio".to_string(),
-            format!("    command: \"{command}\""),
+            format!("    command: {}", yaml_scalar(command)),
             "    args:".to_string(),
         ];
         for arg in args {
-            lines.push(format!("      - \"{arg}\""));
+            lines.push(format!("      - {}", yaml_scalar(arg)));
         }
         lines.push("# codebaseGraph MCP servers end".to_string());
         lines.join("\n") + "\n"
+    }
+
+    #[test]
+    fn hermes_managed_block_round_trips_windows_style_arguments() {
+        let entry = ManagedStdioEntry {
+            command: r"C:\Program Files\codebase-graph.exe".to_string(),
+            args: vec![
+                "--config".to_string(),
+                r"C:\workspace\.codebaseGraph\config.json".to_string(),
+                "value \"quoted\"".to_string(),
+            ],
+        };
+        let entries = BTreeMap::from([("codebase_graph_repo".to_string(), entry)]);
+
+        let block = hermes_yaml_block_from_entries(&entries);
+        let (parsed, previous) = parse_hermes_managed_entries(&block).unwrap();
+
+        assert_eq!(parsed, entries);
+        assert_eq!(previous.as_deref(), Some(block.trim_end()));
     }
 
     #[test]

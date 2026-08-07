@@ -1,5 +1,5 @@
 use crate::error::NativeError;
-use fs2::FileExt;
+use fs2::{lock_contended_error, FileExt};
 use std::fs::{self, File, OpenOptions};
 use std::path::{Path, PathBuf};
 
@@ -55,9 +55,15 @@ pub(crate) fn try_open_locked(
 ) -> Result<Option<LockedFile>, NativeError> {
     match open_locked_inner(path.as_ref(), mode, true) {
         Ok(locked) => Ok(Some(locked)),
-        Err(NativeError::Io(error)) if error.kind() == std::io::ErrorKind::WouldBlock => Ok(None),
+        Err(NativeError::Io(error)) if is_lock_contended(&error) => Ok(None),
         Err(other) => Err(other),
     }
+}
+
+fn is_lock_contended(error: &std::io::Error) -> bool {
+    let expected = lock_contended_error();
+    error.kind() == std::io::ErrorKind::WouldBlock
+        || (error.raw_os_error().is_some() && error.raw_os_error() == expected.raw_os_error())
 }
 
 fn open_locked_inner(
