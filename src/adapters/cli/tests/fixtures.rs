@@ -52,6 +52,23 @@ pub(super) fn managed_active_manifest_path(root: &Path) -> PathBuf {
         .join("manifest.json")
 }
 
+pub(super) fn assert_managed_generation_paths(
+    root: &Path,
+    database_path: &Path,
+    manifest_path: &Path,
+) {
+    let expected_manifest_path = managed_active_manifest_path(root);
+    let expected_database_path = expected_manifest_path.with_file_name("graph.ldb");
+    assert_eq!(
+        fs::canonicalize(manifest_path).unwrap(),
+        fs::canonicalize(expected_manifest_path).unwrap()
+    );
+    assert_eq!(
+        fs::canonicalize(database_path).unwrap(),
+        fs::canonicalize(expected_database_path).unwrap()
+    );
+}
+
 pub(super) fn test_http_options(root: PathBuf, auth_token: Option<&str>) -> McpHttpOptions {
     McpHttpOptions {
         serve: McpServeOptions {

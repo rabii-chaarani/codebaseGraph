@@ -108,14 +108,11 @@ fn install_writes_managed_v2_config_without_static_database_or_manifest_paths() 
     )
     .unwrap();
     assert_eq!(response_storage_root, expected_storage_root);
-    assert!(value["db_path"]
-        .as_str()
-        .unwrap()
-        .contains("/.codebaseGraph/storage/generations/gen-"));
-    assert!(value["manifest_path"]
-        .as_str()
-        .unwrap()
-        .contains("/.codebaseGraph/storage/generations/gen-"));
+    assert_managed_generation_paths(
+        &root,
+        &PathBuf::from(value["db_path"].as_str().unwrap()),
+        &PathBuf::from(value["manifest_path"].as_str().unwrap()),
+    );
     let _ = fs::remove_dir_all(root);
 }
 
