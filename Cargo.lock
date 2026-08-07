@@ -175,7 +175,7 @@ dependencies = [
 
 [[package]]
 name = "codebase-graph"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
  "fs2",
  "lbug",
@@ -690,7 +690,7 @@ dependencies = [
 
 [[package]]
 name = "k-wiki"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
  "ammonia",
  "axum",
@@ -1723,7 +1723,7 @@ checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
 
 [[package]]
 name = "xtask"
-version = "1.2.1"
+version = "1.2.2"
 dependencies = [
  "serde_json",
  "yaml_serde",
