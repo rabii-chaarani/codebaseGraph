@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.2.2...v1.3.0) (2026-08-10)
+
+
+### Features
+
+* **k-wiki:** initialize memory source on install ([#61](https://github.com/rabii-chaarani/codebaseGraph/issues/61)) ([6680d59](https://github.com/rabii-chaarani/codebaseGraph/commit/6680d5931584d8817b8b7adc9b210a6920667e2a))
+
 ## [1.2.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.2.1...v1.2.2) (2026-08-07)
 
 
