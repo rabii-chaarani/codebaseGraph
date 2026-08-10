@@ -17,14 +17,16 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     authoring::{
-        AuthoringConfig, AuthoringService, ConformanceAuthoringValidator, CreateBundleRequest,
-        NoopRefreshNotifier, RepositoryRoot,
+        write_atomically, AuthoringConfig, AuthoringService, ConformanceAuthoringValidator,
+        CreateBundleRequest, NoopRefreshNotifier, RepositoryRoot,
     },
     projection::ProjectionStore,
 };
 
 const DEFAULT_BUNDLE_ID: &str = "knowledge";
 const DEFAULT_BUNDLE_PATH: &str = "knowledge";
+const DEFAULT_MEMORY_INDEX_PATH: &str = "memory/index.md";
+const DEFAULT_MEMORY_INDEX_CONTENT: &str = "# Agent Memory\n\nRepository-scoped durable agent memory is stored here.\n\nRecords are organized under `semantic/`, `episodic/`, and `procedural/`.\n";
 const DEFAULT_SERVER_NAME: &str = "k_wiki";
 const INSTRUCTION_START: &str = "<!-- k-wiki:start -->";
 const INSTRUCTION_END: &str = "<!-- k-wiki:end -->";
@@ -97,6 +99,7 @@ pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, Stri
             })
             .map_err(|error| error.to_string())?;
     }
+    initialize_memory_area(&bundle_root)?;
 
     let store = ProjectionStore::new(&repository_root);
     let state_root = store.state_root();
@@ -117,6 +120,44 @@ pub fn install_repository(repository_root: &Path) -> Result<InstallOutcome, Stri
             bundle_root,
         }
     })
+}
+
+fn initialize_memory_area(bundle_root: &Path) -> Result<(), String> {
+    let bundle_root = bundle_root
+        .canonicalize()
+        .map_err(|_| "the default knowledge bundle could not be located".to_string())?;
+    let memory_root = bundle_root.join("memory");
+    match std::fs::symlink_metadata(&memory_root) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+            return Err("the default memory area is not a regular directory".to_string());
+        }
+        Ok(_) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            std::fs::create_dir(&memory_root)
+                .map_err(|_| "the default memory area could not be created".to_string())?;
+        }
+        Err(_) => return Err("the default memory area could not be inspected".to_string()),
+    }
+    let memory_root = memory_root
+        .canonicalize()
+        .map_err(|_| "the default memory area could not be located".to_string())?;
+    if !memory_root.starts_with(&bundle_root) {
+        return Err("the default memory area escapes the knowledge bundle".to_string());
+    }
+
+    let index_path = bundle_root.join(DEFAULT_MEMORY_INDEX_PATH);
+    match std::fs::symlink_metadata(&index_path) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => {
+            Err("the default memory index is not a regular file".to_string())
+        }
+        Ok(_) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            write_atomically(&index_path, DEFAULT_MEMORY_INDEX_CONTENT)
+                .map(|_| ())
+                .map_err(|_| "the default memory index could not be created".to_string())
+        }
+        Err(_) => Err("the default memory index could not be inspected".to_string()),
+    }
 }
 
 fn install_instruction_blocks(repository_root: &Path) -> Result<(), String> {
@@ -969,9 +1010,18 @@ mod tests {
             fs::read_to_string(root.join("knowledge/index.md")).expect("read starter bundle index");
         assert!(source.contains("okf_version:"));
         assert!(source.contains("Repository Knowledge"));
+        let memory_index = root.join("knowledge/memory/index.md");
+        let memory_source = fs::read_to_string(&memory_index).expect("read memory area index");
+        assert!(memory_source.contains("# Agent Memory"));
+
+        fs::write(&memory_index, "# Team Memory\n").expect("customize memory area index");
 
         let repeat = install_repository(&root).expect("reuse repository state");
         assert!(matches!(repeat, InstallOutcome::AlreadyInitialized { .. }));
+        assert_eq!(
+            fs::read_to_string(memory_index).expect("read preserved memory area index"),
+            "# Team Memory\n"
+        );
 
         fs::remove_dir_all(root).expect("remove temp root");
     }
