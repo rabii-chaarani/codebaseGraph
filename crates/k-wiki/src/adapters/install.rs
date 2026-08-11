@@ -27,6 +27,20 @@ const DEFAULT_BUNDLE_ID: &str = "knowledge";
 const DEFAULT_BUNDLE_PATH: &str = "knowledge";
 const DEFAULT_MEMORY_INDEX_PATH: &str = "memory/index.md";
 const DEFAULT_MEMORY_INDEX_CONTENT: &str = "# Agent Memory\n\nRepository-scoped durable agent memory is stored here.\n\nRecords are organized under `semantic/`, `episodic/`, and `procedural/`.\n";
+const DEFAULT_MEMORY_SECTIONS: [(&str, &str); 3] = [
+    (
+        "semantic",
+        "# Semantic Memory\n\nStable repository facts, terminology, invariants, contracts, ownership boundaries, and durable decisions are stored here.\n",
+    ),
+    (
+        "episodic",
+        "# Episodic Memory\n\nDistilled outcomes from repository work, including root causes, failed approaches, diagnostic discoveries, and reusable lessons, are stored here.\n",
+    ),
+    (
+        "procedural",
+        "# Procedural Memory\n\nVerified runbooks, workflows, repeatable operations, workarounds, and operating constraints are stored here.\n",
+    ),
+];
 const DEFAULT_SERVER_NAME: &str = "k_wiki";
 const INSTRUCTION_START: &str = "<!-- k-wiki:start -->";
 const INSTRUCTION_END: &str = "<!-- k-wiki:end -->";
@@ -148,15 +162,69 @@ fn initialize_memory_area(bundle_root: &Path) -> Result<(), String> {
     let index_path = bundle_root.join(DEFAULT_MEMORY_INDEX_PATH);
     match std::fs::symlink_metadata(&index_path) {
         Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => {
-            Err("the default memory index is not a regular file".to_string())
+            return Err("the default memory index is not a regular file".to_string());
         }
-        Ok(_) => Ok(()),
+        Ok(_) => {}
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             write_atomically(&index_path, DEFAULT_MEMORY_INDEX_CONTENT)
-                .map(|_| ())
-                .map_err(|_| "the default memory index could not be created".to_string())
+                .map_err(|_| "the default memory index could not be created".to_string())?;
         }
-        Err(_) => Err("the default memory index could not be inspected".to_string()),
+        Err(_) => return Err("the default memory index could not be inspected".to_string()),
+    }
+
+    for (section, content) in DEFAULT_MEMORY_SECTIONS {
+        initialize_memory_section(&memory_root, section, content)?;
+    }
+    Ok(())
+}
+
+fn initialize_memory_section(
+    memory_root: &Path,
+    section: &str,
+    content: &str,
+) -> Result<(), String> {
+    let section_root = memory_root.join(section);
+    match std::fs::symlink_metadata(&section_root) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+            return Err(format!(
+                "the default {section} memory section is not a regular directory"
+            ));
+        }
+        Ok(_) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            std::fs::create_dir(&section_root).map_err(|_| {
+                format!("the default {section} memory section could not be created")
+            })?;
+        }
+        Err(_) => {
+            return Err(format!(
+                "the default {section} memory section could not be inspected"
+            ));
+        }
+    }
+    let section_root = section_root
+        .canonicalize()
+        .map_err(|_| format!("the default {section} memory section could not be located"))?;
+    if !section_root.starts_with(memory_root) {
+        return Err(format!(
+            "the default {section} memory section escapes the memory area"
+        ));
+    }
+
+    let index_path = section_root.join("index.md");
+    match std::fs::symlink_metadata(&index_path) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => Err(format!(
+            "the default {section} memory section index is not a regular file"
+        )),
+        Ok(_) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            write_atomically(&index_path, content)
+                .map(|_| ())
+                .map_err(|_| format!("the default {section} memory section could not be indexed"))
+        }
+        Err(_) => Err(format!(
+            "the default {section} memory section index could not be inspected"
+        )),
     }
 }
 
@@ -1020,8 +1088,8 @@ fn repository_hash(repository_root: &Path) -> String {
 mod tests {
     use super::{
         has_partial_migration_failure, install_repository, merge_legacy_migration_result,
-        InstallOutcome, INSTRUCTION_END, INSTRUCTION_START, MEMORY_INSTRUCTION_END,
-        MEMORY_INSTRUCTION_START,
+        InstallOutcome, DEFAULT_MEMORY_SECTIONS, INSTRUCTION_END, INSTRUCTION_START,
+        MEMORY_INSTRUCTION_END, MEMORY_INSTRUCTION_START,
     };
     use serde_json::json;
     use std::{
@@ -1051,14 +1119,27 @@ mod tests {
         let memory_index = root.join("knowledge/memory/index.md");
         let memory_source = fs::read_to_string(&memory_index).expect("read memory area index");
         assert!(memory_source.contains("# Agent Memory"));
+        for (section, expected) in DEFAULT_MEMORY_SECTIONS {
+            let section_index = root.join(format!("knowledge/memory/{section}/index.md"));
+            assert_eq!(
+                fs::read_to_string(section_index).expect("read memory section index"),
+                expected
+            );
+        }
 
         fs::write(&memory_index, "# Team Memory\n").expect("customize memory area index");
+        let semantic_index = root.join("knowledge/memory/semantic/index.md");
+        fs::write(&semantic_index, "# Team Facts\n").expect("customize memory section index");
 
         let repeat = install_repository(&root).expect("reuse repository state");
         assert!(matches!(repeat, InstallOutcome::AlreadyInitialized { .. }));
         assert_eq!(
             fs::read_to_string(memory_index).expect("read preserved memory area index"),
             "# Team Memory\n"
+        );
+        assert_eq!(
+            fs::read_to_string(semantic_index).expect("read preserved memory section index"),
+            "# Team Facts\n"
         );
 
         fs::remove_dir_all(root).expect("remove temp root");

@@ -26,7 +26,7 @@ All v1 memory is repository-scoped. User, agent, organization, and cross-reposit
 
 Memory concepts live at `memory/{semantic|episodic|procedural}/<memory-id>.md` inside the configured OKF bundle and declare `type: agent-memory`.
 
-The repository installer initializes the memory source area with a frontmatter-free `memory/index.md`. Reinstallation preserves existing index content; kind directories are created when records are first written.
+The repository installer initializes the memory source area with frontmatter-free directory indexes at `memory/index.md`, `memory/semantic/index.md`, `memory/episodic/index.md`, and `memory/procedural/index.md`. Reinstallation preserves existing index content. Memory records are written beneath the corresponding kind section.
 
 The `agent_memory` extension carries:
 
