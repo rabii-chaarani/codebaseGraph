@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.3.0...v1.3.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* **memory:** enhance agent-memory workflow documentation and add distinct memory kind tests ([#63](https://github.com/rabii-chaarani/codebaseGraph/issues/63)) ([a447ac3](https://github.com/rabii-chaarani/codebaseGraph/commit/a447ac3a3fad28762dfb33f51fc971afc941b8bf))
+
 ## [1.3.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.2.2...v1.3.0) (2026-08-10)
 
 
