@@ -10,6 +10,7 @@
 /.codex/
 /.venv/
 /.mcp.json
+/.claude/
 
 # Editor and OS noise
 .DS_Store

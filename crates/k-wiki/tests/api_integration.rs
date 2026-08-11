@@ -519,12 +519,33 @@ fn install_command_initializes_repository_local_wiki_state() {
         .expect("read starter bundle index");
     assert!(source.contains("okf_version:"));
     assert!(source.contains("Repository Knowledge"));
+    for (section, heading) in [
+        ("semantic", "# Semantic Memory"),
+        ("episodic", "# Episodic Memory"),
+        ("procedural", "# Procedural Memory"),
+    ] {
+        let section_index = repository.join(format!("knowledge/memory/{section}/index.md"));
+        let section_source = fs::read_to_string(section_index).expect("read memory section index");
+        assert!(section_source.contains(heading));
+    }
     for file_name in ["AGENTS.md", "CLAUDE.md"] {
         let instructions =
             fs::read_to_string(repository.join(file_name)).expect("read installer instructions");
         assert!(instructions.contains("<!-- k-wiki:start -->"));
         assert!(instructions.contains("wiki_validate"));
     }
+    let installed_files = [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "knowledge/memory/index.md",
+        "knowledge/memory/semantic/index.md",
+        "knowledge/memory/episodic/index.md",
+        "knowledge/memory/procedural/index.md",
+    ];
+    let installed_contents = installed_files
+        .iter()
+        .map(|path| fs::read(repository.join(path)).expect("read installed bootstrap file"))
+        .collect::<Vec<_>>();
 
     let repeat = Command::new(binary)
         .args([
@@ -536,6 +557,13 @@ fn install_command_initializes_repository_local_wiki_state() {
         .expect("rerun install");
     assert!(repeat.status.success());
     assert!(String::from_utf8_lossy(&repeat.stdout).contains("already initialized"));
+    for (path, expected) in installed_files.iter().zip(installed_contents) {
+        assert_eq!(
+            fs::read(repository.join(path)).expect("reread installed bootstrap file"),
+            expected,
+            "reinstall changed {path}"
+        );
+    }
 }
 
 #[test]

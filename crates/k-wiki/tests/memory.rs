@@ -35,6 +35,32 @@ fn record_memory_persists_candidate_with_structured_provenance() {
 }
 
 #[test]
+fn memory_kinds_use_distinct_paths_and_recall_filters() {
+    let fixture = MemoryFixture::new("memory-kinds");
+    let cases = [
+        ("repository-fact", MemoryKind::Semantic, "semantic"),
+        ("incident-outcome", MemoryKind::Episodic, "episodic"),
+        ("release-runbook", MemoryKind::Procedural, "procedural"),
+    ];
+
+    for (memory_id, kind, path_segment) in cases {
+        fixture.record(record_request(memory_id, kind));
+        assert!(fixture
+            .bundle
+            .join(format!("memory/{path_segment}/{memory_id}.md"))
+            .is_file());
+        fixture.transition(memory_id, MemoryStatus::Active, None);
+    }
+
+    for (memory_id, kind, _) in cases {
+        let recalled = fixture.recall_kinds("release checks", vec![kind]);
+        assert_eq!(recalled.len(), 1);
+        assert_eq!(recalled[0].memory_id, memory_id);
+        assert_eq!(recalled[0].kind, kind);
+    }
+}
+
+#[test]
 fn recall_returns_only_valid_active_memory_in_requested_bundle() {
     let fixture = MemoryFixture::new("recall-active");
     fixture.record(record_request("build-contract", MemoryKind::Semantic));
@@ -237,12 +263,20 @@ impl MemoryFixture {
     }
 
     fn recall(&self, text: &str) -> Vec<k_wiki::memory::MemoryRecallResult> {
+        self.recall_kinds(text, Vec::new())
+    }
+
+    fn recall_kinds(
+        &self,
+        text: &str,
+        kinds: Vec<MemoryKind>,
+    ) -> Vec<k_wiki::memory::MemoryRecallResult> {
         match self
             .api
             .execute_operation(&WikiOperationRequest::RecallMemory(RecallMemoryRequest {
                 bundle_id: "docs".into(),
                 text: text.into(),
-                kinds: Vec::new(),
+                kinds,
                 limit: 20,
             }))
             .expect("recall memory")
