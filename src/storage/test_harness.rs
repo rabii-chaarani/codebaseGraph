@@ -497,6 +497,36 @@ fn managed_cleanup_reports_and_later_removes_locked_runs() {
 }
 
 #[test]
+fn run_workspace_create_isolates_each_materialization_run() {
+    let root = temp_dir("run-workspace-create-isolates-each-materialization-run");
+    let runs_root = root.join("runs");
+    let first = RunWorkspace::create(&runs_root, Some("base-generation".to_string())).unwrap();
+    let second = RunWorkspace::create(&runs_root, Some("base-generation".to_string())).unwrap();
+
+    assert_ne!(first.root(), second.root());
+    for workspace in [&first, &second] {
+        assert_eq!(workspace.root().parent(), Some(runs_root.as_path()));
+        assert!(workspace.root().join("lease.lock").is_file());
+        assert!(workspace.journal_path().is_file());
+        assert!(workspace.staging_root().is_dir());
+        assert!(workspace.candidate_root().is_dir());
+        assert!(workspace.staging_root().starts_with(workspace.root()));
+        assert!(workspace.candidate_root().starts_with(workspace.root()));
+
+        let journal = workspace.journal().unwrap();
+        assert_eq!(journal.phase, RunPhase::Created);
+        assert_eq!(
+            journal.base_generation_id.as_deref(),
+            Some("base-generation")
+        );
+    }
+
+    first.finish().unwrap();
+    second.finish().unwrap();
+    assert!(fs::read_dir(runs_root).unwrap().next().is_none());
+}
+
+#[test]
 fn run_workspace_cleanup_rejects_symlink_content() {
     #[cfg(unix)]
     {
