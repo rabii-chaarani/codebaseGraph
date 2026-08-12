@@ -73,6 +73,11 @@ pub(crate) fn prepare_operation_request(
             group: argument_optional_string(arguments, "group"),
             output_format: invocation.output_format,
         },
+        "syntax" => OperationRequest::Catalog {
+            kind: operation_id.to_string(),
+            group: argument_optional_string(arguments, "language"),
+            output_format: invocation.output_format,
+        },
         _ => {
             return Err(ApiError::new(
                 "unsupported_operation",
@@ -190,11 +195,16 @@ pub(crate) fn validate_request(request: &OperationRequest) -> Result<(), ApiErro
         OperationRequest::Reinstall(request) => validate_lifecycle(request, "reinstall"),
         OperationRequest::Uninstall(request) => validate_lifecycle(request, "uninstall"),
         OperationRequest::InstallMcp(request) => validate_mcp_install(request),
-        OperationRequest::Catalog { kind, .. } => {
+        OperationRequest::Catalog { kind, group, .. } => {
             if kind.is_empty() {
                 Err(ApiError::new(
                     "invalid_catalog_kind",
                     "catalog kind must not be empty",
+                ))
+            } else if kind == "syntax" && group.is_none() {
+                Err(ApiError::new(
+                    "invalid_catalog_group",
+                    "syntax catalog requires a language",
                 ))
             } else {
                 Ok(())
@@ -208,6 +218,7 @@ pub(crate) fn required_fields(operation_id: &str) -> &'static [&'static str] {
     match operation_id {
         "search" => &["query"],
         "query" => &["statement"],
+        "syntax" => &["language"],
         _ => &[],
     }
 }
@@ -499,7 +510,7 @@ mod tests {
             "query",
             &OperationInvocation {
                 arguments: json!({"statement": "MATCH (n) RETURN n"}),
-                ..invocation
+                ..invocation.clone()
             },
         )
         .expect("registered query input should prepare");
@@ -508,6 +519,20 @@ mod tests {
         };
         assert_eq!(query.limit, DEFAULT_QUERY_LIMIT);
         assert_eq!(query.parameters, json!({}));
+
+        let syntax = prepare_operation_request(
+            "syntax",
+            &OperationInvocation {
+                arguments: json!({"language": " rust "}),
+                ..invocation
+            },
+        )
+        .expect("registered syntax input should prepare");
+        let OperationRequest::Catalog { kind, group, .. } = syntax else {
+            panic!("registered syntax input should produce a catalog request");
+        };
+        assert_eq!(kind, "syntax");
+        assert_eq!(group.as_deref(), Some("rust"));
     }
 
     #[test]
@@ -528,6 +553,14 @@ mod tests {
         .expect_err("partial node reference should be rejected");
 
         assert_eq!(error.code, "invalid_node_reference");
+
+        let syntax_error = validate_request(&OperationRequest::Catalog {
+            kind: "syntax".to_string(),
+            group: None,
+            output_format: OutputFormat::Typed,
+        })
+        .expect_err("syntax catalog without a language should be rejected");
+        assert_eq!(syntax_error.code, "invalid_catalog_group");
     }
 
     #[test]
@@ -557,6 +590,7 @@ mod tests {
     fn operation_schema_requirements_share_normalization_policy() {
         assert_eq!(required_fields("search"), ["query"]);
         assert_eq!(required_fields("query"), ["statement"]);
+        assert_eq!(required_fields("syntax"), ["language"]);
         assert!(required_fields("context").is_empty());
     }
 }

@@ -1,4 +1,4 @@
-use crate::api::catalog::{filter_catalog, load_catalog};
+use crate::api::catalog::{filter_catalog, load_catalog, supported_syntax_languages};
 use crate::api::context::{resolve_runtime, RepoRuntime};
 use crate::api::contracts::{
     ApiError, ContextRequest, HealthRequest, MaterializationRequest, OperationInvocation,
@@ -129,6 +129,14 @@ impl ApiCore {
                 surfaces: &["api", "cli", "mcp"],
                 supported_outputs: &[OutputFormat::Typed, OutputFormat::Block],
                 mcp_tool_name: Some("graph_schema"),
+            },
+            OperationDescriptor {
+                id: "syntax",
+                summary: "Return a language syntax catalog",
+                request_schema: syntax_request_schema,
+                surfaces: &["api", "cli", "mcp"],
+                supported_outputs: &[OutputFormat::Typed, OutputFormat::Block],
+                mcp_tool_name: Some("graph_syntax"),
             },
             OperationDescriptor {
                 id: "query-helpers",
@@ -290,7 +298,7 @@ fn build_registry(descriptors: impl IntoIterator<Item = OperationDescriptor>) ->
             "query" => handle_query,
             "materialize" => handle_materialize,
             "plan" => handle_plan,
-            "schema" | "query-helpers" | "architecture-queries" => handle_catalog,
+            "schema" | "syntax" | "query-helpers" | "architecture-queries" => handle_catalog,
             "setup" => handle_setup,
             "reinstall" => handle_reinstall,
             "uninstall" => handle_uninstall,
@@ -367,6 +375,12 @@ fn query_request_schema() -> serde_json::Value {
 fn architecture_queries_request_schema() -> serde_json::Value {
     json!({
         "group": {"type": "string"},
+    })
+}
+
+fn syntax_request_schema() -> serde_json::Value {
+    json!({
+        "language": {"type": "string", "enum": supported_syntax_languages()},
     })
 }
 
@@ -899,8 +913,8 @@ fn materialization_payload(
 #[cfg(test)]
 mod tests {
     use crate::api::contracts::{
-        MaterializationRequest, McpInstallRequest, OperationRequest, OutputFormat, RepoSelector,
-        RepositoryLifecycleRequest,
+        MaterializationRequest, McpInstallRequest, OperationInvocation, OperationRequest,
+        OutputFormat, RepoSelector, RepositoryLifecycleRequest,
     };
     use crate::api::core::ApiCore;
     use crate::api::{
@@ -952,6 +966,27 @@ mod tests {
     fn resolve_unknown_operation_is_none() {
         let core = ApiCore::new();
         assert!(core.resolve_operation("_missing_").is_none());
+    }
+
+    #[test]
+    fn syntax_operation_publishes_the_selected_language_catalog() {
+        let response = ApiCore::new()
+            .execute_invocation(
+                "syntax",
+                &OperationInvocation {
+                    repo: RepoSelector::default(),
+                    arguments: json!({"language": "python"}),
+                    output_format: OutputFormat::Typed,
+                },
+            )
+            .expect("syntax operation should load the selected catalog");
+
+        assert_eq!(response.operation, "syntax");
+        assert_eq!(response.payload["language"], "python");
+        assert_eq!(
+            response.payload["grammar_version"],
+            "tree_sitter_python@0.25.0"
+        );
     }
 
     #[test]

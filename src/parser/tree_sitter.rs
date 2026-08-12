@@ -55,6 +55,18 @@ fn grammar_language(profile: &LanguageProfile) -> Option<Language> {
     }
 }
 
+pub(super) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static str> {
+    match (profile.grammar_package.as_str(), profile.language.as_str()) {
+        ("tree_sitter_c", _) | (_, "c") => Some(tree_sitter_c::NODE_TYPES),
+        ("tree_sitter_cpp", _) | (_, "cpp") => Some(tree_sitter_cpp::NODE_TYPES),
+        ("tree_sitter_fortran", _) | (_, "fortran") => Some(tree_sitter_fortran::NODE_TYPES),
+        ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::NODE_TYPES),
+        ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::NODE_TYPES),
+        ("tree_sitter_rust", _) | (_, "rust") => Some(tree_sitter_rust::NODE_TYPES),
+        _ => None,
+    }
+}
+
 fn normalize_tree_sitter_node(node: Node<'_>, source_bytes: &[u8]) -> SyntaxNode {
     let fields = tree_sitter_fields(node, source_bytes);
     let children = named_children_with_indices(node)

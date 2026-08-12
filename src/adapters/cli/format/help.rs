@@ -1,5 +1,5 @@
 pub(in crate::adapters::cli) fn top_level_help() -> &'static str {
-    "codebase-graph native CLI\n\nUSAGE:\n  codebase-graph <command> [options]\n\nCOMMANDS:\n  install                     Perform first-time graph setup and write .codebaseGraph/config.json\n  reinstall                   Remove existing graph state and run install again\n  uninstall                   Remove repo graph state, instructions, and MCP registrations\n  build                       Materialize a graph through the Rust native engine\n  plan                        Preview files that would rebuild, delete, skip, or ignore\n  watch                       Watch for file changes and refresh after a debounce window\n  check-health                Check whether the native graph database is readable\n  schema                      Return ontology schema, indexes, profiles, and helpers\n  query-helpers               Return named read-only graph query helpers\n  codebase-architecture-queries  Return the architecture-discovery query catalog\n  codebase-search             Search the code graph with compact context\n  codebase-context            Return compact graph context\n  graph-query                 Execute a restricted read-only graph query\n  mcp                         Serve codebaseGraph MCP over stdio or HTTP\n\nRun `codebase-graph <command> --help` for command options."
+    "codebase-graph native CLI\n\nUSAGE:\n  codebase-graph <command> [options]\n\nCOMMANDS:\n  install                     Perform first-time graph setup and write .codebaseGraph/config.json\n  reinstall                   Remove existing graph state and run install again\n  uninstall                   Remove repo graph state, instructions, and MCP registrations\n  build                       Materialize a graph through the Rust native engine\n  plan                        Preview files that would rebuild, delete, skip, or ignore\n  watch                       Watch for file changes and refresh after a debounce window\n  check-health                Check whether the native graph database is readable\n  schema                      Return ontology schema, indexes, profiles, and helpers\n  syntax                      Return a language syntax catalog\n  query-helpers               Return named read-only graph query helpers\n  codebase-architecture-queries  Return the architecture-discovery query catalog\n  codebase-search             Search the code graph with compact context\n  codebase-context            Return compact graph context\n  graph-query                 Execute a restricted read-only graph query\n  mcp                         Serve codebaseGraph MCP over stdio or HTTP\n\nRun `codebase-graph <command> --help` for command options."
 }
 
 pub(crate) fn mcp_help() -> &'static str {
@@ -42,6 +42,10 @@ pub(in crate::adapters::cli) fn graph_schema_help() -> &'static str {
     "codebase-graph schema\n\nUSAGE:\n  codebase-graph schema [--format json|block] [--json] [--pretty]\n\nOPTIONS:\n  --format <format>         block or json; defaults to block\n  --json                    Emit compact JSON output\n  --pretty                  Pretty-print JSON output"
 }
 
+pub(in crate::adapters::cli) fn graph_syntax_help() -> &'static str {
+    "codebase-graph syntax\n\nUSAGE:\n  codebase-graph syntax <language> [--format json|block] [--json] [--pretty]\n\nOPTIONS:\n  <language>                 One of c, cpp, fortran, go, markdown, python, or rust\n  --format <format>         block or json; defaults to block\n  --json                    Emit compact JSON output\n  --pretty                  Pretty-print JSON output"
+}
+
 pub(in crate::adapters::cli) fn graph_query_helpers_help() -> &'static str {
     "codebase-graph query-helpers\n\nUSAGE:\n  codebase-graph query-helpers [--format json|block] [--json] [--pretty]\n\nOPTIONS:\n  --format <format>         block or json; defaults to block\n  --json                    Emit compact JSON output\n  --pretty                  Pretty-print JSON output"
 }
@@ -61,6 +65,7 @@ pub(in crate::adapters::cli) fn graph_context_help() -> &'static str {
 pub(in crate::adapters::cli) fn metadata_help(command_name: &str) -> &'static str {
     match command_name {
         "schema" => graph_schema_help(),
+        "syntax" => graph_syntax_help(),
         "query-helpers" => graph_query_helpers_help(),
         "codebase-architecture-queries" => graph_architecture_queries_help(),
         "codebase-search" => graph_search_help(),

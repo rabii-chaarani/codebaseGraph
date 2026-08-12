@@ -19,6 +19,27 @@ fn graph_schema_outputs_block_and_json() {
 }
 
 #[test]
+fn graph_syntax_outputs_language_catalog_and_validates_language() {
+    let mut block = Vec::new();
+    run(["syntax", "rust"], &mut block).unwrap();
+    let block_text = String::from_utf8(block).unwrap();
+    assert!(block_text.starts_with("syntax language=rust"));
+    assert!(block_text.contains("node function_item"));
+
+    let mut json_output = Vec::new();
+    run(["syntax", "markdown", "--json"], &mut json_output).unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&json_output).unwrap();
+    assert_eq!(value["language"], "markdown");
+    assert_eq!(value["grammar_version"], "builtin-markdown@1");
+
+    let error = run(["syntax", "custom"], &mut Vec::new()).unwrap_err();
+    assert!(error.contains("Unknown syntax language"));
+    assert!(run(["syntax"], &mut Vec::new())
+        .unwrap_err()
+        .contains("syntax requires a language"));
+}
+
+#[test]
 fn graph_query_helpers_outputs_helper_catalog() {
     let mut block = Vec::new();
     run(["query-helpers"], &mut block).unwrap();

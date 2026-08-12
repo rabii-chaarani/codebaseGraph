@@ -190,6 +190,7 @@ mod tests {
                 "graph_query_helpers",
                 "graph_schema",
                 "graph_search",
+                "graph_syntax",
             ]
         );
         let search = tools
@@ -206,5 +207,14 @@ mod tests {
         );
         assert_eq!(search["inputSchema"]["properties"]["limit"]["default"], 3);
         assert_eq!(search["inputSchema"]["required"], json!(["query"]));
+        let syntax = tools
+            .iter()
+            .find(|tool| tool["name"] == "graph_syntax")
+            .expect("syntax tool should be advertised");
+        assert_eq!(syntax["inputSchema"]["required"], json!(["language"]));
+        assert_eq!(
+            syntax["inputSchema"]["properties"]["language"]["enum"],
+            json!(["c", "cpp", "fortran", "go", "markdown", "python", "rust"])
+        );
     }
 }

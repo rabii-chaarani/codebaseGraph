@@ -33,6 +33,10 @@ fn parse_source(source: &str, profile: &LanguageProfile) -> Result<ParseOutput, 
     tree_sitter::parse_tree_sitter_source(source, profile)
 }
 
+pub(crate) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static str> {
+    tree_sitter::grammar_node_types(profile)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -87,6 +87,38 @@ pub(crate) fn serialize_architecture_queries_block(payload: &serde_json::Value) 
     format!("{}\n", lines.join("\n"))
 }
 
+pub(crate) fn serialize_syntax_block(payload: &serde_json::Value) -> String {
+    let node_types = value_array(payload, "node_types");
+    let capture_mappings = value_array(payload, "capture_mappings");
+    let mut lines = vec![format!(
+        "syntax language={} grammar_version={} nodes={} capture_mappings={}",
+        block_value(value_str(payload, "language")),
+        block_value(value_str(payload, "grammar_version")),
+        node_types.len(),
+        capture_mappings.len()
+    )];
+    let roots = csv_values(payload.get("root_node_types"));
+    if !roots.is_empty() {
+        lines.push(format!("root_node_types {roots}"));
+    }
+    for node in node_types {
+        let fields = node
+            .get("fields")
+            .and_then(serde_json::Value::as_object)
+            .map(|fields| fields.keys().cloned().collect::<Vec<_>>().join(","))
+            .unwrap_or_default();
+        if fields.is_empty() {
+            lines.push(format!("node {}", block_value(value_str(node, "type"))));
+        } else {
+            lines.push(format!(
+                "node {} fields={fields}",
+                block_value(value_str(node, "type"))
+            ));
+        }
+    }
+    format!("{}\n", lines.join("\n"))
+}
+
 pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
     let mut lines = vec![format!(
         "health ok={} database_exists={} manifest_exists={} graph_readable={} total_nodes={} storage_format={} writable={} active_generation={} pending_runs={} cleanup_pending={} physical_database_bytes={} logical_database_bytes={}",

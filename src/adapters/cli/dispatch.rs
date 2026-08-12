@@ -1,11 +1,12 @@
 use super::{
     format::{
         graph_architecture_queries_help, graph_context_help, graph_health_help, graph_query_help,
-        graph_query_helpers_help, graph_schema_help, graph_search_help, top_level_help,
+        graph_query_helpers_help, graph_schema_help, graph_search_help, graph_syntax_help,
+        top_level_help,
     },
     graph::{
         ArchitectureQueryOptions, GraphContextOptions, GraphQueryOptions, GraphSearchOptions,
-        HealthOptions, MetadataOutputOptions,
+        HealthOptions, MetadataOutputOptions, SyntaxCatalogOptions,
     },
     materialization::{run_materialize, run_plan},
     mcp_command::run_mcp_command,
@@ -40,6 +41,7 @@ where
         Some("watch") => run_watch(&args[1..], stdout),
         Some("check-health") => run_graph_health(&args[1..], stdout),
         Some("schema") => run_graph_schema(&args[1..], stdout),
+        Some("syntax") => run_graph_syntax(&args[1..], stdout),
         Some("query-helpers") => run_graph_query_helpers(&args[1..], stdout),
         Some("codebase-architecture-queries") => run_graph_architecture_queries(&args[1..], stdout),
         Some("codebase-search") => run_graph_search(&args[1..], stdout),
@@ -92,6 +94,25 @@ fn run_graph_schema<W: Write>(args: &[String], stdout: &mut W) -> Result<(), Str
         &response.payload,
         &options.format.eq("json"),
         options.pretty,
+    )
+}
+
+fn run_graph_syntax<W: Write>(args: &[String], stdout: &mut W) -> Result<(), String> {
+    let options = SyntaxCatalogOptions::parse(args)?;
+    if options.output.help {
+        writeln!(stdout, "{}", graph_syntax_help()).map_err(|error| error.to_string())?;
+        return Ok(());
+    }
+    let response = execute_api_request(OperationRequest::Catalog {
+        kind: "syntax".to_string(),
+        group: Some(options.language),
+        output_format: output_format(options.output.format == "json"),
+    })?;
+    write_api_response(
+        stdout,
+        &response.payload,
+        &options.output.format.eq("json"),
+        options.output.pretty,
     )
 }
 

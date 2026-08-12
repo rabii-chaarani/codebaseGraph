@@ -10,7 +10,10 @@ impl ProfileSet {
     pub(crate) fn new(profiles: &[LanguageProfile]) -> Self {
         let mut by_language = BTreeMap::new();
         let mut suffix_to_language = BTreeMap::new();
-        for profile in base_profiles().into_iter().chain(profiles.iter().cloned()) {
+        for profile in built_in_profiles()
+            .into_iter()
+            .chain(profiles.iter().cloned())
+        {
             for suffix in &profile.suffixes {
                 suffix_to_language.insert(suffix.to_lowercase(), profile.language.clone());
             }
@@ -47,7 +50,7 @@ impl ProfileSet {
     }
 }
 
-fn base_profiles() -> Vec<LanguageProfile> {
+pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
     vec![
         LanguageProfile {
             language: "python".to_string(),
