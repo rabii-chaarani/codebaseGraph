@@ -516,10 +516,10 @@ fn hex_lower(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
     use crate::hash;
     use crate::partition_builder::GraphPartition;
     use crate::protocol::{CaptureMapping, ManifestEntry, OntologyRelationType, OntologySchema};
+    use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
     use serde_json::json;
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {

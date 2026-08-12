@@ -1,6 +1,7 @@
-use crate::graph_rows::BuiltGraphRows;
 use crate::normalize::SyntaxNode;
 use std::collections::BTreeMap;
+
+pub(crate) use rows::{BuiltGraphRows, GraphEdgeRow, GraphNodeRow};
 
 pub(crate) fn build_syntax_tree_graph_rows(
     meta: BTreeMap<String, String>,
@@ -17,6 +18,7 @@ mod builder;
 mod capture;
 mod ids;
 mod relations;
+mod rows;
 
 use arena::*;
 use builder::*;

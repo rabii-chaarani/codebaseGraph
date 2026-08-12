@@ -1,10 +1,9 @@
 use super::{NativeBuilder, Owner};
-use crate::graph_rows::GraphNodeRow;
 use crate::syntax_materializer::{
     assignment_target_label, assignment_target_table, call_value_child, empty_metadata,
     import_label, json_field_label, parameter_annotation_capture, parameter_capture,
     parameter_child_ids, parser_like_metadata_capture, return_type_capture, symbol_key,
-    table_for_node_type, tree_capture, Capture, NativeSyntaxArena, TreeNodeRef,
+    table_for_node_type, tree_capture, Capture, GraphNodeRow, NativeSyntaxArena, TreeNodeRef,
 };
 use serde_json::Value;
 

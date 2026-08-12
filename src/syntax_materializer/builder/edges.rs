@@ -1,6 +1,5 @@
 use super::{NativeBuilder, Owner};
-use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
-use crate::syntax_materializer::{empty_metadata, graph_id};
+use crate::syntax_materializer::{empty_metadata, graph_id, GraphEdgeRow, GraphNodeRow};
 use serde_json::{Map, Value};
 
 impl NativeBuilder {

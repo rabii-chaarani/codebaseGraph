@@ -1,4 +1,4 @@
-use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
+use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;

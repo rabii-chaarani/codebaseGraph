@@ -149,9 +149,9 @@ mod tests {
     use super::resolution::add_semantic_edge_if_allowed;
     use super::state::{relation_specs, SemNode, SemanticState};
     use super::*;
-    use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
     use crate::partition_builder::GraphPartition;
     use crate::protocol::NativeSyntaxMaterializationRequest;
+    use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
     use serde_json::json;
     use std::collections::{BTreeMap, HashMap};
 

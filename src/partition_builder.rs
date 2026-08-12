@@ -1,9 +1,8 @@
 use crate::error::NativeError;
-use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::hash;
 use crate::parser::ParseOutput;
 use crate::protocol::{ManifestEntry, NativeSyntaxMaterializationRequest, SourceSnapshot};
-use crate::syntax_materializer;
+use crate::syntax_materializer::{self, GraphEdgeRow, GraphNodeRow};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize)]

@@ -1,8 +1,7 @@
 use super::NativeBuilder;
-use crate::graph_rows::{BuiltGraphRows, GraphNodeRow};
 use crate::syntax_materializer::{
     empty_metadata, graph_id, imported_name, kind_for, qualified_name, stable_optional_i64,
-    symbol_key, Capture,
+    symbol_key, BuiltGraphRows, Capture, GraphNodeRow,
 };
 use serde_json::{Map, Value};
 

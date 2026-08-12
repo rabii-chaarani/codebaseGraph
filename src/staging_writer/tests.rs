@@ -1,7 +1,7 @@
 use super::StagingAccumulator;
-use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::partition_builder::GraphPartition;
 use crate::protocol::ManifestEntry;
+use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};

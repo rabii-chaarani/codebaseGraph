@@ -4,7 +4,7 @@ mod semantic;
 mod traversal;
 
 use super::RelationAllowlist;
-use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
+use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
 use std::collections::{BTreeMap, HashMap};
 
 pub(in crate::syntax_materializer) struct Owner {
