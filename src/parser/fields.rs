@@ -349,6 +349,15 @@ pub(super) fn named_children(node: Node<'_>) -> Vec<Node<'_>> {
         .collect()
 }
 
+pub(super) fn named_children_with_indices(node: Node<'_>) -> Vec<(usize, Node<'_>)> {
+    (0..node.child_count())
+        .filter_map(|index| {
+            let child = node.child(index)?;
+            child.is_named().then_some((index, child))
+        })
+        .collect()
+}
+
 pub(super) fn node_types(node: Node<'_>) -> BTreeSet<String> {
     let mut types = BTreeSet::new();
     collect_node_types(node, &mut types);

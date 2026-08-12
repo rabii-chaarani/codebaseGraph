@@ -44,6 +44,27 @@ impl NativeBuilder {
         Ok(())
     }
 
+    pub(in crate::syntax_materializer) fn syntax_child(
+        &mut self,
+        parent_id: &str,
+        child_id: &str,
+        field_name: Option<&str>,
+        child_index: usize,
+    ) -> Result<(), String> {
+        let edge = self.edge(
+            "SyntaxChild",
+            parent_id,
+            child_id,
+            "syntax_child",
+            empty_metadata(),
+        )?;
+        if let Some(stored) = self.edges.get_mut(&edge.id) {
+            stored.field_name = field_name.map(str::to_string);
+            stored.child_index = Some(child_index as i64);
+        }
+        Ok(())
+    }
+
     pub(in crate::syntax_materializer) fn edge_if_allowed(
         &mut self,
         edge_type: &str,
@@ -103,6 +124,8 @@ impl NativeBuilder {
             target_id: target_id.to_string(),
             kind: kind.to_string(),
             confidence: 1.0,
+            field_name: None,
+            child_index: None,
             line_start: None,
             line_end: None,
             byte_start: None,

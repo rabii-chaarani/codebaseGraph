@@ -1,5 +1,7 @@
 use super::captures::mark_captures;
-use super::fields::{first_field_label, named_children, node_text, tree_sitter_fields};
+use super::fields::{
+    first_field_label, named_children_with_indices, node_text, tree_sitter_fields,
+};
 use super::ParseOutput;
 use crate::error::NativeError;
 use crate::normalize::SyntaxNode;
@@ -55,9 +57,16 @@ fn grammar_language(profile: &LanguageProfile) -> Option<Language> {
 
 fn normalize_tree_sitter_node(node: Node<'_>, source_bytes: &[u8]) -> SyntaxNode {
     let fields = tree_sitter_fields(node, source_bytes);
-    let children = named_children(node)
+    let children = named_children_with_indices(node)
         .into_iter()
-        .map(|child| normalize_tree_sitter_node(child, source_bytes))
+        .map(|(index, child)| {
+            let mut normalized = normalize_tree_sitter_node(child, source_bytes);
+            normalized.field_name = u32::try_from(index)
+                .ok()
+                .and_then(|index| node.field_name_for_child(index))
+                .map(str::to_string);
+            normalized
+        })
         .collect();
     let text = node_text(node, source_bytes)
         .filter(|value| !value.is_empty())
@@ -70,6 +79,7 @@ fn normalize_tree_sitter_node(node: Node<'_>, source_bytes: &[u8]) -> SyntaxNode
         byte_start: Some(node.start_byte() as i64),
         byte_end: Some(node.end_byte() as i64),
         capture_name: String::new(),
+        field_name: None,
         children,
         fields,
     }

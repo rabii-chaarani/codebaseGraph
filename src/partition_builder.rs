@@ -1,6 +1,7 @@
 use crate::error::NativeError;
 use crate::hash;
 use crate::parser::ParseOutput;
+use crate::profiles::ProfileSet;
 use crate::protocol::{ManifestEntry, NativeSyntaxMaterializationRequest, SourceSnapshot};
 use crate::syntax_materializer::{self, GraphEdgeRow, GraphNodeRow};
 use std::collections::BTreeMap;
@@ -88,6 +89,13 @@ fn graph_meta(
         "language".to_string(),
         snapshot.language.clone().unwrap_or_default(),
     );
+    if let Some(grammar_version) = snapshot.language.as_deref().and_then(|language| {
+        ProfileSet::new(&request.profiles)
+            .profile_for_language(language)
+            .map(|profile| profile.grammar_version.clone())
+    }) {
+        meta.insert("grammar_version".to_string(), grammar_version);
+    }
     meta.insert("source_root".to_string(), request.source_root.clone());
     meta.insert(
         "repository_label".to_string(),
@@ -162,6 +170,7 @@ mod tests {
                 label: "main".to_string(),
                 kind: "definition.function".to_string(),
                 language: "rust".to_string(),
+                grammar_version: None,
                 path: "src/lib.rs".to_string(),
                 qualified_name: "crate::main".to_string(),
                 scope_id: "scope:root".to_string(),
@@ -181,6 +190,8 @@ mod tests {
                 target_id: "node:2".to_string(),
                 kind: "reference.call".to_string(),
                 confidence: 0.9,
+                field_name: None,
+                child_index: None,
                 line_start: Some(2),
                 line_end: Some(2),
                 byte_start: Some(10),

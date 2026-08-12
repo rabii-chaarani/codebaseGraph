@@ -13,7 +13,7 @@ use std::io::Write as IoWrite;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub(crate) const ARTIFACT_FORMAT_VERSION: u64 = 1;
+pub(crate) const ARTIFACT_FORMAT_VERSION: u64 = 2;
 const ENVELOPE_FILE_NAME: &str = "partition.json";
 const ARTIFACT_KEY_BYTES: usize = 32;
 const ARTIFACT_KEY_HEX_LEN: usize = ARTIFACT_KEY_BYTES * 2;
@@ -538,6 +538,7 @@ mod tests {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
+            grammar_version: "tree_sitter_rust@0.24.2".to_string(),
             root_node_types: vec!["source_file".to_string()],
             capture_mappings: vec![CaptureMapping {
                 capture_name: "definition.function".to_string(),
@@ -603,6 +604,7 @@ mod tests {
             label: "main".to_string(),
             kind: "definition.function".to_string(),
             language: "rust".to_string(),
+            grammar_version: None,
             path: "src/lib.rs".to_string(),
             qualified_name: "crate::main".to_string(),
             scope_id: "scope:root".to_string(),
@@ -622,6 +624,8 @@ mod tests {
             target_id: "node:2".to_string(),
             kind: "reference.call".to_string(),
             confidence: 0.95,
+            field_name: None,
+            child_index: None,
             line_start: Some(2),
             line_end: Some(2),
             byte_start: Some(10),
@@ -766,6 +770,37 @@ mod tests {
         let payload_dir = root.join(&key[..2]).join(&key);
         fs::create_dir_all(&payload_dir).unwrap();
         fs::write(payload_dir.join(ENVELOPE_FILE_NAME), "{not-json").unwrap();
+
+        let loaded = store
+            .load_partition(
+                &key,
+                &ArtifactExpectations {
+                    path: "src/lib.rs",
+                    content_hash: "content-hash",
+                    language: "rust",
+                },
+            )
+            .unwrap();
+        assert!(loaded.is_none());
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn artifact_store_rejects_prior_format_envelopes() {
+        let root = unique_temp_dir("codebase-graph-artifacts-format");
+        let store = ArtifactStore::new(&root);
+        let request = sample_request();
+        let snapshot = sample_snapshot();
+        let key =
+            ArtifactStore::key_for_request(&request, &snapshot, request.profiles.first()).unwrap();
+        store.store_partition(&key, &sample_partition()).unwrap();
+
+        let payload_path = root.join(&key[..2]).join(&key).join(ENVELOPE_FILE_NAME);
+        let mut envelope: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&payload_path).unwrap()).unwrap();
+        envelope["format_version"] = serde_json::Value::from(ARTIFACT_FORMAT_VERSION - 1);
+        fs::write(&payload_path, serde_json::to_vec(&envelope).unwrap()).unwrap();
 
         let loaded = store
             .load_partition(

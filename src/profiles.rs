@@ -32,7 +32,6 @@ impl ProfileSet {
             .cloned()
     }
 
-    #[cfg(test)]
     pub(crate) fn profile_for_language(&self, language: &str) -> Option<&LanguageProfile> {
         self.by_language.get(language)
     }
@@ -54,6 +53,7 @@ fn base_profiles() -> Vec<LanguageProfile> {
             language: "python".to_string(),
             suffixes: vec![".py".to_string()],
             grammar_package: "tree_sitter_python".to_string(),
+            grammar_version: "tree_sitter_python@0.25.0".to_string(),
             root_node_types: vec!["module".to_string()],
             capture_mappings: vec![
                 mapping("definition.class", &["class_definition"], "Class"),
@@ -70,6 +70,7 @@ fn base_profiles() -> Vec<LanguageProfile> {
             language: "markdown".to_string(),
             suffixes: vec![".md".to_string(), ".mdx".to_string()],
             grammar_package: String::new(),
+            grammar_version: "builtin-markdown@1".to_string(),
             root_node_types: vec!["Module".to_string()],
             capture_mappings: vec![
                 mapping(
@@ -84,6 +85,7 @@ fn base_profiles() -> Vec<LanguageProfile> {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
+            grammar_version: "tree_sitter_rust@0.24.2".to_string(),
             root_node_types: vec!["source_file".to_string()],
             capture_mappings: vec![
                 mapping("definition.struct", &["struct_item"], "Class"),
@@ -103,6 +105,7 @@ fn base_profiles() -> Vec<LanguageProfile> {
             language: "go".to_string(),
             suffixes: vec![".go".to_string()],
             grammar_package: "tree_sitter_go".to_string(),
+            grammar_version: "tree_sitter_go@0.25.0".to_string(),
             root_node_types: vec!["source_file".to_string()],
             capture_mappings: vec![
                 mapping("definition.package", &["package_clause"], "Module"),
@@ -120,6 +123,7 @@ fn base_profiles() -> Vec<LanguageProfile> {
             language: "c".to_string(),
             suffixes: vec![".c".to_string(), ".h".to_string()],
             grammar_package: "tree_sitter_c".to_string(),
+            grammar_version: "tree_sitter_c@0.24.2".to_string(),
             root_node_types: vec!["translation_unit".to_string()],
             capture_mappings: c_family_mappings(),
         },
@@ -133,6 +137,7 @@ fn base_profiles() -> Vec<LanguageProfile> {
                 ".hh".to_string(),
             ],
             grammar_package: "tree_sitter_cpp".to_string(),
+            grammar_version: "tree_sitter_cpp@0.23.4".to_string(),
             root_node_types: vec!["translation_unit".to_string()],
             capture_mappings: c_family_mappings(),
         },
@@ -145,6 +150,7 @@ fn base_profiles() -> Vec<LanguageProfile> {
                 ".for".to_string(),
             ],
             grammar_package: "tree_sitter_fortran".to_string(),
+            grammar_version: "tree_sitter_fortran@0.6.0".to_string(),
             root_node_types: vec!["translation_unit".to_string()],
             capture_mappings: vec![
                 mapping("definition.module", &["module"], "Module"),

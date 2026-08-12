@@ -14,6 +14,7 @@ pub(super) fn parse_markdown_source(source: &str, profile: &LanguageProfile) -> 
         byte_start: None,
         byte_end: None,
         capture_name: String::new(),
+        field_name: None,
         children: Vec::new(),
         fields: BTreeMap::new(),
     };
@@ -103,6 +104,7 @@ fn markdown_node<const N: usize>(
         },
         byte_end: if byte_end == 0 { None } else { Some(byte_end) },
         capture_name: String::new(),
+        field_name: None,
         children: Vec::new(),
         fields,
     }

@@ -84,6 +84,10 @@ impl TreeNodeRef<'_> {
         &self.node.capture_name
     }
 
+    pub(super) fn field_name(&self) -> Option<&str> {
+        self.node.field_name.as_deref()
+    }
+
     pub(super) fn field_keys(&self) -> Vec<String> {
         self.node.fields.keys().cloned().collect()
     }

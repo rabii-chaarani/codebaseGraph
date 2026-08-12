@@ -3726,6 +3726,12 @@
           "type": "string"
         },
         {
+          "description": "Versioned grammar identity that produced this syntax node.",
+          "name": "grammar_version",
+          "required": false,
+          "type": "string"
+        },
+        {
           "description": "Repository-relative source path.",
           "name": "path",
           "required": false,
@@ -6330,6 +6336,91 @@
       ],
       "target_types": [
         "ExceptionFlow"
+      ]
+    },
+    {
+      "constraints": [],
+      "description": "Ordered grammar parent-child structure between retained named syntax nodes.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "Named grammar field represented by this child relationship.",
+          "name": "field_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Zero-based child position among retained named siblings.",
+          "name": "child_index",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "SyntaxChild",
+      "source_types": [
+        "SyntaxCapture"
+      ],
+      "target_types": [
+        "SyntaxCapture"
       ]
     },
     {

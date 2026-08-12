@@ -12,6 +12,8 @@ pub(super) struct NodeStagedRow {
     pub(super) label: String,
     pub(super) kind: String,
     pub(super) language: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) grammar_version: Option<String>,
     pub(super) path: String,
     pub(super) qualified_name: String,
     pub(super) scope_id: String,
@@ -34,6 +36,10 @@ pub(super) struct EdgeStagedRow {
     pub(super) source_id: String,
     pub(super) target_id: String,
     pub(super) confidence: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) field_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) child_index: Option<i64>,
     pub(super) line_start: Option<i64>,
     pub(super) line_end: Option<i64>,
     pub(super) byte_start: Option<i64>,
@@ -47,6 +53,7 @@ pub(super) fn node_fields(node: &GraphNodeRow, content_hash: Option<&str>) -> No
         label: node.label.clone(),
         kind: node.kind.clone(),
         language: node.language.clone(),
+        grammar_version: node.grammar_version.clone(),
         path: node.path.clone(),
         qualified_name: node.qualified_name.clone(),
         scope_id: node.scope_id.clone(),
@@ -69,6 +76,8 @@ pub(super) fn edge_fields(edge: &GraphEdgeRow) -> EdgeStagedRow {
         source_id: edge.source_id.clone(),
         target_id: edge.target_id.clone(),
         confidence: edge.confidence,
+        field_name: edge.field_name.clone(),
+        child_index: edge.child_index,
         line_start: edge.line_start,
         line_end: edge.line_end,
         byte_start: edge.byte_start,

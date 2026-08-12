@@ -11,6 +11,7 @@ pub(crate) struct SyntaxNode {
     pub(crate) byte_start: Option<i64>,
     pub(crate) byte_end: Option<i64>,
     pub(crate) capture_name: String,
+    pub(crate) field_name: Option<String>,
     pub(crate) children: Vec<SyntaxNode>,
     pub(crate) fields: BTreeMap<String, Value>,
 }

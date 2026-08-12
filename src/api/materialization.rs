@@ -6,7 +6,7 @@ use crate::api::{
 use crate::artifact_store::ArtifactStore;
 use crate::protocol::{
     ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
-    NativeSyntaxMaterializationResponse,
+    NativeSyntaxMaterializationResponse, MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
 };
 use crate::storage::direct::{DirectStore, DirectWriteSession};
 use crate::storage::layout::{DirectLayout, RepositoryLayout};
@@ -186,7 +186,7 @@ pub(crate) fn execute_materialization_request(
     request.staging_dir = execution.staging_root().to_string_lossy().into_owned();
     request.previous_manifest = execution.previous_manifest().clone();
     request.artifact_root = execution.artifact_root().to_string_lossy().into_owned();
-    request.manifest_schema_version = 2;
+    request.manifest_schema_version = MATERIALIZATION_MANIFEST_SCHEMA_VERSION;
     let started = Instant::now();
     let final_request = request;
     let mut response = match crate::execute_materialization_pipeline(&final_request) {
@@ -369,7 +369,7 @@ pub(crate) fn build_request(
         repository_label: paths.repo_name,
         mode: options.mode.clone(),
         parser_version: "native-rust-cli-v1".to_string(),
-        manifest_schema_version: 2,
+        manifest_schema_version: MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
         ontology: "code_ontology_v1".to_string(),
         ontology_schema: Default::default(),
         previous_manifest,
@@ -827,11 +827,12 @@ fn validate_candidate_bundle(
     manifest: &NativeManifest,
     response: &NativeSyntaxMaterializationResponse,
 ) -> Result<(), String> {
-    if manifest.schema_version != 2 {
+    if manifest.schema_version != MATERIALIZATION_MANIFEST_SCHEMA_VERSION {
         return Err(format!(
-            "published manifest {} has schema_version {}, expected 2",
+            "published manifest {} has schema_version {}, expected {}",
             manifest_path.display(),
-            manifest.schema_version
+            manifest.schema_version,
+            MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
         ));
     }
     if manifest.graph_build_digest != response.graph_build_digest {

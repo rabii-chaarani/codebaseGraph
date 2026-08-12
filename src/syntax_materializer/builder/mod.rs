@@ -17,6 +17,7 @@ pub(in crate::syntax_materializer) struct Owner {
 pub(in crate::syntax_materializer) struct NativeBuilder {
     pub(in crate::syntax_materializer) path: String,
     pub(in crate::syntax_materializer) language: String,
+    pub(in crate::syntax_materializer) grammar_version: Option<String>,
     pub(in crate::syntax_materializer) source_root: String,
     pub(in crate::syntax_materializer) repository_label: String,
     pub(in crate::syntax_materializer) nodes: HashMap<String, GraphNodeRow>,
@@ -33,6 +34,10 @@ impl NativeBuilder {
         Ok(Self {
             path: meta.get("path").cloned().unwrap_or_default(),
             language: meta.get("language").cloned().unwrap_or_default(),
+            grammar_version: meta
+                .get("grammar_version")
+                .filter(|version| !version.trim().is_empty())
+                .cloned(),
             source_root: meta.get("source_root").cloned().unwrap_or_default(),
             repository_label: meta
                 .get("repository_label")

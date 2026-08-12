@@ -177,6 +177,8 @@ impl SemEdge {
             target_id: self.target_id.clone(),
             kind: self.kind.clone(),
             confidence: self.confidence,
+            field_name: None,
+            child_index: None,
             line_start: None,
             line_end: None,
             byte_start: None,
