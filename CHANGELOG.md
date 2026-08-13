@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.3.1...v1.4.0) (2026-08-13)
+
+
+### Features
+
+* add language grammar extractors ([#65](https://github.com/rabii-chaarani/codebaseGraph/issues/65)) ([ee3a7bd](https://github.com/rabii-chaarani/codebaseGraph/commit/ee3a7bd4e352c0608a9ae589de110896e9bbc73d))
+
 ## [1.3.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.3.0...v1.3.1) (2026-08-11)
 
 
