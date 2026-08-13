@@ -6,8 +6,9 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-pub(crate) const GRAPH_BUILD_DIGEST_FORMAT_VERSION: u64 = 1;
-pub(crate) const PROFILE_COMPATIBILITY_VERSION: u64 = 1;
+pub(crate) const GRAPH_BUILD_DIGEST_FORMAT_VERSION: u64 = 3;
+pub(crate) const PROFILE_COMPATIBILITY_VERSION: u64 = 2;
+pub(crate) const MATERIALIZATION_MANIFEST_SCHEMA_VERSION: u64 = 4;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct NativeSyntaxMaterializationRequest {
@@ -215,7 +216,7 @@ pub struct LanguageProfile {
     pub suffixes: Vec<String>,
     #[serde(default)]
     pub grammar_package: String,
-    #[serde(default)]
+    pub grammar_version: String,
     pub root_node_types: Vec<String>,
     #[serde(default)]
     pub capture_mappings: Vec<CaptureMapping>,
@@ -419,8 +420,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::{
-        CaptureMapping, ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
-        OntologyRelationType, OntologySchema,
+        CaptureMapping, LanguageProfile, ManifestEntry, NativeManifest,
+        NativeSyntaxMaterializationRequest, OntologyRelationType, OntologySchema,
     };
     use std::collections::BTreeMap;
     use std::path::PathBuf;
@@ -462,6 +463,20 @@ mod tests {
             serde_json::from_str(&request_json(r#", "parallel": false"#)).unwrap();
 
         assert!(!request.parallel);
+    }
+
+    #[test]
+    fn language_profile_requires_grammar_version_when_deserialized() {
+        let profile = serde_json::from_str::<LanguageProfile>(
+            r#"{
+                "language": "custom",
+                "grammar_package": "custom_grammar",
+                "root_node_types": [],
+                "capture_mappings": []
+            }"#,
+        );
+
+        assert!(profile.is_err());
     }
 
     #[test]
@@ -585,6 +600,7 @@ mod tests {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
+            grammar_version: "tree_sitter_rust@0.24.2".to_string(),
             root_node_types: vec!["source_file".to_string()],
             capture_mappings: vec![CaptureMapping {
                 capture_name: "definition.function".to_string(),

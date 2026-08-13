@@ -8,6 +8,8 @@ pub(crate) struct GraphNodeRow {
     pub(crate) label: String,
     pub(crate) kind: String,
     pub(crate) language: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) grammar_version: Option<String>,
     pub(crate) path: String,
     pub(crate) qualified_name: String,
     pub(crate) scope_id: String,
@@ -29,6 +31,10 @@ pub(crate) struct GraphEdgeRow {
     pub(crate) target_id: String,
     pub(crate) kind: String,
     pub(crate) confidence: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) field_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) child_index: Option<i64>,
     pub(crate) line_start: Option<i64>,
     pub(crate) line_end: Option<i64>,
     pub(crate) byte_start: Option<i64>,
@@ -55,6 +61,7 @@ mod tests {
             label: "main".to_string(),
             kind: "definition.function".to_string(),
             language: "rust".to_string(),
+            grammar_version: Some("tree_sitter_rust@0.24.2".to_string()),
             path: "src/main.rs".to_string(),
             qualified_name: "crate::main".to_string(),
             scope_id: "scope:root".to_string(),
@@ -74,6 +81,8 @@ mod tests {
             target_id: "node:2".to_string(),
             kind: "reference.call".to_string(),
             confidence: 0.9,
+            field_name: Some("function".to_string()),
+            child_index: Some(0),
             line_start: Some(2),
             line_end: Some(2),
             byte_start: Some(10),

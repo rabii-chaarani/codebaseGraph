@@ -1017,11 +1017,14 @@ fn instruction_block(config_path: &Path) -> String {
 - Treat the repo-local `.codebaseGraph` graph as the project operating source of truth. It is prohibited to read the code source before you find the target files using the graph.\n\
 - Prefer the `codebase_graph` MCP server tools over shell commands whenever they are exposed in the current agent session.\n\
 - AI agents receive block output by default for graph CLI and MCP tools; request `output_format: \"json\"` or `include_structured_content: true` only for tests, APIs, or explicit structured-payload debugging.\n\
-- Use MCP `graph_search` with `detail: \"slim\"` and `context_limit: 1` before answering repo-structure questions or performing coding tasks.\n\
-- Use MCP `graph_context` with `profile: \"<profile>\"`, `detail: \"slim\"`, and `context_limit: 2` when relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.\n\
+- Use MCP `graph_search` with `layer: \"semantic\"`, `detail: \"slim\"`, and `context_limit: 1` before answering entity, relationship, or repository-structure questions and before coding tasks.\n\
+- Use MCP `graph_context` with `layer: \"semantic\"`, `profile: \"<profile>\"`, `detail: \"slim\"`, and `context_limit: 2` when semantic relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.\n\
+- For parse-tree, grammar-field, source-construct, or Tree-sitter node questions, first use MCP `graph_syntax` with the file language, then use `graph_search` with `layer: \"syntax\"` to find `SyntaxCapture` nodes.\n\
+- Use MCP `graph_context` with `layer: \"syntax\"` only for a `SyntaxCapture` result, passing its `node_id` and `node_type: \"SyntaxCapture\"`; follow ordered `SyntaxChild` rows through `field_name` and `child_index`.\n\
+- Use `layer: \"hybrid\"` only when semantic relationships and syntax structure are both needed; hybrid search returns semantic matches before syntax matches.\n\
 - For architecture orientation, use MCP `graph_architecture_queries`, then execute selected read-only statements with MCP `graph_query`.\n\
 - Use MCP `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.\n\
-- If MCP tools are unavailable, fall back to CLI: `{command} codebase-search <query> --no-refresh --detail slim --context-limit 1`, `{command} codebase-context <query> --profile <profile> --no-refresh --detail slim --context-limit 2`, `{command} codebase-architecture-queries`, `{command} graph-query \"<statement>\"`, `{command} schema`, and `{command} query-helpers`.\n\
+- If MCP tools are unavailable, fall back to CLI: `{command} codebase-search <query> --layer semantic --no-refresh --detail slim --context-limit 1`, `{command} codebase-context <query> --layer semantic --profile <profile> --no-refresh --detail slim --context-limit 2`, `{command} syntax <language>`, `{command} codebase-search <query> --layer syntax --no-refresh --detail slim --context-limit 1`, `{command} codebase-context --node-id <id> --node-type SyntaxCapture --layer syntax --no-refresh --detail slim --context-limit 2`, `{command} codebase-context <query> --layer hybrid --profile <profile> --no-refresh --detail slim --context-limit 2`, `{command} codebase-architecture-queries`, `{command} graph-query \"<statement>\"`, `{command} schema`, and `{command} query-helpers`.\n\
 - Do not rerun install to refresh the graph. The MCP server started from this setup config watches the repo and refreshes automatically; use `{command} build --mode full` only for explicit manual rebuilds. Setup config: `{config_path}`.\n\
 <!-- codebaseGraph:end -->\n",
         command = server_command(),
@@ -3351,12 +3354,13 @@ fn install_safe_name(value: &str) -> String {
 mod tests {
     use super::{
         codex_toml_block, descriptor_signature, hermes_yaml_block_from_entries, inspect_mcp_server,
-        install_mcp_server, native_client_command, parse_hermes_managed_entries,
+        install_mcp_server, instruction_block, native_client_command, parse_hermes_managed_entries,
         parse_toml_stdio_entry, reinstall_state, remove_mcp_server, remove_partial_state_tree,
-        rename_mcp_server, resolve_mcp_target, run_reinstall_activation_boundary, yaml_scalar,
-        GraphStatePaths, ManagedStdioEntry, McpClientInstallOptions, McpClientRemovalOptions,
-        McpClientRenameOptions, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
-        McpTargetLocality, ResolvedMcpTarget,
+        rename_mcp_server, resolve_mcp_target, run_reinstall_activation_boundary,
+        upsert_instruction_text, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
+        McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
+        McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
+        ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -3416,6 +3420,36 @@ mod tests {
             setup_config_path: Some(repo_root.join(".codebaseGraph/config.json")),
             tool_policy: Some("graph_query_read_only".to_string()),
             manual_http_metadata: None,
+        }
+    }
+
+    #[test]
+    fn managed_instruction_block_replaces_stale_guidance_and_preserves_surrounding_text() {
+        let existing = "before\n\n<!-- codebaseGraph:start -->\nold semantic-only guidance\n<!-- codebaseGraph:end -->\n\nafter\n";
+        let (updated, action) = upsert_instruction_text(
+            existing,
+            &instruction_block(Path::new("/tmp/repository/.codebaseGraph/config.json")),
+            false,
+        );
+
+        assert_eq!(action, "updated");
+        assert!(updated.contains("before"));
+        assert!(updated.contains("after"));
+        assert!(!updated.contains("old semantic-only guidance"));
+        for expected in [
+            "graph_syntax",
+            "layer: \"semantic\"",
+            "layer: \"syntax\"",
+            "layer: \"hybrid\"",
+            "node_type: \"SyntaxCapture\"",
+            "field_name",
+            "child_index",
+            "syntax <language>",
+            "--layer syntax",
+            "--layer hybrid",
+            "--node-type SyntaxCapture",
+        ] {
+            assert!(updated.contains(expected), "missing {expected}");
         }
     }
 

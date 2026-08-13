@@ -33,6 +33,10 @@ fn parse_source(source: &str, profile: &LanguageProfile) -> Result<ParseOutput, 
     tree_sitter::parse_tree_sitter_source(source, profile)
 }
 
+pub(crate) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static str> {
+    tree_sitter::grammar_node_types(profile)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,6 +67,50 @@ mod tests {
         assert!(captures.contains(&("definition.function".to_string(), "helper".to_string())));
         assert!(captures.contains(&("reference.call".to_string(), "Service::new".to_string())));
         assert_eq!(output.root.node_type, "source_file");
+    }
+
+    #[test]
+    fn tree_sitter_parser_preserves_named_child_order_and_field_names() {
+        let output = parse_source(
+            "fn greet(name: String) -> String { name }",
+            &profile("rust"),
+        )
+        .expect("rust parsing should succeed");
+
+        let function = output
+            .root
+            .children
+            .iter()
+            .find(|node| node.node_type == "function_item")
+            .expect("function item should be retained");
+        let children = function
+            .children
+            .iter()
+            .map(|child| (child.node_type.as_str(), child.field_name.as_deref()))
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            children,
+            vec![
+                ("identifier", Some("name")),
+                ("parameters", Some("parameters")),
+                ("type_identifier", Some("return_type")),
+                ("block", Some("body")),
+            ]
+        );
+    }
+
+    #[test]
+    fn markdown_parser_marks_children_without_grammar_field_names() {
+        let output = parse_source("# Overview\n\nDetails", &profile("markdown"))
+            .expect("markdown parsing should succeed");
+
+        assert!(!output.root.children.is_empty());
+        assert!(output
+            .root
+            .children
+            .iter()
+            .all(|child| child.field_name.is_none()));
     }
 
     #[test]

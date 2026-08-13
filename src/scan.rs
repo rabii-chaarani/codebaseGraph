@@ -21,6 +21,7 @@ pub(crate) struct SourceScan {
 pub(crate) fn scan_sources(
     request: &NativeSyntaxMaterializationRequest,
 ) -> Result<SourceScan, NativeError> {
+    validate_profile_grammar_versions(&request.profiles)?;
     let source_root = PathBuf::from(&request.source_root);
     let profiles = ProfileSet::new(&request.profiles);
     let excluded_parts = request
@@ -89,6 +90,18 @@ pub(crate) fn scan_sources(
         diagnostics,
         diff,
     })
+}
+
+fn validate_profile_grammar_versions(profiles: &[LanguageProfile]) -> Result<(), NativeError> {
+    for profile in profiles {
+        if profile.grammar_version.trim().is_empty() {
+            return Err(NativeError::InvalidInput(format!(
+                "language profile {} requires grammar_version",
+                profile.language
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn ignored_by_patterns(relative_path: &str, request: &NativeSyntaxMaterializationRequest) -> bool {
@@ -257,7 +270,10 @@ fn requires_full_source_rebuild(request: &NativeSyntaxMaterializationRequest) ->
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::{ManifestEntry, NativeManifest, OntologySchema};
+    use crate::protocol::{
+        LanguageProfile, ManifestEntry, NativeManifest, OntologySchema,
+        MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
+    };
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {
@@ -359,6 +375,59 @@ mod tests {
         assert!(scan.diff.added.contains(&"src/helper.rs".to_string()));
 
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn prior_manifest_schema_forces_a_full_rebuild() {
+        let root = unique_temp_dir("codebase-graph-scan-schema-upgrade");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/caller.rs"), "fn caller() {}\n").unwrap();
+        let mut request = request(&root, None);
+        request.manifest_schema_version = MATERIALIZATION_MANIFEST_SCHEMA_VERSION;
+        let digest = request.graph_build_compatibility_digest().unwrap();
+        request.previous_manifest = Some(NativeManifest {
+            schema_version: MATERIALIZATION_MANIFEST_SCHEMA_VERSION - 1,
+            ontology: "code_ontology_v1".to_string(),
+            parser_version: "native-test".to_string(),
+            graph_build_digest: Some(digest),
+            files: BTreeMap::from([(
+                "src/caller.rs".to_string(),
+                manifest_entry(
+                    "src/caller.rs",
+                    Some("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+                ),
+            )]),
+        });
+
+        let scan = scan_sources(&request).unwrap();
+
+        assert!(scan.diff.force_rebuild);
+        assert_eq!(scan.diff.added, vec!["src/caller.rs"]);
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn custom_profiles_require_a_non_empty_grammar_version() {
+        let root = unique_temp_dir("codebase-graph-scan-profile-version");
+        let mut request = request(&root, None);
+        request.profiles = vec![LanguageProfile {
+            language: "custom".to_string(),
+            suffixes: vec![".custom".to_string()],
+            grammar_package: "custom_grammar".to_string(),
+            grammar_version: String::new(),
+            root_node_types: Vec::new(),
+            capture_mappings: Vec::new(),
+        }];
+
+        let error = match scan_sources(&request) {
+            Ok(_) => panic!("empty grammar versions must be rejected"),
+            Err(error) => error,
+        };
+
+        assert!(error
+            .to_string()
+            .contains("language profile custom requires grammar_version"));
     }
 
     #[test]

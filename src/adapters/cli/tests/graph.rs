@@ -19,6 +19,27 @@ fn graph_schema_outputs_block_and_json() {
 }
 
 #[test]
+fn graph_syntax_outputs_language_catalog_and_validates_language() {
+    let mut block = Vec::new();
+    run(["syntax", "rust"], &mut block).unwrap();
+    let block_text = String::from_utf8(block).unwrap();
+    assert!(block_text.starts_with("syntax language=rust"));
+    assert!(block_text.contains("node function_item"));
+
+    let mut json_output = Vec::new();
+    run(["syntax", "markdown", "--json"], &mut json_output).unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&json_output).unwrap();
+    assert_eq!(value["language"], "markdown");
+    assert_eq!(value["grammar_version"], "builtin-markdown@1");
+
+    let error = run(["syntax", "custom"], &mut Vec::new()).unwrap_err();
+    assert!(error.contains("Unknown syntax language"));
+    assert!(run(["syntax"], &mut Vec::new())
+        .unwrap_err()
+        .contains("syntax requires a language"));
+}
+
+#[test]
 fn graph_query_helpers_outputs_helper_catalog() {
     let mut block = Vec::new();
     run(["query-helpers"], &mut block).unwrap();
@@ -123,6 +144,164 @@ fn graph_search_reads_native_fts_indexes() {
     .unwrap();
     let top_value: serde_json::Value = serde_json::from_slice(&top_output).unwrap();
     assert_eq!(top_value["results"][0]["type"], "Class");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn graph_layers_search_syntax_and_preserve_hybrid_context_structure() {
+    let root = unique_temp_dir("codebase-graph-layered-search");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(
+        root.join("service.py"),
+        "def helper(value):\n    return value\n",
+    )
+    .unwrap();
+    setup_search_fixture_repo(&root);
+
+    let mut default_output = Vec::new();
+    run(
+        [
+            "codebase-search",
+            "function_definition",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--json",
+        ],
+        &mut default_output,
+    )
+    .unwrap();
+    let default_value: serde_json::Value = serde_json::from_slice(&default_output).unwrap();
+    assert_eq!(default_value["layer"], "semantic");
+    assert!(default_value["results"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|result| result["type"] != "SyntaxCapture"));
+
+    let mut syntax_output = Vec::new();
+    run(
+        [
+            "codebase-search",
+            "function_definition",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--layer",
+            "syntax",
+            "--limit",
+            "10",
+            "--json",
+        ],
+        &mut syntax_output,
+    )
+    .unwrap();
+    let syntax_value: serde_json::Value = serde_json::from_slice(&syntax_output).unwrap();
+    assert_eq!(syntax_value["layer"], "syntax");
+    let syntax_results = syntax_value["results"].as_array().unwrap();
+    assert!(syntax_results.iter().all(|result| {
+        result["type"] == "SyntaxCapture"
+            && result["layer"] == "syntax"
+            && result["grammar_version"] == "tree_sitter_python@0.25.0"
+    }));
+    let function = syntax_results
+        .iter()
+        .find(|result| result["tree_sitter_node_type"] == "function_definition")
+        .expect("function syntax node should be searchable");
+
+    let mut hybrid_output = Vec::new();
+    run(
+        [
+            "codebase-search",
+            "helper",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--layer",
+            "hybrid",
+            "--limit",
+            "20",
+            "--json",
+        ],
+        &mut hybrid_output,
+    )
+    .unwrap();
+    let hybrid_value: serde_json::Value = serde_json::from_slice(&hybrid_output).unwrap();
+    assert_eq!(hybrid_value["layer"], "hybrid");
+    let hybrid_results = hybrid_value["results"].as_array().unwrap();
+    let first_syntax = hybrid_results
+        .iter()
+        .position(|result| result["layer"] == "syntax")
+        .expect("hybrid results should include syntax matches");
+    assert!(first_syntax > 0);
+    assert!(hybrid_results[..first_syntax]
+        .iter()
+        .all(|result| result["layer"] == "semantic"));
+
+    let mut syntax_context_output = Vec::new();
+    run(
+        [
+            "codebase-context",
+            "--node-id",
+            function["id"].as_str().unwrap(),
+            "--node-type",
+            "SyntaxCapture",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--layer",
+            "syntax",
+            "--context-limit",
+            "10",
+            "--json",
+        ],
+        &mut syntax_context_output,
+    )
+    .unwrap();
+    let syntax_context: serde_json::Value = serde_json::from_slice(&syntax_context_output).unwrap();
+    assert_eq!(syntax_context["layer"], "syntax");
+    let syntax_children = syntax_context["context"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|context| context["relation"] == "SyntaxChild")
+        .collect::<Vec<_>>();
+    assert!(!syntax_children.is_empty());
+    assert!(syntax_children
+        .iter()
+        .all(|context| context["child_index"].is_i64()));
+    assert!(syntax_children
+        .windows(2)
+        .all(|pair| pair[0]["child_index"].as_i64() <= pair[1]["child_index"].as_i64()));
+
+    let mut hybrid_context_output = Vec::new();
+    run(
+        [
+            "codebase-context",
+            "--node-id",
+            function["id"].as_str().unwrap(),
+            "--node-type",
+            "SyntaxCapture",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--layer",
+            "hybrid",
+            "--context-limit",
+            "10",
+            "--json",
+        ],
+        &mut hybrid_context_output,
+    )
+    .unwrap();
+    let hybrid_context: serde_json::Value = serde_json::from_slice(&hybrid_context_output).unwrap();
+    assert_eq!(hybrid_context["layer"], "hybrid");
+    assert!(hybrid_context["context"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|context| {
+            matches!(
+                context["relation"].as_str(),
+                Some("SyntaxChild" | "DerivedFrom" | "EvidencedBy")
+            )
+        }));
+
     let _ = fs::remove_dir_all(root);
 }
 
@@ -254,10 +433,25 @@ fn graph_search_default_output_is_block() {
     .unwrap();
 
     let text = String::from_utf8(output).unwrap();
-    assert!(text.starts_with("q helper\n"));
+    assert!(text.starts_with("q helper layer=semantic\n"));
     assert!(text.contains("file path "));
     assert!(!text.trim_start().starts_with('{'));
     let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn graph_layer_help_documents_supported_values() {
+    let mut search_help = Vec::new();
+    run(["codebase-search", "--help"], &mut search_help).unwrap();
+    assert!(String::from_utf8(search_help)
+        .unwrap()
+        .contains("--layer semantic|syntax|hybrid"));
+
+    let mut context_help = Vec::new();
+    run(["codebase-context", "--help"], &mut context_help).unwrap();
+    assert!(String::from_utf8(context_help)
+        .unwrap()
+        .contains("--layer semantic|syntax|hybrid"));
 }
 
 #[test]
@@ -344,6 +538,7 @@ fn graph_context_query_mode_uses_search_payload() {
 
     let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
     assert_eq!(value["query"], "helper");
+    assert_eq!(value["layer"], "semantic");
     assert_eq!(value["results"].as_array().unwrap().len(), 1);
     let _ = fs::remove_dir_all(root);
 }

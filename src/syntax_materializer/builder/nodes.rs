@@ -1,8 +1,7 @@
 use super::NativeBuilder;
-use crate::graph_rows::{BuiltGraphRows, GraphNodeRow};
 use crate::syntax_materializer::{
     empty_metadata, graph_id, imported_name, kind_for, qualified_name, stable_optional_i64,
-    symbol_key, Capture,
+    symbol_key, BuiltGraphRows, Capture, GraphNodeRow,
 };
 use serde_json::{Map, Value};
 
@@ -25,6 +24,7 @@ impl NativeBuilder {
             label: label.to_string(),
             kind: table.to_lowercase(),
             language: String::new(),
+            grammar_version: None,
             path: path.to_string(),
             qualified_name: String::new(),
             scope_id: String::new(),
@@ -83,6 +83,7 @@ impl NativeBuilder {
             label: label.to_string(),
             kind: kind_for(table, &capture.node_type),
             language: self.language.clone(),
+            grammar_version: None,
             path: self.path.clone(),
             qualified_name,
             scope_id: owner_id.to_string(),
@@ -115,6 +116,7 @@ impl NativeBuilder {
             label: label.trim().to_string(),
             kind: "symbol_reference".to_string(),
             language: self.language.clone(),
+            grammar_version: None,
             path: self.path.clone(),
             qualified_name: label.trim().to_string(),
             scope_id: String::new(),
@@ -146,6 +148,7 @@ impl NativeBuilder {
             label: format!("{} scope", owner.label),
             kind: format!("{}_scope", owner.table.to_lowercase()),
             language: owner.language.clone(),
+            grammar_version: None,
             path: owner.path.clone(),
             qualified_name: format!(
                 "{}.<scope>",
@@ -204,6 +207,7 @@ impl NativeBuilder {
             },
             kind: capture.node_type.clone(),
             language: self.language.clone(),
+            grammar_version: self.grammar_version.clone(),
             path: self.path.clone(),
             qualified_name: String::new(),
             scope_id: String::new(),

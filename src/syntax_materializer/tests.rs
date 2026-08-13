@@ -145,10 +145,87 @@ fn syntax_materializer_manifest_ids_remain_stable() {
     assert!(ids.contains(&"Constant:f30f45c3854762d38187"));
 }
 
+#[test]
+fn syntax_materializer_materializes_ordered_grammar_tree_with_provenance() {
+    let mut function = syntax_node(
+        "function_definition",
+        "def handle():\n    pass",
+        Vec::new(),
+        &[("name", json!("handle"))],
+    );
+    function.field_name = Some("body".to_string());
+    let mut class = syntax_node(
+        "class_definition",
+        "class Service:\n    def handle():\n        pass",
+        vec![function],
+        &[("name", json!("Service"))],
+    );
+    class.field_name = Some("body".to_string());
+    let root = syntax_node(
+        "module",
+        "class Service:\n    def handle():\n        pass",
+        vec![class],
+        &[],
+    );
+
+    let rows = build_syntax_tree_graph_rows(meta("python", "pkg/service.py"), &root).unwrap();
+    let syntax_nodes = rows
+        .nodes
+        .iter()
+        .filter(|node| node.table == "SyntaxCapture")
+        .collect::<Vec<_>>();
+    assert_eq!(syntax_nodes.len(), 3);
+    assert!(syntax_nodes
+        .iter()
+        .all(|node| { node.grammar_version.as_deref() == Some("tree_sitter_python@test") }));
+
+    let root_syntax = syntax_nodes
+        .iter()
+        .find(|node| node.tree_sitter_node_type == "module")
+        .unwrap();
+    let class_syntax = syntax_nodes
+        .iter()
+        .find(|node| node.tree_sitter_node_type == "class_definition")
+        .unwrap();
+    let function_syntax = syntax_nodes
+        .iter()
+        .find(|node| node.tree_sitter_node_type == "function_definition")
+        .unwrap();
+
+    assert!(rows.edges.iter().any(|edge| {
+        edge.edge_type == "EvidencedBy"
+            && edge.kind == "syntax_root"
+            && edge.target_id == root_syntax.id
+    }));
+    assert!(rows.edges.iter().any(|edge| {
+        edge.edge_type == "SyntaxChild"
+            && edge.source_id == root_syntax.id
+            && edge.target_id == class_syntax.id
+            && edge.field_name.as_deref() == Some("body")
+            && edge.child_index == Some(0)
+    }));
+    assert!(rows.edges.iter().any(|edge| {
+        edge.edge_type == "SyntaxChild"
+            && edge.source_id == class_syntax.id
+            && edge.target_id == function_syntax.id
+            && edge.field_name.as_deref() == Some("body")
+            && edge.child_index == Some(0)
+    }));
+    assert!(rows.edges.iter().any(|edge| {
+        edge.edge_type == "DerivedFrom"
+            && (edge.source_id.starts_with("Function:") || edge.source_id.starts_with("Method:"))
+            && edge.target_id == function_syntax.id
+    }));
+}
+
 fn meta(language: &str, path: &str) -> BTreeMap<String, String> {
     BTreeMap::from([
         ("path".to_string(), path.to_string()),
         ("language".to_string(), language.to_string()),
+        (
+            "grammar_version".to_string(),
+            format!("tree_sitter_{language}@test"),
+        ),
         ("source_root".to_string(), "/repo".to_string()),
         ("repository_label".to_string(), "repo".to_string()),
     ])
@@ -168,6 +245,7 @@ fn syntax_node(
         byte_start: Some(0),
         byte_end: Some(text.len() as i64),
         capture_name: String::new(),
+        field_name: None,
         children,
         fields: fields
             .iter()

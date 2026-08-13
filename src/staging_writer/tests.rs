@@ -1,7 +1,7 @@
 use super::StagingAccumulator;
-use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::partition_builder::GraphPartition;
 use crate::protocol::ManifestEntry;
+use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -63,6 +63,44 @@ fn writes_typed_rows_and_connectors_without_bulk_protocol() {
 
     let file_rows = read_json_array(&staging_dir.join("file.json"));
     assert_eq!(file_rows[0]["content_hash"], "hash-1");
+}
+
+#[test]
+fn writes_grammar_provenance_and_ordered_syntax_child_rows() {
+    let staging_dir = temp_staging_dir("syntax_structure");
+    let mut root = node("syntax:root", "SyntaxCapture", "module");
+    root.grammar_version = Some("tree_sitter_rust@0.24.2".to_string());
+    let mut child = node("syntax:child", "SyntaxCapture", "function_item");
+    child.grammar_version = Some("tree_sitter_rust@0.24.2".to_string());
+    let mut syntax_child = edge(
+        "edge:syntax-child",
+        "SyntaxChild",
+        "syntax:root",
+        "syntax:child",
+    );
+    syntax_child.kind = "syntax_child".to_string();
+    syntax_child.field_name = Some("body".to_string());
+    syntax_child.child_index = Some(0);
+
+    let mut staging = StagingAccumulator::new(&staging_dir.to_string_lossy());
+    staging.add_partition(&partition("hash-1", vec![root, child], vec![syntax_child]));
+    let result = staging.finish().unwrap();
+
+    assert_eq!(result.edge_rows, 1);
+    assert_eq!(result.connector_rows, 2);
+    let syntax_rows = read_json_array(&staging_dir.join("syntaxcapture.json"));
+    assert!(syntax_rows
+        .iter()
+        .all(|row| { row["grammar_version"] == "tree_sitter_rust@0.24.2" }));
+    let edge_rows = read_json_array(&staging_dir.join("syntaxchild.json"));
+    assert_eq!(edge_rows[0]["field_name"], "body");
+    assert_eq!(edge_rows[0]["child_index"], 0);
+    assert!(staging_dir
+        .join("from_syntaxchild__syntaxcapture__syntaxchild.csv")
+        .exists());
+    assert!(staging_dir
+        .join("to_syntaxchild__syntaxchild__syntaxcapture.csv")
+        .exists());
 }
 
 #[test]
@@ -258,6 +296,7 @@ fn node(id: &str, table: &str, label: &str) -> GraphNodeRow {
         label: label.to_string(),
         kind: label.to_string(),
         language: "python".to_string(),
+        grammar_version: None,
         path: "file.py".to_string(),
         qualified_name: label.to_string(),
         scope_id: String::new(),
@@ -280,6 +319,8 @@ fn edge(id: &str, edge_type: &str, source_id: &str, target_id: &str) -> GraphEdg
         target_id: target_id.to_string(),
         kind: "contains".to_string(),
         confidence: 1.0,
+        field_name: None,
+        child_index: None,
         line_start: None,
         line_end: None,
         byte_start: None,

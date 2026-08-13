@@ -3726,6 +3726,12 @@
           "type": "string"
         },
         {
+          "description": "Versioned grammar identity that produced this syntax node.",
+          "name": "grammar_version",
+          "required": false,
+          "type": "string"
+        },
+        {
           "description": "Repository-relative source path.",
           "name": "path",
           "required": false,
@@ -6334,6 +6340,91 @@
     },
     {
       "constraints": [],
+      "description": "Ordered grammar parent-child structure between retained named syntax nodes.",
+      "fields": [
+        {
+          "description": "Stable unique relation identifier.",
+          "name": "id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Relation subtype or evidence role.",
+          "name": "kind",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Source node id.",
+          "name": "source_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Target node id.",
+          "name": "target_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "description": "Extractor confidence between 0 and 1.",
+          "name": "confidence",
+          "required": false,
+          "type": "number"
+        },
+        {
+          "description": "Named grammar field represented by this child relationship.",
+          "name": "field_name",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Zero-based child position among retained named siblings.",
+          "name": "child_index",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence start line.",
+          "name": "line_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "One-based evidence end line.",
+          "name": "line_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence start byte.",
+          "name": "byte_start",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Zero-based evidence end byte.",
+          "name": "byte_end",
+          "required": false,
+          "type": "integer"
+        },
+        {
+          "description": "Structured relation evidence and resolver details.",
+          "name": "metadata",
+          "required": false,
+          "type": "json"
+        }
+      ],
+      "name": "SyntaxChild",
+      "source_types": [
+        "SyntaxCapture"
+      ],
+      "target_types": [
+        "SyntaxCapture"
+      ]
+    },
+    {
+      "constraints": [],
       "description": "A semantic node was derived from a raw parser capture.",
       "fields": [
         {
@@ -6555,6 +6646,7 @@
         "qualified_name",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_code_symbols",
       "node_types": [
         "Symbol",
@@ -6571,6 +6663,7 @@
         "path",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_source_units",
       "node_types": [
         "Repository",
@@ -6585,6 +6678,7 @@
         "qualified_name",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_dependencies",
       "node_types": [
         "ImportDeclaration",
@@ -6597,6 +6691,7 @@
         "qualified_name",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_runtime_surface",
       "node_types": [
         "APIEndpoint",
@@ -6612,12 +6707,25 @@
         "path",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_docs",
       "node_types": [
         "DocumentationSource",
         "DocumentationChunk"
       ]
+    },
+    {
+      "fields": [
+        "label",
+        "tree_sitter_node_type",
+        "text"
+      ],
+      "layer": "syntax",
+      "name": "idx_syntax_captures",
+      "node_types": [
+        "SyntaxCapture"
+      ]
     }
   ],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

@@ -311,8 +311,77 @@ impl ArchitectureQueryOptions {
 }
 
 #[derive(Debug)]
+pub(crate) struct SyntaxCatalogOptions {
+    pub(in crate::adapters::cli) language: String,
+    pub(in crate::adapters::cli) output: MetadataOutputOptions,
+}
+
+impl SyntaxCatalogOptions {
+    pub(in crate::adapters::cli) fn parse(args: &[String]) -> Result<Self, String> {
+        let mut language = None;
+        let mut format = "block".to_string();
+        let mut pretty = false;
+        let mut help = false;
+        let mut index = 0;
+        while index < args.len() {
+            match args[index].as_str() {
+                "-h" | "--help" => {
+                    help = true;
+                    index += 1;
+                }
+                "--format" | "--output-format" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--format requires json or block".to_string())?;
+                    if value != "json" && value != "block" {
+                        return Err("--format must be json or block".to_string());
+                    }
+                    format = value.clone();
+                    index += 2;
+                }
+                "--json" => {
+                    format = "json".to_string();
+                    index += 1;
+                }
+                "--pretty" => {
+                    pretty = true;
+                    index += 1;
+                }
+                other if other.starts_with('-') => {
+                    return Err(format!(
+                        "unknown syntax option: {other}\n\n{}",
+                        super::super::format::graph_syntax_help()
+                    ));
+                }
+                value => {
+                    if language.replace(value.to_string()).is_some() {
+                        return Err("syntax accepts exactly one language".to_string());
+                    }
+                    index += 1;
+                }
+            }
+        }
+        if !help && language.is_none() {
+            return Err(format!(
+                "syntax requires a language\n\n{}",
+                super::super::format::graph_syntax_help()
+            ));
+        }
+        Ok(Self {
+            language: language.unwrap_or_default(),
+            output: MetadataOutputOptions {
+                format,
+                pretty,
+                help,
+            },
+        })
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct GraphSearchOptions {
     pub(crate) query: String,
+    pub(crate) layer: String,
     pub(crate) limit: usize,
     pub(crate) profile: String,
     pub(crate) budget: usize,
@@ -329,6 +398,7 @@ pub(crate) struct GraphSearchOptions {
 impl GraphSearchOptions {
     pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         let mut query = None;
+        let mut layer = "semantic".to_string();
         let mut limit = 3_usize;
         let mut profile = "brief".to_string();
         let mut budget = 600_usize;
@@ -356,6 +426,10 @@ impl GraphSearchOptions {
                 }
                 "--limit" => {
                     limit = parse_usize_arg(args, index, "--limit")?;
+                    index += 2;
+                }
+                "--layer" => {
+                    layer = required_arg(args, index, "--layer")?.to_string();
                     index += 2;
                 }
                 "--profile" => {
@@ -437,6 +511,7 @@ impl GraphSearchOptions {
         if output.help {
             return Ok(Self {
                 query: String::new(),
+                layer,
                 limit,
                 profile,
                 budget,
@@ -453,6 +528,7 @@ impl GraphSearchOptions {
         let query = query.unwrap_or_default();
         Ok(Self {
             query,
+            layer,
             limit,
             profile,
             budget,

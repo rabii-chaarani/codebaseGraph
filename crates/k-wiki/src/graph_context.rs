@@ -178,6 +178,7 @@ impl GraphClient for PublicGraphClient {
             .execute_operation(&OperationRequest::Search(SearchRequest {
                 repo: selector(repository_root),
                 query: query.to_string(),
+                layer: "semantic".to_string(),
                 profile: "brief".to_string(),
                 limit: limit.min(MAX_RESULTS),
                 budget: 600,
@@ -203,6 +204,7 @@ impl GraphClient for PublicGraphClient {
             .execute_operation(&OperationRequest::Context(ContextRequest {
                 repo: selector(repository_root),
                 query: None,
+                layer: "semantic".to_string(),
                 profile: "definitions".to_string(),
                 limit: limit.min(MAX_RESULTS),
                 budget: 600,

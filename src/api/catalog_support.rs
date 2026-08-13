@@ -271,6 +271,7 @@ fn common_node_fields() -> Vec<(&'static str, &'static str)> {
         ("label", "STRING"),
         ("kind", "STRING"),
         ("language", "STRING"),
+        ("grammar_version", "STRING"),
         ("path", "STRING"),
         ("qualified_name", "STRING"),
         ("scope_id", "STRING"),
@@ -281,6 +282,7 @@ fn common_node_fields() -> Vec<(&'static str, &'static str)> {
         ("tree_sitter_node_type", "STRING"),
         ("capture_name", "STRING"),
         ("summary", "STRING"),
+        ("text", "STRING"),
         ("metadata", "JSON"),
     ]
 }
@@ -292,6 +294,8 @@ fn edge_fields() -> Vec<(&'static str, &'static str)> {
         ("source_id", "STRING"),
         ("target_id", "STRING"),
         ("confidence", "DOUBLE"),
+        ("field_name", "STRING"),
+        ("child_index", "INT64"),
         ("line_start", "INT64"),
         ("line_end", "INT64"),
         ("metadata", "JSON"),
@@ -318,4 +322,41 @@ pub(crate) fn value_str<'a>(payload: &'a serde_json::Value, key: &str) -> &'a st
 
 pub(crate) fn cypher_single_quoted(value: &str) -> String {
     value.replace('\\', "\\\\").replace('\'', "\\'")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::schema_statements_from_copy_statements;
+
+    #[test]
+    fn declared_schema_includes_ordered_syntax_relationship_columns() {
+        let statements = schema_statements_from_copy_statements(
+            false,
+            &["COPY `SyntaxCapture` FROM \"/tmp/syntaxcapture.json\";".to_string()],
+        );
+
+        assert!(statements.iter().any(|statement| {
+            statement.contains("CREATE NODE TABLE IF NOT EXISTS `SyntaxCapture`")
+                && statement.contains("`grammar_version` STRING")
+        }));
+        assert!(statements.iter().any(|statement| {
+            statement.contains("CREATE NODE TABLE IF NOT EXISTS `SyntaxChild`")
+                && statement.contains("`field_name` STRING")
+                && statement.contains("`child_index` INT64")
+        }));
+        assert!(statements.iter().any(|statement| {
+            statement.contains("CREATE REL TABLE IF NOT EXISTS `FROM_SyntaxChild`")
+                && statement.contains("FROM `SyntaxCapture` TO `SyntaxChild`")
+        }));
+        let fts = schema_statements_from_copy_statements(
+            true,
+            &["COPY `SyntaxCapture` FROM \"/tmp/syntaxcapture.json\";".to_string()],
+        );
+        assert!(fts.iter().any(|statement| {
+            statement
+                .contains("CREATE_FTS_INDEX('SyntaxCapture', 'idx_syntax_captures_SyntaxCapture'")
+                && statement.contains("'tree_sitter_node_type'")
+                && statement.contains("'text'")
+        }));
+    }
 }

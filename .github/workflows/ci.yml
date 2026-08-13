@@ -44,16 +44,19 @@ jobs:
             prebuilt_lbug: true
             lbug_archive: liblbug-static-linux-x86_64-compat.tar.gz
             test_args: ""
+            cargo_features: ""
           - os: macos-latest
             rustflags: ""
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-arm64.tar.gz
             test_args: ""
+            cargo_features: ""
           - os: windows-2022
             rustflags: ""
             prebuilt_lbug: true
             lbug_archive: liblbug-static-windows-x86_64.zip
             test_args: "--release"
+            cargo_features: "--features bundled-windows-extensions"
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -110,7 +113,7 @@ jobs:
       - name: Run tests
         env:
           RUSTFLAGS: ${{ matrix.rustflags }}
-        run: cargo test --workspace --locked ${{ matrix.test_args }}
+        run: cargo test --workspace --locked ${{ matrix.test_args }} ${{ matrix.cargo_features }}
 
   clippy:
     name: cargo clippy
@@ -179,6 +182,7 @@ jobs:
             prebuilt_lbug: true
             lbug_archive: liblbug-static-linux-x86_64-compat.tar.gz
             rustflags: ""
+            cargo_features: ""
           - os: macos-latest
             binary: codebase-graph
             wiki_binary: k-wiki
@@ -186,6 +190,7 @@ jobs:
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-arm64.tar.gz
             rustflags: ""
+            cargo_features: ""
           - os: macos-15-intel
             binary: codebase-graph
             wiki_binary: k-wiki
@@ -193,6 +198,7 @@ jobs:
             prebuilt_lbug: true
             lbug_archive: liblbug-static-osx-x86_64.tar.gz
             rustflags: ""
+            cargo_features: ""
           - os: windows-2022
             binary: codebase-graph.exe
             wiki_binary: k-wiki.exe
@@ -200,6 +206,7 @@ jobs:
             prebuilt_lbug: true
             lbug_archive: liblbug-static-windows-x86_64.zip
             rustflags: ""
+            cargo_features: "--features bundled-windows-extensions"
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -256,10 +263,11 @@ jobs:
       - name: Build Rust production binary
         env:
           RUSTFLAGS: ${{ matrix.rustflags }}
+          CARGO_FEATURES: ${{ matrix.cargo_features }}
         shell: bash
         run: |
           mkdir -p dist/smoke
-          cargo build --locked --release --bin codebase-graph
+          cargo build --locked --release --bin codebase-graph ${CARGO_FEATURES}
           cargo build --locked --release -p k-wiki --bin k-wiki
           cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
           cp "target/release/${{ matrix.wiki_binary }}" "dist/smoke/${{ matrix.wiki_binary }}"

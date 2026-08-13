@@ -4,7 +4,8 @@ mod support;
 use self::support::{
     serialize_architecture_queries_block, serialize_context_block, serialize_health_block,
     serialize_plan_block, serialize_query_block, serialize_query_helpers_block,
-    serialize_schema_block, serialize_search_block, serialize_uninstall_block,
+    serialize_schema_block, serialize_search_block, serialize_syntax_block,
+    serialize_uninstall_block,
 };
 
 fn present_block(operation: &str, payload: &serde_json::Value) -> String {
@@ -20,6 +21,7 @@ fn present_block(operation: &str, payload: &serde_json::Value) -> String {
         }
         "query" => serialize_query_block(payload),
         "schema" => serialize_schema_block(payload),
+        "syntax" => serialize_syntax_block(payload),
         "query-helpers" => serialize_query_helpers_block(payload),
         "architecture-queries" => serialize_architecture_queries_block(payload),
         "plan" => serialize_plan_block(payload),

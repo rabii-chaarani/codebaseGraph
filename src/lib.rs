@@ -5,7 +5,6 @@ mod bootstrap;
 pub mod db_writer;
 pub mod error;
 mod execution;
-mod graph_rows;
 mod hash;
 mod normalize;
 mod parser;

@@ -7,8 +7,8 @@ use super::ordering::{
 use super::result::StagingResult;
 use super::rows::{edge_fields, node_fields, EdgeRowsById, NodeRowsById};
 use crate::error::NativeError;
-use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::partition_builder::GraphPartition;
+use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;

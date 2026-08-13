@@ -47,7 +47,7 @@ fn managed_materialization_activates_generations_atomically() {
     let active_manifest = read_manifest(
         &generation_root(&storage_root, &active_generation_id(&storage_root)).join("manifest.json"),
     );
-    assert_eq!(active_manifest.schema_version, 2);
+    assert_eq!(active_manifest.schema_version, 4);
     assert!(active_manifest.graph_build_digest.is_some());
 }
 
@@ -85,7 +85,8 @@ fn managed_publish_failure_preserves_active_generation() {
 
 #[test]
 fn direct_materialization_uses_custom_paths_and_cleans_shadow_files() {
-    let repo = temp_repo("direct_materialization_uses_custom_paths_and_cleans_shadow_files");
+    // Keep the longest staged connector path below Windows' classic MAX_PATH limit.
+    let repo = temp_repo("direct_materialization");
     write_source(&repo, "pub fn direct_custom() -> bool { true }\n");
 
     let custom_root = repo.join("custom-output");
@@ -100,7 +101,7 @@ fn direct_materialization_uses_custom_paths_and_cleans_shadow_files() {
     assert_eq!(payload["pending_runs"], json!(0));
 
     let manifest = read_manifest(&manifest_path);
-    assert_eq!(manifest.schema_version, 2);
+    assert_eq!(manifest.schema_version, 4);
     assert_eq!(
         manifest.graph_build_digest.as_deref(),
         payload["graph_build_digest"].as_str()
@@ -154,7 +155,7 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
 
     let active_root = generation_root(&storage_root, &active_generation_id(&storage_root));
     let active_manifest = read_manifest(&active_root.join("manifest.json"));
-    assert_eq!(active_manifest.schema_version, 2);
+    assert_eq!(active_manifest.schema_version, 4);
     assert!(active_manifest.graph_build_digest.is_some());
     assert!(active_manifest.files.values().all(|entry| entry
         .artifact_key

@@ -40,6 +40,7 @@ impl NativeBuilder {
             "source_root_file",
             empty_metadata(),
         )?;
+        self.materialize_syntax_tree(nodes, root_id, &file.id)?;
 
         if matches!(
             root.node_type(),
@@ -105,6 +106,50 @@ impl NativeBuilder {
                 scope_id: file_scope.id.clone(),
             };
             self.traverse_tree_node(nodes, root_id, &owner)?;
+        }
+        Ok(())
+    }
+
+    fn materialize_syntax_tree(
+        &mut self,
+        nodes: &NativeSyntaxArena<'_>,
+        root_id: usize,
+        file_id: &str,
+    ) -> Result<(), String> {
+        let Some(root) = nodes.get_node(root_id) else {
+            return Err("tree graph root node is missing".to_string());
+        };
+        let root_capture = tree_capture(root);
+        let root_syntax_id = self.syntax_capture(&root_capture);
+        self.edge(
+            "EvidencedBy",
+            file_id,
+            &root_syntax_id,
+            "syntax_root",
+            empty_metadata(),
+        )?;
+        self.materialize_syntax_children(nodes, root, &root_syntax_id)
+    }
+
+    fn materialize_syntax_children(
+        &mut self,
+        nodes: &NativeSyntaxArena<'_>,
+        parent: TreeNodeRef<'_>,
+        parent_syntax_id: &str,
+    ) -> Result<(), String> {
+        for (child_index, child_id) in parent.children.iter().enumerate() {
+            let Some(child) = nodes.get_node(*child_id) else {
+                return Err(format!("tree graph node {child_id} is missing"));
+            };
+            let child_capture = tree_capture(child);
+            let child_syntax_id = self.syntax_capture(&child_capture);
+            self.syntax_child(
+                parent_syntax_id,
+                &child_syntax_id,
+                child.field_name(),
+                child_index,
+            )?;
+            self.materialize_syntax_children(nodes, child, &child_syntax_id)?;
         }
         Ok(())
     }

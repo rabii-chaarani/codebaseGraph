@@ -149,9 +149,9 @@ mod tests {
     use super::resolution::add_semantic_edge_if_allowed;
     use super::state::{relation_specs, SemNode, SemanticState};
     use super::*;
-    use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
     use crate::partition_builder::GraphPartition;
     use crate::protocol::NativeSyntaxMaterializationRequest;
+    use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
     use serde_json::json;
     use std::collections::{BTreeMap, HashMap};
 
@@ -324,6 +324,7 @@ mod tests {
             label: label.to_string(),
             kind: label.to_string(),
             language: "rust".to_string(),
+            grammar_version: None,
             path: "src/lib.rs".to_string(),
             qualified_name: label.to_string(),
             scope_id: String::new(),
@@ -346,6 +347,8 @@ mod tests {
             target_id: target_id.to_string(),
             kind: edge_type.to_lowercase(),
             confidence: 1.0,
+            field_name: None,
+            child_index: None,
             line_start: None,
             line_end: None,
             byte_start: None,

@@ -1,7 +1,7 @@
 use super::metadata::{metadata_string, metadata_string_map};
-use crate::graph_rows::{GraphEdgeRow, GraphNodeRow};
 use crate::partition_builder::GraphPartition;
 use crate::protocol::OntologyRelationType;
+use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -177,6 +177,8 @@ impl SemEdge {
             target_id: self.target_id.clone(),
             kind: self.kind.clone(),
             confidence: self.confidence,
+            field_name: None,
+            child_index: None,
             line_start: None,
             line_end: None,
             byte_start: None,
