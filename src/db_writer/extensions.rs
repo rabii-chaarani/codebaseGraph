@@ -1,9 +1,11 @@
 use crate::error::NativeError;
 use std::path::{Path, PathBuf};
 
-// LadybugDB 0.17.x stores extensions under its 0.19.0 extension ABI cache.
-// This is intentionally independent of the Rust crate version in Cargo.lock.
-const LADYBUG_EXTENSION_CACHE_VERSION: &str = "0.19.0";
+// Prebuilt Ladybug 0.17.x libraries look in the 0.17.0 cache, while the
+// source-built release library resolves the same extensions from 0.19.0.
+// Seed both compatible cache locations so packaged binaries never download
+// extensions at runtime.
+const LADYBUG_EXTENSION_CACHE_VERSIONS: [&str; 2] = ["0.17.0", "0.19.0"];
 
 pub fn preseed_ladybug_extensions(include_fts: bool) -> Result<(), NativeError> {
     let home = ladybug_home_dir()?;
@@ -18,21 +20,23 @@ pub fn preseed_ladybug_extensions(include_fts: bool) -> Result<(), NativeError> 
         let Some(bytes) = bundled_extension_bytes(extension) else {
             continue;
         };
-        let extension_dir = extension_dir(&home, platform, extension);
-        let extension_path = extension_dir.join(format!("lib{extension}.lbug_extension"));
-        if extension_path.exists() {
-            continue;
+        for cache_version in LADYBUG_EXTENSION_CACHE_VERSIONS {
+            let extension_dir = extension_dir(&home, cache_version, platform, extension);
+            let extension_path = extension_dir.join(format!("lib{extension}.lbug_extension"));
+            if extension_path.exists() {
+                continue;
+            }
+            std::fs::create_dir_all(&extension_dir)?;
+            std::fs::write(extension_path, bytes)?;
         }
-        std::fs::create_dir_all(&extension_dir)?;
-        std::fs::write(extension_path, bytes)?;
     }
     Ok(())
 }
 
-fn extension_dir(home: &Path, platform: &str, extension: &str) -> PathBuf {
+fn extension_dir(home: &Path, cache_version: &str, platform: &str, extension: &str) -> PathBuf {
     home.join(".lbdb")
         .join("extension")
-        .join(LADYBUG_EXTENSION_CACHE_VERSION)
+        .join(cache_version)
         .join(platform)
         .join(extension)
 }
@@ -155,9 +159,17 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     #[test]
-    fn uses_the_ladybug_runtime_extension_cache_version() {
+    fn supports_prebuilt_and_source_built_ladybug_extension_cache_versions() {
         assert_eq!(
-            extension_dir(Path::new("cache"), "linux_amd64", "json"),
+            super::LADYBUG_EXTENSION_CACHE_VERSIONS,
+            ["0.17.0", "0.19.0"]
+        );
+        assert_eq!(
+            extension_dir(Path::new("cache"), "0.17.0", "win_amd64", "json"),
+            PathBuf::from("cache/.lbdb/extension/0.17.0/win_amd64/json")
+        );
+        assert_eq!(
+            extension_dir(Path::new("cache"), "0.19.0", "linux_amd64", "json"),
             PathBuf::from("cache/.lbdb/extension/0.19.0/linux_amd64/json")
         );
     }
