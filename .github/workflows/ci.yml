@@ -4,17 +4,18 @@ on:
   pull_request:
     branches:
       - main
-      - "codex/**"
   push:
     branches:
       - main
-      - "codex/**"
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 env:
-  MACOSX_DEPLOYMENT_TARGET: "13.3"
   CARGO_HTTP_MULTIPLEXING: "false"
   CARGO_NET_RETRY: "10"
 
@@ -26,94 +27,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          fetch-depth: 0
       - name: Check formatting
         run: cargo fmt --check
-
-  test:
-    name: cargo test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            rustflags: ""
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-linux-x86_64-compat.tar.gz
-            test_args: ""
-            cargo_features: ""
-          - os: macos-latest
-            rustflags: ""
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-osx-arm64.tar.gz
-            test_args: ""
-            cargo_features: ""
-          - os: windows-2022
-            rustflags: ""
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-windows-x86_64.zip
-            test_args: "--release"
-            cargo_features: "--features bundled-windows-extensions"
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          fetch-depth: 0
-      - name: Prepare OpenSSL static libraries
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $triplet = 'x64-windows-static'
-          vcpkg install "openssl:$triplet"
-          $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { 'C:\vcpkg' }
-          $libDir = Join-Path $vcpkgRoot "installed\$triplet\lib"
-          $linkDir = Join-Path $env:RUNNER_TEMP 'lbug-openssl'
-          New-Item -ItemType Directory -Force -Path $linkDir | Out-Null
-          Copy-Item (Join-Path $libDir 'libssl.lib') (Join-Path $linkDir 'ssl.lib')
-          Copy-Item (Join-Path $libDir 'libcrypto.lib') (Join-Path $linkDir 'crypto.lib')
-          "LIB=$linkDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Prepare prebuilt liblbug
-        if: ${{ matrix.prebuilt_lbug }}
-        shell: bash
-        run: |
-          set -eu
-          lib_dir="$PWD/.cache/lbug-prebuilt"
-          archive="${{ matrix.lbug_archive }}"
-          lbug_version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
-          mkdir -p "$lib_dir"
-          curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
-            "https://github.com/LadybugDB/ladybug/releases/download/v${lbug_version}/${archive}" \
-            -o "$RUNNER_TEMP/$archive"
-          case "$archive" in
-            *.tar.gz)
-              tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
-              test -f "$lib_dir/liblbug.a"
-              ;;
-            *.zip)
-              unzip -o "$RUNNER_TEMP/$archive" -d "$lib_dir"
-              test -f "$lib_dir/lbug.lib"
-              ;;
-            *)
-              echo "Unsupported liblbug archive: $archive" >&2
-              exit 1
-              ;;
-          esac
-          test -f "$lib_dir/lbug.h"
-          lib_dir_env="$lib_dir"
-          if [ "${RUNNER_OS:-}" = "Windows" ]; then
-            lib_dir_env="$(cygpath -m "$lib_dir")"
-          fi
-          {
-            echo "LBUG_LIBRARY_DIR=$lib_dir_env"
-            echo "LBUG_INCLUDE_DIR=$lib_dir_env"
-          } >> "$GITHUB_ENV"
-      - name: Run tests
-        env:
-          RUSTFLAGS: ${{ matrix.rustflags }}
-        run: cargo test --workspace --locked ${{ matrix.test_args }} ${{ matrix.cargo_features }}
 
   clippy:
     name: cargo clippy
@@ -122,8 +37,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          fetch-depth: 0
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
@@ -131,13 +44,20 @@ jobs:
     name: cargo audit
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CARGO_AUDIT_VERSION: "0.22.2"
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Restore cargo-audit
+        id: cargo-audit-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          fetch-depth: 0
+          path: ~/.cargo/bin/cargo-audit
+          key: cargo-audit-${{ runner.os }}-${{ env.CARGO_AUDIT_VERSION }}
       - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
+        if: steps.cargo-audit-cache.outputs.cache-hit != 'true'
+        run: cargo install cargo-audit --version "$CARGO_AUDIT_VERSION" --locked
       - name: Run Rust advisory scan
         shell: bash
         run: |
@@ -146,8 +66,6 @@ jobs:
             echo "time parsing is enabled; RUSTSEC-2026-0009 must not be ignored" >&2
             exit 1
           fi
-          # time >=0.3.47 requires Rust 1.88, while this project supports Rust 1.82.
-          # The vulnerable parsing API is not compiled through lbug's default features.
           cargo audit --ignore RUSTSEC-2026-0009
 
   publish-dry-run:
@@ -157,125 +75,52 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          fetch-depth: 0
       - name: Verify crates.io package
         run: cargo publish --dry-run --locked
       - name: Verify Knowledge Wiki package archive
-        # k-wiki is an unpublished workspace binary that uses the in-tree
-        # codebase-graph registrar. The root package is verified above; this
-        # checks the wiki archive without resolving an older published API.
         run: cargo package -p k-wiki --locked --no-verify --config 'patch.crates-io.codebase-graph.path="."'
 
-  package:
-    name: native package (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+  native:
+    name: native (${{ matrix.target }})
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            binary: codebase-graph
-            wiki_binary: k-wiki
-            archive: codebase-graph-linux-x86_64.tar.gz
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-linux-x86_64-compat.tar.gz
-            rustflags: ""
-            cargo_features: ""
-          - os: macos-latest
-            binary: codebase-graph
-            wiki_binary: k-wiki
-            archive: codebase-graph-macos-arm64.tar.gz
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-osx-arm64.tar.gz
-            rustflags: ""
-            cargo_features: ""
-          - os: macos-15-intel
-            binary: codebase-graph
-            wiki_binary: k-wiki
-            archive: codebase-graph-macos-x86_64.tar.gz
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-osx-x86_64.tar.gz
-            rustflags: ""
-            cargo_features: ""
-          - os: windows-2022
-            binary: codebase-graph.exe
-            wiki_binary: k-wiki.exe
-            archive: codebase-graph-windows-x86_64.tar.gz
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-windows-x86_64.zip
-            rustflags: ""
-            cargo_features: "--features bundled-windows-extensions"
+          - target: linux-x86_64
+            run-tests: true
+          - target: macos-arm64
+            run-tests: true
+          - target: macos-x86_64
+            run-tests: false
+          - target: windows-x86_64
+            run-tests: true
+    uses: ./.github/workflows/native.yml
+    with:
+      target: ${{ matrix.target }}
+      source-sha: ${{ github.sha }}
+      run-tests: ${{ matrix.run-tests }}
+      upload-artifact: ${{ github.event_name == 'push' }}
+      artifact-retention-days: 90
+
+  required:
+    name: required
+    if: ${{ always() }}
+    needs:
+      - fmt
+      - clippy
+      - supply-chain
+      - publish-dry-run
+      - native
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Check out repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          fetch-depth: 0
-      - name: Prepare OpenSSL static libraries
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $triplet = 'x64-windows-static'
-          vcpkg install "openssl:$triplet"
-          $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { 'C:\vcpkg' }
-          $libDir = Join-Path $vcpkgRoot "installed\$triplet\lib"
-          $linkDir = Join-Path $env:RUNNER_TEMP 'lbug-openssl'
-          New-Item -ItemType Directory -Force -Path $linkDir | Out-Null
-          Copy-Item (Join-Path $libDir 'libssl.lib') (Join-Path $linkDir 'ssl.lib')
-          Copy-Item (Join-Path $libDir 'libcrypto.lib') (Join-Path $linkDir 'crypto.lib')
-          "LIB=$linkDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Prepare prebuilt liblbug
-        if: ${{ matrix.prebuilt_lbug }}
-        shell: bash
-        run: |
-          set -eu
-          lib_dir="$PWD/.cache/lbug-prebuilt"
-          archive="${{ matrix.lbug_archive }}"
-          lbug_version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
-          mkdir -p "$lib_dir"
-          curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
-            "https://github.com/LadybugDB/ladybug/releases/download/v${lbug_version}/${archive}" \
-            -o "$RUNNER_TEMP/$archive"
-          case "$archive" in
-            *.tar.gz)
-              tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
-              test -f "$lib_dir/liblbug.a"
-              ;;
-            *.zip)
-              unzip -o "$RUNNER_TEMP/$archive" -d "$lib_dir"
-              test -f "$lib_dir/lbug.lib"
-              ;;
-            *)
-              echo "Unsupported liblbug archive: $archive" >&2
-              exit 1
-              ;;
-          esac
-          test -f "$lib_dir/lbug.h"
-          lib_dir_env="$lib_dir"
-          if [ "${RUNNER_OS:-}" = "Windows" ]; then
-            lib_dir_env="$(cygpath -m "$lib_dir")"
-          fi
-          {
-            echo "LBUG_LIBRARY_DIR=$lib_dir_env"
-            echo "LBUG_INCLUDE_DIR=$lib_dir_env"
-          } >> "$GITHUB_ENV"
-      - name: Build Rust production binary
+      - name: Require every mandatory job
         env:
-          RUSTFLAGS: ${{ matrix.rustflags }}
-          CARGO_FEATURES: ${{ matrix.cargo_features }}
+          RESULTS: ${{ toJSON(needs) }}
         shell: bash
         run: |
-          mkdir -p dist/smoke
-          cargo build --locked --release --bin codebase-graph ${CARGO_FEATURES}
-          cargo build --locked --release -p k-wiki --bin k-wiki
-          cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
-          cp "target/release/${{ matrix.wiki_binary }}" "dist/smoke/${{ matrix.wiki_binary }}"
-          chmod +x "dist/smoke/${{ matrix.binary }}"
-          chmod +x "dist/smoke/${{ matrix.wiki_binary }}"
-          tar -C dist/smoke -czf "dist/${{ matrix.archive }}" "${{ matrix.binary }}" "${{ matrix.wiki_binary }}"
-      - name: Smoke-test Rust production binary
-        shell: bash
-        run: |
-          cargo run -p xtask -- smoke-artifact "./dist/smoke/${{ matrix.binary }}"
-          cargo run -p xtask -- smoke-wiki-artifact "./dist/smoke/${{ matrix.wiki_binary }}"
+          set -euo pipefail
+          if jq -e 'to_entries | any(.value.result != "success")' <<<"$RESULTS" >/dev/null; then
+            echo "$RESULTS"
+            exit 1
+          fi
