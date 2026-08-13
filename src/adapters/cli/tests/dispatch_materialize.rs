@@ -487,5 +487,19 @@ fn setup_materializes_graph_and_writes_config() {
     .unwrap();
     assert_eq!(config["schema_version"], 2);
     assert_eq!(config["mcp"]["server_name"], "codebase_graph");
+    let instructions = fs::read_to_string(root.join("AGENTS.md")).unwrap();
+    for expected in [
+        "graph_syntax",
+        "layer: \"semantic\"",
+        "layer: \"syntax\"",
+        "layer: \"hybrid\"",
+        "node_type: \"SyntaxCapture\"",
+        "syntax <language>",
+        "--layer syntax",
+        "--layer hybrid",
+        "--node-type SyntaxCapture",
+    ] {
+        assert!(instructions.contains(expected), "missing {expected}");
+    }
     let _ = fs::remove_dir_all(root);
 }
