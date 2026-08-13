@@ -114,6 +114,8 @@ pub struct HealthRequest {
 pub struct SearchRequest {
     pub repo: RepoSelector,
     pub query: String,
+    #[serde(default = "default_graph_layer")]
+    pub layer: String,
     pub profile: String,
     pub limit: usize,
     pub budget: usize,
@@ -127,6 +129,8 @@ pub struct SearchRequest {
 pub struct ContextRequest {
     pub repo: RepoSelector,
     pub query: Option<String>,
+    #[serde(default = "default_graph_layer")]
+    pub layer: String,
     pub profile: String,
     pub limit: usize,
     pub budget: usize,
@@ -136,6 +140,10 @@ pub struct ContextRequest {
     pub node_id: Option<String>,
     pub node_type: Option<String>,
     pub output_format: OutputFormat,
+}
+
+fn default_graph_layer() -> String {
+    "semantic".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -373,6 +381,7 @@ mod tests {
             OperationRequest::Search(SearchRequest {
                 repo: repository(),
                 query: "execute operation".to_string(),
+                layer: "semantic".to_string(),
                 profile: "brief".to_string(),
                 limit: 3,
                 budget: 600,
@@ -384,6 +393,7 @@ mod tests {
             OperationRequest::Context(ContextRequest {
                 repo: repository(),
                 query: None,
+                layer: "hybrid".to_string(),
                 profile: "dependencies".to_string(),
                 limit: 3,
                 budget: 600,
@@ -442,6 +452,20 @@ mod tests {
                 encoded
             );
         }
+
+        let search: SearchRequest = serde_json::from_value(json!({
+            "repo": {},
+            "query": "needle",
+            "profile": "brief",
+            "limit": 3,
+            "budget": 600,
+            "context_limit": 2,
+            "max_depth": null,
+            "detail": "standard",
+            "output_format": "Typed",
+        }))
+        .expect("older search requests without a layer should deserialize");
+        assert_eq!(search.layer, "semantic");
 
         let node = NodeRef {
             id: "node-1".to_string(),

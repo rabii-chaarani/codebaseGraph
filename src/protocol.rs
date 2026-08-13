@@ -6,9 +6,9 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-pub(crate) const GRAPH_BUILD_DIGEST_FORMAT_VERSION: u64 = 2;
+pub(crate) const GRAPH_BUILD_DIGEST_FORMAT_VERSION: u64 = 3;
 pub(crate) const PROFILE_COMPATIBILITY_VERSION: u64 = 2;
-pub(crate) const MATERIALIZATION_MANIFEST_SCHEMA_VERSION: u64 = 3;
+pub(crate) const MATERIALIZATION_MANIFEST_SCHEMA_VERSION: u64 = 4;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct NativeSyntaxMaterializationRequest {

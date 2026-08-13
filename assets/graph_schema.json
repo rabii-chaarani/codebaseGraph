@@ -6646,6 +6646,7 @@
         "qualified_name",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_code_symbols",
       "node_types": [
         "Symbol",
@@ -6662,6 +6663,7 @@
         "path",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_source_units",
       "node_types": [
         "Repository",
@@ -6676,6 +6678,7 @@
         "qualified_name",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_dependencies",
       "node_types": [
         "ImportDeclaration",
@@ -6688,6 +6691,7 @@
         "qualified_name",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_runtime_surface",
       "node_types": [
         "APIEndpoint",
@@ -6703,12 +6707,25 @@
         "path",
         "summary"
       ],
+      "layer": "semantic",
       "name": "idx_docs",
       "node_types": [
         "DocumentationSource",
         "DocumentationChunk"
       ]
+    },
+    {
+      "fields": [
+        "label",
+        "tree_sitter_node_type",
+        "text"
+      ],
+      "layer": "syntax",
+      "name": "idx_syntax_captures",
+      "node_types": [
+        "SyntaxCapture"
+      ]
     }
   ],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

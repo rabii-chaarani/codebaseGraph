@@ -381,6 +381,7 @@ impl SyntaxCatalogOptions {
 #[derive(Debug)]
 pub(crate) struct GraphSearchOptions {
     pub(crate) query: String,
+    pub(crate) layer: String,
     pub(crate) limit: usize,
     pub(crate) profile: String,
     pub(crate) budget: usize,
@@ -397,6 +398,7 @@ pub(crate) struct GraphSearchOptions {
 impl GraphSearchOptions {
     pub(crate) fn parse(args: &[String]) -> Result<Self, String> {
         let mut query = None;
+        let mut layer = "semantic".to_string();
         let mut limit = 3_usize;
         let mut profile = "brief".to_string();
         let mut budget = 600_usize;
@@ -424,6 +426,10 @@ impl GraphSearchOptions {
                 }
                 "--limit" => {
                     limit = parse_usize_arg(args, index, "--limit")?;
+                    index += 2;
+                }
+                "--layer" => {
+                    layer = required_arg(args, index, "--layer")?.to_string();
                     index += 2;
                 }
                 "--profile" => {
@@ -505,6 +511,7 @@ impl GraphSearchOptions {
         if output.help {
             return Ok(Self {
                 query: String::new(),
+                layer,
                 limit,
                 profile,
                 budget,
@@ -521,6 +528,7 @@ impl GraphSearchOptions {
         let query = query.unwrap_or_default();
         Ok(Self {
             query,
+            layer,
             limit,
             profile,
             budget,

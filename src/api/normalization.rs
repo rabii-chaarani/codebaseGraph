@@ -8,6 +8,7 @@ use crate::api::materialization::MaterializeOptions;
 use serde_json::json;
 
 pub(crate) const DEFAULT_PROFILE: &str = "brief";
+pub(crate) const DEFAULT_LAYER: &str = "semantic";
 pub(crate) const DEFAULT_DETAIL: &str = "standard";
 pub(crate) const DEFAULT_SEARCH_LIMIT: usize = 3;
 pub(crate) const DEFAULT_SEARCH_BUDGET: usize = 600;
@@ -30,6 +31,7 @@ pub(crate) fn prepare_operation_request(
         "search" => OperationRequest::Search(SearchRequest {
             repo: invocation.repo.clone(),
             query: argument_string(arguments, "query"),
+            layer: argument_string(arguments, "layer"),
             profile: argument_string(arguments, "profile"),
             limit: argument_usize(arguments, "limit").unwrap_or(DEFAULT_SEARCH_LIMIT),
             budget: argument_usize(arguments, "budget").unwrap_or(DEFAULT_SEARCH_BUDGET),
@@ -42,6 +44,7 @@ pub(crate) fn prepare_operation_request(
         "context" => OperationRequest::Context(ContextRequest {
             repo: invocation.repo.clone(),
             query: argument_optional_string(arguments, "query"),
+            layer: argument_string(arguments, "layer"),
             profile: argument_string(arguments, "profile"),
             limit: argument_usize(arguments, "limit").unwrap_or(DEFAULT_SEARCH_LIMIT),
             budget: argument_usize(arguments, "budget").unwrap_or(DEFAULT_SEARCH_BUDGET),
@@ -93,10 +96,12 @@ pub(crate) fn normalize_request(request: &OperationRequest) -> OperationRequest 
     match &mut normalized {
         OperationRequest::Search(request) => {
             request.query = request.query.trim().to_string();
+            normalize_layer(&mut request.layer);
             default_string(&mut request.profile, DEFAULT_PROFILE);
             default_string(&mut request.detail, DEFAULT_DETAIL);
         }
         OperationRequest::Context(request) => {
+            normalize_layer(&mut request.layer);
             default_string(&mut request.profile, DEFAULT_PROFILE);
             default_string(&mut request.detail, DEFAULT_DETAIL);
             request.query = request
@@ -129,6 +134,11 @@ pub(crate) fn normalize_request(request: &OperationRequest) -> OperationRequest 
     normalized
 }
 
+fn normalize_layer(layer: &mut String) {
+    *layer = layer.trim().to_ascii_lowercase();
+    default_string(layer, DEFAULT_LAYER);
+}
+
 pub(crate) fn normalize_materialize_options(options: &mut MaterializeOptions) {
     default_string(&mut options.mode, DEFAULT_MATERIALIZATION_MODE);
     default_string(
@@ -141,7 +151,8 @@ pub(crate) fn normalize_materialize_options(options: &mut MaterializeOptions) {
 pub(crate) fn validate_request(request: &OperationRequest) -> Result<(), ApiError> {
     match request {
         OperationRequest::Search(request) => {
-            validate_search_fields(&request.query, &request.detail, request.limit)
+            validate_search_fields(&request.query, &request.detail, request.limit)?;
+            validate_graph_layer(&request.layer)
         }
         OperationRequest::Context(request) => {
             if request.node_id.is_some() != request.node_type.is_some() {
@@ -156,7 +167,9 @@ pub(crate) fn validate_request(request: &OperationRequest) -> Result<(), ApiErro
                     "context operation requires a query or explicit node reference",
                 ));
             }
-            validate_detail_and_limit(&request.detail, request.limit)
+            validate_detail_and_limit(&request.detail, request.limit)?;
+            validate_graph_layer(&request.layer)?;
+            validate_context_layer_target(&request.layer, request.node_type.as_deref())
         }
         OperationRequest::Query(request) => {
             if request.statement.is_empty() {
@@ -211,6 +224,31 @@ pub(crate) fn validate_request(request: &OperationRequest) -> Result<(), ApiErro
             }
         }
         OperationRequest::Health(_) => Ok(()),
+    }
+}
+
+fn validate_graph_layer(layer: &str) -> Result<(), ApiError> {
+    if matches!(layer, "semantic" | "syntax" | "hybrid") {
+        Ok(())
+    } else {
+        Err(ApiError::new(
+            "invalid_graph_layer",
+            "graph layer must be one of semantic, syntax, or hybrid",
+        ))
+    }
+}
+
+fn validate_context_layer_target(layer: &str, node_type: Option<&str>) -> Result<(), ApiError> {
+    match (layer, node_type) {
+        ("semantic", Some("SyntaxCapture")) => Err(ApiError::new(
+            "invalid_graph_layer_target",
+            "semantic context does not accept SyntaxCapture targets",
+        )),
+        ("syntax", Some(node_type)) if node_type != "SyntaxCapture" => Err(ApiError::new(
+            "invalid_graph_layer_target",
+            "syntax context requires a SyntaxCapture target",
+        )),
+        _ => Ok(()),
     }
 }
 
@@ -428,7 +466,7 @@ fn normalize_paths(paths: &mut Vec<String>) {
 mod tests {
     use super::{
         normalize_request, prepare_operation_request, required_fields, validate_request,
-        DEFAULT_CONTEXT_LIMIT, DEFAULT_DETAIL, DEFAULT_PROFILE, DEFAULT_QUERY_LIMIT,
+        DEFAULT_CONTEXT_LIMIT, DEFAULT_DETAIL, DEFAULT_LAYER, DEFAULT_PROFILE, DEFAULT_QUERY_LIMIT,
         DEFAULT_SEARCH_BUDGET, DEFAULT_SEARCH_LIMIT,
     };
     use crate::api::contracts::{
@@ -442,6 +480,7 @@ mod tests {
         let normalized = normalize_request(&OperationRequest::Search(SearchRequest {
             repo: RepoSelector::default(),
             query: "needle".to_string(),
+            layer: " HYBRID ".to_string(),
             profile: " ".to_string(),
             limit: 3,
             budget: 600,
@@ -455,6 +494,7 @@ mod tests {
             panic!("search request should remain a search request");
         };
         assert_eq!(search.profile, "brief");
+        assert_eq!(search.layer, "hybrid");
         assert_eq!(search.detail, "standard");
 
         let normalized =
@@ -505,6 +545,7 @@ mod tests {
         assert_eq!(search.limit, DEFAULT_SEARCH_LIMIT);
         assert_eq!(search.budget, DEFAULT_SEARCH_BUDGET);
         assert_eq!(search.context_limit, DEFAULT_CONTEXT_LIMIT);
+        assert_eq!(search.layer, DEFAULT_LAYER);
 
         let query = prepare_operation_request(
             "query",
@@ -540,6 +581,7 @@ mod tests {
         let error = validate_request(&OperationRequest::Context(ContextRequest {
             repo: RepoSelector::default(),
             query: None,
+            layer: "semantic".to_string(),
             profile: "brief".to_string(),
             limit: 3,
             budget: 600,
@@ -553,6 +595,55 @@ mod tests {
         .expect_err("partial node reference should be rejected");
 
         assert_eq!(error.code, "invalid_node_reference");
+
+        let invalid_layer = validate_request(&OperationRequest::Search(SearchRequest {
+            repo: RepoSelector::default(),
+            query: "needle".to_string(),
+            layer: "raw".to_string(),
+            profile: "brief".to_string(),
+            limit: 3,
+            budget: 600,
+            context_limit: 3,
+            max_depth: None,
+            detail: "standard".to_string(),
+            output_format: OutputFormat::Typed,
+        }))
+        .expect_err("unsupported graph layers should be rejected");
+        assert_eq!(invalid_layer.code, "invalid_graph_layer");
+
+        let invalid_target = validate_request(&OperationRequest::Context(ContextRequest {
+            repo: RepoSelector::default(),
+            query: None,
+            layer: "semantic".to_string(),
+            profile: "brief".to_string(),
+            limit: 3,
+            budget: 600,
+            context_limit: 3,
+            max_depth: None,
+            detail: "standard".to_string(),
+            node_id: Some("SyntaxCapture:1".to_string()),
+            node_type: Some("SyntaxCapture".to_string()),
+            output_format: OutputFormat::Typed,
+        }))
+        .expect_err("semantic context should reject syntax targets");
+        assert_eq!(invalid_target.code, "invalid_graph_layer_target");
+
+        let invalid_syntax_target = validate_request(&OperationRequest::Context(ContextRequest {
+            repo: RepoSelector::default(),
+            query: None,
+            layer: "syntax".to_string(),
+            profile: "brief".to_string(),
+            limit: 3,
+            budget: 600,
+            context_limit: 3,
+            max_depth: None,
+            detail: "standard".to_string(),
+            node_id: Some("Function:1".to_string()),
+            node_type: Some("Function".to_string()),
+            output_format: OutputFormat::Typed,
+        }))
+        .expect_err("syntax context should reject semantic targets");
+        assert_eq!(invalid_syntax_target.code, "invalid_graph_layer_target");
 
         let syntax_error = validate_request(&OperationRequest::Catalog {
             kind: "syntax".to_string(),

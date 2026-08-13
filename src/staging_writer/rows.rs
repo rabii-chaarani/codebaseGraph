@@ -24,6 +24,7 @@ pub(super) struct NodeStagedRow {
     pub(super) tree_sitter_node_type: String,
     pub(super) capture_name: String,
     pub(super) summary: String,
+    pub(super) text: String,
     pub(super) metadata: Value,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) content_hash: Option<String>,
@@ -64,6 +65,7 @@ pub(super) fn node_fields(node: &GraphNodeRow, content_hash: Option<&str>) -> No
         tree_sitter_node_type: node.tree_sitter_node_type.clone(),
         capture_name: node.capture_name.clone(),
         summary: node.summary.clone(),
+        text: node.summary.clone(),
         metadata: node.metadata.clone(),
         content_hash: content_hash.map(str::to_string),
     }

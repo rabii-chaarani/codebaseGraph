@@ -18,7 +18,7 @@ use crate::api::materialization::{
 };
 use crate::api::normalization::{
     normalize_request, prepare_operation_request, validate_request, DEFAULT_CONTEXT_LIMIT,
-    DEFAULT_DETAIL, DEFAULT_PROFILE, DEFAULT_QUERY_LIMIT, DEFAULT_SEARCH_BUDGET,
+    DEFAULT_DETAIL, DEFAULT_LAYER, DEFAULT_PROFILE, DEFAULT_QUERY_LIMIT, DEFAULT_SEARCH_BUDGET,
     DEFAULT_SEARCH_LIMIT,
 };
 use crate::api::presenter::present_operation_response;
@@ -340,6 +340,7 @@ fn empty_request_schema() -> serde_json::Value {
 fn search_request_schema() -> serde_json::Value {
     json!({
         "query": {"type": "string"},
+        "layer": {"type": "string", "enum": ["semantic", "syntax", "hybrid"], "default": DEFAULT_LAYER},
         "limit": {"type": "integer", "minimum": 1, "default": DEFAULT_SEARCH_LIMIT},
         "profile": {"type": "string", "default": DEFAULT_PROFILE},
         "budget": {"type": "integer", "minimum": 0, "default": DEFAULT_SEARCH_BUDGET},
@@ -354,6 +355,7 @@ fn context_request_schema() -> serde_json::Value {
         "query": {"type": "string"},
         "node_id": {"type": "string"},
         "node_type": {"type": "string"},
+        "layer": {"type": "string", "enum": ["semantic", "syntax", "hybrid"], "default": DEFAULT_LAYER},
         "limit": {"type": "integer", "minimum": 1, "default": DEFAULT_SEARCH_LIMIT},
         "profile": {"type": "string", "default": DEFAULT_PROFILE},
         "budget": {"type": "integer", "minimum": 0, "default": DEFAULT_SEARCH_BUDGET},
@@ -659,6 +661,7 @@ fn execute_search(
     let output_format = request.output_format;
     let options = GraphSearchRequest {
         query: request.query.clone(),
+        layer: request.layer.clone(),
         limit: request.limit,
         profile: request.profile.clone(),
         budget: request.budget,
@@ -670,6 +673,7 @@ fn execute_search(
         .map_err(|error| ApiError::new("search_execution_failed", error.to_string()))?;
     let payload = serde_json::json!({
         "query": request.query,
+        "layer": request.layer,
         "profile": request.profile,
         "limit": request.limit,
         "budget": request.budget,
@@ -689,6 +693,7 @@ fn execute_context(
     let output_format = request.output_format;
     let search = GraphSearchRequest {
         query: request.query.clone().unwrap_or_default(),
+        layer: request.layer.clone(),
         profile: request.profile.clone(),
         limit: request.limit,
         budget: request.budget,
@@ -704,6 +709,7 @@ fn execute_context(
         json!({
             "node_id": node_id,
             "node_type": node_type,
+            "layer": request.layer,
             "profile": request.profile,
             "context": context,
         })
@@ -718,6 +724,7 @@ fn execute_context(
             .map_err(|error| ApiError::new("context_execution_failed", error.to_string()))?;
         json!({
             "query": request.query,
+            "layer": request.layer,
             "profile": request.profile,
             "limit": request.limit,
             "budget": request.budget,

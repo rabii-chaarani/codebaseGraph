@@ -28,8 +28,9 @@ pub(crate) fn serialize_schema_block(payload: &serde_json::Value) -> String {
     }
     for index in search_indexes {
         lines.push(format!(
-            "index {} node_types={} fields={}",
+            "index {} layer={} node_types={} fields={}",
             block_value(value_str(index, "name")),
+            block_value(value_str(index, "layer")),
             csv_values(index.get("node_types")),
             csv_values(index.get("fields"))
         ));
@@ -169,7 +170,11 @@ pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
 
 pub(crate) fn serialize_search_block(payload: &serde_json::Value) -> String {
     let results = value_array(payload, "results");
-    let mut lines = vec![format!("q {}", block_value(value_str(payload, "query")))];
+    let mut lines = vec![format!(
+        "q {} layer={}",
+        block_value(value_str(payload, "query")),
+        block_value(value_str(payload, "layer"))
+    )];
     let mut current_path: Option<String> = None;
     for result in results {
         let result_path = value_str(result, "path").to_string();
@@ -190,6 +195,10 @@ pub(crate) fn serialize_search_block(payload: &serde_json::Value) -> String {
         }
         if let Some(id) = result.get("id").and_then(serde_json::Value::as_str) {
             result_parts.push(format!("id={}", block_value(id)));
+        }
+        let layer = value_str(result, "layer");
+        if !layer.is_empty() {
+            result_parts.push(format!("layer={}", block_value(layer)));
         }
         let summary = value_str(result, "summary");
         if !summary.is_empty() && summary != value_str(result, "label") {
@@ -248,9 +257,10 @@ pub(crate) fn serialize_query_block(payload: &serde_json::Value) -> String {
 
 pub(crate) fn serialize_context_block(payload: &serde_json::Value) -> String {
     let mut lines = vec![format!(
-        "context {} id={} profile={}",
+        "context {} id={} layer={} profile={}",
         value_str(payload, "node_type"),
         block_value(value_str(payload, "node_id")),
+        block_value(value_str(payload, "layer")),
         block_value(value_str(payload, "profile"))
     )];
     let mut current_path: Option<String> = None;
@@ -273,6 +283,18 @@ pub(crate) fn serialize_context_block(payload: &serde_json::Value) -> String {
         let summary = value_str(context, "summary");
         if !summary.is_empty() && summary != value_str(context, "label") {
             parts.push(format!("summary={}", block_value(summary)));
+        }
+        if let Some(field_name) = context
+            .get("field_name")
+            .and_then(serde_json::Value::as_str)
+        {
+            parts.push(format!("field_name={}", block_value(field_name)));
+        }
+        if let Some(child_index) = context
+            .get("child_index")
+            .and_then(serde_json::Value::as_i64)
+        {
+            parts.push(format!("child_index={child_index}"));
         }
         lines.push(parts.join(" ").trim_end().to_string());
     }

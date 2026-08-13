@@ -9,6 +9,7 @@ use std::{collections::BTreeSet, path::Path};
 #[derive(Debug, Clone)]
 pub(crate) struct GraphSearchRequest {
     pub(crate) query: String,
+    pub(crate) layer: String,
     pub(crate) limit: usize,
     pub(crate) profile: String,
     pub(crate) budget: usize,
@@ -63,10 +64,15 @@ pub(crate) fn execute_graph_search(
     conn.query("LOAD fts")
         .map_err(|error| format!("failed to load FTS extension for graph search: {error}"))?;
     let schema = metadata_payload(GRAPH_SCHEMA_JSON)?;
-    let mut hits = Vec::new();
+    let mut semantic_hits = Vec::new();
+    let mut syntax_hits = Vec::new();
     let candidate_limit = options.limit.clamp(10, 50);
     let mut order = 0_usize;
     for index in value_array(&schema, "search_indexes") {
+        let index_layer = search_index_layer(index);
+        if !search_layer_includes(&options.layer, index_layer) {
+            continue;
+        }
         let index_name = value_str(index, "name");
         for node_type in index
             .get("node_types")
@@ -76,31 +82,26 @@ pub(crate) fn execute_graph_search(
             .filter_map(serde_json::Value::as_str)
         {
             let full_index_name = format!("{index_name}_{node_type}");
-            hits.extend(search_fts_index(
+            let hits = search_fts_index(
                 &conn,
                 node_type,
                 &full_index_name,
                 &options.query,
                 candidate_limit,
                 order,
-            )?);
+                index_layer,
+            )?;
+            if index_layer == "syntax" {
+                syntax_hits.extend(hits);
+            } else {
+                semantic_hits.extend(hits);
+            }
             order += 1;
         }
     }
-    rank_search_hits(&mut hits, &options.query);
-    hits.sort_by(|left, right| {
-        right
-            .rank_score
-            .partial_cmp(&left.rank_score)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then_with(|| left.index_order.cmp(&right.index_order))
-            .then_with(|| left.path.cmp(&right.path))
-            .then_with(|| left.line_start.cmp(&right.line_start))
-            .then_with(|| left.id.cmp(&right.id))
-    });
-    hits.dedup_by(|left, right| left.id == right.id);
+    let hits = select_search_hits(options, semantic_hits, syntax_hits);
     let mut payloads = Vec::new();
-    for hit in hits.into_iter().take(options.limit) {
+    for hit in hits {
         let context = if options.context_limit > 0 && options.budget > 0 {
             execute_graph_context(db_path, &hit.id, &hit.node_type, options)?
         } else {
@@ -137,20 +138,27 @@ pub(crate) fn execute_graph_context(
     let conn =
         Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
     let schema = metadata_payload(GRAPH_SCHEMA_JSON)?;
-    let profile = schema
-        .get("context_profiles")
-        .and_then(|profiles| profiles.get(&options.profile))
-        .ok_or_else(|| format!("Unknown context profile: {}", options.profile))?;
-    let relations = profile
-        .get("relations")
-        .and_then(serde_json::Value::as_array)
-        .ok_or_else(|| format!("Context profile {} has no relations", options.profile))?;
-    let depth_limit = options.max_depth.unwrap_or_else(|| {
-        profile
-            .get("max_depth")
-            .and_then(serde_json::Value::as_u64)
-            .unwrap_or(1) as usize
-    });
+    let (relations, depth_limit) = if options.layer == "syntax" {
+        (syntax_context_relations(), options.max_depth.unwrap_or(1))
+    } else {
+        let profile = schema
+            .get("context_profiles")
+            .and_then(|profiles| profiles.get(&options.profile))
+            .ok_or_else(|| format!("Unknown context profile: {}", options.profile))?;
+        let semantic_relations = profile
+            .get("relations")
+            .and_then(serde_json::Value::as_array)
+            .ok_or_else(|| format!("Context profile {} has no relations", options.profile))?;
+        (
+            context_relations(options, semantic_relations),
+            options.max_depth.unwrap_or_else(|| {
+                profile
+                    .get("max_depth")
+                    .and_then(serde_json::Value::as_u64)
+                    .unwrap_or(1) as usize
+            }),
+        )
+    };
     if depth_limit == 0 {
         return Ok(Vec::new());
     }
@@ -162,11 +170,11 @@ pub(crate) fn execute_graph_context(
         if depth >= depth_limit || context.len() >= options.context_limit {
             continue;
         }
-        for relation in relations.iter().filter_map(serde_json::Value::as_str) {
+        for relation in &relations {
             for direction in ["outgoing", "incoming"] {
                 let remaining = options.context_limit.saturating_sub(context.len());
                 if remaining == 0 {
-                    return Ok(context);
+                    return Ok(order_context_rows(context, options));
                 }
                 let neighbors = query_relation_neighbors(
                     &conn,
@@ -193,13 +201,117 @@ pub(crate) fn execute_graph_context(
                     }
                     context.push(neighbor);
                     if context.len() >= options.context_limit {
-                        return Ok(context);
+                        return Ok(order_context_rows(context, options));
                     }
                 }
             }
         }
     }
-    Ok(context)
+    Ok(order_context_rows(context, options))
+}
+
+fn order_context_rows(
+    mut context: Vec<serde_json::Value>,
+    options: &GraphSearchRequest,
+) -> Vec<serde_json::Value> {
+    if options.layer != "semantic" {
+        context.sort_by(|left, right| {
+            let left_syntax_child = value_str(left, "relation") == "SyntaxChild";
+            let right_syntax_child = value_str(right, "relation") == "SyntaxChild";
+            match (left_syntax_child, right_syntax_child) {
+                (true, true) => left
+                    .get("child_index")
+                    .and_then(serde_json::Value::as_i64)
+                    .cmp(&right.get("child_index").and_then(serde_json::Value::as_i64))
+                    .then_with(|| value_str(left, "id").cmp(value_str(right, "id"))),
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                (false, false) => std::cmp::Ordering::Equal,
+            }
+        });
+    }
+    context
+}
+
+fn search_index_layer(index: &serde_json::Value) -> &str {
+    match value_str(index, "layer") {
+        "syntax" => "syntax",
+        _ => "semantic",
+    }
+}
+
+fn search_layer_includes(requested_layer: &str, index_layer: &str) -> bool {
+    requested_layer == "hybrid" || requested_layer == index_layer
+}
+
+fn select_search_hits(
+    options: &GraphSearchRequest,
+    mut semantic_hits: Vec<SearchHitRow>,
+    mut syntax_hits: Vec<SearchHitRow>,
+) -> Vec<SearchHitRow> {
+    sort_search_hits(&mut semantic_hits, &options.query);
+    sort_search_hits(&mut syntax_hits, &options.query);
+    match options.layer.as_str() {
+        "syntax" => syntax_hits.into_iter().take(options.limit).collect(),
+        "hybrid" => {
+            let semantic_count = semantic_hits.len().min(options.limit);
+            semantic_hits
+                .into_iter()
+                .take(semantic_count)
+                .chain(
+                    syntax_hits
+                        .into_iter()
+                        .take(options.limit.saturating_sub(semantic_count)),
+                )
+                .collect()
+        }
+        _ => semantic_hits.into_iter().take(options.limit).collect(),
+    }
+}
+
+fn sort_search_hits(hits: &mut Vec<SearchHitRow>, query: &str) {
+    rank_search_hits(hits, query);
+    hits.sort_by(|left, right| {
+        right
+            .rank_score
+            .partial_cmp(&left.rank_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| left.index_order.cmp(&right.index_order))
+            .then_with(|| left.path.cmp(&right.path))
+            .then_with(|| left.line_start.cmp(&right.line_start))
+            .then_with(|| left.id.cmp(&right.id))
+    });
+    hits.dedup_by(|left, right| left.id == right.id);
+}
+
+fn context_relations(
+    options: &GraphSearchRequest,
+    semantic_relations: &[serde_json::Value],
+) -> Vec<String> {
+    let semantic_relations = semantic_relations
+        .iter()
+        .filter_map(serde_json::Value::as_str)
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    match options.layer.as_str() {
+        "hybrid" => {
+            let mut relations = semantic_relations;
+            for relation in syntax_context_relations() {
+                if !relations.contains(&relation) {
+                    relations.push(relation);
+                }
+            }
+            relations
+        }
+        _ => semantic_relations,
+    }
+}
+
+fn syntax_context_relations() -> Vec<String> {
+    ["SyntaxChild", "EvidencedBy", "DerivedFrom"]
+        .into_iter()
+        .map(str::to_string)
+        .collect()
 }
 
 pub(crate) fn validate_read_only_statement(statement: &str) -> Result<(), String> {
@@ -497,6 +609,7 @@ fn query_relation_neighbors(
             let mut payload = json!({
                 "direction": direction,
                 "relation": relation,
+                "layer": if neighbor_type == "SyntaxCapture" { "syntax" } else { "semantic" },
                 "type": neighbor_type,
                 "label": label.clone(),
                 "path": value_to_string(row.get(3)),
@@ -511,6 +624,15 @@ fn query_relation_neighbors(
                 payload["evidence_path"] = json!({
                     "chain": format!("{}:{}->{}", relation, value_to_string(row.get(9)), value_to_string(row.get(10)))
                 });
+            }
+            if relation == "SyntaxChild" {
+                let field_name = value_to_string(row.get(13));
+                if !field_name.is_empty() {
+                    payload["field_name"] = json!(field_name);
+                }
+                if let Some(child_index) = value_to_i64(row.get(14)) {
+                    payload["child_index"] = json!(child_index);
+                }
             }
             neighbors.push(payload);
             if neighbors.len() >= limit {
@@ -538,9 +660,14 @@ fn neighbor_statement(
     node_id: &str,
     limit: usize,
 ) -> String {
+    let ordering = if relation == "SyntaxChild" {
+        " ORDER BY edge.child_index, neighbor.id"
+    } else {
+        ""
+    };
     if direction == "outgoing" {
         format!(
-            "MATCH (source:`{}` {{id: '{}'}})-[:`FROM_{}`]->(edge:`{}`)-[:`TO_{}`]->(neighbor:`{}`) RETURN neighbor.id, neighbor.label, neighbor.qualified_name, neighbor.path, neighbor.line_start, neighbor.line_end, neighbor.summary, edge.id, edge.kind, edge.source_id, edge.target_id, edge.confidence, edge.metadata LIMIT {}",
+            "MATCH (source:`{}` {{id: '{}'}})-[:`FROM_{}`]->(edge:`{}`)-[:`TO_{}`]->(neighbor:`{}`) RETURN neighbor.id, neighbor.label, neighbor.qualified_name, neighbor.path, neighbor.line_start, neighbor.line_end, neighbor.summary, edge.id, edge.kind, edge.source_id, edge.target_id, edge.confidence, edge.metadata, edge.field_name, edge.child_index{ordering} LIMIT {}",
             cypher_identifier(node_type),
             cypher_single_quoted(node_id),
             cypher_identifier(relation),
@@ -551,7 +678,7 @@ fn neighbor_statement(
         )
     } else {
         format!(
-            "MATCH (neighbor:`{}`)-[:`FROM_{}`]->(edge:`{}`)-[:`TO_{}`]->(target:`{}` {{id: '{}'}}) RETURN neighbor.id, neighbor.label, neighbor.qualified_name, neighbor.path, neighbor.line_start, neighbor.line_end, neighbor.summary, edge.id, edge.kind, edge.source_id, edge.target_id, edge.confidence, edge.metadata LIMIT {}",
+            "MATCH (neighbor:`{}`)-[:`FROM_{}`]->(edge:`{}`)-[:`TO_{}`]->(target:`{}` {{id: '{}'}}) RETURN neighbor.id, neighbor.label, neighbor.qualified_name, neighbor.path, neighbor.line_start, neighbor.line_end, neighbor.summary, edge.id, edge.kind, edge.source_id, edge.target_id, edge.confidence, edge.metadata, edge.field_name, edge.child_index{ordering} LIMIT {}",
             cypher_identifier(neighbor_type),
             cypher_identifier(relation),
             cypher_identifier(relation),
@@ -570,9 +697,10 @@ fn search_fts_index(
     query: &str,
     limit: usize,
     index_order: usize,
+    layer: &str,
 ) -> Result<Vec<SearchHitRow>, String> {
     let statement = format!(
-        "CALL QUERY_FTS_INDEX('{}', '{}', '{}', TOP := {}) RETURN node.id, node.label, node.qualified_name, node.path, node.line_start, node.line_end, node.summary, score",
+        "CALL QUERY_FTS_INDEX('{}', '{}', '{}', TOP := {}) RETURN node.id, node.label, node.qualified_name, node.path, node.line_start, node.line_end, node.summary, node.grammar_version, node.tree_sitter_node_type, score",
         cypher_single_quoted(node_type),
         cypher_single_quoted(index_name),
         cypher_single_quoted(query),
@@ -598,9 +726,12 @@ fn search_fts_index(
             line_start: value_to_i64(row.get(4)),
             line_end: value_to_i64(row.get(5)),
             summary: value_to_string(row.get(6)),
-            score: value_to_f64(row.get(7)),
+            grammar_version: value_to_string(row.get(7)),
+            tree_sitter_node_type: value_to_string(row.get(8)),
+            score: value_to_f64(row.get(9)),
             rank_score: 0.0,
             index_order,
+            layer: layer.to_string(),
         });
     }
     Ok(rows)
@@ -622,9 +753,12 @@ struct SearchHitRow {
     line_start: Option<i64>,
     line_end: Option<i64>,
     summary: String,
+    grammar_version: String,
+    tree_sitter_node_type: String,
     score: f64,
     rank_score: f64,
     index_order: usize,
+    layer: String,
 }
 
 impl SearchHitRow {
@@ -635,6 +769,7 @@ impl SearchHitRow {
                 "id": self.id,
                 "type": self.node_type,
                 "label": self.label,
+                "layer": self.layer,
                 "rank_score": self.rank_score,
             });
             if !self.path.is_empty() {
@@ -646,12 +781,17 @@ impl SearchHitRow {
             if !self.summary.is_empty() && self.summary != self.label {
                 payload["summary"] = json!(self.summary);
             }
+            if payload["layer"] == "syntax" {
+                payload["grammar_version"] = json!(self.grammar_version);
+                payload["tree_sitter_node_type"] = json!(self.tree_sitter_node_type);
+            }
             return payload;
         }
-        json!({
+        let mut payload = json!({
             "id": self.id,
             "type": self.node_type,
             "label": self.label,
+            "layer": self.layer,
             "qualified_name": self.qualified_name,
             "path": self.path,
             "span": span,
@@ -664,7 +804,12 @@ impl SearchHitRow {
             },
             "summary": self.summary,
             "context": [],
-        })
+        });
+        if payload["layer"] == "syntax" {
+            payload["grammar_version"] = json!(self.grammar_version);
+            payload["tree_sitter_node_type"] = json!(self.tree_sitter_node_type);
+        }
+        payload
     }
 }
 

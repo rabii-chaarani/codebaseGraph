@@ -169,6 +169,7 @@ fn run_graph_search<W: Write>(args: &[String], stdout: &mut W) -> Result<(), Str
             options.manifest,
         ),
         query: options.query,
+        layer: options.layer,
         profile: options.profile,
         limit: options.limit,
         budget: options.budget,
@@ -203,6 +204,7 @@ fn run_graph_context<W: Write>(args: &[String], stdout: &mut W) -> Result<(), St
         } else {
             Some(options.search.query)
         },
+        layer: options.search.layer,
         profile: options.search.profile,
         limit: options.search.limit,
         budget: options.search.budget,
