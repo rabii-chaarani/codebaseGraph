@@ -85,7 +85,8 @@ fn managed_publish_failure_preserves_active_generation() {
 
 #[test]
 fn direct_materialization_uses_custom_paths_and_cleans_shadow_files() {
-    let repo = temp_repo("direct_materialization_uses_custom_paths_and_cleans_shadow_files");
+    // Keep the longest staged connector path below Windows' classic MAX_PATH limit.
+    let repo = temp_repo("direct_materialization");
     write_source(&repo, "pub fn direct_custom() -> bool { true }\n");
 
     let custom_root = repo.join("custom-output");
