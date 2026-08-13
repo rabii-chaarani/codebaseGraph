@@ -1,18 +1,88 @@
+use flate2::read::GzDecoder;
+use flate2::{Compression, GzBuilder};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::collections::BTreeSet;
+use sha2::{Digest, Sha256};
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
-use std::fs;
+use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use yaml_serde::Value as YamlValue;
 
-const CONFIRMATIONS: &[&str] = &[
-    "release-environment",
-    "hosted-ci-green",
-    "private-vulnerability-reporting",
+const CONFIRMATIONS: &[&str] = &["release-environment", "private-vulnerability-reporting"];
+const NATIVE_TARGETS: [NativeTarget; 4] = [
+    NativeTarget::LinuxX86_64,
+    NativeTarget::MacosArm64,
+    NativeTarget::MacosX86_64,
+    NativeTarget::WindowsX86_64,
 ];
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+enum NativeTarget {
+    LinuxX86_64,
+    MacosArm64,
+    MacosX86_64,
+    WindowsX86_64,
+}
+
+impl NativeTarget {
+    fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "linux-x86_64" => Ok(Self::LinuxX86_64),
+            "macos-arm64" => Ok(Self::MacosArm64),
+            "macos-x86_64" => Ok(Self::MacosX86_64),
+            "windows-x86_64" => Ok(Self::WindowsX86_64),
+            other => Err(format!("unsupported native target: {other}")),
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::LinuxX86_64 => "linux-x86_64",
+            Self::MacosArm64 => "macos-arm64",
+            Self::MacosX86_64 => "macos-x86_64",
+            Self::WindowsX86_64 => "windows-x86_64",
+        }
+    }
+
+    fn binary_names(self) -> (&'static str, &'static str) {
+        match self {
+            Self::WindowsX86_64 => ("codebase-graph.exe", "k-wiki.exe"),
+            _ => ("codebase-graph", "k-wiki"),
+        }
+    }
+
+    fn host(self) -> (&'static str, &'static str) {
+        match self {
+            Self::LinuxX86_64 => ("linux", "x86_64"),
+            Self::MacosArm64 => ("macos", "aarch64"),
+            Self::MacosX86_64 => ("macos", "x86_64"),
+            Self::WindowsX86_64 => ("windows", "x86_64"),
+        }
+    }
+
+    fn archive_name(self, version: &str) -> String {
+        format!("codebase-graph-{version}-{}.tar.gz", self.as_str())
+    }
+
+    fn uses_windows_extensions(self) -> bool {
+        self == Self::WindowsX86_64
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct NativeProvenance {
+    schema_version: u32,
+    commit_sha: String,
+    version: String,
+    target: String,
+    archive: String,
+    archive_sha256: String,
+}
 
 fn main() {
     if let Err(error) = run() {
@@ -25,6 +95,9 @@ fn run() -> Result<(), String> {
     let mut args = env::args().skip(1);
     match args.next().as_deref() {
         Some("release-gate") => release_gate(args.collect()),
+        Some("native-test") => native_test(args.collect()),
+        Some("native-artifact") => native_artifact(args.collect()),
+        Some("validate-native-artifacts") => validate_native_artifacts(args.collect()),
         Some("smoke-artifact") => {
             let executable = args
                 .next()
@@ -45,9 +118,569 @@ fn run() -> Result<(), String> {
         }
         Some(command) => Err(format!("unknown xtask command: {command}")),
         None => Err(
-            "usage: cargo run -p xtask -- <release-gate|smoke-artifact|smoke-wiki-artifact|verify-release-version>"
+            "usage: cargo run -p xtask -- <release-gate|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version>"
                 .to_string(),
         ),
+    }
+}
+
+fn native_test(args: Vec<String>) -> Result<(), String> {
+    let options = parse_options(&args, &["--target"])?;
+    let target = NativeTarget::parse(required_option(&options, "--target")?)?;
+    ensure_native_host(target)?;
+    let command_args = native_test_command(target);
+    let mut command = Command::new("cargo");
+    command.args(command_args);
+    run_command(&mut command, "native test")
+}
+
+fn native_test_command(target: NativeTarget) -> Vec<&'static str> {
+    let mut args = vec!["test", "--workspace", "--locked"];
+    if target.uses_windows_extensions() {
+        args.extend([
+            "--release",
+            "--features",
+            "codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions",
+        ]);
+    }
+    args
+}
+
+fn native_artifact(args: Vec<String>) -> Result<(), String> {
+    let options = parse_options(&args, &["--target", "--commit-sha", "--output"])?;
+    let target = NativeTarget::parse(required_option(&options, "--target")?)?;
+    let commit_sha = required_option(&options, "--commit-sha")?;
+    validate_commit_sha(commit_sha)?;
+    let output = Path::new(required_option(&options, "--output")?);
+    ensure_native_host(target)?;
+
+    let version = release_version()?;
+    build_native_binaries(target)?;
+    fs::create_dir_all(output).map_err(|error| {
+        format!(
+            "failed to create artifact output {}: {error}",
+            output.display()
+        )
+    })?;
+
+    let staging = unique_temp_dir(&format!("native_artifact_{}", target.as_str()))?;
+    let result = build_and_smoke_native_archive(target, &version, commit_sha, output, &staging);
+    let _ = fs::remove_dir_all(&staging);
+    result
+}
+
+fn validate_native_artifacts(args: Vec<String>) -> Result<(), String> {
+    let options = parse_options(&args, &["--input", "--tag", "--commit-sha"])?;
+    let input = Path::new(required_option(&options, "--input")?);
+    let tag = required_option(&options, "--tag")?;
+    let commit_sha = required_option(&options, "--commit-sha")?;
+    validate_commit_sha(commit_sha)?;
+    let version = release_version_from_tag(tag)?;
+    validate_native_artifact_set(input, &version, commit_sha)
+}
+
+fn parse_options(args: &[String], allowed: &[&str]) -> Result<BTreeMap<String, String>, String> {
+    let allowed: BTreeSet<&str> = allowed.iter().copied().collect();
+    let mut options = BTreeMap::new();
+    let mut index = 0;
+    while index < args.len() {
+        let flag = args[index].as_str();
+        if !allowed.contains(flag) {
+            return Err(format!("unknown option: {flag}"));
+        }
+        index += 1;
+        let value = args
+            .get(index)
+            .ok_or_else(|| format!("{flag} requires a value"))?;
+        if options.insert(flag.to_string(), value.clone()).is_some() {
+            return Err(format!("duplicate option: {flag}"));
+        }
+        index += 1;
+    }
+    Ok(options)
+}
+
+fn required_option<'a>(
+    options: &'a BTreeMap<String, String>,
+    flag: &str,
+) -> Result<&'a str, String> {
+    options
+        .get(flag)
+        .map(String::as_str)
+        .ok_or_else(|| format!("missing required option: {flag}"))
+}
+
+fn validate_commit_sha(value: &str) -> Result<(), String> {
+    if value.len() == 40 && value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        Ok(())
+    } else {
+        Err(format!(
+            "commit SHA must be 40 hexadecimal characters, got {value:?}"
+        ))
+    }
+}
+
+fn ensure_native_host(target: NativeTarget) -> Result<(), String> {
+    let (expected_os, expected_arch) = target.host();
+    if env::consts::OS == expected_os && env::consts::ARCH == expected_arch {
+        Ok(())
+    } else {
+        Err(format!(
+            "target {} requires {expected_os}/{expected_arch}, current host is {}/{}",
+            target.as_str(),
+            env::consts::OS,
+            env::consts::ARCH
+        ))
+    }
+}
+
+fn release_version() -> Result<String, String> {
+    let root = cargo_version(Path::new("Cargo.toml"))?;
+    let wiki = cargo_version(Path::new("crates/k-wiki/Cargo.toml"))?;
+    let dependency = dependency_version(Path::new("crates/k-wiki/Cargo.toml"), "codebase-graph")?;
+    if root != wiki || root != dependency {
+        return Err(format!(
+            "release versions are not aligned: root={root}, k-wiki={wiki}, dependency={dependency}"
+        ));
+    }
+    Ok(root)
+}
+
+fn release_version_from_tag(tag: &str) -> Result<String, String> {
+    let version = tag
+        .strip_prefix('v')
+        .ok_or_else(|| format!("release tag must match vX.Y.Z, got {tag:?}"))?;
+    let parts: Vec<&str> = version.split('.').collect();
+    if parts.len() != 3
+        || parts
+            .iter()
+            .any(|part| part.is_empty() || !part.bytes().all(|byte| byte.is_ascii_digit()))
+    {
+        return Err(format!("release tag must match vX.Y.Z, got {tag:?}"));
+    }
+    Ok(version.to_string())
+}
+
+fn build_native_binaries(target: NativeTarget) -> Result<(), String> {
+    let mut graph = Command::new("cargo");
+    graph.args(["build", "--locked", "--release", "--bin", "codebase-graph"]);
+    if target.uses_windows_extensions() {
+        graph.args(["--features", "bundled-windows-extensions"]);
+    }
+    run_command(&mut graph, "codebase-graph release build")?;
+
+    let mut wiki = Command::new("cargo");
+    wiki.args([
+        "build",
+        "--locked",
+        "--release",
+        "-p",
+        "k-wiki",
+        "--bin",
+        "k-wiki",
+    ]);
+    if target.uses_windows_extensions() {
+        wiki.args(["--features", "bundled-windows-extensions"]);
+    }
+    run_command(&mut wiki, "k-wiki release build")
+}
+
+fn build_and_smoke_native_archive(
+    target: NativeTarget,
+    version: &str,
+    commit_sha: &str,
+    output: &Path,
+    staging: &Path,
+) -> Result<(), String> {
+    let package = staging.join("package");
+    let extracted = staging.join("extracted");
+    let install_bin = staging.join("install-bin");
+    fs::create_dir_all(&package).map_err(|error| error.to_string())?;
+
+    let (graph_name, wiki_name) = target.binary_names();
+    copy_file(
+        Path::new("target/release").join(graph_name),
+        package.join(graph_name),
+    )?;
+    copy_file(
+        Path::new("target/release").join(wiki_name),
+        package.join(wiki_name),
+    )?;
+    copy_file("release/install/install.sh", package.join("install.sh"))?;
+    copy_file("release/install/install.ps1", package.join("install.ps1"))?;
+    set_executable(&package.join(graph_name))?;
+    set_executable(&package.join(wiki_name))?;
+    set_executable(&package.join("install.sh"))?;
+
+    let checksums = format!(
+        "{}  {graph_name}\n{}  {wiki_name}\n",
+        sha256_file(&package.join(graph_name))?,
+        sha256_file(&package.join(wiki_name))?
+    );
+    fs::write(package.join("checksums.txt"), checksums).map_err(|error| error.to_string())?;
+
+    let archive_name = target.archive_name(version);
+    let archive_path = output.join(&archive_name);
+    create_native_archive(&package, &archive_path, target)?;
+    let archive_sha256 = sha256_file(&archive_path)?;
+    fs::write(
+        output.join(format!("{archive_name}.sha256")),
+        format!("{archive_sha256}  {archive_name}\n"),
+    )
+    .map_err(|error| error.to_string())?;
+    let provenance = NativeProvenance {
+        schema_version: 1,
+        commit_sha: commit_sha.to_string(),
+        version: version.to_string(),
+        target: target.as_str().to_string(),
+        archive: archive_name.clone(),
+        archive_sha256,
+    };
+    fs::write(
+        output.join("provenance.json"),
+        serde_json::to_vec_pretty(&provenance).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+
+    extract_and_validate_native_archive(&archive_path, target, &extracted)?;
+    dry_run_installer(target, &extracted, &install_bin)?;
+    smoke_artifact(&extracted.join(graph_name))?;
+    smoke_wiki_artifact(&extracted.join(wiki_name))?;
+    println!("{}", archive_path.display());
+    Ok(())
+}
+
+fn copy_file(source: impl AsRef<Path>, destination: impl AsRef<Path>) -> Result<(), String> {
+    let source = source.as_ref();
+    let destination = destination.as_ref();
+    fs::copy(source, destination).map_err(|error| {
+        format!(
+            "failed to copy {} to {}: {error}",
+            source.display(),
+            destination.display()
+        )
+    })?;
+    Ok(())
+}
+
+#[cfg(unix)]
+fn set_executable(path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+    let mut permissions = fs::metadata(path)
+        .map_err(|error| error.to_string())?
+        .permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(path, permissions).map_err(|error| error.to_string())
+}
+
+#[cfg(not(unix))]
+fn set_executable(_path: &Path) -> Result<(), String> {
+    Ok(())
+}
+
+fn create_native_archive(
+    package: &Path,
+    archive_path: &Path,
+    target: NativeTarget,
+) -> Result<(), String> {
+    let file = File::create(archive_path)
+        .map_err(|error| format!("failed to create {}: {error}", archive_path.display()))?;
+    let encoder = GzBuilder::new()
+        .mtime(0)
+        .write(file, Compression::default());
+    let mut archive = tar::Builder::new(encoder);
+    let (graph_name, wiki_name) = target.binary_names();
+    for (name, mode) in [
+        (graph_name, 0o755),
+        (wiki_name, 0o755),
+        ("checksums.txt", 0o644),
+        ("install.sh", 0o755),
+        ("install.ps1", 0o644),
+    ] {
+        append_deterministic_file(&mut archive, &package.join(name), name, mode)?;
+    }
+    let encoder = archive
+        .into_inner()
+        .map_err(|error| format!("failed to finish tar archive: {error}"))?;
+    encoder
+        .finish()
+        .map_err(|error| format!("failed to finish gzip archive: {error}"))?;
+    Ok(())
+}
+
+fn append_deterministic_file<W: Write>(
+    archive: &mut tar::Builder<W>,
+    source: &Path,
+    name: &str,
+    mode: u32,
+) -> Result<(), String> {
+    let mut file = File::open(source)
+        .map_err(|error| format!("failed to open {}: {error}", source.display()))?;
+    let size = file.metadata().map_err(|error| error.to_string())?.len();
+    let mut header = tar::Header::new_gnu();
+    header.set_size(size);
+    header.set_mode(mode);
+    header.set_uid(0);
+    header.set_gid(0);
+    header.set_mtime(0);
+    header.set_cksum();
+    archive
+        .append_data(&mut header, name, &mut file)
+        .map_err(|error| format!("failed to append {name}: {error}"))
+}
+
+fn extract_and_validate_native_archive(
+    archive_path: &Path,
+    target: NativeTarget,
+    destination: &Path,
+) -> Result<(), String> {
+    fs::create_dir_all(destination).map_err(|error| error.to_string())?;
+    let file = File::open(archive_path)
+        .map_err(|error| format!("failed to open {}: {error}", archive_path.display()))?;
+    let mut archive = tar::Archive::new(GzDecoder::new(file));
+    let expected = expected_package_files(target);
+    let mut actual = BTreeSet::new();
+    for entry in archive.entries().map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        if !entry.header().entry_type().is_file() {
+            return Err("native archive contains a non-file entry".to_string());
+        }
+        let path = entry.path().map_err(|error| error.to_string())?;
+        let text = path
+            .to_str()
+            .ok_or_else(|| "native archive contains a non-UTF-8 path".to_string())?;
+        if !expected.contains(text) || !actual.insert(text.to_string()) {
+            return Err(format!(
+                "unexpected or duplicate native archive entry: {text}"
+            ));
+        }
+    }
+    if actual != expected {
+        return Err(format!(
+            "native archive entries do not match contract: expected {expected:?}, got {actual:?}"
+        ));
+    }
+
+    let file = File::open(archive_path).map_err(|error| error.to_string())?;
+    tar::Archive::new(GzDecoder::new(file))
+        .unpack(destination)
+        .map_err(|error| format!("failed to extract {}: {error}", archive_path.display()))?;
+    for executable in [target.binary_names().0, target.binary_names().1] {
+        set_executable(&destination.join(executable))?;
+    }
+    set_executable(&destination.join("install.sh"))?;
+    validate_internal_checksums(destination, target)
+}
+
+fn expected_package_files(target: NativeTarget) -> BTreeSet<String> {
+    let (graph_name, wiki_name) = target.binary_names();
+    [
+        graph_name,
+        wiki_name,
+        "checksums.txt",
+        "install.sh",
+        "install.ps1",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+fn validate_internal_checksums(directory: &Path, target: NativeTarget) -> Result<(), String> {
+    let text = fs::read_to_string(directory.join("checksums.txt"))
+        .map_err(|error| format!("failed to read checksums.txt: {error}"))?;
+    let mut checksums = BTreeMap::new();
+    for line in text.lines() {
+        let mut parts = line.split_whitespace();
+        let digest = parts.next().unwrap_or_default();
+        let name = parts.next().unwrap_or_default();
+        if parts.next().is_some()
+            || digest.len() != 64
+            || !digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+            || checksums
+                .insert(name.to_string(), digest.to_ascii_lowercase())
+                .is_some()
+        {
+            return Err(format!("invalid checksums.txt line: {line:?}"));
+        }
+    }
+    let (graph_name, wiki_name) = target.binary_names();
+    let expected_names: BTreeSet<String> = [graph_name, wiki_name]
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    if checksums.keys().cloned().collect::<BTreeSet<_>>() != expected_names {
+        return Err("checksums.txt does not contain exactly both packaged binaries".to_string());
+    }
+    for (name, expected) in checksums {
+        let actual = sha256_file(&directory.join(&name))?;
+        if actual != expected {
+            return Err(format!("SHA256 mismatch for {name}"));
+        }
+    }
+    Ok(())
+}
+
+fn dry_run_installer(
+    target: NativeTarget,
+    extracted: &Path,
+    install_bin: &Path,
+) -> Result<(), String> {
+    let mut command = if target == NativeTarget::WindowsX86_64 {
+        let mut command = Command::new("pwsh");
+        command
+            .arg("-File")
+            .arg(extracted.join("install.ps1"))
+            .arg("-SourceDir")
+            .arg(extracted)
+            .arg("-BinDir")
+            .arg(install_bin)
+            .arg("-DryRun");
+        command
+    } else {
+        let mut command = Command::new("bash");
+        command
+            .arg(extracted.join("install.sh"))
+            .arg("--source-dir")
+            .arg(extracted)
+            .arg("--bin-dir")
+            .arg(install_bin)
+            .arg("--dry-run");
+        command
+    };
+    run_command(&mut command, "packaged installer dry-run")
+}
+
+fn sha256_file(path: &Path) -> Result<String, String> {
+    let mut file =
+        File::open(path).map_err(|error| format!("failed to open {}: {error}", path.display()))?;
+    let mut digest = Sha256::new();
+    std::io::copy(&mut file, &mut digest).map_err(|error| error.to_string())?;
+    Ok(format!("{:x}", digest.finalize()))
+}
+
+fn validate_native_artifact_set(
+    input: &Path,
+    version: &str,
+    commit_sha: &str,
+) -> Result<(), String> {
+    if !input.is_dir() {
+        return Err(format!(
+            "artifact input is not a directory: {}",
+            input.display()
+        ));
+    }
+    let files = all_files_under(input);
+    let provenance_files: Vec<PathBuf> = files
+        .iter()
+        .filter(|path| {
+            path.file_name()
+                .is_some_and(|name| name == "provenance.json")
+        })
+        .cloned()
+        .collect();
+    if provenance_files.len() != NATIVE_TARGETS.len() {
+        return Err(format!(
+            "expected {} provenance files, found {}",
+            NATIVE_TARGETS.len(),
+            provenance_files.len()
+        ));
+    }
+
+    let mut validated_targets = BTreeSet::new();
+    let mut expected_files = BTreeSet::new();
+    for provenance_path in provenance_files {
+        let provenance: NativeProvenance =
+            serde_json::from_slice(&fs::read(&provenance_path).map_err(|error| error.to_string())?)
+                .map_err(|error| format!("invalid {}: {error}", provenance_path.display()))?;
+        if provenance.schema_version != 1 {
+            return Err(format!(
+                "unsupported provenance schema: {}",
+                provenance.schema_version
+            ));
+        }
+        if provenance.commit_sha != commit_sha || provenance.version != version {
+            return Err(format!(
+                "mixed release provenance in {}: expected {commit_sha}/{version}, got {}/{}",
+                provenance_path.display(),
+                provenance.commit_sha,
+                provenance.version
+            ));
+        }
+        let target = NativeTarget::parse(&provenance.target)?;
+        if !validated_targets.insert(target) {
+            return Err(format!("duplicate provenance target: {}", target.as_str()));
+        }
+        let expected_archive = target.archive_name(version);
+        if provenance.archive != expected_archive {
+            return Err(format!(
+                "provenance archive mismatch for {}: expected {expected_archive}, got {}",
+                target.as_str(),
+                provenance.archive
+            ));
+        }
+        let parent = provenance_path
+            .parent()
+            .ok_or_else(|| "provenance file has no parent directory".to_string())?;
+        let archive_path = parent.join(&expected_archive);
+        let sidecar_path = parent.join(format!("{expected_archive}.sha256"));
+        let actual_sha = sha256_file(&archive_path)?;
+        if provenance.archive_sha256 != actual_sha {
+            return Err(format!(
+                "archive SHA256 does not match provenance for {expected_archive}"
+            ));
+        }
+        let expected_sidecar = format!("{actual_sha}  {expected_archive}");
+        let sidecar = fs::read_to_string(&sidecar_path)
+            .map_err(|error| format!("failed to read {}: {error}", sidecar_path.display()))?;
+        if sidecar.trim_end() != expected_sidecar {
+            return Err(format!("invalid SHA256 sidecar for {expected_archive}"));
+        }
+        let extracted = unique_temp_dir(&format!("validate_{}", target.as_str()))?;
+        let validation = extract_and_validate_native_archive(&archive_path, target, &extracted);
+        let _ = fs::remove_dir_all(&extracted);
+        validation?;
+        expected_files.extend([provenance_path, archive_path, sidecar_path]);
+    }
+
+    let all_targets: BTreeSet<NativeTarget> = NATIVE_TARGETS.into_iter().collect();
+    if validated_targets != all_targets {
+        return Err(format!(
+            "native artifact targets are incomplete: expected {all_targets:?}, got {validated_targets:?}"
+        ));
+    }
+    let actual_files: BTreeSet<PathBuf> = files.into_iter().collect();
+    if actual_files != expected_files {
+        return Err("artifact input contains unexpected or missing files".to_string());
+    }
+    println!("validated {} native artifact targets", NATIVE_TARGETS.len());
+    Ok(())
+}
+
+fn all_files_under(root: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    let Ok(entries) = fs::read_dir(root) else {
+        return files;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            files.extend(all_files_under(&path));
+        } else {
+            files.push(path);
+        }
+    }
+    files
+}
+
+fn run_command(command: &mut Command, description: &str) -> Result<(), String> {
+    let status = command
+        .status()
+        .map_err(|error| format!("failed to run {description}: {error}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("{description} failed with status {status}"))
     }
 }
 
@@ -278,21 +911,21 @@ fn check_release_please_config(issues: &mut Vec<String>) {
 }
 
 fn check_workflows(issues: &mut Vec<String>) {
-    for workflow in [".github/workflows/ci.yml", ".github/workflows/release.yml"] {
+    let paths = [
+        ".github/workflows/ci.yml",
+        ".github/workflows/native.yml",
+        ".github/workflows/release.yml",
+    ];
+    let mut parsed = BTreeMap::new();
+    for workflow in paths {
         let Ok(text) = fs::read_to_string(workflow) else {
             issues.push(format!("FAIL: workflow-missing: {workflow} is required."));
             continue;
         };
-        if let Some(error) = workflow_yaml_error(&text) {
-            issues.push(format!(
-                "FAIL: workflow-yaml-invalid: {workflow} is not valid YAML: {error}."
-            ));
-            continue;
-        }
         let workflow_forbidden = [
             concat!("actions/setup-", "python"),
             concat!("python", " "),
-            concat!("p", "ip"),
+            concat!("p", "ip", " "),
             concat!("py", "test"),
             concat!("ru", "ff"),
             concat!("p", "ip", "-audit"),
@@ -305,35 +938,196 @@ fn check_workflows(issues: &mut Vec<String>) {
                 ));
             }
         }
-        for required in [
-            "cargo test --workspace --locked",
-            "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
-        ] {
-            if workflow.ends_with("ci.yml") && !text.contains(required) {
-                issues.push(format!(
-                    "FAIL: workflow-rust-gate-missing: {workflow} must run {required}."
-                ));
+        match yaml_serde::from_str::<YamlValue>(&text) {
+            Ok(value) => {
+                parsed.insert(workflow, value);
             }
+            Err(error) => issues.push(format!(
+                "FAIL: workflow-yaml-invalid: {workflow} is not valid YAML: {error}."
+            )),
         }
     }
-    let release = fs::read_to_string(".github/workflows/release.yml").unwrap_or_default();
-    for required in [
-        "cargo publish --dry-run --locked",
-        "cargo publish --locked",
-        "cargo run -p xtask --",
-    ] {
-        if !release.contains(required) {
-            issues.push(format!(
-                "FAIL: release-publish-gate-missing: release workflow must run {required}."
-            ));
-        }
+    if let (Some(ci), Some(native), Some(release)) = (
+        parsed.get(".github/workflows/ci.yml"),
+        parsed.get(".github/workflows/native.yml"),
+        parsed.get(".github/workflows/release.yml"),
+    ) {
+        check_workflow_policy(ci, native, release, issues);
     }
 }
 
+#[cfg(test)]
 fn workflow_yaml_error(text: &str) -> Option<String> {
-    yaml_serde::from_str::<yaml_serde::Value>(text)
+    yaml_serde::from_str::<YamlValue>(text)
         .err()
         .map(|error| error.to_string())
+}
+
+fn check_workflow_policy(
+    ci: &YamlValue,
+    native: &YamlValue,
+    release: &YamlValue,
+    issues: &mut Vec<String>,
+) {
+    for event in ["pull_request", "push"] {
+        let branches = yaml_path(ci, &["on", event, "branches"])
+            .and_then(yaml_string_set)
+            .unwrap_or_default();
+        if branches != BTreeSet::from(["main".to_string()]) {
+            issues.push(format!(
+                "FAIL: workflow-trigger-invalid: CI {event} branches must contain only main."
+            ));
+        }
+    }
+    if yaml_path(ci, &["jobs", "native", "uses"]).and_then(YamlValue::as_str)
+        != Some("./.github/workflows/native.yml")
+    {
+        issues.push(
+            "FAIL: workflow-native-reuse-missing: CI native job must call native.yml.".to_string(),
+        );
+    }
+    let required_needs = yaml_path(ci, &["jobs", "required", "needs"])
+        .and_then(yaml_string_set)
+        .unwrap_or_default();
+    let expected_needs: BTreeSet<String> =
+        ["fmt", "clippy", "supply-chain", "publish-dry-run", "native"]
+            .into_iter()
+            .map(str::to_string)
+            .collect();
+    if required_needs != expected_needs {
+        issues.push(
+            "FAIL: workflow-required-incomplete: required job must depend on every mandatory CI job."
+                .to_string(),
+        );
+    }
+    if yaml_path(ci, &["jobs", "required", "if"]).and_then(YamlValue::as_str)
+        != Some("${{ always() }}")
+    {
+        issues.push(
+            "FAIL: workflow-required-condition: required job must use if: always().".to_string(),
+        );
+    }
+
+    for input in [
+        "target",
+        "source-sha",
+        "run-tests",
+        "upload-artifact",
+        "artifact-retention-days",
+    ] {
+        if yaml_path(native, &["on", "workflow_call", "inputs", input]).is_none() {
+            issues.push(format!(
+                "FAIL: workflow-native-input-missing: native workflow input {input} is required."
+            ));
+        }
+    }
+    if yaml_path(native, &["jobs", "native", "permissions", "contents"]).and_then(YamlValue::as_str)
+        != Some("read")
+    {
+        issues.push(
+            "FAIL: workflow-native-permissions: native workflow must use contents: read."
+                .to_string(),
+        );
+    }
+
+    if yaml_path(release, &["jobs", "ci-gate", "permissions", "actions"])
+        .and_then(YamlValue::as_str)
+        != Some("read")
+        || yaml_path(release, &["jobs", "ci-gate", "outputs", "ci-run-id"]).is_none()
+    {
+        issues.push(
+            "FAIL: release-exact-sha-gate-missing: release must resolve an exact-SHA CI run with actions: read."
+                .to_string(),
+        );
+    }
+    if yaml_path(release, &["jobs", "rebuild-artifacts", "uses"]).and_then(YamlValue::as_str)
+        != Some("./.github/workflows/native.yml")
+    {
+        issues.push(
+            "FAIL: release-recovery-reuse-missing: recovery must call native.yml.".to_string(),
+        );
+    }
+    let Some(jobs) = yaml_path(release, &["jobs"]).and_then(YamlValue::as_mapping) else {
+        issues.push("FAIL: release-jobs-missing: release workflow jobs are required.".to_string());
+        return;
+    };
+    let publishers: Vec<&YamlValue> = jobs
+        .values()
+        .filter(|job| yaml_contains_string(job, "gh release upload"))
+        .collect();
+    if publishers.len() != 1
+        || !yaml_contains_string(
+            yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null),
+            "gh release upload",
+        )
+    {
+        issues.push(
+            "FAIL: release-publisher-count: exactly one publish-release-assets job may upload release assets."
+                .to_string(),
+        );
+    }
+    if yaml_path(
+        release,
+        &["jobs", "publish-release-assets", "permissions", "contents"],
+    )
+    .and_then(YamlValue::as_str)
+        != Some("write")
+        || yaml_path(
+            release,
+            &["jobs", "publish-release-assets", "environment", "name"],
+        )
+        .and_then(YamlValue::as_str)
+            != Some("cargo")
+    {
+        issues.push(
+            "FAIL: release-publisher-permissions: the single publisher must use contents: write in cargo."
+                .to_string(),
+        );
+    }
+    if !yaml_contains_string(
+        yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null),
+        "cargo publish --dry-run --locked",
+    ) || !yaml_contains_string(
+        yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null),
+        "cargo publish --locked",
+    ) {
+        issues.push(
+            "FAIL: release-publish-gate-missing: crate publication must retain dry-run and publish steps."
+                .to_string(),
+        );
+    }
+}
+
+fn yaml_path<'a>(value: &'a YamlValue, path: &[&str]) -> Option<&'a YamlValue> {
+    let mut current = value;
+    for key in path {
+        current = current
+            .as_mapping()?
+            .get(YamlValue::String((*key).to_string()))?;
+    }
+    Some(current)
+}
+
+fn yaml_string_set(value: &YamlValue) -> Option<BTreeSet<String>> {
+    value.as_sequence().map(|items| {
+        items
+            .iter()
+            .filter_map(YamlValue::as_str)
+            .map(str::to_string)
+            .collect()
+    })
+}
+
+fn yaml_contains_string(value: &YamlValue, needle: &str) -> bool {
+    match value {
+        YamlValue::String(text) => text.contains(needle),
+        YamlValue::Sequence(items) => items.iter().any(|item| yaml_contains_string(item, needle)),
+        YamlValue::Mapping(mapping) => mapping.iter().any(|(key, value)| {
+            yaml_contains_string(key, needle) || yaml_contains_string(value, needle)
+        }),
+        YamlValue::Tagged(tagged) => yaml_contains_string(&tagged.value, needle),
+        _ => false,
+    }
 }
 
 fn check_no_legacy_surfaces(issues: &mut Vec<String>) {
@@ -1105,7 +1899,14 @@ fn files_under(root: &Path) -> Vec<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::workflow_yaml_error;
+    use super::{
+        check_workflow_policy, create_native_archive, extract_and_validate_native_archive,
+        native_test_command, release_version_from_tag, sha256_file, validate_commit_sha,
+        validate_native_artifact_set, workflow_yaml_error, NativeProvenance, NativeTarget,
+        NATIVE_TARGETS,
+    };
+    use std::fs;
+    use std::path::Path;
 
     #[test]
     fn workflow_yaml_validation_rejects_unindented_heredoc_body() {
@@ -1115,5 +1916,160 @@ mod tests {
 
         assert!(workflow_yaml_error(invalid).is_some());
         assert!(workflow_yaml_error(valid).is_none());
+    }
+
+    #[test]
+    fn native_target_contract_maps_names_and_binaries() {
+        assert_eq!(
+            NativeTarget::parse("linux-x86_64").unwrap().binary_names(),
+            ("codebase-graph", "k-wiki")
+        );
+        assert_eq!(
+            NativeTarget::parse("windows-x86_64")
+                .unwrap()
+                .binary_names(),
+            ("codebase-graph.exe", "k-wiki.exe")
+        );
+        assert!(NativeTarget::parse("linux-arm64").is_err());
+    }
+
+    #[test]
+    fn windows_native_tests_forward_bundled_extensions() {
+        let windows = native_test_command(NativeTarget::WindowsX86_64);
+        assert!(windows.contains(&"--release"));
+        assert!(windows.contains(
+            &"codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions"
+        ));
+
+        let linux = native_test_command(NativeTarget::LinuxX86_64);
+        assert!(!linux.contains(&"--features"));
+        assert!(!linux.contains(&"--release"));
+    }
+
+    #[test]
+    fn release_identity_validation_is_strict() {
+        assert_eq!(release_version_from_tag("v1.2.3").unwrap(), "1.2.3");
+        assert!(release_version_from_tag("1.2.3").is_err());
+        assert!(release_version_from_tag("v1.2").is_err());
+        assert!(validate_commit_sha("0123456789abcdef0123456789abcdef01234567").is_ok());
+        assert!(validate_commit_sha("abc").is_err());
+    }
+
+    #[test]
+    fn archive_contract_rejects_unexpected_entries() {
+        let temp = super::unique_temp_dir("xtask_archive_contract").unwrap();
+        let package = temp.join("package");
+        fs::create_dir_all(&package).unwrap();
+        for name in [
+            "codebase-graph",
+            "k-wiki",
+            "checksums.txt",
+            "install.sh",
+            "install.ps1",
+        ] {
+            fs::write(package.join(name), name).unwrap();
+        }
+        let archive = temp.join("artifact.tar.gz");
+        create_native_archive(&package, &archive, NativeTarget::LinuxX86_64).unwrap();
+        let extracted = temp.join("extracted");
+        let error =
+            extract_and_validate_native_archive(&archive, NativeTarget::LinuxX86_64, &extracted)
+                .unwrap_err();
+        assert!(error.contains("checksums.txt") || error.contains("SHA256"));
+        fs::remove_dir_all(temp).unwrap();
+    }
+
+    #[test]
+    fn complete_artifact_set_rejects_mixed_provenance() {
+        let temp = super::unique_temp_dir("xtask_artifact_set").unwrap();
+        let version = "1.2.3";
+        let commit_sha = "0123456789abcdef0123456789abcdef01234567";
+        for target in NATIVE_TARGETS {
+            write_test_artifact(&temp, target, version, commit_sha);
+        }
+        validate_native_artifact_set(&temp, version, commit_sha).unwrap();
+
+        let provenance_path = temp.join("native-linux-x86_64/provenance.json");
+        let mut provenance: NativeProvenance =
+            serde_json::from_slice(&fs::read(&provenance_path).unwrap()).unwrap();
+        provenance.commit_sha = "ffffffffffffffffffffffffffffffffffffffff".to_string();
+        fs::write(
+            &provenance_path,
+            serde_json::to_vec_pretty(&provenance).unwrap(),
+        )
+        .unwrap();
+        let error = validate_native_artifact_set(&temp, version, commit_sha).unwrap_err();
+        assert!(error.contains("mixed release provenance"));
+        fs::remove_dir_all(temp).unwrap();
+    }
+
+    fn write_test_artifact(root: &Path, target: NativeTarget, version: &str, commit_sha: &str) {
+        let artifact_dir = root.join(format!("native-{}", target.as_str()));
+        let package = artifact_dir.join("package");
+        fs::create_dir_all(&package).unwrap();
+        let (graph_name, wiki_name) = target.binary_names();
+        fs::write(package.join(graph_name), b"graph").unwrap();
+        fs::write(package.join(wiki_name), b"wiki").unwrap();
+        fs::write(package.join("install.sh"), b"installer").unwrap();
+        fs::write(package.join("install.ps1"), b"installer").unwrap();
+        fs::write(
+            package.join("checksums.txt"),
+            format!(
+                "{}  {graph_name}\n{}  {wiki_name}\n",
+                sha256_file(&package.join(graph_name)).unwrap(),
+                sha256_file(&package.join(wiki_name)).unwrap()
+            ),
+        )
+        .unwrap();
+        let archive_name = target.archive_name(version);
+        let archive_path = artifact_dir.join(&archive_name);
+        create_native_archive(&package, &archive_path, target).unwrap();
+        fs::remove_dir_all(&package).unwrap();
+        let archive_sha256 = sha256_file(&archive_path).unwrap();
+        fs::write(
+            artifact_dir.join(format!("{archive_name}.sha256")),
+            format!("{archive_sha256}  {archive_name}\n"),
+        )
+        .unwrap();
+        let provenance = NativeProvenance {
+            schema_version: 1,
+            commit_sha: commit_sha.to_string(),
+            version: version.to_string(),
+            target: target.as_str().to_string(),
+            archive: archive_name,
+            archive_sha256,
+        };
+        fs::write(
+            artifact_dir.join("provenance.json"),
+            serde_json::to_vec_pretty(&provenance).unwrap(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn workflow_policy_requires_one_exact_sha_publisher() {
+        let ci = yaml_serde::from_str(
+            "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
+        )
+        .unwrap();
+        let native = yaml_serde::from_str(
+            "on:\n  workflow_call:\n    inputs:\n      target: {}\n      source-sha: {}\n      run-tests: {}\n      upload-artifact: {}\n      artifact-retention-days: {}\njobs:\n  native:\n    permissions: {contents: read}\n",
+        )
+        .unwrap();
+        let release = yaml_serde::from_str(
+            "jobs:\n  ci-gate:\n    permissions: {actions: read}\n    outputs: {ci-run-id: x}\n  rebuild-artifacts: {uses: './.github/workflows/native.yml'}\n  publish-release-assets:\n    permissions: {contents: write}\n    environment: {name: cargo}\n    steps: [{run: 'gh release upload'}]\n  publish-crate:\n    steps:\n      - {run: 'cargo publish --dry-run --locked'}\n      - {run: 'cargo publish --locked'}\n",
+        )
+        .unwrap();
+        let mut issues = Vec::new();
+        check_workflow_policy(&ci, &native, &release, &mut issues);
+        assert!(issues.is_empty(), "{issues:?}");
+
+        let broken = yaml_serde::from_str(
+            "jobs:\n  ci-gate: {}\n  rebuild-artifacts: {}\n  publish-release-assets: {}\n  build:\n    steps: [{run: 'gh release upload'}]\n",
+        )
+        .unwrap();
+        check_workflow_policy(&ci, &native, &broken, &mut issues);
+        assert!(issues.iter().any(|issue| issue.contains("exact-sha")));
+        assert!(issues.iter().any(|issue| issue.contains("publisher")));
     }
 }

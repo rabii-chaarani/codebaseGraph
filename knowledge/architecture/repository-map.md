@@ -3,10 +3,10 @@ description: Directory-level ownership map and starting points for architecture-
 resource: repository-architecture
 tags:
 - architecture
-- repository-map
 - ownership
+- repository-map
 - source-layout
-timestamp: 2026-08-04
+timestamp: 2026-08-13
 title: Repository Ownership Map
 type: architecture
 ---
@@ -28,7 +28,9 @@ This map connects durable architecture responsibilities to current source locati
 | `src/staging_writer/` | Deterministic row accumulation, merge, connector creation, and staging. |
 | `src/db_writer/` | Embedded graph-store writes, deletion planning, concurrency, retry, and extension setup. |
 | `crates/k-wiki/` | Knowledge Wiki container: OKF API, source reading, validation, compilation, projection, search, rendering, authoring, refresh, and transports. |
-| `crates/xtask/` | Release Verifier container and release gate. |
+| `crates/xtask/` | Release Verifier container, native artifact contract, and release gate. |
+| `.github/actions/setup-native/` | Target-specific native dependency preparation. |
+| `.github/workflows/native.yml` | Reusable cross-platform native test, build, package, and smoke execution. |
 | `tests/` and module-local test modules | Cross-boundary integration tests and component-level regression coverage. |
 | `knowledge/` | Curated repository intent consumed by k-wiki. |
 | `.kwiki/` | Generated wiki projection and static-site state. |
@@ -61,7 +63,7 @@ This map connects durable architecture responsibilities to current source locati
 
 ## Release verification
 
-The Release Verifier is intentionally separate from runtime code. Its release gate checks repository and security policy, validates workflow requirements and release versions, and smoke-tests packaged CLI and MCP negotiation through subprocesses. It validates deployable artifacts rather than linking to runtime internals.
+The Release Verifier is intentionally separate from runtime code. It selects platform-aligned tests, produces deterministic release-ready archives, records exact-SHA provenance, validates complete artifact sets, and smoke-tests packaged CLI and MCP behavior through subprocesses. CI and release call the same reusable native workflow; release promotes only the complete artifact set from successful CI for the exact tag commit.
 
 ## Architecture discovery workflow
 

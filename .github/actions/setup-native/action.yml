@@ -1,0 +1,106 @@
+name: Set up native dependencies
+description: Prepare the target-specific OpenSSL and prebuilt Ladybug libraries.
+
+inputs:
+  target:
+    description: Native target identifier.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Validate target host
+      shell: bash
+      env:
+        NATIVE_TARGET: ${{ inputs.target }}
+      run: |
+        set -euo pipefail
+        case "${NATIVE_TARGET}:${RUNNER_OS}:${RUNNER_ARCH}" in
+          linux-x86_64:Linux:X64|macos-arm64:macOS:ARM64|macos-x86_64:macOS:X64|windows-x86_64:Windows:X64) ;;
+          *)
+            echo "Target ${NATIVE_TARGET} does not match ${RUNNER_OS}/${RUNNER_ARCH}." >&2
+            exit 1
+            ;;
+        esac
+
+    - name: Prepare Windows OpenSSL static libraries
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $triplet = 'x64-windows-static'
+        vcpkg install "openssl:$triplet"
+        $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { 'C:\vcpkg' }
+        $libDir = Join-Path $vcpkgRoot "installed\$triplet\lib"
+        $linkDir = Join-Path $env:RUNNER_TEMP 'lbug-openssl'
+        New-Item -ItemType Directory -Force -Path $linkDir | Out-Null
+        Copy-Item -LiteralPath (Join-Path $libDir 'libssl.lib') -Destination (Join-Path $linkDir 'ssl.lib')
+        Copy-Item -LiteralPath (Join-Path $libDir 'libcrypto.lib') -Destination (Join-Path $linkDir 'crypto.lib')
+        "LIB=$linkDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Resolve Ladybug dependency
+      id: ladybug
+      shell: bash
+      env:
+        NATIVE_TARGET: ${{ inputs.target }}
+      run: |
+        set -euo pipefail
+        version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
+        case "$NATIVE_TARGET" in
+          linux-x86_64) archive='liblbug-static-linux-x86_64-compat.tar.gz' ;;
+          macos-arm64) archive='liblbug-static-osx-arm64.tar.gz' ;;
+          macos-x86_64) archive='liblbug-static-osx-x86_64.tar.gz' ;;
+          windows-x86_64) archive='liblbug-static-windows-x86_64.zip' ;;
+          *) echo "Unsupported native target: $NATIVE_TARGET" >&2; exit 1 ;;
+        esac
+        {
+          echo "version=$version"
+          echo "archive=$archive"
+          echo "cache-dir=$GITHUB_WORKSPACE/.cache/lbug-prebuilt/$version/$NATIVE_TARGET"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Restore Ladybug dependency
+      id: ladybug-cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ${{ steps.ladybug.outputs.cache-dir }}
+        key: lbug-${{ steps.ladybug.outputs.version }}-${{ inputs.target }}-v1
+
+    - name: Download Ladybug dependency
+      if: steps.ladybug-cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        LBUG_ARCHIVE: ${{ steps.ladybug.outputs.archive }}
+        LBUG_CACHE_DIR: ${{ steps.ladybug.outputs.cache-dir }}
+        LBUG_VERSION: ${{ steps.ladybug.outputs.version }}
+      run: |
+        set -euo pipefail
+        archive_path="$RUNNER_TEMP/$LBUG_ARCHIVE"
+        mkdir -p "$LBUG_CACHE_DIR"
+        curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
+          "https://github.com/LadybugDB/ladybug/releases/download/v${LBUG_VERSION}/${LBUG_ARCHIVE}" \
+          -o "$archive_path"
+        case "$LBUG_ARCHIVE" in
+          *.tar.gz) tar xzf "$archive_path" -C "$LBUG_CACHE_DIR" ;;
+          *.zip) unzip -o "$archive_path" -d "$LBUG_CACHE_DIR" ;;
+          *) echo "Unsupported Ladybug archive: $LBUG_ARCHIVE" >&2; exit 1 ;;
+        esac
+
+    - name: Export Ladybug dependency
+      shell: bash
+      env:
+        LBUG_CACHE_DIR: ${{ steps.ladybug.outputs.cache-dir }}
+      run: |
+        set -euo pipefail
+        test -f "$LBUG_CACHE_DIR/lbug.h"
+        if [[ "$RUNNER_OS" == 'Windows' ]]; then
+          test -f "$LBUG_CACHE_DIR/lbug.lib"
+          library_dir="$(cygpath -m "$LBUG_CACHE_DIR")"
+        else
+          test -f "$LBUG_CACHE_DIR/liblbug.a"
+          library_dir="$LBUG_CACHE_DIR"
+        fi
+        {
+          echo "LBUG_LIBRARY_DIR=$library_dir"
+          echo "LBUG_INCLUDE_DIR=$library_dir"
+        } >> "$GITHUB_ENV"

@@ -18,6 +18,7 @@ path = "src/bin/k-wiki.rs"
 [features]
 default = []
 graph-context = []
+bundled-windows-extensions = ["codebase-graph/bundled-windows-extensions"]
 
 [dependencies]
 ammonia = "4.1"

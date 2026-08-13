@@ -7,23 +7,38 @@ on:
   workflow_dispatch:
     inputs:
       publish-existing-tag:
-        description: Re-publish an existing GitHub release tag's native artifacts.
-        required: false
+        description: Existing vX.Y.Z tag to validate or re-publish.
+        required: true
         type: string
-        default: ""
+      artifact-source:
+        description: Promote retained CI artifacts or rebuild all targets when any are missing.
+        required: true
+        type: choice
+        default: promote
+        options:
+          - promote
+          - rebuild-if-missing
+      dry-run:
+        description: Validate the full release without publishing GitHub or Cargo assets.
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ inputs.publish-existing-tag || github.sha }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 env:
-  MACOSX_DEPLOYMENT_TARGET: "13.3"
   CARGO_HTTP_MULTIPLEXING: "false"
   CARGO_NET_RETRY: "10"
 
 jobs:
   release-please:
     name: release please
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.publish-existing-tag == '' }}
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -33,6 +48,7 @@ jobs:
       release-created: ${{ steps.release.outputs.release_created }}
       tag-name: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
+      sha: ${{ steps.release.outputs.sha }}
     steps:
       - name: Create release pull request or GitHub release
         id: release
@@ -47,39 +63,127 @@ jobs:
     needs: release-please
     if: ${{ always() && (github.event_name == 'workflow_dispatch' || needs.release-please.result == 'success') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    permissions:
+      contents: read
     outputs:
       should-publish: ${{ steps.resolve.outputs.should-publish }}
+      automatic: ${{ steps.resolve.outputs.automatic }}
       tag-name: ${{ steps.resolve.outputs.tag-name }}
+      version: ${{ steps.resolve.outputs.version }}
+      source-sha: ${{ steps.resolve.outputs.source-sha }}
+      dry-run: ${{ steps.resolve.outputs.dry-run }}
+      artifact-source: ${{ steps.resolve.outputs.artifact-source }}
     steps:
-      - name: Resolve release tag
+      - name: Resolve tag and source SHA
         id: resolve
         shell: bash
         env:
-          PUBLISH_EXISTING_TAG: ${{ inputs.publish-existing-tag }}
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_TAG: ${{ inputs.publish-existing-tag }}
+          MANUAL_SOURCE: ${{ inputs.artifact-source }}
+          MANUAL_DRY_RUN: ${{ inputs.dry-run }}
           RELEASE_CREATED: ${{ needs.release-please.outputs.release-created }}
           RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
+          RELEASE_SHA: ${{ needs.release-please.outputs.sha }}
         run: |
-          if [[ -n "${PUBLISH_EXISTING_TAG}" ]]; then
-            {
-              echo "should-publish=true"
-              echo "tag-name=${PUBLISH_EXISTING_TAG}"
-            } >> "$GITHUB_OUTPUT"
-          elif [[ "${RELEASE_CREATED}" == "true" ]]; then
-            {
-              echo "should-publish=true"
-              echo "tag-name=${RELEASE_TAG}"
-            } >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            tag="$MANUAL_TAG"
+            [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag: $tag" >&2; exit 1; }
+            source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
+            object_type="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.type')"
+            if [[ "$object_type" == 'tag' ]]; then
+              source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$source_sha" --jq '.object.sha')"
+            fi
+            automatic=false
+            should_publish=true
+            dry_run="$MANUAL_DRY_RUN"
+            artifact_source="$MANUAL_SOURCE"
+          elif [[ "$RELEASE_CREATED" == 'true' ]]; then
+            tag="$RELEASE_TAG"
+            source_sha="$RELEASE_SHA"
+            if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
+              source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
+              object_type="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.type')"
+              if [[ "$object_type" == 'tag' ]]; then
+                source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$source_sha" --jq '.object.sha')"
+              fi
+            fi
+            automatic=true
+            should_publish=true
+            dry_run=false
+            artifact_source=promote
           else
-            {
-              echo "should-publish=false"
-              echo "tag-name="
-            } >> "$GITHUB_OUTPUT"
+            tag=''
+            source_sha=''
+            automatic=false
+            should_publish=false
+            dry_run=true
+            artifact_source=promote
           fi
+          {
+            echo "should-publish=$should_publish"
+            echo "automatic=$automatic"
+            echo "tag-name=$tag"
+            echo "version=${tag#v}"
+            echo "source-sha=$source_sha"
+            echo "dry-run=$dry_run"
+            echo "artifact-source=$artifact_source"
+          } >> "$GITHUB_OUTPUT"
+
+  ci-gate:
+    name: exact-SHA CI gate
+    needs: release-target
+    if: needs.release-target.outputs.should-publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      ci-run-id: ${{ steps.wait.outputs.ci-run-id }}
+      artifacts-available: ${{ steps.wait.outputs.artifacts-available }}
+    steps:
+      - name: Wait for successful CI push run
+        id: wait
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.release-target.outputs.source-sha }}
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + 1800))
+          while (( SECONDS < deadline )); do
+            runs="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$SOURCE_SHA&per_page=100")"
+            run_id="$(jq -r --arg sha "$SOURCE_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push" and .status == "completed" and .conclusion == "success")] | sort_by(.run_number) | last | .id // empty' <<<"$runs")"
+            if [[ -n "$run_id" ]]; then
+              artifact_count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("native-")))] | length')"
+              {
+                echo "ci-run-id=$run_id"
+                if [[ "$artifact_count" == '4' ]]; then
+                  echo "artifacts-available=true"
+                else
+                  echo "artifacts-available=false"
+                fi
+              } >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            failed="$(jq -r --arg sha "$SOURCE_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push" and .status == "completed" and .conclusion != "success")] | length' <<<"$runs")"
+            if [[ "$failed" != '0' ]]; then
+              echo "Exact-SHA CI completed without success for $SOURCE_SHA." >&2
+              exit 1
+            fi
+            sleep 20
+          done
+          echo "Timed out waiting for successful CI for $SOURCE_SHA." >&2
+          exit 1
 
   production-gate:
     name: production release gate
-    needs: release-target
+    needs:
+      - release-target
+      - ci-gate
     if: needs.release-target.outputs.should-publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -87,210 +191,176 @@ jobs:
       name: cargo
     permissions:
       contents: read
-    env:
-      RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
     steps:
-      - name: Check out release tag
+      - name: Check out exact release SHA
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ env.RELEASE_TAG }}
-          fetch-depth: 0
-      - name: Run production release gate
+          ref: ${{ needs.release-target.outputs.source-sha }}
+      - name: Verify package version matches tag
+        run: cargo run -p xtask -- verify-release-version "${{ needs.release-target.outputs.tag-name }}"
+      - name: Run production repository gate
         shell: bash
         env:
           CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT: ${{ vars.CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT }}
-          CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN: ${{ vars.CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN }}
           CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING: ${{ vars.CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING }}
           CODEBASE_GRAPH_REQUIRE_CONDA: ${{ vars.CODEBASE_GRAPH_REQUIRE_CONDA }}
         run: |
+          set -euo pipefail
           args=(release-gate --production)
-          if [[ "${CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT}" == "true" ]]; then
-            args+=(--confirm release-environment)
-          fi
-          if [[ "${CODEBASE_GRAPH_CONFIRM_HOSTED_CI_GREEN}" == "true" ]]; then
-            args+=(--confirm hosted-ci-green)
-          fi
-          if [[ "${CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING}" == "true" ]]; then
-            args+=(--confirm private-vulnerability-reporting)
-          fi
-          if [[ "${CODEBASE_GRAPH_REQUIRE_CONDA}" == "true" ]]; then
-            args+=(--require-conda)
-          fi
+          [[ "$CODEBASE_GRAPH_CONFIRM_RELEASE_ENVIRONMENT" == 'true' ]] && args+=(--confirm release-environment)
+          [[ "$CODEBASE_GRAPH_CONFIRM_PRIVATE_VULNERABILITY_REPORTING" == 'true' ]] && args+=(--confirm private-vulnerability-reporting)
+          [[ "$CODEBASE_GRAPH_REQUIRE_CONDA" == 'true' ]] && args+=(--require-conda)
           cargo run -p xtask -- "${args[@]}"
 
-  build:
-    name: build native release artifacts (${{ matrix.os }})
+  select-artifacts:
+    name: select artifact source
     needs:
       - release-target
+      - ci-gate
       - production-gate
     if: needs.release-target.outputs.should-publish == 'true'
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    permissions:
-      contents: write
+    environment:
+      name: cargo
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      rebuild: ${{ steps.select.outputs.rebuild }}
+    steps:
+      - name: Select promotion or all-target rebuild
+        id: select
+        shell: bash
+        env:
+          ARTIFACT_SOURCE: ${{ needs.release-target.outputs.artifact-source }}
+          ARTIFACTS_AVAILABLE: ${{ needs.ci-gate.outputs.artifacts-available }}
+          AUTOMATIC: ${{ needs.release-target.outputs.automatic }}
+        run: |
+          set -euo pipefail
+          if [[ "$ARTIFACTS_AVAILABLE" == 'true' ]]; then
+            echo 'rebuild=false' >> "$GITHUB_OUTPUT"
+          elif [[ "$AUTOMATIC" == 'false' && "$ARTIFACT_SOURCE" == 'rebuild-if-missing' ]]; then
+            echo 'rebuild=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Exact-SHA CI artifacts are missing or expired; select rebuild-if-missing for manual recovery.' >&2
+            exit 1
+          fi
+
+  rebuild-artifacts:
+    name: rebuild (${{ matrix.target }})
+    needs:
+      - release-target
+      - select-artifacts
+    if: ${{ needs.select-artifacts.outputs.rebuild == 'true' }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            binary: codebase-graph
-            wiki_binary: k-wiki
-            artifact-suffix: linux-x86_64
-            prebuilt_lbug: false
-            lbug_archive: ""
-            rustflags: ""
-            cargo_features: ""
-          - os: macos-latest
-            binary: codebase-graph
-            wiki_binary: k-wiki
-            artifact-suffix: macos-arm64
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-osx-arm64.tar.gz
-            rustflags: ""
-            cargo_features: ""
-          - os: macos-15-intel
-            binary: codebase-graph
-            wiki_binary: k-wiki
-            artifact-suffix: macos-x86_64
-            prebuilt_lbug: true
-            lbug_archive: liblbug-static-osx-x86_64.tar.gz
-            rustflags: ""
-            cargo_features: ""
-          - os: windows-2022
-            binary: codebase-graph.exe
-            wiki_binary: k-wiki.exe
-            artifact-suffix: windows-x86_64
-            prebuilt_lbug: false
-            lbug_archive: ""
-            rustflags: ""
-            cargo_features: "--features bundled-windows-extensions"
-    env:
-      RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
+        target:
+          - linux-x86_64
+          - macos-arm64
+          - macos-x86_64
+          - windows-x86_64
+    uses: ./.github/workflows/native.yml
+    with:
+      target: ${{ matrix.target }}
+      source-sha: ${{ needs.release-target.outputs.source-sha }}
+      run-tests: false
+      upload-artifact: true
+      artifact-retention-days: 7
+
+  validate-artifacts:
+    name: validate complete native artifact set
+    needs:
+      - release-target
+      - ci-gate
+      - select-artifacts
+      - rebuild-artifacts
+    if: ${{ always() && needs.select-artifacts.result == 'success' && (needs.rebuild-artifacts.result == 'success' || needs.rebuild-artifacts.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    environment:
+      name: cargo
     steps:
-      - name: Check out release tag
+      - name: Check out exact release SHA
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ env.RELEASE_TAG }}
-          fetch-depth: 0
-      - name: Prepare OpenSSL static libraries
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $triplet = 'x64-windows-static'
-          vcpkg install "openssl:$triplet"
-          $vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { 'C:\vcpkg' }
-          $libDir = Join-Path $vcpkgRoot "installed\$triplet\lib"
-          $linkDir = Join-Path $env:RUNNER_TEMP 'lbug-openssl'
-          New-Item -ItemType Directory -Force -Path $linkDir | Out-Null
-          Copy-Item (Join-Path $libDir 'libssl.lib') (Join-Path $linkDir 'ssl.lib')
-          Copy-Item (Join-Path $libDir 'libcrypto.lib') (Join-Path $linkDir 'crypto.lib')
-          "LIB=$linkDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Verify package version matches tag
-        shell: bash
-        run: cargo run -p xtask -- verify-release-version "$RELEASE_TAG"
-      - name: Prepare prebuilt liblbug
-        if: ${{ matrix.prebuilt_lbug }}
+          ref: ${{ needs.release-target.outputs.source-sha }}
+      - name: Download promoted CI artifacts
+        if: needs.select-artifacts.outputs.rebuild == 'false'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          run-id: ${{ needs.ci-gate.outputs.ci-run-id }}
+          pattern: native-*
+          path: dist/native
+          github-token: ${{ github.token }}
+      - name: Download rebuilt artifacts
+        if: needs.select-artifacts.outputs.rebuild == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: native-*
+          path: dist/native
+      - name: Validate checksums, provenance, and archive contract
+        run: cargo run -p xtask -- validate-native-artifacts --input dist/native --tag "${{ needs.release-target.outputs.tag-name }}" --commit-sha "${{ needs.release-target.outputs.source-sha }}"
+      - name: Stage complete validated set
         shell: bash
         run: |
-          set -eu
-          lib_dir="$PWD/.cache/lbug-prebuilt"
-          archive="${{ matrix.lbug_archive }}"
-          lbug_version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
-          mkdir -p "$lib_dir"
-          curl --retry 5 --retry-all-errors --connect-timeout 20 -fSL \
-            "https://github.com/LadybugDB/ladybug/releases/download/v${lbug_version}/${archive}" \
-            -o "$RUNNER_TEMP/$archive"
-          tar xzf "$RUNNER_TEMP/$archive" -C "$lib_dir"
-          test -f "$lib_dir/liblbug.a"
-          test -f "$lib_dir/lbug.h"
-          {
-            echo "LBUG_LIBRARY_DIR=$lib_dir"
-            echo "LBUG_INCLUDE_DIR=$lib_dir"
-          } >> "$GITHUB_ENV"
-      - name: Build Rust production binary
-        env:
-          RUSTFLAGS: ${{ matrix.rustflags }}
-          CARGO_FEATURES: ${{ matrix.cargo_features }}
-        shell: bash
-        run: |
-          mkdir -p dist/package dist/smoke
-          cargo build --locked --release --bin codebase-graph ${CARGO_FEATURES}
-          cargo build --locked --release -p k-wiki --bin k-wiki
-          cp "target/release/${{ matrix.binary }}" "dist/smoke/${{ matrix.binary }}"
-          cp "target/release/${{ matrix.wiki_binary }}" "dist/smoke/${{ matrix.wiki_binary }}"
-          chmod +x "dist/smoke/${{ matrix.binary }}"
-          chmod +x "dist/smoke/${{ matrix.wiki_binary }}"
-          cp "dist/smoke/${{ matrix.binary }}" "dist/package/${{ matrix.binary }}"
-          cp "dist/smoke/${{ matrix.wiki_binary }}" "dist/package/${{ matrix.wiki_binary }}"
-          cp "release/install/install.sh" "dist/package/install.sh"
-          cp "release/install/install.ps1" "dist/package/install.ps1"
-          chmod +x "dist/package/${{ matrix.binary }}" "dist/package/${{ matrix.wiki_binary }}" "dist/package/install.sh"
-          checksum_python="$(command -v python3 || command -v python)"
-          "$checksum_python" - <<'PY'
-          from hashlib import sha256
-          from pathlib import Path
+          set -euo pipefail
+          mkdir -p dist/release-assets
+          while IFS= read -r -d '' artifact; do cp "$artifact" dist/release-assets/; done < <(find dist/native -type f -name 'codebase-graph-*.tar.gz' -print0)
+          while IFS= read -r -d '' checksum; do cp "$checksum" dist/release-assets/; done < <(find dist/native -type f -name 'codebase-graph-*.tar.gz.sha256' -print0)
+          test "$(find dist/release-assets -type f | wc -l | tr -d ' ')" = '8'
+      - name: Upload validated release set
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: validated-release-assets
+          path: dist/release-assets/
+          if-no-files-found: error
+          retention-days: 7
 
-          package_dir = Path("dist/package")
-          binary_names = [
-              "${{ matrix.binary }}",
-              "${{ matrix.wiki_binary }}",
-          ]
-          lines = []
-          for name in binary_names:
-              path = package_dir / name
-              lines.append(f"{sha256(path.read_bytes()).hexdigest()}  {name}")
-          (package_dir / "checksums.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
-          PY
-          archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"
-          tar -C dist/package -czf "dist/${archive}" .
-          "$checksum_python" -c 'import hashlib, pathlib, sys; path = pathlib.Path(sys.argv[1]); print(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.as_posix()}")' "dist/${archive}" > "dist/${archive}.sha256"
-      - name: Extract packaged artifact
-        shell: bash
-        run: |
-          rm -rf dist/extracted
-          mkdir -p dist/extracted
-          archive="codebase-graph-${RELEASE_TAG#v}-${{ matrix.artifact-suffix }}.tar.gz"
-          tar -xzf "dist/${archive}" -C dist/extracted
-          test -f "dist/extracted/checksums.txt"
-          test -f "dist/extracted/install.sh"
-          test -f "dist/extracted/install.ps1"
-          test -f "dist/extracted/${{ matrix.binary }}"
-          test -f "dist/extracted/${{ matrix.wiki_binary }}"
-      - name: Dry-run packaged installer (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: bash ./dist/extracted/install.sh --source-dir ./dist/extracted --bin-dir ./dist/install-bin --dry-run
-      - name: Dry-run packaged installer (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./dist/extracted/install.ps1 -SourceDir ./dist/extracted -BinDir ./dist/install-bin -DryRun
-      - name: Smoke-test extracted artifact
-        shell: bash
-        run: |
-          cargo run -p xtask -- smoke-artifact "./dist/extracted/${{ matrix.binary }}"
-          cargo run -p xtask -- smoke-wiki-artifact "./dist/extracted/${{ matrix.wiki_binary }}"
-      - name: Upload native artifacts to GitHub release
+  publish-release-assets:
+    name: publish release assets
+    needs:
+      - release-target
+      - validate-artifacts
+    if: ${{ needs.release-target.outputs.dry-run == 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: cargo
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download validated release set
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: validated-release-assets
+          path: dist/release-assets
+      - name: Upload complete native asset set
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$RELEASE_TAG" dist/codebase-graph-*.tar.gz dist/codebase-graph-*.tar.gz.sha256 --clobber
+        run: gh release upload "${{ needs.release-target.outputs.tag-name }}" dist/release-assets/codebase-graph-*.tar.gz dist/release-assets/codebase-graph-*.tar.gz.sha256 --clobber
 
   publish-crate:
     name: publish crates.io package
     needs:
       - release-please
-      - build
-    if: needs.release-please.outputs.release-created == 'true'
+      - release-target
+      - publish-release-assets
+    if: ${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.dry-run == 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
       name: cargo
+    permissions:
+      contents: read
     steps:
-      - name: Check out release tag
+      - name: Check out exact release SHA
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          ref: ${{ needs.release-please.outputs.tag-name }}
-          fetch-depth: 0
+          ref: ${{ needs.release-target.outputs.source-sha }}
       - name: Verify crates.io package
         run: cargo publish --dry-run --locked
       - name: Publish crates.io package
