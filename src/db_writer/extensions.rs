@@ -1,5 +1,9 @@
 use crate::error::NativeError;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+// LadybugDB 0.17.x stores extensions under its 0.19.0 extension ABI cache.
+// This is intentionally independent of the Rust crate version in Cargo.lock.
+const LADYBUG_EXTENSION_CACHE_VERSION: &str = "0.19.0";
 
 pub fn preseed_ladybug_extensions(include_fts: bool) -> Result<(), NativeError> {
     let home = ladybug_home_dir()?;
@@ -14,12 +18,7 @@ pub fn preseed_ladybug_extensions(include_fts: bool) -> Result<(), NativeError> 
         let Some(bytes) = bundled_extension_bytes(extension) else {
             continue;
         };
-        let extension_dir = home
-            .join(".lbdb")
-            .join("extension")
-            .join("0.17.0")
-            .join(platform)
-            .join(extension);
+        let extension_dir = extension_dir(&home, platform, extension);
         let extension_path = extension_dir.join(format!("lib{extension}.lbug_extension"));
         if extension_path.exists() {
             continue;
@@ -28,6 +27,14 @@ pub fn preseed_ladybug_extensions(include_fts: bool) -> Result<(), NativeError> 
         std::fs::write(extension_path, bytes)?;
     }
     Ok(())
+}
+
+fn extension_dir(home: &Path, platform: &str, extension: &str) -> PathBuf {
+    home.join(".lbdb")
+        .join("extension")
+        .join(LADYBUG_EXTENSION_CACHE_VERSION)
+        .join(platform)
+        .join(extension)
 }
 
 fn ladybug_home_dir() -> Result<PathBuf, NativeError> {
@@ -140,4 +147,18 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
 )))]
 fn bundled_extension_bytes(_extension: &str) -> Option<&'static [u8]> {
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::extension_dir;
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn uses_the_ladybug_runtime_extension_cache_version() {
+        assert_eq!(
+            extension_dir(Path::new("cache"), "linux_amd64", "json"),
+            PathBuf::from("cache/.lbdb/extension/0.19.0/linux_amd64/json")
+        );
+    }
 }
