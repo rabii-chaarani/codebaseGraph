@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.0...v1.4.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* **release:** trigger publication from completed ci ([#73](https://github.com/rabii-chaarani/codebaseGraph/issues/73)) ([8d9cc44](https://github.com/rabii-chaarani/codebaseGraph/commit/8d9cc44e77d8cb5f3bef24a4dd6e550a24aba9ad))
+
 ## [1.4.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.3.1...v1.4.0) (2026-08-13)
 
 
