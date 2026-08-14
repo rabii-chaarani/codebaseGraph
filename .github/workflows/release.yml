@@ -1,7 +1,11 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - main
   workflow_dispatch:
@@ -25,7 +29,7 @@ on:
         default: false
 
 concurrency:
-  group: release-${{ inputs.publish-existing-tag || github.sha }}
+  group: release-${{ github.event_name == 'workflow_run' && 'main' || inputs.publish-existing-tag }}
   cancel-in-progress: false
 
 permissions:
@@ -38,7 +42,7 @@ env:
 jobs:
   release-please:
     name: release please
-    if: github.event_name == 'push'
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -48,15 +52,56 @@ jobs:
       release-created: ${{ steps.release.outputs.release_created }}
       tag-name: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
-      sha: ${{ steps.release.outputs.sha }}
+      ci-run-id: ${{ steps.trigger.outputs.ci-run-id }}
+      ci-head-sha: ${{ steps.trigger.outputs.ci-head-sha }}
     steps:
+      - name: Verify successful CI is for the current main tip
+        id: trigger
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+          CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "$main_sha" != "$CI_HEAD_SHA" ]]; then
+            echo "Skipping stale CI completion for $CI_HEAD_SHA; current main is $main_sha."
+            echo 'current-tip=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo 'current-tip=true'
+            echo "ci-run-id=$CI_RUN_ID"
+            echo "ci-head-sha=$CI_HEAD_SHA"
+          } >> "$GITHUB_OUTPUT"
       - name: Create release pull request or GitHub release
         id: release
+        if: steps.trigger.outputs.current-tip == 'true'
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      - name: Recheck current main tip after release-please
+        if: steps.trigger.outputs.current-tip == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_CREATED: ${{ steps.release.outputs.release_created }}
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          [[ "$main_sha" == "$CI_HEAD_SHA" ]] || {
+            echo "Main advanced to $main_sha while release-please was running; stopping publication for $CI_HEAD_SHA." >&2
+            exit 1
+          }
+          if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_SHA" != "$CI_HEAD_SHA" ]]; then
+            echo "Release-please created a release for $RELEASE_SHA, not triggering CI SHA $CI_HEAD_SHA." >&2
+            exit 1
+          fi
 
   release-target:
     name: resolve release target
@@ -74,6 +119,7 @@ jobs:
       source-sha: ${{ steps.resolve.outputs.source-sha }}
       dry-run: ${{ steps.resolve.outputs.dry-run }}
       artifact-source: ${{ steps.resolve.outputs.artifact-source }}
+      ci-run-id: ${{ steps.resolve.outputs.ci-run-id }}
     steps:
       - name: Resolve tag and source SHA
         id: resolve
@@ -85,7 +131,8 @@ jobs:
           MANUAL_DRY_RUN: ${{ inputs.dry-run }}
           RELEASE_CREATED: ${{ needs.release-please.outputs.release-created }}
           RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
-          RELEASE_SHA: ${{ needs.release-please.outputs.sha }}
+          RELEASE_CI_RUN_ID: ${{ needs.release-please.outputs.ci-run-id }}
+          RELEASE_CI_HEAD_SHA: ${{ needs.release-please.outputs.ci-head-sha }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
@@ -100,16 +147,19 @@ jobs:
             should_publish=true
             dry_run="$MANUAL_DRY_RUN"
             artifact_source="$MANUAL_SOURCE"
+            ci_run_id=''
           elif [[ "$RELEASE_CREATED" == 'true' ]]; then
             tag="$RELEASE_TAG"
-            source_sha="$RELEASE_SHA"
-            if [[ ! "$source_sha" =~ ^[0-9a-f]{40}$ ]]; then
-              source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
-              object_type="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.type')"
-              if [[ "$object_type" == 'tag' ]]; then
-                source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$source_sha" --jq '.object.sha')"
-              fi
+            source_sha="$RELEASE_CI_HEAD_SHA"
+            ci_run_id="$RELEASE_CI_RUN_ID"
+            [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid triggering CI SHA: $source_sha" >&2; exit 1; }
+            [[ "$ci_run_id" =~ ^[0-9]+$ ]] || { echo "Invalid triggering CI run ID: $ci_run_id" >&2; exit 1; }
+            tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
+            object_type="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.type')"
+            if [[ "$object_type" == 'tag' ]]; then
+              tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" --jq '.object.sha')"
             fi
+            [[ "$tag_sha" == "$source_sha" ]] || { echo "Release tag $tag resolves to $tag_sha, not triggering CI SHA $source_sha." >&2; exit 1; }
             automatic=true
             should_publish=true
             dry_run=false
@@ -121,6 +171,7 @@ jobs:
             should_publish=false
             dry_run=true
             artifact_source=promote
+            ci_run_id=''
           fi
           {
             echo "should-publish=$should_publish"
@@ -130,6 +181,7 @@ jobs:
             echo "source-sha=$source_sha"
             echo "dry-run=$dry_run"
             echo "artifact-source=$artifact_source"
+            echo "ci-run-id=$ci_run_id"
           } >> "$GITHUB_OUTPUT"
 
   ci-gate:
@@ -145,14 +197,48 @@ jobs:
       ci-run-id: ${{ steps.wait.outputs.ci-run-id }}
       artifacts-available: ${{ steps.wait.outputs.artifacts-available }}
     steps:
-      - name: Wait for successful CI push run
+      - name: Validate exact-SHA CI push run
         id: wait
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ needs.release-target.outputs.source-sha }}
+          AUTOMATIC: ${{ needs.release-target.outputs.automatic }}
+          REQUESTED_CI_RUN_ID: ${{ needs.release-target.outputs.ci-run-id }}
         run: |
           set -euo pipefail
+          if [[ "$AUTOMATIC" == 'true' ]]; then
+            run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_CI_RUN_ID")"
+            jq -e \
+              --arg sha "$SOURCE_SHA" \
+              --arg run_id "$REQUESTED_CI_RUN_ID" \
+              '.id == ($run_id | tonumber)
+               and .path == ".github/workflows/ci.yml"
+               and .event == "push"
+               and .head_branch == "main"
+               and .head_sha == $sha
+               and .status == "completed"
+               and .conclusion == "success"' <<<"$run" >/dev/null || {
+                echo "Triggering workflow run does not satisfy the exact-SHA main CI contract." >&2
+                exit 1
+              }
+            main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+            [[ "$main_sha" == "$SOURCE_SHA" ]] || {
+              echo "Refusing to release stale CI SHA $SOURCE_SHA; current main is $main_sha." >&2
+              exit 1
+            }
+            artifact_count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_CI_RUN_ID/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("native-")))] | length')"
+            {
+              echo "ci-run-id=$REQUESTED_CI_RUN_ID"
+              if [[ "$artifact_count" == '4' ]]; then
+                echo 'artifacts-available=true'
+              else
+                echo 'artifacts-available=false'
+              fi
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           deadline=$((SECONDS + 1800))
           while (( SECONDS < deadline )); do
             runs="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$SOURCE_SHA&per_page=100")"

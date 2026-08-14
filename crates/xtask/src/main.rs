@@ -95,6 +95,7 @@ fn run() -> Result<(), String> {
     let mut args = env::args().skip(1);
     match args.next().as_deref() {
         Some("release-gate") => release_gate(args.collect()),
+        Some("check-workflows") => check_workflows_command(),
         Some("native-test") => native_test(args.collect()),
         Some("native-artifact") => native_artifact(args.collect()),
         Some("validate-native-artifacts") => validate_native_artifacts(args.collect()),
@@ -118,7 +119,7 @@ fn run() -> Result<(), String> {
         }
         Some(command) => Err(format!("unknown xtask command: {command}")),
         None => Err(
-            "usage: cargo run -p xtask -- <release-gate|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version>"
+            "usage: cargo run -p xtask -- <release-gate|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version>"
                 .to_string(),
         ),
     }
@@ -735,6 +736,20 @@ fn release_gate(args: Vec<String>) -> Result<(), String> {
     }
 }
 
+fn check_workflows_command() -> Result<(), String> {
+    let mut issues = Vec::new();
+    check_workflows(&mut issues);
+    if issues.is_empty() {
+        println!("workflow policy passed");
+        Ok(())
+    } else {
+        for issue in &issues {
+            eprintln!("{issue}");
+        }
+        Err("workflow policy failed".to_string())
+    }
+}
+
 fn check_security_policy(issues: &mut Vec<String>) {
     let path = Path::new("SECURITY.md");
     let Ok(text) = fs::read_to_string(path) else {
@@ -1030,6 +1045,145 @@ fn check_workflow_policy(
         );
     }
 
+    if yaml_path(release, &["on", "push"]).is_some() {
+        issues.push(
+            "FAIL: release-direct-push-trigger: release must wait for the completed CI workflow."
+                .to_string(),
+        );
+    }
+    for (field, expected) in [
+        ("workflows", BTreeSet::from(["CI".to_string()])),
+        ("types", BTreeSet::from(["completed".to_string()])),
+        ("branches", BTreeSet::from(["main".to_string()])),
+    ] {
+        let actual = yaml_path(release, &["on", "workflow_run", field])
+            .and_then(yaml_string_set)
+            .unwrap_or_default();
+        if actual != expected {
+            issues.push(format!(
+                "FAIL: release-workflow-run-trigger: release workflow_run {field} is invalid."
+            ));
+        }
+    }
+    if yaml_path(release, &["on", "workflow_dispatch"]).is_none() {
+        issues.push(
+            "FAIL: release-manual-trigger-missing: release must retain workflow_dispatch recovery."
+                .to_string(),
+        );
+    }
+    if yaml_path(release, &["concurrency", "group"]).and_then(YamlValue::as_str)
+        != Some(
+            "release-${{ github.event_name == 'workflow_run' && 'main' || inputs.publish-existing-tag }}",
+        )
+        || yaml_path(release, &["concurrency", "cancel-in-progress"]).and_then(YamlValue::as_bool)
+            != Some(false)
+    {
+        issues.push(
+            "FAIL: release-concurrency-invalid: automatic releases must serialize as release-main without cancellation."
+                .to_string(),
+        );
+    }
+
+    let release_please =
+        yaml_path(release, &["jobs", "release-please"]).unwrap_or(&YamlValue::Null);
+    for marker in [
+        "github.event_name == 'workflow_run'",
+        "github.event.workflow_run.event == 'push'",
+        "github.event.workflow_run.head_branch == 'main'",
+        "github.event.workflow_run.conclusion == 'success'",
+    ] {
+        if !yaml_path(release_please, &["if"])
+            .is_some_and(|condition| yaml_contains_string(condition, marker))
+        {
+            issues.push(format!(
+                "FAIL: release-success-guard-missing: release-please must require {marker}."
+            ));
+        }
+    }
+    let trigger_step = yaml_step_by_id(release_please, "trigger").unwrap_or(&YamlValue::Null);
+    for (field, expected) in [
+        ("CI_RUN_ID", "${{ github.event.workflow_run.id }}"),
+        ("CI_HEAD_SHA", "${{ github.event.workflow_run.head_sha }}"),
+    ] {
+        if yaml_path(trigger_step, &["env", field]).and_then(YamlValue::as_str) != Some(expected) {
+            issues.push(format!(
+                "FAIL: release-trigger-binding-missing: trigger step {field} must bind {expected}."
+            ));
+        }
+    }
+    for marker in ["git/ref/heads/main", "current-tip"] {
+        if !yaml_path(trigger_step, &["run"]).is_some_and(|run| yaml_contains_string(run, marker)) {
+            issues.push(format!(
+                "FAIL: release-trigger-binding-missing: trigger step must contain {marker}."
+            ));
+        }
+    }
+    let release_action = yaml_step_by_id(release_please, "release").unwrap_or(&YamlValue::Null);
+    if yaml_path(release_action, &["uses"]).and_then(YamlValue::as_str)
+        != Some("googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7")
+    {
+        issues.push(
+            "FAIL: release-please-action-missing: release job must use the pinned release-please action."
+                .to_string(),
+        );
+    }
+    let post_release_step = yaml_step_by_name(
+        release_please,
+        "Recheck current main tip after release-please",
+    )
+    .unwrap_or(&YamlValue::Null);
+    if yaml_path(post_release_step, &["env", "RELEASE_SHA"]).and_then(YamlValue::as_str)
+        != Some("${{ steps.release.outputs.sha }}")
+        || !yaml_path(post_release_step, &["run"]).is_some_and(|run| {
+            yaml_contains_string(run, "main_sha") && yaml_contains_string(run, "CI_HEAD_SHA")
+        })
+    {
+        issues.push(
+            "FAIL: release-post-action-freshness-missing: release-please must recheck the current main tip and release SHA."
+                .to_string(),
+        );
+    }
+    if [
+        release_please,
+        yaml_path(release, &["jobs", "release-target"]).unwrap_or(&YamlValue::Null),
+        yaml_path(release, &["jobs", "ci-gate"]).unwrap_or(&YamlValue::Null),
+    ]
+    .iter()
+    .any(|value| yaml_contains_string(value, "github.sha"))
+    {
+        issues.push(
+            "FAIL: release-github-sha-forbidden: workflow_run releases must use the triggering CI head SHA."
+                .to_string(),
+        );
+    }
+
+    let release_target =
+        yaml_path(release, &["jobs", "release-target"]).unwrap_or(&YamlValue::Null);
+    let resolve_step = yaml_step_by_id(release_target, "resolve").unwrap_or(&YamlValue::Null);
+    for (field, expected) in [
+        (
+            "RELEASE_CI_RUN_ID",
+            "${{ needs.release-please.outputs.ci-run-id }}",
+        ),
+        (
+            "RELEASE_CI_HEAD_SHA",
+            "${{ needs.release-please.outputs.ci-head-sha }}",
+        ),
+    ] {
+        if yaml_path(resolve_step, &["env", field]).and_then(YamlValue::as_str) != Some(expected) {
+            issues.push(format!(
+                "FAIL: release-target-binding-missing: resolve step {field} must bind {expected}."
+            ));
+        }
+    }
+    for marker in ["tag_sha", "source_sha"] {
+        if !yaml_path(resolve_step, &["run"]).is_some_and(|run| yaml_contains_string(run, marker)) {
+            issues.push(format!(
+                "FAIL: release-target-binding-missing: resolve step must preserve {marker}."
+            ));
+        }
+    }
+
     if yaml_path(release, &["jobs", "ci-gate", "permissions", "actions"])
         .and_then(YamlValue::as_str)
         != Some("read")
@@ -1037,6 +1191,51 @@ fn check_workflow_policy(
     {
         issues.push(
             "FAIL: release-exact-sha-gate-missing: release must resolve an exact-SHA CI run with actions: read."
+                .to_string(),
+        );
+    }
+    let ci_gate = yaml_path(release, &["jobs", "ci-gate"]).unwrap_or(&YamlValue::Null);
+    let ci_gate_step = yaml_step_by_id(ci_gate, "wait").unwrap_or(&YamlValue::Null);
+    for (field, expected) in [
+        ("AUTOMATIC", "${{ needs.release-target.outputs.automatic }}"),
+        (
+            "REQUESTED_CI_RUN_ID",
+            "${{ needs.release-target.outputs.ci-run-id }}",
+        ),
+    ] {
+        if yaml_path(ci_gate_step, &["env", field]).and_then(YamlValue::as_str) != Some(expected) {
+            issues.push(format!(
+                "FAIL: release-trigger-run-validation-missing: CI gate {field} must bind {expected}."
+            ));
+        }
+    }
+    for marker in [
+        "if [[ \"$AUTOMATIC\" == 'true' ]]",
+        "actions/runs/$REQUESTED_CI_RUN_ID",
+        ".github/workflows/ci.yml",
+        ".event == \"push\"",
+        ".head_branch == \"main\"",
+        ".status == \"completed\"",
+        ".conclusion == \"success\"",
+    ] {
+        if !yaml_path(ci_gate_step, &["run"]).is_some_and(|run| yaml_contains_string(run, marker)) {
+            issues.push(format!(
+                "FAIL: release-trigger-run-validation-missing: exact triggering CI validation must contain {marker}."
+            ));
+        }
+    }
+    let select_artifacts =
+        yaml_path(release, &["jobs", "select-artifacts"]).unwrap_or(&YamlValue::Null);
+    let select_step = yaml_step_by_id(select_artifacts, "select").unwrap_or(&YamlValue::Null);
+    if yaml_path(select_step, &["env", "AUTOMATIC"]).and_then(YamlValue::as_str)
+        != Some("${{ needs.release-target.outputs.automatic }}")
+        || !yaml_path(select_step, &["run"]).is_some_and(|run| {
+            yaml_contains_string(run, "\"$AUTOMATIC\" == 'false'")
+                && yaml_contains_string(run, "rebuild-if-missing")
+        })
+    {
+        issues.push(
+            "FAIL: release-automatic-rebuild: all-target rebuild recovery must remain manual-only."
                 .to_string(),
         );
     }
@@ -1116,6 +1315,20 @@ fn yaml_string_set(value: &YamlValue) -> Option<BTreeSet<String>> {
             .map(str::to_string)
             .collect()
     })
+}
+
+fn yaml_step_by_id<'a>(job: &'a YamlValue, id: &str) -> Option<&'a YamlValue> {
+    yaml_path(job, &["steps"])?
+        .as_sequence()?
+        .iter()
+        .find(|step| yaml_path(step, &["id"]).and_then(YamlValue::as_str) == Some(id))
+}
+
+fn yaml_step_by_name<'a>(job: &'a YamlValue, name: &str) -> Option<&'a YamlValue> {
+    yaml_path(job, &["steps"])?
+        .as_sequence()?
+        .iter()
+        .find(|step| yaml_path(step, &["name"]).and_then(YamlValue::as_str) == Some(name))
 }
 
 fn yaml_contains_string(value: &YamlValue, needle: &str) -> bool {
@@ -1903,7 +2116,7 @@ mod tests {
         check_workflow_policy, create_native_archive, extract_and_validate_native_archive,
         native_test_command, release_version_from_tag, sha256_file, validate_commit_sha,
         validate_native_artifact_set, workflow_yaml_error, NativeProvenance, NativeTarget,
-        NATIVE_TARGETS,
+        YamlValue, NATIVE_TARGETS,
     };
     use std::fs;
     use std::path::Path;
@@ -2046,30 +2259,201 @@ mod tests {
         .unwrap();
     }
 
-    #[test]
-    fn workflow_policy_requires_one_exact_sha_publisher() {
-        let ci = yaml_serde::from_str(
+    fn valid_ci_workflow() -> YamlValue {
+        yaml_serde::from_str(
             "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
         )
-        .unwrap();
-        let native = yaml_serde::from_str(
+        .unwrap()
+    }
+
+    fn valid_native_workflow() -> YamlValue {
+        yaml_serde::from_str(
             "on:\n  workflow_call:\n    inputs:\n      target: {}\n      source-sha: {}\n      run-tests: {}\n      upload-artifact: {}\n      artifact-retention-days: {}\njobs:\n  native:\n    permissions: {contents: read}\n",
         )
-        .unwrap();
-        let release = yaml_serde::from_str(
-            "jobs:\n  ci-gate:\n    permissions: {actions: read}\n    outputs: {ci-run-id: x}\n  rebuild-artifacts: {uses: './.github/workflows/native.yml'}\n  publish-release-assets:\n    permissions: {contents: write}\n    environment: {name: cargo}\n    steps: [{run: 'gh release upload'}]\n  publish-crate:\n    steps:\n      - {run: 'cargo publish --dry-run --locked'}\n      - {run: 'cargo publish --locked'}\n",
-        )
-        .unwrap();
-        let mut issues = Vec::new();
-        check_workflow_policy(&ci, &native, &release, &mut issues);
-        assert!(issues.is_empty(), "{issues:?}");
+        .unwrap()
+    }
 
-        let broken = yaml_serde::from_str(
-            "jobs:\n  ci-gate: {}\n  rebuild-artifacts: {}\n  publish-release-assets: {}\n  build:\n    steps: [{run: 'gh release upload'}]\n",
-        )
-        .unwrap();
-        check_workflow_policy(&ci, &native, &broken, &mut issues);
-        assert!(issues.iter().any(|issue| issue.contains("exact-sha")));
-        assert!(issues.iter().any(|issue| issue.contains("publisher")));
+    fn valid_release_workflow_text() -> String {
+        r#"on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+concurrency:
+  group: release-${{ github.event_name == 'workflow_run' && 'main' || inputs.publish-existing-tag }}
+  cancel-in-progress: false
+jobs:
+  release-please:
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      ci-run-id: ${{ steps.trigger.outputs.ci-run-id }}
+      ci-head-sha: ${{ steps.trigger.outputs.ci-head-sha }}
+    steps:
+      - id: trigger
+        env:
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+          CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          echo 'current-tip=true'
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+      - name: Recheck current main tip after release-please
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          main_sha=current
+          test "$main_sha" = "$CI_HEAD_SHA"
+  release-target:
+    outputs:
+      ci-run-id: ${{ steps.resolve.outputs.ci-run-id }}
+    steps:
+      - id: resolve
+        env:
+          RELEASE_CI_RUN_ID: ${{ needs.release-please.outputs.ci-run-id }}
+          RELEASE_CI_HEAD_SHA: ${{ needs.release-please.outputs.ci-head-sha }}
+        run: |
+          tag_sha=tag
+          source_sha=source
+  ci-gate:
+    permissions: {actions: read}
+    outputs: {ci-run-id: x}
+    steps:
+      - id: wait
+        env:
+          REQUESTED_CI_RUN_ID: ${{ needs.release-target.outputs.ci-run-id }}
+          AUTOMATIC: ${{ needs.release-target.outputs.automatic }}
+        run: |
+          if [[ "$AUTOMATIC" == 'true' ]]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_CI_RUN_ID"
+            jq '.path == ".github/workflows/ci.yml" and .event == "push" and .head_branch == "main" and .status == "completed" and .conclusion == "success"'
+          fi
+  select-artifacts:
+    steps:
+      - id: select
+        env:
+          AUTOMATIC: ${{ needs.release-target.outputs.automatic }}
+        run: |
+          if [[ "$AUTOMATIC" == 'false' && "$ARTIFACT_SOURCE" == 'rebuild-if-missing' ]]; then
+            echo rebuild
+          fi
+  rebuild-artifacts: {uses: './.github/workflows/native.yml'}
+  publish-release-assets:
+    permissions: {contents: write}
+    environment: {name: cargo}
+    steps: [{run: 'gh release upload'}]
+  publish-crate:
+    steps:
+      - {run: 'cargo publish --dry-run --locked'}
+      - {run: 'cargo publish --locked'}
+"#
+        .to_string()
+    }
+
+    fn workflow_policy_issues(release_text: &str) -> Vec<String> {
+        let release = yaml_serde::from_str(release_text).unwrap();
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            &valid_ci_workflow(),
+            &valid_native_workflow(),
+            &release,
+            &mut issues,
+        );
+        issues
+    }
+
+    #[test]
+    fn workflow_policy_requires_ci_completion_release_trigger() {
+        let issues = workflow_policy_issues(&valid_release_workflow_text());
+        assert!(issues.is_empty(), "{issues:?}");
+    }
+
+    #[test]
+    fn workflow_policy_rejects_direct_release_push_trigger() {
+        let broken = valid_release_workflow_text().replace(
+            "  workflow_dispatch: {}",
+            "  push: {branches: [main]}\n  workflow_dispatch: {}",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-direct-push-trigger")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_ci_success_guard() {
+        let broken = valid_release_workflow_text().replace(
+            "github.event.workflow_run.conclusion == 'success'",
+            "github.event.workflow_run.conclusion != 'cancelled'",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-success-guard-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_github_sha_for_release_identity() {
+        let broken = valid_release_workflow_text().replace(
+            "${{ github.event.workflow_run.head_sha }}",
+            "${{ github.sha }}",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-github-sha-forbidden")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_triggering_run_binding() {
+        let broken = valid_release_workflow_text().replace(
+            "${{ github.event.workflow_run.id }}",
+            "${{ github.run_id }}",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-trigger-binding-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_post_action_freshness_check() {
+        let broken = valid_release_workflow_text().replace(
+            "Recheck current main tip after release-please",
+            "Do something unrelated",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-post-action-freshness-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_automatic_rebuild_recovery() {
+        let broken = valid_release_workflow_text()
+            .replace("\"$AUTOMATIC\" == 'false'", "\"$AUTOMATIC\" == 'true'");
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-automatic-rebuild")),
+            "{issues:?}"
+        );
     }
 }
