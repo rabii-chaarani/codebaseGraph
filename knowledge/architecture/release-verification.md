@@ -1,13 +1,13 @@
 ---
-description: Build-once/promote contract, exact-SHA gating, native target isolation, artifact provenance, and release recovery.
+description: Build-once promotion, CI-completion release orchestration, exact-run gating, and manual recovery.
 resource: repository-architecture
 tags:
 - architecture
-- ci
-- release
 - artifacts
+- ci
 - provenance
-timestamp: 2026-08-13
+- release
+timestamp: 2026-08-14
 title: Native Release Verification
 type: architecture
 ---
@@ -38,22 +38,28 @@ CI runs only for pull requests targeting `main` and pushes to `main`. Formatting
 
 Pull requests validate artifacts without retaining them. Main pushes retain all four release-ready artifacts for 90 days. A final job named `required` depends on every mandatory job and is the sole stable repository-ruleset context.
 
+## Automatic release orchestration
+
+The Release workflow is triggered by completion of the `CI` workflow on `main`, not independently by a branch push. Release-please runs only when the triggering workflow was a completed successful `push` run on `main` and its `head_sha` is still the current `main` tip. Failed, cancelled, pull-request, and non-main completions may create a skipped Release workflow record but cannot mutate release state. A completion that is already stale is rejected before release-please. Because GitHub does not provide an atomic branch-tip check plus action invocation, the workflow rechecks the current tip and release SHA immediately after release-please; if `main` advanced during the action, all artifact and crate publication stops.
+
+Automatic mode binds release identity directly to `github.event.workflow_run.id` and `github.event.workflow_run.head_sha`. It revalidates that run's workflow path, event, branch, status, conclusion, and SHA, and it requires any release-please tag to resolve to that same SHA. Automatic mode never uses `github.sha`, polls for a substitute CI run, or rebuilds missing artifacts. Automatic runs serialize in the `release-main` concurrency group without cancellation, so only a successful current-tip completion owns orchestration.
+
 ## Release promotion
 
-Release resolution produces a tag, package version, and exact commit SHA once. Before any publication, the workflow finds a completed successful `push` run of `ci.yml` whose `head_sha` equals that release SHA. A concurrently running match may be awaited for a bounded period; branch-level or manually confirmed green status is never sufficient.
+Automatic publication downloads all four retained internal artifacts from the exact CI run that triggered Release. A single validation job verifies target completeness, provenance, versions, digests, extraction, installers, and packaged behavior. Missing or expired artifacts stop automatic publication.
 
-The default path downloads all four internal artifacts from that exact CI run. A single validation job verifies target completeness, provenance, versions, digests, extraction, installers, and packaged behavior. Only the single asset publisher receives `contents: write`; it uploads the already validated complete set. Crate publication is automatic-release-only, remains protected by the `cargo` environment, and starts after native asset publication succeeds.
+Only the single asset publisher receives `contents: write`; it uploads the already validated complete set. Crate publication is automatic-release-only, remains protected by the `cargo` environment, and starts after native asset publication succeeds. The environment restricts deployments to `main` but has no required reviewers, so publication remains unattended.
 
 ## Recovery and dry-run
 
-Manual dispatch always requires an existing tag and exact-SHA successful CI:
+Manual dispatch always requires an existing tag and exact-SHA successful CI. Unlike automatic mode, manual recovery may search for the successful CI run for that tag SHA and wait for a concurrently running match for a bounded period:
 
 - `promote` fails if any retained artifact is unavailable.
 - `rebuild-if-missing` is manual-only and rebuilds all four targets through the same reusable workflow. Promoted and rebuilt targets are never mixed.
 - `dry-run` performs resolution, gating, artifact acquisition, validation, extraction, and smoke checks without modifying a GitHub release or publishing crates.
 - Manual execution never publishes a crate.
 
-Release concurrency is scoped to the tag with cancellation disabled so duplicate attempts cannot race publication.
+Manual release concurrency is scoped to the tag with cancellation disabled so duplicate attempts cannot race publication.
 
 ## Change discipline
 

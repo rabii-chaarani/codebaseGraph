@@ -1,14 +1,17 @@
 # Release Process
 
 `codebaseGraph` releases are managed by release-please. Main-branch CI builds and smoke-tests the complete native
-archives. When a release pull request is merged, the release workflow creates a strict `vX.Y.Z` tag, proves that the
-exact tagged commit has a successful main-branch CI run, validates the retained artifact set, and promotes those same
-archives to the GitHub Release before publishing `codebase-graph` to crates.io.
+archives. The Release workflow starts only after that entire CI workflow completes. A successful current-tip `main`
+push lets release-please create or update its release pull request; merging that pull request creates a strict `vX.Y.Z`
+tag, validates and promotes the triggering CI run's retained artifacts, and publishes `codebase-graph` to crates.io.
+Failed, cancelled, pull-request, and non-main completions perform no release mutation. A completion that is already stale
+is skipped before release-please; if `main` advances while release-please is running, a post-action guard stops all asset
+and crate publication.
 
 ## One-Time Setup
 
-Create the protected `cargo` GitHub environment before the first release. Use required reviewers when release approval
-should be manual.
+Create the protected `cargo` GitHub environment before the first release. Keep its deployment policy restricted to
+`main`. Automatic publication is unattended, so the environment must not require reviewers.
 
 Set these `cargo` environment variables to `true` only after the corresponding owner-controlled gate is verified:
 
@@ -38,21 +41,24 @@ Pull requests targeting `main` and pushes to `main` run:
 ## Release Flow
 
 1. Merge normal pull requests into `main` with Conventional Commit-style titles or squash commit messages.
-2. The `Release` workflow opens or updates a release pull request that updates `CHANGELOG.md`, `.release-please-manifest.json`,
+2. After the complete `CI` push workflow succeeds, `Release` verifies that its triggering run is the current `main` tip
+   and passes that exact run ID and SHA to release-please. It rechecks the tip after release-please before continuing.
+3. Release-please opens or updates a release pull request that changes `CHANGELOG.md`, `.release-please-manifest.json`,
    root `Cargo.toml`, and `crates/k-wiki/Cargo.toml` together.
-3. Review and merge the release pull request when ready to publish.
-4. The `Release` workflow creates the `vX.Y.Z` tag and GitHub Release.
-5. The protected jobs locate the successful `ci.yml` push run whose `head_sha` exactly matches the tag, validate all
-   four archives/checksums/provenance records as one set, and upload all public assets from one publisher job.
-6. Automatic releases keep `cargo publish --dry-run --locked` at the immutable tag and publish only after native assets
-   succeed. Manual recovery never publishes the crate.
+4. Review and merge the release pull request when ready to publish. Its `main` CI must complete successfully like any
+   other merge.
+5. The resulting Release run creates the `vX.Y.Z` tag, proves that the tag resolves to the triggering CI SHA, validates
+   all four archives/checksums/provenance records from that exact run, and uploads the public assets from one publisher.
+6. `cargo publish --dry-run --locked` runs at the immutable tag, then the crate publishes automatically after native
+   assets succeed. Manual recovery never publishes the crate.
 
 ## Release Gate
 
 Before publishing a production release, confirm:
 
-- The exact tagged commit has a successful `ci.yml` push run, including Rust tests, formatting, linting, native package
-  builds, advisory scanning, package dry-run, and artifact smoke.
+- The exact tagged commit is the current `main` tip and matches the completed successful `ci.yml` push run that triggered
+  Release, including Rust tests, formatting, linting, native package builds, advisory scanning, package dry-run, and
+  artifact smoke.
 - Native Rust CLI and MCP entrypoints are required in production artifacts.
 - Golden graph fixtures or expected graph-contract tests are current.
 - `SECURITY.md` is present and vulnerability reporting expectations are current.
@@ -65,6 +71,7 @@ Before publishing a production release, confirm:
 Run the local release-gate checker before publishing:
 
 ```bash
+cargo run -p xtask -- check-workflows
 cargo run -p xtask -- release-gate
 cargo run -p xtask -- release-gate --production \
   --confirm release-environment \
@@ -103,7 +110,8 @@ Run the `Release` workflow manually with an existing strict tag:
 - `dry-run: true` performs exact-SHA gating, promotion or recovery, archive/checksum/provenance validation, extraction,
   and smoke checks without modifying a GitHub Release or publishing Cargo.
 
-Every manual mode still requires successful CI for the exact tag commit. Use dry-run first when exercising recovery.
+Every manual mode still searches for and requires successful CI for the exact tag commit. Automatic mode never searches
+for a substitute run: it validates and consumes the triggering run directly. Use dry-run first when exercising recovery.
 
 The packaged installer validates both binaries against `checksums.txt`, runs
 `codebase-graph --help` plus `k-wiki --version`, and only then atomically
