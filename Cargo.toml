@@ -10,7 +10,7 @@ homepage = "https://github.com/rabii-chaarani/codebaseGraph"
 readme = "README.md"
 keywords = ["codebase", "graph", "mcp", "cli", "analysis"]
 categories = ["command-line-utilities", "development-tools"]
-exclude = ["assets/ladybug-extensions/0.17.0/win_amd64/**"]
+exclude = ["assets/ladybug-extensions/0.18.1/win_amd64/**"]
 
 [workspace]
 members = [".", "crates/k-wiki", "crates/xtask"]
@@ -24,7 +24,7 @@ bundled-windows-extensions = []
 
 [dependencies]
 fs2 = "0.4.3"
-lbug = "0.17.1"
+lbug = "0.18.3"
 notify = "8.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
