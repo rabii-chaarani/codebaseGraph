@@ -1,11 +1,10 @@
 use crate::error::NativeError;
 use std::path::{Path, PathBuf};
 
-// Prebuilt Ladybug 0.17.x libraries look in the 0.17.0 cache, while the
-// source-built release library resolves the same extensions from 0.19.0.
-// Seed both compatible cache locations so packaged binaries never download
-// extensions at runtime.
-const LADYBUG_EXTENSION_CACHE_VERSIONS: [&str; 2] = ["0.17.0", "0.19.0"];
+// Both the prebuilt and source-built Ladybug 0.18.3 libraries resolve
+// extensions from this ABI-compatible cache path. Seed it so packaged
+// binaries never download extensions at runtime.
+const LADYBUG_EXTENSION_CACHE_VERSIONS: [&str; 1] = ["0.18.1"];
 
 pub fn preseed_ladybug_extensions(include_fts: bool) -> Result<(), NativeError> {
     let home = ladybug_home_dir()?;
@@ -73,10 +72,10 @@ fn ladybug_platform() -> Option<&'static str> {
 fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/linux_amd64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/linux_amd64/json/libjson.lbug_extension"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/linux_amd64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/linux_amd64/fts/libfts.lbug_extension"
         )),
         _ => None,
     }
@@ -86,10 +85,10 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
 fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/linux_arm64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/linux_arm64/json/libjson.lbug_extension"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/linux_arm64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/linux_arm64/fts/libfts.lbug_extension"
         )),
         _ => None,
     }
@@ -99,10 +98,10 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
 fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/osx_amd64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/osx_amd64/json/libjson.lbug_extension"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/osx_amd64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/osx_amd64/fts/libfts.lbug_extension"
         )),
         _ => None,
     }
@@ -112,10 +111,10 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
 fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/osx_arm64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/osx_arm64/json/libjson.lbug_extension"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/osx_arm64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/osx_arm64/fts/libfts.lbug_extension"
         )),
         _ => None,
     }
@@ -129,10 +128,10 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
 fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/win_amd64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/win_amd64/json/libjson.lbug_extension"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.17.0/win_amd64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.18.1/win_amd64/fts/libfts.lbug_extension"
         )),
         _ => None,
     }
@@ -160,17 +159,10 @@ mod tests {
 
     #[test]
     fn supports_prebuilt_and_source_built_ladybug_extension_cache_versions() {
+        assert_eq!(super::LADYBUG_EXTENSION_CACHE_VERSIONS, ["0.18.1"]);
         assert_eq!(
-            super::LADYBUG_EXTENSION_CACHE_VERSIONS,
-            ["0.17.0", "0.19.0"]
-        );
-        assert_eq!(
-            extension_dir(Path::new("cache"), "0.17.0", "win_amd64", "json"),
-            PathBuf::from("cache/.lbdb/extension/0.17.0/win_amd64/json")
-        );
-        assert_eq!(
-            extension_dir(Path::new("cache"), "0.19.0", "linux_amd64", "json"),
-            PathBuf::from("cache/.lbdb/extension/0.19.0/linux_amd64/json")
+            extension_dir(Path::new("cache"), "0.18.1", "osx_arm64", "json"),
+            PathBuf::from("cache/.lbdb/extension/0.18.1/osx_arm64/json")
         );
     }
 }

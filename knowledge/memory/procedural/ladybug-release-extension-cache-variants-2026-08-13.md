@@ -3,14 +3,14 @@ agent_memory:
   version: 1
   kind: procedural
   scope: repository
-  status: active
+  status: superseded
   owner: codex
   created_at: 2026-08-13T00:00:00+09:30
   last_verified_at: 2026-08-13T00:00:00+09:30
   verified_by: codex
   review_after: null
   supersedes: []
-  superseded_by: null
+  superseded_by: ladybug-0183-link-and-extension-alignment-2026-08-14
   sources:
   - kind: commit
     reference: 'ba7ed2f fix(release): seed both Ladybug extension caches'
@@ -33,6 +33,11 @@ agent_memory:
     actor: codex
     at: 2026-08-13T00:00:00+09:30
     reason: Verified against the distinct 0.19.0 source-built and 0.17.0 prebuilt Ladybug cache requests in the failing logs, and the successful Ubuntu and Windows native-package smoke tests in run 31671399427.
+  - from: active
+    to: superseded
+    actor: codex
+    at: 2026-08-14T15:07:00+09:30
+    reason: The repository now uses lbug 0.18.3 consistently for source and prebuilt modes, so both require ABI-compatible 0.18.1 extension binaries instead of seeding 0.17.0 and 0.19.0 copies.
 description: Prebuilt and source-built Ladybug libraries can resolve the same bundled extensions from different cache-version paths.
 tags:
 - ci

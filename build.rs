@@ -24,4 +24,37 @@ fn main() {
             println!("cargo:rustc-link-search=native={}", path.display());
         }
     }
+
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos")
+        && std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() == Ok("x86_64")
+    {
+        link_macos_x86_compiler_runtime();
+    }
+}
+
+fn link_macos_x86_compiler_runtime() {
+    println!("cargo:rerun-if-env-changed=DEVELOPER_DIR");
+    let output = std::process::Command::new("xcrun")
+        .args(["clang", "--print-resource-dir"])
+        .output()
+        .expect("macOS x86_64 builds require xcrun and clang");
+    assert!(
+        output.status.success(),
+        "xcrun clang --print-resource-dir failed with {}",
+        output.status
+    );
+
+    let resource_dir =
+        String::from_utf8(output.stdout).expect("clang resource directory must be valid UTF-8");
+    let library_dir = std::path::Path::new(resource_dir.trim())
+        .join("lib")
+        .join("darwin");
+    let runtime = library_dir.join("libclang_rt.osx.a");
+    assert!(
+        runtime.is_file(),
+        "macOS compiler runtime not found at {}",
+        runtime.display()
+    );
+    println!("cargo:rustc-link-search=native={}", library_dir.display());
+    println!("cargo:rustc-link-lib=static=clang_rt.osx");
 }
