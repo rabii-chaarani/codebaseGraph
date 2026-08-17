@@ -444,7 +444,15 @@ jobs:
     needs:
       - release-target
       - validate-artifacts
-    if: ${{ needs.release-target.outputs.publish_assets == 'true' }}
+    # Artifact promotion intentionally skips rebuild-artifacts. Override that skipped
+    # ancestor only after every direct publication prerequisite succeeds.
+    if: >-
+      ${{
+        always()
+        && needs.release-target.result == 'success'
+        && needs.validate-artifacts.result == 'success'
+        && needs.release-target.outputs.publish_assets == 'true'
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -470,7 +478,17 @@ jobs:
       - release-please
       - release-target
       - publish-release-assets
-    if: ${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}
+    # Keep the explicit status override through the final job so the intentionally
+    # skipped rebuild ancestor cannot suppress crate publication either.
+    if: >-
+      ${{
+        always()
+        && needs.release-please.result == 'success'
+        && needs.release-target.result == 'success'
+        && needs.publish-release-assets.result == 'success'
+        && needs.release-please.outputs.release-created == 'true'
+        && needs.release-target.outputs.publish_assets == 'true'
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:

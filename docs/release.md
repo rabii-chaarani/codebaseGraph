@@ -53,7 +53,9 @@ Pull requests targeting `main` and pushes to `main` run:
    other merge.
 5. The successful CI run for the release pull request merge enables tag creation. The resulting Release run creates the
    `vX.Y.Z` tag, proves that the tag resolves to the triggering CI SHA, validates all four
-   archives/checksums/provenance records from that exact run, and uploads the public assets from one publisher.
+   archives/checksums/provenance records from that exact run, and uploads the public assets from one publisher. Promotion
+   intentionally skips the rebuild job; the asset and crate publishers explicitly override that skipped ancestor only
+   after their direct prerequisites succeed, so GitHub cannot silently suppress publication after validation.
 6. `cargo publish --dry-run --locked` runs at the immutable tag, then the crate publishes automatically after native
    assets succeed. Manual recovery never publishes the crate.
 
