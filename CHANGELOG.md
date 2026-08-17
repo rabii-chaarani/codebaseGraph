@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.1...v1.4.2) (2026-08-17)
+
+
+### Bug Fixes
+
+* **ci:** repair crates.io package verification ([#75](https://github.com/rabii-chaarani/codebaseGraph/issues/75)) ([5f2686a](https://github.com/rabii-chaarani/codebaseGraph/commit/5f2686af7c83bb7127072739602efc116be2142f))
+
 ## [1.4.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.0...v1.4.1) (2026-08-14)
 
 
