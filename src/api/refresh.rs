@@ -1153,6 +1153,16 @@ pub(crate) struct RefreshState {
     graph_lock: RwLock<()>,
 }
 
+struct RefreshCompletion {
+    event_count: usize,
+    changed_paths: usize,
+    rebuilt: usize,
+    deleted: usize,
+    database_written: bool,
+    overflow_count: usize,
+    filtered_event_count: usize,
+}
+
 impl RefreshState {
     pub(crate) fn with_config(config: RefreshServiceConfig) -> Self {
         let status = RefreshStatus {
@@ -1335,17 +1345,7 @@ impl RefreshState {
         }
     }
 
-    pub(crate) fn mark_refreshed(
-        &self,
-        backend: &str,
-        event_count: usize,
-        changed_paths: usize,
-        rebuilt: usize,
-        deleted: usize,
-        database_written: bool,
-        overflow_count: usize,
-        filtered_event_count: usize,
-    ) {
+    fn mark_refreshed(&self, backend: &str, completion: RefreshCompletion) {
         if let Ok(mut status) = self.status.lock() {
             status.backend = backend.to_string();
             status.refreshing = false;
@@ -1354,19 +1354,21 @@ impl RefreshState {
             status.last_error = None;
             status.last_error_count = 0;
             status.last_retry_unix_ms = None;
-            status.last_event_count = event_count;
-            status.last_changed_paths = changed_paths;
-            status.last_rebuilt = rebuilt;
-            status.last_deleted = deleted;
-            status.last_database_written = database_written;
+            status.last_event_count = completion.event_count;
+            status.last_changed_paths = completion.changed_paths;
+            status.last_rebuilt = completion.rebuilt;
+            status.last_deleted = completion.deleted;
+            status.last_database_written = completion.database_written;
             status.coalesced_event_count = status
                 .coalesced_event_count
-                .saturating_add(event_count.saturating_sub(1));
-            status.overflow_count = status.overflow_count.saturating_add(overflow_count);
+                .saturating_add(completion.event_count.saturating_sub(1));
+            status.overflow_count = status
+                .overflow_count
+                .saturating_add(completion.overflow_count);
             status.filtered_event_count = status
                 .filtered_event_count
-                .saturating_add(filtered_event_count);
-            if database_written {
+                .saturating_add(completion.filtered_event_count);
+            if completion.database_written {
                 status.last_noop_reason = None;
             } else {
                 status.deduplicated_refresh_count =
@@ -1467,16 +1469,11 @@ fn run_refresh_leader(
         max_iterations: None,
     };
 
-    if !refresh_batch_with_state(
-        state,
-        "startup",
-        &execution,
-        0,
-        &BTreeSet::new(),
-        true,
-        0,
-        0,
-    )? {
+    let startup_batch = WatchChangeBatch {
+        full_rescan: true,
+        ..WatchChangeBatch::default()
+    };
+    if !refresh_batch_with_state(state, "startup", &execution, &startup_batch)? {
         return Err("startup repository reconciliation failed".to_string());
     }
 
@@ -1485,15 +1482,14 @@ fn run_refresh_leader(
             let probe = probe_native_watcher(&runtime.repo_root, &filter, &rx)?;
             if probe.delivered {
                 state.set_backend("native");
-                match run_service_native_loop(
-                    state,
+                match run_native_watch(
                     loop_config,
-                    &execution,
                     &filter,
                     watcher,
                     rx,
                     overflowed,
                     probe.queued,
+                    |batch| refresh_batch_with_state(state, "native", &execution, batch),
                 ) {
                     Ok(()) => Ok(()),
                     Err(error) => {
@@ -1523,30 +1519,6 @@ fn run_refresh_leader(
     }
 }
 
-fn run_service_native_loop(
-    state: &Arc<RefreshState>,
-    config: RefreshLoopConfig,
-    execution: &RefreshExecutionPlan,
-    filter: &WatchEventFilter,
-    watcher: notify::RecommendedWatcher,
-    rx: Receiver<WatchMessage>,
-    overflowed: Arc<AtomicBool>,
-    queued: VecDeque<WatchMessage>,
-) -> Result<(), String> {
-    run_native_watch(config, filter, watcher, rx, overflowed, queued, |batch| {
-        refresh_batch_with_state(
-            state,
-            "native",
-            execution,
-            batch.event_count,
-            &batch.paths,
-            batch.full_rescan,
-            batch.overflow_count,
-            batch.filtered_event_count,
-        )
-    })
-}
-
 fn run_service_poll_loop(
     state: &Arc<RefreshState>,
     config: RefreshLoopConfig,
@@ -1555,16 +1527,7 @@ fn run_service_poll_loop(
 ) -> Result<(), String> {
     state.set_backend("poll");
     run_poll_watch(config, filter, |batch| {
-        refresh_batch_with_state(
-            state,
-            "poll",
-            execution,
-            batch.event_count,
-            &batch.paths,
-            batch.full_rescan,
-            batch.overflow_count,
-            batch.filtered_event_count,
-        )
+        refresh_batch_with_state(state, "poll", execution, batch)
     })
 }
 
@@ -1572,19 +1535,19 @@ fn refresh_batch_with_state(
     state: &Arc<RefreshState>,
     backend: &str,
     execution: &RefreshExecutionPlan,
-    event_count: usize,
-    paths: &BTreeSet<String>,
-    full_rescan: bool,
-    overflow_count: usize,
-    filtered_event_count: usize,
+    batch: &WatchChangeBatch,
 ) -> Result<bool, String> {
-    let mut observer =
-        StateRefreshObserver::new(state, backend, overflow_count, filtered_event_count);
+    let mut observer = StateRefreshObserver::new(
+        state,
+        backend,
+        batch.overflow_count,
+        batch.filtered_event_count,
+    );
     execute_refresh_with_policy(
         &mut observer,
-        event_count,
-        paths,
-        full_rescan,
+        batch.event_count,
+        &batch.paths,
+        batch.full_rescan,
         RefreshRetryPolicy::default(),
         |candidate_paths| execution.execute(candidate_paths),
     )
@@ -1632,13 +1595,15 @@ impl RefreshObserver for StateRefreshObserver<'_> {
         self.guard.take();
         self.state.mark_refreshed(
             self.backend,
-            event_count,
-            changed_paths,
-            response.diff.rebuild_paths().len(),
-            response.diff.deleted.len(),
-            response.database_written,
-            self.overflow_count,
-            self.filtered_event_count,
+            RefreshCompletion {
+                event_count,
+                changed_paths,
+                rebuilt: response.diff.rebuild_paths().len(),
+                deleted: response.diff.deleted.len(),
+                database_written: response.database_written,
+                overflow_count: self.overflow_count,
+                filtered_event_count: self.filtered_event_count,
+            },
         );
         Ok(())
     }

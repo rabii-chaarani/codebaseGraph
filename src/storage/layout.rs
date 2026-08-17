@@ -57,10 +57,6 @@ impl ManagedLayout {
         self.storage_root.join("refresh.lock")
     }
 
-    pub(crate) fn worker_lock_path(&self) -> PathBuf {
-        self.storage_root.join("worker.lock")
-    }
-
     pub(crate) fn active_pointer_path(&self) -> PathBuf {
         self.storage_root.join("active.json")
     }
@@ -227,10 +223,6 @@ impl DirectLayout {
 
     pub(crate) fn refresh_lock_path(&self) -> PathBuf {
         self.destination_lock_path("refresh")
-    }
-
-    pub(crate) fn worker_lock_path(&self) -> PathBuf {
-        self.destination_lock_path("worker")
     }
 
     pub(crate) fn artifact_root_path(&self) -> PathBuf {
