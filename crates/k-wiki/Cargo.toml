@@ -1,6 +1,6 @@
 [package]
 name = "k-wiki"
-version = "1.4.4"
+version = "1.4.5"
 edition = "2021"
 rust-version = "1.82"
 description = "OKF knowledge wiki, projection builder, and MCP service."
@@ -23,7 +23,7 @@ bundled-windows-extensions = ["codebase-graph/bundled-windows-extensions"]
 [dependencies]
 ammonia = "4.1"
 axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
-codebase-graph = { version = "1.4.4", path = "../.." }
+codebase-graph = { version = "1.4.5", path = "../.." }
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
