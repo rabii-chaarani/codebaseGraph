@@ -1303,26 +1303,36 @@ fn check_workflow_policy(
     }
     let publish_assets =
         yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
-    if yaml_path(publish_assets, &["if"]).and_then(YamlValue::as_str)
-        != Some("${{ needs.release-target.outputs.publish_assets == 'true' }}")
-    {
+    if !yaml_path(publish_assets, &["if"]).is_some_and(|condition| {
+        [
+            "always()",
+            "needs.release-target.result == 'success'",
+            "needs.validate-artifacts.result == 'success'",
+            "needs.release-target.outputs.publish_assets == 'true'",
+        ]
+        .iter()
+        .all(|marker| yaml_contains_string(condition, marker))
+    }) {
         issues.push(
-            "FAIL: release-publication-condition-invalid: asset publication must require affirmative publish_assets authorization."
+            "FAIL: release-publication-condition-invalid: asset publication must override skipped ancestors while requiring successful validation and affirmative publish_assets authorization."
                 .to_string(),
         );
     }
     let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
     if !yaml_path(publish_crate, &["if"]).is_some_and(|condition| {
-        yaml_contains_string(
-            condition,
+        [
+            "always()",
+            "needs.release-please.result == 'success'",
+            "needs.release-target.result == 'success'",
+            "needs.publish-release-assets.result == 'success'",
             "needs.release-please.outputs.release-created == 'true'",
-        ) && yaml_contains_string(
-            condition,
             "needs.release-target.outputs.publish_assets == 'true'",
-        )
+        ]
+        .iter()
+        .all(|marker| yaml_contains_string(condition, marker))
     }) {
         issues.push(
-            "FAIL: release-crate-publication-condition-invalid: crate publication must require a created release and affirmative publish_assets authorization."
+            "FAIL: release-crate-publication-condition-invalid: crate publication must override skipped ancestors while requiring successful publication prerequisites, a created release, and affirmative publish_assets authorization."
                 .to_string(),
         );
     }
@@ -2416,12 +2426,14 @@ jobs:
           fi
   rebuild-artifacts: {uses: './.github/workflows/native.yml'}
   publish-release-assets:
-    if: ${{ needs.release-target.outputs.publish_assets == 'true' }}
+    needs: [release-target, validate-artifacts]
+    if: ${{ always() && needs.release-target.result == 'success' && needs.validate-artifacts.result == 'success' && needs.release-target.outputs.publish_assets == 'true' }}
     permissions: {contents: write}
     environment: {name: cargo}
     steps: [{run: 'gh release upload'}]
   publish-crate:
-    if: ${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}
+    needs: [release-please, release-target, publish-release-assets]
+    if: ${{ always() && needs.release-please.result == 'success' && needs.release-target.result == 'success' && needs.publish-release-assets.result == 'success' && needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}
     steps:
       - {run: 'cargo publish --dry-run --locked'}
       - {run: 'cargo publish --locked'}
@@ -2600,6 +2612,36 @@ jobs:
             issues
                 .iter()
                 .any(|issue| issue.contains("release-negative-dry-run-condition")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_asset_publication_without_skipped_ancestor_override() {
+        let broken = valid_release_workflow_text().replace(
+            "${{ always() && needs.release-target.result == 'success' && needs.validate-artifacts.result == 'success' && needs.release-target.outputs.publish_assets == 'true' }}",
+            "${{ needs.release-target.outputs.publish_assets == 'true' }}",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-publication-condition-invalid")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_crate_publication_without_skipped_ancestor_override() {
+        let broken = valid_release_workflow_text().replace(
+            "${{ always() && needs.release-please.result == 'success' && needs.release-target.result == 'success' && needs.publish-release-assets.result == 'success' && needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}",
+            "${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-crate-publication-condition-invalid")),
             "{issues:?}"
         );
     }
