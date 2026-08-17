@@ -3,11 +3,11 @@ description: Immutable generation storage, recoverable run workspaces, artifact 
 resource: repository-architecture
 tags:
 - architecture
-- graph-storage
 - generations
+- graph-storage
 - recovery
 - runbook
-timestamp: 2026-08-06
+timestamp: 2026-08-17
 title: Graph Storage Lifecycle and Recovery
 type: architecture
 ---
@@ -54,7 +54,7 @@ storage_root/
 7. **Paths are confined.** Cleanup accepts only expected descendants of the managed root, rejects symlinks and traversal, and never follows links into user data.
 8. **Direct paths remain transactional.** Explicit `--db` and `--manifest` targets use adjacent shadow files plus a checksummed recovery journal so the pair cannot remain half-published after a crash.
 
-These rules replace the stale-file write-intent heuristic and all in-place partition deletion or replacement. The compatibility `atomic_rebuild` request field remains accepted but does not re-enable in-place mutation.
+These rules replace the stale-file write-intent heuristic and all in-place partition deletion or replacement. The compatibility `atomic_rebuild` request field remains accepted but does not re-enable in-place mutation.\n\n## Refresh ownership\n\n`refresh.lock` is independent from `writer.lock` and `state.lock`. Its nonblocking exclusive holder is the only process allowed to create a repository watcher. Followers do not materialize and retry election every second with up to 250 ms of deterministic jitter; operating-system lock release enables takeover without a persisted leader record. On acquisition, the new leader reconciles the active manifest before it begins watching.\n\nManaged storage places the lock under `storage_root`. Direct storage derives a destination-scoped lock from the explicit database and manifest pair. Lock files reject symlinks. Refresh candidates still acquire the ordinary writer lock for the complete mutation, and an unchanged refresh may close its write session without publishing after comparing against the latest active manifest.
 
 ## Run workspace lifecycle
 
@@ -90,13 +90,13 @@ Health and materialization output expose:
 - active generation;
 - reused and rebuilt artifact counts;
 - pending run count and cleanup status;
-- physical and logical database sizes.
+- physical and logical database sizes;\n- refresh role, leader process, pending state, coalesced and overflow counts, deduplicated refreshes, and the latest no-op reason.
 
 A healthy idle managed store reports format v2, one active generation, zero run directories, and `cleanup_pending = false`.
 
 ## Recovery runbook
 
-1. Quiesce the repository watcher and any long-lived readers before reinstalling or investigating retirement.
+1. Confirm the process reporting refresh role `leader`, then quiesce the repository watcher and any long-lived readers before reinstalling or investigating retirement.
 2. Run health and record the storage format, active generation, pending runs, cleanup status, and physical/logical sizes.
 3. If a v2 run or publication was interrupted, enter the runtime through health or another repository operation. The janitor will acquire unlocked run journals and recover them before normal work continues.
 4. If `cleanup_pending` remains true, confirm no process holds the run or retired-generation lease, then enter the runtime again. Do not manually delete a locked workspace or generation.

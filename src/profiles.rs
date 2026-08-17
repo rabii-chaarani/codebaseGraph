@@ -1,6 +1,7 @@
 use crate::protocol::{CaptureMapping, LanguageProfile};
 use std::collections::BTreeMap;
 
+#[derive(Debug)]
 pub(crate) struct ProfileSet {
     by_language: BTreeMap<String, LanguageProfile>,
     suffix_to_language: BTreeMap<String, String>,

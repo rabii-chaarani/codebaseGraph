@@ -4,7 +4,7 @@ use crate::api::{
         RefreshWatchConfig, RefreshWatchObserver, RepoSelector,
     },
     core::{ApiCore, OperationDescriptor},
-    refresh::{run_refresh_watch, start_refresh_service},
+    refresh::{run_refresh_watch, start_refresh_service, RefreshServiceConfig},
 };
 
 pub trait OperationExecutor {
@@ -37,9 +37,9 @@ impl CodebaseGraphApi<ApiCore> {
         self.core.resolve_mcp_operation(tool_name)
     }
 
-    pub(crate) fn with_auto_refresh(selector: RepoSelector) -> Self {
+    pub(crate) fn with_auto_refresh(selector: RepoSelector, config: RefreshServiceConfig) -> Self {
         Self {
-            core: ApiCore::with_refresh_state(Some(start_refresh_service(selector))),
+            core: ApiCore::with_refresh_state(Some(start_refresh_service(selector, config))),
         }
     }
 

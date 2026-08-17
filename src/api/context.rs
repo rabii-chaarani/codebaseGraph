@@ -97,12 +97,88 @@ impl RepoPaths {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub(crate) const INSTALL_CONFIG_SCHEMA_VERSION: u64 = 3;
+pub(crate) const DEFAULT_WORKER_MEMORY_MIB: u64 = 768;
+pub(crate) const DEFAULT_RUST_MEMORY_MIB: u64 = 384;
+pub(crate) const DEFAULT_SPILL_CHUNK_MIB: u64 = 32;
+pub(crate) const DEFAULT_MAX_PARALLELISM: usize = 2;
+
+const fn default_true() -> bool {
+    true
+}
+
+const fn default_worker_memory_mib() -> u64 {
+    DEFAULT_WORKER_MEMORY_MIB
+}
+
+const fn default_rust_memory_mib() -> u64 {
+    DEFAULT_RUST_MEMORY_MIB
+}
+
+const fn default_spill_chunk_mib() -> u64 {
+    DEFAULT_SPILL_CHUNK_MIB
+}
+
+const fn default_max_parallelism() -> usize {
+    DEFAULT_MAX_PARALLELISM
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct GraphInstallMaterializationConfig {
     #[serde(default)]
     pub include: Vec<String>,
     #[serde(default)]
     pub exclude: Vec<String>,
+    #[serde(default = "default_true")]
+    pub include_fts: bool,
+    #[serde(default = "default_true")]
+    pub semantic_enrichment: bool,
+    #[serde(default = "default_worker_memory_mib")]
+    pub worker_memory_mib: u64,
+    #[serde(default = "default_rust_memory_mib")]
+    pub rust_memory_mib: u64,
+    #[serde(default = "default_spill_chunk_mib")]
+    pub spill_chunk_mib: u64,
+    #[serde(default = "default_max_parallelism")]
+    pub max_parallelism: usize,
+}
+
+impl Default for GraphInstallMaterializationConfig {
+    fn default() -> Self {
+        Self {
+            include: Vec::new(),
+            exclude: Vec::new(),
+            include_fts: true,
+            semantic_enrichment: true,
+            worker_memory_mib: DEFAULT_WORKER_MEMORY_MIB,
+            rust_memory_mib: DEFAULT_RUST_MEMORY_MIB,
+            spill_chunk_mib: DEFAULT_SPILL_CHUNK_MIB,
+            max_parallelism: DEFAULT_MAX_PARALLELISM,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum GraphRefreshPolicy {
+    Off,
+    #[default]
+    Leader,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum GraphRefreshBackend {
+    #[default]
+    Auto,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub(crate) struct GraphInstallRefreshConfig {
+    #[serde(default)]
+    pub policy: GraphRefreshPolicy,
+    #[serde(default)]
+    pub backend: GraphRefreshBackend,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -135,6 +211,8 @@ pub(crate) struct GraphInstallConfig {
     pub package_version: Option<String>,
     #[serde(default)]
     pub materialization: GraphInstallMaterializationConfig,
+    #[serde(default)]
+    pub refresh: GraphInstallRefreshConfig,
     #[serde(default)]
     pub mcp: Option<GraphInstallMcpConfig>,
 }
@@ -192,7 +270,9 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
     }
 
     match config.as_ref().and_then(|value| value.schema_version) {
-        Some(2) => resolve_managed_runtime(repo_root, paths, config_path, config.as_ref()),
+        Some(2) | Some(INSTALL_CONFIG_SCHEMA_VERSION) => {
+            resolve_managed_runtime(repo_root, paths, config_path, config.as_ref())
+        }
         Some(1) => Ok(RepoRuntime {
             repo_root: repo_root.clone(),
             state_dir: paths.state_dir.clone(),
@@ -367,6 +447,20 @@ pub(crate) fn read_install_config(path: &Path) -> Result<GraphInstallConfig, Str
     })
 }
 
+pub(crate) fn read_selected_install_config(
+    selector: &RepoSelector,
+) -> Result<Option<GraphInstallConfig>, String> {
+    let repo_root = resolve_repository_root(selector.repo_root.as_deref())?;
+    let config_path = selector
+        .config_path
+        .clone()
+        .unwrap_or_else(|| RepoPaths::derive(&repo_root).config_path);
+    config_path
+        .exists()
+        .then(|| read_install_config(&config_path))
+        .transpose()
+}
+
 fn safe_name(value: &str) -> String {
     let normalized: String = value
         .chars()
@@ -388,7 +482,11 @@ fn safe_name(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{read_install_config, resolve_runtime, RepoPaths};
+    use super::{
+        read_install_config, resolve_runtime, GraphRefreshBackend, GraphRefreshPolicy, RepoPaths,
+        DEFAULT_MAX_PARALLELISM, DEFAULT_RUST_MEMORY_MIB, DEFAULT_SPILL_CHUNK_MIB,
+        DEFAULT_WORKER_MEMORY_MIB,
+    };
     use crate::api::contracts::RepoSelector;
     use crate::storage::atomic::write_json_atomically;
     use crate::storage::direct::{DirectPublishJournal, DirectPublishPhase};
@@ -597,6 +695,26 @@ mod tests {
         assert_eq!(runtime.active_generation.as_deref(), Some("demo"));
         assert_eq!(runtime.db_path, generation.join("graph.ldb"));
         assert_eq!(runtime.manifest_path, generation.join("manifest.json"));
+
+        fs::write(
+            state.join("config.json"),
+            serde_json::to_vec(&serde_json::json!({
+                "schema_version": 3,
+                "repo_root": root,
+                "storage_root": storage,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        let schema_v3_runtime = resolve_runtime(&RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: None,
+            manifest_path: None,
+        })
+        .expect("schema-v3 managed runtime should resolve");
+        assert_eq!(schema_v3_runtime.storage_format(), "managed_v2");
+        assert_eq!(schema_v3_runtime.active_generation.as_deref(), Some("demo"));
         let _ = fs::remove_dir_all(root);
     }
 
@@ -620,6 +738,26 @@ mod tests {
         let mcp = config.mcp.expect("mcp config should deserialize");
         assert_eq!(mcp.server_name, "");
         assert!(mcp.command.is_empty());
+        assert_eq!(config.refresh.policy, GraphRefreshPolicy::Leader);
+        assert_eq!(config.refresh.backend, GraphRefreshBackend::Auto);
+        assert!(config.materialization.include_fts);
+        assert!(config.materialization.semantic_enrichment);
+        assert_eq!(
+            config.materialization.worker_memory_mib,
+            DEFAULT_WORKER_MEMORY_MIB
+        );
+        assert_eq!(
+            config.materialization.rust_memory_mib,
+            DEFAULT_RUST_MEMORY_MIB
+        );
+        assert_eq!(
+            config.materialization.spill_chunk_mib,
+            DEFAULT_SPILL_CHUNK_MIB
+        );
+        assert_eq!(
+            config.materialization.max_parallelism,
+            DEFAULT_MAX_PARALLELISM
+        );
         let _ = fs::remove_dir_all(root);
     }
 }

@@ -5,9 +5,9 @@ tags:
 - architecture
 - constraints
 - decisions
-- invariants
 - graph-storage
-timestamp: 2026-08-06
+- invariants
+timestamp: 2026-08-17
 title: Architecture Invariants
 type: architecture
 ---
@@ -34,7 +34,7 @@ These constraints are the shortest durable test for whether a change still fits 
 15. **Cleanup is confined and primary errors survive.** Cleanup rejects symlinks and escaping paths, is idempotent, and never masks the failure that caused abort.
 16. **Artifacts optimize parsing, not persistence correctness.** Raw partitions are content-addressed across every invalidation dimension; all partitions are assembled deterministically and global semantic enrichment always reruns.
 17. **Legacy state is read-only until explicit reinstall.** Schema-v1 reads remain available; mutations return `legacy_storage_requires_reinstall`. Successful reinstall deletes renamed legacy state immediately after validated v2 activation.
-18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.
+18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.\n19. **Refresh ownership and admission are bounded.** One nonblocking refresh lease holder creates the watcher; followers remain read-only. Event churn collapses to one bounded dirty state, overflow forces a full rescan, CodebaseGraph-owned roots are never admitted, and only refresh intent may close an unchanged writer session without publication.
 
 ## Knowledge invariants
 

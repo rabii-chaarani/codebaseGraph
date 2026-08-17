@@ -150,7 +150,7 @@ fn watch_filter_honors_ignore_config_and_cli_excludes() {
 }
 
 #[test]
-fn watch_filter_keeps_unsupported_files_when_unignored() {
+fn watch_filter_rejects_unsupported_files_when_unignored() {
     let root = unique_temp_dir("codebase-graph-rust-watch-filter-unsupported");
     fs::create_dir_all(&root).unwrap();
     let filter = watch_filter_for(&root, &[]);
@@ -162,10 +162,53 @@ fn watch_filter_keeps_unsupported_files_when_unignored() {
         &["notes.txt"],
     );
 
-    assert_eq!(
-        filter.relevant_paths(&event),
-        BTreeSet::from(["notes.txt".to_string()])
+    assert!(filter.relevant_paths(&event).is_empty());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn watch_filter_ignores_generated_directories_unless_explicitly_included() {
+    let root = unique_temp_dir("codebase-graph-rust-watch-filter-generated");
+    fs::create_dir_all(&root).unwrap();
+    let default_filter = watch_filter_for(&root, &[]);
+    let included_filter = watch_filter_for(&root, &["--include", ".astro/*"]);
+    let event = watch_test_event(
+        &root,
+        EventKind::Modify(notify::event::ModifyKind::Data(
+            notify::event::DataChange::Content,
+        )),
+        &[".astro/generated/routes.rs"],
     );
+
+    assert!(default_filter.relevant_paths(&event).is_empty());
+    assert_eq!(
+        included_filter.relevant_paths(&event),
+        BTreeSet::from([".astro/generated/routes.rs".to_string()])
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn watch_filter_always_admits_configuration_triggers() {
+    let root = unique_temp_dir("codebase-graph-rust-watch-filter-config");
+    fs::create_dir_all(root.join(".codebaseGraph")).unwrap();
+    fs::write(root.join(".codebaseGraphignore"), "*.json\n").unwrap();
+    fs::write(root.join(".codebaseGraph/config.json"), "{}\n").unwrap();
+    let filter = watch_filter_for(&root, &["--exclude", "*.json"]);
+
+    for path in [".codebaseGraph/config.json", ".codebaseGraphignore"] {
+        let event = watch_test_event(
+            &root,
+            EventKind::Modify(notify::event::ModifyKind::Data(
+                notify::event::DataChange::Content,
+            )),
+            &[path],
+        );
+        assert_eq!(
+            filter.relevant_paths(&event),
+            BTreeSet::from([path.to_string()])
+        );
+    }
     let _ = fs::remove_dir_all(root);
 }
 
@@ -226,6 +269,7 @@ fn watch_batch_coalesces_burst_events_until_quiet() {
             &["a.py"],
         )),
         &rx,
+        None,
         &mut queued,
         &filter,
         Duration::from_millis(10),
@@ -239,6 +283,86 @@ fn watch_batch_coalesces_burst_events_until_quiet() {
         batch.paths,
         BTreeSet::from(["a.py".to_string(), "b.py".to_string()])
     );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn watch_batch_overflow_collapses_to_one_full_rescan_marker() {
+    let mut batch = WatchChangeBatch::default();
+    batch.extend_paths((0..=4_096).map(|index| format!("src/file-{index}.rs")));
+
+    assert!(batch.full_rescan);
+    assert!(batch.paths.is_empty());
+    assert_eq!(batch.overflow_count, 1);
+
+    batch.extend_paths(["src/ignored-after-overflow.rs".to_string()]);
+    assert!(batch.paths.is_empty());
+    assert_eq!(batch.overflow_count, 1);
+}
+
+#[test]
+fn watch_batch_counts_filtered_paths_without_retaining_them() {
+    let root = unique_temp_dir("codebase-graph-rust-watch-filter-count");
+    fs::create_dir_all(&root).unwrap();
+    let filter = watch_filter_for(&root, &[]);
+    let mut batch = WatchChangeBatch::default();
+
+    apply_watch_message(
+        WatchMessage::Event(watch_test_event(
+            &root,
+            EventKind::Modify(notify::event::ModifyKind::Any),
+            &["keep.rs", "notes.txt"],
+        )),
+        &filter,
+        &mut batch,
+    )
+    .unwrap();
+
+    assert_eq!(batch.paths, BTreeSet::from(["keep.rs".to_string()]));
+    assert_eq!(batch.filtered_event_count, 1);
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn watch_batch_directory_remove_and_rename_force_full_rescan() {
+    let root = unique_temp_dir("codebase-graph-rust-watch-directory-change");
+    fs::create_dir_all(&root).unwrap();
+    let filter = watch_filter_for(&root, &[]);
+
+    for event in [
+        watch_test_event(
+            &root,
+            EventKind::Remove(notify::event::RemoveKind::Folder),
+            &["src/removed"],
+        ),
+        watch_test_event(
+            &root,
+            EventKind::Modify(notify::event::ModifyKind::Name(
+                notify::event::RenameMode::Both,
+            )),
+            &["src/old", "src/new"],
+        ),
+    ] {
+        let mut batch = WatchChangeBatch::default();
+        apply_watch_message(WatchMessage::Event(event), &filter, &mut batch).unwrap();
+        assert!(batch.full_rescan);
+        assert!(batch.paths.is_empty());
+        assert_eq!(batch.event_count, 1);
+    }
+
+    let mut unsupported_file = WatchChangeBatch::default();
+    apply_watch_message(
+        WatchMessage::Event(watch_test_event(
+            &root,
+            EventKind::Remove(notify::event::RemoveKind::File),
+            &["notes.txt"],
+        )),
+        &filter,
+        &mut unsupported_file,
+    )
+    .unwrap();
+    assert!(!unsupported_file.full_rescan);
+    assert!(unsupported_file.paths.is_empty());
     let _ = fs::remove_dir_all(root);
 }
 
@@ -272,6 +396,7 @@ fn watch_batch_flushes_under_sustained_churn() {
             &["initial.py"],
         )),
         &rx,
+        None,
         &mut queued,
         &filter,
         Duration::from_millis(100),
@@ -312,6 +437,7 @@ fn watch_batch_coalesces_queued_events_into_follow_up_refresh() {
     let batch = collect_watch_batch(
         rx.recv().unwrap(),
         &rx,
+        None,
         &mut queued,
         &filter,
         Duration::from_millis(10),
@@ -342,6 +468,7 @@ fn watch_batch_propagates_watcher_errors() {
     let error = collect_watch_batch(
         WatchMessage::Error("backend failed".to_string()),
         &rx,
+        None,
         &mut queued,
         &filter,
         Duration::from_millis(1),
@@ -703,6 +830,58 @@ fn watch_once_runs_single_refresh_and_exits() {
 
     assert!(text.contains("watch event=refreshed event_count=0 changed_paths=0"));
     assert!(root.join(".codebaseGraph").join("manifest.json").exists());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn unchanged_refresh_keeps_generation_but_explicit_build_still_publishes() {
+    let root = unique_temp_dir("codebase-graph-rust-refresh-noop");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    setup_fixture_repo(&root);
+    let active_path = root.join(".codebaseGraph/storage/active.json");
+    let initial_active = fs::read(&active_path).unwrap();
+
+    let mut watch_output = Vec::new();
+    run(
+        [
+            "watch",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--once",
+            "--no-git",
+            "--no-fts",
+            "--no-semantic-enrichment",
+        ],
+        &mut watch_output,
+    )
+    .unwrap();
+    assert!(String::from_utf8(watch_output)
+        .unwrap()
+        .contains("database_written=false"));
+    assert_eq!(fs::read(&active_path).unwrap(), initial_active);
+
+    let mut build_output = Vec::new();
+    run(
+        [
+            "build",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "changed",
+            "--no-git",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut build_output,
+    )
+    .unwrap();
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&build_output).unwrap()["database_written"],
+        true
+    );
+    assert_ne!(fs::read(&active_path).unwrap(), initial_active);
     let _ = fs::remove_dir_all(root);
 }
 

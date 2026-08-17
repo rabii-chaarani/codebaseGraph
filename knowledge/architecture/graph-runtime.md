@@ -6,7 +6,7 @@ tags:
 - components
 - graph-runtime
 - rust
-timestamp: 2026-08-06
+timestamp: 2026-08-17
 title: Graph Runtime Architecture
 type: architecture
 ---
@@ -72,7 +72,7 @@ The Materialization API requests these operations but does not publish paths its
 
 ## Refresh behavior
 
-The Repository Refresh Service supports continuous and one-shot refresh. It filters and coalesces filesystem events into bounded batches, resolves canonical repository context, normalizes refresh options, and reuses generation-backed materialization. Transient failures are classified and retried with bounded backoff. Runtime entry also gives the janitor an opportunity to recover abandoned work and retry retirement.
+The Repository Refresh Service supports continuous and one-shot refresh. Continuous refresh is a cross-process elected role: one nonblocking `refresh.lock` holder performs a manifest catch-up before creating the watcher, while followers remain read-only and retry election with deterministic jitter. Install schema v3 defaults to `refresh.policy = leader`; `off` starts a watcher-free MCP runtime.\n\nThe leader admits supported source and rebuild-triggering configuration events, never admits CodebaseGraph-owned state or storage roots, and collapses churn into one dirty signal plus a bounded path set. Path-count, byte-count, or watcher-channel overflow becomes one full-rescan marker. After the materialization writer lock is held, refresh intent may discard an unchanged candidate without publishing a generation; explicit builds retain their publication semantics. Transient failures are classified and retried with bounded backoff.
 
 ## Source evidence
 

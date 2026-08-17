@@ -1,6 +1,105 @@
 use super::*;
 
 #[test]
+fn mcp_options_resolve_config_defaults_and_cli_overrides() {
+    let root = unique_temp_dir("codebase-graph-rust-mcp-runtime-settings");
+    let state = root.join(".codebaseGraph");
+    fs::create_dir_all(&state).unwrap();
+    fs::write(
+        state.join("config.json"),
+        serde_json::to_vec(&json!({
+            "schema_version": 3,
+            "repo_root": root,
+            "refresh": {"policy": "off", "backend": "auto"},
+            "materialization": {
+                "worker_memory_mib": 900,
+                "rust_memory_mib": 450,
+                "spill_chunk_mib": 45,
+                "max_parallelism": 3
+            }
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let options = McpServeOptions::parse(
+        &[
+            "--repo-root".into(),
+            root.to_string_lossy().into_owned(),
+            "--refresh-policy".into(),
+            "leader".into(),
+            "--worker-memory-mib".into(),
+            "1024".into(),
+            "--rust-memory-mib".into(),
+            "512".into(),
+            "--spill-chunk-mib".into(),
+            "64".into(),
+            "--max-parallelism".into(),
+            "4".into(),
+        ],
+        format::mcp_help(),
+    )
+    .unwrap();
+    let settings = options.runtime_settings().unwrap();
+    assert_eq!(
+        settings.refresh_policy,
+        crate::api::context::GraphRefreshPolicy::Leader
+    );
+    assert_eq!(settings.worker_memory_mib, 1024);
+    assert_eq!(settings.rust_memory_mib, 512);
+    assert_eq!(settings.spill_chunk_mib, 64);
+    assert_eq!(settings.max_parallelism, 4);
+
+    let http = McpHttpOptions::parse(
+        &[
+            "--repo-root".into(),
+            root.to_string_lossy().into_owned(),
+            "--refresh-policy".into(),
+            "off".into(),
+            "--worker-memory-mib".into(),
+            "800".into(),
+            "--rust-memory-mib".into(),
+            "400".into(),
+        ],
+        format::mcp_help(),
+    )
+    .unwrap();
+    assert_eq!(
+        http.serve.runtime_settings().unwrap().refresh_policy,
+        crate::api::context::GraphRefreshPolicy::Off
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn mcp_options_reject_invalid_resource_limits() {
+    let error = McpServeOptions::parse(
+        &["--worker-memory-mib".into(), "0".into()],
+        format::mcp_help(),
+    )
+    .unwrap_err();
+    assert!(error.contains("positive integer"));
+
+    let root = unique_temp_dir("codebase-graph-rust-mcp-invalid-limits");
+    fs::create_dir_all(&root).unwrap();
+    let options = McpServeOptions::parse(
+        &[
+            "--repo-root".into(),
+            root.to_string_lossy().into_owned(),
+            "--worker-memory-mib".into(),
+            "256".into(),
+        ],
+        format::mcp_help(),
+    )
+    .unwrap();
+    assert!(options
+        .runtime_settings()
+        .unwrap_err()
+        .contains("rust_memory_mib"));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn mcp_graph_query_binds_json_parameters() {
     let root = unique_temp_dir("codebase-graph-rust-mcp-query-params");
     fs::create_dir_all(&root).unwrap();
@@ -13,6 +112,11 @@ fn mcp_graph_query_binds_json_parameters() {
         db: None,
         manifest: None,
         api: None,
+        refresh_policy: None,
+        worker_memory_mib: None,
+        rust_memory_mib: None,
+        spill_chunk_mib: None,
+        max_parallelism: None,
     };
     let result = mcp_call_tool_result(
         "graph_query",
@@ -107,6 +211,11 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         db: None,
         manifest: None,
         api: None,
+        refresh_policy: None,
+        worker_memory_mib: None,
+        rust_memory_mib: None,
+        spill_chunk_mib: None,
+        max_parallelism: None,
     };
     let mut output = Vec::new();
     serve_mcp_stdio(&options, std::io::Cursor::new(input), &mut output).unwrap();
@@ -161,6 +270,59 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         .unwrap()
         .starts_with("error tool=graph_query type=ValueError"));
 
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn mcp_stdio_refresh_policy_off_is_watcher_free() {
+    let root = unique_temp_dir("codebase-graph-rust-mcp-refresh-off");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    setup_fixture_repo(&root);
+
+    let input = [
+        json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": "2025-11-25"},
+        }),
+        json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "graph_health",
+                "arguments": {"include_structured_content": true},
+            },
+        }),
+    ]
+    .iter()
+    .map(serde_json::to_string)
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap()
+    .join("\n")
+        + "\n";
+    let options = McpServeOptions {
+        repo_root: Some(root.clone()),
+        config: None,
+        db: None,
+        manifest: None,
+        api: None,
+        refresh_policy: Some(crate::api::context::GraphRefreshPolicy::Off),
+        worker_memory_mib: None,
+        rust_memory_mib: None,
+        spill_chunk_mib: None,
+        max_parallelism: None,
+    };
+    let mut output = Vec::new();
+    serve_mcp_stdio(&options, std::io::Cursor::new(input), &mut output).unwrap();
+    let responses = String::from_utf8(output)
+        .unwrap()
+        .lines()
+        .map(|line| serde_json::from_str::<serde_json::Value>(line).unwrap())
+        .collect::<Vec<_>>();
+    assert!(responses[1]["result"]["structuredContent"]["refresh"].is_null());
     let _ = fs::remove_dir_all(root);
 }
 

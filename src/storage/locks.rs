@@ -41,6 +41,7 @@ impl Drop for LockedFile {
 pub(crate) type WriterLease = LockedFile;
 pub(crate) type StateLease = LockedFile;
 pub(crate) type RunLease = LockedFile;
+pub(crate) type RefreshLease = LockedFile;
 
 pub(crate) fn open_locked(
     path: impl AsRef<Path>,
