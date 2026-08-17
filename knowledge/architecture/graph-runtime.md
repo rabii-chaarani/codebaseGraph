@@ -6,7 +6,7 @@ tags:
 - components
 - graph-runtime
 - rust
-timestamp: 2026-08-17
+timestamp: 2026-08-18
 title: Graph Runtime Architecture
 type: architecture
 ---
@@ -22,7 +22,7 @@ The Graph Runtime is the product executable and embeddable library. It exposes o
 | Public boundary | Public API Contracts, Public API Facade, Unified API Core, Catalog Provider, Response Presenter | Define stable requests and responses, register operations once, dispatch them, and present typed or compact block output. |
 | Runtime preparation | Request Normalizer, Repository Runtime Resolver | Apply canonical defaults, reject invalid requests, resolve schema-v1 versus storage-v2 state, and select Managed or Direct storage mode. |
 | Application services | Graph Read Service, Materialization API, Repository Lifecycle Service, Repository Refresh Service | Execute graph reads, generation builds, installation lifecycle, and refresh behavior independently of transport. |
-| Build pipeline | Source Scanner, Execution Planner, Semantic Enricher, Graph Writer | Revalidate inputs, reuse or rebuild raw partitions, enrich all partitions, and assemble deterministic candidate rows. |
+| Build pipeline | Source Scanner, Execution Planner, Graph Writer, Search Index Builder, Database Phase Runner | Revalidate inputs, reuse or rebuild raw partitions, externally merge deterministic rows, build disk-backed search, and load a candidate within hard memory limits. |
 | Persistence | Graph Store | Own immutable generation publication, read leases, abandoned-run recovery, retirement, direct-mode recovery, and partition artifacts. |
 
 ## Dependency direction
@@ -55,7 +55,7 @@ The Graph Read Service reads health and metadata, performs ranked search and rel
 
 A managed read resolves `active.json` under a shared state lock and holds a shared lease on that generation for the complete database operation. This lease, rather than a stale timestamp, prevents retirement while a reader is active.
 
-Graph writes enter through the Materialization API and [Materialization Pipeline](./materialization-pipeline.md). The Graph Writer produces a deterministic candidate; the Graph Store holds the exclusive writer lock for the complete mutation, validates the reopened candidate, and atomically publishes its generation pointer. It never applies source deltas to the active database.
+Graph writes enter through the Materialization API and [Materialization Pipeline](./materialization-pipeline.md). The bounded pipeline releases each partition after use, stages deterministic sorted runs, builds a generation-owned disk search sidecar, and runs Ladybug loading in an RSS-supervised child. Semantic enrichment is retired from production; its legacy options are accepted only for compatibility. The Graph Store holds the exclusive writer lock for the complete mutation, validates the reopened candidate and sidecar, and atomically publishes its generation pointer. It never applies source deltas to the active database.
 
 ## Storage and recovery boundary
 

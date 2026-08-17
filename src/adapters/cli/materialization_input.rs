@@ -20,6 +20,10 @@ pub(crate) struct MaterializeOptions {
     pub(crate) exclude_patterns: Vec<String>,
     pub(crate) candidate_paths: Vec<String>,
     pub(crate) parallel: bool,
+    pub(crate) worker_memory_mib: Option<u64>,
+    pub(crate) rust_memory_mib: Option<u64>,
+    pub(crate) spill_chunk_mib: Option<u64>,
+    pub(crate) max_parallelism: Option<usize>,
     pub(crate) progress: bool,
     pub(crate) help: bool,
     pub(crate) json_output: bool,
@@ -44,6 +48,10 @@ impl Default for MaterializeOptions {
             exclude_patterns: Vec::new(),
             candidate_paths: Vec::new(),
             parallel: true,
+            worker_memory_mib: None,
+            rust_memory_mib: None,
+            spill_chunk_mib: None,
+            max_parallelism: None,
             progress: false,
             help: false,
             json_output: false,
@@ -59,7 +67,7 @@ impl MaterializeOptions {
     pub(crate) fn parse_with_command(args: &[String], command_name: &str) -> Result<Self, String> {
         let mut options = Self {
             include_fts: true,
-            semantic_enrichment: true,
+            semantic_enrichment: false,
             use_git: true,
             ..Self::default()
         };
@@ -158,6 +166,25 @@ impl MaterializeOptions {
                     options.parallel = true;
                     index += 1;
                 }
+                "--worker-memory-mib" => {
+                    options.worker_memory_mib = Some(parse_positive_u64(args, index)?);
+                    index += 2;
+                }
+                "--rust-memory-mib" => {
+                    options.rust_memory_mib = Some(parse_positive_u64(args, index)?);
+                    index += 2;
+                }
+                "--spill-chunk-mib" => {
+                    options.spill_chunk_mib = Some(parse_positive_u64(args, index)?);
+                    index += 2;
+                }
+                "--max-parallelism" => {
+                    let value = parse_positive_u64(args, index)?;
+                    options.max_parallelism = Some(usize::try_from(value).map_err(|_| {
+                        format!("{} exceeds this platform's usize range", args[index])
+                    })?);
+                    index += 2;
+                }
                 "--progress" => {
                     options.progress = true;
                     index += 1;
@@ -176,6 +203,19 @@ impl MaterializeOptions {
         }
         Ok(options)
     }
+}
+
+fn parse_positive_u64(args: &[String], option_index: usize) -> Result<u64, String> {
+    let option = &args[option_index];
+    let value = args
+        .get(option_index + 1)
+        .ok_or_else(|| format!("{option} requires a positive integer"))?
+        .parse::<u64>()
+        .map_err(|_| format!("{option} requires a positive integer"))?;
+    if value == 0 {
+        return Err(format!("{option} requires a positive integer"));
+    }
+    Ok(value)
 }
 
 pub(in crate::adapters::cli) fn materialize_like_help(command_name: &str) -> &'static str {
@@ -204,7 +244,7 @@ pub(in crate::adapters::cli) fn materialize_request(
             .map(|path| path.to_string_lossy().to_string()),
         mode: options.mode.clone(),
         include_fts: options.include_fts,
-        semantic_enrichment: options.semantic_enrichment,
+        semantic_enrichment: false,
         semantic_provider_mode: options.semantic_provider_mode.clone(),
         use_git: options.use_git,
         git_diff: options.git_diff,
@@ -213,6 +253,10 @@ pub(in crate::adapters::cli) fn materialize_request(
         exclude_patterns: options.exclude_patterns.clone(),
         candidate_paths: options.candidate_paths.clone(),
         parallel: options.parallel,
+        worker_memory_mib: options.worker_memory_mib,
+        rust_memory_mib: options.rust_memory_mib,
+        spill_chunk_mib: options.spill_chunk_mib,
+        max_parallelism: options.max_parallelism,
         progress: options.progress,
         output_format,
     }
@@ -236,6 +280,14 @@ mod tests {
             "--include".to_string(),
             "src/**/*.rs".to_string(),
             "--single-thread".to_string(),
+            "--worker-memory-mib".to_string(),
+            "640".to_string(),
+            "--rust-memory-mib".to_string(),
+            "320".to_string(),
+            "--spill-chunk-mib".to_string(),
+            "16".to_string(),
+            "--max-parallelism".to_string(),
+            "3".to_string(),
         ])
         .expect("command options should parse");
 
@@ -254,6 +306,21 @@ mod tests {
         assert!(request.git_diff);
         assert_eq!(request.include_patterns, ["src/**/*.rs"]);
         assert!(!request.parallel);
+        assert_eq!(request.worker_memory_mib, Some(640));
+        assert_eq!(request.rust_memory_mib, Some(320));
+        assert_eq!(request.spill_chunk_mib, Some(16));
+        assert_eq!(request.max_parallelism, Some(3));
         assert_eq!(request.output_format, OutputFormat::Block);
+    }
+
+    #[test]
+    fn materialize_memory_overrides_reject_zero_and_non_numeric_values() {
+        for args in [
+            vec!["--worker-memory-mib".to_string(), "0".to_string()],
+            vec!["--max-parallelism".to_string(), "many".to_string()],
+        ] {
+            let error = MaterializeOptions::parse(&args).unwrap_err();
+            assert!(error.contains("requires a positive integer"));
+        }
     }
 }

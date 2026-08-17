@@ -9,7 +9,7 @@ use crate::protocol::{
     NativeSyntaxMaterializationResponse, MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
 };
 use crate::storage::direct::{DirectStore, DirectWriteSession};
-use crate::storage::layout::{DirectLayout, RepositoryLayout};
+use crate::storage::layout::{DirectLayout, RepositoryLayout, DIRECT_DB_SIDECAR_SUFFIXES};
 use crate::storage::managed::{GraphStorage, ManagedStore, ManagedWriteSession, StorageMode};
 use crate::storage::run_workspace::{RunPhase, RunWorkspace};
 use std::collections::{BTreeMap, BTreeSet};
@@ -40,6 +40,10 @@ pub(crate) struct MaterializeOptions {
     pub(crate) exclude_patterns: Vec<String>,
     pub(crate) candidate_paths: Vec<String>,
     pub(crate) parallel: bool,
+    pub(crate) worker_memory_mib: Option<u64>,
+    pub(crate) rust_memory_mib: Option<u64>,
+    pub(crate) spill_chunk_mib: Option<u64>,
+    pub(crate) max_parallelism: Option<usize>,
     pub(crate) progress: bool,
     pub(crate) plan_only: bool,
     pub(crate) intent: MaterializationIntent,
@@ -72,6 +76,10 @@ impl Default for MaterializeOptions {
             exclude_patterns: Vec::new(),
             candidate_paths: Vec::new(),
             parallel: true,
+            worker_memory_mib: None,
+            rust_memory_mib: None,
+            spill_chunk_mib: None,
+            max_parallelism: None,
             progress: false,
             plan_only: false,
             intent: MaterializationIntent::ExplicitBuild,
@@ -93,7 +101,7 @@ impl MaterializeOptions {
             storage_root: runtime.storage_root.clone(),
             mode: request.mode.clone(),
             include_fts: request.include_fts,
-            semantic_enrichment: request.semantic_enrichment,
+            semantic_enrichment: false,
             semantic_provider_mode: request.semantic_provider_mode.clone(),
             use_git: request.use_git,
             git_diff: request.git_diff,
@@ -102,6 +110,10 @@ impl MaterializeOptions {
             exclude_patterns: request.exclude_patterns.clone(),
             candidate_paths: request.candidate_paths.clone(),
             parallel: request.parallel,
+            worker_memory_mib: request.worker_memory_mib,
+            rust_memory_mib: request.rust_memory_mib,
+            spill_chunk_mib: request.spill_chunk_mib,
+            max_parallelism: request.max_parallelism,
             progress: request.progress,
             plan_only,
             ..Self::default()
@@ -113,6 +125,10 @@ impl MaterializeOptions {
 pub(crate) struct ConfigScanRules {
     pub(crate) include_patterns: Vec<String>,
     pub(crate) exclude_patterns: Vec<String>,
+    pub(crate) worker_memory_mib: Option<u64>,
+    pub(crate) rust_memory_mib: Option<u64>,
+    pub(crate) spill_chunk_mib: Option<u64>,
+    pub(crate) max_parallelism: Option<usize>,
 }
 
 #[cfg(test)]
@@ -134,7 +150,7 @@ pub(crate) fn materialization_request(
             .map(|path| path.to_string_lossy().to_string()),
         mode: options.mode.clone(),
         include_fts: options.include_fts,
-        semantic_enrichment: options.semantic_enrichment,
+        semantic_enrichment: false,
         semantic_provider_mode: options.semantic_provider_mode.clone(),
         use_git: options.use_git,
         git_diff: options.git_diff,
@@ -143,6 +159,10 @@ pub(crate) fn materialization_request(
         exclude_patterns: options.exclude_patterns.clone(),
         candidate_paths: options.candidate_paths.clone(),
         parallel: options.parallel,
+        worker_memory_mib: options.worker_memory_mib,
+        rust_memory_mib: options.rust_memory_mib,
+        spill_chunk_mib: options.spill_chunk_mib,
+        max_parallelism: options.max_parallelism,
         progress: options.progress,
         output_format,
     })
@@ -190,6 +210,8 @@ pub(crate) fn execute_materialization_request(
     String,
 > {
     let mut request = request;
+    request.semantic_enrichment = false;
+    request.semantic_provider_mode = "local_only".to_string();
     let execution = prepare_storage_execution(options)?;
     request.db_path = execution.request_db_path().to_string_lossy().into_owned();
     request.staging_dir = execution.staging_root().to_string_lossy().into_owned();
@@ -428,6 +450,28 @@ pub(crate) fn build_request(
     };
     let staging_dir = paths.state_dir.join("native-staging");
     let artifact_root = paths.state_dir.join("artifacts");
+    let worker_memory_mib = options
+        .worker_memory_mib
+        .or(config_rules.worker_memory_mib)
+        .unwrap_or(crate::api::context::DEFAULT_WORKER_MEMORY_MIB);
+    let rust_memory_mib = options
+        .rust_memory_mib
+        .or(config_rules.rust_memory_mib)
+        .unwrap_or(crate::api::context::DEFAULT_RUST_MEMORY_MIB);
+    let spill_chunk_mib = options
+        .spill_chunk_mib
+        .or(config_rules.spill_chunk_mib)
+        .unwrap_or(crate::api::context::DEFAULT_SPILL_CHUNK_MIB);
+    let max_parallelism = options
+        .max_parallelism
+        .or(config_rules.max_parallelism)
+        .unwrap_or(crate::api::context::DEFAULT_MAX_PARALLELISM);
+    validate_materialization_limits(
+        worker_memory_mib,
+        rust_memory_mib,
+        spill_chunk_mib,
+        max_parallelism,
+    )?;
 
     Ok(NativeSyntaxMaterializationRequest {
         source_root: source_root.to_string_lossy().to_string(),
@@ -447,13 +491,17 @@ pub(crate) fn build_request(
         artifact_root: artifact_root.to_string_lossy().into_owned(),
         db_path: db_path.to_string_lossy().to_string(),
         include_fts: options.include_fts,
-        semantic_enrichment: options.semantic_enrichment,
+        semantic_enrichment: false,
         semantic_provider_mode: options.semantic_provider_mode.clone(),
         schema_statements: Vec::new(),
         staging_dir: staging_dir.to_string_lossy().to_string(),
         atomic_rebuild: true,
         strict: true,
         parallel: options.parallel,
+        worker_memory_mib,
+        rust_memory_mib,
+        spill_chunk_mib,
+        max_parallelism,
         progress: options.progress,
     })
 }
@@ -478,7 +526,42 @@ pub(crate) fn read_materialization_config_rules(path: &Path) -> Result<ConfigSca
             .and_then(|payload| payload.get("exclude"))
             .map(json_string_array)
             .unwrap_or_default(),
+        worker_memory_mib: materialization
+            .and_then(|payload| payload.get("worker_memory_mib"))
+            .and_then(serde_json::Value::as_u64),
+        rust_memory_mib: materialization
+            .and_then(|payload| payload.get("rust_memory_mib"))
+            .and_then(serde_json::Value::as_u64),
+        spill_chunk_mib: materialization
+            .and_then(|payload| payload.get("spill_chunk_mib"))
+            .and_then(serde_json::Value::as_u64),
+        max_parallelism: materialization
+            .and_then(|payload| payload.get("max_parallelism"))
+            .and_then(serde_json::Value::as_u64)
+            .and_then(|value| usize::try_from(value).ok()),
     })
+}
+
+fn validate_materialization_limits(
+    worker_memory_mib: u64,
+    rust_memory_mib: u64,
+    spill_chunk_mib: u64,
+    max_parallelism: usize,
+) -> Result<(), String> {
+    if worker_memory_mib == 0
+        || rust_memory_mib == 0
+        || spill_chunk_mib == 0
+        || max_parallelism == 0
+    {
+        return Err("materialization memory limits and max_parallelism must be positive".into());
+    }
+    if rust_memory_mib > worker_memory_mib {
+        return Err("rust_memory_mib must not exceed worker_memory_mib".into());
+    }
+    if spill_chunk_mib > rust_memory_mib {
+        return Err("spill_chunk_mib must not exceed rust_memory_mib".into());
+    }
+    Ok(())
 }
 
 pub(crate) fn json_string_array(value: &serde_json::Value) -> Vec<String> {
@@ -627,13 +710,19 @@ pub(crate) fn write_manifest(
     request: &NativeSyntaxMaterializationRequest,
     materialized_entries: &BTreeMap<String, ManifestEntry>,
     graph_build_digest: Option<String>,
+    search_backend: Option<crate::protocol::SearchBackendMetadata>,
 ) -> Result<NativeManifest, String> {
+    let files = materialized_entries
+        .iter()
+        .map(|(path, entry)| (path.clone(), entry.clone().compact()))
+        .collect();
     let manifest = NativeManifest {
         schema_version: request.manifest_schema_version,
         ontology: request.ontology.clone(),
         parser_version: request.parser_version.clone(),
         graph_build_digest,
-        files: materialized_entries.clone(),
+        search_backend,
+        files,
     };
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|error| {
@@ -733,6 +822,7 @@ fn finalize_materialization(
         request,
         &response.materialized_entries,
         response.graph_build_digest.clone(),
+        response.search_backend.clone(),
     ) {
         Ok(manifest) => manifest,
         Err(error) => return Err(execution.abort_with_cleanup(error)),
@@ -908,11 +998,30 @@ fn validate_candidate_bundle(
             response.graph_build_digest
         ));
     }
-    if manifest.files != response.materialized_entries {
+    if manifest.search_backend != response.search_backend {
+        return Err(format!(
+            "published manifest {} does not match the materialized search backend",
+            manifest_path.display()
+        ));
+    }
+    let expected_files = response
+        .materialized_entries
+        .iter()
+        .map(|(path, entry)| (path.clone(), entry.clone().compact()))
+        .collect::<BTreeMap<_, _>>();
+    if manifest.files != expected_files {
         return Err(format!(
             "published manifest {} does not match materialized entries",
             manifest_path.display()
         ));
+    }
+    if let Some(search_backend) = manifest.search_backend.as_ref() {
+        crate::search_index::validate(db_path, search_backend).map_err(|error| {
+            format!(
+                "published search sidecar for {} is invalid: {error}",
+                db_path.display()
+            )
+        })?;
     }
 
     let node_count = crate::api::graph_read::count_graph_nodes(db_path)?;
@@ -989,7 +1098,7 @@ fn cleanup_direct_candidate(session: &DirectWriteSession) -> Result<(), String> 
             cleanup_errors.push(error);
         }
     }
-    for suffix in ["wal", "tmp", "lock"] {
+    for suffix in DIRECT_DB_SIDECAR_SUFFIXES {
         let sidecar = PathBuf::from(format!(
             "{}.{}",
             session.db_candidate_path().display(),
@@ -1086,6 +1195,7 @@ mod tests {
             ontology: "code_ontology_v1".to_string(),
             parser_version: "native".to_string(),
             graph_build_digest: Some("digest".to_string()),
+            search_backend: None,
             files: BTreeMap::from([(
                 "src/lib.rs".to_string(),
                 ManifestEntry {
@@ -1098,6 +1208,8 @@ mod tests {
                     edge_ids: Vec::new(),
                     node_types: BTreeMap::new(),
                     edge_types: BTreeMap::new(),
+                    node_count: 0,
+                    edge_count: 0,
                     materialized_at: "unix:0".to_string(),
                 },
             )]),
@@ -1244,7 +1356,11 @@ mod tests {
             serde_json::to_vec(&json!({
                 "materialization": {
                     "include": ["src/**/*.rs"],
-                    "exclude": ["target/**"]
+                    "exclude": ["target/**"],
+                    "worker_memory_mib": 640,
+                    "rust_memory_mib": 320,
+                    "spill_chunk_mib": 16,
+                    "max_parallelism": 1
                 }
             }))
             .expect("config should serialize"),
@@ -1295,6 +1411,46 @@ mod tests {
         );
         assert_eq!(request.ignore_patterns, vec!["build/".to_string()]);
         assert!(request.candidate_paths.is_empty());
+        assert_eq!(request.worker_memory_mib, 640);
+        assert_eq!(request.rust_memory_mib, 320);
+        assert_eq!(request.spill_chunk_mib, 16);
+        assert_eq!(request.max_parallelism, 1);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn materialization_option_limits_override_install_config() {
+        let root = unique_temp_dir("codebase-graph-api-build-limit-override");
+        let state_dir = root.join(".codebaseGraph");
+        fs::create_dir_all(&state_dir).unwrap();
+        fs::write(
+            state_dir.join("config.json"),
+            serde_json::to_vec(&json!({
+                "materialization": {
+                    "worker_memory_mib": 640,
+                    "rust_memory_mib": 320,
+                    "spill_chunk_mib": 16,
+                    "max_parallelism": 1
+                }
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let request = build_request(&MaterializeOptions {
+            source_root: Some(root.clone()),
+            worker_memory_mib: Some(768),
+            rust_memory_mib: Some(384),
+            spill_chunk_mib: Some(32),
+            max_parallelism: Some(2),
+            ..MaterializeOptions::default()
+        })
+        .unwrap();
+
+        assert_eq!(request.worker_memory_mib, 768);
+        assert_eq!(request.rust_memory_mib, 384);
+        assert_eq!(request.spill_chunk_mib, 32);
+        assert_eq!(request.max_parallelism, 2);
         let _ = fs::remove_dir_all(root);
     }
 

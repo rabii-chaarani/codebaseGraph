@@ -102,7 +102,6 @@ fn transport_adapters_use_only_the_public_api_facade() {
         ["crate", "::db_writer"].concat(),
         ["crate", "::execution"].concat(),
         ["crate", "::scan"].concat(),
-        ["crate", "::semantic_enrichment"].concat(),
         ["crate", "::staging_writer"].concat(),
     ];
     let adapters_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/adapters");
@@ -207,7 +206,6 @@ fn transport_adapters_do_not_import_product_execution_services() {
         ["crate", "::db_writer"].concat(),
         ["crate", "::scan"].concat(),
         ["crate", "::execution"].concat(),
-        ["crate", "::semantic_enrichment"].concat(),
         ["crate", "::staging_writer"].concat(),
         ["crate", "::adapters::cli::graph"].concat(),
         ["crate", "::adapters::cli::materialization"].concat(),
@@ -259,17 +257,16 @@ fn mcp_tools_leave_product_request_and_refresh_policy_in_the_api() {
 #[test]
 fn only_graph_writer_submits_database_updates() {
     let graph_writer = include_str!("../staging_writer/writer.rs");
-    assert!(graph_writer.contains(&["write", "_database("].concat()));
+    assert!(graph_writer.contains(&["write", "_database_with_metrics("].concat()));
 
     let other_materialization_modules = [
         include_str!("../execution/run.rs"),
         include_str!("../execution/plan.rs"),
         include_str!("../execution/parallel.rs"),
-        include_str!("../semantic_enrichment/mod.rs"),
         include_str!("../adapters/cli/materialization/command.rs"),
         include_str!("materialization.rs"),
     ];
     for source in other_materialization_modules {
-        assert!(!source.contains(&["write", "_database("].concat()));
+        assert!(!source.contains(&["write", "_database_with_metrics("].concat()));
     }
 }

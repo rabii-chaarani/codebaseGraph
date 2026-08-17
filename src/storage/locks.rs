@@ -42,6 +42,7 @@ pub(crate) type WriterLease = LockedFile;
 pub(crate) type StateLease = LockedFile;
 pub(crate) type RunLease = LockedFile;
 pub(crate) type RefreshLease = LockedFile;
+#[allow(dead_code)] // Consumed by the isolated worker supervisor in stacked PR 3.
 pub(crate) type WorkerLease = LockedFile;
 
 pub(crate) fn open_locked(

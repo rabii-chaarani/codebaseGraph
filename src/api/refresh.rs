@@ -57,7 +57,7 @@ impl Default for RefreshServiceConfig {
     fn default() -> Self {
         Self {
             include_fts: true,
-            semantic_enrichment: true,
+            semantic_enrichment: false,
             worker_memory_mib: crate::api::context::DEFAULT_WORKER_MEMORY_MIB,
             rust_memory_mib: crate::api::context::DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: crate::api::context::DEFAULT_SPILL_CHUNK_MIB,
@@ -1008,6 +1008,56 @@ impl RefreshExecutionPlan {
 }
 
 #[derive(Clone, Copy, Debug)]
+struct RefreshServiceContext<'a> {
+    state: &'a Arc<RefreshState>,
+    execution: &'a RefreshExecutionPlan,
+}
+
+impl<'a> RefreshServiceContext<'a> {
+    fn new(state: &'a Arc<RefreshState>, execution: &'a RefreshExecutionPlan) -> Self {
+        Self { state, execution }
+    }
+
+    fn refresh_batch(&self, backend: &'a str, batch: &WatchChangeBatch) -> Result<bool, String> {
+        let mut observer = StateRefreshObserver::new(
+            self.state,
+            backend,
+            batch.overflow_count,
+            batch.filtered_event_count,
+        );
+        execute_refresh_with_policy(
+            &mut observer,
+            batch.event_count,
+            &batch.paths,
+            batch.full_rescan,
+            RefreshRetryPolicy::default(),
+            |candidate_paths| self.execution.execute(candidate_paths),
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct RefreshWatchRuntime<'a> {
+    service: RefreshServiceContext<'a>,
+    config: RefreshLoopConfig,
+    filter: &'a WatchEventFilter,
+}
+
+impl<'a> RefreshWatchRuntime<'a> {
+    fn new(
+        service: RefreshServiceContext<'a>,
+        config: RefreshLoopConfig,
+        filter: &'a WatchEventFilter,
+    ) -> Self {
+        Self {
+            service,
+            config,
+            filter,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct RefreshRetryPolicy {
     pub(crate) initial_delay: Duration,
     pub(crate) max_delay: Duration,
@@ -1080,6 +1130,20 @@ pub(crate) fn execute_refresh_with_policy(
             }
         }
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct RefreshStatusMetrics<'a> {
+    backend: &'a str,
+    event_count: usize,
+    changed_paths: usize,
+    rebuilt: usize,
+    deleted: usize,
+    database_written: bool,
+    overflow_count: usize,
+    filtered_event_count: usize,
+    phase_high_water_marks: &'a BTreeMap<String, u64>,
+    spill_bytes: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -1335,39 +1399,31 @@ impl RefreshState {
         }
     }
 
-    pub(crate) fn mark_refreshed(
-        &self,
-        backend: &str,
-        event_count: usize,
-        changed_paths: usize,
-        rebuilt: usize,
-        deleted: usize,
-        database_written: bool,
-        overflow_count: usize,
-        filtered_event_count: usize,
-    ) {
+    pub(crate) fn mark_refreshed(&self, metrics: RefreshStatusMetrics<'_>) {
         if let Ok(mut status) = self.status.lock() {
-            status.backend = backend.to_string();
+            status.backend = metrics.backend.to_string();
             status.refreshing = false;
             status.pending = false;
             status.last_refresh_unix_ms = Some(unix_ms());
             status.last_error = None;
             status.last_error_count = 0;
             status.last_retry_unix_ms = None;
-            status.last_event_count = event_count;
-            status.last_changed_paths = changed_paths;
-            status.last_rebuilt = rebuilt;
-            status.last_deleted = deleted;
-            status.last_database_written = database_written;
+            status.last_event_count = metrics.event_count;
+            status.last_changed_paths = metrics.changed_paths;
+            status.last_rebuilt = metrics.rebuilt;
+            status.last_deleted = metrics.deleted;
+            status.last_database_written = metrics.database_written;
             status.coalesced_event_count = status
                 .coalesced_event_count
-                .saturating_add(event_count.saturating_sub(1));
-            status.overflow_count = status.overflow_count.saturating_add(overflow_count);
+                .saturating_add(metrics.event_count.saturating_sub(1));
+            status.overflow_count = status.overflow_count.saturating_add(metrics.overflow_count);
             status.filtered_event_count = status
                 .filtered_event_count
-                .saturating_add(filtered_event_count);
-            if database_written {
+                .saturating_add(metrics.filtered_event_count);
+            if metrics.database_written {
                 status.last_noop_reason = None;
+                status.phase_high_water_marks = metrics.phase_high_water_marks.clone();
+                status.spill_bytes = metrics.spill_bytes;
             } else {
                 status.deduplicated_refresh_count =
                     status.deduplicated_refresh_count.saturating_add(1);
@@ -1455,6 +1511,10 @@ fn run_refresh_leader(
         semantic_enrichment: config.semantic_enrichment,
         semantic_provider_mode: "local_only".to_string(),
         use_git: false,
+        worker_memory_mib: Some(config.worker_memory_mib),
+        rust_memory_mib: Some(config.rust_memory_mib),
+        spill_chunk_mib: Some(config.spill_chunk_mib),
+        max_parallelism: Some(config.max_parallelism),
         intent: MaterializationIntent::Refresh,
         ..MaterializeOptions::default()
     };
@@ -1466,17 +1526,14 @@ fn run_refresh_leader(
         max_wait: Duration::from_millis(1_000),
         max_iterations: None,
     };
+    let service = RefreshServiceContext::new(state, &execution);
+    let watch_runtime = RefreshWatchRuntime::new(service, loop_config, &filter);
+    let startup_batch = WatchChangeBatch {
+        full_rescan: true,
+        ..Default::default()
+    };
 
-    if !refresh_batch_with_state(
-        state,
-        "startup",
-        &execution,
-        0,
-        &BTreeSet::new(),
-        true,
-        0,
-        0,
-    )? {
+    if !service.refresh_batch("startup", &startup_batch)? {
         return Err("startup repository reconciliation failed".to_string());
     }
 
@@ -1485,16 +1542,8 @@ fn run_refresh_leader(
             let probe = probe_native_watcher(&runtime.repo_root, &filter, &rx)?;
             if probe.delivered {
                 state.set_backend("native");
-                match run_service_native_loop(
-                    state,
-                    loop_config,
-                    &execution,
-                    &filter,
-                    watcher,
-                    rx,
-                    overflowed,
-                    probe.queued,
-                ) {
+                match run_service_native_loop(watch_runtime, watcher, rx, overflowed, probe.queued)
+                {
                     Ok(()) => Ok(()),
                     Err(error) => {
                         state.set_error("poll", error);
@@ -1524,27 +1573,21 @@ fn run_refresh_leader(
 }
 
 fn run_service_native_loop(
-    state: &Arc<RefreshState>,
-    config: RefreshLoopConfig,
-    execution: &RefreshExecutionPlan,
-    filter: &WatchEventFilter,
+    runtime: RefreshWatchRuntime<'_>,
     watcher: notify::RecommendedWatcher,
     rx: Receiver<WatchMessage>,
     overflowed: Arc<AtomicBool>,
     queued: VecDeque<WatchMessage>,
 ) -> Result<(), String> {
-    run_native_watch(config, filter, watcher, rx, overflowed, queued, |batch| {
-        refresh_batch_with_state(
-            state,
-            "native",
-            execution,
-            batch.event_count,
-            &batch.paths,
-            batch.full_rescan,
-            batch.overflow_count,
-            batch.filtered_event_count,
-        )
-    })
+    run_native_watch(
+        runtime.config,
+        runtime.filter,
+        watcher,
+        rx,
+        overflowed,
+        queued,
+        |batch| runtime.service.refresh_batch("native", batch),
+    )
 }
 
 fn run_service_poll_loop(
@@ -1554,40 +1597,11 @@ fn run_service_poll_loop(
     filter: &WatchEventFilter,
 ) -> Result<(), String> {
     state.set_backend("poll");
-    run_poll_watch(config, filter, |batch| {
-        refresh_batch_with_state(
-            state,
-            "poll",
-            execution,
-            batch.event_count,
-            &batch.paths,
-            batch.full_rescan,
-            batch.overflow_count,
-            batch.filtered_event_count,
-        )
+    let service = RefreshServiceContext::new(state, execution);
+    let runtime = RefreshWatchRuntime::new(service, config, filter);
+    run_poll_watch(runtime.config, runtime.filter, |batch| {
+        runtime.service.refresh_batch("poll", batch)
     })
-}
-
-fn refresh_batch_with_state(
-    state: &Arc<RefreshState>,
-    backend: &str,
-    execution: &RefreshExecutionPlan,
-    event_count: usize,
-    paths: &BTreeSet<String>,
-    full_rescan: bool,
-    overflow_count: usize,
-    filtered_event_count: usize,
-) -> Result<bool, String> {
-    let mut observer =
-        StateRefreshObserver::new(state, backend, overflow_count, filtered_event_count);
-    execute_refresh_with_policy(
-        &mut observer,
-        event_count,
-        paths,
-        full_rescan,
-        RefreshRetryPolicy::default(),
-        |candidate_paths| execution.execute(candidate_paths),
-    )
 }
 
 struct StateRefreshObserver<'a> {
@@ -1630,16 +1644,18 @@ impl RefreshObserver for StateRefreshObserver<'_> {
         changed_paths: usize,
     ) -> Result<(), String> {
         self.guard.take();
-        self.state.mark_refreshed(
-            self.backend,
+        self.state.mark_refreshed(RefreshStatusMetrics {
+            backend: self.backend,
             event_count,
             changed_paths,
-            response.diff.rebuild_paths().len(),
-            response.diff.deleted.len(),
-            response.database_written,
-            self.overflow_count,
-            self.filtered_event_count,
-        );
+            rebuilt: response.diff.rebuild_paths().len(),
+            deleted: response.diff.deleted.len(),
+            database_written: response.database_written,
+            overflow_count: self.overflow_count,
+            filtered_event_count: self.filtered_event_count,
+            phase_high_water_marks: &response.phase_high_water_marks,
+            spill_bytes: response.spill_bytes,
+        });
         Ok(())
     }
 

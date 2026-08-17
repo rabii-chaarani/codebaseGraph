@@ -409,6 +409,14 @@ fn direct_store_recovers_interrupted_publication_with_sidecars_and_split_parents
         b"wal-v2",
     )
     .unwrap();
+    fs::write(
+        format!(
+            "{}.search.lexicon.bin",
+            layout.db_candidate_path().display()
+        ),
+        b"lexicon-v2",
+    )
+    .unwrap();
     write_json_atomically(
         &layout.journal_path(),
         &DirectPublishJournal {
@@ -419,7 +427,10 @@ fn direct_store_recovers_interrupted_publication_with_sidecars_and_split_parents
             manifest_candidate_path: layout.manifest_candidate_path(),
             db_sha256: sha256_hex(b"db-v2"),
             manifest_sha256: sha256_hex(b"{\"version\":2}\n"),
-            sidecar_sha256: BTreeMap::from([("wal".to_string(), sha256_hex(b"wal-v2"))]),
+            sidecar_sha256: BTreeMap::from([
+                ("wal".to_string(), sha256_hex(b"wal-v2")),
+                ("search.lexicon.bin".to_string(), sha256_hex(b"lexicon-v2")),
+            ]),
         },
     )
     .unwrap();
@@ -433,6 +444,10 @@ fn direct_store_recovers_interrupted_publication_with_sidecars_and_split_parents
     assert_eq!(
         fs::read(format!("{}.wal", layout.db_path().display())).unwrap(),
         b"wal-v2"
+    );
+    assert_eq!(
+        fs::read(format!("{}.search.lexicon.bin", layout.db_path().display())).unwrap(),
+        b"lexicon-v2"
     );
 }
 

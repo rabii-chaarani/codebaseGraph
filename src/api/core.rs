@@ -25,6 +25,7 @@ use crate::api::presenter::present_operation_response;
 use crate::api::refresh::RefreshState;
 use crate::error::NativeError;
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
+use crate::storage::layout::direct_bundle_paths;
 use serde_json::json;
 use std::{collections::BTreeMap, fs, path::Path, sync::Arc};
 
@@ -669,7 +670,7 @@ fn execute_search(
         max_depth: request.max_depth,
         detail: request.detail.clone(),
     };
-    let results = execute_graph_search(&runtime.db_path, &options)
+    let results = execute_graph_search(&runtime.db_path, &runtime.manifest_path, &options)
         .map_err(|error| ApiError::new("search_execution_failed", error.to_string()))?;
     let payload = serde_json::json!({
         "query": request.query,
@@ -720,7 +721,7 @@ fn execute_context(
                 "query is required",
             ));
         }
-        let results = execute_graph_search(&runtime.db_path, &search)
+        let results = execute_graph_search(&runtime.db_path, &runtime.manifest_path, &search)
             .map_err(|error| ApiError::new("context_execution_failed", error.to_string()))?;
         json!({
             "query": request.query,
@@ -796,7 +797,7 @@ fn execute_materialization(
     } else {
         execute_materialization_request(&materialize_options, native_request)
             .map(|(_, response)| response)
-            .map_err(|error| ApiError::new("materialization_failed", error))?
+            .map_err(materialization_api_error)?
     };
 
     let payload = materialization_payload(request, &response, &runtime.manifest_path, dry_plan);
@@ -807,6 +808,18 @@ fn execute_materialization(
     );
     operation_response.diagnostics = response.diagnostics.clone();
     Ok(operation_response)
+}
+
+fn materialization_api_error(message: String) -> ApiError {
+    let Ok(details) = serde_json::from_str::<serde_json::Value>(&message) else {
+        return ApiError::new("materialization_failed", message);
+    };
+    if details.get("error").and_then(serde_json::Value::as_str) == Some("memory_budget_exceeded") {
+        return ApiError::new("memory_budget_exceeded", message)
+            .with_details(details)
+            .retryable(false);
+    }
+    ApiError::new("materialization_failed", message)
 }
 
 fn execute_plan_native(
@@ -862,15 +875,9 @@ fn logical_bundle_bytes(db_path: &Path, manifest_path: &Path) -> u64 {
 }
 
 fn bundle_paths(db_path: &Path, manifest_path: &Path) -> Vec<std::path::PathBuf> {
-    let mut paths = vec![db_path.to_path_buf(), manifest_path.to_path_buf()];
-    for suffix in ["wal", "tmp", "lock"] {
-        paths.push(db_path_with_suffix(db_path, suffix));
-    }
+    let mut paths = direct_bundle_paths(db_path);
+    paths.push(manifest_path.to_path_buf());
     paths
-}
-
-fn db_path_with_suffix(db_path: &Path, suffix: &str) -> std::path::PathBuf {
-    std::path::PathBuf::from(format!("{}.{}", db_path.display(), suffix))
 }
 
 fn file_len(path: &Path) -> u64 {
@@ -919,6 +926,7 @@ fn materialization_payload(
 
 #[cfg(test)]
 mod tests {
+    use super::materialization_api_error;
     use crate::api::contracts::{
         MaterializationRequest, McpInstallRequest, OperationInvocation, OperationRequest,
         OutputFormat, RepoSelector, RepositoryLifecycleRequest,
@@ -940,6 +948,24 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn materialization_memory_failure_preserves_structured_details() {
+        let error = materialization_api_error(
+            serde_json::json!({
+                "error": "memory_budget_exceeded",
+                "phase": "staging",
+                "limit_bytes": 1024,
+                "accounted_bytes": 2048,
+                "observed_rss_bytes": 1536,
+            })
+            .to_string(),
+        );
+
+        assert_eq!(error.code, "memory_budget_exceeded");
+        assert!(!error.retryable);
+        assert_eq!(error.details.unwrap()["phase"], "staging");
     }
 
     fn write_legacy_install_config(root: &PathBuf) {
@@ -1096,6 +1122,10 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: false,
+                worker_memory_mib: None,
+                rust_memory_mib: None,
+                spill_chunk_mib: None,
+                max_parallelism: None,
                 progress: false,
                 output_format: OutputFormat::Typed,
             }))
@@ -1118,6 +1148,10 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: false,
+                worker_memory_mib: None,
+                rust_memory_mib: None,
+                spill_chunk_mib: None,
+                max_parallelism: None,
                 progress: false,
                 output_format: OutputFormat::Typed,
             }))

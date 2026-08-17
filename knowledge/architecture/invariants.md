@@ -7,7 +7,7 @@ tags:
 - decisions
 - graph-storage
 - invariants
-timestamp: 2026-08-17
+timestamp: 2026-08-18
 title: Architecture Invariants
 type: architecture
 ---
@@ -22,19 +22,20 @@ These constraints are the shortest durable test for whether a change still fits 
 3. **Repository context is canonical per operation.** Source root, storage mode, configuration, and manifest selection are resolved once and reused by the handler.
 4. **Validation precedes execution.** Canonical defaults and operation rules are applied before side effects or storage access.
 5. **Graph reads are bounded and non-mutating.** Raw statements are single, parameterized, read-only, and result-limited; adapters never bypass the Graph Read Service.
-6. **Materialization has one pipeline.** Explicit builds, setup, lifecycle refresh, and watch refresh converge on Source Scanner -> Execution Planner -> Semantic Enricher -> Graph Writer -> Graph Store.
-7. **Execution plans are self-contained.** Later stages do not depend on source files remaining present after scanning.
-8. **Output is deterministic across execution modes.** Parallel parsing, enrichment, and merging preserve stable identities and collection order.
-9. **Relationships carry evidence and satisfy the ontology.** Cross-file inference records evidence or fallback diagnostics, and relationship endpoints are validated before persistence.
+6. **Materialization has one pipeline.** Explicit builds, setup, lifecycle refresh, and watch refresh converge on Source Scanner -> bounded Execution Planner -> deterministic Graph Writer -> Search Index Builder -> isolated database loading -> Graph Store.
+7. **Execution state is bounded.** Required source snapshots, partition workers, spill buffers, merge fan-in, search construction, and database phases have explicit fallible limits.
+8. **Output is deterministic across execution modes.** Parallel parsing and external merging preserve stable identities, merge priority, and collection order.
+9. **Relationships satisfy the ontology.** Parsed relationship endpoints are validated before persistence; retired semantic inference is not part of production materialization.
 10. **Managed graph generations are immutable.** Every mutation builds a fresh self-contained candidate; the active database is never partition-deleted, appended to, or replaced in place.
 11. **Publication is one atomic pointer change.** A candidate database, manifest, metadata, and readiness marker are validated before `active.json` advances under the state lock. Failure preserves the prior active generation.
 12. **Writer and reader lifetimes are explicit.** One exclusive writer lock covers the complete mutation. Each read holds a shared lease on exactly one generation until all database access is complete.
 13. **Retirement is lease-aware and immediate.** Superseded generations have no timed retention; they are deleted after the last reader releases, with retryable failures visible as `cleanup_pending`.
 14. **Run ownership is durable.** Every build has a leased, journaled `RunWorkspace`; explicit finish or abort reports cleanup errors, and later runtime entry deterministically recovers abandoned work.
 15. **Cleanup is confined and primary errors survive.** Cleanup rejects symlinks and escaping paths, is idempotent, and never masks the failure that caused abort.
-16. **Artifacts optimize parsing, not persistence correctness.** Raw partitions are content-addressed across every invalidation dimension; all partitions are assembled deterministically and global semantic enrichment always reruns.
+16. **Artifacts optimize parsing, not persistence correctness.** Raw partitions are content-addressed across every invalidation dimension, compact manifest v5 carries only publication metadata, and all partitions are externally assembled deterministically.
 17. **Legacy state is read-only until explicit reinstall.** Schema-v1 reads remain available; mutations return `legacy_storage_requires_reinstall`. Successful reinstall deletes renamed legacy state immediately after validated v2 activation.
-18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.\n19. **Refresh ownership and admission are bounded.** One nonblocking refresh lease holder creates the watcher; followers remain read-only. Event churn collapses to one bounded dirty state, overflow forces a full rescan, CodebaseGraph-owned roots are never admitted, and only refresh intent may close an unchanged writer session without publication.
+18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.
+19. **Refresh ownership and admission are bounded.** One nonblocking refresh lease holder creates the watcher; followers remain read-only. Event churn collapses to one bounded dirty state, overflow forces a full rescan, CodebaseGraph-owned roots are never admitted, and only refresh intent may close an unchanged writer session without publication.
 
 ## Knowledge invariants
 

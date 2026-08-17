@@ -12,12 +12,12 @@ mod partition_builder;
 mod profiles;
 pub mod protocol;
 mod scan;
-mod semantic_enrichment;
+mod search_index;
 mod staging_writer;
 mod storage;
 mod syntax_materializer;
 
-pub use error::MaterializationError;
+pub use error::{MaterializationError, MemoryBudgetExceeded};
 pub use execution::{execute_materialization_pipeline, plan_materialization};
 pub use protocol::{MaterializationInput, MaterializationResult};
 

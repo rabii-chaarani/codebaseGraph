@@ -23,6 +23,8 @@ pub const READ_RETRY_POLICY: RetryPolicy =
     RetryPolicy::new(3, Duration::from_millis(40), Duration::from_millis(160));
 pub const WRITE_RETRY_POLICY: RetryPolicy =
     RetryPolicy::new(8, Duration::from_millis(100), Duration::from_millis(1_000));
+const DEFAULT_READ_BUFFER_POOL_BYTES: u64 = 128 * 1024 * 1024;
+const DEFAULT_READ_THREADS: u64 = 2;
 
 pub fn is_transient_database_error(message: &str) -> bool {
     let message = message.to_ascii_lowercase();
@@ -61,7 +63,25 @@ pub fn retry_transient_database<T>(
 }
 
 pub fn open_ladybug_database(db_path: &Path, read_only: bool) -> Result<Database, NativeError> {
-    Database::new(db_path, SystemConfig::default().read_only(read_only)).map_err(|error| {
+    open_ladybug_database_with_limits(
+        db_path,
+        read_only,
+        DEFAULT_READ_BUFFER_POOL_BYTES,
+        DEFAULT_READ_THREADS,
+    )
+}
+
+pub fn open_ladybug_database_with_limits(
+    db_path: &Path,
+    read_only: bool,
+    buffer_pool_bytes: u64,
+    max_num_threads: u64,
+) -> Result<Database, NativeError> {
+    let config = SystemConfig::default()
+        .read_only(read_only)
+        .buffer_pool_size(buffer_pool_bytes)
+        .max_num_threads(max_num_threads);
+    Database::new(db_path, config).map_err(|error| {
         NativeError::Database(format!(
             "failed to open graph database {}: {error}",
             db_path.display()

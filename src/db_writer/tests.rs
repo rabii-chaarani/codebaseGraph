@@ -13,14 +13,20 @@ fn native_writer_loads_json_staging_through_ladybug_copy() {
     fs::create_dir_all(&root).unwrap();
     let db_path = root.join("graph.lbug");
     let json_path = root.join("thing.json");
+    let relationship_path = root.join("links.csv");
     fs::write(
         &json_path,
-        r#"[{"id":"one","label":"One","metadata":{"answer":42}}]"#,
+        r#"[{"id":"one","label":"One","metadata":{"answer":42}},{"id":"two","label":"Two","metadata":{}}]"#,
     )
     .unwrap();
+    fs::write(&relationship_path, "from_id,to_id\none,two\n").unwrap();
 
     let result = write_database(LadybugWriteRequest {
         db_path: db_path.to_string_lossy().to_string(),
+        worker_memory_bytes: 768 * 1024 * 1024,
+        buffer_pool_bytes: 128 * 1024 * 1024,
+        max_num_threads: 1,
+        defer_hash_indexes: true,
         include_fts: false,
         schema_statements: vec![
             "INSTALL json".to_string(),
@@ -31,8 +37,15 @@ fn native_writer_loads_json_staging_through_ladybug_copy() {
   `metadata` JSON
 )"
             .to_string(),
+            "CREATE REL TABLE IF NOT EXISTS `FROM_Links`(FROM `Thing` TO `Thing`)".to_string(),
         ],
-        copy_statements: vec![format!("COPY `Thing` FROM \"{}\";", copy_path(&json_path))],
+        copy_statements: vec![
+            format!("COPY `Thing` FROM \"{}\";", copy_path(&json_path)),
+            format!(
+                "COPY `FROM_Links` FROM \"{}\" (header=true, from=\"from_id\", to=\"to_id\");",
+                copy_path(&relationship_path)
+            ),
+        ],
     });
     let _ = fs::remove_dir_all(&root);
     result.expect("native writer should execute JSON COPY through Ladybug");
