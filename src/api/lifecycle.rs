@@ -1,6 +1,6 @@
 use crate::api::context::{
     resolve_runtime, GraphInstallConfig, GraphInstallMaterializationConfig, GraphInstallMcpConfig,
-    RepoRuntime,
+    GraphInstallRefreshConfig, RepoRuntime, INSTALL_CONFIG_SCHEMA_VERSION,
 };
 use crate::api::contracts::{
     ApiError, McpInstallRequest, RefreshRequest, RepoSelector, RepositoryLifecycleRequest,
@@ -858,7 +858,7 @@ pub(crate) fn safe_name(value: &str) -> String {
 
 fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) -> serde_json::Value {
     serde_json::to_value(GraphInstallConfig {
-        schema_version: Some(2),
+        schema_version: Some(INSTALL_CONFIG_SCHEMA_VERSION),
         repo_root: Some(repo_root.to_path_buf()),
         repo_name: Some(paths.repo_name.clone()),
         state_dir: Some(paths.state_dir.clone()),
@@ -868,6 +868,7 @@ fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) -> serde_json
         ontology_version: Some("code_ontology_v1".to_string()),
         package_version: Some(env!("CARGO_PKG_VERSION").to_string()),
         materialization: GraphInstallMaterializationConfig::default(),
+        refresh: GraphInstallRefreshConfig::default(),
         mcp: Some(GraphInstallMcpConfig {
             server_name: "codebase_graph".to_string(),
             command: vec![

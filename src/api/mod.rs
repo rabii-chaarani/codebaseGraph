@@ -31,6 +31,7 @@ pub use lifecycle::{
     McpClientRenameOptions, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
     McpServerRegistration, McpTargetLocality, ResolvedMcpTarget,
 };
+pub(crate) use refresh::RefreshServiceConfig;
 
 #[cfg(test)]
 pub(crate) use refresh::{

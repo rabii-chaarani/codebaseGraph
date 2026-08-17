@@ -8,7 +8,7 @@ tags:
 - mcp
 - runtime
 - storage
-timestamp: 2026-08-06
+timestamp: 2026-08-17
 title: Public Operations and Runtime Paths
 type: architecture
 ---
@@ -51,17 +51,17 @@ Every repository-scoped operation resolves one `RepoRuntime`: source root, confi
 
 Managed reads resolve `active.json` and lease its generation for the entire operation. Direct reads recover any interrupted paired publication before opening their destinations. Runtime entry also recovers abandoned managed runs and retries pending retirement.
 
-Config schema v2 supplies a managed `storage_root`. Schema-v1 deserialization remains available for reads, but the resolved runtime is not writable until explicit reinstall.
+Config schema v3 supplies a managed `storage_root`, refresh policy and backend, and bounded materialization defaults. Schema-v2 remains readable and receives v3 defaults for missing fields. Schema-v1 deserialization remains available for reads, but the resolved runtime is not writable until explicit reinstall.
 
 ## Graph read path
 
 Health, schema, helper catalogs, architecture catalogs, search, context, and raw query operations dispatch from the core to the Graph Read Service. Search reads native full-text indexes and applies lexical/entity ranking. Context expands selected relationship profiles. Raw statements are parameterized, single-statement, read-only, and result-bounded.
 
-Health reports storage format, writability, active generation, reused and rebuilt artifacts, pending runs, cleanup status, and physical/logical database sizes.
+Health reports storage format, writability, active generation, reused and rebuilt artifacts, pending runs, cleanup status, physical/logical database sizes, and refresh ownership/coalescing/no-op state.
 
 ## Lifecycle and refresh paths
 
-Repository installation, reinstallation, client registration, and removal are coordinated by the Repository Lifecycle Service. Continuous or one-shot refresh is coordinated by the Repository Refresh Service, which invokes the same Materialization API used by explicit builds.
+Repository installation, reinstallation, client registration, and removal are coordinated by the Repository Lifecycle Service. Continuous or one-shot refresh is coordinated by the Repository Refresh Service, which invokes the same Materialization API used by explicit builds. Under the default `leader` policy, one cross-process lock holder owns the watcher and followers remain read-only standbys; `off` starts MCP without refresh. Refresh-only materialization may return `database_written = false` after the writer lock proves the active generation already consumed the change.
 
 For schema-v1 state, search, context, query, and health remain available. Build, watch, refresh, and install return `legacy_storage_requires_reinstall`. Reinstall moves the legacy state without copying it, restores it after any pre-activation failure, and deletes it immediately after successful v2 activation and validation; there is no grace-period copy.
 

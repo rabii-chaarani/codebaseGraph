@@ -42,6 +42,14 @@ pub(crate) struct MaterializeOptions {
     pub(crate) parallel: bool,
     pub(crate) progress: bool,
     pub(crate) plan_only: bool,
+    pub(crate) intent: MaterializationIntent,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum MaterializationIntent {
+    #[default]
+    ExplicitBuild,
+    Refresh,
 }
 
 impl Default for MaterializeOptions {
@@ -66,6 +74,7 @@ impl Default for MaterializeOptions {
             parallel: true,
             progress: false,
             plan_only: false,
+            intent: MaterializationIntent::ExplicitBuild,
         }
     }
 }
@@ -187,6 +196,18 @@ pub(crate) fn execute_materialization_request(
     request.previous_manifest = execution.previous_manifest().clone();
     request.artifact_root = execution.artifact_root().to_string_lossy().into_owned();
     request.manifest_schema_version = MATERIALIZATION_MANIFEST_SCHEMA_VERSION;
+    if options.intent == MaterializationIntent::Refresh {
+        let mut response = match crate::plan_materialization(&request) {
+            Ok(response) => response,
+            Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
+        };
+        if refresh_plan_is_current(&response) {
+            response.storage_format = execution.storage_format().to_string();
+            response.active_generation = execution.active_generation();
+            execution.finish_without_publish()?;
+            return Ok((request, response));
+        }
+    }
     let started = Instant::now();
     let final_request = request;
     let mut response = match crate::execute_materialization_pipeline(&final_request) {
@@ -264,6 +285,43 @@ enum StorageExecution {
 }
 
 impl StorageExecution {
+    fn storage_format(&self) -> &'static str {
+        match self {
+            Self::Direct { .. } => "direct",
+            Self::Managed { .. } => "managed_v2",
+        }
+    }
+
+    fn active_generation(&self) -> Option<String> {
+        match self {
+            Self::Direct { .. } => None,
+            Self::Managed { session, .. } => session
+                .base_generation
+                .as_ref()
+                .map(|generation| generation.generation_id.clone()),
+        }
+    }
+
+    fn finish_without_publish(self) -> Result<(), String> {
+        match self {
+            Self::Direct {
+                session, workspace, ..
+            } => {
+                let cleanup_error = cleanup_direct_candidate(&session).err();
+                let workspace_error = workspace.finish().err().map(|error| error.to_string());
+                session.finish();
+                match (cleanup_error, workspace_error) {
+                    (None, None) => Ok(()),
+                    (Some(primary), secondary) => Err(append_cleanup_error(primary, secondary)),
+                    (None, Some(error)) => Err(error),
+                }
+            }
+            Self::Managed { session, .. } => session
+                .abort(None)
+                .map_err(|error| format!("failed to discard no-op materialization: {error}")),
+        }
+    }
+
     fn request_db_path(&self) -> PathBuf {
         match self {
             Self::Direct { session, .. } => session.db_candidate_path(),
@@ -329,6 +387,13 @@ impl StorageExecution {
             ),
         }
     }
+}
+
+fn refresh_plan_is_current(response: &NativeSyntaxMaterializationResponse) -> bool {
+    !response.diff.force_rebuild
+        && response.diff.added.is_empty()
+        && response.diff.modified.is_empty()
+        && response.diff.deleted.is_empty()
 }
 
 pub(crate) fn build_request(

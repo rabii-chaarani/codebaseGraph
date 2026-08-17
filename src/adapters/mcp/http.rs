@@ -1,7 +1,7 @@
 use super::{
     options::McpHttpOptions,
     protocol::{handle_mcp_message, is_supported_protocol_version, parse_mcp_payload, rpc_error},
-    refresh::start_auto_refresh,
+    refresh::start_configured_api,
     state::McpHttpState,
 };
 use serde_json::json;
@@ -16,7 +16,7 @@ const MAX_HTTP_BODY_BYTES: usize = 1_000_000;
 pub(crate) fn serve_mcp_http(options: &McpHttpOptions) -> Result<(), String> {
     let listener = options.bind_listener()?;
     let mut options = options.clone();
-    options.serve.api = Some(start_auto_refresh(&options.serve));
+    options.serve.api = Some(start_configured_api(&options.serve)?);
     serve_mcp_http_listener(&options, listener, None)
 }
 

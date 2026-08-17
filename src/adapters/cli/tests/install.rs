@@ -57,8 +57,8 @@ fn install_skips_materialization_when_graph_state_already_exists() {
 }
 
 #[test]
-fn install_writes_managed_v2_config_without_static_database_or_manifest_paths() {
-    let root = unique_temp_dir("codebase-graph-rust-install-managed-v2");
+fn install_writes_schema_v3_managed_config_without_static_database_or_manifest_paths() {
+    let root = unique_temp_dir("codebase-graph-rust-install-managed-v3");
     fs::create_dir_all(&root).unwrap();
     fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
 
@@ -87,7 +87,13 @@ fn install_writes_managed_v2_config_without_static_database_or_manifest_paths() 
         &fs::read_to_string(root.join(".codebaseGraph").join("config.json")).unwrap(),
     )
     .unwrap();
-    assert_eq!(config["schema_version"], 2);
+    assert_eq!(config["schema_version"], 3);
+    assert_eq!(config["refresh"]["policy"], "leader");
+    assert_eq!(config["refresh"]["backend"], "auto");
+    assert_eq!(config["materialization"]["worker_memory_mib"], 768);
+    assert_eq!(config["materialization"]["rust_memory_mib"], 384);
+    assert_eq!(config["materialization"]["spill_chunk_mib"], 32);
+    assert_eq!(config["materialization"]["max_parallelism"], 2);
     assert!(config.get("database_path").is_none());
     assert!(config.get("manifest_path").is_none());
     let expected_storage_root =

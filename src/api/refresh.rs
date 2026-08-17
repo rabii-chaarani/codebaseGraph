@@ -8,11 +8,16 @@ use crate::{
         lifecycle::is_retryable_refresh_failure,
         materialization::{
             default_excluded_parts, execute_candidate_materialization, read_codebase_graph_ignore,
-            read_materialization_config_rules, MaterializeOptions,
+            read_materialization_config_rules, MaterializationIntent, MaterializeOptions,
         },
         normalization::normalize_materialize_options,
     },
+    profiles::ProfileSet,
     protocol::NativeSyntaxMaterializationResponse,
+    storage::{
+        layout::{DirectLayout, ManagedLayout},
+        locks::{try_open_locked, LockMode, RefreshLease},
+    },
 };
 use notify::{
     event::{AccessKind, AccessMode},
@@ -24,6 +29,7 @@ use std::{
     env, fs,
     path::{Path, PathBuf},
     sync::{
+        atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver},
         Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
     },
@@ -31,14 +37,46 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+pub(crate) const MAX_PENDING_PATHS: usize = 4_096;
+const MAX_PENDING_PATH_BYTES: usize = 1024 * 1024;
+const REFRESH_ELECTION_INTERVAL: Duration = Duration::from_secs(1);
+
+const GENERATED_PARTS: &[&str] = &[".astro", ".kwiki", ".scryer"];
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct RefreshServiceConfig {
+    pub(crate) include_fts: bool,
+    pub(crate) semantic_enrichment: bool,
+    pub(crate) worker_memory_mib: u64,
+    pub(crate) rust_memory_mib: u64,
+    pub(crate) spill_chunk_mib: u64,
+    pub(crate) max_parallelism: usize,
+}
+
+impl Default for RefreshServiceConfig {
+    fn default() -> Self {
+        Self {
+            include_fts: true,
+            semantic_enrichment: true,
+            worker_memory_mib: crate::api::context::DEFAULT_WORKER_MEMORY_MIB,
+            rust_memory_mib: crate::api::context::DEFAULT_RUST_MEMORY_MIB,
+            spill_chunk_mib: crate::api::context::DEFAULT_SPILL_CHUNK_MIB,
+            max_parallelism: crate::api::context::DEFAULT_MAX_PARALLELISM,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct WatchEventFilter {
     pub(crate) source_root: PathBuf,
     pub(crate) current_dir: PathBuf,
+    config_path: PathBuf,
     pub(crate) excluded_parts: BTreeSet<String>,
     pub(crate) include_patterns: Vec<String>,
     pub(crate) exclude_patterns: Vec<String>,
     pub(crate) ignore_patterns: Vec<String>,
+    profiles: ProfileSet,
+    protected_roots: Vec<PathBuf>,
 }
 
 impl WatchEventFilter {
@@ -52,6 +90,12 @@ impl WatchEventFilter {
             request.repo.config_path.clone(),
             request.include_patterns.clone(),
             request.exclude_patterns.clone(),
+            protected_roots(
+                source_root,
+                None,
+                request.repo.db_path.as_deref(),
+                request.repo.manifest_path.as_deref(),
+            ),
         )
     }
 
@@ -64,6 +108,12 @@ impl WatchEventFilter {
             options.config.clone(),
             options.include_patterns.clone(),
             options.exclude_patterns.clone(),
+            protected_roots(
+                source_root,
+                options.storage_root.as_deref(),
+                options.db.as_deref(),
+                options.manifest.as_deref(),
+            ),
         )
     }
 
@@ -72,6 +122,7 @@ impl WatchEventFilter {
         config_path: Option<PathBuf>,
         mut include_patterns: Vec<String>,
         mut exclude_patterns: Vec<String>,
+        protected_roots: Vec<PathBuf>,
     ) -> Result<Self, String> {
         let config_path = config_path.unwrap_or_else(|| config_path_for(source_root));
         let config_rules = read_materialization_config_rules(&config_path)?;
@@ -80,10 +131,13 @@ impl WatchEventFilter {
         Ok(Self {
             source_root: source_root.to_path_buf(),
             current_dir: env::current_dir().unwrap_or_else(|_| source_root.to_path_buf()),
+            config_path,
             excluded_parts: default_excluded_parts().into_iter().collect(),
             include_patterns,
             exclude_patterns,
             ignore_patterns: read_codebase_graph_ignore(source_root)?,
+            profiles: ProfileSet::new(&[]),
+            protected_roots,
         })
     }
 
@@ -98,7 +152,69 @@ impl WatchEventFilter {
             .collect()
     }
 
+    fn directory_rescan_path_count(&self, event: &Event) -> usize {
+        if !matches!(
+            event.kind,
+            EventKind::Remove(_) | EventKind::Modify(notify::event::ModifyKind::Name(_))
+        ) {
+            return 0;
+        }
+        event
+            .paths
+            .iter()
+            .filter(|path| self.directory_change_path(path))
+            .count()
+    }
+
+    fn directory_change_path(&self, path: &Path) -> bool {
+        if self.is_configuration_path(path) || self.is_protected_path(path) {
+            return false;
+        }
+        let Some(relative) = self.relative_event_path(path) else {
+            return false;
+        };
+        if relative.as_os_str().is_empty()
+            || relative.components().any(|component| {
+                self.excluded_parts
+                    .contains(component.as_os_str().to_string_lossy().as_ref())
+            })
+        {
+            return false;
+        }
+        let relative = relative.to_string_lossy().replace('\\', "/");
+        let explicitly_included = watch_matches_any_pattern(&relative, &self.include_patterns);
+        for generated_part in GENERATED_PARTS {
+            if let Some(index) = relative.split('/').position(|part| part == *generated_part) {
+                let generated_prefix = relative
+                    .split('/')
+                    .take(index + 1)
+                    .collect::<Vec<_>>()
+                    .join("/");
+                let descendant_is_included = self.include_patterns.iter().any(|pattern| {
+                    watch_normalize_pattern(pattern).starts_with(&format!("{generated_prefix}/"))
+                });
+                if !explicitly_included && !descendant_is_included {
+                    return false;
+                }
+            }
+        }
+        if watch_matches_any_pattern(&relative, &self.ignore_patterns)
+            || watch_matches_any_pattern(&relative, &self.exclude_patterns)
+        {
+            return false;
+        }
+        path.is_dir() || path.extension().is_none()
+    }
+
     pub(crate) fn relevant_path(&self, path: &Path) -> Option<String> {
+        if self.is_configuration_path(path) {
+            return self
+                .relative_event_path(path)
+                .map(|relative| relative.to_string_lossy().replace('\\', "/"));
+        }
+        if self.is_protected_path(path) {
+            return None;
+        }
         let relative = self.relative_event_path(path)?;
         if relative.as_os_str().is_empty() {
             return None;
@@ -110,11 +226,46 @@ impl WatchEventFilter {
             return None;
         }
         let relative = relative.to_string_lossy().replace('\\', "/");
-        if self.ignored_by_patterns(&relative) {
+        let explicitly_included = watch_matches_any_pattern(&relative, &self.include_patterns);
+        if relative
+            .split('/')
+            .any(|part| GENERATED_PARTS.contains(&part))
+            && !explicitly_included
+        {
+            return None;
+        }
+        if self.ignored_by_patterns(&relative)
+            || self
+                .profiles
+                .language_for_path(Path::new(&relative))
+                .is_none()
+        {
             None
         } else {
             Some(relative)
         }
+    }
+
+    fn is_configuration_path(&self, path: &Path) -> bool {
+        let absolute = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            self.current_dir.join(path)
+        };
+        absolute == self.config_path
+            || absolute == self.source_root.join(".codebaseGraphignore")
+            || path == self.config_path
+    }
+
+    fn is_protected_path(&self, path: &Path) -> bool {
+        let absolute = if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            self.current_dir.join(path)
+        };
+        self.protected_roots
+            .iter()
+            .any(|root| absolute.starts_with(root))
     }
 
     pub(crate) fn relative_event_path(&self, path: &Path) -> Option<PathBuf> {
@@ -148,6 +299,26 @@ impl WatchEventFilter {
         watch_matches_any_pattern(relative_path, &self.ignore_patterns)
             || watch_matches_any_pattern(relative_path, &self.exclude_patterns)
     }
+}
+
+fn protected_roots(
+    source_root: &Path,
+    storage_root: Option<&Path>,
+    db_path: Option<&Path>,
+    manifest_path: Option<&Path>,
+) -> Vec<PathBuf> {
+    let mut roots = vec![source_root.join(".codebaseGraph")];
+    roots.extend(storage_root.map(Path::to_path_buf));
+    roots.extend(db_path.map(Path::to_path_buf));
+    roots.extend(manifest_path.map(Path::to_path_buf));
+    if storage_root.is_none() {
+        if let (Some(db_path), Some(manifest_path)) = (db_path, manifest_path) {
+            roots.push(DirectLayout::new(db_path, manifest_path).artifact_root_path());
+        }
+    }
+    roots.sort();
+    roots.dedup();
+    roots
 }
 
 #[cfg(windows)]
@@ -188,6 +359,48 @@ pub(crate) enum WatchMessage {
 pub(crate) struct WatchChangeBatch {
     pub(crate) paths: BTreeSet<String>,
     pub(crate) event_count: usize,
+    pub(crate) full_rescan: bool,
+    pub(crate) overflow_count: usize,
+    pub(crate) filtered_event_count: usize,
+    path_bytes: usize,
+}
+
+impl WatchChangeBatch {
+    pub(crate) fn extend_paths(&mut self, paths: impl IntoIterator<Item = String>) {
+        if self.full_rescan {
+            return;
+        }
+        for path in paths {
+            if self.paths.contains(&path) {
+                continue;
+            }
+            let Some(next_bytes) = self.path_bytes.checked_add(path.len()) else {
+                self.mark_overflow();
+                return;
+            };
+            if self.paths.len() >= MAX_PENDING_PATHS || next_bytes > MAX_PENDING_PATH_BYTES {
+                self.mark_overflow();
+                return;
+            }
+            self.path_bytes = next_bytes;
+            self.paths.insert(path);
+        }
+    }
+
+    fn mark_overflow(&mut self) {
+        self.mark_full_rescan();
+        self.overflow_count = self.overflow_count.saturating_add(1);
+    }
+
+    fn mark_full_rescan(&mut self) {
+        self.paths.clear();
+        self.path_bytes = 0;
+        self.full_rescan = true;
+    }
+
+    fn has_changes(&self) -> bool {
+        self.full_rescan || !self.paths.is_empty()
+    }
 }
 
 #[derive(Debug, Default)]
@@ -199,20 +412,31 @@ pub(crate) struct WatchProbeOutcome {
 
 pub(crate) fn start_native_watcher(
     source_root: &Path,
-) -> Result<(notify::RecommendedWatcher, Receiver<WatchMessage>), String> {
-    let (tx, rx) = mpsc::channel();
+) -> Result<
+    (
+        notify::RecommendedWatcher,
+        Receiver<WatchMessage>,
+        Arc<AtomicBool>,
+    ),
+    String,
+> {
+    let (tx, rx) = mpsc::sync_channel(1);
+    let overflowed = Arc::new(AtomicBool::new(false));
+    let callback_overflowed = Arc::clone(&overflowed);
     let mut watcher = notify::recommended_watcher(move |result: notify::Result<Event>| {
         let message = match result {
             Ok(event) => WatchMessage::Event(event),
             Err(error) => WatchMessage::Error(error.to_string()),
         };
-        let _ = tx.send(message);
+        if tx.try_send(message).is_err() {
+            callback_overflowed.store(true, Ordering::Release);
+        }
     })
     .map_err(|error| format!("failed to start filesystem watcher: {error}"))?;
     watcher
         .watch(source_root, RecursiveMode::Recursive)
         .map_err(|error| format!("failed to watch {}: {error}", source_root.display()))?;
-    Ok((watcher, rx))
+    Ok((watcher, rx, overflowed))
 }
 
 pub(crate) fn probe_native_watcher(
@@ -322,10 +546,23 @@ pub(crate) fn apply_watch_message(
 ) -> Result<(), String> {
     match message {
         WatchMessage::Event(event) => {
+            let candidate_count = event.paths.len();
+            let directory_rescan_count = filter.directory_rescan_path_count(&event);
             let paths = filter.relevant_paths(&event);
-            if !paths.is_empty() {
+            batch.filtered_event_count = batch.filtered_event_count.saturating_add(
+                candidate_count
+                    .saturating_sub(paths.len())
+                    .saturating_sub(directory_rescan_count),
+            );
+            let has_paths = !paths.is_empty();
+            if has_paths {
+                batch.extend_paths(paths);
+            }
+            if directory_rescan_count > 0 {
+                batch.mark_full_rescan();
+            }
+            if has_paths || directory_rescan_count > 0 {
                 batch.event_count += 1;
-                batch.paths.extend(paths);
             }
             Ok(())
         }
@@ -336,6 +573,7 @@ pub(crate) fn apply_watch_message(
 pub(crate) fn collect_watch_batch(
     first: WatchMessage,
     rx: &Receiver<WatchMessage>,
+    overflowed: Option<&AtomicBool>,
     queued: &mut VecDeque<WatchMessage>,
     filter: &WatchEventFilter,
     debounce: Duration,
@@ -343,7 +581,10 @@ pub(crate) fn collect_watch_batch(
 ) -> Result<Option<WatchChangeBatch>, String> {
     let mut batch = WatchChangeBatch::default();
     apply_watch_message(first, filter, &mut batch)?;
-    if batch.paths.is_empty() {
+    if overflowed.is_some_and(|flag| flag.swap(false, Ordering::AcqRel)) {
+        batch.mark_overflow();
+    }
+    if !batch.has_changes() {
         return Ok(None);
     }
 
@@ -352,10 +593,16 @@ pub(crate) fn collect_watch_batch(
     loop {
         let elapsed = started.elapsed();
         if elapsed >= max_wait {
+            if overflowed.is_some_and(|flag| flag.swap(false, Ordering::AcqRel)) {
+                batch.mark_overflow();
+            }
             return Ok(Some(batch));
         }
         let quiet_elapsed = last_relevant.elapsed();
         if quiet_elapsed >= debounce {
+            if overflowed.is_some_and(|flag| flag.swap(false, Ordering::AcqRel)) {
+                batch.mark_overflow();
+            }
             return Ok(Some(batch));
         }
         let timeout = debounce
@@ -374,7 +621,12 @@ pub(crate) fn collect_watch_batch(
                     last_relevant = Instant::now();
                 }
             }
-            Err(mpsc::RecvTimeoutError::Timeout) => return Ok(Some(batch)),
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                if overflowed.is_some_and(|flag| flag.swap(false, Ordering::AcqRel)) {
+                    batch.mark_overflow();
+                }
+                return Ok(Some(batch));
+            }
             Err(mpsc::RecvTimeoutError::Disconnected) => {
                 return Err("filesystem watcher stopped".to_string())
             }
@@ -473,9 +725,14 @@ pub(crate) fn collect_poll_batch(
         let started = Instant::now();
         let mut last_relevant = started;
         let mut batch = WatchChangeBatch {
-            paths: changed_paths,
+            paths: BTreeSet::new(),
             event_count: 1,
+            full_rescan: false,
+            overflow_count: 0,
+            filtered_event_count: 0,
+            path_bytes: 0,
         };
+        batch.extend_paths(changed_paths);
         loop {
             let elapsed = started.elapsed();
             if elapsed >= max_wait {
@@ -493,7 +750,7 @@ pub(crate) fn collect_poll_batch(
             let changed_paths = watch_snapshot_diff(previous_snapshot, &current_snapshot);
             *previous_snapshot = current_snapshot;
             if !changed_paths.is_empty() {
-                batch.paths.extend(changed_paths);
+                batch.extend_paths(changed_paths);
                 batch.event_count += 1;
                 last_relevant = Instant::now();
             }
@@ -508,8 +765,19 @@ pub(crate) fn run_refresh_watch(
 ) -> Result<(), String> {
     let runtime = resolve_refresh_runtime(&request.repo)?;
     runtime.require_graph_write()?;
+    let _refresh_lease = if config.once {
+        None
+    } else {
+        try_open_locked(refresh_lock_path(&runtime), LockMode::Exclusive)
+            .map_err(|error| format!("failed to acquire refresh ownership: {error}"))?
+            .ok_or_else(|| {
+                "another process already owns repository refresh monitoring".to_string()
+            })?
+            .into()
+    };
     let mut materialize_options = MaterializeOptions::from_request(request, &runtime, false);
     normalize_materialize_options(&mut materialize_options);
+    materialize_options.intent = MaterializationIntent::Refresh;
     let execution = RefreshExecutionPlan::new(request.repo.clone(), materialize_options.clone());
 
     if config.once {
@@ -523,18 +791,19 @@ pub(crate) fn run_refresh_watch(
             refresh_watch_batch(observer, "poll", &execution, batch)
         }),
         RefreshBackend::Native => {
-            let (watcher, rx) = start_native_watcher(&runtime.repo_root)?;
+            let (watcher, rx, overflowed) = start_native_watcher(&runtime.repo_root)?;
             run_native_watch(
                 config.loop_config,
                 &filter,
                 watcher,
                 rx,
+                overflowed,
                 VecDeque::new(),
                 |batch| refresh_watch_batch(observer, "native", &execution, batch),
             )
         }
         RefreshBackend::Auto => match start_native_watcher(&runtime.repo_root) {
-            Ok((watcher, rx)) => {
+            Ok((watcher, rx, overflowed)) => {
                 let probe = probe_native_watcher(&runtime.repo_root, &filter, &rx)?;
                 if probe.delivered {
                     run_native_watch(
@@ -542,6 +811,7 @@ pub(crate) fn run_refresh_watch(
                         &filter,
                         watcher,
                         rx,
+                        overflowed,
                         probe.queued,
                         |batch| refresh_watch_batch(observer, "native", &execution, batch),
                     )
@@ -583,6 +853,7 @@ fn refresh_watch_batch(
         &mut bound_observer,
         batch.event_count,
         &batch.paths,
+        batch.full_rescan,
         RefreshRetryPolicy::default(),
         |candidate_paths| execution.execute(candidate_paths),
     )
@@ -659,6 +930,7 @@ pub(crate) fn run_native_watch(
     filter: &WatchEventFilter,
     _watcher: notify::RecommendedWatcher,
     rx: Receiver<WatchMessage>,
+    overflowed: Arc<AtomicBool>,
     mut queued: VecDeque<WatchMessage>,
     mut refresh: impl FnMut(&WatchChangeBatch) -> Result<bool, String>,
 ) -> Result<(), String> {
@@ -673,6 +945,7 @@ pub(crate) fn run_native_watch(
         let Some(batch) = collect_watch_batch(
             first,
             &rx,
+            Some(&overflowed),
             &mut queued,
             filter,
             config.debounce,
@@ -774,15 +1047,20 @@ pub(crate) fn execute_refresh_with_policy(
     observer: &mut impl RefreshObserver,
     event_count: usize,
     paths: &BTreeSet<String>,
+    full_rescan: bool,
     policy: RefreshRetryPolicy,
     mut refresh: impl FnMut(Vec<String>) -> Result<NativeSyntaxMaterializationResponse, String>,
 ) -> Result<bool, String> {
     let changed_paths = paths.len();
-    if changed_paths == 0 {
+    if changed_paths == 0 && !full_rescan {
         return Ok(true);
     }
 
-    let candidate_paths = paths.iter().cloned().collect::<Vec<_>>();
+    let candidate_paths = if full_rescan {
+        Vec::new()
+    } else {
+        paths.iter().cloned().collect::<Vec<_>>()
+    };
     let mut delay = policy.initial_delay;
     loop {
         observer.before_attempt(event_count, changed_paths)?;
@@ -807,6 +1085,9 @@ pub(crate) fn execute_refresh_with_policy(
 #[derive(Clone, Debug)]
 pub(crate) struct RefreshStatus {
     pub(crate) enabled: bool,
+    pub(crate) role: String,
+    pub(crate) leader_pid: Option<u32>,
+    pub(crate) worker_pid: Option<u32>,
     pub(crate) backend: String,
     pub(crate) refreshing: bool,
     pub(crate) pending: bool,
@@ -819,12 +1100,26 @@ pub(crate) struct RefreshStatus {
     pub(crate) last_rebuilt: usize,
     pub(crate) last_deleted: usize,
     pub(crate) last_database_written: bool,
+    pub(crate) coalesced_event_count: usize,
+    pub(crate) filtered_event_count: usize,
+    pub(crate) overflow_count: usize,
+    pub(crate) deduplicated_refresh_count: usize,
+    pub(crate) last_noop_reason: Option<String>,
+    pub(crate) worker_memory_mib: u64,
+    pub(crate) rust_memory_mib: u64,
+    pub(crate) spill_chunk_mib: u64,
+    pub(crate) max_parallelism: usize,
+    pub(crate) phase_high_water_marks: BTreeMap<String, u64>,
+    pub(crate) spill_bytes: u64,
 }
 
 impl Default for RefreshStatus {
     fn default() -> Self {
         Self {
             enabled: true,
+            role: "starting".to_string(),
+            leader_pid: None,
+            worker_pid: None,
             backend: "starting".to_string(),
             refreshing: false,
             pending: false,
@@ -837,6 +1132,17 @@ impl Default for RefreshStatus {
             last_rebuilt: 0,
             last_deleted: 0,
             last_database_written: false,
+            coalesced_event_count: 0,
+            filtered_event_count: 0,
+            overflow_count: 0,
+            deduplicated_refresh_count: 0,
+            last_noop_reason: None,
+            worker_memory_mib: crate::api::context::DEFAULT_WORKER_MEMORY_MIB,
+            rust_memory_mib: crate::api::context::DEFAULT_RUST_MEMORY_MIB,
+            spill_chunk_mib: crate::api::context::DEFAULT_SPILL_CHUNK_MIB,
+            max_parallelism: crate::api::context::DEFAULT_MAX_PARALLELISM,
+            phase_high_water_marks: BTreeMap::new(),
+            spill_bytes: 0,
         }
     }
 }
@@ -848,9 +1154,16 @@ pub(crate) struct RefreshState {
 }
 
 impl RefreshState {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn with_config(config: RefreshServiceConfig) -> Self {
+        let status = RefreshStatus {
+            worker_memory_mib: config.worker_memory_mib,
+            rust_memory_mib: config.rust_memory_mib,
+            spill_chunk_mib: config.spill_chunk_mib,
+            max_parallelism: config.max_parallelism,
+            ..RefreshStatus::default()
+        };
         Self {
-            status: Mutex::new(RefreshStatus::default()),
+            status: Mutex::new(status),
             graph_lock: RwLock::new(()),
         }
     }
@@ -861,6 +1174,9 @@ impl RefreshState {
             .map(|status| status.clone())
             .unwrap_or_else(|_| RefreshStatus {
                 enabled: false,
+                role: "failed".to_string(),
+                leader_pid: None,
+                worker_pid: None,
                 backend: "failed".to_string(),
                 refreshing: false,
                 pending: false,
@@ -873,6 +1189,17 @@ impl RefreshState {
                 last_rebuilt: 0,
                 last_deleted: 0,
                 last_database_written: false,
+                coalesced_event_count: 0,
+                filtered_event_count: 0,
+                overflow_count: 0,
+                deduplicated_refresh_count: 0,
+                last_noop_reason: None,
+                worker_memory_mib: 0,
+                rust_memory_mib: 0,
+                spill_chunk_mib: 0,
+                max_parallelism: 0,
+                phase_high_water_marks: BTreeMap::new(),
+                spill_bytes: 0,
             })
     }
 
@@ -880,6 +1207,9 @@ impl RefreshState {
         let status = self.snapshot();
         json!({
             "enabled": status.enabled,
+            "role": status.role,
+            "leader_pid": status.leader_pid,
+            "worker_pid": status.worker_pid,
             "backend": status.backend,
             "refreshing": status.refreshing,
             "pending": status.pending,
@@ -892,7 +1222,38 @@ impl RefreshState {
             "last_rebuilt": status.last_rebuilt,
             "last_deleted": status.last_deleted,
             "last_database_written": status.last_database_written,
+            "coalesced_event_count": status.coalesced_event_count,
+            "filtered_event_count": status.filtered_event_count,
+            "overflow_count": status.overflow_count,
+            "deduplicated_refresh_count": status.deduplicated_refresh_count,
+            "last_noop_reason": status.last_noop_reason,
+            "memory_limits": {
+                "worker_memory_mib": status.worker_memory_mib,
+                "rust_memory_mib": status.rust_memory_mib,
+                "spill_chunk_mib": status.spill_chunk_mib,
+                "max_parallelism": status.max_parallelism,
+            },
+            "phase_high_water_marks": status.phase_high_water_marks,
+            "spill_bytes": status.spill_bytes,
         })
+    }
+
+    pub(crate) fn mark_leader(&self) {
+        if let Ok(mut status) = self.status.lock() {
+            status.role = "leader".to_string();
+            status.leader_pid = Some(std::process::id());
+            status.enabled = true;
+        }
+    }
+
+    pub(crate) fn mark_standby(&self) {
+        if let Ok(mut status) = self.status.lock() {
+            status.role = "standby".to_string();
+            status.leader_pid = None;
+            status.backend = "standby".to_string();
+            status.refreshing = false;
+            status.enabled = true;
+        }
     }
 
     pub(crate) fn read_guard(&self) -> Result<RwLockReadGuard<'_, ()>, String> {
@@ -930,6 +1291,8 @@ impl RefreshState {
         if let Ok(mut status) = self.status.lock() {
             status.backend = backend.to_string();
             status.enabled = false;
+            status.role = "disabled".to_string();
+            status.leader_pid = None;
             status.refreshing = false;
             status.pending = false;
             status.last_error = Some(error);
@@ -980,6 +1343,8 @@ impl RefreshState {
         rebuilt: usize,
         deleted: usize,
         database_written: bool,
+        overflow_count: usize,
+        filtered_event_count: usize,
     ) {
         if let Ok(mut status) = self.status.lock() {
             status.backend = backend.to_string();
@@ -994,15 +1359,32 @@ impl RefreshState {
             status.last_rebuilt = rebuilt;
             status.last_deleted = deleted;
             status.last_database_written = database_written;
+            status.coalesced_event_count = status
+                .coalesced_event_count
+                .saturating_add(event_count.saturating_sub(1));
+            status.overflow_count = status.overflow_count.saturating_add(overflow_count);
+            status.filtered_event_count = status
+                .filtered_event_count
+                .saturating_add(filtered_event_count);
+            if database_written {
+                status.last_noop_reason = None;
+            } else {
+                status.deduplicated_refresh_count =
+                    status.deduplicated_refresh_count.saturating_add(1);
+                status.last_noop_reason = Some("active_generation_current".to_string());
+            }
         }
     }
 }
 
-pub(crate) fn start_refresh_service(selector: RepoSelector) -> Arc<RefreshState> {
-    let state = Arc::new(RefreshState::new());
+pub(crate) fn start_refresh_service(
+    selector: RepoSelector,
+    config: RefreshServiceConfig,
+) -> Arc<RefreshState> {
+    let state = Arc::new(RefreshState::with_config(config));
     let thread_state = Arc::clone(&state);
     thread::spawn(move || {
-        if let Err(error) = run_refresh_service(selector, &thread_state) {
+        if let Err(error) = run_refresh_service(selector, config, &thread_state) {
             thread_state.set_error("failed", error.clone());
             eprintln!(
                 "{}",
@@ -1013,12 +1395,55 @@ pub(crate) fn start_refresh_service(selector: RepoSelector) -> Arc<RefreshState>
     state
 }
 
-fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Result<(), String> {
+fn run_refresh_service(
+    selector: RepoSelector,
+    config: RefreshServiceConfig,
+    state: &Arc<RefreshState>,
+) -> Result<(), String> {
     let runtime = resolve_refresh_runtime(&selector)?;
     if let Err(error) = runtime.require_graph_write() {
         state.disable("disabled", error);
         return Ok(());
     }
+    let lock_path = refresh_lock_path(&runtime);
+    loop {
+        match try_open_locked(&lock_path, LockMode::Exclusive).map_err(|error| {
+            format!(
+                "failed to acquire refresh ownership {}: {error}",
+                lock_path.display()
+            )
+        })? {
+            Some(lease) => {
+                state.mark_leader();
+                return run_refresh_leader(selector, state, runtime, lease, config);
+            }
+            None => {
+                state.mark_standby();
+                thread::sleep(refresh_election_delay());
+            }
+        }
+    }
+}
+
+fn refresh_lock_path(runtime: &crate::api::context::RepoRuntime) -> PathBuf {
+    match runtime.storage_root.as_ref() {
+        Some(storage_root) => ManagedLayout::new(storage_root).refresh_lock_path(),
+        None => DirectLayout::new(&runtime.db_path, &runtime.manifest_path).refresh_lock_path(),
+    }
+}
+
+fn refresh_election_delay() -> Duration {
+    REFRESH_ELECTION_INTERVAL
+        .saturating_add(Duration::from_millis(u64::from(std::process::id() % 251)))
+}
+
+fn run_refresh_leader(
+    selector: RepoSelector,
+    state: &Arc<RefreshState>,
+    runtime: crate::api::context::RepoRuntime,
+    _lease: RefreshLease,
+    config: RefreshServiceConfig,
+) -> Result<(), String> {
     let materialize_options = MaterializeOptions {
         source_root: Some(runtime.repo_root.clone()),
         config: runtime.config_path.clone(),
@@ -1026,10 +1451,11 @@ fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Res
         manifest: Some(runtime.manifest_path.clone()),
         storage_root: runtime.storage_root.clone(),
         mode: "changed".to_string(),
-        include_fts: true,
-        semantic_enrichment: true,
+        include_fts: config.include_fts,
+        semantic_enrichment: config.semantic_enrichment,
         semantic_provider_mode: "local_only".to_string(),
         use_git: false,
+        intent: MaterializationIntent::Refresh,
         ..MaterializeOptions::default()
     };
     let execution = RefreshExecutionPlan::new(selector, materialize_options.clone());
@@ -1041,8 +1467,21 @@ fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Res
         max_iterations: None,
     };
 
+    if !refresh_batch_with_state(
+        state,
+        "startup",
+        &execution,
+        0,
+        &BTreeSet::new(),
+        true,
+        0,
+        0,
+    )? {
+        return Err("startup repository reconciliation failed".to_string());
+    }
+
     match start_native_watcher(&runtime.repo_root) {
-        Ok((watcher, rx)) => {
+        Ok((watcher, rx, overflowed)) => {
             let probe = probe_native_watcher(&runtime.repo_root, &filter, &rx)?;
             if probe.delivered {
                 state.set_backend("native");
@@ -1053,6 +1492,7 @@ fn run_refresh_service(selector: RepoSelector, state: &Arc<RefreshState>) -> Res
                     &filter,
                     watcher,
                     rx,
+                    overflowed,
                     probe.queued,
                 ) {
                     Ok(()) => Ok(()),
@@ -1090,10 +1530,20 @@ fn run_service_native_loop(
     filter: &WatchEventFilter,
     watcher: notify::RecommendedWatcher,
     rx: Receiver<WatchMessage>,
+    overflowed: Arc<AtomicBool>,
     queued: VecDeque<WatchMessage>,
 ) -> Result<(), String> {
-    run_native_watch(config, filter, watcher, rx, queued, |batch| {
-        refresh_batch_with_state(state, "native", execution, batch.event_count, &batch.paths)
+    run_native_watch(config, filter, watcher, rx, overflowed, queued, |batch| {
+        refresh_batch_with_state(
+            state,
+            "native",
+            execution,
+            batch.event_count,
+            &batch.paths,
+            batch.full_rescan,
+            batch.overflow_count,
+            batch.filtered_event_count,
+        )
     })
 }
 
@@ -1105,7 +1555,16 @@ fn run_service_poll_loop(
 ) -> Result<(), String> {
     state.set_backend("poll");
     run_poll_watch(config, filter, |batch| {
-        refresh_batch_with_state(state, "poll", execution, batch.event_count, &batch.paths)
+        refresh_batch_with_state(
+            state,
+            "poll",
+            execution,
+            batch.event_count,
+            &batch.paths,
+            batch.full_rescan,
+            batch.overflow_count,
+            batch.filtered_event_count,
+        )
     })
 }
 
@@ -1115,12 +1574,17 @@ fn refresh_batch_with_state(
     execution: &RefreshExecutionPlan,
     event_count: usize,
     paths: &BTreeSet<String>,
+    full_rescan: bool,
+    overflow_count: usize,
+    filtered_event_count: usize,
 ) -> Result<bool, String> {
-    let mut observer = StateRefreshObserver::new(state, backend);
+    let mut observer =
+        StateRefreshObserver::new(state, backend, overflow_count, filtered_event_count);
     execute_refresh_with_policy(
         &mut observer,
         event_count,
         paths,
+        full_rescan,
         RefreshRetryPolicy::default(),
         |candidate_paths| execution.execute(candidate_paths),
     )
@@ -1130,14 +1594,23 @@ struct StateRefreshObserver<'a> {
     state: &'a Arc<RefreshState>,
     backend: &'a str,
     guard: Option<RwLockWriteGuard<'a, ()>>,
+    overflow_count: usize,
+    filtered_event_count: usize,
 }
 
 impl<'a> StateRefreshObserver<'a> {
-    fn new(state: &'a Arc<RefreshState>, backend: &'a str) -> Self {
+    fn new(
+        state: &'a Arc<RefreshState>,
+        backend: &'a str,
+        overflow_count: usize,
+        filtered_event_count: usize,
+    ) -> Self {
         Self {
             state,
             backend,
             guard: None,
+            overflow_count,
+            filtered_event_count,
         }
     }
 }
@@ -1164,6 +1637,8 @@ impl RefreshObserver for StateRefreshObserver<'_> {
             response.diff.rebuild_paths().len(),
             response.diff.deleted.len(),
             response.database_written,
+            self.overflow_count,
+            self.filtered_event_count,
         );
         Ok(())
     }
@@ -1292,6 +1767,47 @@ mod tests {
         )
     }
 
+    #[test]
+    fn refresh_status_reports_configured_limits_and_worker_placeholders() {
+        let state = RefreshState::with_config(RefreshServiceConfig {
+            include_fts: false,
+            semantic_enrichment: false,
+            worker_memory_mib: 640,
+            rust_memory_mib: 320,
+            spill_chunk_mib: 16,
+            max_parallelism: 1,
+        });
+
+        let status = state.as_json();
+        assert_eq!(status["worker_pid"], serde_json::Value::Null);
+        assert_eq!(status["memory_limits"]["worker_memory_mib"], 640);
+        assert_eq!(status["memory_limits"]["rust_memory_mib"], 320);
+        assert_eq!(status["memory_limits"]["spill_chunk_mib"], 16);
+        assert_eq!(status["memory_limits"]["max_parallelism"], 1);
+        assert_eq!(status["phase_high_water_marks"], serde_json::json!({}));
+        assert_eq!(status["spill_bytes"], 0);
+    }
+
+    #[test]
+    fn watch_filter_never_admits_configured_storage_root() {
+        let root = unique_temp_dir("codebase-graph-rust-watch-filter-storage");
+        let storage_root = root.join("graph-storage");
+        fs::create_dir_all(&storage_root).unwrap();
+        let options = MaterializeOptions {
+            source_root: Some(root.clone()),
+            storage_root: Some(storage_root.clone()),
+            include_patterns: vec!["graph-storage/*".to_string()],
+            ..MaterializeOptions::default()
+        };
+        let filter = WatchEventFilter::from_options(&root, &options).unwrap();
+
+        assert_eq!(
+            filter.relevant_path(&storage_root.join("generated.rs")),
+            None
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
     struct RecordingObserver {
         retries: Vec<(bool, String, usize, usize)>,
         successes: Vec<(usize, usize, usize)>,
@@ -1342,6 +1858,7 @@ mod tests {
             &mut observer,
             2,
             &BTreeSet::from(["src/lib.rs".to_string()]),
+            false,
             RefreshRetryPolicy {
                 initial_delay: Duration::from_millis(0),
                 max_delay: Duration::from_millis(0),
@@ -1370,6 +1887,7 @@ mod tests {
             &mut observer,
             1,
             &BTreeSet::from(["src/lib.rs".to_string()]),
+            false,
             RefreshRetryPolicy {
                 initial_delay: Duration::from_millis(0),
                 max_delay: Duration::from_millis(0),
@@ -1507,12 +2025,15 @@ mod tests {
         )
         .unwrap();
 
-        let state = start_refresh_service(RepoSelector {
-            repo_root: Some(root.clone()),
-            config_path: None,
-            db_path: None,
-            manifest_path: None,
-        });
+        let state = start_refresh_service(
+            RepoSelector {
+                repo_root: Some(root.clone()),
+                config_path: None,
+                db_path: None,
+                manifest_path: None,
+            },
+            RefreshServiceConfig::default(),
+        );
 
         let mut snapshot = state.snapshot();
         for _ in 0..50 {

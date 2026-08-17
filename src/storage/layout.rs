@@ -53,6 +53,14 @@ impl ManagedLayout {
         self.storage_root.join("state.lock")
     }
 
+    pub(crate) fn refresh_lock_path(&self) -> PathBuf {
+        self.storage_root.join("refresh.lock")
+    }
+
+    pub(crate) fn worker_lock_path(&self) -> PathBuf {
+        self.storage_root.join("worker.lock")
+    }
+
     pub(crate) fn active_pointer_path(&self) -> PathBuf {
         self.storage_root.join("active.json")
     }
@@ -214,8 +222,15 @@ impl DirectLayout {
     }
 
     pub(crate) fn writer_lock_path(&self) -> PathBuf {
-        let parent = self.db_path.parent().unwrap_or_else(|| Path::new("."));
-        parent.join(format!(".direct-publish-{}.lock", self.destination_key()))
+        self.destination_lock_path("publish")
+    }
+
+    pub(crate) fn refresh_lock_path(&self) -> PathBuf {
+        self.destination_lock_path("refresh")
+    }
+
+    pub(crate) fn worker_lock_path(&self) -> PathBuf {
+        self.destination_lock_path("worker")
     }
 
     pub(crate) fn artifact_root_path(&self) -> PathBuf {
@@ -244,6 +259,11 @@ impl DirectLayout {
             .map(|byte| format!("{byte:02x}"))
             .collect();
         hex[..16].to_string()
+    }
+
+    fn destination_lock_path(&self, role: &str) -> PathBuf {
+        let parent = self.db_path.parent().unwrap_or_else(|| Path::new("."));
+        parent.join(format!(".direct-{role}-{}.lock", self.destination_key()))
     }
 }
 

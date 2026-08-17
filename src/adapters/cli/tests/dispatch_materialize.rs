@@ -485,7 +485,15 @@ fn setup_materializes_graph_and_writes_config() {
         &fs::read_to_string(root.join(".codebaseGraph").join("config.json")).unwrap(),
     )
     .unwrap();
-    assert_eq!(config["schema_version"], 2);
+    assert_eq!(config["schema_version"], 3);
+    assert_eq!(config["refresh"]["policy"], "leader");
+    assert_eq!(config["refresh"]["backend"], "auto");
+    assert_eq!(config["materialization"]["include_fts"], true);
+    assert_eq!(config["materialization"]["semantic_enrichment"], true);
+    assert_eq!(config["materialization"]["worker_memory_mib"], 768);
+    assert_eq!(config["materialization"]["rust_memory_mib"], 384);
+    assert_eq!(config["materialization"]["spill_chunk_mib"], 32);
+    assert_eq!(config["materialization"]["max_parallelism"], 2);
     assert_eq!(config["mcp"]["server_name"], "codebase_graph");
     let instructions = fs::read_to_string(root.join("AGENTS.md")).unwrap();
     for expected in [
