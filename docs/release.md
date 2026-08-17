@@ -6,7 +6,9 @@ push lets release-please create or update its release pull request; merging that
 tag, validates and promotes the triggering CI run's retained artifacts, and publishes `codebase-graph` to crates.io.
 Failed, cancelled, pull-request, and non-main completions perform no release mutation. A completion that is already stale
 is skipped before release-please; if `main` advances while release-please is running, a post-action guard stops all asset
-and crate publication.
+and crate publication. Successful CI for an ordinary main commit may create or update the release proposal, but it runs
+release-please with tag creation disabled. Tag and GitHub Release publication is enabled only when the successful CI SHA
+is the merge commit of a release-please pull request.
 
 ## One-Time Setup
 
@@ -42,15 +44,22 @@ Pull requests targeting `main` and pushes to `main` run:
 
 1. Merge normal pull requests into `main` with Conventional Commit-style titles or squash commit messages.
 2. After the complete `CI` push workflow succeeds, `Release` verifies that its triggering run is the current `main` tip
-   and passes that exact run ID and SHA to release-please. It rechecks the tip after release-please before continuing.
+   and requires exactly one associated merged pull request from the repository-owned release-please branch with its
+   pending-release label before enabling publication. Ordinary commits allow release-please to manage release proposals
+   with tag creation disabled.
 3. Release-please opens or updates a release pull request that changes `CHANGELOG.md`, `.release-please-manifest.json`,
    root `Cargo.toml`, and `crates/k-wiki/Cargo.toml` together.
 4. Review and merge the release pull request when ready to publish. Its `main` CI must complete successfully like any
    other merge.
-5. The resulting Release run creates the `vX.Y.Z` tag, proves that the tag resolves to the triggering CI SHA, validates
-   all four archives/checksums/provenance records from that exact run, and uploads the public assets from one publisher.
+5. The successful CI run for the release pull request merge enables tag creation. The resulting Release run creates the
+   `vX.Y.Z` tag, proves that the tag resolves to the triggering CI SHA, validates all four
+   archives/checksums/provenance records from that exact run, and uploads the public assets from one publisher.
 6. `cargo publish --dry-run --locked` runs at the immutable tag, then the crate publishes automatically after native
    assets succeed. Manual recovery never publishes the crate.
+
+If the release pull request merge fails CI, later successful commits cannot publish its stale tag. A corrected release
+must be represented by a new release pull request whose own merge commit passes CI, preserving the exact-run artifact
+and provenance contract.
 
 ## Release Gate
 

@@ -70,10 +70,32 @@ jobs:
             echo 'current-tip=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          associated_pulls="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/commits/$CI_HEAD_SHA/pulls")"
+          release_merge_count="$(jq -r \
+            --arg repository "$GITHUB_REPOSITORY" \
+            '[.[]
+              | select(.merged_at != null)
+              | select(.base.ref == "main")
+              | select(.head.repo.full_name == $repository)
+              | select(.head.ref == "release-please--branches--main--components--codebase-graph")
+              | select([.labels[].name] | index("autorelease: pending") != null)]
+             | length' <<<"$associated_pulls")"
+          [[ "$release_merge_count" -le 1 ]] || {
+            echo "Expected at most one release-please pull request for $CI_HEAD_SHA; found $release_merge_count." >&2
+            exit 1
+          }
+          if [[ "$release_merge_count" == '1' ]]; then
+            release_merge=true
+          else
+            release_merge=false
+          fi
           {
             echo 'current-tip=true'
             echo "ci-run-id=$CI_RUN_ID"
             echo "ci-head-sha=$CI_HEAD_SHA"
+            echo "release-merge=$release_merge"
           } >> "$GITHUB_OUTPUT"
       - name: Create release pull request or GitHub release
         id: release
@@ -83,12 +105,14 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-release: ${{ steps.trigger.outputs.release-merge != 'true' }}
       - name: Recheck current main tip after release-please
         if: steps.trigger.outputs.current-tip == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_MERGE: ${{ steps.trigger.outputs.release-merge }}
           RELEASE_CREATED: ${{ steps.release.outputs.release_created }}
           RELEASE_SHA: ${{ steps.release.outputs.sha }}
         run: |
@@ -98,6 +122,10 @@ jobs:
             echo "Main advanced to $main_sha while release-please was running; stopping publication for $CI_HEAD_SHA." >&2
             exit 1
           }
+          if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_MERGE" != 'true' ]]; then
+            echo "Release-please created a release outside a verified release merge." >&2
+            exit 1
+          fi
           if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_SHA" != "$CI_HEAD_SHA" ]]; then
             echo "Release-please created a release for $RELEASE_SHA, not triggering CI SHA $CI_HEAD_SHA." >&2
             exit 1
@@ -117,7 +145,7 @@ jobs:
       tag-name: ${{ steps.resolve.outputs.tag-name }}
       version: ${{ steps.resolve.outputs.version }}
       source-sha: ${{ steps.resolve.outputs.source-sha }}
-      dry-run: ${{ steps.resolve.outputs.dry-run }}
+      publish_assets: ${{ steps.resolve.outputs.publish_assets }}
       artifact-source: ${{ steps.resolve.outputs.artifact-source }}
       ci-run-id: ${{ steps.resolve.outputs.ci-run-id }}
     steps:
@@ -146,6 +174,11 @@ jobs:
             automatic=false
             should_publish=true
             dry_run="$MANUAL_DRY_RUN"
+            if [[ "$dry_run" == 'true' ]]; then
+              publish_assets=false
+            else
+              publish_assets=true
+            fi
             artifact_source="$MANUAL_SOURCE"
             ci_run_id=''
           elif [[ "$RELEASE_CREATED" == 'true' ]]; then
@@ -163,6 +196,7 @@ jobs:
             automatic=true
             should_publish=true
             dry_run=false
+            publish_assets=true
             artifact_source=promote
           else
             tag=''
@@ -170,6 +204,7 @@ jobs:
             automatic=false
             should_publish=false
             dry_run=true
+            publish_assets=false
             artifact_source=promote
             ci_run_id=''
           fi
@@ -179,7 +214,7 @@ jobs:
             echo "tag-name=$tag"
             echo "version=${tag#v}"
             echo "source-sha=$source_sha"
-            echo "dry-run=$dry_run"
+            echo "publish_assets=$publish_assets"
             echo "artifact-source=$artifact_source"
             echo "ci-run-id=$ci_run_id"
           } >> "$GITHUB_OUTPUT"
@@ -409,7 +444,7 @@ jobs:
     needs:
       - release-target
       - validate-artifacts
-    if: ${{ needs.release-target.outputs.dry-run == 'false' }}
+    if: ${{ needs.release-target.outputs.publish_assets == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -435,7 +470,7 @@ jobs:
       - release-please
       - release-target
       - publish-release-assets
-    if: ${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.dry-run == 'false' }}
+    if: ${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:

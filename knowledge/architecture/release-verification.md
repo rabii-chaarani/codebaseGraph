@@ -7,7 +7,7 @@ tags:
 - ci
 - provenance
 - release
-timestamp: 2026-08-14
+timestamp: 2026-08-17
 title: Native Release Verification
 type: architecture
 ---
@@ -40,9 +40,9 @@ Pull requests validate artifacts without retaining them. Main pushes retain all 
 
 ## Automatic release orchestration
 
-The Release workflow is triggered by completion of the `CI` workflow on `main`, not independently by a branch push. Release-please runs only when the triggering workflow was a completed successful `push` run on `main` and its `head_sha` is still the current `main` tip. Failed, cancelled, pull-request, and non-main completions may create a skipped Release workflow record but cannot mutate release state. A completion that is already stale is rejected before release-please. Because GitHub does not provide an atomic branch-tip check plus action invocation, the workflow rechecks the current tip and release SHA immediately after release-please; if `main` advanced during the action, all artifact and crate publication stops.
+The Release workflow is triggered by completion of the `CI` workflow on `main`, not independently by a branch push. Release-please runs only when the triggering workflow was a completed successful `push` run on `main` and its `head_sha` is still the current `main` tip. Before invoking release-please, the workflow classifies whether that SHA belongs to exactly one merged pull request targeting `main` from the repository-owned release-please branch with the pending-release label; ambiguous or untrusted identities fail closed. Ordinary successful commits run release-please with GitHub Release and tag creation disabled, allowing proposal maintenance without publishing a stale pending release. Only a successful release-merge commit enables tag creation. Failed, cancelled, pull-request, and non-main completions may create a skipped Release workflow record but cannot mutate release state. A completion that is already stale is rejected before release-please. Because GitHub does not provide an atomic branch-tip check plus action invocation, the workflow rechecks the current tip, release classification, and release SHA immediately after release-please; if `main` advanced during the action, all artifact and crate publication stops.
 
-Automatic mode binds release identity directly to `github.event.workflow_run.id` and `github.event.workflow_run.head_sha`. It revalidates that run's workflow path, event, branch, status, conclusion, and SHA, and it requires any release-please tag to resolve to that same SHA. Automatic mode never uses `github.sha`, polls for a substitute CI run, or rebuilds missing artifacts. Automatic runs serialize in the `release-main` concurrency group without cancellation, so only a successful current-tip completion owns orchestration.
+Automatic mode binds release identity directly to `github.event.workflow_run.id` and `github.event.workflow_run.head_sha`. It revalidates that run's workflow path, event, branch, status, conclusion, and SHA, and it requires any release-please tag to resolve to that same SHA. If a release-merge commit fails CI, a later ordinary commit cannot publish its pending tag; the corrected release must be represented by a new release pull request whose merge commit passes CI. Automatic mode never uses `github.sha`, polls for a substitute CI run, or rebuilds missing artifacts. Automatic runs serialize in the `release-main` concurrency group without cancellation, so only a successful current-tip completion owns orchestration.
 
 ## Release promotion
 
