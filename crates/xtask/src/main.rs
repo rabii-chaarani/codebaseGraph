@@ -1303,6 +1303,17 @@ fn check_workflow_policy(
     }
     let publish_assets =
         yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
+    let release_upload_step = yaml_step_by_name(publish_assets, "Upload complete native asset set")
+        .unwrap_or(&YamlValue::Null);
+    if !yaml_path(release_upload_step, &["run"]).is_some_and(|run| {
+        yaml_contains_string(run, "gh release upload")
+            && yaml_contains_string(run, "--repo \"$GITHUB_REPOSITORY\"")
+    }) {
+        issues.push(
+            "FAIL: release-publisher-repository-missing: the checkout-free release upload must explicitly select GITHUB_REPOSITORY."
+                .to_string(),
+        );
+    }
     if !yaml_path(publish_assets, &["if"]).is_some_and(|condition| {
         [
             "always()",
@@ -2430,7 +2441,9 @@ jobs:
     if: ${{ always() && needs.release-target.result == 'success' && needs.validate-artifacts.result == 'success' && needs.release-target.outputs.publish_assets == 'true' }}
     permissions: {contents: write}
     environment: {name: cargo}
-    steps: [{run: 'gh release upload'}]
+    steps:
+      - name: Upload complete native asset set
+        run: 'gh release upload v1.2.3 artifact --repo "$GITHUB_REPOSITORY"'
   publish-crate:
     needs: [release-please, release-target, publish-release-assets]
     if: ${{ always() && needs.release-please.result == 'success' && needs.release-target.result == 'success' && needs.publish-release-assets.result == 'success' && needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}
@@ -2627,6 +2640,18 @@ jobs:
             issues
                 .iter()
                 .any(|issue| issue.contains("release-publication-condition-invalid")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_repository_implicit_release_upload() {
+        let broken = valid_release_workflow_text().replace(" --repo \"$GITHUB_REPOSITORY\"", "");
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-publisher-repository-missing")),
             "{issues:?}"
         );
     }
