@@ -1111,7 +1111,17 @@ fn check_workflow_policy(
             ));
         }
     }
-    for marker in ["git/ref/heads/main", "current-tip"] {
+    for marker in [
+        "git/ref/heads/main",
+        "current-tip",
+        "commits/$CI_HEAD_SHA/pulls",
+        ".merged_at != null",
+        ".base.ref == \"main\"",
+        ".head.repo.full_name == $repository",
+        ".head.ref == \"release-please--branches--main--components--codebase-graph\"",
+        "autorelease: pending",
+        "release-merge",
+    ] {
         if !yaml_path(trigger_step, &["run"]).is_some_and(|run| yaml_contains_string(run, marker)) {
             issues.push(format!(
                 "FAIL: release-trigger-binding-missing: trigger step must contain {marker}."
@@ -1127,6 +1137,14 @@ fn check_workflow_policy(
                 .to_string(),
         );
     }
+    if yaml_path(release_action, &["with", "skip-github-release"]).and_then(YamlValue::as_str)
+        != Some("${{ steps.trigger.outputs.release-merge != 'true' }}")
+    {
+        issues.push(
+            "FAIL: release-publication-gate-missing: release-please must skip tag publication outside a verified release merge."
+                .to_string(),
+        );
+    }
     let post_release_step = yaml_step_by_name(
         release_please,
         "Recheck current main tip after release-please",
@@ -1134,8 +1152,16 @@ fn check_workflow_policy(
     .unwrap_or(&YamlValue::Null);
     if yaml_path(post_release_step, &["env", "RELEASE_SHA"]).and_then(YamlValue::as_str)
         != Some("${{ steps.release.outputs.sha }}")
+        || yaml_path(post_release_step, &["env", "RELEASE_MERGE"]).and_then(YamlValue::as_str)
+            != Some("${{ steps.trigger.outputs.release-merge }}")
         || !yaml_path(post_release_step, &["run"]).is_some_and(|run| {
-            yaml_contains_string(run, "main_sha") && yaml_contains_string(run, "CI_HEAD_SHA")
+            yaml_contains_string(run, "main_sha")
+                && yaml_contains_string(run, "CI_HEAD_SHA")
+                && yaml_contains_string(run, "RELEASE_MERGE")
+                && yaml_contains_string(
+                    run,
+                    "\"$RELEASE_CREATED\" == 'true' && \"$RELEASE_MERGE\" != 'true'",
+                )
         })
     {
         issues.push(
@@ -1160,6 +1186,16 @@ fn check_workflow_policy(
     let release_target =
         yaml_path(release, &["jobs", "release-target"]).unwrap_or(&YamlValue::Null);
     let resolve_step = yaml_step_by_id(release_target, "resolve").unwrap_or(&YamlValue::Null);
+    if yaml_path(release_target, &["outputs", "publish_assets"]).and_then(YamlValue::as_str)
+        != Some("${{ steps.resolve.outputs.publish_assets }}")
+        || !yaml_path(resolve_step, &["run"])
+            .is_some_and(|run| yaml_contains_string(run, "publish_assets"))
+    {
+        issues.push(
+            "FAIL: release-publication-output-missing: release target must emit an affirmative publish_assets output."
+                .to_string(),
+        );
+    }
     for (field, expected) in [
         (
             "RELEASE_CI_RUN_ID",
@@ -1262,6 +1298,37 @@ fn check_workflow_policy(
     {
         issues.push(
             "FAIL: release-publisher-count: exactly one publish-release-assets job may upload release assets."
+                .to_string(),
+        );
+    }
+    let publish_assets =
+        yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
+    if yaml_path(publish_assets, &["if"]).and_then(YamlValue::as_str)
+        != Some("${{ needs.release-target.outputs.publish_assets == 'true' }}")
+    {
+        issues.push(
+            "FAIL: release-publication-condition-invalid: asset publication must require affirmative publish_assets authorization."
+                .to_string(),
+        );
+    }
+    let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
+    if !yaml_path(publish_crate, &["if"]).is_some_and(|condition| {
+        yaml_contains_string(
+            condition,
+            "needs.release-please.outputs.release-created == 'true'",
+        ) && yaml_contains_string(
+            condition,
+            "needs.release-target.outputs.publish_assets == 'true'",
+        )
+    }) {
+        issues.push(
+            "FAIL: release-crate-publication-condition-invalid: crate publication must require a created release and affirmative publish_assets authorization."
+                .to_string(),
+        );
+    }
+    if yaml_contains_string(release, "outputs.dry-run == 'false'") {
+        issues.push(
+            "FAIL: release-negative-dry-run-condition: publication must use affirmative authorization instead of a negated dry-run output."
                 .to_string(),
         );
     }
@@ -2296,18 +2363,26 @@ jobs:
           CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          associated_pulls="$(gh api "repos/$GITHUB_REPOSITORY/commits/$CI_HEAD_SHA/pulls")"
+          release_merge_count="$(jq -r --arg repository "$GITHUB_REPOSITORY" '[.[] | select(.merged_at != null) | select(.base.ref == "main") | select(.head.repo.full_name == $repository) | select(.head.ref == "release-please--branches--main--components--codebase-graph") | select([.labels[].name] | index("autorelease: pending") != null)] | length' <<<"$associated_pulls")"
           echo 'current-tip=true'
+          echo 'release-merge=true'
       - id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
+        with:
+          skip-github-release: ${{ steps.trigger.outputs.release-merge != 'true' }}
       - name: Recheck current main tip after release-please
         env:
+          RELEASE_MERGE: ${{ steps.trigger.outputs.release-merge }}
           RELEASE_SHA: ${{ steps.release.outputs.sha }}
         run: |
           main_sha=current
           test "$main_sha" = "$CI_HEAD_SHA"
+          if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_MERGE" != 'true' ]]; then exit 1; fi
   release-target:
     outputs:
       ci-run-id: ${{ steps.resolve.outputs.ci-run-id }}
+      publish_assets: ${{ steps.resolve.outputs.publish_assets }}
     steps:
       - id: resolve
         env:
@@ -2316,6 +2391,7 @@ jobs:
         run: |
           tag_sha=tag
           source_sha=source
+          publish_assets=true
   ci-gate:
     permissions: {actions: read}
     outputs: {ci-run-id: x}
@@ -2340,10 +2416,12 @@ jobs:
           fi
   rebuild-artifacts: {uses: './.github/workflows/native.yml'}
   publish-release-assets:
+    if: ${{ needs.release-target.outputs.publish_assets == 'true' }}
     permissions: {contents: write}
     environment: {name: cargo}
     steps: [{run: 'gh release upload'}]
   publish-crate:
+    if: ${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}
     steps:
       - {run: 'cargo publish --dry-run --locked'}
       - {run: 'cargo publish --locked'}
@@ -2440,6 +2518,88 @@ jobs:
             issues
                 .iter()
                 .any(|issue| issue.contains("release-post-action-freshness-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unconditional_release_publication() {
+        let broken = valid_release_workflow_text().replace(
+            "${{ steps.trigger.outputs.release-merge != 'true' }}",
+            "false",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-publication-gate-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_release_merge_detection() {
+        let broken = valid_release_workflow_text().replace(
+            ".head.ref == \"release-please--branches--main--components--codebase-graph\"",
+            "ordinary-feature-branch",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-trigger-binding-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_untrusted_release_merge_identity() {
+        for (trusted, untrusted) in [
+            (
+                ".head.repo.full_name == $repository",
+                ".head.repo.full_name != $repository",
+            ),
+            ("autorelease: pending", "ordinary-label"),
+            (".merged_at != null", ".merged_at == null"),
+            (".base.ref == \"main\"", ".base.ref == \"other\""),
+        ] {
+            let broken = valid_release_workflow_text().replace(trusted, untrusted);
+            let issues = workflow_policy_issues(&broken);
+            assert!(
+                issues
+                    .iter()
+                    .any(|issue| issue.contains("release-trigger-binding-missing")),
+                "{trusted}: {issues:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_post_action_release_merge_guard() {
+        let broken = valid_release_workflow_text().replace(
+            "\"$RELEASE_CREATED\" == 'true' && \"$RELEASE_MERGE\" != 'true'",
+            "\"$RELEASE_CREATED\" == 'true' && \"$RELEASE_MERGE\" == 'true'",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-post-action-freshness-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_negated_dry_run_publication() {
+        let broken = valid_release_workflow_text().replace(
+            "outputs.publish_assets == 'true'",
+            "outputs.dry-run == 'false'",
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-negative-dry-run-condition")),
             "{issues:?}"
         );
     }
