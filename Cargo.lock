@@ -181,7 +181,7 @@ dependencies = [
 
 [[package]]
 name = "codebase-graph"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "fs2",
  "lbug",
@@ -725,7 +725,7 @@ dependencies = [
 
 [[package]]
 name = "k-wiki"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "ammonia",
  "axum",
@@ -1814,7 +1814,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "flate2",
  "serde",
