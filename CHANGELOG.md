@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.4...v1.4.5) (2026-08-17)
+
+
+### Bug Fixes
+
+* **release:** bind asset upload repository ([#82](https://github.com/rabii-chaarani/codebaseGraph/issues/82)) ([2a898c6](https://github.com/rabii-chaarani/codebaseGraph/commit/2a898c6f0c50345723d0d60cf9fc8df0da8f23ee))
+
 ## [1.4.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.3...v1.4.4) (2026-08-17)
 
 
