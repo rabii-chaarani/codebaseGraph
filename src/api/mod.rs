@@ -24,12 +24,16 @@ pub use contracts::{
     RefreshWatchSummary, RepoSelector, RepositoryLifecycleRequest, SearchRequest,
 };
 pub use core::OperationDescriptor;
+pub(crate) use facade::CoordinatorCodebaseGraphApi;
 pub use facade::{CodebaseGraphApi, OperationExecutor};
 pub use lifecycle::{
     inspect_mcp_server, install_mcp_server, remove_mcp_server, rename_mcp_server,
     resolve_mcp_target, supported_mcp_clients, McpClientInstallOptions, McpClientRemovalOptions,
     McpClientRenameOptions, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
     McpServerRegistration, McpTargetLocality, ResolvedMcpTarget,
+};
+pub(crate) use materialization::{
+    execute_candidate_materialization, execute_materialization, read_manifest, MaterializeOptions,
 };
 pub(crate) use refresh::RefreshServiceConfig;
 

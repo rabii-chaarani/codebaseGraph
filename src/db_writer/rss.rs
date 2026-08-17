@@ -1,7 +1,7 @@
 use std::io;
 
 #[cfg(target_os = "macos")]
-pub(super) fn sample_process_rss(pid: u32) -> io::Result<u64> {
+pub(crate) fn sample_process_rss(pid: u32) -> io::Result<u64> {
     let mut info = std::mem::MaybeUninit::<libc::rusage_info_v2>::zeroed();
     // SAFETY: `info` points to writable storage for the exact RUSAGE_INFO_V2
     // structure requested, and `proc_pid_rusage` initializes it on success.
@@ -21,7 +21,7 @@ pub(super) fn sample_process_rss(pid: u32) -> io::Result<u64> {
 }
 
 #[cfg(target_os = "linux")]
-pub(super) fn sample_process_rss(pid: u32) -> io::Result<u64> {
+pub(crate) fn sample_process_rss(pid: u32) -> io::Result<u64> {
     let status = std::fs::read_to_string(format!("/proc/{pid}/status"))?;
     let kib = status
         .lines()
@@ -36,7 +36,7 @@ pub(super) fn sample_process_rss(pid: u32) -> io::Result<u64> {
 }
 
 #[cfg(windows)]
-pub(super) fn sample_process_rss(pid: u32) -> io::Result<u64> {
+pub(crate) fn sample_process_rss(pid: u32) -> io::Result<u64> {
     use windows_sys::Win32::Foundation::CloseHandle;
     use windows_sys::Win32::System::ProcessStatus::{
         GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS,
@@ -75,7 +75,7 @@ pub(super) fn sample_process_rss(pid: u32) -> io::Result<u64> {
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
-pub(super) fn sample_process_rss(_pid: u32) -> io::Result<u64> {
+pub(crate) fn sample_process_rss(_pid: u32) -> io::Result<u64> {
     Err(io::Error::new(
         io::ErrorKind::Unsupported,
         "RSS sampling is unsupported on this platform",

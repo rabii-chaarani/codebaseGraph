@@ -24,6 +24,7 @@ use crate::api::normalization::{
 use crate::api::presenter::present_operation_response;
 use crate::api::refresh::RefreshState;
 use crate::error::NativeError;
+use crate::materialization_worker::execute_explicit_worker;
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
 use crate::storage::layout::direct_bundle_paths;
 use serde_json::json;
@@ -62,6 +63,7 @@ pub(crate) struct RegisteredOperation {
 #[derive(Debug, Clone, Default)]
 pub struct ApiCore {
     refresh: Option<Arc<RefreshState>>,
+    isolate_materialization: bool,
 }
 
 impl ApiCore {
@@ -69,8 +71,11 @@ impl ApiCore {
         Self::default()
     }
 
-    pub(crate) fn with_refresh_state(refresh: Option<Arc<RefreshState>>) -> Self {
-        Self { refresh }
+    pub(crate) fn for_coordinator(refresh: Option<Arc<RefreshState>>) -> Self {
+        Self {
+            refresh,
+            isolate_materialization: true,
+        }
     }
 
     pub(crate) fn register_operations(&self) -> OperationRegistry {
@@ -218,15 +223,6 @@ impl ApiCore {
             }
         }
         validate_request(&request)?;
-        let _refresh_read_guard = if operation_requires_consistent_graph_read(&request) {
-            self.refresh
-                .as_ref()
-                .map(|refresh| refresh.read_guard())
-                .transpose()
-                .map_err(|error| ApiError::new("refresh_lock_failed", error))?
-        } else {
-            None
-        };
         let operation = self
             .resolve_operation(request.operation_name())
             .ok_or_else(|| {
@@ -261,7 +257,16 @@ impl ApiCore {
                 runtime.direct_read = None;
             }
         }
-        let response = dispatch_operation(&request, &operation, runtime.as_ref())?;
+        let response = if self.isolate_materialization {
+            match (&request, runtime.as_ref()) {
+                (OperationRequest::Materialize(request), Some(runtime)) => {
+                    execute_isolated_materialization(request, runtime, self.refresh.as_deref())?
+                }
+                _ => dispatch_operation(&request, &operation, runtime.as_ref())?,
+            }
+        } else {
+            dispatch_operation(&request, &operation, runtime.as_ref())?
+        };
         Ok(present_operation_response(
             response,
             request.output_format(),
@@ -393,16 +398,6 @@ fn dispatch_operation(
     runtime: Option<&RepoRuntime>,
 ) -> Result<OperationResponse, ApiError> {
     (operation.handler)(request, runtime)
-}
-
-fn operation_requires_consistent_graph_read(request: &OperationRequest) -> bool {
-    matches!(
-        request,
-        OperationRequest::Health(_)
-            | OperationRequest::Search(_)
-            | OperationRequest::Context(_)
-            | OperationRequest::Query(_)
-    )
 }
 
 fn operation_requires_graph_write(request: &OperationRequest) -> bool {
@@ -779,7 +774,6 @@ fn execute_materialization(
     if !dry_plan {
         reject_legacy_write_operation(runtime)?;
     }
-    let output_format = request.output_format;
     let materialize_options = MaterializeOptions::from_request(request, runtime, dry_plan);
 
     let mut native_request = if let Some(request_path) = request.native_request_path.as_ref() {
@@ -800,14 +794,44 @@ fn execute_materialization(
             .map_err(materialization_api_error)?
     };
 
-    let payload = materialization_payload(request, &response, &runtime.manifest_path, dry_plan);
+    Ok(materialization_operation_response(
+        request, runtime, &response, dry_plan,
+    ))
+}
+
+fn execute_isolated_materialization(
+    request: &MaterializationRequest,
+    runtime: &RepoRuntime,
+    refresh: Option<&RefreshState>,
+) -> Result<OperationResponse, ApiError> {
+    reject_legacy_write_operation(runtime)?;
+    let options = MaterializeOptions::from_request(request, runtime, false);
+    let response = execute_explicit_worker(&options, |pid| {
+        if let Some(refresh) = refresh {
+            refresh.set_worker_pid(pid);
+        }
+    })
+    .map_err(materialization_api_error)?;
+    Ok(materialization_operation_response(
+        request, runtime, &response, false,
+    ))
+}
+
+fn materialization_operation_response(
+    request: &MaterializationRequest,
+    runtime: &RepoRuntime,
+    response: &NativeSyntaxMaterializationResponse,
+    dry_plan: bool,
+) -> OperationResponse {
+    let output_format = request.output_format;
+    let payload = materialization_payload(request, response, &runtime.manifest_path, dry_plan);
     let mut operation_response = OperationResponse::from_payload(
         if dry_plan { "plan" } else { "materialize" },
         output_format,
         payload,
     );
     operation_response.diagnostics = response.diagnostics.clone();
-    Ok(operation_response)
+    operation_response
 }
 
 fn materialization_api_error(message: String) -> ApiError {
@@ -1187,35 +1211,6 @@ mod tests {
             .expect("registered MCP operation should resolve");
         assert_eq!(operation.id, "search");
         assert!(core.resolve_mcp_operation("graph_missing").is_none());
-    }
-
-    #[test]
-    fn refresh_read_policy_covers_repository_graph_reads() {
-        let repo = RepoSelector::default();
-        let typed = OutputFormat::Typed;
-        assert!(super::operation_requires_consistent_graph_read(
-            &OperationRequest::Health(crate::api::contracts::HealthRequest {
-                repo: repo.clone(),
-                refresh_status: None,
-                output_format: typed,
-            })
-        ));
-        assert!(super::operation_requires_consistent_graph_read(
-            &OperationRequest::Query(crate::api::contracts::QueryRequest {
-                repo,
-                statement: "MATCH (n) RETURN n".to_string(),
-                parameters: json!({}),
-                limit: 1,
-                output_format: typed,
-            })
-        ));
-        assert!(!super::operation_requires_consistent_graph_read(
-            &OperationRequest::Catalog {
-                kind: "schema".to_string(),
-                group: None,
-                output_format: typed,
-            }
-        ));
     }
 
     #[test]
