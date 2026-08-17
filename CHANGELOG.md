@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.2...v1.4.3) (2026-08-17)
+
+
+### Bug Fixes
+
+* **release:** prevent stale tag publication ([#77](https://github.com/rabii-chaarani/codebaseGraph/issues/77)) ([1931dc8](https://github.com/rabii-chaarani/codebaseGraph/commit/1931dc85d32f92477f2fa244dbebb3e0f5ea4c44))
+
 ## [1.4.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.1...v1.4.2) (2026-08-17)
 
 
