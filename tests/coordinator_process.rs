@@ -143,20 +143,33 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
         Duration::from_secs(30),
     );
     assert_ne!(updated_generation, initial_generation);
-    let search = follower.call(
-        10_001,
-        "tools/call",
-        json!({
-            "name": "graph_search",
-            "arguments": {
-                "query": "coordinated_graph_v2",
-                "include_structured_content": true
-            }
-        }),
-    );
-    assert!(search["result"]["structuredContent"]["results"]
-        .as_array()
-        .is_some_and(|results| !results.is_empty()));
+    let search_deadline = Instant::now() + Duration::from_secs(10);
+    let mut search_id = 10_001;
+    loop {
+        let search = follower.call(
+            search_id,
+            "tools/call",
+            json!({
+                "name": "graph_search",
+                "arguments": {
+                    "query": "coordinated_graph_v2",
+                    "include_structured_content": true
+                }
+            }),
+        );
+        if search["result"]["structuredContent"]["results"]
+            .as_array()
+            .is_some_and(|results| !results.is_empty())
+        {
+            break;
+        }
+        assert!(
+            Instant::now() < search_deadline,
+            "published refresh did not become searchable"
+        );
+        search_id += 1;
+        std::thread::sleep(Duration::from_millis(25));
+    }
 
     clients.kill_pid(first_pid);
     let replacement =
@@ -173,7 +186,10 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     write_config(&repo, &storage, 129, 1, 1);
     fs::write(
         repo.join("src/lib.rs"),
-        "pub fn coordinated_graph() -> bool { false }\n",
+        format!(
+            "/*{}*/\npub fn coordinated_graph() -> bool {{ false }}\n",
+            "x".repeat(2 * 1024 * 1024)
+        ),
     )
     .unwrap();
     clients.push(McpClient::start(&repo, 20));

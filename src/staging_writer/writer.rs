@@ -1,15 +1,16 @@
 use crate::api::catalog::schema_statements_from_copy_statements;
 use crate::db_writer::{write_database_with_metrics, LadybugWriteMetrics, LadybugWriteRequest};
 use crate::error::NativeError;
-use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
+use crate::protocol::NativeSyntaxMaterializationRequest;
 
 pub(crate) fn write_graph_rows(
     request: &NativeSyntaxMaterializationRequest,
-    response: &NativeSyntaxMaterializationResponse,
+    copy_statements: &[String],
+    has_external_search_backend: bool,
 ) -> Result<LadybugWriteMetrics, NativeError> {
-    let use_ladybug_fts = request.include_fts && response.search_backend.is_none();
+    let use_ladybug_fts = request.include_fts && !has_external_search_backend;
     let schema_statements = if request.schema_statements.is_empty() {
-        schema_statements_from_copy_statements(use_ladybug_fts, &response.copy_statements)
+        schema_statements_from_copy_statements(use_ladybug_fts, copy_statements)
     } else {
         request.schema_statements.clone()
     };
@@ -26,6 +27,6 @@ pub(crate) fn write_graph_rows(
         defer_hash_indexes: true,
         include_fts: use_ladybug_fts,
         schema_statements,
-        copy_statements: response.copy_statements.clone(),
+        copy_statements: copy_statements.to_vec(),
     })
 }

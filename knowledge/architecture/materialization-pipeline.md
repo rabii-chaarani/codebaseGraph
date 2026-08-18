@@ -62,7 +62,9 @@ New generations build a generation-owned `disk_bm25_v1` sidecar from externally 
 
 ### 7. Build and validate the database
 
-Ladybug work is ordered into pre-COPY schema, bulk COPY, and post-COPY indexes. The complete MCP build runs in the Materialization Worker, and Ladybug phases run in nested short-lived children. Both supervisors sample every 25 ms. During a Ladybug phase, the phase supervisor accounts the materialization parent plus Ladybug child RSS together and terminates the phase before the configured worker ceiling is exceeded. The Ladybug buffer pool starts at 256 MiB and may retry COPY/index pool exhaustion at 320 and 384 MiB, while the configured worker RSS limit remains the hard authority.
+Ladybug work is ordered into pre-COPY schema, bulk COPY, and post-COPY indexes. The complete MCP build runs in the Materialization Worker, and Ladybug phases run in nested short-lived children. Both supervisors sample every 25 ms. During a Ladybug phase, the phase supervisor adds a composable memory charge for the materialization parent and Ladybug child, then terminates the phase before the configured worker ceiling is exceeded. The Ladybug buffer pool starts at 256 MiB and may retry COPY/index pool exhaustion at 320 and 384 MiB, while the configured worker RSS limit remains the hard authority.
+
+On macOS, supervision adds each process's current physical footprint from `proc_pid_rusage(...).ri_phys_footprint`. The cumulative `ri_resident_size` field is not a live measurement, while adding raw current RSS from parent and child double-counts their clean shared runtime mappings. Rust graph construction uses mimalloc and forces collection at the Ladybug boundary after dropping scan/planner state; platform-allocator relief covers foreign allocations. Structured budget failures include the parent/child memory split and active pool size.
 
 Managed mode writes the database, compact manifest v5, metadata, sidecar siblings, and readiness marker into a fresh candidate. The database is closed, reopened read-only, and checked before publication. Existing v4 generations remain readable; their next write performs one bounded full rebuild.
 

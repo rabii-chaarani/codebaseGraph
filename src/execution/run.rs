@@ -13,8 +13,8 @@ use std::fs;
 use std::path::Path;
 use std::time::Instant;
 
-// The JSON reader does not consolidate a list of chunk files, so each bounded
-// file is loaded separately and checkpointed before the next transaction.
+// Ladybug's bundled JSON reader does not consolidate a list or glob of JSON
+// files, so production currently loads one complete table document at a time.
 const COPY_FILE_CHUNK_BYTES: usize = usize::MAX;
 
 pub fn execute_materialization_pipeline(
@@ -32,7 +32,6 @@ fn execute_scanned_materialization(
     mut phase_timings: BTreeMap<String, f64>,
 ) -> Result<NativeSyntaxMaterializationResponse, NativeError> {
     let request = &scan.input;
-    let diff = scan.diff.clone();
     // A write invocation always assembles a complete candidate generation. Even a
     // source no-op must validate/reuse every artifact,
     // and produce a self-contained database that can be published atomically.
@@ -57,7 +56,7 @@ fn execute_scanned_materialization(
     let materialization_paths = scan.supported.keys().cloned().collect::<Vec<_>>();
     let materialization_total = materialization_paths.len();
 
-    let mut diagnostics = scan.diagnostics.clone();
+    let mut parse_diagnostics = Vec::new();
     let mut parse_seconds = 0.0;
     let mut graph_build_seconds = 0.0;
     let mut staging_seconds = 0.0;
@@ -77,7 +76,7 @@ fn execute_scanned_materialization(
         |index, result| {
             parse_seconds += result.parse_seconds;
             graph_build_seconds += result.graph_build_seconds;
-            diagnostics.extend(result.diagnostics);
+            parse_diagnostics.extend(result.diagnostics);
             if result.reused_artifact {
                 artifacts_reused += 1;
             } else {
@@ -106,12 +105,21 @@ fn execute_scanned_materialization(
     phase_timings.insert("parse_seconds".to_string(), parse_seconds);
     phase_timings.insert("graph_build_seconds".to_string(), graph_build_seconds);
 
+    let scan::SourceScan {
+        input: request,
+        profiles,
+        snapshots,
+        supported,
+        mut diagnostics,
+        diff,
+    } = scan;
+    diagnostics.extend(parse_diagnostics);
     let artifact_memory_limit = request.rust_memory_limit_bytes()?;
     let mut materialized_entries = BTreeMap::new();
     let mut rebuilt_entries = BTreeMap::new();
     for (index, path) in materialization_paths.iter().enumerate() {
         let partition = load_planned_partition(
-            &scan,
+            &supported,
             path,
             &planned_entries,
             &artifact_store,
@@ -148,9 +156,48 @@ fn execute_scanned_materialization(
         edge_count: staging.unique_edge_count,
     };
     let graph_build_digest = request.graph_build_compatibility_digest()?;
+    // The scan's supported-source index and planner maps are no longer needed.
+    // Release them before entering native database loading; only compact result
+    // data and the small COPY statement list cross that phase boundary.
+    drop(supported);
+    drop(profiles);
+    drop(materialization_paths);
+    drop(planned_entries);
+    drop(parsed_paths);
+    drop(artifact_store);
+
+    let mut search_backend = None;
+    let mut search_spill_bytes = 0_u64;
+    let mut search_high_water_bytes = None;
+    if request.include_fts {
+        let search_started = Instant::now();
+        let search = search_index::build(search_index::SearchIndexBuildRequest {
+            db_path: Path::new(&request.db_path),
+            staging_dir: Path::new(&request.staging_dir),
+            chunk_bytes: spill_chunk_bytes,
+        })?;
+        search_backend = Some(search.metadata);
+        search_spill_bytes = search.spill_bytes;
+        search_high_water_bytes = Some(search.high_water_bytes);
+        phase_timings.insert(
+            "search_index_seconds".to_string(),
+            elapsed_seconds(search_started),
+        );
+    }
+
+    let graph_write_started = Instant::now();
+    let database_metrics = staging_writer::write_graph_rows(
+        &request,
+        &staging.copy_statements,
+        search_backend.is_some(),
+    )?;
+    phase_timings.insert(
+        "database_write_seconds".to_string(),
+        elapsed_seconds(graph_write_started),
+    );
 
     let mut response = NativeSyntaxMaterializationResponse::from_parts(
-        scan.snapshots,
+        snapshots,
         diff,
         diagnostics,
         rebuilt_entries,
@@ -163,52 +210,34 @@ fn execute_scanned_materialization(
     response.artifacts_reused = artifacts_reused;
     response.artifacts_rebuilt = artifacts_rebuilt;
     response.graph_build_digest = Some(graph_build_digest);
+    response.search_backend = search_backend;
+    response.spill_bytes = response.spill_bytes.saturating_add(search_spill_bytes);
     response
         .phase_high_water_marks
         .insert("parse".to_string(), execution_stats.high_water_bytes);
-
-    if request.include_fts {
-        let search_started = Instant::now();
-        let search = search_index::build(search_index::SearchIndexBuildRequest {
-            db_path: Path::new(&request.db_path),
-            staging_dir: Path::new(&request.staging_dir),
-            chunk_bytes: spill_chunk_bytes,
-        })?;
-        response.search_backend = Some(search.metadata);
-        response.spill_bytes = response.spill_bytes.saturating_add(search.spill_bytes);
+    if let Some(high_water_bytes) = search_high_water_bytes {
         response
             .phase_high_water_marks
-            .insert("search_index".to_string(), search.high_water_bytes);
-        response.phase_timings.insert(
-            "search_index_seconds".to_string(),
-            elapsed_seconds(search_started),
-        );
+            .insert("search_index".to_string(), high_water_bytes);
     }
-
-    let graph_write_started = Instant::now();
-    let database_metrics = staging_writer::write_graph_rows(request, &response)?;
     if database_metrics.high_water_bytes > 0 {
         response.phase_high_water_marks.insert(
             "database_write".to_string(),
             database_metrics.high_water_bytes,
         );
     }
-    response.phase_timings.insert(
-        "database_write_seconds".to_string(),
-        elapsed_seconds(graph_write_started),
-    );
     response.database_written = true;
     Ok(response)
 }
 
 fn load_planned_partition(
-    scan: &scan::SourceScan,
+    supported: &BTreeMap<String, crate::protocol::SourceSnapshot>,
     path: &str,
     planned_entries: &BTreeMap<String, ManifestEntry>,
     artifact_store: &ArtifactStore,
     memory_limit_bytes: u64,
 ) -> Result<GraphPartition, NativeError> {
-    let snapshot = scan.supported.get(path).ok_or_else(|| {
+    let snapshot = supported.get(path).ok_or_else(|| {
         NativeError::InvalidInput(format!(
             "missing scanned source metadata after execution planning: {path}"
         ))

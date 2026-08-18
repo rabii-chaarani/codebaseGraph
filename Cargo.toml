@@ -26,6 +26,8 @@ bundled-windows-extensions = []
 fs2 = "0.4.3"
 lbug = "0.19.0"
 libc = "0.2"
+libmimalloc-sys = { version = "0.1.49", features = ["extended"] }
+mimalloc = { version = "0.1.52", features = ["extended"] }
 notify = "8.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

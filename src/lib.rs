@@ -1,3 +1,6 @@
+#[global_allocator]
+static GLOBAL_ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 pub mod adapters;
 pub mod api;
 mod artifact_store;

@@ -7,6 +7,10 @@ pub struct MemoryBudgetExceeded {
     pub limit_bytes: u64,
     pub accounted_bytes: u64,
     pub observed_rss_bytes: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_rss_bytes: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub child_rss_bytes: Option<u64>,
 }
 
 impl MemoryBudgetExceeded {
@@ -21,7 +25,15 @@ impl MemoryBudgetExceeded {
             limit_bytes,
             accounted_bytes,
             observed_rss_bytes,
+            parent_rss_bytes: None,
+            child_rss_bytes: None,
         }
+    }
+
+    pub(crate) fn with_process_rss(mut self, parent_bytes: u64, child_bytes: u64) -> Self {
+        self.parent_rss_bytes = Some(parent_bytes);
+        self.child_rss_bytes = Some(child_bytes);
+        self
     }
 }
 
@@ -44,17 +56,22 @@ impl fmt::Display for NativeError {
             NativeError::Json(error) => write!(formatter, "{error}"),
             NativeError::Database(message) => write!(formatter, "{message}"),
             NativeError::InvalidInput(message) => write!(formatter, "{message}"),
-            NativeError::MemoryBudgetExceeded(error) => write!(
-                formatter,
-                "{}",
-                serde_json::json!({
+            NativeError::MemoryBudgetExceeded(error) => {
+                let mut payload = serde_json::json!({
                     "error": "memory_budget_exceeded",
                     "phase": error.phase,
                     "limit_bytes": error.limit_bytes,
                     "accounted_bytes": error.accounted_bytes,
                     "observed_rss_bytes": error.observed_rss_bytes,
-                })
-            ),
+                });
+                if let Some(parent_bytes) = error.parent_rss_bytes {
+                    payload["parent_rss_bytes"] = serde_json::json!(parent_bytes);
+                }
+                if let Some(child_bytes) = error.child_rss_bytes {
+                    payload["child_rss_bytes"] = serde_json::json!(child_bytes);
+                }
+                write!(formatter, "{payload}")
+            }
             NativeError::Unsupported(message) => write!(formatter, "{message}"),
         }
     }
@@ -89,5 +106,18 @@ mod tests {
         assert_eq!(value["limit_bytes"], 1024);
         assert_eq!(value["accounted_bytes"], 2048);
         assert_eq!(value["observed_rss_bytes"], 512);
+        assert!(value.get("parent_rss_bytes").is_none());
+        assert!(value.get("child_rss_bytes").is_none());
+    }
+
+    #[test]
+    fn memory_budget_failure_can_report_supervised_process_split() {
+        let error = NativeError::MemoryBudgetExceeded(
+            MemoryBudgetExceeded::new("ladybug_copy", 1024, 900, 900).with_process_rss(300, 600),
+        );
+        let value: serde_json::Value = serde_json::from_str(&error.to_string()).unwrap();
+
+        assert_eq!(value["parent_rss_bytes"], 300);
+        assert_eq!(value["child_rss_bytes"], 600);
     }
 }
