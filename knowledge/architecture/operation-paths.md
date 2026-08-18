@@ -22,8 +22,10 @@ All Graph Runtime clients share one public operation path. Transport code transl
 external input
   -> adapter-specific parsing
   -> typed public request
-  -> CodebaseGraphApi::execute_operation
-  -> Unified API Core
+  -> CodebaseGraphApi facade
+  -> CLI/embedded: local Unified API Core
+  -> MCP: authenticated loopback route to repository owner
+  -> owner Unified API Core
   -> operation descriptor resolution
   -> canonical request normalization and validation
   -> repository runtime resolution and storage recovery
@@ -37,9 +39,17 @@ external input
 | Interface | Adapter responsibility | Shared behavior |
 | --- | --- | --- |
 | CLI | Parse product commands, map command options, choose stable exit codes, and write human or machine output. | Calls public operations; does not own graph or storage semantics. |
-| MCP stdio | Negotiate MCP messages and serve newline-delimited requests over standard streams. | Tool specifications derive from public operation metadata. |
-| MCP HTTP | Serve MCP requests over HTTP and enforce configured authentication and bind rules. | Uses the same MCP dispatch and public operations as stdio. |
+| MCP stdio | Negotiate MCP messages and serve newline-delimited requests over standard streams. | Tool specifications derive from public operation metadata; the process routes repository operations to the elected owner. |
+| MCP HTTP | Serve MCP requests over HTTP and enforce configured authentication and bind rules. | Uses the same MCP dispatch and repository coordinator as stdio. |
 | Embedded Rust API | Accept typed operation requests and return typed or block-form results. | Enters directly at the Public API Facade. |
+
+## Repository coordinator path
+
+For a given repository storage root or Direct destination pair, one MCP process acquires `coordinator.lock` and owns the Public API Core. It accepts a versioned, length-bounded JSON frame over loopback and authenticates every request with the capability token stored in mode-0600 `coordinator.json`. The owner overwrites the invocation's repository selector with its canonical configured selector before execution.
+
+Follower MCP processes do not resolve and open Ladybug databases. They retain only the coordinator route and reconnect once after failure. A one-second monitor initiates deterministic election when the endpoint disappears; operating-system lock release provides takeover within five seconds.
+
+Health responses are produced by the owner and attach coordinator PID, endpoint, refresh ownership, memory limits, worker PID, pending state, high-water marks, spill bytes, and last no-op or error information.
 
 ## Operation registry
 
@@ -55,13 +65,13 @@ Config schema v3 supplies a managed `storage_root`, refresh policy and backend, 
 
 ## Graph read path
 
-Health, schema, helper catalogs, architecture catalogs, search, context, and raw query operations dispatch from the core to the Graph Read Service. Search uses a generation-owned disk BM25 sidecar when backend metadata is present; older generations fall back to native Ladybug FTS. Both paths apply deterministic lexical/entity ranking. Context expands selected relationship profiles. Raw statements are parameterized, single-statement, read-only, and result-bounded.
+Health, schema, helper catalogs, architecture catalogs, search, context, and raw query operations dispatch from the owner core to the Graph Read Service. For MCP, this makes Ladybug memory repository-central rather than client-local. Search uses a generation-owned disk BM25 sidecar when backend metadata is present; older generations fall back to native Ladybug FTS. Both paths apply deterministic lexical/entity ranking. Context expands selected relationship profiles. Raw statements are parameterized, single-statement, read-only, and result-bounded.
 
 Health reports storage format, writability, active generation, reused and rebuilt artifacts, pending runs, cleanup status, physical/logical database sizes, and refresh ownership/coalescing/no-op state.
 
 ## Lifecycle and refresh paths
 
-Repository installation, reinstallation, client registration, and removal are coordinated by the Repository Lifecycle Service. Continuous or one-shot refresh is coordinated by the Repository Refresh Service, which invokes the same Materialization API used by explicit builds. Under the default `leader` policy, one cross-process lock holder owns the watcher and followers remain read-only standbys; `off` starts MCP without refresh. Refresh-only materialization may return `database_written = false` after the writer lock proves the active generation already consumed the change.
+Repository installation, reinstallation, client registration, and removal are coordinated by the Repository Lifecycle Service. Continuous or one-shot refresh is coordinated by the Repository Refresh Service, which invokes the same Materialization API used by explicit builds. MCP refresh and explicit coordinator builds execute in one isolated Materialization Worker; standalone CLI builds use the same canonical pipeline directly. Under the default `leader` policy, one cross-process lock holder owns the watcher and followers remain read-only standbys; `off` starts MCP without refresh. Refresh-only materialization may return `database_written = false` after the writer lock proves the active generation already consumed the change.
 
 For schema-v1 state, search, context, query, and health remain available. Build, watch, refresh, and install return `legacy_storage_requires_reinstall`. Reinstall moves the legacy state without copying it, restores it after any pre-activation failure, and deletes it immediately after successful v2 activation and validation; there is no grace-period copy.
 
@@ -69,7 +79,7 @@ For schema-v1 state, search, context, query, and health remain available. Build,
 
 - Request-shape and operation-rule violations fail during preparation.
 - Repository selection and storage-format failures fail during runtime resolution.
-- A failed candidate build, memory-budget termination, or publication preserves the active generation.
+- A failed candidate build, memory-budget termination, coordinator death, orphan-worker reap, or publication failure preserves the active generation.
 - Structured memory failures report the phase, configured limit, accounted bytes, and observed RSS.
 - Cleanup errors are reported separately and never hide the primary build error.
 - Application failures are translated once into stable public errors.

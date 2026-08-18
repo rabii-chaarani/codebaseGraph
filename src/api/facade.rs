@@ -6,6 +6,7 @@ use crate::api::{
     core::{ApiCore, OperationDescriptor},
     refresh::{run_refresh_watch, start_refresh_service, RefreshServiceConfig},
 };
+use crate::coordinator::{CoordinatorApiConfig, CoordinatorClient};
 
 pub trait OperationExecutor {
     fn execute(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError>;
@@ -20,6 +21,29 @@ impl OperationExecutor for ApiCore {
 #[derive(Debug, Clone)]
 pub struct CodebaseGraphApi<C = ApiCore> {
     core: C,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct CoordinatorCodebaseGraphApi {
+    client: CoordinatorClient,
+}
+
+impl CoordinatorCodebaseGraphApi {
+    pub(crate) fn connect(
+        selector: RepoSelector,
+        refresh: Option<RefreshServiceConfig>,
+    ) -> Result<Self, String> {
+        CoordinatorClient::connect_or_start(CoordinatorApiConfig::new(selector, refresh))
+            .map(|client| Self { client })
+    }
+
+    pub(crate) fn execute_invocation(
+        &self,
+        operation_id: &str,
+        invocation: &OperationInvocation,
+    ) -> Result<OperationResponse, ApiError> {
+        self.client.execute_invocation(operation_id, invocation)
+    }
 }
 
 impl CodebaseGraphApi<ApiCore> {
@@ -37,9 +61,13 @@ impl CodebaseGraphApi<ApiCore> {
         self.core.resolve_mcp_operation(tool_name)
     }
 
-    pub(crate) fn with_auto_refresh(selector: RepoSelector, config: RefreshServiceConfig) -> Self {
+    pub(crate) fn for_coordinator_owner(
+        selector: RepoSelector,
+        refresh: Option<RefreshServiceConfig>,
+    ) -> Self {
+        let refresh = refresh.map(|config| start_refresh_service(selector, config));
         Self {
-            core: ApiCore::with_refresh_state(Some(start_refresh_service(selector, config))),
+            core: ApiCore::for_coordinator(refresh),
         }
     }
 

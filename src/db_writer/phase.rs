@@ -118,11 +118,16 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             cleanup_phase_files(&request_path, &stderr_path);
             return Err(NativeError::MemoryBudgetExceeded(
                 MemoryBudgetExceeded::new(
-                    format!("ladybug_{}", request.phase.trace_label()),
+                    format!(
+                        "ladybug_{}_pool_{}_mib",
+                        request.phase.trace_label(),
+                        request.buffer_pool_bytes / (1024 * 1024)
+                    ),
                     request.worker_memory_bytes,
                     observed,
                     observed,
-                ),
+                )
+                .with_process_rss(parent_rss, child_rss),
             ));
         }
         std::thread::sleep(RSS_SAMPLE_INTERVAL);

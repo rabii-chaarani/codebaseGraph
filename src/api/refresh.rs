@@ -12,6 +12,7 @@ use crate::{
         },
         normalization::normalize_materialize_options,
     },
+    materialization_worker::execute_refresh_worker,
     profiles::ProfileSet,
     protocol::NativeSyntaxMaterializationResponse,
     storage::{
@@ -31,7 +32,7 @@ use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver},
-        Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
+        Arc, Mutex,
     },
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -1005,6 +1006,15 @@ impl RefreshExecutionPlan {
         let options = self.resolve_options()?;
         execute_refresh_operation(&options, candidate_paths)
     }
+
+    fn execute_isolated(
+        &self,
+        candidate_paths: Vec<String>,
+        state: &RefreshState,
+    ) -> Result<NativeSyntaxMaterializationResponse, String> {
+        let options = self.resolve_options()?;
+        execute_refresh_worker(&options, candidate_paths, |pid| state.set_worker_pid(pid))
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -1031,7 +1041,7 @@ impl<'a> RefreshServiceContext<'a> {
             &batch.paths,
             batch.full_rescan,
             RefreshRetryPolicy::default(),
-            |candidate_paths| self.execution.execute(candidate_paths),
+            |candidate_paths| self.execution.execute_isolated(candidate_paths, self.state),
         )
     }
 }
@@ -1214,7 +1224,6 @@ impl Default for RefreshStatus {
 #[derive(Debug)]
 pub(crate) struct RefreshState {
     status: Mutex<RefreshStatus>,
-    graph_lock: RwLock<()>,
 }
 
 impl RefreshState {
@@ -1228,7 +1237,6 @@ impl RefreshState {
         };
         Self {
             status: Mutex::new(status),
-            graph_lock: RwLock::new(()),
         }
     }
 
@@ -1320,18 +1328,6 @@ impl RefreshState {
         }
     }
 
-    pub(crate) fn read_guard(&self) -> Result<RwLockReadGuard<'_, ()>, String> {
-        self.graph_lock
-            .read()
-            .map_err(|_| "refresh graph read lock poisoned".to_string())
-    }
-
-    pub(crate) fn write_guard(&self) -> Result<RwLockWriteGuard<'_, ()>, String> {
-        self.graph_lock
-            .write()
-            .map_err(|_| "refresh graph write lock poisoned".to_string())
-    }
-
     pub(crate) fn set_backend(&self, backend: &str) {
         if let Ok(mut status) = self.status.lock() {
             status.backend = backend.to_string();
@@ -1367,6 +1363,12 @@ impl RefreshState {
     pub(crate) fn mark_pending(&self) {
         if let Ok(mut status) = self.status.lock() {
             status.pending = true;
+        }
+    }
+
+    pub(crate) fn set_worker_pid(&self, pid: Option<u32>) {
+        if let Ok(mut status) = self.status.lock() {
+            status.worker_pid = pid;
         }
     }
 
@@ -1534,7 +1536,10 @@ fn run_refresh_leader(
     };
 
     if !service.refresh_batch("startup", &startup_batch)? {
-        return Err("startup repository reconciliation failed".to_string());
+        return Err(state
+            .snapshot()
+            .last_error
+            .unwrap_or_else(|| "startup repository reconciliation failed".to_string()));
     }
 
     match start_native_watcher(&runtime.repo_root) {
@@ -1607,7 +1612,6 @@ fn run_service_poll_loop(
 struct StateRefreshObserver<'a> {
     state: &'a Arc<RefreshState>,
     backend: &'a str,
-    guard: Option<RwLockWriteGuard<'a, ()>>,
     overflow_count: usize,
     filtered_event_count: usize,
 }
@@ -1622,7 +1626,6 @@ impl<'a> StateRefreshObserver<'a> {
         Self {
             state,
             backend,
-            guard: None,
             overflow_count,
             filtered_event_count,
         }
@@ -1632,7 +1635,6 @@ impl<'a> StateRefreshObserver<'a> {
 impl RefreshObserver for StateRefreshObserver<'_> {
     fn before_attempt(&mut self, _event_count: usize, _changed_paths: usize) -> Result<(), String> {
         self.state.mark_pending();
-        self.guard = Some(self.state.write_guard()?);
         self.state.mark_refreshing(self.backend);
         Ok(())
     }
@@ -1643,7 +1645,6 @@ impl RefreshObserver for StateRefreshObserver<'_> {
         event_count: usize,
         changed_paths: usize,
     ) -> Result<(), String> {
-        self.guard.take();
         self.state.mark_refreshed(RefreshStatusMetrics {
             backend: self.backend,
             event_count,
@@ -1666,7 +1667,6 @@ impl RefreshObserver for StateRefreshObserver<'_> {
         event_count: usize,
         changed_paths: usize,
     ) -> Result<(), String> {
-        self.guard.take();
         self.state.mark_refresh_error(
             self.backend,
             event_count,

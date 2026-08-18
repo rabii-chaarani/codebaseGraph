@@ -3,6 +3,7 @@ use super::phase::{
     phase_worker_available, run_isolated_phase, LadybugWritePhase, LadybugWritePhaseRequest,
 };
 use super::request::{LadybugWriteMetrics, LadybugWriteRequest};
+use super::rss::release_unused_allocator_pages;
 use super::schema::statement_phases;
 use super::{
     connect_ladybug_database, open_ladybug_database_with_limits, retry_transient_database,
@@ -87,6 +88,10 @@ fn write_database_isolated(
         })
         .cloned()
         .collect::<Vec<_>>();
+    // Parsing, external sorting, and sidecar construction can leave free pages
+    // resident in the parent allocator. Return them before the first Ladybug
+    // child so the combined parent+child RSS supervisor measures live work.
+    release_unused_allocator_pages();
     let mut high_water_bytes = run_phase(
         request,
         LadybugWritePhase::Schema {
@@ -104,7 +109,10 @@ fn write_database_isolated(
     } else {
         request.copy_statements.len()
     };
+    let early_index_tables =
+        tables_requiring_early_index(&request.copy_statements[..connector_start])?;
     let mut node_tables = BTreeSet::new();
+    let mut indexed_tables = BTreeSet::new();
     for (index, statement) in request.copy_statements[..connector_start]
         .iter()
         .enumerate()
@@ -118,7 +126,18 @@ fn write_database_isolated(
                     copy_target(statement)
                 ))
             })?;
-            node_tables.insert(table.to_string());
+            if early_index_tables.contains(table) {
+                if indexed_tables.insert(table.to_string()) {
+                    high_water_bytes = high_water_bytes.max(run_phase(
+                        request,
+                        LadybugWritePhase::Index {
+                            table: table.to_string(),
+                        },
+                    )?);
+                }
+            } else {
+                node_tables.insert(table.to_string());
+            }
         }
     }
     for table in node_tables {
@@ -235,7 +254,10 @@ fn execute_deferred_index_copy(
         .iter()
         .position(|statement| node_table_name(statement).is_none())
         .unwrap_or(request.copy_statements.len());
+    let early_index_tables =
+        tables_requiring_early_index(&request.copy_statements[..connector_start])?;
     let mut node_tables = BTreeSet::new();
+    let mut indexed_tables = BTreeSet::new();
     for (index, statement) in request.copy_statements[..connector_start]
         .iter()
         .enumerate()
@@ -247,18 +269,16 @@ fn execute_deferred_index_copy(
                 copy_target(statement)
             ))
         })?;
-        node_tables.insert(table.to_string());
+        if early_index_tables.contains(table) {
+            if indexed_tables.insert(table.to_string()) {
+                create_hash_index(connection, table)?;
+            }
+        } else {
+            node_tables.insert(table.to_string());
+        }
     }
     for table in node_tables {
-        let statement = format!(
-            "CREATE HASH INDEX `pk_{table}_id` IF NOT EXISTS FOR (node:`{table}`) ON (node.id)"
-        );
-        connection.query(&statement).map_err(|error| {
-            NativeError::Database(format!(
-                "failed to build primary-key index for node table {table}: {error}"
-            ))
-        })?;
-        checkpoint(connection, &format!("primary-key index for {table}"))?;
+        create_hash_index(connection, &table)?;
     }
     for (index, statement) in request.copy_statements[connector_start..]
         .iter()
@@ -267,6 +287,37 @@ fn execute_deferred_index_copy(
         execute_copy(connection, request, connector_start + index, statement)?;
     }
     Ok(())
+}
+
+fn tables_requiring_early_index(
+    node_copy_statements: &[String],
+) -> Result<BTreeSet<String>, NativeError> {
+    let mut seen = BTreeSet::new();
+    let mut repeated = BTreeSet::new();
+    for statement in node_copy_statements {
+        let table = node_table_name(statement).ok_or_else(|| {
+            NativeError::InvalidInput(format!(
+                "node COPY statement has an unsupported target: {}",
+                copy_target(statement)
+            ))
+        })?;
+        if !seen.insert(table.to_string()) {
+            repeated.insert(table.to_string());
+        }
+    }
+    Ok(repeated)
+}
+
+fn create_hash_index(connection: &Connection<'_>, table: &str) -> Result<(), NativeError> {
+    let statement = format!(
+        "CREATE HASH INDEX `pk_{table}_id` IF NOT EXISTS FOR (node:`{table}`) ON (node.id)"
+    );
+    connection.query(&statement).map_err(|error| {
+        NativeError::Database(format!(
+            "failed to build primary-key index for node table {table}: {error}"
+        ))
+    })?;
+    checkpoint(connection, &format!("primary-key index for {table}"))
 }
 
 fn execute_copy(

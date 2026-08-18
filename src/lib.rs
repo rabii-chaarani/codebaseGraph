@@ -1,11 +1,16 @@
+#[global_allocator]
+static GLOBAL_ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 pub mod adapters;
 pub mod api;
 mod artifact_store;
 mod bootstrap;
+mod coordinator;
 pub mod db_writer;
 pub mod error;
 mod execution;
 mod hash;
+mod materialization_worker;
 mod normalize;
 mod parser;
 mod partition_builder;

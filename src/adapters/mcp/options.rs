@@ -5,7 +5,7 @@ use crate::api::context::{
     DEFAULT_MAX_PARALLELISM, DEFAULT_RUST_MEMORY_MIB, DEFAULT_SPILL_CHUNK_MIB,
     DEFAULT_WORKER_MEMORY_MIB,
 };
-use crate::api::{CodebaseGraphApi, RepoSelector};
+use crate::api::{CoordinatorCodebaseGraphApi, RepoSelector};
 use std::{env, net::TcpListener, path::PathBuf};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -41,7 +41,7 @@ pub(crate) struct McpServeOptions {
     pub(in crate::adapters) config: Option<PathBuf>,
     pub(in crate::adapters) db: Option<PathBuf>,
     pub(in crate::adapters) manifest: Option<PathBuf>,
-    pub(in crate::adapters) api: Option<CodebaseGraphApi>,
+    pub(in crate::adapters) api: Option<CoordinatorCodebaseGraphApi>,
     pub(in crate::adapters) refresh_policy: Option<GraphRefreshPolicy>,
     pub(in crate::adapters) worker_memory_mib: Option<u64>,
     pub(in crate::adapters) rust_memory_mib: Option<u64>,

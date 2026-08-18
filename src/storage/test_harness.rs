@@ -24,40 +24,73 @@ use storage::atomic::{
 };
 use storage::direct::{DirectPublishJournal, DirectPublishPhase, DirectStore};
 use storage::layout::{managed_generation_id, DirectLayout, GenerationPaths, ManagedLayout};
-use storage::locks::{try_open_locked, LockMode, RefreshLease};
+use storage::locks::{try_open_locked, CoordinatorLease, LockMode, RefreshLease, WorkerLease};
 use storage::managed::{ActiveGeneration, ManagedStore, ManagedWriteSession};
 use storage::run_workspace::{RunJournal, RunPhase, RunWorkspace};
 
 static TEST_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 #[test]
-fn managed_refresh_lock_path_is_stable_and_separate_from_publication() {
-    let root = temp_dir("managed_refresh_lock_path");
+fn managed_control_lock_paths_are_stable_and_role_scoped() {
+    let root = temp_dir("managed_control_lock_paths");
     let layout = ManagedLayout::new(root.join("storage"));
 
     assert_eq!(
         layout.refresh_lock_path(),
         root.join("storage/refresh.lock")
     );
+    assert_eq!(layout.worker_lock_path(), root.join("storage/worker.lock"));
+    assert_eq!(layout.worker_state_path(), root.join("storage/worker.json"));
+    assert_eq!(
+        layout.coordinator_lock_path(),
+        root.join("storage/coordinator.lock")
+    );
+    assert_eq!(
+        layout.coordinator_state_path(),
+        root.join("storage/coordinator.json")
+    );
+    assert_ne!(layout.refresh_lock_path(), layout.worker_lock_path());
+    assert_ne!(layout.worker_lock_path(), layout.coordinator_lock_path());
     assert_ne!(layout.refresh_lock_path(), layout.writer_lock_path());
 }
 
 #[test]
-fn direct_refresh_lock_paths_are_stable_and_destination_scoped() {
-    let root = temp_dir("direct_refresh_lock_paths");
+fn direct_control_lock_paths_are_stable_and_destination_scoped() {
+    let root = temp_dir("direct_control_lock_paths");
     let first = DirectLayout::new(root.join("graph.ldb"), root.join("manifest.json"));
     let same = DirectLayout::new(root.join("graph.ldb"), root.join("manifest.json"));
     let other = DirectLayout::new(root.join("other.ldb"), root.join("manifest.json"));
 
     assert_eq!(first.refresh_lock_path(), same.refresh_lock_path());
+    assert_eq!(first.worker_lock_path(), same.worker_lock_path());
+    assert_eq!(first.worker_state_path(), same.worker_state_path());
+    assert_eq!(
+        first.worker_workspace_root_path(),
+        same.worker_workspace_root_path()
+    );
+    assert_eq!(first.coordinator_lock_path(), same.coordinator_lock_path());
+    assert_eq!(
+        first.coordinator_state_path(),
+        same.coordinator_state_path()
+    );
     assert_eq!(first.refresh_lock_path().parent(), Some(root.as_path()));
+    assert_eq!(first.worker_lock_path().parent(), Some(root.as_path()));
+    assert_ne!(first.refresh_lock_path(), first.worker_lock_path());
+    assert_ne!(first.worker_lock_path(), first.coordinator_lock_path());
     assert_ne!(first.refresh_lock_path(), first.writer_lock_path());
     assert_ne!(first.refresh_lock_path(), other.refresh_lock_path());
+    assert_ne!(first.worker_lock_path(), other.worker_lock_path());
+    assert_ne!(first.worker_state_path(), other.worker_state_path());
+    assert_ne!(
+        first.worker_workspace_root_path(),
+        other.worker_workspace_root_path()
+    );
+    assert_ne!(first.coordinator_lock_path(), other.coordinator_lock_path());
 }
 
 #[test]
-fn refresh_lease_is_exclusive_nonblocking_and_transfers_after_release() {
-    let root = temp_dir("refresh_lease_takeover");
+fn control_leases_are_exclusive_nonblocking_and_transfer_after_release() {
+    let root = temp_dir("control_lease_takeover");
     let layout = ManagedLayout::new(root.join("storage"));
 
     let refresh: RefreshLease = try_open_locked(layout.refresh_lock_path(), LockMode::Exclusive)
@@ -74,14 +107,45 @@ fn refresh_lease_is_exclusive_nonblocking_and_transfers_after_release() {
             .unwrap()
             .is_some()
     );
+
+    let worker: WorkerLease = try_open_locked(layout.worker_lock_path(), LockMode::Exclusive)
+        .unwrap()
+        .expect("first worker owner should acquire the lease");
+    assert!(
+        try_open_locked(layout.worker_lock_path(), LockMode::Exclusive)
+            .unwrap()
+            .is_none()
+    );
+    drop(worker);
+    assert!(
+        try_open_locked(layout.worker_lock_path(), LockMode::Exclusive)
+            .unwrap()
+            .is_some()
+    );
+
+    let coordinator: CoordinatorLease =
+        try_open_locked(layout.coordinator_lock_path(), LockMode::Exclusive)
+            .unwrap()
+            .expect("first coordinator owner should acquire the lease");
+    assert!(
+        try_open_locked(layout.coordinator_lock_path(), LockMode::Exclusive)
+            .unwrap()
+            .is_none()
+    );
+    drop(coordinator);
+    assert!(
+        try_open_locked(layout.coordinator_lock_path(), LockMode::Exclusive)
+            .unwrap()
+            .is_some()
+    );
 }
 
 #[cfg(unix)]
 #[test]
-fn refresh_lease_rejects_a_symlinked_lock_file() {
+fn control_lease_rejects_a_symlinked_lock_file() {
     use std::os::unix::fs::symlink;
 
-    let root = temp_dir("refresh_lease_symlink");
+    let root = temp_dir("control_lease_symlink");
     let layout = ManagedLayout::new(root.join("storage"));
     fs::create_dir_all(layout.storage_root()).unwrap();
     let target = root.join("outside.lock");

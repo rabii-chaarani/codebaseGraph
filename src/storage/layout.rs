@@ -67,9 +67,20 @@ impl ManagedLayout {
         self.storage_root.join("refresh.lock")
     }
 
-    #[allow(dead_code)] // Consumed by the isolated worker supervisor in stacked PR 3.
     pub(crate) fn worker_lock_path(&self) -> PathBuf {
         self.storage_root.join("worker.lock")
+    }
+
+    pub(crate) fn worker_state_path(&self) -> PathBuf {
+        self.storage_root.join("worker.json")
+    }
+
+    pub(crate) fn coordinator_lock_path(&self) -> PathBuf {
+        self.storage_root.join("coordinator.lock")
+    }
+
+    pub(crate) fn coordinator_state_path(&self) -> PathBuf {
+        self.storage_root.join("coordinator.json")
     }
 
     pub(crate) fn active_pointer_path(&self) -> PathBuf {
@@ -240,9 +251,30 @@ impl DirectLayout {
         self.destination_lock_path("refresh")
     }
 
-    #[allow(dead_code)] // Consumed by the isolated worker supervisor in stacked PR 3.
     pub(crate) fn worker_lock_path(&self) -> PathBuf {
         self.destination_lock_path("worker")
+    }
+
+    pub(crate) fn worker_workspace_root_path(&self) -> PathBuf {
+        let parent = self.db_path.parent().unwrap_or_else(|| Path::new("."));
+        parent.join(format!(".direct-workers-{}", self.destination_key()))
+    }
+
+    pub(crate) fn worker_state_path(&self) -> PathBuf {
+        let parent = self.db_path.parent().unwrap_or_else(|| Path::new("."));
+        parent.join(format!(".direct-worker-{}.json", self.destination_key()))
+    }
+
+    pub(crate) fn coordinator_lock_path(&self) -> PathBuf {
+        self.destination_lock_path("coordinator")
+    }
+
+    pub(crate) fn coordinator_state_path(&self) -> PathBuf {
+        let parent = self.db_path.parent().unwrap_or_else(|| Path::new("."));
+        parent.join(format!(
+            ".direct-coordinator-{}.json",
+            self.destination_key()
+        ))
     }
 
     pub(crate) fn artifact_root_path(&self) -> PathBuf {

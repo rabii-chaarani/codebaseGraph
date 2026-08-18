@@ -12,6 +12,7 @@ use crate::storage::direct::{DirectStore, DirectWriteSession};
 use crate::storage::layout::{DirectLayout, RepositoryLayout, DIRECT_DB_SIDECAR_SUFFIXES};
 use crate::storage::managed::{GraphStorage, ManagedStore, ManagedWriteSession, StorageMode};
 use crate::storage::run_workspace::{RunPhase, RunWorkspace};
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -21,7 +22,7 @@ use std::time::Instant;
 #[cfg(test)]
 use crate::api::contracts::OutputFormat;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct MaterializeOptions {
     pub(crate) native_request: Option<PathBuf>,
     pub(crate) source_root: Option<PathBuf>,
@@ -49,7 +50,7 @@ pub(crate) struct MaterializeOptions {
     pub(crate) intent: MaterializationIntent,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 pub(crate) enum MaterializationIntent {
     #[default]
     ExplicitBuild,
