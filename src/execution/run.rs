@@ -1,15 +1,21 @@
 use super::parallel::build_execution_plan;
 use super::timing::elapsed_seconds;
-use crate::artifact_store::ArtifactStore;
-use crate::error::NativeError;
+use crate::artifact_store::{ArtifactExpectations, ArtifactStore};
+use crate::error::{MemoryBudgetExceeded, NativeError};
+use crate::partition_builder::GraphPartition;
 use crate::protocol::{
     GraphSummary, ManifestEntry, NativeSyntaxMaterializationRequest,
     NativeSyntaxMaterializationResponse, ProgressEvent,
 };
-use crate::{scan, semantic_enrichment, staging_writer};
+use crate::{scan, search_index, staging_writer};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::path::Path;
 use std::time::Instant;
+
+// The JSON reader does not consolidate a list of chunk files, so each bounded
+// file is loaded separately and checkpointed before the next transaction.
+const COPY_FILE_CHUNK_BYTES: usize = usize::MAX;
 
 pub fn execute_materialization_pipeline(
     request: &NativeSyntaxMaterializationRequest,
@@ -28,11 +34,26 @@ fn execute_scanned_materialization(
     let request = &scan.input;
     let diff = scan.diff.clone();
     // A write invocation always assembles a complete candidate generation. Even a
-    // source no-op must validate/reuse every artifact, rerun global enrichment,
+    // source no-op must validate/reuse every artifact,
     // and produce a self-contained database that can be published atomically.
     fs::create_dir_all(&request.staging_dir)?;
     let artifact_store = ArtifactStore::new(request.resolved_artifact_root());
-    let mut staging_accumulator = staging_writer::StagingAccumulator::new(&request.staging_dir);
+    let spill_chunk_bytes = usize::try_from(request.spill_chunk_mib)
+        .ok()
+        .and_then(|mib| mib.checked_mul(1024 * 1024))
+        .ok_or_else(|| {
+            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
+                "staging_spill_configuration",
+                request.rust_memory_limit_bytes().unwrap_or(u64::MAX),
+                u64::MAX,
+                0,
+            ))
+        })?;
+    let mut staging_accumulator = staging_writer::StagingAccumulator::with_limits(
+        &request.staging_dir,
+        spill_chunk_bytes,
+        COPY_FILE_CHUNK_BYTES,
+    )?;
     let materialization_paths = scan.supported.keys().cloned().collect::<Vec<_>>();
     let materialization_total = materialization_paths.len();
 
@@ -40,71 +61,80 @@ fn execute_scanned_materialization(
     let mut parse_seconds = 0.0;
     let mut graph_build_seconds = 0.0;
     let mut staging_seconds = 0.0;
-    let mut progress_events = Vec::new();
-    let mut partitions = Vec::new();
+    // Keep only the latest frame per phase. Long-running MCP builds stream their
+    // progress separately; the materialization result must not retain a history
+    // proportional to the number of source files.
+    let mut progress_events = BTreeMap::new();
+    let mut planned_entries = BTreeMap::new();
     let mut parsed_paths = BTreeSet::new();
     let mut artifacts_reused = 0usize;
     let mut artifacts_rebuilt = 0usize;
 
-    for (index, result) in build_execution_plan(&scan, &materialization_paths, &artifact_store)?
-        .into_iter()
-        .enumerate()
-    {
-        parse_seconds += result.parse_seconds;
-        graph_build_seconds += result.graph_build_seconds;
-        diagnostics.extend(result.diagnostics);
-        if result.reused_artifact {
-            artifacts_reused += 1;
-        } else {
-            artifacts_rebuilt += 1;
-            parsed_paths.insert(result.partition.entry.path.clone());
-        }
-        if request.progress {
-            progress_events.push(ProgressEvent {
-                phase: "parsed".to_string(),
-                current: index + 1,
-                total: materialization_total,
-                path: Some(result.partition.entry.path.clone()),
-            });
-        }
-        partitions.push(result.partition);
-    }
+    let execution_stats = build_execution_plan(
+        &scan,
+        &materialization_paths,
+        &artifact_store,
+        |index, result| {
+            parse_seconds += result.parse_seconds;
+            graph_build_seconds += result.graph_build_seconds;
+            diagnostics.extend(result.diagnostics);
+            if result.reused_artifact {
+                artifacts_reused += 1;
+            } else {
+                artifacts_rebuilt += 1;
+                parsed_paths.insert(result.partition.entry.path.clone());
+            }
+            if request.progress {
+                progress_events.insert(
+                    "parsed".to_string(),
+                    ProgressEvent {
+                        phase: "parsed".to_string(),
+                        current: index + 1,
+                        total: materialization_total,
+                        path: Some(result.partition.entry.path.clone()),
+                    },
+                );
+            }
+            planned_entries.insert(
+                result.partition.entry.path.clone(),
+                result.partition.entry.compact(),
+            );
+            Ok(())
+        },
+    )?;
 
-    partitions.sort_by(|left, right| left.entry.path.cmp(&right.entry.path));
     phase_timings.insert("parse_seconds".to_string(), parse_seconds);
     phase_timings.insert("graph_build_seconds".to_string(), graph_build_seconds);
 
-    let semantic_stats = semantic_enrichment::enrich_semantics(&mut partitions, request)?;
-    for (phase, seconds) in semantic_stats.phase_timings {
-        phase_timings.insert(phase, seconds);
-    }
-
-    let materialized_entries = partitions
-        .iter()
-        .map(|partition| (partition.entry.path.clone(), partition.entry.clone()))
-        .collect::<BTreeMap<_, _>>();
-    let rebuilt_entries = parsed_paths
-        .iter()
-        .filter_map(|path| {
-            materialized_entries
-                .get(path)
-                .cloned()
-                .map(|entry| (path.clone(), entry))
-        })
-        .collect::<BTreeMap<_, _>>();
-
-    let materialized_total = partitions.len();
-    for (index, partition) in partitions.into_iter().enumerate() {
+    let artifact_memory_limit = request.rust_memory_limit_bytes()?;
+    let mut materialized_entries = BTreeMap::new();
+    let mut rebuilt_entries = BTreeMap::new();
+    for (index, path) in materialization_paths.iter().enumerate() {
+        let partition = load_planned_partition(
+            &scan,
+            path,
+            &planned_entries,
+            &artifact_store,
+            artifact_memory_limit,
+        )?;
+        let compact_entry = partition.entry.clone().compact();
+        materialized_entries.insert(path.clone(), compact_entry.clone());
+        if parsed_paths.contains(path) {
+            rebuilt_entries.insert(path.clone(), compact_entry);
+        }
         let staging_started = Instant::now();
         staging_accumulator.add_partition(&partition);
         staging_seconds += elapsed_seconds(staging_started);
         if request.progress {
-            progress_events.push(ProgressEvent {
-                phase: "staged".to_string(),
-                current: index + 1,
-                total: materialized_total,
-                path: Some(partition.entry.path.clone()),
-            });
+            progress_events.insert(
+                "staged".to_string(),
+                ProgressEvent {
+                    phase: "staged".to_string(),
+                    current: index + 1,
+                    total: materialization_total,
+                    path: Some(partition.entry.path.clone()),
+                },
+            );
         }
     }
 
@@ -114,8 +144,8 @@ fn execute_scanned_materialization(
     phase_timings.insert("staging_seconds".to_string(), staging_seconds);
 
     let graph_summary = GraphSummary {
-        node_count: unique_manifest_ids(&materialized_entries, |entry| &entry.node_ids),
-        edge_count: unique_manifest_ids(&materialized_entries, |entry| &entry.edge_ids),
+        node_count: staging.unique_node_count,
+        edge_count: staging.unique_edge_count,
     };
     let graph_build_digest = request.graph_build_compatibility_digest()?;
 
@@ -129,13 +159,40 @@ fn execute_scanned_materialization(
         staging,
         phase_timings,
     );
-    response.progress_events = progress_events;
+    response.progress_events = progress_events.into_values().collect();
     response.artifacts_reused = artifacts_reused;
     response.artifacts_rebuilt = artifacts_rebuilt;
     response.graph_build_digest = Some(graph_build_digest);
+    response
+        .phase_high_water_marks
+        .insert("parse".to_string(), execution_stats.high_water_bytes);
+
+    if request.include_fts {
+        let search_started = Instant::now();
+        let search = search_index::build(search_index::SearchIndexBuildRequest {
+            db_path: Path::new(&request.db_path),
+            staging_dir: Path::new(&request.staging_dir),
+            chunk_bytes: spill_chunk_bytes,
+        })?;
+        response.search_backend = Some(search.metadata);
+        response.spill_bytes = response.spill_bytes.saturating_add(search.spill_bytes);
+        response
+            .phase_high_water_marks
+            .insert("search_index".to_string(), search.high_water_bytes);
+        response.phase_timings.insert(
+            "search_index_seconds".to_string(),
+            elapsed_seconds(search_started),
+        );
+    }
 
     let graph_write_started = Instant::now();
-    staging_writer::write_graph_rows(request, &response).map_err(NativeError::InvalidInput)?;
+    let database_metrics = staging_writer::write_graph_rows(request, &response)?;
+    if database_metrics.high_water_bytes > 0 {
+        response.phase_high_water_marks.insert(
+            "database_write".to_string(),
+            database_metrics.high_water_bytes,
+        );
+    }
     response.phase_timings.insert(
         "database_write_seconds".to_string(),
         elapsed_seconds(graph_write_started),
@@ -144,9 +201,49 @@ fn execute_scanned_materialization(
     Ok(response)
 }
 
+fn load_planned_partition(
+    scan: &scan::SourceScan,
+    path: &str,
+    planned_entries: &BTreeMap<String, ManifestEntry>,
+    artifact_store: &ArtifactStore,
+    memory_limit_bytes: u64,
+) -> Result<GraphPartition, NativeError> {
+    let snapshot = scan.supported.get(path).ok_or_else(|| {
+        NativeError::InvalidInput(format!(
+            "missing scanned source metadata after execution planning: {path}"
+        ))
+    })?;
+    let planned_entry = planned_entries.get(path).ok_or_else(|| {
+        NativeError::InvalidInput(format!(
+            "missing planned manifest entry after artifact persistence: {path}"
+        ))
+    })?;
+    let artifact_key = planned_entry.artifact_key.as_deref().ok_or_else(|| {
+        NativeError::InvalidInput(format!(
+            "missing artifact key after execution planning: {path}"
+        ))
+    })?;
+    artifact_store
+        .load_partition_with_budget(
+            artifact_key,
+            &ArtifactExpectations {
+                path,
+                content_hash: &snapshot.content_hash,
+                language: snapshot.language.as_deref().unwrap_or_default(),
+            },
+            memory_limit_bytes,
+        )?
+        .ok_or_else(|| {
+            NativeError::InvalidInput(format!(
+                "persisted artifact could not be reloaded after execution planning: {path}"
+            ))
+        })
+}
+
+#[cfg(test)]
 fn unique_manifest_ids(
-    entries: &BTreeMap<String, ManifestEntry>,
-    ids: impl Fn(&ManifestEntry) -> &[String],
+    entries: &BTreeMap<String, crate::protocol::ManifestEntry>,
+    ids: impl Fn(&crate::protocol::ManifestEntry) -> &[String],
 ) -> usize {
     entries
         .values()
@@ -158,7 +255,7 @@ fn unique_manifest_ids(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::{NativeManifest, OntologySchema};
+    use crate::protocol::{ManifestEntry, NativeManifest, OntologySchema};
     use std::path::{Path, PathBuf};
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -452,6 +549,8 @@ mod tests {
                     edge_ids: vec!["edge:shared".to_string()],
                     node_types: BTreeMap::new(),
                     edge_types: BTreeMap::new(),
+                    node_count: 2,
+                    edge_count: 1,
                     materialized_at: "unix:0".to_string(),
                 },
             ),
@@ -467,6 +566,8 @@ mod tests {
                     edge_ids: vec!["edge:shared".to_string(), "edge:b".to_string()],
                     node_types: BTreeMap::new(),
                     edge_types: BTreeMap::new(),
+                    node_count: 2,
+                    edge_count: 2,
                     materialized_at: "unix:0".to_string(),
                 },
             ),
@@ -524,7 +625,7 @@ mod tests {
     }
 
     #[test]
-    fn semantic_enrichment_changes_reuse_raw_artifacts_and_rerun_global_enrichment() {
+    fn retired_semantic_settings_do_not_change_materialization() {
         let root = unique_temp_dir("codebase-graph-artifact-semantic-reuse");
         let source_root = root.join("repository");
         let initial_state = root.join("state-initial");
@@ -564,9 +665,10 @@ mod tests {
 
         assert_eq!(semantic.artifacts_reused, 2);
         assert_eq!(semantic.artifacts_rebuilt, 0);
-        assert_ne!(initial.graph_build_digest, semantic.graph_build_digest);
-        assert!(semantic.edge_rows > initial.edge_rows);
-        assert!(semantic.connector_rows > initial.connector_rows);
+        assert_eq!(initial.graph_build_digest, semantic.graph_build_digest);
+        assert_eq!(initial.edge_rows, semantic.edge_rows);
+        assert_eq!(initial.connector_rows, semantic.connector_rows);
+        assert!(!semantic.phase_high_water_marks.contains_key("semantic"));
 
         let _ = fs::remove_dir_all(root);
     }
@@ -608,6 +710,10 @@ mod tests {
             atomic_rebuild: false,
             strict: true,
             parallel: false,
+            worker_memory_mib: 768,
+            rust_memory_mib: 384,
+            spill_chunk_mib: 32,
+            max_parallelism: 2,
             progress: false,
         }
     }
@@ -618,6 +724,7 @@ mod tests {
             ontology: "code_ontology_v1".to_string(),
             parser_version: "test".to_string(),
             graph_build_digest: response.graph_build_digest.clone(),
+            search_backend: response.search_backend.clone(),
             files: response.materialized_entries.clone(),
         }
     }

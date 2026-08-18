@@ -9,8 +9,10 @@ use crate::storage::locks::{
 };
 use crate::storage::run_workspace::{RunJournal, RunPhase, RunWorkspace, RunWorkspaceRecovery};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -54,6 +56,18 @@ pub(crate) struct GenerationRetirement {
     #[serde(default = "managed_schema_version")]
     pub schema_version: u64,
     pub retired_at_ms: u64,
+}
+
+#[derive(Debug, Deserialize)]
+struct SearchManifestEnvelope {
+    #[serde(default)]
+    search_backend: Option<SearchBackendEnvelope>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SearchBackendEnvelope {
+    #[serde(default)]
+    files: BTreeMap<String, String>,
 }
 
 #[derive(Debug)]
@@ -816,7 +830,57 @@ fn validate_candidate_generation(paths: &GenerationPaths) -> Result<(), NativeEr
     ensure_regular_file(&paths.db_path())?;
     ensure_regular_file(&paths.manifest_path())?;
     ensure_directory_without_symlinks(paths.root())?;
+    let manifest: SearchManifestEnvelope =
+        serde_json::from_str(&fs::read_to_string(paths.manifest_path())?)?;
+    if let Some(search_backend) = manifest.search_backend.as_ref() {
+        validate_search_sidecar_checksums(&paths.db_path(), &search_backend.files)?;
+    }
     Ok(())
+}
+
+fn validate_search_sidecar_checksums(
+    db_path: &Path,
+    expected: &BTreeMap<String, String>,
+) -> Result<(), NativeError> {
+    let search_suffixes = crate::storage::layout::DIRECT_DB_SIDECAR_SUFFIXES
+        .iter()
+        .copied()
+        .filter(|suffix| suffix.starts_with("search."))
+        .collect::<Vec<_>>();
+    if expected.len() != search_suffixes.len()
+        || search_suffixes
+            .iter()
+            .any(|suffix| !expected.contains_key(*suffix))
+    {
+        return Err(NativeError::InvalidInput(
+            "managed search sidecar metadata has an incomplete file set".to_string(),
+        ));
+    }
+    for suffix in search_suffixes {
+        let path = PathBuf::from(format!("{}.{}", db_path.display(), suffix));
+        ensure_regular_file(&path)?;
+        if sha256_path(&path)? != expected[suffix] {
+            return Err(NativeError::InvalidInput(format!(
+                "managed search sidecar checksum mismatch: {}",
+                path.display()
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn sha256_path(path: &Path) -> Result<String, NativeError> {
+    let mut file = fs::File::open(path)?;
+    let mut digest = Sha256::new();
+    let mut buffer = [0_u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        digest.update(&buffer[..read]);
+    }
+    Ok(format!("{:x}", digest.finalize()))
 }
 
 fn validate_ready_generation(paths: &GenerationPaths) -> Result<(), NativeError> {

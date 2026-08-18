@@ -1,12 +1,8 @@
 use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
 
-pub(super) type NodeRowsById = HashMap<String, NodeStagedRow>;
-pub(super) type EdgeRowsById = HashMap<String, EdgeStagedRow>;
-
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(super) struct NodeStagedRow {
     pub(super) id: String,
     pub(super) label: String,
@@ -30,7 +26,7 @@ pub(super) struct NodeStagedRow {
     pub(super) content_hash: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(super) struct EdgeStagedRow {
     pub(super) id: String,
     pub(super) kind: String,

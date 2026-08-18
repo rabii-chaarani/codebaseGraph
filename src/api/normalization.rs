@@ -140,6 +140,7 @@ fn normalize_layer(layer: &mut String) {
 }
 
 pub(crate) fn normalize_materialize_options(options: &mut MaterializeOptions) {
+    options.semantic_enrichment = false;
     default_string(&mut options.mode, DEFAULT_MATERIALIZATION_MODE);
     default_string(
         &mut options.semantic_provider_mode,
@@ -262,6 +263,7 @@ pub(crate) fn required_fields(operation_id: &str) -> &'static [&'static str] {
 }
 
 fn normalize_materialization(request: &mut MaterializationRequest) {
+    request.semantic_enrichment = false;
     default_string(&mut request.mode, DEFAULT_MATERIALIZATION_MODE);
     default_string(
         &mut request.semantic_provider_mode,
@@ -276,6 +278,7 @@ fn normalize_materialization(request: &mut MaterializationRequest) {
 }
 
 fn normalize_refresh(request: &mut RefreshRequest) {
+    request.semantic_enrichment = false;
     default_string(&mut request.mode, DEFAULT_MATERIALIZATION_MODE);
     default_string(
         &mut request.semantic_provider_mode,
@@ -285,6 +288,7 @@ fn normalize_refresh(request: &mut RefreshRequest) {
 }
 
 fn normalize_lifecycle(request: &mut RepositoryLifecycleRequest) {
+    request.semantic_enrichment = false;
     request.action = request.action.trim().to_string();
     default_string(&mut request.mode, DEFAULT_MATERIALIZATION_MODE);
     default_string(
@@ -513,6 +517,10 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: true,
+                worker_memory_mib: None,
+                rust_memory_mib: None,
+                spill_chunk_mib: None,
+                max_parallelism: None,
                 progress: false,
                 output_format: OutputFormat::Typed,
             }));
@@ -520,6 +528,7 @@ mod tests {
             panic!("materialization request should remain a materialization request");
         };
         assert_eq!(materialization.mode, "changed");
+        assert!(!materialization.semantic_enrichment);
         assert_eq!(materialization.semantic_provider_mode, "local_only");
         assert_eq!(
             materialization.repo.repo_root,

@@ -1,6 +1,6 @@
 use codebase_graph::api::{
     CodebaseGraphApi, MaterializationRequest, OperationRequest, OutputFormat, QueryRequest,
-    RepoSelector,
+    RepoSelector, SearchRequest,
 };
 use codebase_graph::protocol::NativeManifest;
 use serde_json::json;
@@ -47,7 +47,7 @@ fn managed_materialization_activates_generations_atomically() {
     let active_manifest = read_manifest(
         &generation_root(&storage_root, &active_generation_id(&storage_root)).join("manifest.json"),
     );
-    assert_eq!(active_manifest.schema_version, 4);
+    assert_eq!(active_manifest.schema_version, 5);
     assert!(active_manifest.graph_build_digest.is_some());
 }
 
@@ -101,7 +101,7 @@ fn direct_materialization_uses_custom_paths_and_cleans_shadow_files() {
     assert_eq!(payload["pending_runs"], json!(0));
 
     let manifest = read_manifest(&manifest_path);
-    assert_eq!(manifest.schema_version, 4);
+    assert_eq!(manifest.schema_version, 5);
     assert_eq!(
         manifest.graph_build_digest.as_deref(),
         payload["graph_build_digest"].as_str()
@@ -116,6 +116,62 @@ fn direct_materialization_uses_custom_paths_and_cleans_shadow_files() {
     let manifest_candidate = sibling_candidate_path(&manifest_path);
     assert!(!db_candidate.exists());
     assert!(!manifest_candidate.exists());
+}
+
+#[test]
+fn direct_search_sidecars_publish_with_the_database_and_remain_queryable() {
+    let repo = temp_repo("direct_search_sidecars");
+    write_source(&repo, "pub fn searchable_sidecar() -> bool { true }\n");
+    let output = repo.join("output");
+    fs::create_dir_all(&output).unwrap();
+    let db_path = output.join("graph.ldb");
+    let manifest_path = output.join("manifest.json");
+    let mut request =
+        materialize_request(&repo, Some(db_path.clone()), Some(manifest_path.clone()));
+    request.include_fts = true;
+    let payload = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Materialize(request))
+        .unwrap()
+        .payload;
+    assert_eq!(payload["search_backend"]["backend"], "disk_bm25_v1");
+
+    let manifest = read_manifest(&manifest_path);
+    let backend = manifest.search_backend.unwrap();
+    for suffix in backend.files.keys() {
+        assert!(PathBuf::from(format!("{}.{}", db_path.display(), suffix)).is_file());
+        assert!(!PathBuf::from(format!(
+            "{}.{}",
+            sibling_candidate_path(&db_path).display(),
+            suffix
+        ))
+        .exists());
+    }
+
+    let search = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Search(SearchRequest {
+            repo: RepoSelector {
+                repo_root: Some(repo.clone()),
+                config_path: None,
+                db_path: Some(db_path),
+                manifest_path: Some(manifest_path),
+            },
+            query: "searchable_sidecar".to_string(),
+            layer: "semantic".to_string(),
+            profile: "brief".to_string(),
+            limit: 3,
+            budget: 0,
+            context_limit: 0,
+            max_depth: None,
+            detail: "slim".to_string(),
+            output_format: OutputFormat::Typed,
+        }))
+        .unwrap()
+        .payload;
+    assert!(search["results"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|result| result["label"] == "searchable_sidecar"));
 }
 
 #[test]
@@ -155,7 +211,7 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
 
     let active_root = generation_root(&storage_root, &active_generation_id(&storage_root));
     let active_manifest = read_manifest(&active_root.join("manifest.json"));
-    assert_eq!(active_manifest.schema_version, 4);
+    assert_eq!(active_manifest.schema_version, 5);
     assert!(active_manifest.graph_build_digest.is_some());
     assert!(active_manifest.files.values().all(|entry| entry
         .artifact_key
@@ -248,6 +304,10 @@ fn materialize_request(
         exclude_patterns: Vec::new(),
         candidate_paths: Vec::new(),
         parallel: false,
+        worker_memory_mib: None,
+        rust_memory_mib: None,
+        spill_chunk_mib: None,
+        max_parallelism: None,
         progress: false,
         output_format: OutputFormat::Typed,
     }

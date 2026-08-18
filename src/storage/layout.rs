@@ -6,7 +6,17 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 static UNIQUE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
-pub(crate) const DIRECT_DB_SIDECAR_SUFFIXES: &[&str] = &["wal", "tmp", "lock"];
+pub(crate) const DIRECT_DB_SIDECAR_SUFFIXES: &[&str] = &[
+    "wal",
+    "tmp",
+    "lock",
+    "search.meta.json",
+    "search.lexicon.bin",
+    "search.postings.bin",
+    "search.doc_lengths.bin",
+    "search.documents.bin",
+    "search.document_offsets.bin",
+];
 
 #[derive(Debug, Clone)]
 pub(crate) struct RepositoryLayout {
@@ -55,6 +65,11 @@ impl ManagedLayout {
 
     pub(crate) fn refresh_lock_path(&self) -> PathBuf {
         self.storage_root.join("refresh.lock")
+    }
+
+    #[allow(dead_code)] // Consumed by the isolated worker supervisor in stacked PR 3.
+    pub(crate) fn worker_lock_path(&self) -> PathBuf {
+        self.storage_root.join("worker.lock")
     }
 
     pub(crate) fn active_pointer_path(&self) -> PathBuf {
@@ -223,6 +238,11 @@ impl DirectLayout {
 
     pub(crate) fn refresh_lock_path(&self) -> PathBuf {
         self.destination_lock_path("refresh")
+    }
+
+    #[allow(dead_code)] // Consumed by the isolated worker supervisor in stacked PR 3.
+    pub(crate) fn worker_lock_path(&self) -> PathBuf {
+        self.destination_lock_path("worker")
     }
 
     pub(crate) fn artifact_root_path(&self) -> PathBuf {

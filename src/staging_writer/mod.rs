@@ -1,10 +1,9 @@
 mod accumulator;
-mod connectors;
 mod files;
 mod merge;
-mod ordering;
 mod result;
 mod rows;
+mod spill;
 mod writer;
 
 pub(crate) use accumulator::StagingAccumulator;

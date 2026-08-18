@@ -131,7 +131,7 @@ impl SetupOptions {
             repo_root: None,
             mode: String::new(),
             include_fts: true,
-            semantic_enrichment: true,
+            semantic_enrichment: false,
             semantic_provider_mode: String::new(),
             mcp_client: "codex".to_string(),
             mcp_config_path: None,

@@ -8,7 +8,7 @@ tags:
 - mcp
 - runtime
 - storage
-timestamp: 2026-08-17
+timestamp: 2026-08-18
 title: Public Operations and Runtime Paths
 type: architecture
 ---
@@ -51,11 +51,11 @@ Every repository-scoped operation resolves one `RepoRuntime`: source root, confi
 
 Managed reads resolve `active.json` and lease its generation for the entire operation. Direct reads recover any interrupted paired publication before opening their destinations. Runtime entry also recovers abandoned managed runs and retries pending retirement.
 
-Config schema v3 supplies a managed `storage_root`, refresh policy and backend, and bounded materialization defaults. Schema-v2 remains readable and receives v3 defaults for missing fields. Schema-v1 deserialization remains available for reads, but the resolved runtime is not writable until explicit reinstall.
+Config schema v3 supplies a managed `storage_root`, refresh policy and backend, and bounded materialization defaults: 768 MiB worker RSS, 384 MiB Rust working state, 32 MiB spill chunks, and parallelism two. Schema-v2 remains readable and receives these defaults. The legacy semantic-enrichment field remains readable but is normalized to disabled. Schema-v1 deserialization remains available for reads, but the resolved runtime is not writable until explicit reinstall.
 
 ## Graph read path
 
-Health, schema, helper catalogs, architecture catalogs, search, context, and raw query operations dispatch from the core to the Graph Read Service. Search reads native full-text indexes and applies lexical/entity ranking. Context expands selected relationship profiles. Raw statements are parameterized, single-statement, read-only, and result-bounded.
+Health, schema, helper catalogs, architecture catalogs, search, context, and raw query operations dispatch from the core to the Graph Read Service. Search uses a generation-owned disk BM25 sidecar when backend metadata is present; older generations fall back to native Ladybug FTS. Both paths apply deterministic lexical/entity ranking. Context expands selected relationship profiles. Raw statements are parameterized, single-statement, read-only, and result-bounded.
 
 Health reports storage format, writability, active generation, reused and rebuilt artifacts, pending runs, cleanup status, physical/logical database sizes, and refresh ownership/coalescing/no-op state.
 
@@ -69,7 +69,8 @@ For schema-v1 state, search, context, query, and health remain available. Build,
 
 - Request-shape and operation-rule violations fail during preparation.
 - Repository selection and storage-format failures fail during runtime resolution.
-- A failed candidate build or publication preserves the active generation.
+- A failed candidate build, memory-budget termination, or publication preserves the active generation.
+- Structured memory failures report the phase, configured limit, accounted bytes, and observed RSS.
 - Cleanup errors are reported separately and never hide the primary build error.
 - Application failures are translated once into stable public errors.
 - CLI exit codes and MCP protocol errors are framing choices at the edge, not distinct product errors.

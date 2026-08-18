@@ -108,7 +108,7 @@ pub(in crate::adapters::cli) fn run_uninstall<W: Write>(
         skip_mcp_config: false,
         mode: "changed".to_string(),
         include_fts: true,
-        semantic_enrichment: true,
+        semantic_enrichment: false,
         semantic_provider_mode: "local_only".to_string(),
     };
     let payload = CodebaseGraphApi::new()

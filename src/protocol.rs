@@ -6,9 +6,28 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-pub(crate) const GRAPH_BUILD_DIGEST_FORMAT_VERSION: u64 = 3;
+pub(crate) const GRAPH_BUILD_DIGEST_FORMAT_VERSION: u64 = 5;
 pub(crate) const PROFILE_COMPATIBILITY_VERSION: u64 = 2;
-pub(crate) const MATERIALIZATION_MANIFEST_SCHEMA_VERSION: u64 = 4;
+pub(crate) const MATERIALIZATION_MANIFEST_SCHEMA_VERSION: u64 = 5;
+pub(crate) const SEARCH_BACKEND_FORMAT_VERSION: u64 = 1;
+const MAX_DATABASE_BUFFER_POOL_BYTES: u64 = 384 * 1024 * 1024;
+const MIN_DATABASE_BUFFER_POOL_BYTES: u64 = 128 * 1024 * 1024;
+
+const fn default_worker_memory_mib() -> u64 {
+    crate::api::context::DEFAULT_WORKER_MEMORY_MIB
+}
+
+const fn default_rust_memory_mib() -> u64 {
+    crate::api::context::DEFAULT_RUST_MEMORY_MIB
+}
+
+const fn default_spill_chunk_mib() -> u64 {
+    crate::api::context::DEFAULT_SPILL_CHUNK_MIB
+}
+
+const fn default_max_parallelism() -> usize {
+    crate::api::context::DEFAULT_MAX_PARALLELISM
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct NativeSyntaxMaterializationRequest {
@@ -48,6 +67,14 @@ pub struct NativeSyntaxMaterializationRequest {
     pub strict: bool,
     #[serde(default = "default_parallel")]
     pub parallel: bool,
+    #[serde(default = "default_worker_memory_mib")]
+    pub worker_memory_mib: u64,
+    #[serde(default = "default_rust_memory_mib")]
+    pub rust_memory_mib: u64,
+    #[serde(default = "default_spill_chunk_mib")]
+    pub spill_chunk_mib: u64,
+    #[serde(default = "default_max_parallelism")]
+    pub max_parallelism: usize,
     #[serde(default)]
     pub progress: bool,
 }
@@ -129,11 +156,71 @@ impl NativeSyntaxMaterializationRequest {
             exclude_patterns: &exclude_patterns,
             ignore_patterns: &ignore_patterns,
             include_fts: self.include_fts,
-            semantic_enrichment: self.semantic_enrichment,
-            semantic_provider_mode: &self.semantic_provider_mode,
+            search_backend_format_version: self
+                .include_fts
+                .then_some(SEARCH_BACKEND_FORMAT_VERSION),
             schema_statements: &schema_statements,
         })?;
         Ok(hex_lower(Sha256::digest(payload).as_ref()))
+    }
+
+    pub(crate) fn rust_memory_limit_bytes(&self) -> Result<u64, NativeError> {
+        self.rust_memory_mib
+            .checked_mul(1024 * 1024)
+            .ok_or_else(|| {
+                NativeError::InvalidInput(
+                    "rust_memory_mib is too large to convert to bytes".to_string(),
+                )
+            })
+    }
+
+    pub(crate) fn database_buffer_pool_bytes(&self) -> Result<u64, NativeError> {
+        let worker_bytes = self
+            .worker_memory_mib
+            .checked_mul(1024 * 1024)
+            .ok_or_else(|| {
+                NativeError::InvalidInput(
+                    "worker_memory_mib is too large to convert to bytes".to_string(),
+                )
+            })?;
+        let rust_bytes = self.rust_memory_limit_bytes()?;
+        let available = worker_bytes.checked_sub(rust_bytes).ok_or_else(|| {
+            NativeError::InvalidInput(
+                "worker_memory_mib must exceed rust_memory_mib for database writes".to_string(),
+            )
+        })?;
+        if available < MIN_DATABASE_BUFFER_POOL_BYTES {
+            return Err(NativeError::InvalidInput(
+                "worker_memory_mib must reserve at least 128 MiB beyond rust_memory_mib for database writes"
+                    .to_string(),
+            ));
+        }
+        Ok(available.min(MAX_DATABASE_BUFFER_POOL_BYTES))
+    }
+
+    pub(crate) fn validate_resource_limits(&self) -> Result<(), NativeError> {
+        if self.worker_memory_mib == 0
+            || self.rust_memory_mib == 0
+            || self.spill_chunk_mib == 0
+            || self.max_parallelism == 0
+        {
+            return Err(NativeError::InvalidInput(
+                "materialization memory limits and max_parallelism must be positive".to_string(),
+            ));
+        }
+        if self.rust_memory_mib > self.worker_memory_mib {
+            return Err(NativeError::InvalidInput(
+                "rust_memory_mib must not exceed worker_memory_mib".to_string(),
+            ));
+        }
+        self.database_buffer_pool_bytes()?;
+        if self.spill_chunk_mib > self.rust_memory_mib {
+            return Err(NativeError::InvalidInput(
+                "spill_chunk_mib must not exceed rust_memory_mib".to_string(),
+            ));
+        }
+        self.rust_memory_limit_bytes()?;
+        Ok(())
     }
 }
 
@@ -153,8 +240,7 @@ struct GraphBuildDigestInput<'a> {
     exclude_patterns: &'a [String],
     ignore_patterns: &'a [String],
     include_fts: bool,
-    semantic_enrichment: bool,
-    semantic_provider_mode: &'a str,
+    search_backend_format_version: Option<u64>,
     schema_statements: &'a [String],
 }
 
@@ -185,8 +271,24 @@ pub struct NativeManifest {
     pub parser_version: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub graph_build_digest: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub search_backend: Option<SearchBackendMetadata>,
     #[serde(default, deserialize_with = "manifest_files_from_any")]
     pub files: BTreeMap<String, ManifestEntry>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, PartialEq, Eq, Serialize)]
+pub struct SearchBackendMetadata {
+    pub backend: String,
+    pub format_version: u64,
+    #[serde(default)]
+    pub files: BTreeMap<String, String>,
+    #[serde(default)]
+    pub document_count: u64,
+    #[serde(default)]
+    pub term_count: u64,
+    #[serde(default)]
+    pub total_tokens: u64,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq, Serialize)]
@@ -197,16 +299,36 @@ pub struct ManifestEntry {
     pub partition_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub artifact_key: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub node_ids: Vec<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub edge_ids: Vec<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub node_types: BTreeMap<String, String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub edge_types: BTreeMap<String, String>,
     #[serde(default)]
+    pub node_count: usize,
+    #[serde(default)]
+    pub edge_count: usize,
+    #[serde(default)]
     pub materialized_at: String,
+}
+
+impl ManifestEntry {
+    pub(crate) fn compact(mut self) -> Self {
+        if self.node_count == 0 {
+            self.node_count = self.node_ids.len();
+        }
+        if self.edge_count == 0 {
+            self.edge_count = self.edge_ids.len();
+        }
+        self.node_ids.clear();
+        self.edge_ids.clear();
+        self.node_types.clear();
+        self.edge_types.clear();
+        self
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -242,6 +364,8 @@ pub struct SourceSnapshot {
     pub absolute_path: String,
     pub content_hash: String,
     pub language: Option<String>,
+    #[serde(default)]
+    pub byte_len: u64,
     #[serde(skip)]
     pub source: Option<String>,
 }
@@ -296,6 +420,12 @@ pub struct NativeSyntaxMaterializationResponse {
     pub artifacts_rebuilt: usize,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub graph_build_digest: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub search_backend: Option<SearchBackendMetadata>,
+    #[serde(default)]
+    pub phase_high_water_marks: BTreeMap<String, u64>,
+    #[serde(default)]
+    pub spill_bytes: u64,
 }
 
 pub type MaterializationResult = NativeSyntaxMaterializationResponse;
@@ -345,6 +475,9 @@ impl NativeSyntaxMaterializationResponse {
             artifacts_reused: 0,
             artifacts_rebuilt: 0,
             graph_build_digest: None,
+            search_backend: None,
+            phase_high_water_marks: BTreeMap::new(),
+            spill_bytes: 0,
         }
     }
 
@@ -359,6 +492,11 @@ impl NativeSyntaxMaterializationResponse {
         staging: crate::staging_writer::StagingResult,
         phase_timings: BTreeMap<String, f64>,
     ) -> Self {
+        let phase_high_water_marks = BTreeMap::from([(
+            "staging".to_string(),
+            u64::try_from(staging.high_water_bytes).unwrap_or(u64::MAX),
+        )]);
+        let spill_bytes = staging.spill_bytes;
         Self {
             snapshots,
             diff,
@@ -382,6 +520,9 @@ impl NativeSyntaxMaterializationResponse {
             artifacts_reused: 0,
             artifacts_rebuilt: 0,
             graph_build_digest: None,
+            search_backend: None,
+            phase_high_water_marks,
+            spill_bytes,
         }
     }
 }
@@ -422,6 +563,7 @@ mod tests {
     use super::{
         CaptureMapping, LanguageProfile, ManifestEntry, NativeManifest,
         NativeSyntaxMaterializationRequest, OntologyRelationType, OntologySchema,
+        SearchBackendMetadata, SEARCH_BACKEND_FORMAT_VERSION,
     };
     use std::collections::BTreeMap;
     use std::path::PathBuf;
@@ -451,6 +593,14 @@ mod tests {
             serde_json::from_str(&request_json("")).unwrap();
 
         assert!(request.parallel);
+        assert_eq!(request.worker_memory_mib, 768);
+        assert_eq!(request.rust_memory_mib, 384);
+        assert_eq!(request.spill_chunk_mib, 32);
+        assert_eq!(request.max_parallelism, 2);
+        assert_eq!(
+            request.database_buffer_pool_bytes().unwrap(),
+            384 * 1024 * 1024
+        );
         assert_eq!(
             request.resolved_artifact_root(),
             PathBuf::from("/repo/.codebaseGraph/artifacts")
@@ -463,6 +613,30 @@ mod tests {
             serde_json::from_str(&request_json(r#", "parallel": false"#)).unwrap();
 
         assert!(!request.parallel);
+    }
+
+    #[test]
+    fn native_materialization_request_rejects_inconsistent_resource_limits() {
+        let mut request: NativeSyntaxMaterializationRequest =
+            serde_json::from_str(&request_json("")).unwrap();
+        request.rust_memory_mib = request.worker_memory_mib + 1;
+
+        let error = request.validate_resource_limits().unwrap_err();
+
+        assert!(error
+            .to_string()
+            .contains("rust_memory_mib must not exceed worker_memory_mib"));
+    }
+
+    #[test]
+    fn native_materialization_request_reserves_worker_memory_for_database_writes() {
+        let mut request: NativeSyntaxMaterializationRequest =
+            serde_json::from_str(&request_json("")).unwrap();
+        request.worker_memory_mib = request.rust_memory_mib;
+
+        let error = request.validate_resource_limits().unwrap_err();
+
+        assert!(error.to_string().contains("must reserve at least 128 MiB"));
     }
 
     #[test]
@@ -504,6 +678,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(manifest.graph_build_digest, None);
+        assert_eq!(manifest.search_backend, None);
         assert_eq!(manifest.files["src/lib.rs"].artifact_key, None,);
     }
 
@@ -514,6 +689,7 @@ mod tests {
             ontology: "code_ontology_v1".to_string(),
             parser_version: "native-test".to_string(),
             graph_build_digest: Some("digest".to_string()),
+            search_backend: None,
             files: BTreeMap::from([(
                 "src/lib.rs".to_string(),
                 ManifestEntry {
@@ -526,6 +702,8 @@ mod tests {
                     edge_ids: Vec::new(),
                     node_types: BTreeMap::new(),
                     edge_types: BTreeMap::new(),
+                    node_count: 0,
+                    edge_count: 0,
                     materialized_at: "unix:0".to_string(),
                 },
             )]),
@@ -535,6 +713,7 @@ mod tests {
         let decoded: NativeManifest = serde_json::from_str(&encoded).unwrap();
 
         assert_eq!(decoded.graph_build_digest.as_deref(), Some("digest"));
+        assert_eq!(decoded.search_backend, None);
         assert_eq!(
             decoded.files["src/lib.rs"].artifact_key.as_deref(),
             Some("artifact")
@@ -545,6 +724,124 @@ mod tests {
         let encoded = serde_json::to_string(&manifest).unwrap();
         assert!(!encoded.contains("graph_build_digest"));
         assert!(!encoded.contains("artifact_key"));
+        assert!(!encoded.contains("node_ids"));
+        assert!(!encoded.contains("edge_ids"));
+        assert!(!encoded.contains("node_types"));
+        assert!(!encoded.contains("edge_types"));
+    }
+
+    #[test]
+    fn manifest_search_backend_metadata_roundtrips_with_checksums() {
+        let metadata = SearchBackendMetadata {
+            backend: "sidecar".to_string(),
+            format_version: SEARCH_BACKEND_FORMAT_VERSION,
+            files: BTreeMap::from([("search.lexicon.bin".to_string(), "a".repeat(64))]),
+            document_count: 3,
+            term_count: 5,
+            total_tokens: 8,
+        };
+        let encoded = serde_json::to_string(&metadata).unwrap();
+        let decoded: SearchBackendMetadata = serde_json::from_str(&encoded).unwrap();
+
+        assert_eq!(decoded, metadata);
+    }
+
+    #[test]
+    fn compact_v5_manifest_entry_omits_artifact_local_row_identity() {
+        let entry = ManifestEntry {
+            path: "src/lib.rs".to_string(),
+            content_hash: "hash".to_string(),
+            language: "rust".to_string(),
+            partition_id: "partition".to_string(),
+            artifact_key: Some("artifact".to_string()),
+            node_ids: vec!["node:1".to_string(), "node:2".to_string()],
+            edge_ids: vec!["edge:1".to_string()],
+            node_types: BTreeMap::from([("node:1".to_string(), "File".to_string())]),
+            edge_types: BTreeMap::from([("edge:1".to_string(), "Contains".to_string())]),
+            node_count: 0,
+            edge_count: 0,
+            materialized_at: "unix:0".to_string(),
+        }
+        .compact();
+
+        let value = serde_json::to_value(entry).unwrap();
+        let object = value.as_object().unwrap();
+        assert_eq!(object.len(), 8);
+        for key in [
+            "path",
+            "content_hash",
+            "language",
+            "partition_id",
+            "artifact_key",
+            "node_count",
+            "edge_count",
+            "materialized_at",
+        ] {
+            assert!(object.contains_key(key), "missing compact field {key}");
+        }
+        assert_eq!(object["node_count"], 2);
+        assert_eq!(object["edge_count"], 1);
+        assert!(!object.contains_key("node_ids"));
+        assert!(!object.contains_key("edge_ids"));
+        assert!(!object.contains_key("node_types"));
+        assert!(!object.contains_key("edge_types"));
+    }
+
+    #[test]
+    fn v4_manifest_remains_readable_for_one_upgrade_rebuild() {
+        let manifest: NativeManifest = serde_json::from_str(
+            r#"{
+                "schema_version": 4,
+                "ontology": "code_ontology_v1",
+                "parser_version": "native-test",
+                "graph_build_digest": "legacy-digest",
+                "files": {
+                    "src/lib.rs": {
+                        "path": "src/lib.rs",
+                        "content_hash": "hash",
+                        "language": "rust",
+                        "partition_id": "partition",
+                        "artifact_key": "artifact",
+                        "node_ids": ["node:1"],
+                        "edge_ids": [],
+                        "node_types": {"node:1": "File"},
+                        "edge_types": {},
+                        "materialized_at": "unix:0"
+                    }
+                }
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(manifest.schema_version, 4);
+        assert_eq!(manifest.files["src/lib.rs"].node_ids, ["node:1"]);
+        assert_eq!(manifest.files["src/lib.rs"].node_count, 0);
+    }
+
+    #[test]
+    fn compact_manifest_entry_retains_counts_without_row_identity_vectors() {
+        let entry = ManifestEntry {
+            path: "src/lib.rs".to_string(),
+            content_hash: "hash".to_string(),
+            language: "rust".to_string(),
+            partition_id: "partition".to_string(),
+            artifact_key: Some("artifact".to_string()),
+            node_ids: vec!["node:1".to_string(), "node:2".to_string()],
+            edge_ids: vec!["edge:1".to_string()],
+            node_types: BTreeMap::from([("node:1".to_string(), "Function".to_string())]),
+            edge_types: BTreeMap::from([("edge:1".to_string(), "Calls".to_string())]),
+            node_count: 0,
+            edge_count: 0,
+            materialized_at: "unix:0".to_string(),
+        }
+        .compact();
+
+        assert_eq!(entry.node_count, 2);
+        assert_eq!(entry.edge_count, 1);
+        assert!(entry.node_ids.is_empty());
+        assert!(entry.edge_ids.is_empty());
+        assert!(entry.node_types.is_empty());
+        assert!(entry.edge_types.is_empty());
     }
 
     #[test]
@@ -562,14 +859,14 @@ mod tests {
 
         let mut changed = request.clone();
         changed.semantic_enrichment = !request.semantic_enrichment;
-        assert_ne!(
+        assert_eq!(
             baseline,
             changed.graph_build_compatibility_digest().unwrap()
         );
 
         let mut changed = request.clone();
         changed.semantic_provider_mode = "provider".to_string();
-        assert_ne!(
+        assert_eq!(
             baseline,
             changed.graph_build_compatibility_digest().unwrap()
         );

@@ -29,7 +29,7 @@ pub(in crate::adapters::cli) fn run_reinstall<W: Write>(
         skip_mcp_config: options.skip_mcp_config,
         mode: options.mode.clone(),
         include_fts: options.include_fts,
-        semantic_enrichment: options.semantic_enrichment,
+        semantic_enrichment: false,
         semantic_provider_mode: options.semantic_provider_mode.clone(),
     };
     let payload = CodebaseGraphApi::new()

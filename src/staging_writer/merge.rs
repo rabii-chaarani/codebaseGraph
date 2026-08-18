@@ -1,12 +1,7 @@
-use super::rows::{EdgeRowsById, EdgeStagedRow, NodeRowsById, NodeStagedRow};
+use super::rows::{EdgeStagedRow, NodeStagedRow};
 use serde_json::Value;
 
-pub(super) fn merge_node_row(rows: &mut NodeRowsById, row_id: String, incoming: NodeStagedRow) {
-    let Some(existing) = rows.get_mut(&row_id) else {
-        rows.insert(row_id, incoming);
-        return;
-    };
-
+pub(super) fn merge_node_value(existing: &mut NodeStagedRow, incoming: NodeStagedRow) {
     merge_string(&mut existing.id, incoming.id);
     merge_string(&mut existing.label, incoming.label);
     merge_string(&mut existing.kind, incoming.kind);
@@ -29,12 +24,7 @@ pub(super) fn merge_node_row(rows: &mut NodeRowsById, row_id: String, incoming: 
     merge_optional_string(&mut existing.content_hash, incoming.content_hash);
 }
 
-pub(super) fn merge_edge_row(rows: &mut EdgeRowsById, row_id: String, incoming: EdgeStagedRow) {
-    let Some(existing) = rows.get_mut(&row_id) else {
-        rows.insert(row_id, incoming);
-        return;
-    };
-
+pub(super) fn merge_edge_value(existing: &mut EdgeStagedRow, incoming: EdgeStagedRow) {
     merge_string(&mut existing.id, incoming.id);
     merge_string(&mut existing.kind, incoming.kind);
     merge_string(&mut existing.source_id, incoming.source_id);

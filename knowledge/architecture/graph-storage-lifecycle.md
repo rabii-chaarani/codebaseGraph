@@ -7,7 +7,7 @@ tags:
 - graph-storage
 - recovery
 - runbook
-timestamp: 2026-08-17
+timestamp: 2026-08-18
 title: Graph Storage Lifecycle and Recovery
 type: architecture
 ---
@@ -25,6 +25,7 @@ storage_root/
   generations/
     gen-<id>/
       database/
+      search sidecar siblings
       manifest.json
       metadata.json
       READY
@@ -72,7 +73,7 @@ On later runtime entry, the janitor takes the run lease before acting. It remove
 
 Raw source partitions are stored content-addressably. An artifact key includes repository identity, relative path, content hash, language, parser version, profile version, ontology version, and artifact schema version.
 
-A materialization run revalidates source hashes, reuses valid unchanged artifacts, rebuilds missing or corrupt entries, assembles every partition in deterministic order, and reruns global semantic enrichment before writing a fresh database. Manifest v2 records each `artifact_key`; a legacy manifest therefore causes one full rebuild. Artifact garbage collection retains entries referenced by the active manifest or a live run and removes everything else.
+A materialization run revalidates source hashes, reuses valid unchanged artifacts, rebuilds missing or corrupt entries, and reloads each partition only for its current bounded pass. Compact manifest v5 retains path, content hash, language, partition ID, artifact key, row counts, and timestamp; readable v4 generations receive one bounded full rebuild on their next write. Artifact garbage collection retains entries referenced by the active manifest or a live run and removes everything else.
 
 Artifact reuse reduces parsing work. It does not make graph database files incremental or mutable.
 
@@ -90,7 +91,10 @@ Health and materialization output expose:
 - active generation;
 - reused and rebuilt artifact counts;
 - pending run count and cleanup status;
-- physical and logical database sizes;\n- refresh role, leader process, pending state, coalesced and overflow counts, deduplicated refreshes, and the latest no-op reason.
+- physical and logical database sizes;
+- parsing, staging, search, and database phase high-water marks plus spill bytes;
+- configured Rust and worker RSS limits;
+- refresh role, leader process, pending state, coalesced and overflow counts, deduplicated refreshes, and the latest no-op reason.
 
 A healthy idle managed store reports format v2, one active generation, zero run directories, and `cleanup_pending = false`.
 
@@ -108,7 +112,7 @@ If cleanup rejects a path or symlink, preserve the reported path and investigate
 
 ## Verification expectations
 
-Lifecycle regressions cover failure at parsing, enrichment, staging, database validation, and publication; abandoned-run recovery; symlink rejection; lease-delayed retirement; stale-base rejection; schema-v1 write rejection; reinstall restoration and immediate legacy deletion; direct-mode paired recovery; artifact invalidation and corruption; deterministic clean-rebuild equivalence; and artifact garbage collection.
+Lifecycle regressions cover failure at parsing, staging, search construction, isolated database loading, database validation, and publication; abandoned-run recovery; symlink rejection; lease-delayed retirement; stale-base rejection; schema-v1 write rejection; reinstall restoration and immediate legacy deletion; direct-mode paired recovery; artifact invalidation and corruption; deterministic clean-rebuild equivalence; and artifact garbage collection.
 
 The churn acceptance test performs 10–20 updates. At idle it must leave one managed generation and no run directories, preserve graph results, and keep final physical database size within the greater of 10% or 8 MiB above a clean-control rebuild.
 

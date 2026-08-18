@@ -1,21 +1,31 @@
 use crate::api::catalog::schema_statements_from_copy_statements;
-use crate::db_writer::{write_database, LadybugWriteRequest};
+use crate::db_writer::{write_database_with_metrics, LadybugWriteMetrics, LadybugWriteRequest};
+use crate::error::NativeError;
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
 
 pub(crate) fn write_graph_rows(
     request: &NativeSyntaxMaterializationRequest,
     response: &NativeSyntaxMaterializationResponse,
-) -> Result<(), String> {
+) -> Result<LadybugWriteMetrics, NativeError> {
+    let use_ladybug_fts = request.include_fts && response.search_backend.is_none();
     let schema_statements = if request.schema_statements.is_empty() {
-        schema_statements_from_copy_statements(request.include_fts, &response.copy_statements)
+        schema_statements_from_copy_statements(use_ladybug_fts, &response.copy_statements)
     } else {
         request.schema_statements.clone()
     };
-    write_database(LadybugWriteRequest {
+    let buffer_pool_bytes = request.database_buffer_pool_bytes()?;
+    // Ladybug COPY uses additional native working memory per execution thread.
+    // Materialization parallelism is bounded separately; keep the database phase
+    // single-threaded so its 256 MiB buffer pool remains the dominant allocation.
+    let max_num_threads = 1;
+    write_database_with_metrics(LadybugWriteRequest {
         db_path: request.db_path.clone(),
-        include_fts: request.include_fts,
+        worker_memory_bytes: request.worker_memory_mib.saturating_mul(1024 * 1024),
+        buffer_pool_bytes,
+        max_num_threads,
+        defer_hash_indexes: true,
+        include_fts: use_ladybug_fts,
         schema_statements,
         copy_statements: response.copy_statements.clone(),
     })
-    .map_err(|error| error.to_string())
 }

@@ -441,7 +441,16 @@ fn parallel_materialize_reports_progress_events() {
     .unwrap();
     let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
     assert_eq!(value["database_written"], true);
-    assert!(value["progress_events"].as_array().unwrap().len() >= 2);
+    let progress = value["progress_events"].as_array().unwrap();
+    assert_eq!(
+        progress.len(),
+        2,
+        "only the latest frame per phase is retained"
+    );
+    assert_eq!(progress[0]["phase"], "parsed");
+    assert_eq!(progress[0]["current"], 2);
+    assert_eq!(progress[1]["phase"], "staged");
+    assert_eq!(progress[1]["current"], 2);
     assert_eq!(value["diff"]["added"][0], "a.py");
     assert_eq!(value["diff"]["added"][1], "b.py");
     let _ = fs::remove_dir_all(root);
@@ -489,7 +498,7 @@ fn setup_materializes_graph_and_writes_config() {
     assert_eq!(config["refresh"]["policy"], "leader");
     assert_eq!(config["refresh"]["backend"], "auto");
     assert_eq!(config["materialization"]["include_fts"], true);
-    assert_eq!(config["materialization"]["semantic_enrichment"], true);
+    assert_eq!(config["materialization"]["semantic_enrichment"], false);
     assert_eq!(config["materialization"]["worker_memory_mib"], 768);
     assert_eq!(config["materialization"]["rust_memory_mib"], 384);
     assert_eq!(config["materialization"]["spill_chunk_mib"], 32);

@@ -1,8 +1,11 @@
 use super::StagingAccumulator;
+use crate::api::catalog::schema_statements_from_copy_statements;
+use crate::db_writer::{write_database, LadybugWriteRequest};
 use crate::partition_builder::GraphPartition;
 use crate::protocol::ManifestEntry;
 use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -24,6 +27,18 @@ fn copy_path_strips_windows_extended_prefix_for_ladybug() {
     assert_eq!(
         super::files::copy_path(path),
         "C:/Users/runner/AppData/Local/Temp/thing.json"
+    );
+}
+
+#[test]
+fn csv_field_streaming_escapes_quotes_without_building_a_second_string() {
+    let mut output = Vec::new();
+
+    super::files::write_csv_field(&mut output, "naïve,\"value\"\n").unwrap();
+
+    assert_eq!(
+        String::from_utf8(output).unwrap(),
+        "\"naïve,\"\"value\"\"\n\""
     );
 }
 
@@ -260,11 +275,109 @@ fn connector_generation_allows_target_in_later_partition() {
         .exists());
 }
 
+#[test]
+fn small_budget_forces_spill_without_changing_deterministic_output() {
+    let default_dir = temp_staging_dir("default_budget");
+    let bounded_dir = temp_staging_dir("bounded_budget");
+    let mut nodes = vec![node("file:one", "File", "file.py")];
+    let mut edges = Vec::new();
+    for index in (0..400).rev() {
+        let symbol_id = format!("sym:{index:03}");
+        nodes.push(node(&symbol_id, "Symbol", &format!("symbol_{index:03}")));
+        edges.push(edge(
+            &format!("edge:{index:03}"),
+            "Contains",
+            "file:one",
+            &symbol_id,
+        ));
+    }
+    let graph = partition("hash-spill", nodes, edges);
+
+    let mut default = StagingAccumulator::new(&default_dir.to_string_lossy());
+    default.add_partition(&graph);
+    let default_result = default.finish().unwrap();
+
+    let mut bounded =
+        StagingAccumulator::with_chunk_limit(&bounded_dir.to_string_lossy(), 8_192).unwrap();
+    bounded.add_partition(&graph);
+    let bounded_result = bounded.finish().unwrap();
+
+    assert_eq!(bounded_result.node_rows, 401);
+    assert_eq!(bounded_result.edge_rows, 400);
+    assert_eq!(bounded_result.unique_node_count, 401);
+    assert_eq!(bounded_result.unique_edge_count, 400);
+    assert_eq!(bounded_result.connector_rows, 800);
+    assert!(bounded_result.spill_bytes > 0);
+    assert!(bounded_result.high_water_bytes > 0);
+    assert_eq!(
+        unique_statement_tables(&bounded_result.copy_statements),
+        unique_statement_tables(&default_result.copy_statements)
+    );
+    assert_eq!(
+        staged_json_rows(&bounded_dir),
+        staged_json_rows(&default_dir)
+    );
+    assert_eq!(staged_csv_rows(&bounded_dir), staged_csv_rows(&default_dir));
+    assert!(bounded_dir.join("symbol__000001.json").is_file());
+    assert!(fs::read_dir(&bounded_dir)
+        .unwrap()
+        .filter_map(Result::ok)
+        .any(|entry| {
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            name.ends_with("__000001.csv")
+        }));
+    for entry in fs::read_dir(&bounded_dir).unwrap().filter_map(Result::ok) {
+        if entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            assert!(entry.metadata().unwrap().len() <= 8_192);
+        }
+    }
+    let database_path = bounded_dir.join("chunked-copy.lbdb");
+    write_database(LadybugWriteRequest {
+        db_path: database_path.to_string_lossy().into_owned(),
+        worker_memory_bytes: 768 * 1024 * 1024,
+        buffer_pool_bytes: 384 * 1024 * 1024,
+        max_num_threads: 1,
+        defer_hash_indexes: false,
+        include_fts: false,
+        schema_statements: schema_statements_from_copy_statements(
+            false,
+            &bounded_result.copy_statements,
+        ),
+        copy_statements: bounded_result.copy_statements,
+    })
+    .unwrap();
+}
+
+#[test]
+fn single_record_larger_than_budget_fails_structurally() {
+    let staging_dir = temp_staging_dir("record_budget");
+    let graph = partition(
+        "hash-1",
+        vec![node("file:one", "File", "file.py")],
+        Vec::new(),
+    );
+    let mut staging =
+        StagingAccumulator::with_chunk_limit(&staging_dir.to_string_lossy(), 64).unwrap();
+    staging.add_partition(&graph);
+
+    let error = staging.finish().unwrap_err();
+
+    let crate::error::NativeError::MemoryBudgetExceeded(error) = error else {
+        panic!("expected a structured memory budget error");
+    };
+    assert_eq!(error.phase, "staged");
+    assert_eq!(error.limit_bytes, 64);
+    assert!(error.accounted_bytes > error.limit_bytes);
+}
+
 fn partition(
     content_hash: &str,
     nodes: Vec<GraphNodeRow>,
     edges: Vec<GraphEdgeRow>,
 ) -> GraphPartition {
+    let node_count = nodes.len();
+    let edge_count = edges.len();
     GraphPartition {
         entry: ManifestEntry {
             path: "file.py".to_string(),
@@ -282,11 +395,77 @@ fn partition(
                 .iter()
                 .map(|edge| (edge.id.clone(), edge.edge_type.clone()))
                 .collect(),
+            node_count,
+            edge_count,
             materialized_at: "now".to_string(),
         },
         nodes,
         edges,
     }
+}
+
+fn unique_statement_tables(statements: &[String]) -> Vec<&str> {
+    let mut tables = Vec::new();
+    for table in statements
+        .iter()
+        .map(|statement| statement.split(" FROM ").next().unwrap())
+    {
+        if tables.last().copied() != Some(table) {
+            tables.push(table);
+        }
+    }
+    tables
+}
+
+fn staged_json_rows(root: &Path) -> BTreeMap<String, Vec<Value>> {
+    let mut paths = fs::read_dir(root)
+        .unwrap()
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "json")
+        })
+        .collect::<Vec<_>>();
+    paths.sort();
+    let mut rows = BTreeMap::<String, Vec<Value>>::new();
+    for path in paths {
+        let stem = path.file_stem().unwrap().to_string_lossy();
+        let table = unchunked_stem(&stem).to_string();
+        rows.entry(table)
+            .or_default()
+            .extend(read_json_array(&path));
+    }
+    rows
+}
+
+fn staged_csv_rows(root: &Path) -> BTreeMap<String, Vec<String>> {
+    let mut paths = fs::read_dir(root)
+        .unwrap()
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|extension| extension == "csv"))
+        .collect::<Vec<_>>();
+    paths.sort();
+    let mut rows = BTreeMap::<String, Vec<String>>::new();
+    for path in paths {
+        let stem = path.file_stem().unwrap().to_string_lossy();
+        let table = unchunked_stem(&stem).to_string();
+        rows.entry(table).or_default().extend(
+            fs::read_to_string(path)
+                .unwrap()
+                .lines()
+                .skip(1)
+                .map(str::to_string),
+        );
+    }
+    rows
+}
+
+fn unchunked_stem(stem: &str) -> &str {
+    stem.rsplit_once("__")
+        .filter(|(_, suffix)| suffix.len() == 6 && suffix.bytes().all(|byte| byte.is_ascii_digit()))
+        .map_or(stem, |(base, _)| base)
 }
 
 fn node(id: &str, table: &str, label: &str) -> GraphNodeRow {
