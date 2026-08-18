@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.6](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.5...v1.4.6) (2026-08-17)
+
+
+### Bug Fixes
+
+* **refresh:** elect a single repository owner ([#78](https://github.com/rabii-chaarani/codebaseGraph/issues/78)) ([8d624f2](https://github.com/rabii-chaarani/codebaseGraph/commit/8d624f2cd61f99003aeb09ea39a3b9e5d606ab24))
+
 ## [1.4.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.4...v1.4.5) (2026-08-17)
 
 
