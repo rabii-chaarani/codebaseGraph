@@ -6,12 +6,11 @@
 /.kWiki/
 /knowledge/.obsidian/
 /.omx/state/
-/.scryer/
 /.codex/
 /.venv/
 /.mcp.json
 /.claude/
-
+/.*/
 # Editor and OS noise
 .DS_Store
 .idea/
@@ -32,3 +31,4 @@
 !/Cargo.lock
 AGENTS.md
 CLAUDE.md
+.gitignore

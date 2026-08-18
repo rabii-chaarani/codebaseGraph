@@ -70,10 +70,32 @@ jobs:
             echo 'current-tip=false' >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          associated_pulls="$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/$GITHUB_REPOSITORY/commits/$CI_HEAD_SHA/pulls")"
+          release_merge_count="$(jq -r \
+            --arg repository "$GITHUB_REPOSITORY" \
+            '[.[]
+              | select(.merged_at != null)
+              | select(.base.ref == "main")
+              | select(.head.repo.full_name == $repository)
+              | select(.head.ref == "release-please--branches--main--components--codebase-graph")
+              | select([.labels[].name] | index("autorelease: pending") != null)]
+             | length' <<<"$associated_pulls")"
+          [[ "$release_merge_count" -le 1 ]] || {
+            echo "Expected at most one release-please pull request for $CI_HEAD_SHA; found $release_merge_count." >&2
+            exit 1
+          }
+          if [[ "$release_merge_count" == '1' ]]; then
+            release_merge=true
+          else
+            release_merge=false
+          fi
           {
             echo 'current-tip=true'
             echo "ci-run-id=$CI_RUN_ID"
             echo "ci-head-sha=$CI_HEAD_SHA"
+            echo "release-merge=$release_merge"
           } >> "$GITHUB_OUTPUT"
       - name: Create release pull request or GitHub release
         id: release
@@ -83,12 +105,14 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          skip-github-release: ${{ steps.trigger.outputs.release-merge != 'true' }}
       - name: Recheck current main tip after release-please
         if: steps.trigger.outputs.current-tip == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_MERGE: ${{ steps.trigger.outputs.release-merge }}
           RELEASE_CREATED: ${{ steps.release.outputs.release_created }}
           RELEASE_SHA: ${{ steps.release.outputs.sha }}
         run: |
@@ -98,6 +122,10 @@ jobs:
             echo "Main advanced to $main_sha while release-please was running; stopping publication for $CI_HEAD_SHA." >&2
             exit 1
           }
+          if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_MERGE" != 'true' ]]; then
+            echo "Release-please created a release outside a verified release merge." >&2
+            exit 1
+          fi
           if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_SHA" != "$CI_HEAD_SHA" ]]; then
             echo "Release-please created a release for $RELEASE_SHA, not triggering CI SHA $CI_HEAD_SHA." >&2
             exit 1
