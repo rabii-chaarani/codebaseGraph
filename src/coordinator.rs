@@ -18,6 +18,7 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 const COORDINATOR_PROTOCOL_VERSION: u64 = 1;
+const COORDINATOR_AUTHENTICATION_FAILED: &str = "coordinator_authentication_failed";
 const MAX_FRAME_BYTES: usize = 16 * 1024 * 1024;
 const ELECTION_TIMEOUT: Duration = Duration::from_secs(5);
 const ELECTION_RETRY_INTERVAL: Duration = Duration::from_millis(50);
@@ -178,27 +179,23 @@ impl CoordinatorClient {
             operation_id: operation_id.to_string(),
             invocation: invocation.clone(),
         };
-        match self.send_command(&command) {
-            Ok(CoordinatorReply::Success(response)) => Ok(response),
-            Ok(CoordinatorReply::Failure(error)) => Err(error),
-            Ok(CoordinatorReply::Pong) => Err(coordinator_protocol_error(
-                "coordinator returned pong for an operation request",
-            )),
-            Err(_) => {
+        let reply = match self.send_command(&command) {
+            Ok(reply) if !reply_requires_route_refresh(&reply) => reply,
+            Ok(_) | Err(_) => {
                 self.refresh_route().map_err(|error| {
                     ApiError::new("coordinator_unavailable", error).retryable(true)
                 })?;
-                match self.send_command(&command) {
-                    Ok(CoordinatorReply::Success(response)) => Ok(response),
-                    Ok(CoordinatorReply::Failure(error)) => Err(error),
-                    Ok(CoordinatorReply::Pong) => Err(coordinator_protocol_error(
-                        "coordinator returned pong for an operation request",
-                    )),
-                    Err(error) => {
-                        Err(ApiError::new("coordinator_unavailable", error).retryable(true))
-                    }
-                }
+                self.send_command(&command).map_err(|error| {
+                    ApiError::new("coordinator_unavailable", error).retryable(true)
+                })?
             }
+        };
+        match reply {
+            CoordinatorReply::Success(response) => Ok(response),
+            CoordinatorReply::Failure(error) => Err(error),
+            CoordinatorReply::Pong => Err(coordinator_protocol_error(
+                "coordinator returned pong for an operation request",
+            )),
         }
     }
 
@@ -274,12 +271,13 @@ impl CoordinatorClient {
     fn ping(&self) -> Result<(), String> {
         match self.send_command(&CoordinatorCommand::Ping) {
             Ok(CoordinatorReply::Pong) => Ok(()),
-            Ok(_) => Err("repository coordinator returned a non-pong reply".to_string()),
-            Err(_) => {
+            Ok(_) | Err(_) => {
                 self.refresh_route()?;
                 match self.send_command(&CoordinatorCommand::Ping)? {
                     CoordinatorReply::Pong => Ok(()),
-                    _ => Err("repository coordinator returned a non-pong reply".to_string()),
+                    reply => Err(format!(
+                        "repository coordinator returned a non-pong reply after route refresh: {reply:?}"
+                    )),
                 }
             }
         }
@@ -399,7 +397,7 @@ fn handle_connection(
     };
     if request.version != COORDINATOR_PROTOCOL_VERSION || request.token != state.token {
         return CoordinatorReply::Failure(ApiError::new(
-            "coordinator_authentication_failed",
+            COORDINATOR_AUTHENTICATION_FAILED,
             "repository coordinator protocol or token is invalid",
         ));
     }
@@ -465,6 +463,13 @@ fn ping_state(state: &CoordinatorState) -> Result<(), String> {
         CoordinatorReply::Pong => Ok(()),
         _ => Err("repository coordinator did not answer ping".to_string()),
     }
+}
+
+fn reply_requires_route_refresh(reply: &CoordinatorReply) -> bool {
+    matches!(
+        reply,
+        CoordinatorReply::Failure(error) if error.code == COORDINATOR_AUTHENTICATION_FAILED
+    )
 }
 
 fn clone_command(command: &CoordinatorCommand) -> CoordinatorCommand {
@@ -633,6 +638,11 @@ mod tests {
         for client in &clients {
             client.ping().unwrap();
         }
+        let refreshed_endpoint = clients[0].endpoint().unwrap();
+        assert!(clients
+            .iter()
+            .all(|client| client.endpoint() == Some(refreshed_endpoint)));
+        assert_eq!(clients.iter().filter(|client| client.is_owner()).count(), 1);
     }
 
     #[test]
@@ -655,6 +665,45 @@ mod tests {
             "standby did not take over within five seconds"
         );
         assert_ne!(follower.endpoint(), Some(previous));
+    }
+
+    #[test]
+    fn follower_refreshes_a_stale_authenticated_route() {
+        let root = temp_dir("stale-route");
+        let config = direct_config(&root);
+        let owner = CoordinatorClient::connect_or_start(config.clone()).unwrap();
+        let follower = CoordinatorClient::connect_or_start(config).unwrap();
+
+        let invalidate_route = || {
+            follower
+                .inner
+                .route
+                .lock()
+                .unwrap()
+                .state
+                .as_mut()
+                .unwrap()
+                .token = "0".repeat(64);
+        };
+
+        invalidate_route();
+        let response = follower
+            .execute_invocation(
+                "syntax",
+                &OperationInvocation {
+                    repo: RepoSelector::default(),
+                    arguments: serde_json::json!({"language": "python"}),
+                    output_format: crate::api::OutputFormat::Typed,
+                },
+            )
+            .unwrap();
+        assert_eq!(response.operation, "syntax");
+
+        invalidate_route();
+        follower.ping().unwrap();
+        assert_eq!(follower.endpoint(), owner.endpoint());
+        assert!(owner.is_owner());
+        assert!(!follower.is_owner());
     }
 
     fn direct_config(root: &Path) -> CoordinatorApiConfig {
