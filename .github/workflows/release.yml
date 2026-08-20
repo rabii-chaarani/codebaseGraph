@@ -145,7 +145,7 @@ jobs:
       tag-name: ${{ steps.resolve.outputs.tag-name }}
       version: ${{ steps.resolve.outputs.version }}
       source-sha: ${{ steps.resolve.outputs.source-sha }}
-      dry-run: ${{ steps.resolve.outputs.dry-run }}
+      publish_assets: ${{ steps.resolve.outputs.publish_assets }}
       artifact-source: ${{ steps.resolve.outputs.artifact-source }}
       ci-run-id: ${{ steps.resolve.outputs.ci-run-id }}
     steps:
@@ -174,6 +174,11 @@ jobs:
             automatic=false
             should_publish=true
             dry_run="$MANUAL_DRY_RUN"
+            if [[ "$dry_run" == 'true' ]]; then
+              publish_assets=false
+            else
+              publish_assets=true
+            fi
             artifact_source="$MANUAL_SOURCE"
             ci_run_id=''
           elif [[ "$RELEASE_CREATED" == 'true' ]]; then
@@ -191,6 +196,7 @@ jobs:
             automatic=true
             should_publish=true
             dry_run=false
+            publish_assets=true
             artifact_source=promote
           else
             tag=''
@@ -198,6 +204,7 @@ jobs:
             automatic=false
             should_publish=false
             dry_run=true
+            publish_assets=false
             artifact_source=promote
             ci_run_id=''
           fi
@@ -207,7 +214,7 @@ jobs:
             echo "tag-name=$tag"
             echo "version=${tag#v}"
             echo "source-sha=$source_sha"
-            echo "dry-run=$dry_run"
+            echo "publish_assets=$publish_assets"
             echo "artifact-source=$artifact_source"
             echo "ci-run-id=$ci_run_id"
           } >> "$GITHUB_OUTPUT"
@@ -437,7 +444,15 @@ jobs:
     needs:
       - release-target
       - validate-artifacts
-    if: ${{ needs.release-target.outputs.dry-run == 'false' }}
+    # Artifact promotion intentionally skips rebuild-artifacts. Override that skipped
+    # ancestor only after every direct publication prerequisite succeeds.
+    if: >-
+      ${{
+        always()
+        && needs.release-target.result == 'success'
+        && needs.validate-artifacts.result == 'success'
+        && needs.release-target.outputs.publish_assets == 'true'
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -455,7 +470,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ needs.release-target.outputs.tag-name }}" dist/release-assets/codebase-graph-*.tar.gz dist/release-assets/codebase-graph-*.tar.gz.sha256 --clobber
+        run: gh release upload "${{ needs.release-target.outputs.tag-name }}" dist/release-assets/codebase-graph-*.tar.gz dist/release-assets/codebase-graph-*.tar.gz.sha256 --clobber --repo "$GITHUB_REPOSITORY"
 
   publish-crate:
     name: publish crates.io package
@@ -463,7 +478,17 @@ jobs:
       - release-please
       - release-target
       - publish-release-assets
-    if: ${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.dry-run == 'false' }}
+    # Keep the explicit status override through the final job so the intentionally
+    # skipped rebuild ancestor cannot suppress crate publication either.
+    if: >-
+      ${{
+        always()
+        && needs.release-please.result == 'success'
+        && needs.release-target.result == 'success'
+        && needs.publish-release-assets.result == 'success'
+        && needs.release-please.outputs.release-created == 'true'
+        && needs.release-target.outputs.publish_assets == 'true'
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:

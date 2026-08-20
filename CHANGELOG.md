@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.4.6](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.5...v1.4.6) (2026-08-17)
+
+
+### Bug Fixes
+
+* **refresh:** elect a single repository owner ([#78](https://github.com/rabii-chaarani/codebaseGraph/issues/78)) ([8d624f2](https://github.com/rabii-chaarani/codebaseGraph/commit/8d624f2cd61f99003aeb09ea39a3b9e5d606ab24))
+
+## [1.4.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.4...v1.4.5) (2026-08-17)
+
+
+### Bug Fixes
+
+* **release:** bind asset upload repository ([#82](https://github.com/rabii-chaarani/codebaseGraph/issues/82)) ([2a898c6](https://github.com/rabii-chaarani/codebaseGraph/commit/2a898c6f0c50345723d0d60cf9fc8df0da8f23ee))
+
+## [1.4.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.3...v1.4.4) (2026-08-17)
+
+
+### Bug Fixes
+
+* **release:** publish after skipped rebuild ([#80](https://github.com/rabii-chaarani/codebaseGraph/issues/80)) ([392b26c](https://github.com/rabii-chaarani/codebaseGraph/commit/392b26cfc304732489cdbf66986ab3d37b310a84))
+
+## [1.4.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.2...v1.4.3) (2026-08-17)
+
+
+### Bug Fixes
+
+* **release:** prevent stale tag publication ([#77](https://github.com/rabii-chaarani/codebaseGraph/issues/77)) ([1931dc8](https://github.com/rabii-chaarani/codebaseGraph/commit/1931dc85d32f92477f2fa244dbebb3e0f5ea4c44))
+
 ## [1.4.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.1...v1.4.2) (2026-08-17)
 
 
