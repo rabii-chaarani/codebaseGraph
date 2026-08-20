@@ -90,6 +90,15 @@ impl Drop for CoordinatorOwner {
     }
 }
 
+impl CoordinatorOwner {
+    fn is_running(&self) -> bool {
+        self.thread
+            .lock()
+            .map(|thread| thread.as_ref().is_some_and(|thread| !thread.is_finished()))
+            .unwrap_or(false)
+    }
+}
+
 #[derive(Clone, Debug)]
 struct CoordinatorControlPaths {
     lock: PathBuf,
@@ -286,23 +295,23 @@ fn monitor_route(inner: Weak<ClientInner>) {
         if inner.monitor_stop.load(Ordering::Acquire) {
             return;
         }
-        let state = inner
+        let (state, owner) = inner
             .route
             .lock()
             .ok()
-            .and_then(|route| route.state.clone());
-        let route_is_reachable = state
-            .as_ref()
-            .is_some_and(|state| endpoint_is_reachable(state.endpoint));
+            .map(|route| (route.state.clone(), route.owner.clone()))
+            .unwrap_or((None, None));
+        let route_is_reachable = match owner {
+            Some(owner) => owner.is_running(),
+            None => state
+                .as_ref()
+                .is_some_and(|state| ping_state(state).is_ok()),
+        };
         if !route_is_reachable {
             let client = CoordinatorClient { inner };
             let _ = client.refresh_route();
         }
     }
-}
-
-fn endpoint_is_reachable(endpoint: SocketAddr) -> bool {
-    TcpStream::connect_timeout(&endpoint, CONNECT_TIMEOUT).is_ok()
 }
 
 fn start_owner(
