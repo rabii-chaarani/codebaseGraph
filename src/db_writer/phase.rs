@@ -151,21 +151,21 @@ fn cleanup_phase_files(request_path: &Path, stderr_path: &Path) {
 
 fn traced_phase_command(
     executable: &Path,
-    request: &LadybugWritePhaseRequest,
-    request_path: &Path,
+    _request: &LadybugWritePhaseRequest,
+    _request_path: &Path,
 ) -> Result<Command, NativeError> {
     #[cfg(target_os = "macos")]
     if let Some(trace_root) = std::env::var_os("CODEBASE_GRAPH_PHASE_TIMING_DIR") {
         let trace_root = PathBuf::from(trace_root);
         fs::create_dir_all(&trace_root)?;
-        let request_name = request_path
+        let request_name = _request_path
             .file_stem()
             .and_then(|name| name.to_str())
             .unwrap_or("ladybug-phase");
         let trace_path = trace_root.join(format!(
             "{}-{}.time",
             request_name,
-            request.phase.trace_label()
+            _request.phase.trace_label()
         ));
         let mut command = Command::new("/usr/bin/time");
         command.arg("-l").arg("-o").arg(trace_path).arg(executable);
