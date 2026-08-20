@@ -1,4 +1,5 @@
 mod block;
+mod daemon;
 mod http;
 mod options;
 mod protocol;
@@ -7,6 +8,11 @@ mod state;
 mod stdio;
 mod tools;
 
+pub(crate) use daemon::{
+    repository_fingerprint, serve_mcp_daemon, service_id, stable_daemon_port, start_mcp_daemon,
+    status_mcp_daemon, stop_mcp_daemon, verify_daemon_endpoint, McpDaemonOptions, McpDaemonSpec,
+    DAEMON_TRANSPORT_VERSION,
+};
 pub(crate) use http::serve_mcp_http;
 pub(crate) use options::{McpHttpOptions, McpServeOptions};
 pub(in crate::adapters) use protocol::McpSession;

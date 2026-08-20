@@ -8,7 +8,7 @@ tags:
 - mcp
 - runtime
 - storage
-timestamp: 2026-08-18
+timestamp: 2026-08-20
 title: Public Operations and Runtime Paths
 type: architecture
 ---
@@ -40,8 +40,16 @@ external input
 | --- | --- | --- |
 | CLI | Parse product commands, map command options, choose stable exit codes, and write human or machine output. | Calls public operations; does not own graph or storage semantics. |
 | MCP stdio | Negotiate MCP messages and serve newline-delimited requests over standard streams. | Tool specifications derive from public operation metadata; the process routes repository operations to the elected owner. |
-| MCP HTTP | Serve MCP requests over HTTP and enforce configured authentication and bind rules. | Uses the same MCP dispatch and repository coordinator as stdio. |
+| MCP HTTP | Serve MCP requests from one repository-scoped managed loopback daemon. | Every compatible local harness registers the same endpoint; the daemon uses the same MCP dispatch and repository coordinator as stdio. |
 | Embedded Rust API | Accept typed operation requests and return typed or block-form results. | Enters directly at the Public API Facade. |
+
+## Managed local MCP daemon
+
+`auto` selects one Streamable HTTP daemon per canonical repository for every loopback-capable harness. The daemon holds `mcp-daemon.lock` before it initializes the listener, API core, coordinator, or watcher, so concurrent starts cannot create duplicate owners. Setup persists its loopback URL, service ID, and transport version while retaining the stdio launch command for explicit compatibility mode.
+
+The daemon is supervised by launchd, a systemd user service, or Windows Task Scheduler. Runtime state records its PID, repository fingerprint, endpoint, version, and a rotating control token in the repository state directory. Health is loopback-only; shutdown requires the control token. Stop, reinstall, and uninstall request graceful shutdown, wait for release, and use service-manager or process-group termination only after the bounded grace period.
+
+Codex, Claude Code, repository `.mcp.json`, GitHub Copilot/VS Code, LM Studio, Hermes, OpenClaw, and generic local adapters render their native HTTP form with the same URL and no command field. Registration is preflighted before mutation, only recognized managed stdio entries migrate automatically, and file-backed multi-client changes roll back together. Copilot Studio, Microsoft 365 Copilot, and other cloud-brokered connectors remain manual public-HTTPS targets; lifecycle code never exposes the loopback listener or provisions a tunnel.
 
 ## Repository coordinator path
 
@@ -80,6 +88,7 @@ For schema-v1 state, search, context, query, and health remain available. Build,
 - Request-shape and operation-rule violations fail during preparation.
 - Repository selection and storage-format failures fail during runtime resolution.
 - A failed candidate build, memory-budget termination, coordinator death, orphan-worker reap, or publication failure preserves the active generation.
+- A managed daemon is registered only after its identity, repository fingerprint, initialization, and required tool schemas verify; failed provisioning removes a newly created service and restores changed registrations.
 - Structured memory failures report the phase, configured limit, accounted bytes, and observed RSS.
 - Cleanup errors are reported separately and never hide the primary build error.
 - Application failures are translated once into stable public errors.

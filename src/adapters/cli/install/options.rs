@@ -1,4 +1,5 @@
 use crate::adapters::{cli::format::mcp_install_help, required_arg};
+use crate::api::McpTransport;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -11,6 +12,8 @@ pub(in crate::adapters::cli) struct McpInstallOptions {
     pub(in crate::adapters::cli) repo_root: Option<PathBuf>,
     pub(in crate::adapters::cli) dry_run: bool,
     pub(in crate::adapters::cli) verify: bool,
+    pub(in crate::adapters::cli) transport: McpTransport,
+    pub(in crate::adapters::cli) daemon_port: Option<u16>,
     pub(in crate::adapters::cli) json: bool,
     pub(in crate::adapters::cli) help: bool,
 }
@@ -26,6 +29,8 @@ impl McpInstallOptions {
             repo_root: None,
             dry_run: false,
             verify: false,
+            transport: McpTransport::Auto,
+            daemon_port: None,
             json: false,
             help: false,
         };
@@ -73,6 +78,21 @@ impl McpInstallOptions {
                 "--verify" => {
                     options.verify = true;
                     index += 1;
+                }
+                "--mcp-transport" => {
+                    options.transport =
+                        McpTransport::parse(required_arg(args, index, "--mcp-transport")?)?;
+                    index += 2;
+                }
+                "--mcp-daemon-port" => {
+                    let port = required_arg(args, index, "--mcp-daemon-port")?
+                        .parse::<u16>()
+                        .map_err(|_| "--mcp-daemon-port must be between 1 and 65535".to_string())?;
+                    if port == 0 {
+                        return Err("--mcp-daemon-port must be between 1 and 65535".to_string());
+                    }
+                    options.daemon_port = Some(port);
+                    index += 2;
                 }
                 "--json" => {
                     options.json = true;

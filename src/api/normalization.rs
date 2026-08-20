@@ -395,6 +395,12 @@ fn validate_lifecycle(
             ));
         }
     }
+    if request.mcp_daemon_port == Some(0) {
+        return Err(ApiError::new(
+            "invalid_mcp_daemon_port",
+            "MCP daemon port must be between 1 and 65535",
+        ));
+    }
     Ok(())
 }
 
@@ -415,6 +421,12 @@ fn validate_mcp_install(request: &McpInstallRequest) -> Result<(), ApiError> {
         return Err(ApiError::new(
             "invalid_mcp_config_path",
             "client_config_path requires one selected MCP client",
+        ));
+    }
+    if request.daemon_port == Some(0) {
+        return Err(ApiError::new(
+            "invalid_mcp_daemon_port",
+            "MCP daemon port must be between 1 and 65535",
         ));
     }
     Ok(())
@@ -673,6 +685,8 @@ mod tests {
                 name: None,
                 client_config_path: None,
                 dry_run: true,
+                transport: crate::api::McpTransport::Auto,
+                daemon_port: None,
                 output_format: OutputFormat::Typed,
             })
         };

@@ -87,7 +87,7 @@ tool is marked as a write operation because it writes the static site.
 ```bash
 cargo install codebase-graph
 codebase-graph install
-codebase-graph mcp start --config .codebaseGraph/config.json
+codebase-graph mcp daemon status --config .codebaseGraph/config.json
 ```
 
 For local development from this checkout:
@@ -118,26 +118,42 @@ client entries.
 
 ```bash
 codebase-graph mcp install --client codex
+codebase-graph mcp install --client all --mcp-transport http-daemon
 ```
 
 Supported clients are `codex`, `claude`, `claude-project`, `github-copilot`, `lmstudio`, `hermes`, `openclaw`,
 `generic`, `copilot-studio`, and `microsoft-copilot`.
 
-`github-copilot` writes VS Code workspace configuration to `.vscode/mcp.json`. `copilot-studio` and
-`microsoft-copilot` are metadata-only targets: they print stdio and local HTTP connection details for manual Copilot
-Studio onboarding and do not provision a hosted connector, TLS, OAuth, or remote deployment.
+`auto` is the default MCP transport and resolves to one repository-scoped Streamable HTTP daemon for every local
+harness. Codex, Claude Code and `claude-project`, GitHub Copilot/VS Code, LM Studio, Hermes, OpenClaw, and generic
+registrations all receive the same persisted `http://127.0.0.1:<port>/mcp` endpoint. Use
+`--mcp-transport stdio` only for compatibility. `--mcp-daemon-port` overrides the stable repository-derived port.
+
+`github-copilot` writes VS Code workspace configuration to `.vscode/mcp.json`. `claude` targets Claude Code;
+`claude-project` targets the repository `.mcp.json`. An explicit Claude Desktop config rejects loopback HTTP and may
+still be registered with explicit stdio. `copilot-studio` and `microsoft-copilot` report
+`manual_remote_required`: their cloud runtimes require a publicly reachable HTTPS endpoint. The installer never
+publishes the loopback URL or provisions a tunnel, TLS, OAuth, or remote deployment.
 
 ## MCP Usage
 
-Stdio is the default transport for local MCP clients:
+The managed daemon is the default transport for local MCP clients. Setup installs a user service through launchd on
+macOS, a systemd user unit on Linux, or Task Scheduler on Windows. A repository lock prevents a second daemon from
+starting, and every harness shares the daemon's coordinator and watcher.
+
+```bash
+codebase-graph mcp daemon status --config .codebaseGraph/config.json
+codebase-graph mcp daemon start --config .codebaseGraph/config.json
+codebase-graph mcp daemon stop --config .codebaseGraph/config.json
+```
+
+The daemon binds only to `127.0.0.1`, exposes MCP at `/mcp`, exposes local health metadata at
+`/_codebasegraph/health`, and uses a rotating state-file token for authenticated shutdown. Reinstall and uninstall stop
+and reap it before replacing or removing repository state. The lower-level transports remain available for diagnostics
+and compatibility:
 
 ```bash
 codebase-graph mcp start --config .codebaseGraph/config.json
-```
-
-HTTP is available for local endpoint clients:
-
-```bash
 codebase-graph mcp http --config .codebaseGraph/config.json --host 127.0.0.1 --port 8765
 ```
 
@@ -166,7 +182,7 @@ codebase-graph graph-query "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" --
 Retrieval commands emit block format by default for agent-facing output. Use `--json --pretty` or `--format json` for
 structured inspection.
 
-Freshness is automatic while `codebase-graph mcp start` or `codebase-graph watch` is running. Use `build` only for an
+Freshness is automatic while the managed MCP daemon, explicit `mcp start`, or `watch` is running. Use `build` only for an
 explicit manual rebuild, and use `plan` to inspect what a manual build would touch:
 
 ```bash
@@ -206,7 +222,8 @@ expectations, and the local-first MCP security boundary.
 ## Troubleshooting
 
 - Missing LadyBugDB: install `codebase-graph` from crates.io, a release artifact, or this checkout.
-- Stale graph: ensure `codebase-graph mcp start --config .codebaseGraph/config.json` or `codebase-graph watch --repo-root .` is running; use `codebase-graph build --repo-root . --mode full` only for an explicit manual rebuild.
+- Stale graph: check `codebase-graph mcp daemon status --config .codebaseGraph/config.json`; use `codebase-graph watch --repo-root .` for an explicit foreground watcher or `build --mode full` only for a manual rebuild.
+- Daemon service unavailable: setup fails closed instead of silently creating stdio registrations. Ensure launchd, the systemd user manager, or Task Scheduler is available, then rerun setup.
 - Broken setup state: run `codebase-graph reinstall` to recreate `.codebaseGraph` and refresh the selected MCP registration.
 - Broken client config only: rerun `codebase-graph mcp install --client <client> --verify`.
 - PATH or executable issues: ensure the native `codebase-graph` binary is on `PATH`.

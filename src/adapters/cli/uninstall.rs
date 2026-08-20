@@ -106,6 +106,8 @@ pub(in crate::adapters::cli) fn run_uninstall<W: Write>(
         mcp_config_path: options.client_config_path.clone(),
         instructions_target: None,
         skip_mcp_config: false,
+        mcp_transport: crate::api::McpTransport::Auto,
+        mcp_daemon_port: None,
         mode: "changed".to_string(),
         include_fts: true,
         semantic_enrichment: false,

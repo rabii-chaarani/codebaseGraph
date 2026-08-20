@@ -6,6 +6,7 @@ pub mod api;
 mod artifact_store;
 mod bootstrap;
 mod coordinator;
+mod daemon_service;
 pub mod db_writer;
 pub mod error;
 mod execution;

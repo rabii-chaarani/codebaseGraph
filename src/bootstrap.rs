@@ -2,6 +2,7 @@ use crate::adapters::{
     cli::{format::mcp_help, run},
     mcp::{serve_mcp_http, serve_mcp_stdio, McpHttpOptions, McpServeOptions},
 };
+use crate::daemon_service::{serve_mcp_daemon, McpDaemonOptions};
 use std::{
     env,
     io::{self},
@@ -33,6 +34,10 @@ pub(crate) fn run_process_args(args: Vec<String>) -> Result<(), String> {
             Some("http") => {
                 let options = McpHttpOptions::parse(&args[2..], mcp_help())?;
                 return serve_mcp_http(&options);
+            }
+            Some("daemon") if args.get(2).map(String::as_str) == Some("serve") => {
+                let options = McpDaemonOptions::parse(&args[3..])?;
+                return serve_mcp_daemon(&options);
             }
             _ => {}
         }

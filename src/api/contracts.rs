@@ -193,6 +193,10 @@ pub struct RepositoryLifecycleRequest {
     pub mcp_config_path: Option<PathBuf>,
     pub instructions_target: Option<String>,
     pub skip_mcp_config: bool,
+    #[serde(default)]
+    pub mcp_transport: McpTransport,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_daemon_port: Option<u16>,
     pub mode: String,
     pub include_fts: bool,
     pub semantic_enrichment: bool,
@@ -207,7 +211,38 @@ pub struct McpInstallRequest {
     pub name: Option<String>,
     pub client_config_path: Option<PathBuf>,
     pub dry_run: bool,
+    #[serde(default)]
+    pub transport: McpTransport,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub daemon_port: Option<u16>,
     pub output_format: OutputFormat,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum McpTransport {
+    #[default]
+    Auto,
+    Stdio,
+    HttpDaemon,
+}
+
+impl McpTransport {
+    pub fn parse(value: &str) -> Result<Self, String> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "auto" => Ok(Self::Auto),
+            "stdio" => Ok(Self::Stdio),
+            "http-daemon" => Ok(Self::HttpDaemon),
+            _ => Err("MCP transport must be auto, stdio, or http-daemon".to_string()),
+        }
+    }
+
+    pub fn resolved(self) -> Self {
+        match self {
+            Self::Auto => Self::HttpDaemon,
+            transport => transport,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -375,6 +410,8 @@ mod tests {
             mcp_config_path: Some(PathBuf::from("/tmp/mcp.json")),
             instructions_target: None,
             skip_mcp_config: true,
+            mcp_transport: McpTransport::Auto,
+            mcp_daemon_port: None,
             mode: "full".to_string(),
             include_fts: true,
             semantic_enrichment: false,
@@ -440,6 +477,8 @@ mod tests {
                 name: Some("codebase_graph".to_string()),
                 client_config_path: Some(PathBuf::from("/tmp/mcp.json")),
                 dry_run: true,
+                transport: McpTransport::Auto,
+                daemon_port: None,
                 output_format: OutputFormat::Typed,
             }),
             OperationRequest::Refresh(RefreshRequest {
