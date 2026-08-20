@@ -1,4 +1,4 @@
-use crate::error::NativeError;
+use crate::error::{MemoryBudgetExceeded, NativeError};
 use crate::partition_builder::GraphPartition;
 use crate::protocol::{
     LanguageProfile, NativeSyntaxMaterializationRequest, OntologySchema, SourceSnapshot,
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fmt::Write as _;
 use std::fs::{self, File};
-use std::io::Write as IoWrite;
+use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -17,6 +17,8 @@ pub(crate) const ARTIFACT_FORMAT_VERSION: u64 = 2;
 const ENVELOPE_FILE_NAME: &str = "partition.json";
 const ARTIFACT_KEY_BYTES: usize = 32;
 const ARTIFACT_KEY_HEX_LEN: usize = ARTIFACT_KEY_BYTES * 2;
+const ARTIFACT_IO_BUFFER_BYTES: usize = 64 * 1024;
+const ARTIFACT_DECODE_EXPANSION_FACTOR: u64 = 2;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ArtifactWriteOutcome {
@@ -55,6 +57,36 @@ struct ArtifactEnvelope {
     artifact_key: String,
     partition_payload_sha256: String,
     partition: GraphPartition,
+}
+
+#[derive(Serialize)]
+struct ArtifactEnvelopeRef<'a> {
+    format_version: u64,
+    artifact_key: &'a str,
+    partition_payload_sha256: &'a str,
+    partition: &'a GraphPartition,
+}
+
+#[derive(Default)]
+struct DigestWriter {
+    hasher: Sha256,
+}
+
+impl Write for DigestWriter {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.hasher.update(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl DigestWriter {
+    fn finish(self) -> String {
+        hex_lower(self.hasher.finalize().as_ref())
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -106,6 +138,12 @@ impl ArtifactStore {
         partition
             .validate_raw_rows()
             .map_err(NativeError::InvalidInput)?;
+        if partition.entry.artifact_key.as_deref() != Some(artifact_key) {
+            return Err(NativeError::InvalidInput(format!(
+                "partition artifact key does not match store key for {}",
+                partition.entry.path
+            )));
+        }
         let artifact_dir = self.artifact_dir(artifact_key)?;
         if let Some(parent) = artifact_dir.parent() {
             fs::create_dir_all(parent)?;
@@ -114,22 +152,19 @@ impl ArtifactStore {
             sync_dir(parent)?;
         }
 
+        let partition_payload_sha256 = partition_payload_sha256(partition)?;
         let temp_dir = self.temp_dir_path(artifact_key);
         fs::create_dir(&temp_dir)?;
-
-        let mut stored_partition = partition.clone();
-        stored_partition.set_artifact_key(artifact_key.to_string());
-        let partition_payload_sha256 = partition_payload_sha256(&stored_partition)?;
-        let existing_partition = stored_partition.clone();
-        let envelope = ArtifactEnvelope {
-            format_version: ARTIFACT_FORMAT_VERSION,
-            artifact_key: artifact_key.to_string(),
-            partition_payload_sha256: partition_payload_sha256.clone(),
-            partition: stored_partition,
-        };
-        let payload = serde_json::to_vec_pretty(&envelope)?;
         let payload_path = temp_dir.join(ENVELOPE_FILE_NAME);
-        write_and_sync(&payload_path, &payload)?;
+        if let Err(error) = write_envelope_and_sync(
+            &payload_path,
+            artifact_key,
+            &partition_payload_sha256,
+            partition,
+        ) {
+            let _ = remove_tree_confined(&self.root, &temp_dir);
+            return Err(error);
+        }
         sync_dir(&temp_dir)?;
         sync_dir(temp_dir.parent().expect("temp dir parent should exist"))?;
 
@@ -143,12 +178,7 @@ impl ArtifactStore {
                 Ok(ArtifactWriteOutcome::Written)
             }
             Err(_error) if artifact_dir.exists() => {
-                if existing_artifact_matches(
-                    &artifact_dir,
-                    artifact_key,
-                    &partition_payload_sha256,
-                    &existing_partition,
-                )? {
+                if existing_artifact_matches(&artifact_dir, &payload_path)? {
                     remove_tree_confined(&self.root, &temp_dir)?;
                     sync_dir(
                         artifact_dir
@@ -168,10 +198,20 @@ impl ArtifactStore {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn load_partition(
         &self,
         artifact_key: &str,
         expected: &ArtifactExpectations<'_>,
+    ) -> Result<Option<GraphPartition>, NativeError> {
+        self.load_partition_with_budget(artifact_key, expected, u64::MAX)
+    }
+
+    pub(crate) fn load_partition_with_budget(
+        &self,
+        artifact_key: &str,
+        expected: &ArtifactExpectations<'_>,
+        memory_limit_bytes: u64,
     ) -> Result<Option<GraphPartition>, NativeError> {
         if validate_artifact_key(artifact_key).is_err() {
             return Ok(None);
@@ -182,15 +222,27 @@ impl ArtifactStore {
             ensure_directory_without_symlinks(&artifact_dir)?;
         }
         let payload_path = self.payload_path(artifact_key)?;
-        let text = match fs::read_to_string(&payload_path) {
-            Ok(text) => text,
+        let file = match File::open(&payload_path) {
+            Ok(file) => file,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(NativeError::Io(error)),
         };
-        let envelope: ArtifactEnvelope = match serde_json::from_str(&text) {
-            Ok(envelope) => envelope,
-            Err(_) => return Ok(None),
-        };
+        let file_bytes = file.metadata()?.len();
+        let accounted_bytes = artifact_decode_accounted_bytes(file_bytes);
+        if accounted_bytes > memory_limit_bytes {
+            return Err(NativeError::MemoryBudgetExceeded(
+                MemoryBudgetExceeded::new("artifact_load", memory_limit_bytes, accounted_bytes, 0),
+            ));
+        }
+        let mut reader = BufReader::with_capacity(ARTIFACT_IO_BUFFER_BYTES, file);
+        let envelope: ArtifactEnvelope =
+            match serde_json::from_reader(&mut reader.by_ref().take(file_bytes)) {
+                Ok(envelope) => envelope,
+                Err(_) => return Ok(None),
+            };
+        if reader.get_ref().metadata()?.len() != file_bytes {
+            return Ok(None);
+        }
         if envelope.format_version != ARTIFACT_FORMAT_VERSION
             || envelope.artifact_key != artifact_key
         {
@@ -324,45 +376,72 @@ fn is_valid_artifact_prefix(prefix: &str) -> bool {
             .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
 }
 
-fn write_and_sync(path: &std::path::Path, bytes: &[u8]) -> Result<(), NativeError> {
-    let mut file = File::create(path)?;
-    file.write_all(bytes)?;
-    file.sync_all()?;
+fn write_envelope_and_sync(
+    path: &std::path::Path,
+    artifact_key: &str,
+    partition_payload_sha256: &str,
+    partition: &GraphPartition,
+) -> Result<(), NativeError> {
+    let file = File::create(path)?;
+    let mut writer = BufWriter::with_capacity(ARTIFACT_IO_BUFFER_BYTES, file);
+    serde_json::to_writer_pretty(
+        &mut writer,
+        &ArtifactEnvelopeRef {
+            format_version: ARTIFACT_FORMAT_VERSION,
+            artifact_key,
+            partition_payload_sha256,
+            partition,
+        },
+    )?;
+    writer.flush()?;
+    writer.get_ref().sync_all()?;
     Ok(())
 }
 
 fn partition_payload_sha256(partition: &GraphPartition) -> Result<String, NativeError> {
-    let payload = serde_json::to_vec(partition)?;
-    Ok(hex_lower(Sha256::digest(payload).as_ref()))
+    let mut writer = DigestWriter::default();
+    serde_json::to_writer(&mut writer, partition)?;
+    Ok(writer.finish())
+}
+
+fn artifact_decode_accounted_bytes(file_bytes: u64) -> u64 {
+    file_bytes
+        .checked_mul(ARTIFACT_DECODE_EXPANSION_FACTOR)
+        .and_then(|bytes| bytes.checked_add(ARTIFACT_IO_BUFFER_BYTES as u64))
+        .unwrap_or(u64::MAX)
 }
 
 fn existing_artifact_matches(
     artifact_dir: &std::path::Path,
-    artifact_key: &str,
-    expected_payload_sha256: &str,
-    expected_partition: &GraphPartition,
+    candidate_payload_path: &std::path::Path,
 ) -> Result<bool, NativeError> {
     ensure_directory_without_symlinks(artifact_dir)?;
     let payload_path = artifact_dir.join(ENVELOPE_FILE_NAME);
-    let text = match fs::read_to_string(&payload_path) {
-        Ok(text) => text,
+    let existing = match File::open(&payload_path) {
+        Ok(file) => file,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
         Err(error) => return Err(NativeError::Io(error)),
     };
-    let envelope: ArtifactEnvelope = match serde_json::from_str(&text) {
-        Ok(envelope) => envelope,
-        Err(_) => return Ok(false),
-    };
-    if envelope.format_version != ARTIFACT_FORMAT_VERSION || envelope.artifact_key != artifact_key {
+    let candidate = File::open(candidate_payload_path)?;
+    if existing.metadata()?.len() != candidate.metadata()?.len() {
         return Ok(false);
     }
-    if envelope.partition.validate_raw_rows().is_err() {
-        return Ok(false);
+    let mut existing = BufReader::with_capacity(ARTIFACT_IO_BUFFER_BYTES, existing);
+    let mut candidate = BufReader::with_capacity(ARTIFACT_IO_BUFFER_BYTES, candidate);
+    let mut existing_buffer = [0_u8; 8 * 1024];
+    let mut candidate_buffer = [0_u8; 8 * 1024];
+    loop {
+        let existing_read = existing.read(&mut existing_buffer)?;
+        let candidate_read = candidate.read(&mut candidate_buffer)?;
+        if existing_read != candidate_read
+            || existing_buffer[..existing_read] != candidate_buffer[..candidate_read]
+        {
+            return Ok(false);
+        }
+        if existing_read == 0 {
+            return Ok(true);
+        }
     }
-    if envelope.partition != *expected_partition {
-        return Ok(false);
-    }
-    Ok(envelope.partition_payload_sha256 == expected_payload_sha256)
 }
 
 fn replace_existing_artifact(
@@ -583,6 +662,10 @@ mod tests {
             atomic_rebuild: false,
             strict: false,
             parallel: true,
+            worker_memory_mib: 768,
+            rust_memory_mib: 384,
+            spill_chunk_mib: 32,
+            max_parallelism: 2,
             progress: false,
         }
     }
@@ -593,6 +676,7 @@ mod tests {
             absolute_path: "/repo/src/lib.rs".to_string(),
             content_hash: "content-hash".to_string(),
             language: Some("rust".to_string()),
+            byte_len: 0,
             source: None,
         }
     }
@@ -649,11 +733,19 @@ mod tests {
                     .iter()
                     .map(|edge| (edge.id.clone(), edge.edge_type.clone()))
                     .collect(),
+                node_count: nodes.len(),
+                edge_count: edges.len(),
                 materialized_at: "unix:0".to_string(),
             },
             nodes,
             edges,
         }
+    }
+
+    fn sample_partition_for_key(artifact_key: &str) -> GraphPartition {
+        let mut partition = sample_partition();
+        partition.set_artifact_key(artifact_key.to_string());
+        partition
     }
 
     #[test]
@@ -735,18 +827,19 @@ mod tests {
         let snapshot = sample_snapshot();
         let key =
             ArtifactStore::key_for_request(&request, &snapshot, request.profiles.first()).unwrap();
-        let partition = sample_partition();
+        let partition = sample_partition_for_key(&key);
 
         let first = store.store_partition(&key, &partition).unwrap();
         let second = store.store_partition(&key, &partition).unwrap();
         let loaded = store
-            .load_partition(
+            .load_partition_with_budget(
                 &key,
                 &ArtifactExpectations {
                     path: "src/lib.rs",
                     content_hash: "content-hash",
                     language: "rust",
                 },
+                16 * 1024 * 1024,
             )
             .unwrap()
             .unwrap();
@@ -757,6 +850,62 @@ mod tests {
         loaded.validate_raw_rows().unwrap();
 
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn streaming_partition_checksum_matches_the_legacy_canonical_payload() {
+        let partition = sample_partition();
+        let legacy_payload = serde_json::to_vec(&partition).unwrap();
+        let legacy_checksum = hex_lower(Sha256::digest(legacy_payload).as_ref());
+
+        assert_eq!(
+            partition_payload_sha256(&partition).unwrap(),
+            legacy_checksum
+        );
+    }
+
+    #[test]
+    fn oversized_artifact_is_rejected_before_deserialization() {
+        let root = unique_temp_dir("codebase-graph-artifacts-budget");
+        let store = ArtifactStore::new(&root);
+        let key = "d".repeat(64);
+        let artifact_dir = root.join(&key[..2]).join(&key);
+        fs::create_dir_all(&artifact_dir).unwrap();
+        File::create(artifact_dir.join(ENVELOPE_FILE_NAME))
+            .unwrap()
+            .set_len(2 * 1024 * 1024)
+            .unwrap();
+
+        let error = store
+            .load_partition_with_budget(
+                &key,
+                &ArtifactExpectations {
+                    path: "src/lib.rs",
+                    content_hash: "content-hash",
+                    language: "rust",
+                },
+                1024 * 1024,
+            )
+            .unwrap_err();
+
+        let NativeError::MemoryBudgetExceeded(error) = error else {
+            panic!("oversized artifact should fail with a structured memory budget error");
+        };
+        assert_eq!(error.phase, "artifact_load");
+        assert_eq!(error.limit_bytes, 1024 * 1024);
+        assert!(error.accounted_bytes > error.limit_bytes);
+        assert_eq!(error.observed_rss_bytes, 0);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn reference_sized_artifact_fits_the_default_per_worker_budget() {
+        let reference_artifact_bytes = 77 * 1024 * 1024;
+        let per_worker_budget_bytes = 192 * 1024 * 1024;
+
+        assert!(
+            artifact_decode_accounted_bytes(reference_artifact_bytes) <= per_worker_budget_bytes
+        );
     }
 
     #[test]
@@ -794,7 +943,8 @@ mod tests {
         let snapshot = sample_snapshot();
         let key =
             ArtifactStore::key_for_request(&request, &snapshot, request.profiles.first()).unwrap();
-        store.store_partition(&key, &sample_partition()).unwrap();
+        let partition = sample_partition_for_key(&key);
+        store.store_partition(&key, &partition).unwrap();
 
         let payload_path = root.join(&key[..2]).join(&key).join(ENVELOPE_FILE_NAME);
         let mut envelope: serde_json::Value =
@@ -825,7 +975,8 @@ mod tests {
         let snapshot = sample_snapshot();
         let key =
             ArtifactStore::key_for_request(&request, &snapshot, request.profiles.first()).unwrap();
-        store.store_partition(&key, &sample_partition()).unwrap();
+        let partition = sample_partition_for_key(&key);
+        store.store_partition(&key, &partition).unwrap();
 
         let loaded = store
             .load_partition(
@@ -872,7 +1023,8 @@ mod tests {
         let key =
             ArtifactStore::key_for_request(&request, &snapshot, request.profiles.first()).unwrap();
 
-        store.store_partition(&key, &sample_partition()).unwrap();
+        let partition = sample_partition_for_key(&key);
+        store.store_partition(&key, &partition).unwrap();
 
         let keys = store.list_keys().unwrap();
         assert_eq!(keys, vec![key.clone()]);
@@ -905,7 +1057,9 @@ mod tests {
             ArtifactStore::key_for_request(&request, &snapshot, request.profiles.first()).unwrap();
 
         assert_eq!(
-            store.store_partition(&key, &sample_partition()).unwrap(),
+            store
+                .store_partition(&key, &sample_partition_for_key(&key))
+                .unwrap(),
             ArtifactWriteOutcome::Written
         );
 
@@ -920,7 +1074,9 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            store.store_partition(&key, &sample_partition()).unwrap(),
+            store
+                .store_partition(&key, &sample_partition_for_key(&key))
+                .unwrap(),
             ArtifactWriteOutcome::Written
         );
         let loaded = store

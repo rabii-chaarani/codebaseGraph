@@ -24,7 +24,9 @@ use crate::api::normalization::{
 use crate::api::presenter::present_operation_response;
 use crate::api::refresh::RefreshState;
 use crate::error::NativeError;
+use crate::materialization_worker::execute_explicit_worker;
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
+use crate::storage::layout::direct_bundle_paths;
 use serde_json::json;
 use std::{collections::BTreeMap, fs, path::Path, sync::Arc};
 
@@ -61,6 +63,7 @@ pub(crate) struct RegisteredOperation {
 #[derive(Debug, Clone, Default)]
 pub struct ApiCore {
     refresh: Option<Arc<RefreshState>>,
+    isolate_materialization: bool,
 }
 
 impl ApiCore {
@@ -68,8 +71,11 @@ impl ApiCore {
         Self::default()
     }
 
-    pub(crate) fn with_refresh_state(refresh: Option<Arc<RefreshState>>) -> Self {
-        Self { refresh }
+    pub(crate) fn for_coordinator(refresh: Option<Arc<RefreshState>>) -> Self {
+        Self {
+            refresh,
+            isolate_materialization: true,
+        }
     }
 
     pub(crate) fn register_operations(&self) -> OperationRegistry {
@@ -217,15 +223,6 @@ impl ApiCore {
             }
         }
         validate_request(&request)?;
-        let _refresh_read_guard = if operation_requires_consistent_graph_read(&request) {
-            self.refresh
-                .as_ref()
-                .map(|refresh| refresh.read_guard())
-                .transpose()
-                .map_err(|error| ApiError::new("refresh_lock_failed", error))?
-        } else {
-            None
-        };
         let operation = self
             .resolve_operation(request.operation_name())
             .ok_or_else(|| {
@@ -260,7 +257,16 @@ impl ApiCore {
                 runtime.direct_read = None;
             }
         }
-        let response = dispatch_operation(&request, &operation, runtime.as_ref())?;
+        let response = if self.isolate_materialization {
+            match (&request, runtime.as_ref()) {
+                (OperationRequest::Materialize(request), Some(runtime)) => {
+                    execute_isolated_materialization(request, runtime, self.refresh.as_deref())?
+                }
+                _ => dispatch_operation(&request, &operation, runtime.as_ref())?,
+            }
+        } else {
+            dispatch_operation(&request, &operation, runtime.as_ref())?
+        };
         Ok(present_operation_response(
             response,
             request.output_format(),
@@ -392,16 +398,6 @@ fn dispatch_operation(
     runtime: Option<&RepoRuntime>,
 ) -> Result<OperationResponse, ApiError> {
     (operation.handler)(request, runtime)
-}
-
-fn operation_requires_consistent_graph_read(request: &OperationRequest) -> bool {
-    matches!(
-        request,
-        OperationRequest::Health(_)
-            | OperationRequest::Search(_)
-            | OperationRequest::Context(_)
-            | OperationRequest::Query(_)
-    )
 }
 
 fn operation_requires_graph_write(request: &OperationRequest) -> bool {
@@ -669,7 +665,7 @@ fn execute_search(
         max_depth: request.max_depth,
         detail: request.detail.clone(),
     };
-    let results = execute_graph_search(&runtime.db_path, &options)
+    let results = execute_graph_search(&runtime.db_path, &runtime.manifest_path, &options)
         .map_err(|error| ApiError::new("search_execution_failed", error.to_string()))?;
     let payload = serde_json::json!({
         "query": request.query,
@@ -720,7 +716,7 @@ fn execute_context(
                 "query is required",
             ));
         }
-        let results = execute_graph_search(&runtime.db_path, &search)
+        let results = execute_graph_search(&runtime.db_path, &runtime.manifest_path, &search)
             .map_err(|error| ApiError::new("context_execution_failed", error.to_string()))?;
         json!({
             "query": request.query,
@@ -778,7 +774,6 @@ fn execute_materialization(
     if !dry_plan {
         reject_legacy_write_operation(runtime)?;
     }
-    let output_format = request.output_format;
     let materialize_options = MaterializeOptions::from_request(request, runtime, dry_plan);
 
     let mut native_request = if let Some(request_path) = request.native_request_path.as_ref() {
@@ -796,17 +791,59 @@ fn execute_materialization(
     } else {
         execute_materialization_request(&materialize_options, native_request)
             .map(|(_, response)| response)
-            .map_err(|error| ApiError::new("materialization_failed", error))?
+            .map_err(materialization_api_error)?
     };
 
-    let payload = materialization_payload(request, &response, &runtime.manifest_path, dry_plan);
+    Ok(materialization_operation_response(
+        request, runtime, &response, dry_plan,
+    ))
+}
+
+fn execute_isolated_materialization(
+    request: &MaterializationRequest,
+    runtime: &RepoRuntime,
+    refresh: Option<&RefreshState>,
+) -> Result<OperationResponse, ApiError> {
+    reject_legacy_write_operation(runtime)?;
+    let options = MaterializeOptions::from_request(request, runtime, false);
+    let response = execute_explicit_worker(&options, |pid| {
+        if let Some(refresh) = refresh {
+            refresh.set_worker_pid(pid);
+        }
+    })
+    .map_err(materialization_api_error)?;
+    Ok(materialization_operation_response(
+        request, runtime, &response, false,
+    ))
+}
+
+fn materialization_operation_response(
+    request: &MaterializationRequest,
+    runtime: &RepoRuntime,
+    response: &NativeSyntaxMaterializationResponse,
+    dry_plan: bool,
+) -> OperationResponse {
+    let output_format = request.output_format;
+    let payload = materialization_payload(request, response, &runtime.manifest_path, dry_plan);
     let mut operation_response = OperationResponse::from_payload(
         if dry_plan { "plan" } else { "materialize" },
         output_format,
         payload,
     );
     operation_response.diagnostics = response.diagnostics.clone();
-    Ok(operation_response)
+    operation_response
+}
+
+fn materialization_api_error(message: String) -> ApiError {
+    let Ok(details) = serde_json::from_str::<serde_json::Value>(&message) else {
+        return ApiError::new("materialization_failed", message);
+    };
+    if details.get("error").and_then(serde_json::Value::as_str) == Some("memory_budget_exceeded") {
+        return ApiError::new("memory_budget_exceeded", message)
+            .with_details(details)
+            .retryable(false);
+    }
+    ApiError::new("materialization_failed", message)
 }
 
 fn execute_plan_native(
@@ -862,15 +899,9 @@ fn logical_bundle_bytes(db_path: &Path, manifest_path: &Path) -> u64 {
 }
 
 fn bundle_paths(db_path: &Path, manifest_path: &Path) -> Vec<std::path::PathBuf> {
-    let mut paths = vec![db_path.to_path_buf(), manifest_path.to_path_buf()];
-    for suffix in ["wal", "tmp", "lock"] {
-        paths.push(db_path_with_suffix(db_path, suffix));
-    }
+    let mut paths = direct_bundle_paths(db_path);
+    paths.push(manifest_path.to_path_buf());
     paths
-}
-
-fn db_path_with_suffix(db_path: &Path, suffix: &str) -> std::path::PathBuf {
-    std::path::PathBuf::from(format!("{}.{}", db_path.display(), suffix))
 }
 
 fn file_len(path: &Path) -> u64 {
@@ -919,6 +950,7 @@ fn materialization_payload(
 
 #[cfg(test)]
 mod tests {
+    use super::materialization_api_error;
     use crate::api::contracts::{
         MaterializationRequest, McpInstallRequest, OperationInvocation, OperationRequest,
         OutputFormat, RepoSelector, RepositoryLifecycleRequest,
@@ -940,6 +972,24 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn materialization_memory_failure_preserves_structured_details() {
+        let error = materialization_api_error(
+            serde_json::json!({
+                "error": "memory_budget_exceeded",
+                "phase": "staging",
+                "limit_bytes": 1024,
+                "accounted_bytes": 2048,
+                "observed_rss_bytes": 1536,
+            })
+            .to_string(),
+        );
+
+        assert_eq!(error.code, "memory_budget_exceeded");
+        assert!(!error.retryable);
+        assert_eq!(error.details.unwrap()["phase"], "staging");
     }
 
     fn write_legacy_install_config(root: &PathBuf) {
@@ -1096,6 +1146,10 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: false,
+                worker_memory_mib: None,
+                rust_memory_mib: None,
+                spill_chunk_mib: None,
+                max_parallelism: None,
                 progress: false,
                 output_format: OutputFormat::Typed,
             }))
@@ -1118,6 +1172,10 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: false,
+                worker_memory_mib: None,
+                rust_memory_mib: None,
+                spill_chunk_mib: None,
+                max_parallelism: None,
                 progress: false,
                 output_format: OutputFormat::Typed,
             }))
@@ -1153,35 +1211,6 @@ mod tests {
             .expect("registered MCP operation should resolve");
         assert_eq!(operation.id, "search");
         assert!(core.resolve_mcp_operation("graph_missing").is_none());
-    }
-
-    #[test]
-    fn refresh_read_policy_covers_repository_graph_reads() {
-        let repo = RepoSelector::default();
-        let typed = OutputFormat::Typed;
-        assert!(super::operation_requires_consistent_graph_read(
-            &OperationRequest::Health(crate::api::contracts::HealthRequest {
-                repo: repo.clone(),
-                refresh_status: None,
-                output_format: typed,
-            })
-        ));
-        assert!(super::operation_requires_consistent_graph_read(
-            &OperationRequest::Query(crate::api::contracts::QueryRequest {
-                repo,
-                statement: "MATCH (n) RETURN n".to_string(),
-                parameters: json!({}),
-                limit: 1,
-                output_format: typed,
-            })
-        ));
-        assert!(!super::operation_requires_consistent_graph_read(
-            &OperationRequest::Catalog {
-                kind: "schema".to_string(),
-                group: None,
-                output_format: typed,
-            }
-        ));
     }
 
     #[test]

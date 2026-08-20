@@ -185,6 +185,9 @@ version = "1.4.6"
 dependencies = [
  "fs2",
  "lbug",
+ "libc",
+ "libmimalloc-sys",
+ "mimalloc",
  "notify",
  "serde",
  "serde_json",
@@ -197,6 +200,7 @@ dependencies = [
  "tree-sitter-python",
  "tree-sitter-rust",
  "walkdir",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -247,6 +251,12 @@ dependencies = [
  "itoa",
  "smallvec",
 ]
+
+[[package]]
+name = "cty"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b365fabc795046672053e29c954733ec3b05e4be654ab130fe8f1f94d7051f35"
 
 [[package]]
 name = "cxx"
@@ -761,9 +771,9 @@ dependencies = [
 
 [[package]]
 name = "lbug"
-version = "0.18.3"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aba67c4a43a6dea1c12579a818dee3e2b44d0d80ca6eac700d992c7698cb462f"
+checksum = "a2a843feea97d72124b0438ee6a02ae0ce9d3543da3c391989bfb1f39ec20486"
 dependencies = [
  "cmake",
  "cxx",
@@ -780,6 +790,16 @@ name = "libc"
 version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
+
+[[package]]
+name = "libmimalloc-sys"
+version = "0.1.49"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a45a52f43e1c16f667ccfe4dd8c85b7f7c204fd5e3bf46c5b0db9a5c3c0b8e9"
+dependencies = [
+ "cc",
+ "cty",
+]
 
 [[package]]
 name = "libyaml-rs"
@@ -851,6 +871,15 @@ name = "memchr"
 version = "2.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88904434abc2901f197fe8cc55f0445e7ded921dba5911dad2e2b39b48e663c4"
+
+[[package]]
+name = "mimalloc"
+version = "0.1.52"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d4139bb28d14ad1facf21d5eb8825051b326e172d216b39f6d31df53cc97862"
+dependencies = [
+ "libmimalloc-sys",
+]
 
 [[package]]
 name = "mime"

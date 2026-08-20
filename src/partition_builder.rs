@@ -56,6 +56,12 @@ impl GraphPartition {
         if self.entry.edge_types != expected_edge_types {
             return Err("entry edge_types do not match raw edge rows".to_string());
         }
+        if self.entry.node_count != self.nodes.len() {
+            return Err("entry node_count does not match raw node rows".to_string());
+        }
+        if self.entry.edge_count != self.edges.len() {
+            return Err("entry edge_count does not match raw edge rows".to_string());
+        }
 
         Ok(())
     }
@@ -138,6 +144,8 @@ fn manifest_entry(
         edge_ids,
         node_types,
         edge_types,
+        node_count: nodes.len(),
+        edge_count: edges.len(),
         // Raw partitions are content-addressed. Keep their payload deterministic;
         // generation metadata owns wall-clock publication timestamps.
         materialized_at: "unix:0".to_string(),
@@ -162,6 +170,8 @@ mod tests {
                 edge_ids: vec!["edge:1".to_string()],
                 node_types: BTreeMap::from([("node:1".to_string(), "Function".to_string())]),
                 edge_types: BTreeMap::from([("edge:1".to_string(), "Calls".to_string())]),
+                node_count: 1,
+                edge_count: 1,
                 materialized_at: "unix:0".to_string(),
             },
             nodes: vec![GraphNodeRow {

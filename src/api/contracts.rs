@@ -171,6 +171,14 @@ pub struct MaterializationRequest {
     pub exclude_patterns: Vec<String>,
     pub candidate_paths: Vec<String>,
     pub parallel: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub worker_memory_mib: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rust_memory_mib: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spill_chunk_mib: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_parallelism: Option<usize>,
     pub progress: bool,
     pub output_format: OutputFormat,
 }
@@ -348,6 +356,10 @@ mod tests {
             exclude_patterns: vec!["target/**".to_string()],
             candidate_paths: vec!["src/lib.rs".to_string()],
             parallel: true,
+            worker_memory_mib: Some(768),
+            rust_memory_mib: Some(384),
+            spill_chunk_mib: Some(32),
+            max_parallelism: Some(2),
             progress: false,
             output_format: OutputFormat::Typed,
         }

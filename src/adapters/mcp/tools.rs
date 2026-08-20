@@ -121,21 +121,23 @@ pub(in crate::adapters) fn mcp_tool_payload(
     options: &McpServeOptions,
     output_format: OutputFormat,
 ) -> Result<OperationResponse, ApiError> {
-    let api = options.api.clone().unwrap_or_default();
-    let operation = api.resolve_mcp_operation(tool_name).ok_or_else(|| {
-        ApiError::new(
-            "unknown_tool",
-            format!("Unknown codebaseGraph MCP tool: {tool_name}"),
-        )
-    })?;
-    api.execute_invocation(
-        operation.id,
-        &OperationInvocation {
-            repo: options.repo_selector(),
-            arguments: arguments.clone(),
-            output_format,
-        },
-    )
+    let operation = CodebaseGraphApi::new()
+        .resolve_mcp_operation(tool_name)
+        .ok_or_else(|| {
+            ApiError::new(
+                "unknown_tool",
+                format!("Unknown codebaseGraph MCP tool: {tool_name}"),
+            )
+        })?;
+    let invocation = OperationInvocation {
+        repo: options.repo_selector(),
+        arguments: arguments.clone(),
+        output_format,
+    };
+    match options.api.as_ref() {
+        Some(api) => api.execute_invocation(operation.id, &invocation),
+        None => CodebaseGraphApi::new().execute_invocation(operation.id, &invocation),
+    }
 }
 
 fn parse_output_format(arguments: &serde_json::Value) -> Result<OutputFormat, ApiError> {

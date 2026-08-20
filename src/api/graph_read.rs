@@ -2,6 +2,7 @@ use crate::api::catalog::support::{metadata_payload, value_array, value_str, GRA
 use crate::db_writer::{
     connect_ladybug_database, open_ladybug_database, retry_transient_database, READ_RETRY_POLICY,
 };
+use crate::protocol::SearchBackendMetadata;
 use lbug::{Connection, Database, SystemConfig, Value};
 use serde_json::json;
 use std::{collections::BTreeSet, path::Path};
@@ -50,6 +51,7 @@ pub(crate) fn count_graph_edges(db_path: &Path) -> Result<u64, String> {
 
 pub(crate) fn execute_graph_search(
     db_path: &Path,
+    manifest_path: &Path,
     options: &GraphSearchRequest,
 ) -> Result<Vec<serde_json::Value>, String> {
     let db = Database::new(db_path, SystemConfig::default().read_only(true)).map_err(|error| {
@@ -60,45 +62,11 @@ pub(crate) fn execute_graph_search(
     })?;
     let conn =
         Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
-    crate::db_writer::preseed_ladybug_extensions(true).map_err(|error| error.to_string())?;
-    conn.query("LOAD fts")
-        .map_err(|error| format!("failed to load FTS extension for graph search: {error}"))?;
-    let schema = metadata_payload(GRAPH_SCHEMA_JSON)?;
-    let mut semantic_hits = Vec::new();
-    let mut syntax_hits = Vec::new();
     let candidate_limit = options.limit.clamp(10, 50);
-    let mut order = 0_usize;
-    for index in value_array(&schema, "search_indexes") {
-        let index_layer = search_index_layer(index);
-        if !search_layer_includes(&options.layer, index_layer) {
-            continue;
-        }
-        let index_name = value_str(index, "name");
-        for node_type in index
-            .get("node_types")
-            .and_then(serde_json::Value::as_array)
-            .into_iter()
-            .flatten()
-            .filter_map(serde_json::Value::as_str)
-        {
-            let full_index_name = format!("{index_name}_{node_type}");
-            let hits = search_fts_index(
-                &conn,
-                node_type,
-                &full_index_name,
-                &options.query,
-                candidate_limit,
-                order,
-                index_layer,
-            )?;
-            if index_layer == "syntax" {
-                syntax_hits.extend(hits);
-            } else {
-                semantic_hits.extend(hits);
-            }
-            order += 1;
-        }
-    }
+    let (semantic_hits, syntax_hits) = match search_backend_metadata(manifest_path)? {
+        Some(metadata) => search_sidecar(&conn, db_path, &metadata, options, candidate_limit)?,
+        None => search_ladybug_fts(&conn, options, candidate_limit)?,
+    };
     let hits = select_search_hits(options, semantic_hits, syntax_hits);
     let mut payloads = Vec::new();
     for hit in hits {
@@ -118,6 +86,145 @@ pub(crate) fn execute_graph_search(
         payloads.push(payload);
     }
     Ok(payloads)
+}
+
+fn search_ladybug_fts(
+    conn: &Connection,
+    options: &GraphSearchRequest,
+    candidate_limit: usize,
+) -> Result<(Vec<SearchHitRow>, Vec<SearchHitRow>), String> {
+    crate::db_writer::preseed_ladybug_extensions(true).map_err(|error| error.to_string())?;
+    conn.query("LOAD fts")
+        .map_err(|error| format!("failed to load FTS extension for graph search: {error}"))?;
+    let schema = metadata_payload(GRAPH_SCHEMA_JSON)?;
+    let mut semantic_hits = Vec::new();
+    let mut syntax_hits = Vec::new();
+    let mut order = 0_usize;
+    for index in value_array(&schema, "search_indexes") {
+        let index_layer = search_index_layer(index);
+        if !search_layer_includes(&options.layer, index_layer) {
+            continue;
+        }
+        let index_name = value_str(index, "name");
+        for node_type in index
+            .get("node_types")
+            .and_then(serde_json::Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(serde_json::Value::as_str)
+        {
+            let full_index_name = format!("{index_name}_{node_type}");
+            let hits = search_fts_index(
+                conn,
+                node_type,
+                &full_index_name,
+                &options.query,
+                candidate_limit,
+                order,
+                index_layer,
+            )?;
+            if index_layer == "syntax" {
+                syntax_hits.extend(hits);
+            } else {
+                semantic_hits.extend(hits);
+            }
+            order += 1;
+        }
+    }
+    Ok((semantic_hits, syntax_hits))
+}
+
+fn search_sidecar(
+    conn: &Connection,
+    db_path: &Path,
+    metadata: &SearchBackendMetadata,
+    options: &GraphSearchRequest,
+    candidate_limit: usize,
+) -> Result<(Vec<SearchHitRow>, Vec<SearchHitRow>), String> {
+    let mut semantic_hits = Vec::new();
+    let mut syntax_hits = Vec::new();
+    if search_layer_includes(&options.layer, "semantic") {
+        for hit in crate::search_index::search(
+            db_path,
+            metadata,
+            &options.query,
+            "semantic",
+            candidate_limit,
+        )
+        .map_err(|error| error.to_string())?
+        {
+            if let Some(hit) = hydrate_sidecar_hit(conn, hit)? {
+                semantic_hits.push(hit);
+            }
+        }
+    }
+    if search_layer_includes(&options.layer, "syntax") {
+        for hit in crate::search_index::search(
+            db_path,
+            metadata,
+            &options.query,
+            "syntax",
+            candidate_limit,
+        )
+        .map_err(|error| error.to_string())?
+        {
+            if let Some(hit) = hydrate_sidecar_hit(conn, hit)? {
+                syntax_hits.push(hit);
+            }
+        }
+    }
+    Ok((semantic_hits, syntax_hits))
+}
+
+fn hydrate_sidecar_hit(
+    conn: &Connection,
+    ranked: crate::search_index::RankedDocument,
+) -> Result<Option<SearchHitRow>, String> {
+    let statement = format!(
+        "MATCH (node:`{}` {{id: '{}'}}) RETURN node.id, node.label, node.qualified_name, node.path, node.line_start, node.line_end, node.summary, node.grammar_version, node.tree_sitter_node_type LIMIT 1",
+        cypher_identifier(&ranked.node_type),
+        cypher_single_quoted(&ranked.id),
+    );
+    let mut result = conn
+        .query(&statement)
+        .map_err(|error| format!("failed to hydrate sidecar search result: {error}"))?;
+    let Some(row) = result.next() else {
+        return Ok(None);
+    };
+    Ok(Some(SearchHitRow {
+        id: value_to_string(row.first()),
+        node_type: ranked.node_type,
+        label: value_to_string(row.get(1)),
+        qualified_name: value_to_string(row.get(2)),
+        path: value_to_string(row.get(3)),
+        line_start: value_to_i64(row.get(4)),
+        line_end: value_to_i64(row.get(5)),
+        summary: value_to_string(row.get(6)),
+        grammar_version: value_to_string(row.get(7)),
+        tree_sitter_node_type: value_to_string(row.get(8)),
+        score: ranked.score,
+        rank_score: 0.0,
+        index_order: ranked.index_order,
+        layer: ranked.layer,
+    }))
+}
+
+fn search_backend_metadata(manifest_path: &Path) -> Result<Option<SearchBackendMetadata>, String> {
+    if !manifest_path.is_file() {
+        return Ok(None);
+    }
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(manifest_path)
+            .map_err(|error| format!("failed to read graph manifest: {error}"))?,
+    )
+    .map_err(|error| format!("failed to parse graph manifest: {error}"))?;
+    manifest
+        .get("search_backend")
+        .filter(|value| !value.is_null())
+        .cloned()
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(|error| format!("failed to parse search backend metadata: {error}"))
 }
 
 pub(crate) fn execute_graph_context(
@@ -862,4 +969,82 @@ fn entity_priority_score(node_type: &str) -> f64 {
 
 fn round6(value: f64) -> f64 {
     (value * 1_000_000.0).round() / 1_000_000.0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{execute_graph_search, GraphSearchRequest};
+    use crate::api::catalog::schema_statements_from_copy_statements;
+    use crate::db_writer::{write_database, LadybugWriteRequest};
+    use std::fs;
+
+    #[test]
+    fn manifest_without_backend_metadata_uses_legacy_ladybug_fts() {
+        let root = std::env::temp_dir().join(format!(
+            "codebase-graph-legacy-search-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let db_path = root.join("graph.ldb");
+        let manifest_path = root.join("manifest.json");
+        let rows_path = root.join("function.json");
+        fs::write(
+            &rows_path,
+            serde_json::to_vec(&[serde_json::json!({
+                "id": "fn:legacy",
+                "label": "LegacySearchTarget",
+                "kind": "function",
+                "language": "rust",
+                "path": "src/legacy.rs",
+                "qualified_name": "LegacySearchTarget",
+                "summary": "legacy search fixture",
+                "text": "legacy search fixture",
+                "metadata": {}
+            })])
+            .unwrap(),
+        )
+        .unwrap();
+        let copy_statements = vec![format!(
+            "COPY `Function` FROM \"{}\";",
+            rows_path.to_string_lossy().replace('\\', "/")
+        )];
+        write_database(LadybugWriteRequest {
+            db_path: db_path.to_string_lossy().to_string(),
+            worker_memory_bytes: 768 * 1024 * 1024,
+            buffer_pool_bytes: 256 * 1024 * 1024,
+            max_num_threads: 1,
+            defer_hash_indexes: false,
+            include_fts: true,
+            schema_statements: schema_statements_from_copy_statements(true, &copy_statements),
+            copy_statements,
+        })
+        .unwrap();
+        fs::write(
+            &manifest_path,
+            r#"{"schema_version":4,"ontology":"test","parser_version":"test","files":{}}"#,
+        )
+        .unwrap();
+
+        let results = execute_graph_search(
+            &db_path,
+            &manifest_path,
+            &GraphSearchRequest {
+                query: "LegacySearchTarget".to_string(),
+                layer: "semantic".to_string(),
+                limit: 3,
+                profile: "brief".to_string(),
+                budget: 0,
+                context_limit: 0,
+                max_depth: None,
+                detail: "slim".to_string(),
+            },
+        )
+        .unwrap();
+        assert!(results.iter().any(|result| result["id"] == "fn:legacy"));
+        fs::remove_dir_all(root).unwrap();
+    }
 }

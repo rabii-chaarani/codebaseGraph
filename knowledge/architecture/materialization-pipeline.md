@@ -3,12 +3,12 @@ description: Generation-backed source-to-graph execution, artifact reuse, valida
 resource: repository-architecture
 tags:
 - architecture
+- artifacts
+- generations
 - graph-indexing
 - materialization
 - pipeline
-- generations
-- artifacts
-timestamp: 2026-08-06
+timestamp: 2026-08-18
 title: Graph Materialization Pipeline
 type: architecture
 ---
@@ -19,85 +19,98 @@ Materialization converts repository source snapshots into a fresh persistent sou
 ## Pipeline
 
 ```text
-public materialization request
+MCP write -> repository coordinator -> isolated Materialization Worker
+standalone CLI build -----------------> canonical pipeline directly
   -> canonical repository runtime
   -> recover abandoned runs / direct publication
   -> Source Scanner
-  -> Execution Planner + durable raw-partition artifacts
-  -> Semantic Enricher across all partitions
-  -> Graph Writer
+  -> bounded Execution Planner + durable raw-partition artifacts
+  -> deterministic external staging merge
+  -> disk-backed search sidecar
+  -> isolated Ladybug database phases
   -> validate candidate generation
   -> Graph Store atomic publication
 ```
 
-### 1. Prepare and recover
+### 1. Establish bounded ownership and recover
+
+For MCP refresh and explicit coordinator writes, the owner takes the nonblocking `worker.lock`, reaps any recorded orphan from `worker.json`, and removes only validated abandoned worker workspaces. It then creates versioned request/result files and a start gate before releasing the child. At most one worker runs; refresh churn remains represented by the coordinator's single bounded pending state.
+
+The Materialization Worker exits if its parent-owned control pipe closes. This prevents leader death from leaving an unsupervised process able to publish. Run-journal recovery remains the authority for any candidate state left by a crash.
+
+### 2. Prepare repository execution
 
 The Unified API Core normalizes public options and resolves one canonical source root, storage mode, configuration, and manifest context. The Graph Store runs its janitor before normal work, completes deterministic recovery where possible, and rejects invalid operation combinations before execution.
 
-### 2. Discover source changes
+### 3. Discover stable source snapshots
 
-The Source Scanner discovers supported files as immutable snapshots and compares them with the active manifest. Planning reports rebuild, delete, reuse, and ignored paths without modifying graph state. Every source hash is revalidated before an artifact can be reused.
+The Source Scanner hashes file metadata before retaining content. Required sources are copied into the run workspace with hash verification; an unstable file is retried up to three times. Planning reports rebuild, delete, reuse, and ignored paths without modifying graph state.
 
-### 3. Reuse or build raw partitions
+### 4. Reuse or build raw partitions
 
-The Execution Planner computes an artifact key from repository identity, relative path, content hash, language, parser/profile/ontology versions, and artifact schema version. A valid matching raw partition is reused; a missing or corrupt entry is rebuilt.
-
-Tree-sitter-backed programming-language parsing and Markdown parsing both produce normalized graph rows. Partitions are self-contained, may be built concurrently, and are collected in stable order. Relationship endpoints are checked against the ontology allowlist.
-
-### 4. Enrich the complete graph
-
-The Semantic Enricher runs across every reused and rebuilt partition. It resolves calls, references, and type annotations, records inferred relationships with evidence, and retains diagnostic metadata for unresolved or lower-confidence relations. Reusing raw partitions never skips global semantic enrichment.
+The Execution Planner computes an artifact key from repository identity, relative path, content hash, language, parser/profile/ontology versions, and artifact schema version. A fixed-size worker pool reserves memory fallibly, emits partitions in stable order, persists each raw artifact, and releases it. A source or artifact that cannot fit the working budget returns a structured `memory_budget_exceeded` failure.
 
 ### 5. Assemble deterministic candidate rows
 
-The Graph Writer combines all partitions, preserves shared identities, creates connectors only when endpoints exist, and avoids replacing populated fields with duplicate empty values. Node and edge ordering remains deterministic across execution modes and equivalent to a clean rebuild.
+Partitions are reloaded one at a time. Length-prefixed sorted runs merge nodes, edges, connectors, and endpoint types by deterministic keys. Shared identities keep the existing first-nonempty merge behavior, connector endpoints are resolved by merge join, and unique node and edge counts are computed during the final stream. Output chunks never require a graph-sized in-memory collection.
 
-### 6. Build and validate a candidate generation
+Semantic enrichment is retired from the production pipeline. Legacy configuration and request fields remain readable for compatibility but normalize to disabled and do not affect materialization identity.
 
-Managed mode writes the database and manifest into a fresh run candidate. The database is closed, reopened read-only, and checked for schema, counts, artifact references, and repository metadata before metadata and `READY` are made durable. The active generation remains untouched throughout this work.
+### 6. Build the search sidecar
 
-### 7. Publish atomically
+New generations build a generation-owned `disk_bm25_v1` sidecar from externally sorted term postings, document lengths, and bounded metadata tables. It is checksummed and validated with the candidate. Generations without search-backend metadata remain readable through their legacy Ladybug FTS indexes.
 
-The Graph Store rejects a stale-base candidate, then atomically replaces and fsyncs `active.json` under the exclusive state lock. The manifest is part of the newly active generation; graph and manifest therefore advance together. The prior generation is retired and removed as soon as its final read lease is released.
+### 7. Build and validate the database
 
-Explicit Direct mode follows the same candidate principle beside the requested database and manifest destinations. A checksummed journal recovers the paired rename sequence before the next read or write.
+Ladybug work is ordered into pre-COPY schema, bulk COPY, and post-COPY indexes. The complete MCP build runs in the Materialization Worker, and Ladybug phases run in nested short-lived children. Both supervisors sample every 25 ms. During a Ladybug phase, the phase supervisor adds a composable memory charge for the materialization parent and Ladybug child, then terminates the phase before the configured worker ceiling is exceeded. The Ladybug buffer pool starts at 256 MiB and may retry COPY/index pool exhaustion at 320 and 384 MiB, while the configured worker RSS limit remains the hard authority.
 
-### 8. Finish and collect
+On macOS, supervision adds each process's current physical footprint from `proc_pid_rusage(...).ri_phys_footprint`. The cumulative `ri_resident_size` field is not a live measurement, while adding raw current RSS from parent and child double-counts their clean shared runtime mappings. Rust graph construction uses mimalloc and forces collection at the Ladybug boundary after dropping scan/planner state; platform-allocator relief covers foreign allocations. Structured budget failures include the parent/child memory split and active pool size.
 
-The run journal records `published`, explicit workspace cleanup runs, and artifact garbage collection removes entries not referenced by the active manifest or a live run. Cleanup errors are visible as `cleanup_pending` and never mask the primary materialization error.
+Managed mode writes the database, compact manifest v5, metadata, sidecar siblings, and readiness marker into a fresh candidate. The database is closed, reopened read-only, and checked before publication. Existing v4 generations remain readable; their next write performs one bounded full rebuild.
+
+### 8. Publish atomically
+
+The Graph Store rejects a stale-base candidate, then atomically replaces and fsyncs `active.json` under the exclusive state lock. Database, compact manifest, metadata, readiness marker, and search sidecar advance as one generation. A failure or killed database phase preserves the prior active generation.
+
+Explicit Direct mode uses the same candidate principle beside the requested destinations. Checksummed journals recover the database, manifest, and sidecar rename sequence before the next read or write.
+
+### 9. Finish and collect
+
+The run journal records publication and explicit workspace cleanup. Artifact garbage collection removes entries not referenced by the active manifest or a live run. Cleanup errors remain visible as `cleanup_pending` and never mask the primary materialization error.
 
 ## Contracts carried through the pipeline
 
 | Contract | Purpose |
 | --- | --- |
-| Materialization input | Source root, storage target or explicit Direct paths, configuration, active manifest, language profiles, and execution options. |
-| Source snapshot and manifest diff | Immutable source payload plus rebuild, delete, reuse, and ignored decisions. |
+| Materialization input | Source root, storage target, refresh intent, memory limits, configuration, active manifest, and execution options. |
+| Source snapshot and manifest diff | Verified source snapshot plus rebuild, delete, reuse, and ignored decisions. |
 | Artifact key and raw partition | Durable parse output with every invalidation dimension encoded in its identity. |
-| Enriched plan | Cross-file semantic relationships, evidence, and fallback diagnostics over the complete repository. |
-| Candidate generation | Self-contained database, manifest v2, metadata, readiness marker, and validation evidence. |
-| Materialization result | Active generation, graph summary, reused/rebuilt artifact counts, pending runs, cleanup status, and physical/logical sizes. |
+| Compact manifest v5 entry | Path, content hash, language, partition ID, artifact key, row counts, and timestamp. |
+| Candidate generation | Self-contained database, manifest, metadata, readiness marker, sidecar files, and validation evidence. |
+| Materialization result | Active generation, graph summary, artifact counts, memory high-water marks, spill bytes, pending runs, and cleanup status. |
 
 ## Important invariants
 
-- Removing source files after scanning does not invalidate a self-contained execution plan.
-- Parallel planning preserves stable collected output.
+- Source snapshots and working buffers are bounded and fallibly reserved.
+- Parsing, staging, search construction, and database loading preserve deterministic output.
 - Only ontology-approved relationship endpoints enter the graph.
 - The active database is never partition-deleted, appended to, or replaced in place.
-- Publication advances the database and manifest as one generation.
-- A failed build or publication preserves the previously active generation.
-- A live generation lease delays retirement; the last reader and later runtime entries retry deletion.
-- Legacy manifests force one complete artifact rebuild and schema-v1 storage rejects mutation until explicit reinstall.
+- Publication advances every generation-owned artifact atomically.
+- A failed build, budget kill, coordinator death, orphan reap, or publication failure preserves the previously active generation.
+- A live generation lease delays retirement; later runtime entries retry deletion.
+- Legacy manifests force one bounded complete rebuild and schema-v1 storage rejects mutation until explicit reinstall.
 - Refresh orchestrates this pipeline rather than implementing a second indexing path.
 
 ## Source evidence
 
 | Stage | Verified symbol and path |
 | --- | --- |
+| Coordinator and worker envelope | `src/coordinator.rs`, `src/materialization_worker.rs`, and internal dispatch in `src/bootstrap.rs`. |
 | Pipeline orchestration | `execute_materialization_pipeline` and `execute_scanned_materialization` in `src/execution/run.rs`. |
-| Parallel plan building | `build_execution_plan` in `src/execution/parallel.rs`. |
-| Parsing and row creation | `src/parser` and `src/syntax_materializer`. |
-| Semantic enrichment | `enrich_semantics` in `src/semantic_enrichment/mod.rs`. |
-| Deterministic staging | `write_graph_rows` in `src/staging_writer/writer.rs`. |
-| Candidate writing, validation, publication, and recovery | Storage lifecycle and database writer modules under `src/db_writer`. |
+| Bounded execution | `build_execution_plan` in `src/execution/parallel.rs` and `src/artifact_store.rs`. |
+| Deterministic spill and merge | Modules under `src/staging_writer`. |
+| Disk-backed search | Modules under `src/search_index`. |
+| Isolated database phases | `src/db_writer/phase.rs`, `src/db_writer/rss.rs`, and `src/db_writer/write.rs`. |
+| Publication and recovery | Storage lifecycle modules under `src/db_writer` and `src/storage`. |
 
 Related: [Graph Runtime](./graph-runtime.md), [Graph Storage Lifecycle and Recovery](./graph-storage-lifecycle.md), and [Architecture Invariants](./invariants.md).

@@ -7,7 +7,7 @@ tags:
 - decisions
 - graph-storage
 - invariants
-timestamp: 2026-08-17
+timestamp: 2026-08-18
 title: Architecture Invariants
 type: architecture
 ---
@@ -22,37 +22,40 @@ These constraints are the shortest durable test for whether a change still fits 
 3. **Repository context is canonical per operation.** Source root, storage mode, configuration, and manifest selection are resolved once and reused by the handler.
 4. **Validation precedes execution.** Canonical defaults and operation rules are applied before side effects or storage access.
 5. **Graph reads are bounded and non-mutating.** Raw statements are single, parameterized, read-only, and result-limited; adapters never bypass the Graph Read Service.
-6. **Materialization has one pipeline.** Explicit builds, setup, lifecycle refresh, and watch refresh converge on Source Scanner -> Execution Planner -> Semantic Enricher -> Graph Writer -> Graph Store.
-7. **Execution plans are self-contained.** Later stages do not depend on source files remaining present after scanning.
-8. **Output is deterministic across execution modes.** Parallel parsing, enrichment, and merging preserve stable identities and collection order.
-9. **Relationships carry evidence and satisfy the ontology.** Cross-file inference records evidence or fallback diagnostics, and relationship endpoints are validated before persistence.
+6. **Materialization has one pipeline.** Explicit builds, setup, lifecycle refresh, and watch refresh converge on Source Scanner -> bounded Execution Planner -> deterministic Graph Writer -> Search Index Builder -> isolated database loading -> Graph Store.
+7. **Execution state is bounded.** Required source snapshots, partition workers, spill buffers, merge fan-in, search construction, and database phases have explicit fallible limits.
+8. **Output is deterministic across execution modes.** Parallel parsing and external merging preserve stable identities, merge priority, and collection order.
+9. **Relationships satisfy the ontology.** Parsed relationship endpoints are validated before persistence; retired semantic inference is not part of production materialization.
 10. **Managed graph generations are immutable.** Every mutation builds a fresh self-contained candidate; the active database is never partition-deleted, appended to, or replaced in place.
 11. **Publication is one atomic pointer change.** A candidate database, manifest, metadata, and readiness marker are validated before `active.json` advances under the state lock. Failure preserves the prior active generation.
 12. **Writer and reader lifetimes are explicit.** One exclusive writer lock covers the complete mutation. Each read holds a shared lease on exactly one generation until all database access is complete.
 13. **Retirement is lease-aware and immediate.** Superseded generations have no timed retention; they are deleted after the last reader releases, with retryable failures visible as `cleanup_pending`.
 14. **Run ownership is durable.** Every build has a leased, journaled `RunWorkspace`; explicit finish or abort reports cleanup errors, and later runtime entry deterministically recovers abandoned work.
 15. **Cleanup is confined and primary errors survive.** Cleanup rejects symlinks and escaping paths, is idempotent, and never masks the failure that caused abort.
-16. **Artifacts optimize parsing, not persistence correctness.** Raw partitions are content-addressed across every invalidation dimension; all partitions are assembled deterministically and global semantic enrichment always reruns.
+16. **Artifacts optimize parsing, not persistence correctness.** Raw partitions are content-addressed across every invalidation dimension, compact manifest v5 carries only publication metadata, and all partitions are externally assembled deterministically.
 17. **Legacy state is read-only until explicit reinstall.** Schema-v1 reads remain available; mutations return `legacy_storage_requires_reinstall`. Successful reinstall deletes renamed legacy state immediately after validated v2 activation.
-18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.\n19. **Refresh ownership and admission are bounded.** One nonblocking refresh lease holder creates the watcher; followers remain read-only. Event churn collapses to one bounded dirty state, overflow forces a full rescan, CodebaseGraph-owned roots are never admitted, and only refresh intent may close an unchanged writer session without publication.
+18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.
+19. **Refresh ownership and admission are bounded.** One nonblocking refresh lease holder creates the watcher; followers remain read-only. Event churn collapses to one bounded dirty state, overflow forces a full rescan, CodebaseGraph-owned roots are never admitted, and only refresh intent may close an unchanged writer session without publication.
+20. **MCP graph access has one repository owner.** One coordinator lease holder owns the API core and every MCP Ladybug open; followers route bounded authenticated loopback frames and take over after operating-system lock release.
+21. **Materialization workers cannot outlive supervision.** One worker lease covers request creation through result reconciliation. The child begins only after durable identity and a start gate, exits when its parent control pipe closes, and a successor reaps the recorded PID before cleanup or new work.
 
 ## Knowledge invariants
 
-19. **Curated source is distinct from generated state.** `knowledge/` is authored intent; `.kwiki/` is disposable projection state; `.codebaseGraph/` is source-graph state.
-20. **OKF consumption is forward-compatible.** Unknown types, extensions, and links remain consumable and visible while required conformance errors are reported separately.
-21. **Wiki publication is generation-atomic.** Failed compilation or rendering preserves the last valid projection, and stale concurrent work cannot replace newer output.
-22. **Rendering treats bundle content as untrusted.** Markdown, HTML, links, fragments, and resource identifiers are sanitized before publication.
-23. **Authoring is confined and concurrency-safe.** Writes stay beneath configured bundle roots, reject traversal and escaping links, use atomic replacement, and reject stale content hashes.
-24. **HTTP is a read-only local preview boundary.** It binds locally by default, applies restrictive browser headers, and does not become an alternate authoring surface.
-25. **Graph context is optional.** The wiki calls only the Graph Runtime public API; graph failure returns explicit degraded context without blocking curated knowledge.
-26. **Stable identities and URLs outlive implementation refactors.** Concept IDs, directory projections, backlink targets, and published routes remain deterministic.
+22. **Curated source is distinct from generated state.** `knowledge/` is authored intent; `.kwiki/` is disposable projection state; `.codebaseGraph/` is source-graph state.
+23. **OKF consumption is forward-compatible.** Unknown types, extensions, and links remain consumable and visible while required conformance errors are reported separately.
+24. **Wiki publication is generation-atomic.** Failed compilation or rendering preserves the last valid projection, and stale concurrent work cannot replace newer output.
+25. **Rendering treats bundle content as untrusted.** Markdown, HTML, links, fragments, and resource identifiers are sanitized before publication.
+26. **Authoring is confined and concurrency-safe.** Writes stay beneath configured bundle roots, reject traversal and escaping links, use atomic replacement, and reject stale content hashes.
+27. **HTTP is a read-only local preview boundary.** It binds locally by default, applies restrictive browser headers, and does not become an alternate authoring surface.
+28. **Graph context is optional.** The wiki calls only the Graph Runtime public API; graph failure returns explicit degraded context without blocking curated knowledge.
+29. **Stable identities and URLs outlive implementation refactors.** Concept IDs, directory projections, backlink targets, and published routes remain deterministic.
 
 ## Verification invariants
 
-27. **Release checks exercise packaged behavior.** The separate Release Verifier validates repository policy, versions, workflows, CLI artifacts, and MCP negotiation as shipped.
-28. **Intent and implementation evidence remain separate.** Scryer is the authored responsibility model; the codebase graph and tests are evidence of the current implementation. Neither silently substitutes for the other.
-29. **Architecture documentation records durable boundaries, not transient counts.** Snapshot metrics may qualify confidence, but responsibilities, dependencies, failure modes, and recovery rules are what this wiki preserves.
-30. **Idle storage has a measurable acceptance state.** With no readers, managed v2 has exactly one generation, no run directories, no pending cleanup, stable graph results, and churn size within the greater of 10% or 8 MiB above a clean-control rebuild.
+30. **Release checks exercise packaged behavior.** The separate Release Verifier validates repository policy, versions, workflows, CLI artifacts, and MCP negotiation as shipped.
+31. **Intent and implementation evidence remain separate.** Scryer is the authored responsibility model; the codebase graph and tests are evidence of the current implementation. Neither silently substitutes for the other.
+32. **Architecture documentation records durable boundaries, not transient counts.** Snapshot metrics may qualify confidence, but responsibilities, dependencies, failure modes, and recovery rules are what this wiki preserves.
+33. **Idle storage has a measurable acceptance state.** With no readers, managed v2 has exactly one generation, no run directories, no pending cleanup, stable graph results, and churn size within the greater of 10% or 8 MiB above a clean-control rebuild.
 
 ## When an invariant changes
 

@@ -9,6 +9,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
+const SOURCE_SNAPSHOT_ATTEMPTS: usize = 3;
+const SOURCE_SNAPSHOT_DIRECTORY: &str = "source-snapshots";
+
 pub(crate) struct SourceScan {
     pub(crate) input: NativeSyntaxMaterializationRequest,
     pub(crate) profiles: Vec<LanguageProfile>,
@@ -21,6 +24,7 @@ pub(crate) struct SourceScan {
 pub(crate) fn scan_sources(
     request: &NativeSyntaxMaterializationRequest,
 ) -> Result<SourceScan, NativeError> {
+    request.validate_resource_limits()?;
     validate_profile_grammar_versions(&request.profiles)?;
     let source_root = PathBuf::from(&request.source_root);
     let profiles = ProfileSet::new(&request.profiles);
@@ -59,17 +63,18 @@ pub(crate) fn scan_sources(
         if language.is_none() {
             diagnostics.push(format!("Skipped unsupported file: {relative_path}"));
         }
-        let source = if language.is_some() {
-            Some(fs::read_to_string(path)?)
+        let byte_len = if language.is_some() {
+            fs::metadata(path)?.len()
         } else {
-            None
+            0
         };
         let snapshot = SourceSnapshot {
             path: relative_path.clone(),
             absolute_path: path.to_string_lossy().to_string(),
             content_hash,
             language,
-            source,
+            byte_len,
+            source: None,
         };
         if snapshot.language.is_some() {
             supported.insert(relative_path.clone(), snapshot.clone());
@@ -78,6 +83,8 @@ pub(crate) fn scan_sources(
     }
 
     let diff = compute_diff(request, &supported, full_rebuild);
+    let rebuild_paths = diff.rebuild_paths().into_iter().collect::<BTreeSet<_>>();
+    spool_supported_snapshots(request, &mut snapshots, &mut supported, &rebuild_paths)?;
     let selected_languages = supported
         .values()
         .filter_map(|snapshot| snapshot.language.clone())
@@ -90,6 +97,127 @@ pub(crate) fn scan_sources(
         diagnostics,
         diff,
     })
+}
+
+fn spool_supported_snapshots(
+    request: &NativeSyntaxMaterializationRequest,
+    snapshots: &mut BTreeMap<String, SourceSnapshot>,
+    supported: &mut BTreeMap<String, SourceSnapshot>,
+    required_paths: &BTreeSet<String>,
+) -> Result<(), NativeError> {
+    if required_paths.is_empty() {
+        return Ok(());
+    }
+
+    let snapshot_root = Path::new(&request.staging_dir).join(SOURCE_SNAPSHOT_DIRECTORY);
+    fs::create_dir_all(&snapshot_root)?;
+    for snapshot in supported.values_mut() {
+        if !required_paths.contains(&snapshot.path) {
+            continue;
+        }
+        let source_path = PathBuf::from(&snapshot.absolute_path);
+        let (snapshot_path, byte_len) = spool_stable_source(
+            &source_path,
+            &snapshot_root,
+            &snapshot.path,
+            &snapshot.content_hash,
+        )?;
+        snapshot.absolute_path = snapshot_path.to_string_lossy().into_owned();
+        snapshot.byte_len = byte_len;
+        snapshots.insert(snapshot.path.clone(), snapshot.clone());
+    }
+    Ok(())
+}
+
+fn spool_stable_source(
+    source_path: &Path,
+    snapshot_root: &Path,
+    relative_path: &str,
+    expected_hash: &str,
+) -> Result<(PathBuf, u64), NativeError> {
+    let partition_id = hash::partition_id(relative_path);
+    let shard = snapshot_root.join(&partition_id[..2]);
+    fs::create_dir_all(&shard)?;
+    let mut last_error = None;
+
+    for attempt in 0..SOURCE_SNAPSHOT_ATTEMPTS {
+        let temporary_path = shard.join(format!(
+            ".{partition_id}.{}.{}.snapshot",
+            std::process::id(),
+            attempt
+        ));
+        match fs::copy(source_path, &temporary_path) {
+            Ok(byte_len) => {
+                let copied_hash = match hash::sha256_file(&temporary_path) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        last_error = Some(error.to_string());
+                        let _ = fs::remove_file(&temporary_path);
+                        continue;
+                    }
+                };
+                let current_hash = match hash::sha256_file(source_path) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        last_error = Some(error.to_string());
+                        let _ = fs::remove_file(&temporary_path);
+                        continue;
+                    }
+                };
+                if copied_hash != expected_hash || current_hash != expected_hash {
+                    last_error =
+                        Some("source changed after its scan metadata was captured".to_string());
+                    let _ = fs::remove_file(&temporary_path);
+                    continue;
+                }
+
+                let final_path = shard.join(format!("{partition_id}-{copied_hash}.snapshot"));
+                if final_path.exists() {
+                    let existing_hash = hash::sha256_file(&final_path)?;
+                    if existing_hash == copied_hash {
+                        let _ = fs::remove_file(&temporary_path);
+                        return Ok((final_path, byte_len));
+                    }
+                    return Err(NativeError::InvalidInput(format!(
+                        "source snapshot collision for {relative_path}"
+                    )));
+                }
+                fs::rename(&temporary_path, &final_path)?;
+                return Ok((final_path, byte_len));
+            }
+            Err(error) => {
+                last_error = Some(error.to_string());
+                let _ = fs::remove_file(&temporary_path);
+            }
+        }
+    }
+
+    Err(NativeError::InvalidInput(format!(
+        "source remained unstable after {SOURCE_SNAPSHOT_ATTEMPTS} snapshot attempts: {relative_path}: {}",
+        last_error.unwrap_or_else(|| "unknown snapshot failure".to_string())
+    )))
+}
+
+pub(crate) fn spool_snapshot_for_build(
+    request: &NativeSyntaxMaterializationRequest,
+    snapshot: &SourceSnapshot,
+) -> Result<SourceSnapshot, NativeError> {
+    let snapshot_root = Path::new(&request.staging_dir).join(SOURCE_SNAPSHOT_DIRECTORY);
+    let current_path = PathBuf::from(&snapshot.absolute_path);
+    if current_path.starts_with(&snapshot_root) {
+        return Ok(snapshot.clone());
+    }
+    fs::create_dir_all(&snapshot_root)?;
+    let (snapshot_path, byte_len) = spool_stable_source(
+        &current_path,
+        &snapshot_root,
+        &snapshot.path,
+        &snapshot.content_hash,
+    )?;
+    let mut spooled = snapshot.clone();
+    spooled.absolute_path = snapshot_path.to_string_lossy().into_owned();
+    spooled.byte_len = byte_len;
+    Ok(spooled)
 }
 
 fn validate_profile_grammar_versions(profiles: &[LanguageProfile]) -> Result<(), NativeError> {
@@ -325,6 +453,10 @@ mod tests {
             atomic_rebuild: false,
             strict: true,
             parallel: false,
+            worker_memory_mib: 768,
+            rust_memory_mib: 384,
+            spill_chunk_mib: 32,
+            max_parallelism: 2,
             progress: false,
         }
     }
@@ -340,6 +472,8 @@ mod tests {
             edge_ids: Vec::new(),
             node_types: BTreeMap::new(),
             edge_types: BTreeMap::new(),
+            node_count: 0,
+            edge_count: 0,
             materialized_at: "unix:0".to_string(),
         }
     }
@@ -356,6 +490,7 @@ mod tests {
             ontology: "code_ontology_v1".to_string(),
             parser_version: "native-test".to_string(),
             graph_build_digest: None,
+            search_backend: None,
             files: BTreeMap::from([
                 (
                     "src/caller.rs".to_string(),
@@ -390,6 +525,7 @@ mod tests {
             ontology: "code_ontology_v1".to_string(),
             parser_version: "native-test".to_string(),
             graph_build_digest: Some(digest),
+            search_backend: None,
             files: BTreeMap::from([(
                 "src/caller.rs".to_string(),
                 manifest_entry(
@@ -431,6 +567,68 @@ mod tests {
     }
 
     #[test]
+    fn scan_spools_only_paths_that_require_rebuilding() {
+        let root = unique_temp_dir("codebase-graph-scan-required-snapshots");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/changed.rs"), "fn changed() {}\n").unwrap();
+        fs::write(root.join("src/reused.rs"), "fn reused() {}\n").unwrap();
+
+        let initial_request = request(&root, None);
+        let initial = scan_sources(&initial_request).unwrap();
+        let digest = initial_request.graph_build_compatibility_digest().unwrap();
+        let previous = NativeManifest {
+            schema_version: initial_request.manifest_schema_version,
+            ontology: initial_request.ontology.clone(),
+            parser_version: initial_request.parser_version.clone(),
+            graph_build_digest: Some(digest),
+            search_backend: None,
+            files: initial
+                .supported
+                .iter()
+                .map(|(path, snapshot)| {
+                    let mut entry = manifest_entry(path, Some(&"a".repeat(64)));
+                    entry.content_hash = snapshot.content_hash.clone();
+                    entry.language = snapshot.language.clone().unwrap();
+                    (path.clone(), entry)
+                })
+                .collect(),
+        };
+        fs::write(root.join("src/changed.rs"), "fn changed() { reused(); }\n").unwrap();
+
+        let scan = scan_sources(&request(&root, Some(previous))).unwrap();
+        let changed = &scan.supported["src/changed.rs"];
+        let reused = &scan.supported["src/reused.rs"];
+
+        assert!(Path::new(&changed.absolute_path)
+            .components()
+            .any(|component| component.as_os_str() == SOURCE_SNAPSHOT_DIRECTORY));
+        assert_eq!(
+            PathBuf::from(&reused.absolute_path),
+            root.join("src/reused.rs")
+        );
+        assert!(scan
+            .supported
+            .values()
+            .all(|snapshot| snapshot.source.is_none()));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn snapshot_copy_rejects_content_that_no_longer_matches_scan_metadata() {
+        let root = unique_temp_dir("codebase-graph-scan-unstable-snapshot");
+        fs::create_dir_all(&root).unwrap();
+        let source = root.join("source.rs");
+        let snapshots = root.join("snapshots");
+        fs::write(&source, "fn current() {}\n").unwrap();
+
+        let error =
+            spool_stable_source(&source, &snapshots, "source.rs", "stale-hash").unwrap_err();
+
+        assert!(error.to_string().contains("remained unstable after 3"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn v2_manifest_scans_all_supported_files_even_with_candidate_paths() {
         let root = unique_temp_dir("codebase-graph-scan-v2");
         fs::create_dir_all(root.join("src")).unwrap();
@@ -445,6 +643,7 @@ mod tests {
             ontology: "code_ontology_v1".to_string(),
             parser_version: "native-test".to_string(),
             graph_build_digest: Some(compatible_digest),
+            search_backend: None,
             files: BTreeMap::from([
                 (
                     "src/caller.rs".to_string(),
@@ -487,6 +686,7 @@ mod tests {
             ontology: "code_ontology_v1".to_string(),
             parser_version: "native-test".to_string(),
             graph_build_digest: Some("stale".to_string()),
+            search_backend: None,
             files: BTreeMap::from([
                 (
                     "src/caller.rs".to_string(),
@@ -516,6 +716,7 @@ mod tests {
             ontology: "code_ontology_v1".to_string(),
             parser_version: "native-test".to_string(),
             graph_build_digest: Some(digest),
+            search_backend: None,
             files: BTreeMap::from([
                 (
                     "src/caller.rs".to_string(),
@@ -558,6 +759,7 @@ mod tests {
                     .graph_build_compatibility_digest()
                     .unwrap(),
             ),
+            search_backend: None,
             files: BTreeMap::from([
                 (
                     "src/caller.rs".to_string(),

@@ -7,7 +7,7 @@ tags:
 - graph-storage
 - recovery
 - runbook
-timestamp: 2026-08-17
+timestamp: 2026-08-18
 title: Graph Storage Lifecycle and Recovery
 type: architecture
 ---
@@ -25,6 +25,7 @@ storage_root/
   generations/
     gen-<id>/
       database/
+      search sidecar siblings
       manifest.json
       metadata.json
       READY
@@ -37,6 +38,17 @@ storage_root/
       candidate/
   artifacts/
     <content-addressed raw partitions>
+  workers/
+    worker-<build-id>-<pid>-<sequence>/
+      request.json
+      result.json
+      stderr.log
+      START
+  coordinator.lock
+  coordinator.json
+  refresh.lock
+  worker.lock
+  worker.json
   writer.lock
   state.lock
 ```
@@ -53,8 +65,18 @@ storage_root/
 6. **Only one managed generation remains at idle.** With no readers and no cleanup error, the active generation is the only generation directory.
 7. **Paths are confined.** Cleanup accepts only expected descendants of the managed root, rejects symlinks and traversal, and never follows links into user data.
 8. **Direct paths remain transactional.** Explicit `--db` and `--manifest` targets use adjacent shadow files plus a checksummed recovery journal so the pair cannot remain half-published after a crash.
+9. **MCP database ownership is singular.** One `coordinator.lock` holder owns the API core and Ladybug access; follower MCP processes route over authenticated loopback and never open graph databases.
+10. **Worker ownership survives crashes.** One `worker.lock` holder records the child build ID and PID before releasing its start gate. A worker cannot continue after its coordinator pipe closes, and a successor reaps the recorded PID before cleanup or new work.
 
 These rules replace the stale-file write-intent heuristic and all in-place partition deletion or replacement. The compatibility `atomic_rebuild` request field remains accepted but does not re-enable in-place mutation.\n\n## Refresh ownership\n\n`refresh.lock` is independent from `writer.lock` and `state.lock`. Its nonblocking exclusive holder is the only process allowed to create a repository watcher. Followers do not materialize and retry election every second with up to 250 ms of deterministic jitter; operating-system lock release enables takeover without a persisted leader record. On acquisition, the new leader reconciles the active manifest before it begins watching.\n\nManaged storage places the lock under `storage_root`. Direct storage derives a destination-scoped lock from the explicit database and manifest pair. Lock files reject symlinks. Refresh candidates still acquire the ordinary writer lock for the complete mutation, and an unchanged refresh may close its write session without publishing after comparing against the latest active manifest.
+
+## Coordinator and worker recovery
+
+`coordinator.lock` is scoped exactly like the repository runtime: beneath managed `storage_root`, or derived deterministically from a Direct database/manifest pair. The owner publishes a loopback-only endpoint, random capability token, protocol version, and PID in `coordinator.json`; Unix permissions are restricted to mode 0600. A successor removes the state file only when its token still matches, so stale shutdown cannot erase a newer owner.
+
+`worker.lock` is independent from coordinator, refresh, writer, and state locks. Its holder writes `worker.json` atomically with protocol version, build ID, and child PID, then creates the workspace `START` gate. The child's inherited control pipe is the primary parent-death signal. After leader death, the next holder waits at most five seconds for the recorded child to exit, removes only matching state, cleans only real `worker-*` directories, and then enters ordinary run-journal recovery.
+
+If a worker publishes successfully but dies before writing its result, the supervisor compares the publication marker and active validated manifest, then synthesizes the completed response. A killed or failed worker never causes an incomplete candidate to become active.
 
 ## Run workspace lifecycle
 
@@ -72,7 +94,7 @@ On later runtime entry, the janitor takes the run lease before acting. It remove
 
 Raw source partitions are stored content-addressably. An artifact key includes repository identity, relative path, content hash, language, parser version, profile version, ontology version, and artifact schema version.
 
-A materialization run revalidates source hashes, reuses valid unchanged artifacts, rebuilds missing or corrupt entries, assembles every partition in deterministic order, and reruns global semantic enrichment before writing a fresh database. Manifest v2 records each `artifact_key`; a legacy manifest therefore causes one full rebuild. Artifact garbage collection retains entries referenced by the active manifest or a live run and removes everything else.
+A materialization run revalidates source hashes, reuses valid unchanged artifacts, rebuilds missing or corrupt entries, and reloads each partition only for its current bounded pass. Compact manifest v5 retains path, content hash, language, partition ID, artifact key, row counts, and timestamp; readable v4 generations receive one bounded full rebuild on their next write. Artifact garbage collection retains entries referenced by the active manifest or a live run and removes everything else.
 
 Artifact reuse reduces parsing work. It does not make graph database files incremental or mutable.
 
@@ -90,15 +112,18 @@ Health and materialization output expose:
 - active generation;
 - reused and rebuilt artifact counts;
 - pending run count and cleanup status;
-- physical and logical database sizes;\n- refresh role, leader process, pending state, coalesced and overflow counts, deduplicated refreshes, and the latest no-op reason.
+- physical and logical database sizes;
+- parsing, staging, search, and database phase high-water marks plus spill bytes;
+- configured Rust and worker RSS limits;
+- refresh role, coordinator/leader PID, active worker PID, pending state, coalesced and overflow counts, deduplicated refreshes, and the latest no-op reason.
 
 A healthy idle managed store reports format v2, one active generation, zero run directories, and `cleanup_pending = false`.
 
 ## Recovery runbook
 
-1. Confirm the process reporting refresh role `leader`, then quiesce the repository watcher and any long-lived readers before reinstalling or investigating retirement.
+1. Confirm the reported coordinator PID, refresh role `leader`, and worker PID. Quiesce the repository watcher and long-lived readers before reinstalling or investigating retirement; do not delete coordinator or worker state while their locks are held.
 2. Run health and record the storage format, active generation, pending runs, cleanup status, and physical/logical sizes.
-3. If a v2 run or publication was interrupted, enter the runtime through health or another repository operation. The janitor will acquire unlocked run journals and recover them before normal work continues.
+3. If a coordinator or worker died, allow a follower to acquire the released control locks. It will reap the recorded worker before entering the runtime. If a v2 run or publication was interrupted, health or another repository operation lets the janitor acquire unlocked run journals and recover them before normal work continues.
 4. If `cleanup_pending` remains true, confirm no process holds the run or retired-generation lease, then enter the runtime again. Do not manually delete a locked workspace or generation.
 5. For a schema-v1 repository, use explicit reinstall. Verify the new active generation and graph queries before restarting the watcher; successful reinstall deletes the renamed legacy state immediately.
 6. Confirm the idle store contains exactly one generation and no run directories. On Unix, also confirm no deleted legacy database file remains open.
@@ -108,7 +133,7 @@ If cleanup rejects a path or symlink, preserve the reported path and investigate
 
 ## Verification expectations
 
-Lifecycle regressions cover failure at parsing, enrichment, staging, database validation, and publication; abandoned-run recovery; symlink rejection; lease-delayed retirement; stale-base rejection; schema-v1 write rejection; reinstall restoration and immediate legacy deletion; direct-mode paired recovery; artifact invalidation and corruption; deterministic clean-rebuild equivalence; and artifact garbage collection.
+Lifecycle regressions cover failure at parsing, staging, search construction, isolated database loading, database validation, and publication; abandoned-run recovery; symlink rejection; lease-delayed retirement; stale-base rejection; schema-v1 write rejection; reinstall restoration and immediate legacy deletion; direct-mode paired recovery; artifact invalidation and corruption; deterministic clean-rebuild equivalence; and artifact garbage collection.
 
 The churn acceptance test performs 10–20 updates. At idle it must leave one managed generation and no run directories, preserve graph results, and keep final physical database size within the greater of 10% or 8 MiB above a clean-control rebuild.
 

@@ -6,7 +6,7 @@ tags:
 - components
 - graph-runtime
 - rust
-timestamp: 2026-08-17
+timestamp: 2026-08-18
 title: Graph Runtime Architecture
 type: architecture
 ---
@@ -18,11 +18,11 @@ The Graph Runtime is the product executable and embeddable library. It exposes o
 
 | Layer | Components | Accountability |
 | --- | --- | --- |
-| Process and adapters | Process Bootstrap, CLI Adapter, Repository Lifecycle Adapter, CLI Materialization Adapter, Repository Refresh Adapter, MCP Server Adapter, Command Request Mapper | Select an interface, translate external input into public requests, and frame results without changing product semantics. |
+| Process and adapters | Process Bootstrap, CLI Adapter, Repository Lifecycle Adapter, CLI Materialization Adapter, Repository Refresh Adapter, MCP Server Adapter, Repository Coordinator, Command Request Mapper | Select an interface, elect one repository-scoped MCP owner, translate external input into public requests, and frame results without changing product semantics. |
 | Public boundary | Public API Contracts, Public API Facade, Unified API Core, Catalog Provider, Response Presenter | Define stable requests and responses, register operations once, dispatch them, and present typed or compact block output. |
 | Runtime preparation | Request Normalizer, Repository Runtime Resolver | Apply canonical defaults, reject invalid requests, resolve schema-v1 versus storage-v2 state, and select Managed or Direct storage mode. |
-| Application services | Graph Read Service, Materialization API, Repository Lifecycle Service, Repository Refresh Service | Execute graph reads, generation builds, installation lifecycle, and refresh behavior independently of transport. |
-| Build pipeline | Source Scanner, Execution Planner, Semantic Enricher, Graph Writer | Revalidate inputs, reuse or rebuild raw partitions, enrich all partitions, and assemble deterministic candidate rows. |
+| Application services | Graph Read Service, Materialization API, Materialization Worker, Repository Lifecycle Service, Repository Refresh Service | Execute graph reads, isolated generation builds, installation lifecycle, and refresh behavior independently of transport. |
+| Build pipeline | Source Scanner, Execution Planner, Graph Writer, Search Index Builder, Database Phase Runner | Revalidate inputs, reuse or rebuild raw partitions, externally merge deterministic rows, build disk-backed search, and load a candidate within hard memory limits. |
 | Persistence | Graph Store | Own immutable generation publication, read leases, abandoned-run recovery, retirement, direct-mode recovery, and partition artifacts. |
 
 ## Dependency direction
@@ -30,9 +30,9 @@ The Graph Runtime is the product executable and embeddable library. It exposes o
 Adapters depend inward on the Public API Facade and Public API Contracts. The facade delegates exactly once to the Unified API Core. The core resolves runtime context and normalization before dispatching to application services. Application services may depend on the build pipeline and Graph Store; storage and pipeline components do not depend on CLI or MCP details.
 
 ```text
-CLI / MCP / embedded client
-        -> Public API Facade
-        -> Unified API Core
+CLI / embedded client -> Public API Facade -> Unified API Core
+MCP stdio or HTTP -> Public API Facade -> repository coordinator loopback route
+                                      -> owner Unified API Core
         -> normalize + resolve repository runtime
         -> registered application operation
         -> Response Presenter
@@ -49,13 +49,21 @@ The core owns three cross-cutting duties:
 - normalize and validate requests before side effects;
 - map internal failures into stable public errors.
 
+## Central MCP ownership and process isolation
+
+All MCP processes for one managed storage root or Direct destination pair contend for one nonblocking `coordinator.lock`. The holder writes a mode-0600 loopback endpoint and random token to `coordinator.json`, owns the Public API Core, and is the only MCP process that opens Ladybug databases. Followers keep only the bounded route state, retry the owner on connection failure, and independently attempt takeover. Their monitor detects owner death and operating-system lock release permits takeover within five seconds.
+
+Refresh and coordinator-triggered explicit materialization use the same versioned Materialization Worker protocol. The owner writes request/result files under one worker workspace, holds `worker.lock`, drains bounded newline-delimited progress, and samples RSS every 25 ms. A parent-owned pipe and persisted `worker.json` identity prevent an orphan from continuing after coordinator death: the child exits when the pipe closes, and the next owner reaps the recorded PID and recovers abandoned run journals before starting another worker. Standalone CLI builds remain short-lived and execute the canonical pipeline directly.
+
+Graph reads do not wait for a build-wide in-process lock. They continue leasing the previous immutable active generation until candidate validation and atomic publication advance `active.json`.
+
 ## Read and write separation
 
 The Graph Read Service reads health and metadata, performs ranked search and relationship traversal, and executes bounded read-only statements. `validate_read_only_statement` rejects empty, compound, or write-capable statements before `execute_read_only_query` reaches the Graph Store.
 
 A managed read resolves `active.json` under a shared state lock and holds a shared lease on that generation for the complete database operation. This lease, rather than a stale timestamp, prevents retirement while a reader is active.
 
-Graph writes enter through the Materialization API and [Materialization Pipeline](./materialization-pipeline.md). The Graph Writer produces a deterministic candidate; the Graph Store holds the exclusive writer lock for the complete mutation, validates the reopened candidate, and atomically publishes its generation pointer. It never applies source deltas to the active database.
+Graph writes enter through the Materialization API and [Materialization Pipeline](./materialization-pipeline.md). The bounded pipeline releases each partition after use, stages deterministic sorted runs, builds a generation-owned disk search sidecar, and runs Ladybug loading in an RSS-supervised child. Semantic enrichment is retired from production; its legacy options are accepted only for compatibility. The Graph Store holds the exclusive writer lock for the complete mutation, validates the reopened candidate and sidecar, and atomically publishes its generation pointer. It never applies source deltas to the active database.
 
 ## Storage and recovery boundary
 
@@ -78,7 +86,9 @@ The Repository Refresh Service supports continuous and one-shot refresh. Continu
 
 | Boundary | Current implementation evidence |
 | --- | --- |
-| Process selection | `src/bin/codebase-graph.rs`; Process Bootstrap symbol `run_process_args`. |
+| Process selection | `src/bin/codebase-graph.rs`; Process Bootstrap symbol `run_process_args`; internal materialization worker dispatch in `src/bootstrap.rs`. |
+| MCP ownership and routing | `src/coordinator.rs`; facade routing in `src/api/facade.rs`. |
+| Worker supervision | `src/materialization_worker.rs`; worker state and control paths in `src/storage/layout.rs`. |
 | Public facade and core | `src/api/facade.rs`; `src/api/core.rs`. |
 | Graph reads | `src/api/graph_read.rs`. |
 | Request preparation | `src/api/normalization.rs` and repository-runtime resolution under `src/api`. |

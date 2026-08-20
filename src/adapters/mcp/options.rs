@@ -5,7 +5,7 @@ use crate::api::context::{
     DEFAULT_MAX_PARALLELISM, DEFAULT_RUST_MEMORY_MIB, DEFAULT_SPILL_CHUNK_MIB,
     DEFAULT_WORKER_MEMORY_MIB,
 };
-use crate::api::{CodebaseGraphApi, RepoSelector};
+use crate::api::{CoordinatorCodebaseGraphApi, RepoSelector};
 use std::{env, net::TcpListener, path::PathBuf};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,7 +26,7 @@ impl Default for McpRuntimeSettings {
             refresh_policy: GraphRefreshPolicy::Leader,
             refresh_backend: GraphRefreshBackend::Auto,
             include_fts: true,
-            semantic_enrichment: true,
+            semantic_enrichment: false,
             worker_memory_mib: DEFAULT_WORKER_MEMORY_MIB,
             rust_memory_mib: DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: DEFAULT_SPILL_CHUNK_MIB,
@@ -41,7 +41,7 @@ pub(crate) struct McpServeOptions {
     pub(in crate::adapters) config: Option<PathBuf>,
     pub(in crate::adapters) db: Option<PathBuf>,
     pub(in crate::adapters) manifest: Option<PathBuf>,
-    pub(in crate::adapters) api: Option<CodebaseGraphApi>,
+    pub(in crate::adapters) api: Option<CoordinatorCodebaseGraphApi>,
     pub(in crate::adapters) refresh_policy: Option<GraphRefreshPolicy>,
     pub(in crate::adapters) worker_memory_mib: Option<u64>,
     pub(in crate::adapters) rust_memory_mib: Option<u64>,
@@ -181,7 +181,7 @@ fn settings_from_install_config(config: GraphInstallConfig) -> McpRuntimeSetting
         refresh_policy: config.refresh.policy,
         refresh_backend: config.refresh.backend,
         include_fts: config.materialization.include_fts,
-        semantic_enrichment: config.materialization.semantic_enrichment,
+        semantic_enrichment: false,
         worker_memory_mib: config.materialization.worker_memory_mib,
         rust_memory_mib: config.materialization.rust_memory_mib,
         spill_chunk_mib: config.materialization.spill_chunk_mib,

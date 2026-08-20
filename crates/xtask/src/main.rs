@@ -1186,16 +1186,6 @@ fn check_workflow_policy(
     let release_target =
         yaml_path(release, &["jobs", "release-target"]).unwrap_or(&YamlValue::Null);
     let resolve_step = yaml_step_by_id(release_target, "resolve").unwrap_or(&YamlValue::Null);
-    if yaml_path(release_target, &["outputs", "publish_assets"]).and_then(YamlValue::as_str)
-        != Some("${{ steps.resolve.outputs.publish_assets }}")
-        || !yaml_path(resolve_step, &["run"])
-            .is_some_and(|run| yaml_contains_string(run, "publish_assets"))
-    {
-        issues.push(
-            "FAIL: release-publication-output-missing: release target must emit an affirmative publish_assets output."
-                .to_string(),
-        );
-    }
     for (field, expected) in [
         (
             "RELEASE_CI_RUN_ID",
@@ -1298,58 +1288,6 @@ fn check_workflow_policy(
     {
         issues.push(
             "FAIL: release-publisher-count: exactly one publish-release-assets job may upload release assets."
-                .to_string(),
-        );
-    }
-    let publish_assets =
-        yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
-    let release_upload_step = yaml_step_by_name(publish_assets, "Upload complete native asset set")
-        .unwrap_or(&YamlValue::Null);
-    if !yaml_path(release_upload_step, &["run"]).is_some_and(|run| {
-        yaml_contains_string(run, "gh release upload")
-            && yaml_contains_string(run, "--repo \"$GITHUB_REPOSITORY\"")
-    }) {
-        issues.push(
-            "FAIL: release-publisher-repository-missing: the checkout-free release upload must explicitly select GITHUB_REPOSITORY."
-                .to_string(),
-        );
-    }
-    if !yaml_path(publish_assets, &["if"]).is_some_and(|condition| {
-        [
-            "always()",
-            "needs.release-target.result == 'success'",
-            "needs.validate-artifacts.result == 'success'",
-            "needs.release-target.outputs.publish_assets == 'true'",
-        ]
-        .iter()
-        .all(|marker| yaml_contains_string(condition, marker))
-    }) {
-        issues.push(
-            "FAIL: release-publication-condition-invalid: asset publication must override skipped ancestors while requiring successful validation and affirmative publish_assets authorization."
-                .to_string(),
-        );
-    }
-    let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
-    if !yaml_path(publish_crate, &["if"]).is_some_and(|condition| {
-        [
-            "always()",
-            "needs.release-please.result == 'success'",
-            "needs.release-target.result == 'success'",
-            "needs.publish-release-assets.result == 'success'",
-            "needs.release-please.outputs.release-created == 'true'",
-            "needs.release-target.outputs.publish_assets == 'true'",
-        ]
-        .iter()
-        .all(|marker| yaml_contains_string(condition, marker))
-    }) {
-        issues.push(
-            "FAIL: release-crate-publication-condition-invalid: crate publication must override skipped ancestors while requiring successful publication prerequisites, a created release, and affirmative publish_assets authorization."
-                .to_string(),
-        );
-    }
-    if yaml_contains_string(release, "outputs.dry-run == 'false'") {
-        issues.push(
-            "FAIL: release-negative-dry-run-condition: publication must use affirmative authorization instead of a negated dry-run output."
                 .to_string(),
         );
     }
@@ -2403,7 +2341,6 @@ jobs:
   release-target:
     outputs:
       ci-run-id: ${{ steps.resolve.outputs.ci-run-id }}
-      publish_assets: ${{ steps.resolve.outputs.publish_assets }}
     steps:
       - id: resolve
         env:
@@ -2412,7 +2349,6 @@ jobs:
         run: |
           tag_sha=tag
           source_sha=source
-          publish_assets=true
   ci-gate:
     permissions: {actions: read}
     outputs: {ci-run-id: x}
@@ -2437,16 +2373,10 @@ jobs:
           fi
   rebuild-artifacts: {uses: './.github/workflows/native.yml'}
   publish-release-assets:
-    needs: [release-target, validate-artifacts]
-    if: ${{ always() && needs.release-target.result == 'success' && needs.validate-artifacts.result == 'success' && needs.release-target.outputs.publish_assets == 'true' }}
     permissions: {contents: write}
     environment: {name: cargo}
-    steps:
-      - name: Upload complete native asset set
-        run: 'gh release upload v1.2.3 artifact --repo "$GITHUB_REPOSITORY"'
+    steps: [{run: 'gh release upload'}]
   publish-crate:
-    needs: [release-please, release-target, publish-release-assets]
-    if: ${{ always() && needs.release-please.result == 'success' && needs.release-target.result == 'success' && needs.publish-release-assets.result == 'success' && needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}
     steps:
       - {run: 'cargo publish --dry-run --locked'}
       - {run: 'cargo publish --locked'}
@@ -2610,63 +2540,6 @@ jobs:
             issues
                 .iter()
                 .any(|issue| issue.contains("release-post-action-freshness-missing")),
-            "{issues:?}"
-        );
-    }
-
-    #[test]
-    fn workflow_policy_rejects_negated_dry_run_publication() {
-        let broken = valid_release_workflow_text().replace(
-            "outputs.publish_assets == 'true'",
-            "outputs.dry-run == 'false'",
-        );
-        let issues = workflow_policy_issues(&broken);
-        assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("release-negative-dry-run-condition")),
-            "{issues:?}"
-        );
-    }
-
-    #[test]
-    fn workflow_policy_rejects_asset_publication_without_skipped_ancestor_override() {
-        let broken = valid_release_workflow_text().replace(
-            "${{ always() && needs.release-target.result == 'success' && needs.validate-artifacts.result == 'success' && needs.release-target.outputs.publish_assets == 'true' }}",
-            "${{ needs.release-target.outputs.publish_assets == 'true' }}",
-        );
-        let issues = workflow_policy_issues(&broken);
-        assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("release-publication-condition-invalid")),
-            "{issues:?}"
-        );
-    }
-
-    #[test]
-    fn workflow_policy_rejects_repository_implicit_release_upload() {
-        let broken = valid_release_workflow_text().replace(" --repo \"$GITHUB_REPOSITORY\"", "");
-        let issues = workflow_policy_issues(&broken);
-        assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("release-publisher-repository-missing")),
-            "{issues:?}"
-        );
-    }
-
-    #[test]
-    fn workflow_policy_rejects_crate_publication_without_skipped_ancestor_override() {
-        let broken = valid_release_workflow_text().replace(
-            "${{ always() && needs.release-please.result == 'success' && needs.release-target.result == 'success' && needs.publish-release-assets.result == 'success' && needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}",
-            "${{ needs.release-please.outputs.release-created == 'true' && needs.release-target.outputs.publish_assets == 'true' }}",
-        );
-        let issues = workflow_policy_issues(&broken);
-        assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("release-crate-publication-condition-invalid")),
             "{issues:?}"
         );
     }

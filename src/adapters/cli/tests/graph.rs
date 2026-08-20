@@ -104,6 +104,17 @@ fn graph_search_reads_native_fts_indexes() {
     .unwrap();
 
     setup_search_fixture_repo(&root);
+    let manifest_path = managed_active_manifest_path(&root);
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(&manifest_path).unwrap()).unwrap();
+    let search_backend = manifest["search_backend"]
+        .as_object()
+        .expect("new search-enabled generations should declare their sidecar backend");
+    assert_eq!(search_backend["backend"], "disk_bm25_v1");
+    let database_path = manifest_path.with_file_name("graph.ldb");
+    for suffix in search_backend["files"].as_object().unwrap().keys() {
+        assert!(PathBuf::from(format!("{}.{}", database_path.display(), suffix)).is_file());
+    }
 
     let mut output = Vec::new();
     run(

@@ -1,52 +1,25 @@
-use super::connectors::ConnectorRow;
-use crate::error::NativeError;
-use serde::Serialize;
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::{self, Write};
 use std::path::Path;
 
-pub(super) fn write_json_rows<'a, T: Serialize + 'a>(
-    path: &Path,
-    rows: impl IntoIterator<Item = &'a T>,
-) -> Result<(), NativeError> {
-    let mut writer = BufWriter::new(File::create(path)?);
-    writer.write_all(b"[")?;
-    for (row_index, row) in rows.into_iter().enumerate() {
-        if row_index > 0 {
-            writer.write_all(b",")?;
-        }
-        serde_json::to_writer(&mut writer, row)?;
-    }
-    writer.write_all(b"]\n")?;
-    Ok(())
-}
-
-pub(super) fn write_csv_rows<'a>(
-    path: &Path,
-    rows: impl IntoIterator<Item = &'a ConnectorRow>,
-) -> Result<(), NativeError> {
-    let mut writer = BufWriter::new(File::create(path)?);
-    writer.write_all(b"from_id,to_id,role\r\n")?;
-    for row in rows {
-        writer.write_all(csv_field(&row.from_id).as_bytes())?;
-        writer.write_all(b",")?;
-        writer.write_all(csv_field(&row.to_id).as_bytes())?;
-        writer.write_all(b",")?;
-        writer.write_all(csv_field(&row.role).as_bytes())?;
-        writer.write_all(b"\r\n")?;
-    }
-    Ok(())
-}
-
-fn csv_field(value: &str) -> String {
-    if value
-        .chars()
-        .any(|character| matches!(character, ',' | '"' | '\n' | '\r'))
+pub(super) fn write_csv_field(writer: &mut dyn Write, value: &str) -> io::Result<()> {
+    if !value
+        .bytes()
+        .any(|byte| matches!(byte, b',' | b'"' | b'\n' | b'\r'))
     {
-        format!("\"{}\"", value.replace('"', "\"\""))
-    } else {
-        value.to_string()
+        return writer.write_all(value.as_bytes());
     }
+    writer.write_all(b"\"")?;
+    let mut start = 0;
+    for (index, byte) in value.bytes().enumerate() {
+        if byte != b'"' {
+            continue;
+        }
+        writer.write_all(&value.as_bytes()[start..index])?;
+        writer.write_all(b"\"\"")?;
+        start = index + 1;
+    }
+    writer.write_all(&value.as_bytes()[start..])?;
+    writer.write_all(b"\"")
 }
 
 pub(super) fn stage_file_stem(name: &str) -> String {
