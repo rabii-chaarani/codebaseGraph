@@ -141,6 +141,16 @@ The managed daemon is the default transport for local MCP clients. Setup install
 macOS, a systemd user unit on Linux, or Task Scheduler on Windows. A repository lock prevents a second daemon from
 starting, and every harness shares the daemon's coordinator and watcher.
 
+Upgrading the `codebase-graph` binary does not rewrite an existing harness registration. If the client configuration
+still contains `command = "codebase-graph"` with `mcp start` arguments, rerun `mcp install` for that registration and
+then restart the harness. The restart releases stdio children owned by the already-running host and reloads the HTTP
+URL:
+
+```bash
+codebase-graph mcp install --client codex --scope local \
+  --config-path .codebaseGraph/config.json --mcp-transport http-daemon --verify
+```
+
 ```bash
 codebase-graph mcp daemon status --config .codebaseGraph/config.json
 codebase-graph mcp daemon start --config .codebaseGraph/config.json
