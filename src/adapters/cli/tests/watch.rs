@@ -33,7 +33,9 @@ fn drive_watch_until_finished(
     let mut attempt = 0_usize;
     while !handle.is_finished() && Instant::now() < deadline {
         fs::write(
-            root.join("created.py"),
+            // The refresh worker can hold the prior marker open while parsing it.
+            // Reuse of one path makes Windows reject the next truncating write.
+            root.join(format!("created-{attempt}.py")),
             format!(
                 "def created():\n    return {attempt}\n#{}\n",
                 "x".repeat(attempt)
