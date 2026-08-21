@@ -248,6 +248,27 @@ fn watch_filter_accepts_relative_notify_paths() {
     let _ = fs::remove_dir_all(root);
 }
 
+#[cfg(windows)]
+#[test]
+fn watch_filter_accepts_verbatim_absolute_notify_paths() {
+    let root = unique_temp_dir("codebase-graph-rust-watch-verbatim");
+    fs::create_dir_all(&root).unwrap();
+    let filter = watch_filter_for(&root, &[]);
+    let event = Event {
+        kind: EventKind::Modify(notify::event::ModifyKind::Data(
+            notify::event::DataChange::Content,
+        )),
+        paths: vec![windows_verbatim_path(&root.join("verbatim.py"))],
+        attrs: Default::default(),
+    };
+
+    assert_eq!(
+        filter.relevant_paths(&event),
+        BTreeSet::from(["verbatim.py".to_string()])
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
 #[test]
 fn watch_batch_coalesces_burst_events_until_quiet() {
     let root = unique_temp_dir("codebase-graph-rust-watch-burst");
@@ -554,6 +575,36 @@ fn watch_probe_discards_probe_events_and_queues_real_events() {
     .unwrap();
     assert_eq!(batch.paths, BTreeSet::from(["src/lib.rs".to_string()]));
     let _ = fs::remove_dir_all(root);
+}
+
+#[cfg(windows)]
+#[test]
+fn watch_probe_discards_verbatim_absolute_probe_events() {
+    let _guard = watch_test_env_lock();
+    set_test_env("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS", "5");
+    set_test_env("CODEBASE_GRAPH_WATCH_PROBE_SKIP_WRITE", "1");
+    let root = unique_temp_dir("codebase-graph-rust-watch-probe-verbatim");
+    let probe_dir = root.join(".codebaseGraph/watch-probe");
+    fs::create_dir_all(&probe_dir).unwrap();
+    let filter = watch_filter_for(&root, &[]);
+    let (tx, rx) = mpsc::channel();
+    tx.send(WatchMessage::Event(Event {
+        kind: EventKind::Create(notify::event::CreateKind::File),
+        paths: vec![windows_verbatim_path(&probe_dir.join("probe-test.tmp"))],
+        attrs: Default::default(),
+    }))
+    .unwrap();
+
+    let outcome = probe_native_watcher(&root, &filter, &rx).unwrap();
+
+    assert!(outcome.delivered);
+    assert!(outcome.queued.is_empty());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[cfg(windows)]
+fn windows_verbatim_path(path: &Path) -> PathBuf {
+    PathBuf::from(format!(r"\\?\{}", path.display()))
 }
 
 #[test]

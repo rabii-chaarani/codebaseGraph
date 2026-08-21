@@ -3,7 +3,7 @@ agent_memory:
   version: 1
   kind: episodic
   scope: repository
-  status: active
+  status: quarantined
   owner: codex
   created_at: 2026-08-21T15:26:45+09:30
   last_verified_at: 2026-08-21T15:26:45+09:30
@@ -30,6 +30,11 @@ agent_memory:
     actor: codex
     at: 2026-08-21T15:26:45+09:30
     reason: Verified against the Windows CI failure log, run_refresh_leader startup ordering, the test synchronization change, four focused release-mode passes, and the full workspace suite.
+  - from: active
+    to: quarantined
+    actor: codex
+    at: 2026-08-21T15:59:00+09:30
+    reason: GitHub Actions run 32452550067 job 96683575111 reproduced the same generation-change failure after the test waited for backend native/poll, so the recorded causal claim and procedure are incomplete and must not guide future work.
 description: Coordinator startup metrics can precede watcher readiness, so process tests must synchronize on a native or polling backend before triggering a file change.
 tags:
 - ci

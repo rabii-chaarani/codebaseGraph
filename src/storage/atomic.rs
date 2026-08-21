@@ -81,12 +81,32 @@ pub(crate) fn create_new_file(path: &Path) -> Result<File, NativeError> {
 }
 
 fn temp_path_for(path: &Path) -> PathBuf {
+    let seq = ATOMIC_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+    temp_path_for_writer(path, std::process::id(), seq)
+}
+
+fn temp_path_for_writer(path: &Path, process_id: u32, seq: u64) -> PathBuf {
     let file_name = path
         .file_name()
         .map(|value| value.to_string_lossy().into_owned())
         .unwrap_or_else(|| "temp".to_string());
-    let seq = ATOMIC_SEQUENCE.fetch_add(1, Ordering::Relaxed);
     path.parent()
         .unwrap_or_else(|| Path::new("."))
-        .join(format!(".{file_name}.tmp.{seq}"))
+        .join(format!(".{file_name}.tmp.{process_id}.{seq}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::temp_path_for_writer;
+    use std::path::Path;
+
+    #[test]
+    fn atomic_temp_paths_are_scoped_to_the_writer_process() {
+        let target = Path::new("storage/worker.json");
+
+        assert_ne!(
+            temp_path_for_writer(target, 41, 1),
+            temp_path_for_writer(target, 42, 1)
+        );
+    }
 }

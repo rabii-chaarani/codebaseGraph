@@ -253,9 +253,9 @@ impl WatchEventFilter {
         } else {
             self.current_dir.join(path)
         };
-        absolute == self.config_path
-            || absolute == self.source_root.join(".codebaseGraphignore")
-            || path == self.config_path
+        let absolute = normalize_watch_path(&absolute);
+        absolute == normalize_watch_path(&self.config_path)
+            || absolute == normalize_watch_path(&self.source_root.join(".codebaseGraphignore"))
     }
 
     fn is_protected_path(&self, path: &Path) -> bool {
@@ -264,29 +264,24 @@ impl WatchEventFilter {
         } else {
             self.current_dir.join(path)
         };
+        let absolute = normalize_watch_path(&absolute);
         self.protected_roots
             .iter()
-            .any(|root| absolute.starts_with(root))
+            .any(|root| absolute.starts_with(normalize_watch_path(root)))
     }
 
     pub(crate) fn relative_event_path(&self, path: &Path) -> Option<PathBuf> {
-        if let Ok(relative) = path.strip_prefix(&self.source_root) {
+        let path = normalize_watch_path(path);
+        let source_root = normalize_watch_path(&self.source_root);
+        if let Ok(relative) = path.strip_prefix(&source_root) {
             return Some(relative.to_path_buf());
         }
         if path.is_relative() {
-            let absolute = self.current_dir.join(path);
-            if let Ok(relative) = absolute.strip_prefix(&self.source_root) {
+            let absolute = normalize_watch_path(&self.current_dir.join(&path));
+            if let Ok(relative) = absolute.strip_prefix(&source_root) {
                 return Some(relative.to_path_buf());
             }
-            #[cfg(windows)]
-            {
-                let absolute = normalize_windows_verbatim_path(&absolute);
-                let source_root = normalize_windows_verbatim_path(&self.source_root);
-                if let Ok(relative) = absolute.strip_prefix(source_root) {
-                    return Some(relative.to_path_buf());
-                }
-            }
-            return Some(path.to_path_buf());
+            return Some(path);
         }
         None
     }
@@ -331,6 +326,17 @@ fn normalize_windows_verbatim_path(path: &Path) -> PathBuf {
         PathBuf::from(stripped)
     } else {
         PathBuf::from(normalized)
+    }
+}
+
+fn normalize_watch_path(path: &Path) -> PathBuf {
+    #[cfg(windows)]
+    {
+        normalize_windows_verbatim_path(path)
+    }
+    #[cfg(not(windows))]
+    {
+        path.to_path_buf()
     }
 }
 
@@ -522,12 +528,14 @@ fn watch_path_is_under_dir(
     source_root: &Path,
     current_dir: &Path,
 ) -> bool {
-    if path.starts_with(directory) {
+    let path = normalize_watch_path(path);
+    let directory = normalize_watch_path(directory);
+    if path.starts_with(&directory) {
         return true;
     }
     if path.is_relative() {
-        return current_dir.join(path).starts_with(directory)
-            || source_root.join(path).starts_with(directory);
+        return normalize_watch_path(&current_dir.join(&path)).starts_with(&directory)
+            || normalize_watch_path(&source_root.join(path)).starts_with(directory);
     }
     false
 }
