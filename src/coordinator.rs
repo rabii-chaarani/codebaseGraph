@@ -19,11 +19,13 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 const COORDINATOR_PROTOCOL_VERSION: u64 = 1;
 const COORDINATOR_AUTHENTICATION_FAILED: &str = "coordinator_authentication_failed";
+const COORDINATOR_REQUEST_RECEIVE_FAILED: &str = "coordinator_request_receive_failed";
 const MAX_FRAME_BYTES: usize = 16 * 1024 * 1024;
 const ELECTION_TIMEOUT: Duration = Duration::from_secs(5);
 const ELECTION_RETRY_INTERVAL: Duration = Duration::from_millis(50);
 const CONNECT_TIMEOUT: Duration = Duration::from_millis(500);
 const STREAM_IO_TIMEOUT: Duration = Duration::from_secs(5);
+const COMMAND_RETRY_TIMEOUT: Duration = Duration::from_secs(15);
 const MONITOR_INTERVAL: Duration = Duration::from_secs(1);
 static TOKEN_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
@@ -179,17 +181,9 @@ impl CoordinatorClient {
             operation_id: operation_id.to_string(),
             invocation: invocation.clone(),
         };
-        let reply = match self.send_command(&command) {
-            Ok(reply) if !reply_requires_route_refresh(&reply) => reply,
-            Ok(_) | Err(_) => {
-                self.refresh_route().map_err(|error| {
-                    ApiError::new("coordinator_unavailable", error).retryable(true)
-                })?;
-                self.send_command(&command).map_err(|error| {
-                    ApiError::new("coordinator_unavailable", error).retryable(true)
-                })?
-            }
-        };
+        let reply = self
+            .send_command_with_recovery(&command)
+            .map_err(|error| ApiError::new("coordinator_unavailable", error).retryable(true))?;
         match reply {
             CoordinatorReply::Success(response) => Ok(response),
             CoordinatorReply::Failure(error) => Err(error),
@@ -249,6 +243,42 @@ impl CoordinatorClient {
         send_to_state(&state, command)
     }
 
+    fn send_command_with_recovery(
+        &self,
+        command: &CoordinatorCommand,
+    ) -> Result<CoordinatorReply, String> {
+        let deadline = Instant::now() + COMMAND_RETRY_TIMEOUT;
+        let mut retried_ambiguous_failure = false;
+        loop {
+            match self.send_command(command) {
+                Ok(reply) if reply_is_safe_to_retry(&reply) => {
+                    if Instant::now() >= deadline {
+                        return Err(format!(
+                            "repository coordinator request kept failing before dispatch: {reply:?}"
+                        ));
+                    }
+                    thread::sleep(ELECTION_RETRY_INTERVAL);
+                }
+                Ok(reply) if reply_requires_route_refresh(&reply) => {
+                    if Instant::now() >= deadline {
+                        return Err(format!(
+                            "repository coordinator route stayed stale: {reply:?}"
+                        ));
+                    }
+                    self.refresh_route()?;
+                }
+                Ok(reply) => return Ok(reply),
+                Err(error) => {
+                    if retried_ambiguous_failure || Instant::now() >= deadline {
+                        return Err(error);
+                    }
+                    retried_ambiguous_failure = true;
+                    self.refresh_route()?;
+                }
+            }
+        }
+    }
+
     #[cfg(test)]
     fn is_owner(&self) -> bool {
         self.inner
@@ -269,17 +299,11 @@ impl CoordinatorClient {
 
     #[cfg(test)]
     fn ping(&self) -> Result<(), String> {
-        match self.send_command(&CoordinatorCommand::Ping) {
-            Ok(CoordinatorReply::Pong) => Ok(()),
-            Ok(_) | Err(_) => {
-                self.refresh_route()?;
-                match self.send_command(&CoordinatorCommand::Ping)? {
-                    CoordinatorReply::Pong => Ok(()),
-                    reply => Err(format!(
-                        "repository coordinator returned a non-pong reply after route refresh: {reply:?}"
-                    )),
-                }
-            }
+        match self.send_command_with_recovery(&CoordinatorCommand::Ping)? {
+            CoordinatorReply::Pong => Ok(()),
+            reply => Err(format!(
+                "repository coordinator returned a non-pong reply: {reply:?}"
+            )),
         }
     }
 }
@@ -391,9 +415,9 @@ fn handle_connection(
     selector: &RepoSelector,
     state: &CoordinatorState,
 ) -> CoordinatorReply {
-    let request: CoordinatorRequest = match read_frame(stream) {
+    let request = match receive_request(stream) {
         Ok(request) => request,
-        Err(error) => return CoordinatorReply::Failure(coordinator_protocol_error(error)),
+        Err(reply) => return reply,
     };
     if request.version != COORDINATOR_PROTOCOL_VERSION || request.token != state.token {
         return CoordinatorReply::Failure(ApiError::new(
@@ -417,6 +441,16 @@ fn handle_connection(
             }
         }
     }
+}
+
+fn receive_request(stream: &mut TcpStream) -> Result<CoordinatorRequest, CoordinatorReply> {
+    read_frame(stream).map_err(coordinator_request_receive_failure)
+}
+
+fn coordinator_request_receive_failure(error: String) -> CoordinatorReply {
+    CoordinatorReply::Failure(
+        ApiError::new(COORDINATOR_REQUEST_RECEIVE_FAILED, error).retryable(true),
+    )
 }
 
 fn attach_coordinator_status(response: &mut OperationResponse, state: &CoordinatorState) {
@@ -444,9 +478,14 @@ fn send_to_state(
     validate_state(state)?;
     let mut stream = TcpStream::connect_timeout(&state.endpoint, CONNECT_TIMEOUT)
         .map_err(|error| format!("failed to connect to repository coordinator: {error}"))?;
+    if matches!(command, CoordinatorCommand::Ping) {
+        stream
+            .set_read_timeout(Some(STREAM_IO_TIMEOUT))
+            .map_err(|error| format!("failed to configure coordinator ping reads: {error}"))?;
+    }
     stream
         .set_write_timeout(Some(STREAM_IO_TIMEOUT))
-        .map_err(|error| format!("failed to configure coordinator stream: {error}"))?;
+        .map_err(|error| format!("failed to configure coordinator stream writes: {error}"))?;
     write_frame(
         &mut stream,
         &CoordinatorRequest {
@@ -469,6 +508,14 @@ fn reply_requires_route_refresh(reply: &CoordinatorReply) -> bool {
     matches!(
         reply,
         CoordinatorReply::Failure(error) if error.code == COORDINATOR_AUTHENTICATION_FAILED
+    )
+}
+
+fn reply_is_safe_to_retry(reply: &CoordinatorReply) -> bool {
+    matches!(
+        reply,
+        CoordinatorReply::Failure(error)
+            if error.code == COORDINATOR_REQUEST_RECEIVE_FAILED && error.retryable
     )
 }
 
@@ -620,6 +667,72 @@ fn restrict_state_permissions(_path: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn request_receive_failure_is_retryable_before_dispatch() {
+        use std::net::Shutdown;
+
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+        let (mut server, _) = listener.accept().unwrap();
+        client.shutdown(Shutdown::Write).unwrap();
+
+        let reply = receive_request(&mut server).unwrap_err();
+        assert!(reply_is_safe_to_retry(&reply));
+        assert!(!reply_requires_route_refresh(&reply));
+        let CoordinatorReply::Failure(error) = reply else {
+            panic!("closed request stream should produce a failure reply");
+        };
+        assert_eq!(error.code, COORDINATOR_REQUEST_RECEIVE_FAILED);
+        assert!(error.retryable);
+    }
+
+    #[test]
+    fn retryable_receive_failure_retries_the_same_owner() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let endpoint = listener.local_addr().unwrap();
+        let token = "a".repeat(64);
+        let server_token = token.clone();
+        let server = thread::spawn(move || {
+            for attempt in 0..2 {
+                let (mut stream, _) = listener.accept().unwrap();
+                let request: CoordinatorRequest = read_frame(&mut stream).unwrap();
+                assert_eq!(request.token, server_token);
+                let reply = if attempt == 0 {
+                    coordinator_request_receive_failure("timed out before dispatch".to_string())
+                } else {
+                    CoordinatorReply::Pong
+                };
+                write_frame(&mut stream, &reply).unwrap();
+            }
+        });
+
+        let root = temp_dir("retry-receive");
+        let client = CoordinatorClient {
+            inner: Arc::new(ClientInner {
+                control: CoordinatorControlPaths {
+                    lock: root.join("coordinator.lock"),
+                    state: root.join("coordinator.json"),
+                },
+                api_config: direct_config(&root),
+                route: Mutex::new(CoordinatorRoute {
+                    state: Some(CoordinatorState {
+                        version: COORDINATOR_PROTOCOL_VERSION,
+                        endpoint,
+                        token,
+                        pid: std::process::id(),
+                    }),
+                    owner: None,
+                }),
+                monitor_stop: AtomicBool::new(false),
+                monitor: Mutex::new(None),
+            }),
+        };
+
+        client.ping().unwrap();
+        assert_eq!(client.endpoint(), Some(endpoint));
+        server.join().unwrap();
+    }
 
     #[test]
     fn concurrent_clients_share_one_repository_coordinator() {

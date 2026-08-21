@@ -1,5 +1,6 @@
 use super::McpInstallOptions;
 use crate::api::CodebaseGraphApi;
+use crate::daemon_service::{repository_fingerprint, verify_daemon_endpoint};
 use serde_json::json;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -45,6 +46,36 @@ pub(in crate::adapters::cli) fn verify_mcp_install(
     descriptor: &serde_json::Value,
     client: &str,
 ) -> serde_json::Value {
+    if descriptor
+        .get("transport")
+        .and_then(serde_json::Value::as_str)
+        == Some("streamable_http")
+    {
+        let endpoint = descriptor
+            .get("url")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        let fingerprint = descriptor
+            .get("repo_root")
+            .and_then(serde_json::Value::as_str)
+            .map(Path::new)
+            .map(repository_fingerprint);
+        let http = match verify_daemon_endpoint(endpoint, fingerprint.as_deref()) {
+            Ok(payload) => payload,
+            Err(error) => json!({"ok": false, "endpoint": endpoint, "error": error}),
+        };
+        let server_name = descriptor
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        let visibility = verify_client_visibility(client, server_name);
+        return json!({
+            "ok": http.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(false)
+                && visibility.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(true),
+            "http": http,
+            "client_visibility": visibility,
+        });
+    }
     let stdio = verify_stdio(descriptor);
     let server_name = descriptor
         .get("name")

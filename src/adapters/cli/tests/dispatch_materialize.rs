@@ -152,6 +152,22 @@ fn setup_defaults_repo_root_to_auto_detection() {
     let options = SetupOptions::parse(&args).unwrap();
 
     assert_eq!(options.repo_root, None);
+    assert_eq!(options.mcp_transport, crate::api::McpTransport::Auto);
+    assert_eq!(options.mcp_daemon_port, None);
+}
+
+#[test]
+fn setup_parses_explicit_mcp_transport_and_daemon_port() {
+    let options = SetupOptions::parse(&[
+        "--mcp-transport".to_string(),
+        "stdio".to_string(),
+        "--mcp-daemon-port".to_string(),
+        "43210".to_string(),
+    ])
+    .unwrap();
+
+    assert_eq!(options.mcp_transport, crate::api::McpTransport::Stdio);
+    assert_eq!(options.mcp_daemon_port, Some(43210));
 }
 
 #[test]

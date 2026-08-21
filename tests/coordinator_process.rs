@@ -102,6 +102,9 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
         .iter_mut()
         .find(|client| client.pid() != first_pid)
         .expect("a follower MCP client should exist");
+    // Startup worker metrics are published before the refresh leader installs
+    // and probes its watcher. Wait for both signals before changing a source
+    // file so the test cannot write into that unobserved readiness gap.
     let health_deadline = Instant::now() + Duration::from_secs(10);
     let mut health_id = 10_000;
     let health = loop {
@@ -113,11 +116,12 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
                 "arguments": {"include_structured_content": true}
             }),
         );
-        if health["result"]["structuredContent"]["refresh"]["phase_high_water_marks"]
-            ["materialization_worker_rss"]
+        let refresh = &health["result"]["structuredContent"]["refresh"];
+        let metrics_published = refresh["phase_high_water_marks"]["materialization_worker_rss"]
             .as_u64()
-            .is_some_and(|bytes| bytes > 0)
-        {
+            .is_some_and(|bytes| bytes > 0);
+        let watcher_ready = matches!(refresh["backend"].as_str(), Some("native") | Some("poll"));
+        if metrics_published && watcher_ready {
             break health;
         }
         assert!(

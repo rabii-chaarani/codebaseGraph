@@ -1094,6 +1094,8 @@ mod tests {
                 mcp_config_path: None,
                 instructions_target: Some("skip".to_string()),
                 skip_mcp_config: true,
+                mcp_transport: crate::api::McpTransport::Auto,
+                mcp_daemon_port: None,
                 mode: "full".to_string(),
                 include_fts: false,
                 semantic_enrichment: false,
@@ -1242,6 +1244,8 @@ mod tests {
                 name: Some("codebase_graph_test".to_string()),
                 client_config_path: Some(client_config.clone()),
                 dry_run: false,
+                transport: crate::api::McpTransport::Stdio,
+                daemon_port: None,
                 output_format: OutputFormat::Typed,
             }))
             .expect("API MCP install should succeed");

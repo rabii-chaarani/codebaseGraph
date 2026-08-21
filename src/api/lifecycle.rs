@@ -1,13 +1,18 @@
 use crate::api::context::{
-    resolve_runtime, GraphInstallConfig, GraphInstallMaterializationConfig, GraphInstallMcpConfig,
-    GraphInstallRefreshConfig, RepoRuntime, INSTALL_CONFIG_SCHEMA_VERSION,
+    read_install_config, resolve_runtime, GraphInstallConfig, GraphInstallMaterializationConfig,
+    GraphInstallMcpConfig, GraphInstallMcpHttpConfig, GraphInstallRefreshConfig, RepoRuntime,
+    INSTALL_CONFIG_SCHEMA_VERSION,
 };
 use crate::api::contracts::{
-    ApiError, McpInstallRequest, RefreshRequest, RepoSelector, RepositoryLifecycleRequest,
+    ApiError, McpInstallRequest, McpTransport, RefreshRequest, RepoSelector,
+    RepositoryLifecycleRequest,
 };
 use crate::api::materialization::{
     build_request, default_excluded_parts, execute_candidate_materialization,
     execute_materialization, MaterializeOptions,
+};
+use crate::daemon_service::{
+    repository_fingerprint, service_id, stable_daemon_port, DAEMON_TRANSPORT_VERSION,
 };
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
 use crate::storage::atomic::write_json_atomically;
@@ -54,50 +59,138 @@ pub(crate) fn install_mcp_client(
     request: &McpInstallRequest,
     runtime: &RepoRuntime,
 ) -> Result<serde_json::Value, ApiError> {
+    let transport = request.transport.resolved();
     let config_path = runtime.config_path.clone();
-    let install = |client: &str| {
-        let descriptor = build_mcp_descriptor(
+    let http = if transport == McpTransport::HttpDaemon {
+        let path = config_path.as_ref().ok_or_else(|| {
+            ApiError::new(
+                "mcp_install_failed",
+                "http-daemon transport requires an installed repository setup config",
+            )
+        })?;
+        Some(
+            ensure_http_config(path, &runtime.repo_root, request.daemon_port, true)
+                .map_err(|error| ApiError::new("mcp_install_failed", error))?,
+        )
+    } else {
+        None
+    };
+    let mut descriptor = build_mcp_descriptor(
+        request.name.clone(),
+        config_path.clone(),
+        Some(runtime.repo_root.clone()),
+    )
+    .map_err(|error| ApiError::new("mcp_install_failed", error))?;
+    let endpoint = match http.as_ref() {
+        Some(http) => McpEndpointDescriptor::StreamableHttp {
+            url: http.url.clone(),
+            headers: BTreeMap::new(),
+        },
+        None => descriptor
+            .endpoint(transport)
+            .map_err(|error| ApiError::new("mcp_install_failed", error))?,
+    };
+    let install_options = McpClientInstallOptions {
+        client: request.client.clone(),
+        scope: request.scope.clone(),
+        client_config_path: request.client_config_path.clone(),
+        dry_run: request.dry_run,
+        install_method: McpInstallMode::Auto,
+        existing_entry_policy: McpExistingEntryPolicy::Replace,
+        legacy_server_names: Vec::new(),
+    };
+    let mut preflight = install_options.clone();
+    preflight.dry_run = true;
+    let preflight_result = install_mcp_endpoint(&descriptor, &endpoint, &preflight)
+        .map_err(|error| ApiError::new("mcp_install_failed", error))?;
+    let needs_local_daemon = transport == McpTransport::HttpDaemon
+        && (request.client == "all" || !manual_metadata_client(&request.client));
+    if request.dry_run {
+        let daemon = if needs_local_daemon {
+            Some(
+                ensure_managed_daemon(
+                    descriptor.setup_config_path.as_deref().ok_or_else(|| {
+                        ApiError::new(
+                            "mcp_install_failed",
+                            "managed MCP daemon requires a setup config path",
+                        )
+                    })?,
+                    request.daemon_port,
+                    true,
+                )
+                .map_err(|error| ApiError::new("mcp_install_failed", error))?,
+            )
+        } else {
+            None
+        };
+        return Ok(attach_daemon_payload(preflight_result, daemon));
+    }
+
+    let previous_config = config_path
+        .as_ref()
+        .map(|path| snapshot_file(path))
+        .transpose()
+        .map_err(|error| ApiError::new("mcp_install_failed", error))?;
+    if transport == McpTransport::HttpDaemon {
+        let path = config_path
+            .as_ref()
+            .expect("HTTP config path was validated");
+        ensure_http_config(path, &runtime.repo_root, request.daemon_port, false)
+            .map_err(|error| ApiError::new("mcp_install_failed", error))?;
+        descriptor = build_mcp_descriptor(
             request.name.clone(),
             config_path.clone(),
             Some(runtime.repo_root.clone()),
-        )?;
-        install_mcp_server(
-            &descriptor,
-            &McpClientInstallOptions {
-                client: client.to_string(),
-                scope: request.scope.clone(),
-                client_config_path: request.client_config_path.clone(),
-                dry_run: request.dry_run,
-                install_method: McpInstallMode::Auto,
-                existing_entry_policy: McpExistingEntryPolicy::Replace,
-                legacy_server_names: Vec::new(),
-            },
         )
-    };
-    if request.client == "all" {
-        let results = supported_mcp_clients()
-            .iter()
-            .copied()
-            .map(|client| {
-                install(client).unwrap_or_else(|error| {
-                    json!({
-                        "action": "failed",
-                        "client": client,
-                        "scope": install_scope(client, &request.scope),
-                        "server_name": request.name.clone().unwrap_or_else(|| "codebase_graph".to_string()),
-                        "method": serde_json::Value::Null,
-                        "path": serde_json::Value::Null,
-                        "command": serde_json::Value::Null,
-                        "descriptor": {},
-                        "entry": {},
-                        "error": error,
-                    })
-                })
-            })
-            .collect::<Vec<_>>();
-        Ok(json!({ "results": results }))
+        .map_err(|error| ApiError::new("mcp_install_failed", error))?;
+    }
+    let daemon = if needs_local_daemon {
+        let setup_path = descriptor.setup_config_path.as_deref().ok_or_else(|| {
+            ApiError::new(
+                "mcp_install_failed",
+                "managed MCP daemon requires a setup config path",
+            )
+        })?;
+        match ensure_managed_daemon(setup_path, request.daemon_port, false) {
+            Ok(payload) => Some(payload),
+            Err(error) => {
+                if let (Some(path), Some(previous)) =
+                    (config_path.as_ref(), previous_config.as_ref())
+                {
+                    let _ = restore_file(path, previous.as_deref());
+                }
+                return Err(ApiError::new("mcp_install_failed", error));
+            }
+        }
     } else {
-        install(&request.client).map_err(|error| ApiError::new("mcp_install_failed", error))
+        None
+    };
+    match install_mcp_endpoint(&descriptor, &endpoint, &install_options) {
+        Ok(result) => Ok(attach_daemon_payload(result, daemon)),
+        Err(error) => {
+            let mut rollback_errors = Vec::new();
+            if daemon
+                .as_ref()
+                .is_some_and(|payload| payload["action"] == "started")
+            {
+                if let Some(path) = descriptor.setup_config_path.as_deref() {
+                    if let Err(cleanup) = stop_managed_daemon(path, true, false) {
+                        rollback_errors.push(format!("daemon rollback failed: {cleanup}"));
+                    }
+                }
+            }
+            if let (Some(path), Some(previous)) = (config_path.as_ref(), previous_config.as_ref()) {
+                if let Err(cleanup) = restore_file(path, previous.as_deref()) {
+                    rollback_errors.push(format!("config rollback failed: {cleanup}"));
+                }
+            }
+            let message = if rollback_errors.is_empty() {
+                error
+            } else {
+                format!("{error}; {}", rollback_errors.join("; "))
+            };
+            Err(ApiError::new("mcp_install_failed", message))
+        }
     }
 }
 
@@ -162,6 +255,8 @@ struct LifecycleOptions {
     mcp_client: String,
     mcp_config_path: Option<PathBuf>,
     skip_mcp_config: bool,
+    mcp_transport: McpTransport,
+    mcp_daemon_port: Option<u16>,
     dry_run: bool,
     instructions_target: String,
 }
@@ -178,6 +273,8 @@ impl LifecycleOptions {
                 .unwrap_or_else(|| "codex".to_string()),
             mcp_config_path: request.mcp_config_path.clone(),
             skip_mcp_config: request.skip_mcp_config,
+            mcp_transport: request.mcp_transport,
+            mcp_daemon_port: request.mcp_daemon_port,
             dry_run: request.dry_run,
             instructions_target: request
                 .instructions_target
@@ -213,7 +310,8 @@ fn setup_payload_for_root(
         use_git: true,
         ..MaterializeOptions::default()
     };
-    let config_payload = setup_config_payload(&paths, &source_root);
+    let daemon_port = selected_daemon_port(&paths, &source_root, options.mcp_daemon_port)?;
+    let config_payload = setup_config_payload(&paths, &source_root, daemon_port);
     let instructions_path = instruction_target_path(&source_root, &options.instructions_target)?;
     let state_dir_existed = paths.state_dir.exists();
     let graph_state_existed = managed_install_exists(&paths);
@@ -222,6 +320,7 @@ fn setup_payload_for_root(
         Some(path) => Some((path.clone(), snapshot_file(path)?)),
         None => None,
     };
+    let daemon_state_existed = paths.state_dir.join("mcp-daemon.json").exists();
 
     let (config_action, instructions, mcp_config, materialization) = if options.dry_run {
         let request = materialization_request(&materialize_options)?;
@@ -250,7 +349,7 @@ fn setup_payload_for_root(
             )
         })?;
         let result = (|| {
-            let config_action = write_setup_config(&paths, &source_root)?;
+            let config_action = write_setup_config(&paths, &source_root, daemon_port)?;
             let instructions = upsert_instruction_block(
                 &source_root,
                 &options.instructions_target,
@@ -273,6 +372,14 @@ fn setup_payload_for_root(
         match result {
             Ok(result) => result,
             Err(error) => {
+                let daemon_cleanup = if !daemon_state_existed
+                    && options.mcp_transport.resolved() == McpTransport::HttpDaemon
+                    && (options.mcp_client == "all" || !manual_metadata_client(&options.mcp_client))
+                {
+                    stop_managed_daemon(&paths.config_path, true, false).err()
+                } else {
+                    None
+                };
                 restore_file(&paths.config_path, previous_config.as_deref())?;
                 if let Some((path, previous)) = previous_instructions.as_ref() {
                     restore_file(path, previous.as_deref())?;
@@ -287,7 +394,10 @@ fn setup_payload_for_root(
                         ));
                     }
                 }
-                return Err(error);
+                return Err(match daemon_cleanup {
+                    Some(cleanup) => format!("{error}; daemon rollback failed: {cleanup}"),
+                    None => error,
+                });
             }
         }
     };
@@ -359,6 +469,12 @@ fn reinstall_payload_for_request(
     reject_state_dir_root(&repo_root)?;
 
     let paths = GraphStatePaths::derive(&repo_root);
+    if paths.config_path.exists() {
+        setup_mcp_config(&options, &paths, true)?;
+    }
+    if !options.dry_run && paths.config_path.exists() {
+        stop_managed_daemon(&paths.config_path, true, false)?;
+    }
     let state = reinstall_state(&repo_root, &paths, options.dry_run)?;
     let install = if options.dry_run {
         setup_payload_for_root(&options, &repo_root)?
@@ -415,6 +531,19 @@ fn uninstall_payload_for_request(
         .clone()
         .unwrap_or_else(|| "all".to_string());
     let server_name = uninstall_server_name(&repo_root, &config_path)?;
+    uninstall_mcp_clients(
+        &mcp_client,
+        request.mcp_config_path.as_deref(),
+        &repo_root,
+        &config_path,
+        &server_name,
+        true,
+    )?;
+    let daemon = if config_path.exists() {
+        Some(stop_managed_daemon(&config_path, true, request.dry_run)?)
+    } else {
+        None
+    };
     let state = uninstall_state_dir(&repo_root, &paths.state_dir, request.dry_run)?;
     let instructions = uninstall_instruction_blocks(&repo_root, request.dry_run)?;
     let mcp_clients = uninstall_mcp_clients(
@@ -435,6 +564,7 @@ fn uninstall_payload_for_request(
         "state": state,
         "instructions": instructions,
         "mcp_clients": mcp_clients,
+        "daemon": daemon,
     }))
 }
 
@@ -628,22 +758,169 @@ fn setup_mcp_config(
         }));
     }
 
-    install_mcp_server(
-        &descriptor,
-        &McpClientInstallOptions {
-            client: options.mcp_client.clone(),
-            scope: if options.mcp_client == "claude-project" {
-                "project".to_string()
-            } else {
-                "local".to_string()
-            },
-            client_config_path: options.mcp_config_path.clone(),
-            dry_run,
-            install_method: McpInstallMode::Auto,
-            existing_entry_policy: McpExistingEntryPolicy::Replace,
-            legacy_server_names: Vec::new(),
+    let transport = options.mcp_transport.resolved();
+    let endpoint = descriptor.endpoint(transport)?;
+    let install_options = McpClientInstallOptions {
+        client: options.mcp_client.clone(),
+        scope: if options.mcp_client == "claude-project" {
+            "project".to_string()
+        } else {
+            "local".to_string()
         },
-    )
+        client_config_path: options.mcp_config_path.clone(),
+        dry_run,
+        install_method: McpInstallMode::Auto,
+        existing_entry_policy: McpExistingEntryPolicy::Replace,
+        legacy_server_names: Vec::new(),
+    };
+    let mut preflight = install_options.clone();
+    preflight.dry_run = true;
+    let preflight_result = install_mcp_endpoint(&descriptor, &endpoint, &preflight)?;
+    let needs_local_daemon = transport == McpTransport::HttpDaemon
+        && (options.mcp_client == "all" || !manual_metadata_client(&options.mcp_client));
+    let daemon = if needs_local_daemon {
+        Some(ensure_managed_daemon(
+            &paths.config_path,
+            options.mcp_daemon_port,
+            dry_run,
+        )?)
+    } else {
+        None
+    };
+    let result = if dry_run {
+        preflight_result
+    } else {
+        install_mcp_endpoint(&descriptor, &endpoint, &install_options)?
+    };
+    Ok(attach_daemon_payload(result, daemon))
+}
+
+fn attach_daemon_payload(
+    mut registration: serde_json::Value,
+    daemon: Option<serde_json::Value>,
+) -> serde_json::Value {
+    if let Some(object) = registration.as_object_mut() {
+        object.insert(
+            "daemon".to_string(),
+            daemon.unwrap_or(serde_json::Value::Null),
+        );
+    }
+    registration
+}
+
+fn ensure_http_config(
+    config_path: &Path,
+    repo_root: &Path,
+    requested_port: Option<u16>,
+    dry_run: bool,
+) -> Result<GraphInstallMcpHttpConfig, String> {
+    let mut paths = GraphStatePaths::derive(repo_root);
+    paths.config_path = config_path.to_path_buf();
+    let port = selected_daemon_port(&paths, repo_root, requested_port)?;
+    let fingerprint = repository_fingerprint(repo_root);
+    let http = GraphInstallMcpHttpConfig {
+        url: format!("http://127.0.0.1:{port}/mcp"),
+        service_id: service_id(&fingerprint),
+        transport_version: DAEMON_TRANSPORT_VERSION.to_string(),
+    };
+    let mut config = read_install_config(config_path)?;
+    let mcp = config.mcp.get_or_insert_with(|| GraphInstallMcpConfig {
+        server_name: "codebase_graph".to_string(),
+        command: vec![
+            server_command(),
+            "mcp".to_string(),
+            "start".to_string(),
+            "--config".to_string(),
+            config_path.to_string_lossy().to_string(),
+        ],
+        http: None,
+    });
+    if mcp.http.as_ref().is_some_and(|current| {
+        current.url == http.url
+            && current.service_id == http.service_id
+            && current.transport_version == http.transport_version
+    }) {
+        return Ok(http);
+    }
+    mcp.http = Some(http.clone());
+    if !dry_run {
+        let value = serde_json::to_value(&config).map_err(|error| error.to_string())?;
+        write_json_atomically(config_path, &value).map_err(|error| {
+            format!(
+                "failed to persist managed MCP daemon endpoint {}: {error}",
+                config_path.display()
+            )
+        })?;
+    }
+    Ok(http)
+}
+
+fn ensure_managed_daemon(
+    config_path: &Path,
+    port: Option<u16>,
+    dry_run: bool,
+) -> Result<serde_json::Value, String> {
+    if dry_run {
+        let spec = crate::daemon_service::McpDaemonSpec::from_config(config_path, port)?;
+        return Ok(json!({
+            "action": "dry_run",
+            "endpoint": spec.endpoint,
+            "service_id": spec.service_id,
+            "repository_fingerprint": spec.repository_fingerprint,
+        }));
+    }
+    #[cfg(test)]
+    {
+        let spec = crate::daemon_service::McpDaemonSpec::from_config(config_path, port)?;
+        Ok(json!({
+            "action": "test_managed",
+            "endpoint": spec.endpoint,
+            "service_id": spec.service_id,
+            "repository_fingerprint": spec.repository_fingerprint,
+        }))
+    }
+    #[cfg(not(test))]
+    {
+        let options = crate::daemon_service::McpDaemonOptions {
+            repo_root: None,
+            config: Some(config_path.to_path_buf()),
+            port,
+        };
+        crate::daemon_service::start_mcp_daemon(&options)
+    }
+}
+
+fn stop_managed_daemon(
+    config_path: &Path,
+    remove_service: bool,
+    dry_run: bool,
+) -> Result<serde_json::Value, String> {
+    if dry_run {
+        return Ok(json!({
+            "action": "dry_run",
+            "service_removed": remove_service,
+        }));
+    }
+    #[cfg(test)]
+    {
+        let _ = config_path;
+        Ok(json!({
+            "action": "test_managed",
+            "running": false,
+            "service_removed": remove_service,
+        }))
+    }
+    #[cfg(not(test))]
+    {
+        crate::daemon_service::stop_mcp_daemon(
+            &crate::daemon_service::McpDaemonOptions {
+                repo_root: None,
+                config: Some(config_path.to_path_buf()),
+                port: None,
+            },
+            remove_service,
+        )
+    }
 }
 
 fn uninstall_server_name(repo_root: &Path, config_path: &Path) -> Result<String, String> {
@@ -728,7 +1005,7 @@ fn uninstall_mcp_clients(
         vec![mcp_client.to_string()]
     };
 
-    Ok(clients
+    clients
         .into_iter()
         .map(|client| {
             uninstall_mcp_client(
@@ -739,16 +1016,8 @@ fn uninstall_mcp_clients(
                 server_name,
                 dry_run,
             )
-            .unwrap_or_else(|error| {
-                json!({
-                    "action": "failed",
-                    "client": client,
-                    "server_name": server_name,
-                    "error": error,
-                })
-            })
         })
-        .collect())
+        .collect()
 }
 
 fn uninstall_mcp_client(
@@ -854,7 +1123,12 @@ pub(crate) fn safe_name(value: &str) -> String {
     }
 }
 
-fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) -> serde_json::Value {
+fn setup_config_payload(
+    paths: &GraphStatePaths,
+    repo_root: &Path,
+    daemon_port: u16,
+) -> serde_json::Value {
+    let fingerprint = repository_fingerprint(repo_root);
     serde_json::to_value(GraphInstallConfig {
         schema_version: Some(INSTALL_CONFIG_SCHEMA_VERSION),
         repo_root: Some(repo_root.to_path_buf()),
@@ -876,13 +1150,88 @@ fn setup_config_payload(paths: &GraphStatePaths, repo_root: &Path) -> serde_json
                 "--config".to_string(),
                 paths.config_path.to_string_lossy().to_string(),
             ],
+            http: Some(GraphInstallMcpHttpConfig {
+                url: format!("http://127.0.0.1:{daemon_port}/mcp"),
+                service_id: service_id(&fingerprint),
+                transport_version: DAEMON_TRANSPORT_VERSION.to_string(),
+            }),
         }),
     })
     .expect("managed install config should serialize")
 }
 
-fn write_setup_config(paths: &GraphStatePaths, repo_root: &Path) -> Result<&'static str, String> {
-    let payload = setup_config_payload(paths, repo_root);
+fn selected_daemon_port(
+    paths: &GraphStatePaths,
+    repo_root: &Path,
+    requested: Option<u16>,
+) -> Result<u16, String> {
+    let persisted = paths
+        .config_path
+        .exists()
+        .then(|| read_install_config(&paths.config_path))
+        .transpose()?
+        .and_then(|config| config.mcp)
+        .and_then(|mcp| mcp.http)
+        .and_then(|http| daemon_endpoint_port(&http.url));
+    match requested {
+        None => {
+            if let Some(port) = persisted {
+                return Ok(port);
+            }
+        }
+        Some(port) if Some(port) == persisted => {
+            return Ok(port);
+        }
+        Some(_) => {}
+    }
+    let first = requested.unwrap_or_else(|| stable_daemon_port(repo_root));
+    #[cfg(test)]
+    {
+        Ok(first)
+    }
+    #[cfg(not(test))]
+    {
+        select_available_daemon_port(first, requested, |candidate| {
+            std::net::TcpListener::bind(("127.0.0.1", candidate))
+                .map(drop)
+                .map_err(|error| error.to_string())
+        })
+    }
+}
+
+fn select_available_daemon_port(
+    first: u16,
+    requested: Option<u16>,
+    mut probe: impl FnMut(u16) -> Result<(), String>,
+) -> Result<u16, String> {
+    if let Some(candidate) = requested {
+        return probe(candidate).map(|()| candidate).map_err(|error| {
+            format!("requested MCP daemon port {candidate} is unavailable: {error}")
+        });
+    }
+    for offset in 0..128_u16 {
+        let candidate = 41_000 + ((first - 41_000 + offset) % 8_000);
+        if probe(candidate).is_ok() {
+            return Ok(candidate);
+        }
+    }
+    Err("no loopback port is available for the managed MCP daemon".to_string())
+}
+
+fn daemon_endpoint_port(url: &str) -> Option<u16> {
+    url.strip_prefix("http://127.0.0.1:")?
+        .split('/')
+        .next()?
+        .parse::<u16>()
+        .ok()
+}
+
+fn write_setup_config(
+    paths: &GraphStatePaths,
+    repo_root: &Path,
+    daemon_port: u16,
+) -> Result<&'static str, String> {
+    let payload = setup_config_payload(paths, repo_root, daemon_port);
     let mut action = "created";
     if paths.config_path.exists() {
         let previous = read_json_file(&paths.config_path)?;
@@ -1386,6 +1735,29 @@ pub struct McpServerDescriptor {
     pub manual_http_metadata: Option<serde_json::Value>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "transport", rename_all = "snake_case")]
+pub enum McpEndpointDescriptor {
+    Stdio {
+        command: String,
+        args: Vec<String>,
+        #[serde(default)]
+        env: BTreeMap<String, String>,
+    },
+    StreamableHttp {
+        url: String,
+        #[serde(default)]
+        headers: BTreeMap<String, String>,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct McpHarnessCapabilities {
+    pub stdio: bool,
+    pub loopback_streamable_http: bool,
+    pub manual_remote_https: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum McpTargetLocality {
     RepositoryLocal,
@@ -1442,6 +1814,55 @@ impl McpServerDescriptor {
             entry.insert("startup_timeout_sec".to_string(), json!(self.timeout));
         }
         serde_json::Value::Object(entry)
+    }
+
+    pub fn endpoint(&self, transport: McpTransport) -> Result<McpEndpointDescriptor, String> {
+        match transport.resolved() {
+            McpTransport::Stdio => Ok(McpEndpointDescriptor::Stdio {
+                command: self.command.clone(),
+                args: self.args.clone(),
+                env: BTreeMap::new(),
+            }),
+            McpTransport::HttpDaemon => {
+                let url = self
+                    .manual_http_metadata
+                    .as_ref()
+                    .and_then(|metadata| metadata.get("url"))
+                    .and_then(serde_json::Value::as_str)
+                    .filter(|url| !url.trim().is_empty())
+                    .ok_or_else(|| {
+                        "setup config does not define a managed MCP HTTP endpoint".to_string()
+                    })?;
+                Ok(McpEndpointDescriptor::StreamableHttp {
+                    url: url.to_string(),
+                    headers: BTreeMap::new(),
+                })
+            }
+            McpTransport::Auto => unreachable!("MCP transport was resolved"),
+        }
+    }
+}
+
+pub fn mcp_harness_capabilities(client: &str, scope: &str) -> McpHarnessCapabilities {
+    let adapter = adapter_id(client, scope);
+    if manual_metadata_client(adapter) {
+        McpHarnessCapabilities {
+            stdio: false,
+            loopback_streamable_http: false,
+            manual_remote_https: true,
+        }
+    } else if adapter == "claude-desktop" {
+        McpHarnessCapabilities {
+            stdio: true,
+            loopback_streamable_http: false,
+            manual_remote_https: false,
+        }
+    } else {
+        McpHarnessCapabilities {
+            stdio: true,
+            loopback_streamable_http: true,
+            manual_remote_https: false,
+        }
     }
 }
 
@@ -1510,24 +1931,30 @@ fn build_mcp_descriptor(
             ],
         )
     };
+    let http_url = setup_config
+        .as_ref()
+        .and_then(|payload| payload.pointer("/mcp/http/url"))
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("http://127.0.0.1:{}/mcp", stable_daemon_port(&repo_root)));
+    let http_port =
+        daemon_endpoint_port(&http_url).unwrap_or_else(|| stable_daemon_port(&repo_root));
     let manual_http_metadata = json!({
-        "url": "http://127.0.0.1:8765/mcp",
+        "url": http_url,
         "start_command": [
             command,
             "mcp",
-            "http",
+            "daemon",
+            "start",
             "--config",
             config_path.to_string_lossy(),
-            "--host",
-            "127.0.0.1",
             "--port",
-            "8765",
-            "--path",
-            "/mcp"
+            http_port.to_string()
         ],
         "host": "127.0.0.1",
-        "port": 8765,
+        "port": http_port,
         "path": "/mcp",
+        "transport_version": DAEMON_TRANSPORT_VERSION,
     });
     Ok(McpServerDescriptor {
         name,
@@ -1570,6 +1997,10 @@ pub struct McpClientRemovalOptions {
 pub struct McpServerRegistration {
     pub command: String,
     pub args: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub transport: String,
 }
 
 #[derive(Debug, Clone)]
@@ -1617,6 +2048,194 @@ pub fn install_mcp_server(
         return Ok(json!({ "results": results }));
     }
     install_mcp_client_configuration(&client, &scope, descriptor, options)
+}
+
+pub fn install_mcp_endpoint(
+    descriptor: &McpServerDescriptor,
+    endpoint: &McpEndpointDescriptor,
+    options: &McpClientInstallOptions,
+) -> Result<serde_json::Value, String> {
+    match endpoint {
+        McpEndpointDescriptor::Stdio { .. } => install_mcp_server(descriptor, options),
+        McpEndpointDescriptor::StreamableHttp { .. } => {
+            install_mcp_http_endpoint(descriptor, endpoint, options)
+        }
+    }
+}
+
+fn install_mcp_http_endpoint(
+    descriptor: &McpServerDescriptor,
+    endpoint: &McpEndpointDescriptor,
+    options: &McpClientInstallOptions,
+) -> Result<serde_json::Value, String> {
+    let client = options.client.trim().to_ascii_lowercase();
+    let scope = options.scope.trim().to_ascii_lowercase();
+    if client != "all" && !supported_mcp_clients().contains(&client.as_str()) {
+        return Err(format!("unsupported MCP client: {client}"));
+    }
+    if !matches!(scope.as_str(), "local" | "user" | "project") {
+        return Err("MCP install scope must be local, user, or project".to_string());
+    }
+    if client != "all" {
+        return install_mcp_http_client_configuration(
+            &client, &scope, descriptor, endpoint, options,
+        );
+    }
+
+    let clients = supported_mcp_clients();
+    for candidate in clients {
+        let mut preflight = options.clone();
+        preflight.client = (*candidate).to_string();
+        preflight.dry_run = true;
+        install_mcp_http_client_configuration(candidate, &scope, descriptor, endpoint, &preflight)?;
+    }
+    if options.dry_run {
+        let results = clients
+            .iter()
+            .map(|client| {
+                let mut child = options.clone();
+                child.client = (*client).to_string();
+                install_mcp_http_client_configuration(client, &scope, descriptor, endpoint, &child)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        return Ok(json!({"results": results}));
+    }
+
+    let mut snapshots = BTreeMap::<PathBuf, Option<Vec<u8>>>::new();
+    for candidate in clients {
+        let target = resolve_mcp_target(candidate, &scope, descriptor, None)?;
+        if let Some(path) = target.path {
+            snapshots
+                .entry(path.clone())
+                .or_insert(snapshot_file(&path)?);
+        }
+    }
+    let mut results = Vec::new();
+    for candidate in clients {
+        let mut child = options.clone();
+        child.client = (*candidate).to_string();
+        match install_mcp_http_client_configuration(candidate, &scope, descriptor, endpoint, &child)
+        {
+            Ok(result) => results.push(result),
+            Err(error) => {
+                for (path, previous) in &snapshots {
+                    let _ = restore_file(path, previous.as_deref());
+                }
+                return Err(format!(
+                    "HTTP MCP registration failed for {candidate}; all prior file changes were rolled back: {error}"
+                ));
+            }
+        }
+    }
+    Ok(json!({"results": results}))
+}
+
+fn install_mcp_http_client_configuration(
+    client: &str,
+    scope: &str,
+    descriptor: &McpServerDescriptor,
+    endpoint: &McpEndpointDescriptor,
+    options: &McpClientInstallOptions,
+) -> Result<serde_json::Value, String> {
+    let target = resolve_mcp_target(
+        client,
+        scope,
+        descriptor,
+        options.client_config_path.clone(),
+    )?;
+    if target.locality == McpTargetLocality::Manual {
+        return Ok(json!({
+            "action": "manual_remote_required",
+            "client": client,
+            "scope": target.scope,
+            "server_name": descriptor.name,
+            "method": "manual_metadata",
+            "path": serde_json::Value::Null,
+            "command": serde_json::Value::Null,
+            "descriptor": {
+                "name": descriptor.name,
+                "transport": "remote_https",
+                "repo_root": descriptor.repo_root,
+                "tool_policy": descriptor.tool_policy,
+            },
+            "entry": serde_json::Value::Null,
+            "payload": {
+                "public_https_required": true,
+                "loopback_registered": false,
+                "tunnel_provisioned": false,
+                "instructions": "Deploy codebase-graph behind a publicly reachable HTTPS endpoint and register that URL manually."
+            },
+            "target_locality": target.locality.as_str(),
+            "legacy_cleanup": manual_legacy_cleanup_payload(client, &options.legacy_server_names),
+        }));
+    }
+    if client == "claude"
+        && target.path.as_ref().is_some_and(|path| {
+            path.file_name().and_then(|name| name.to_str()) == Some("claude_desktop_config.json")
+        })
+    {
+        return Err(
+            "Claude Desktop does not accept the managed loopback HTTP registration; use --mcp-transport stdio explicitly or target Claude Code"
+                .to_string(),
+        );
+    }
+    let path = target.path.clone().ok_or_else(|| {
+        format!(
+            "no file-backed MCP config target is available for {}",
+            target.client
+        )
+    })?;
+    let existing = read_optional_text(&path)?;
+    let adapter = adapter_id(&target.client, &target.scope);
+    let rendered = render_client_http_config(
+        adapter,
+        existing.as_deref(),
+        descriptor,
+        endpoint,
+        &options.legacy_server_names,
+    )?;
+    if !options.dry_run && rendered.action != "unchanged" {
+        write_text_atomic(&path, &rendered.text)?;
+    }
+    Ok(json!({
+        "action": if options.dry_run { "dry_run" } else { rendered.action.as_str() },
+        "client": target.client,
+        "scope": target.scope,
+        "server_name": descriptor.name,
+        "method": "file_adapter",
+        "path": path,
+        "command": serde_json::Value::Null,
+        "descriptor": endpoint_json(descriptor, endpoint),
+        "entry": rendered.entry,
+        "patch": rendered.patch,
+        "payload": rendered.payload,
+        "target_locality": target.locality.as_str(),
+        "legacy_cleanup": rendered.legacy_cleanup,
+        "restart_required": rendered.action == "updated",
+        "restart_instructions": if rendered.action == "updated" {
+            Some(format!("Restart {} so any existing host-owned stdio process is released.", target.client))
+        } else {
+            None
+        },
+    }))
+}
+
+fn endpoint_json(
+    descriptor: &McpServerDescriptor,
+    endpoint: &McpEndpointDescriptor,
+) -> serde_json::Value {
+    match endpoint {
+        McpEndpointDescriptor::Stdio { .. } => descriptor.as_json(),
+        McpEndpointDescriptor::StreamableHttp { url, headers } => json!({
+            "name": descriptor.name,
+            "transport": "streamable_http",
+            "url": url,
+            "headers": headers,
+            "repo_root": descriptor.repo_root,
+            "setup_config_path": descriptor.setup_config_path,
+            "tool_policy": descriptor.tool_policy,
+        }),
+    }
 }
 
 fn install_mcp_client_configuration(
@@ -1894,17 +2513,11 @@ pub fn inspect_mcp_server(
     let Some(existing) = read_optional_text(path)? else {
         return Ok(None);
     };
-    inspect_client_registration(
+    inspect_client_endpoint_registration(
         adapter_id(&target.client, &target.scope),
         &existing,
         server_name,
     )
-    .map(|entry| {
-        entry.map(|entry| McpServerRegistration {
-            command: entry.command,
-            args: entry.args,
-        })
-    })
 }
 
 pub fn rename_mcp_server(
@@ -2095,13 +2708,7 @@ fn default_client_config_path(adapter: &str, scope: &str, repo_root: &Path) -> P
             if scope == "project" {
                 repo_root.join(".mcp.json")
             } else {
-                let mac_path =
-                    home.join("Library/Application Support/Claude/claude_desktop_config.json");
-                if mac_path.parent().is_some_and(Path::exists) {
-                    mac_path
-                } else {
-                    home.join(".config/claude/claude_desktop_config.json")
-                }
+                home.join(".claude.json")
             }
         }
         "claude-project" => repo_root.join(".mcp.json"),
@@ -2201,6 +2808,7 @@ fn native_stdio_command(mut command: Vec<String>, descriptor: &McpServerDescript
     command
 }
 
+#[derive(Debug)]
 struct RenderedNativeConfig {
     text: String,
     action: String,
@@ -2227,6 +2835,55 @@ struct RenamedNativeConfig {
 struct ManagedStdioEntry {
     command: String,
     args: Vec<String>,
+}
+
+fn inspect_client_endpoint_registration(
+    adapter: &str,
+    existing: &str,
+    server_name: &str,
+) -> Result<Option<McpServerRegistration>, String> {
+    let http_url = match adapter {
+        "codex" => {
+            find_toml_block(existing, server_name).and_then(|block| parse_toml_http_url(&block))
+        }
+        "hermes" => parse_hermes_endpoint_entries(existing)?
+            .0
+            .get(server_name)
+            .and_then(|entry| match entry {
+                ManagedHermesEndpoint::Http { url } => Some(url.clone()),
+                ManagedHermesEndpoint::Stdio(_) => None,
+            }),
+        "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
+            let payload = if existing.trim().is_empty() {
+                json!({})
+            } else {
+                serde_json::from_str(existing)
+                    .map_err(|error| format!("MCP config must contain a JSON object: {error}"))?
+            };
+            json_container(&payload, &json_adapter_root_path(adapter))?
+                .and_then(|container| container.get(server_name))
+                .and_then(|entry| entry.get("url"))
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string)
+        }
+        other => return Err(format!("Unsupported MCP client adapter: {other}")),
+    };
+    if let Some(url) = http_url {
+        return Ok(Some(McpServerRegistration {
+            command: String::new(),
+            args: Vec::new(),
+            url: Some(url),
+            transport: "streamable_http".to_string(),
+        }));
+    }
+    inspect_client_registration(adapter, existing, server_name).map(|entry| {
+        entry.map(|entry| McpServerRegistration {
+            command: entry.command,
+            args: entry.args,
+            url: None,
+            transport: "stdio".to_string(),
+        })
+    })
 }
 
 fn inspect_client_registration(
@@ -2266,11 +2923,112 @@ fn rename_client_registration(
     source_name: &str,
     destination_name: &str,
 ) -> Result<RenamedNativeConfig, String> {
+    if inspect_client_endpoint_registration(adapter, existing, source_name)?
+        .as_ref()
+        .is_some_and(|entry| entry.transport == "streamable_http")
+    {
+        return rename_http_client_registration(adapter, existing, source_name, destination_name);
+    }
     match adapter {
         "codex" => rename_codex_registration(existing, source_name, destination_name),
         "hermes" => rename_hermes_registration(existing, source_name, destination_name),
         "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
             rename_json_registration(adapter, existing, source_name, destination_name)
+        }
+        other => Err(format!("Unsupported MCP client adapter: {other}")),
+    }
+}
+
+fn rename_http_client_registration(
+    adapter: &str,
+    existing: &str,
+    source_name: &str,
+    destination_name: &str,
+) -> Result<RenamedNativeConfig, String> {
+    match adapter {
+        "codex" => {
+            let source = find_toml_block(existing, source_name)
+                .ok_or_else(|| format!("MCP server {source_name} was not found"))?;
+            let source_url = parse_toml_http_url(&source)
+                .ok_or_else(|| format!("MCP server {source_name} is not an HTTP entry"))?;
+            if let Some(destination) = find_toml_block(existing, destination_name) {
+                if parse_toml_http_url(&destination).as_deref() != Some(source_url.as_str()) {
+                    return Err(format!(
+                        "refusing to rename MCP server {source_name}: destination {destination_name} has a different endpoint"
+                    ));
+                }
+                return Ok(RenamedNativeConfig {
+                    text: remove_toml_block(existing, source_name).0,
+                    action: "deduplicated".to_string(),
+                    registration: None,
+                });
+            }
+            let renamed = source.replace(
+                &format!("[mcp_servers.{source_name}]"),
+                &format!("[mcp_servers.{destination_name}]"),
+            );
+            let without_source = remove_toml_block(existing, source_name).0;
+            Ok(RenamedNativeConfig {
+                text: upsert_toml_block(&without_source, destination_name, &renamed).0,
+                action: "renamed".to_string(),
+                registration: None,
+            })
+        }
+        "hermes" => {
+            let (mut entries, _) = parse_hermes_endpoint_entries(existing)?;
+            let source = entries
+                .get(source_name)
+                .cloned()
+                .ok_or_else(|| format!("MCP server {source_name} was not found"))?;
+            let action = if let Some(destination) = entries.get(destination_name) {
+                if destination != &source {
+                    return Err(format!(
+                        "refusing to rename MCP server {source_name}: destination {destination_name} has a different endpoint"
+                    ));
+                }
+                "deduplicated"
+            } else {
+                entries.insert(destination_name.to_string(), source);
+                "renamed"
+            };
+            entries.remove(source_name);
+            let patch = hermes_yaml_block_from_endpoint_entries(&entries);
+            Ok(RenamedNativeConfig {
+                text: if entries.is_empty() {
+                    remove_marked_block(existing).0
+                } else {
+                    upsert_marked_block(existing, &patch).0
+                },
+                action: action.to_string(),
+                registration: None,
+            })
+        }
+        "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
+            let mut payload = serde_json::from_str::<serde_json::Value>(existing)
+                .map_err(|error| format!("MCP config must contain a JSON object: {error}"))?;
+            let container = json_container_mut(&mut payload, &json_adapter_root_path(adapter))?;
+            let source = container
+                .get(source_name)
+                .cloned()
+                .ok_or_else(|| format!("MCP server {source_name} was not found"))?;
+            let action = if let Some(destination) = container.get(destination_name) {
+                if destination != &source {
+                    return Err(format!(
+                        "refusing to rename MCP server {source_name}: destination {destination_name} has a different endpoint"
+                    ));
+                }
+                "deduplicated"
+            } else {
+                container.insert(destination_name.to_string(), source);
+                "renamed"
+            };
+            container.remove(source_name);
+            Ok(RenamedNativeConfig {
+                text: serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())?
+                    + "\n",
+                action: action.to_string(),
+                registration: None,
+            })
         }
         other => Err(format!("Unsupported MCP client adapter: {other}")),
     }
@@ -2321,6 +3079,384 @@ fn render_client_config(
         rendered.action = "updated".to_string();
     }
     Ok(rendered)
+}
+
+fn render_client_http_config(
+    adapter: &str,
+    existing: Option<&str>,
+    descriptor: &McpServerDescriptor,
+    endpoint: &McpEndpointDescriptor,
+    legacy_server_names: &[String],
+) -> Result<RenderedNativeConfig, String> {
+    let McpEndpointDescriptor::StreamableHttp { url, headers } = endpoint else {
+        return Err("HTTP renderer requires a Streamable HTTP endpoint".to_string());
+    };
+    let mut rendered = match adapter {
+        "codex" => render_codex_http_config(existing, descriptor, url, headers),
+        "hermes" => render_hermes_http_config(existing, descriptor, url),
+        "claude" | "claude-project" | "lmstudio" | "github-copilot" | "openclaw" | "generic" => {
+            render_json_http_config(adapter, existing, descriptor, url, headers)
+        }
+        other => Err(format!("Unsupported MCP client adapter: {other}")),
+    }?;
+    rendered.legacy_cleanup = apply_legacy_cleanup(
+        adapter,
+        rendered.text.as_str(),
+        descriptor.name.as_str(),
+        legacy_server_names,
+    )?;
+    if let Some(cleaned_text) = rendered
+        .legacy_cleanup
+        .get("text")
+        .and_then(serde_json::Value::as_str)
+    {
+        rendered.text = cleaned_text.to_string();
+    }
+    if rendered.action == "unchanged"
+        && rendered
+            .legacy_cleanup
+            .get("action")
+            .and_then(serde_json::Value::as_str)
+            .is_some_and(|action| action != "unchanged")
+    {
+        rendered.action = "updated".to_string();
+    }
+    Ok(rendered)
+}
+
+fn render_codex_http_config(
+    existing: Option<&str>,
+    descriptor: &McpServerDescriptor,
+    url: &str,
+    headers: &BTreeMap<String, String>,
+) -> Result<RenderedNativeConfig, String> {
+    let mut lines = vec![
+        format!("[mcp_servers.{}]", descriptor.name),
+        format!(
+            "url = {}",
+            serde_json::to_string(url).map_err(|error| error.to_string())?
+        ),
+        format!("startup_timeout_sec = {}", descriptor.timeout),
+    ];
+    if !headers.is_empty() {
+        lines.push(format!(
+            "http_headers = {}",
+            serde_json::to_string(headers).map_err(|error| error.to_string())?
+        ));
+    }
+    let patch = lines.join("\n") + "\n";
+    let entry =
+        json!({"url": url, "http_headers": headers, "startup_timeout_sec": descriptor.timeout});
+    let existing_text = existing.unwrap_or_default();
+    let previous = find_toml_block(existing_text, &descriptor.name);
+    if let Some(block) = previous.as_ref() {
+        if parse_toml_http_url(block).as_deref() == Some(url) {
+            return Ok(RenderedNativeConfig {
+                text: existing_text.to_string(),
+                action: "unchanged".to_string(),
+                entry,
+                patch: json!(block),
+                payload: json!(existing_text),
+                legacy_cleanup: json!({"action": "unchanged", "requested": []}),
+            });
+        }
+        let recognized_stdio = parse_toml_stdio_entry(block)
+            .ok()
+            .is_some_and(|entry| entry == descriptor_signature(descriptor));
+        if !recognized_stdio {
+            return Err(format!(
+                "refusing to overwrite existing MCP server {} because it is not the recognized managed stdio entry",
+                descriptor.name
+            ));
+        }
+    }
+    let (text, previous) = upsert_toml_block(existing_text, &descriptor.name, &patch);
+    Ok(RenderedNativeConfig {
+        action: if previous.is_none() {
+            "created"
+        } else {
+            "updated"
+        }
+        .to_string(),
+        text,
+        entry,
+        patch: json!(patch),
+        payload: json!(patch),
+        legacy_cleanup: json!({"action": "unchanged", "requested": []}),
+    })
+}
+
+fn parse_toml_http_url(block: &str) -> Option<String> {
+    block.lines().find_map(|line| {
+        line.trim()
+            .strip_prefix("url = ")
+            .and_then(|value| serde_json::from_str::<String>(value).ok())
+    })
+}
+
+fn render_json_http_config(
+    adapter: &str,
+    existing: Option<&str>,
+    descriptor: &McpServerDescriptor,
+    url: &str,
+    headers: &BTreeMap<String, String>,
+) -> Result<RenderedNativeConfig, String> {
+    let mut payload = existing
+        .filter(|text| !text.trim().is_empty())
+        .map(serde_json::from_str::<serde_json::Value>)
+        .transpose()
+        .map_err(|error| format!("MCP config must contain a JSON object: {error}"))?
+        .unwrap_or_else(|| json!({}));
+    if !payload.is_object() {
+        return Err("MCP config must contain a JSON object".to_string());
+    }
+    let entry = http_json_entry(adapter, url, headers);
+    let root_path = json_adapter_root_path(adapter);
+    let previous = json_container_mut(&mut payload, &root_path)?
+        .get(&descriptor.name)
+        .cloned();
+    if previous.as_ref() == Some(&entry) {
+        return Ok(RenderedNativeConfig {
+            text: existing.unwrap_or_default().to_string(),
+            action: "unchanged".to_string(),
+            entry,
+            patch: json!({}),
+            payload,
+            legacy_cleanup: json!({"action": "unchanged", "requested": []}),
+        });
+    }
+    if let Some(previous) = previous.as_ref() {
+        let recognized_stdio = parse_json_stdio_entry(previous)
+            .ok()
+            .is_some_and(|candidate| candidate == descriptor_signature(descriptor));
+        if !recognized_stdio {
+            return Err(format!(
+                "refusing to overwrite existing MCP server {} because it is not the recognized managed stdio entry",
+                descriptor.name
+            ));
+        }
+    }
+    json_container_mut(&mut payload, &root_path)?.insert(descriptor.name.clone(), entry.clone());
+    let text = serde_json::to_string_pretty(&payload).map_err(|error| error.to_string())? + "\n";
+    Ok(RenderedNativeConfig {
+        action: if previous.is_none() {
+            "created"
+        } else {
+            "updated"
+        }
+        .to_string(),
+        text,
+        entry: entry.clone(),
+        patch: json!({"path": root_path, "server_name": descriptor.name, "entry": entry}),
+        payload,
+        legacy_cleanup: json!({"action": "unchanged", "requested": []}),
+    })
+}
+
+fn http_json_entry(
+    adapter: &str,
+    url: &str,
+    headers: &BTreeMap<String, String>,
+) -> serde_json::Value {
+    let mut entry = serde_json::Map::new();
+    match adapter {
+        "lmstudio" => {}
+        "openclaw" => {
+            entry.insert("transport".to_string(), json!("streamable-http"));
+        }
+        _ => {
+            entry.insert("type".to_string(), json!("http"));
+        }
+    }
+    entry.insert("url".to_string(), json!(url));
+    if !headers.is_empty() {
+        entry.insert("headers".to_string(), json!(headers));
+    }
+    serde_json::Value::Object(entry)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum ManagedHermesEndpoint {
+    Stdio(ManagedStdioEntry),
+    Http { url: String },
+}
+
+fn render_hermes_http_config(
+    existing: Option<&str>,
+    descriptor: &McpServerDescriptor,
+    url: &str,
+) -> Result<RenderedNativeConfig, String> {
+    let existing_text = existing.unwrap_or_default();
+    let (mut entries, previous) = parse_hermes_endpoint_entries(existing_text)?;
+    if entries.get(&descriptor.name)
+        == Some(&ManagedHermesEndpoint::Http {
+            url: url.to_string(),
+        })
+    {
+        return Ok(RenderedNativeConfig {
+            text: existing_text.to_string(),
+            action: "unchanged".to_string(),
+            entry: json!({"url": url}),
+            patch: json!(previous.unwrap_or_default()),
+            payload: json!(existing_text),
+            legacy_cleanup: json!({"action": "unchanged", "requested": []}),
+        });
+    }
+    if let Some(previous) = entries.get(&descriptor.name) {
+        let recognized = matches!(
+            previous,
+            ManagedHermesEndpoint::Stdio(entry) if entry == &descriptor_signature(descriptor)
+        );
+        if !recognized {
+            return Err(format!(
+                "refusing to overwrite existing MCP server {} because it is not the recognized managed stdio entry",
+                descriptor.name
+            ));
+        }
+    }
+    let existed = entries.contains_key(&descriptor.name);
+    entries.insert(
+        descriptor.name.clone(),
+        ManagedHermesEndpoint::Http {
+            url: url.to_string(),
+        },
+    );
+    let patch = hermes_yaml_block_from_endpoint_entries(&entries);
+    let (text, _) = upsert_marked_block(existing_text, &patch);
+    Ok(RenderedNativeConfig {
+        text,
+        action: if existed { "updated" } else { "created" }.to_string(),
+        entry: json!({"url": url}),
+        patch: json!(patch),
+        payload: json!(patch),
+        legacy_cleanup: json!({"action": "unchanged", "requested": []}),
+    })
+}
+
+fn parse_hermes_endpoint_entries(
+    existing: &str,
+) -> Result<(BTreeMap<String, ManagedHermesEndpoint>, Option<String>), String> {
+    validate_hermes_managed_markers(existing)?;
+    let Some((start, end, start_marker, end_marker)) = find_marked_block(existing) else {
+        return Ok((BTreeMap::new(), None));
+    };
+    let block = existing[start..end + end_marker.len()]
+        .trim_end()
+        .to_string();
+    let mut entries = BTreeMap::new();
+    let mut current_name: Option<String> = None;
+    let mut command: Option<String> = None;
+    let mut args = Vec::new();
+    let mut args_seen = false;
+    let mut url: Option<String> = None;
+    let flush = |entries: &mut BTreeMap<String, ManagedHermesEndpoint>,
+                 current_name: &mut Option<String>,
+                 command: &mut Option<String>,
+                 args: &mut Vec<String>,
+                 args_seen: &mut bool,
+                 url: &mut Option<String>|
+     -> Result<(), String> {
+        if let Some(name) = current_name.take() {
+            let endpoint = if let Some(url) = url.take() {
+                ManagedHermesEndpoint::Http { url }
+            } else {
+                let command = command.take().ok_or_else(|| {
+                    format!("existing Hermes MCP block is missing command or url for {name}")
+                })?;
+                if !*args_seen {
+                    return Err(format!(
+                        "existing Hermes MCP block is missing args for {name}"
+                    ));
+                }
+                ManagedHermesEndpoint::Stdio(ManagedStdioEntry {
+                    command,
+                    args: std::mem::take(args),
+                })
+            };
+            entries.insert(name, endpoint);
+            *args_seen = false;
+            command.take();
+            args.clear();
+        }
+        Ok(())
+    };
+    for line in block.lines() {
+        let trimmed = line.trim();
+        if trimmed == start_marker || trimmed == end_marker || trimmed == "mcp_servers:" {
+            continue;
+        }
+        if line.starts_with("  ") && !line.starts_with("    ") {
+            if let Some(name) = line
+                .strip_prefix("  ")
+                .and_then(|value| value.strip_suffix(':'))
+            {
+                flush(
+                    &mut entries,
+                    &mut current_name,
+                    &mut command,
+                    &mut args,
+                    &mut args_seen,
+                    &mut url,
+                )?;
+                current_name = Some(name.to_string());
+                continue;
+            }
+        }
+        if trimmed == "args:" {
+            args_seen = true;
+        } else if let Some(value) = trimmed.strip_prefix("command: ") {
+            command = Some(
+                serde_json::from_str(value)
+                    .map_err(|_| "existing Hermes MCP command is not parseable".to_string())?,
+            );
+        } else if let Some(value) = trimmed.strip_prefix("url: ") {
+            url = Some(
+                serde_json::from_str(value)
+                    .map_err(|_| "existing Hermes MCP url is not parseable".to_string())?,
+            );
+        } else if let Some(value) = trimmed.strip_prefix("- ") {
+            args.push(
+                serde_json::from_str(value)
+                    .map_err(|_| "existing Hermes MCP arg is not parseable".to_string())?,
+            );
+        }
+    }
+    flush(
+        &mut entries,
+        &mut current_name,
+        &mut command,
+        &mut args,
+        &mut args_seen,
+        &mut url,
+    )?;
+    Ok((entries, Some(block)))
+}
+
+fn hermes_yaml_block_from_endpoint_entries(
+    entries: &BTreeMap<String, ManagedHermesEndpoint>,
+) -> String {
+    let mut lines = vec![
+        "# codebaseGraph MCP servers start".to_string(),
+        "mcp_servers:".to_string(),
+    ];
+    for (name, endpoint) in entries {
+        lines.push(format!("  {name}:"));
+        match endpoint {
+            ManagedHermesEndpoint::Http { url } => {
+                lines.push(format!("    url: {}", yaml_scalar(url)));
+            }
+            ManagedHermesEndpoint::Stdio(entry) => {
+                lines.push("    type: stdio".to_string());
+                lines.push(format!("    command: {}", yaml_scalar(&entry.command)));
+                lines.push("    args:".to_string());
+                for arg in &entry.args {
+                    lines.push(format!("      - {}", yaml_scalar(arg)));
+                }
+            }
+        }
+    }
+    lines.push("# codebaseGraph MCP servers end".to_string());
+    lines.join("\n") + "\n"
 }
 
 fn remove_client_config(
@@ -2727,7 +3863,7 @@ fn remove_hermes_config(
             payload: json!(""),
         });
     };
-    let (mut managed, _) = parse_hermes_managed_entries(existing)?;
+    let (mut managed, _) = parse_hermes_endpoint_entries(existing)?;
     let previous = managed.remove(server_name);
     let action = if previous.is_some() {
         "removed".to_string()
@@ -2737,7 +3873,7 @@ fn remove_hermes_config(
     let patch = if managed.is_empty() {
         String::new()
     } else {
-        hermes_yaml_block_from_entries(&managed)
+        hermes_yaml_block_from_endpoint_entries(&managed)
     };
     let text = if previous.is_some() {
         if patch.is_empty() {
@@ -2752,7 +3888,12 @@ fn remove_hermes_config(
         text,
         action,
         previous: previous
-            .map(|entry| json!({"command": entry.command, "args": entry.args}))
+            .map(|entry| match entry {
+                ManagedHermesEndpoint::Stdio(entry) => {
+                    json!({"command": entry.command, "args": entry.args})
+                }
+                ManagedHermesEndpoint::Http { url } => json!({"url": url}),
+            })
             .unwrap_or(serde_json::Value::Null),
         payload: json!(existing),
     })
@@ -3353,13 +4494,14 @@ fn install_safe_name(value: &str) -> String {
 mod tests {
     use super::{
         codex_toml_block, descriptor_signature, hermes_yaml_block_from_entries, inspect_mcp_server,
-        install_mcp_server, instruction_block, native_client_command, parse_hermes_managed_entries,
-        parse_toml_stdio_entry, reinstall_state, remove_mcp_server, remove_partial_state_tree,
-        rename_mcp_server, resolve_mcp_target, run_reinstall_activation_boundary,
+        install_mcp_endpoint, install_mcp_server, instruction_block, native_client_command,
+        parse_hermes_managed_entries, parse_toml_stdio_entry, reinstall_state, remove_mcp_server,
+        remove_partial_state_tree, rename_mcp_server, render_client_http_config,
+        resolve_mcp_target, run_reinstall_activation_boundary, select_available_daemon_port,
         upsert_instruction_text, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
         McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
-        McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
-        ResolvedMcpTarget,
+        McpEndpointDescriptor, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
+        McpTargetLocality, ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -3468,6 +4610,192 @@ mod tests {
         }
     }
 
+    fn http_endpoint() -> McpEndpointDescriptor {
+        McpEndpointDescriptor::StreamableHttp {
+            url: "http://127.0.0.1:43123/mcp".to_string(),
+            headers: BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn http_registration_shapes_match_every_loopback_harness() {
+        let repo = TestDir::new("http-registration-shapes");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let endpoint = http_endpoint();
+        let cases = [
+            (
+                "codex",
+                json!({"url": "http://127.0.0.1:43123/mcp", "http_headers": {}, "startup_timeout_sec": 60}),
+            ),
+            (
+                "claude",
+                json!({"type": "http", "url": "http://127.0.0.1:43123/mcp"}),
+            ),
+            (
+                "claude-project",
+                json!({"type": "http", "url": "http://127.0.0.1:43123/mcp"}),
+            ),
+            (
+                "github-copilot",
+                json!({"type": "http", "url": "http://127.0.0.1:43123/mcp"}),
+            ),
+            ("lmstudio", json!({"url": "http://127.0.0.1:43123/mcp"})),
+            ("hermes", json!({"url": "http://127.0.0.1:43123/mcp"})),
+            (
+                "openclaw",
+                json!({"transport": "streamable-http", "url": "http://127.0.0.1:43123/mcp"}),
+            ),
+            (
+                "generic",
+                json!({"type": "http", "url": "http://127.0.0.1:43123/mcp"}),
+            ),
+        ];
+        for (adapter, expected) in cases {
+            let rendered =
+                render_client_http_config(adapter, None, &descriptor, &endpoint, &[]).unwrap();
+            assert_eq!(rendered.entry, expected, "{adapter}");
+            assert!(!rendered.text.contains("command"), "{adapter}");
+            assert!(rendered.text.contains("http://127.0.0.1:43123/mcp"));
+        }
+    }
+
+    #[test]
+    fn daemon_port_selection_migrates_collisions_but_rejects_unavailable_overrides() {
+        let selected = select_available_daemon_port(43_123, None, |candidate| {
+            if candidate < 43_126 {
+                Err("occupied".to_string())
+            } else {
+                Ok(())
+            }
+        })
+        .unwrap();
+        assert_eq!(selected, 43_126);
+
+        let error =
+            select_available_daemon_port(43_123, Some(43_123), |_| Err("occupied".to_string()))
+                .unwrap_err();
+        assert!(error.contains("requested MCP daemon port 43123 is unavailable"));
+    }
+
+    #[test]
+    fn http_registration_migrates_only_the_recognized_stdio_entry() {
+        let repo = TestDir::new("http-registration-migration");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let endpoint = http_endpoint();
+        let existing = serde_json::to_string_pretty(&json!({
+            "mcpServers": {
+                "codebase_graph_repo": descriptor.stdio_entry(false, false),
+                "unrelated": {"command": "keep", "args": []}
+            }
+        }))
+        .unwrap();
+        let migrated =
+            render_client_http_config("generic", Some(&existing), &descriptor, &endpoint, &[])
+                .unwrap();
+        assert_eq!(migrated.action, "updated");
+        assert!(migrated.text.contains("\"unrelated\""));
+        assert!(migrated.entry.get("command").is_none());
+
+        let custom = existing.replace("codebase-graph", "custom-server");
+        let error =
+            render_client_http_config("generic", Some(&custom), &descriptor, &endpoint, &[])
+                .unwrap_err();
+        assert!(error.contains("not the recognized managed stdio entry"));
+    }
+
+    #[test]
+    fn cloud_targets_require_public_https_without_exposing_loopback() {
+        let repo = TestDir::new("http-manual-cloud");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        for client in ["copilot-studio", "microsoft-copilot"] {
+            let result = install_mcp_endpoint(
+                &descriptor,
+                &http_endpoint(),
+                &McpClientInstallOptions {
+                    client: client.to_string(),
+                    scope: "user".to_string(),
+                    client_config_path: None,
+                    dry_run: false,
+                    install_method: McpInstallMode::FileAdapter,
+                    existing_entry_policy: McpExistingEntryPolicy::Replace,
+                    legacy_server_names: Vec::new(),
+                },
+            )
+            .unwrap();
+            assert_eq!(result["action"], "manual_remote_required");
+            assert_eq!(result["payload"]["public_https_required"], true);
+            assert!(!result["payload"].to_string().contains("127.0.0.1"));
+        }
+    }
+
+    #[test]
+    fn claude_desktop_path_is_rejected_for_loopback_http() {
+        let repo = TestDir::new("claude-desktop-http");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let error = install_mcp_endpoint(
+            &descriptor,
+            &http_endpoint(),
+            &install_options("claude", "user", repo.join("claude_desktop_config.json")),
+        )
+        .unwrap_err();
+        assert!(error.contains("Claude Desktop"));
+    }
+
+    #[test]
+    fn http_registration_can_be_inspected_renamed_and_removed() {
+        let repo = TestDir::new("http-registration-lifecycle");
+        let descriptor = test_descriptor(repo.path(), "codebase_graph_repo");
+        let config_path = repo.join("mcp.json");
+        install_mcp_endpoint(
+            &descriptor,
+            &http_endpoint(),
+            &install_options("generic", "project", config_path.clone()),
+        )
+        .unwrap();
+        let target = ResolvedMcpTarget {
+            client: "generic".to_string(),
+            scope: "project".to_string(),
+            locality: McpTargetLocality::RepositoryLocal,
+            path: Some(config_path.clone()),
+        };
+        let inspected = inspect_mcp_server(&descriptor.name, &target)
+            .unwrap()
+            .unwrap();
+        assert_eq!(inspected.transport, "streamable_http");
+        assert_eq!(inspected.url.as_deref(), Some("http://127.0.0.1:43123/mcp"));
+        assert!(inspected.command.is_empty());
+
+        let renamed = rename_mcp_server(
+            &descriptor.name,
+            "codebase_graph_renamed",
+            &McpClientRenameOptions {
+                target: target.clone(),
+                dry_run: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(renamed["action"], "renamed");
+        assert!(inspect_mcp_server(&descriptor.name, &target)
+            .unwrap()
+            .is_none());
+        assert!(inspect_mcp_server("codebase_graph_renamed", &target)
+            .unwrap()
+            .is_some());
+
+        let removed = remove_mcp_server(
+            "codebase_graph_renamed",
+            &McpClientRemovalOptions {
+                target: target.clone(),
+                dry_run: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(removed["action"], "removed");
+        assert!(inspect_mcp_server("codebase_graph_renamed", &target)
+            .unwrap()
+            .is_none());
+    }
+
     fn hermes_block(name: &str, command: &str, args: &[&str]) -> String {
         let mut lines = vec![
             "# codebaseGraph MCP servers start".to_string(),
@@ -3561,15 +4889,7 @@ mod tests {
         let home = std::env::var_os("HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("."));
-        let claude_user_path = {
-            let mac_path =
-                home.join("Library/Application Support/Claude/claude_desktop_config.json");
-            if mac_path.parent().is_some_and(Path::exists) {
-                mac_path
-            } else {
-                home.join(".config/claude/claude_desktop_config.json")
-            }
-        };
+        let claude_user_path = home.join(".claude.json");
         let openclaw_home = std::env::var_os("OPENCLAW_HOME")
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join(".openclaw"));

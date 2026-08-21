@@ -187,6 +187,18 @@ pub(crate) struct GraphInstallMcpConfig {
     pub server_name: String,
     #[serde(default)]
     pub command: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub http: Option<GraphInstallMcpHttpConfig>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct GraphInstallMcpHttpConfig {
+    #[serde(default)]
+    pub url: String,
+    #[serde(default)]
+    pub service_id: String,
+    #[serde(default)]
+    pub transport_version: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

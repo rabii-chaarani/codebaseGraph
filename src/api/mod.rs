@@ -19,18 +19,20 @@ mod refresh;
 
 pub use contracts::{
     ApiError, ContextRequest, HealthRequest, MaterializationRequest, McpInstallRequest,
-    OperationInvocation, OperationRequest, OperationResponse, OutputFormat, QueryRequest,
-    RefreshBackend, RefreshLoopConfig, RefreshRequest, RefreshWatchConfig, RefreshWatchObserver,
-    RefreshWatchSummary, RepoSelector, RepositoryLifecycleRequest, SearchRequest,
+    McpTransport, OperationInvocation, OperationRequest, OperationResponse, OutputFormat,
+    QueryRequest, RefreshBackend, RefreshLoopConfig, RefreshRequest, RefreshWatchConfig,
+    RefreshWatchObserver, RefreshWatchSummary, RepoSelector, RepositoryLifecycleRequest,
+    SearchRequest,
 };
 pub use core::OperationDescriptor;
 pub(crate) use facade::CoordinatorCodebaseGraphApi;
 pub use facade::{CodebaseGraphApi, OperationExecutor};
 pub use lifecycle::{
-    inspect_mcp_server, install_mcp_server, remove_mcp_server, rename_mcp_server,
-    resolve_mcp_target, supported_mcp_clients, McpClientInstallOptions, McpClientRemovalOptions,
-    McpClientRenameOptions, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
-    McpServerRegistration, McpTargetLocality, ResolvedMcpTarget,
+    inspect_mcp_server, install_mcp_endpoint, install_mcp_server, mcp_harness_capabilities,
+    remove_mcp_server, rename_mcp_server, resolve_mcp_target, supported_mcp_clients,
+    McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
+    McpEndpointDescriptor, McpExistingEntryPolicy, McpHarnessCapabilities, McpInstallMode,
+    McpServerDescriptor, McpServerRegistration, McpTargetLocality, ResolvedMcpTarget,
 };
 pub(crate) use materialization::{
     execute_candidate_materialization, execute_materialization, read_manifest, MaterializeOptions,

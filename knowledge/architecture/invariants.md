@@ -7,7 +7,7 @@ tags:
 - decisions
 - graph-storage
 - invariants
-timestamp: 2026-08-18
+timestamp: 2026-08-20
 title: Architecture Invariants
 type: architecture
 ---
@@ -36,7 +36,7 @@ These constraints are the shortest durable test for whether a change still fits 
 17. **Legacy state is read-only until explicit reinstall.** Schema-v1 reads remain available; mutations return `legacy_storage_requires_reinstall`. Successful reinstall deletes renamed legacy state immediately after validated v2 activation.
 18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.
 19. **Refresh ownership and admission are bounded.** One nonblocking refresh lease holder creates the watcher; followers remain read-only. Event churn collapses to one bounded dirty state, overflow forces a full rescan, CodebaseGraph-owned roots are never admitted, and only refresh intent may close an unchanged writer session without publication.
-20. **MCP graph access has one repository owner.** One coordinator lease holder owns the API core and every MCP Ladybug open; followers route bounded authenticated loopback frames and take over after operating-system lock release.
+20. **MCP graph and local transport access have one repository owner.** One coordinator lease holder owns the API core and every MCP Ladybug open. One service-managed Streamable HTTP daemon holds the repository daemon lock and gives every loopback-capable harness the same endpoint; concurrent starts cannot initialize a second listener, watcher, or API. Stdio remains explicit compatibility mode, and cloud connectors require a separately deployed public HTTPS endpoint.
 21. **Materialization workers cannot outlive supervision.** One worker lease covers request creation through result reconciliation. The child begins only after durable identity and a start gate, exits when its parent control pipe closes, and a successor reaps the recorded PID before cleanup or new work.
 
 ## Knowledge invariants
@@ -46,7 +46,7 @@ These constraints are the shortest durable test for whether a change still fits 
 24. **Wiki publication is generation-atomic.** Failed compilation or rendering preserves the last valid projection, and stale concurrent work cannot replace newer output.
 25. **Rendering treats bundle content as untrusted.** Markdown, HTML, links, fragments, and resource identifiers are sanitized before publication.
 26. **Authoring is confined and concurrency-safe.** Writes stay beneath configured bundle roots, reject traversal and escaping links, use atomic replacement, and reject stale content hashes.
-27. **HTTP is a read-only local preview boundary.** It binds locally by default, applies restrictive browser headers, and does not become an alternate authoring surface.
+27. **Wiki preview HTTP is a read-only local boundary.** It binds locally by default, applies restrictive browser headers, and does not become an alternate authoring surface; this is distinct from the authenticated MCP Streamable HTTP transport.
 28. **Graph context is optional.** The wiki calls only the Graph Runtime public API; graph failure returns explicit degraded context without blocking curated knowledge.
 29. **Stable identities and URLs outlive implementation refactors.** Concept IDs, directory projections, backlink targets, and published routes remain deterministic.
 

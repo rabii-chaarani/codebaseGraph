@@ -1,4 +1,5 @@
 use crate::adapters::cli::{format::setup_help, materialization_input::MaterializeOptions};
+use crate::api::McpTransport;
 use std::path::PathBuf;
 
 #[derive(Debug)]
@@ -112,6 +113,8 @@ pub(in crate::adapters::cli) struct SetupOptions {
     pub(in crate::adapters::cli) mcp_client: String,
     pub(in crate::adapters::cli) mcp_config_path: Option<PathBuf>,
     pub(in crate::adapters::cli) skip_mcp_config: bool,
+    pub(in crate::adapters::cli) mcp_transport: McpTransport,
+    pub(in crate::adapters::cli) mcp_daemon_port: Option<u16>,
     pub(in crate::adapters::cli) dry_run: bool,
     pub(in crate::adapters::cli) instructions_target: String,
     pub(in crate::adapters::cli) help: bool,
@@ -136,6 +139,8 @@ impl SetupOptions {
             mcp_client: "codex".to_string(),
             mcp_config_path: None,
             skip_mcp_config: false,
+            mcp_transport: McpTransport::Auto,
+            mcp_daemon_port: None,
             dry_run: false,
             instructions_target: "auto".to_string(),
             help: false,
@@ -178,6 +183,26 @@ impl SetupOptions {
                 "--skip-mcp-config" => {
                     options.skip_mcp_config = true;
                     index += 1;
+                }
+                "--mcp-transport" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--mcp-transport requires a value".to_string())?;
+                    options.mcp_transport = McpTransport::parse(value)?;
+                    index += 2;
+                }
+                "--mcp-daemon-port" => {
+                    let value = args
+                        .get(index + 1)
+                        .ok_or_else(|| "--mcp-daemon-port requires a port".to_string())?;
+                    let port = value
+                        .parse::<u16>()
+                        .map_err(|_| "--mcp-daemon-port must be between 1 and 65535".to_string())?;
+                    if port == 0 {
+                        return Err("--mcp-daemon-port must be between 1 and 65535".to_string());
+                    }
+                    options.mcp_daemon_port = Some(port);
+                    index += 2;
                 }
                 "--dry-run" => {
                     options.dry_run = true;

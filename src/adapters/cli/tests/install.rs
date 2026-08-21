@@ -94,6 +94,21 @@ fn install_writes_schema_v3_managed_config_without_static_database_or_manifest_p
     assert_eq!(config["materialization"]["rust_memory_mib"], 384);
     assert_eq!(config["materialization"]["spill_chunk_mib"], 32);
     assert_eq!(config["materialization"]["max_parallelism"], 2);
+    assert!(config["mcp"]["command"]
+        .as_array()
+        .is_some_and(|command| command.iter().any(|part| part == "start")));
+    assert!(config["mcp"]["http"]["url"]
+        .as_str()
+        .unwrap()
+        .starts_with("http://127.0.0.1:"));
+    assert_eq!(
+        config["mcp"]["http"]["transport_version"],
+        "streamable-http-v1"
+    );
+    assert!(config["mcp"]["http"]["service_id"]
+        .as_str()
+        .unwrap()
+        .starts_with("io.codebasegraph.mcp."));
     assert!(config.get("database_path").is_none());
     assert!(config.get("manifest_path").is_none());
     let expected_storage_root =
@@ -284,7 +299,7 @@ fn reinstall_dry_run_leaves_existing_graph_state() {
 }
 
 #[test]
-fn reinstall_preserves_unrelated_mcp_entries() {
+fn reinstall_rejects_custom_mcp_entry_without_changing_it() {
     let root = unique_temp_dir("codebase-graph-rust-reinstall-mcp");
     fs::create_dir_all(&root).unwrap();
     fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
@@ -321,7 +336,7 @@ fn reinstall_preserves_unrelated_mcp_entries() {
     .unwrap();
 
     let mut output = Vec::new();
-    run(
+    let error = run(
         [
             "reinstall",
             "--repo-root",
@@ -340,10 +355,8 @@ fn reinstall_preserves_unrelated_mcp_entries() {
         ],
         &mut output,
     )
-    .unwrap();
-
-    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
-    assert_eq!(value["install"]["mcp_config"]["action"], "updated");
+    .unwrap_err();
+    assert!(error.contains("not the recognized managed stdio entry"));
     let client_payload: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(&client_config).unwrap()).unwrap();
     assert_eq!(
@@ -351,8 +364,8 @@ fn reinstall_preserves_unrelated_mcp_entries() {
         "keep"
     );
     assert_eq!(
-        client_payload["mcpServers"]["codebase_graph"]["args"][0],
-        "mcp"
+        client_payload["mcpServers"]["codebase_graph"]["command"],
+        "old"
     );
     let _ = fs::remove_dir_all(root);
 }
@@ -404,7 +417,70 @@ fn mcp_install_writes_generic_client_config() {
     assert!(client_config.exists());
     let client_payload: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(&client_config).unwrap()).unwrap();
-    assert_eq!(client_payload["mcpServers"][server_name]["args"][0], "mcp");
+    assert_eq!(client_payload["mcpServers"][server_name]["type"], "http");
+    assert!(client_payload["mcpServers"][server_name]["url"]
+        .as_str()
+        .unwrap()
+        .starts_with("http://127.0.0.1:"));
+    assert!(client_payload["mcpServers"][server_name]
+        .get("command")
+        .is_none());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn mcp_install_preserves_explicit_stdio_compatibility() {
+    let root = unique_temp_dir("codebase-graph-rust-mcp-stdio");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+    let client_config = root.join("client/mcp.json");
+    let setup_config = root.join(".codebaseGraph/config.json");
+    let mut output = Vec::new();
+    run(
+        [
+            "mcp",
+            "install",
+            "--client",
+            "generic",
+            "--mcp-transport",
+            "stdio",
+            "--config-path",
+            setup_config.to_str().unwrap(),
+            "--client-config-path",
+            client_config.to_str().unwrap(),
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+    let result: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    let server_name = result["server_name"].as_str().unwrap();
+    let config: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&client_config).unwrap()).unwrap();
+    assert_eq!(
+        config["mcpServers"][server_name]["command"],
+        "codebase-graph"
+    );
+    assert_eq!(config["mcpServers"][server_name]["args"][0], "mcp");
+    assert!(config["mcpServers"][server_name].get("url").is_none());
     let _ = fs::remove_dir_all(root);
 }
 
@@ -445,10 +521,11 @@ fn mcp_install_reports_copilot_studio_metadata() {
     )
     .unwrap();
     let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
-    assert_eq!(value["action"], "reported");
+    assert_eq!(value["action"], "manual_remote_required");
     assert_eq!(value["method"], "manual_metadata");
-    assert_eq!(value["payload"]["http"]["url"], "http://127.0.0.1:8765/mcp");
-    assert_eq!(value["payload"]["stdio"]["type"], "stdio");
+    assert_eq!(value["payload"]["public_https_required"], true);
+    assert_eq!(value["payload"]["loopback_registered"], false);
+    assert!(!value.to_string().contains("127.0.0.1"));
     let _ = fs::remove_dir_all(root);
 }
 

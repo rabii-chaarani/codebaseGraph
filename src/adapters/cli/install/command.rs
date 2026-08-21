@@ -26,6 +26,8 @@ pub(in crate::adapters::cli) fn run_mcp_install<W: Write>(
         name: options.name.clone(),
         client_config_path: options.client_config_path.clone(),
         dry_run: options.dry_run,
+        transport: options.transport,
+        daemon_port: options.daemon_port,
         output_format: OutputFormat::Typed,
     });
     let response = CodebaseGraphApi::new()
