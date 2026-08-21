@@ -219,24 +219,19 @@ impl ManagedWriteSession {
             .publish_candidate_inner(&workspace, &self.candidate)
         {
             Ok(generation_id) => {
-                match workspace.mark_phase(RunPhase::Published, Some(generation_id.clone()), None) {
-                    Ok(()) => match workspace.finish() {
-                        Ok(()) => Ok(generation_id),
-                        Err(error) => {
-                            self.finished = true;
-                            drop(self.writer_lease.take());
-                            Err(error)
-                        }
-                    },
-                    Err(error) => {
-                        self.finished = true;
-                        let error = abort_workspace_after_error(workspace, error);
-                        drop(self.writer_lease.take());
-                        Err(error)
-                    }
-                }
+                finish_committed_workspace(workspace, &generation_id);
+                Ok(generation_id)
             }
             Err(error) => {
+                let generation_id = self.candidate.generation_id.clone();
+                if self
+                    .store
+                    .publication_is_committed(&generation_id)
+                    .unwrap_or(false)
+                {
+                    finish_committed_workspace(workspace, &generation_id);
+                    return Ok(generation_id);
+                }
                 self.finished = true;
                 let error = abort_workspace_after_error(workspace, error);
                 drop(self.writer_lease.take());
@@ -780,6 +775,18 @@ impl ManagedStore {
         let _lease = self.open_state_lock(LockMode::Shared)?;
         self.read_active_generation()
     }
+
+    fn publication_is_committed(&self, generation_id: &str) -> Result<bool, NativeError> {
+        let _lease = self.open_state_lock(LockMode::Shared)?;
+        let Some(active) = self.read_active_generation()? else {
+            return Ok(false);
+        };
+        if active.generation_id != generation_id {
+            return Ok(false);
+        }
+        validate_ready_generation(&self.layout.generation(generation_id)?)?;
+        Ok(true)
+    }
 }
 
 pub(crate) struct GraphStorage;
@@ -1046,4 +1053,11 @@ fn abort_workspace_after_error(workspace: RunWorkspace, primary: NativeError) ->
         Ok(()) => primary,
         Err(cleanup) => NativeError::InvalidInput(format!("{primary}; cleanup failed: {cleanup}")),
     }
+}
+
+fn finish_committed_workspace(workspace: RunWorkspace, generation_id: &str) {
+    // The active pointer is the transaction commit. Journal finalization and
+    // workspace removal remain recoverable cleanup after that boundary.
+    let _ = workspace.mark_phase(RunPhase::Published, Some(generation_id.to_string()), None);
+    let _ = workspace.finish();
 }
