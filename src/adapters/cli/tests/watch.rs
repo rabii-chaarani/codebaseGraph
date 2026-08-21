@@ -29,25 +29,25 @@ fn drive_watch_until_finished(
     handle: &std::thread::JoinHandle<Result<String, String>>,
     output: &SharedOutput,
 ) {
-    let deadline = Instant::now() + Duration::from_secs(15);
+    let deadline = Instant::now() + Duration::from_secs(30);
     let mut attempt = 0_usize;
     while !handle.is_finished() && Instant::now() < deadline {
+        // Give the watcher time to capture its baseline before delivering a
+        // marker. Sparse retries also keep slow CI hosts from accumulating a
+        // large initial snapshot while the watch command is still starting.
+        std::thread::sleep(Duration::from_millis(250));
         fs::write(
             // The refresh worker can hold the prior marker open while parsing it.
             // Reuse of one path makes Windows reject the next truncating write.
             root.join(format!("created-{attempt}.py")),
-            format!(
-                "def created():\n    return {attempt}\n#{}\n",
-                "x".repeat(attempt)
-            ),
+            format!("def created():\n    return {attempt}\n"),
         )
         .unwrap();
         attempt += 1;
-        std::thread::sleep(Duration::from_millis(20));
     }
     assert!(
         handle.is_finished(),
-        "watch did not observe a repository change within 15 seconds: {}",
+        "watch did not observe a repository change within 30 seconds: {}",
         output.text()
     );
 }

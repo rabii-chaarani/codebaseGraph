@@ -7,7 +7,9 @@ use crate::storage::layout::{
 use crate::storage::locks::{
     open_locked, try_open_locked, LockMode, LockedFile, StateLease, WriterLease,
 };
-use crate::storage::run_workspace::{RunJournal, RunPhase, RunWorkspace, RunWorkspaceRecovery};
+use crate::storage::run_workspace::{
+    remove_run_root_confined, RunJournal, RunPhase, RunWorkspace, RunWorkspaceRecovery,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -217,24 +219,19 @@ impl ManagedWriteSession {
             .publish_candidate_inner(&workspace, &self.candidate)
         {
             Ok(generation_id) => {
-                match workspace.mark_phase(RunPhase::Published, Some(generation_id.clone()), None) {
-                    Ok(()) => match workspace.finish() {
-                        Ok(()) => Ok(generation_id),
-                        Err(error) => {
-                            self.finished = true;
-                            drop(self.writer_lease.take());
-                            Err(error)
-                        }
-                    },
-                    Err(error) => {
-                        self.finished = true;
-                        let error = abort_workspace_after_error(workspace, error);
-                        drop(self.writer_lease.take());
-                        Err(error)
-                    }
-                }
+                finish_committed_workspace(workspace, &generation_id);
+                Ok(generation_id)
             }
             Err(error) => {
+                let generation_id = self.candidate.generation_id.clone();
+                if self
+                    .store
+                    .publication_is_committed(&generation_id)
+                    .unwrap_or(false)
+                {
+                    finish_committed_workspace(workspace, &generation_id);
+                    return Ok(generation_id);
+                }
                 self.finished = true;
                 let error = abort_workspace_after_error(workspace, error);
                 drop(self.writer_lease.take());
@@ -509,7 +506,7 @@ impl ManagedStore {
             };
             drop(lease);
             if !recovered {
-                remove_run_root_safe(&path, &runs_root)?;
+                remove_run_root_confined(&path, &runs_root)?;
                 report.deleted += 1;
             }
         }
@@ -525,7 +522,7 @@ impl ManagedStore {
     ) -> Result<(), NativeError> {
         let Some(candidate_id) = journal.candidate_generation_id.as_ref() else {
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
             return Ok(());
         };
@@ -545,7 +542,7 @@ impl ManagedStore {
         if active_id.as_deref() == Some(candidate_id.as_str()) && published_valid {
             self.finalize_previous_retirement(journal.base_generation_id.as_deref())?;
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
             return Ok(());
         }
@@ -565,7 +562,7 @@ impl ManagedStore {
                 )?;
             }
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
                 return Ok(());
             }
             return Err(NativeError::InvalidInput(
@@ -584,7 +581,7 @@ impl ManagedStore {
             )?;
             *active = Some(activated);
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
             return Ok(());
         }
@@ -597,7 +594,7 @@ impl ManagedStore {
             )?;
             *active = Some(activated);
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
             return Ok(());
         }
@@ -609,7 +606,7 @@ impl ManagedStore {
             )?;
         }
         if cleanup_run_root {
-            remove_run_root_safe(run_root, &self.layout.runs_root())?;
+            remove_run_root_confined(run_root, &self.layout.runs_root())?;
         }
         Ok(())
     }
@@ -777,6 +774,18 @@ impl ManagedStore {
     fn read_active_with_shared_lock(&self) -> Result<Option<ActiveGeneration>, NativeError> {
         let _lease = self.open_state_lock(LockMode::Shared)?;
         self.read_active_generation()
+    }
+
+    fn publication_is_committed(&self, generation_id: &str) -> Result<bool, NativeError> {
+        let _lease = self.open_state_lock(LockMode::Shared)?;
+        let Some(active) = self.read_active_generation()? else {
+            return Ok(false);
+        };
+        if active.generation_id != generation_id {
+            return Ok(false);
+        }
+        validate_ready_generation(&self.layout.generation(generation_id)?)?;
+        Ok(true)
     }
 }
 
@@ -967,20 +976,6 @@ fn ensure_directory_without_symlinks(path: &Path) -> Result<(), NativeError> {
     Ok(())
 }
 
-fn remove_run_root_safe(run_root: &Path, runs_root: &Path) -> Result<(), NativeError> {
-    let canonical_runs_root = fs::canonicalize(runs_root)?;
-    let canonical_run_root = fs::canonicalize(run_root)?;
-    if canonical_run_root.parent() != Some(canonical_runs_root.as_path()) {
-        return Err(NativeError::InvalidInput(format!(
-            "refusing to remove run path outside runs root: {}",
-            run_root.display()
-        )));
-    }
-    ensure_directory_without_symlinks(&canonical_run_root)?;
-    remove_path_without_symlinks(&canonical_run_root)?;
-    Ok(())
-}
-
 fn remove_path_without_symlinks(path: &Path) -> Result<(), NativeError> {
     let metadata = fs::symlink_metadata(path)?;
     if metadata.file_type().is_symlink() {
@@ -1058,4 +1053,11 @@ fn abort_workspace_after_error(workspace: RunWorkspace, primary: NativeError) ->
         Ok(()) => primary,
         Err(cleanup) => NativeError::InvalidInput(format!("{primary}; cleanup failed: {cleanup}")),
     }
+}
+
+fn finish_committed_workspace(workspace: RunWorkspace, generation_id: &str) {
+    // The active pointer is the transaction commit. Journal finalization and
+    // workspace removal remain recoverable cleanup after that boundary.
+    let _ = workspace.mark_phase(RunPhase::Published, Some(generation_id.to_string()), None);
+    let _ = workspace.finish();
 }

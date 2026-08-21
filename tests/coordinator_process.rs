@@ -122,7 +122,7 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
         }
         assert!(
             Instant::now() < health_deadline,
-            "refresh resource metrics were not published"
+            "refresh resource metrics were not published: {health}"
         );
         health_id += 1;
         std::thread::sleep(Duration::from_millis(25));

@@ -619,6 +619,48 @@ fn managed_publish_rejects_a_stale_base_generation() {
 }
 
 #[test]
+fn managed_publish_reconciles_an_error_after_active_pointer_commit() {
+    let root = temp_dir("managed_publish_reconciles_post_commit_error");
+    let store = open_managed_store(root.join("storage"));
+    let first_generation = publish_managed_generation(&store, b"db-first", json!({"files": []}));
+    let first_paths = store.layout().generation(&first_generation).unwrap();
+    fs::create_dir(first_paths.retired_path()).unwrap();
+
+    let mut session = store.begin_write().unwrap();
+    let expected_generation = session.candidate.generation_id.clone();
+    write_candidate_generation(
+        &session.candidate.paths,
+        b"db-second",
+        json!({"files": []}),
+        false,
+    );
+    session
+        .mark_ready_with_stats(&GraphSummary::default())
+        .unwrap();
+
+    let published_generation = session
+        .publish_with_stats(&GraphSummary::default())
+        .unwrap();
+    assert_eq!(published_generation, expected_generation);
+    assert_eq!(
+        store
+            .read_active_generation()
+            .unwrap()
+            .unwrap()
+            .generation_id,
+        expected_generation
+    );
+
+    session.finish();
+    let cleanup = store.cleanup().unwrap();
+    assert_eq!(cleanup.run_recovery.skipped_locked, 0);
+    assert!(fs::read_dir(store.layout().runs_root())
+        .unwrap()
+        .next()
+        .is_none());
+}
+
+#[test]
 fn managed_cleanup_reports_and_later_removes_locked_runs() {
     let root = temp_dir("managed-cleanup-reports-and-later-removes-locked-runs");
     let store = open_managed_store(root.join("storage"));
