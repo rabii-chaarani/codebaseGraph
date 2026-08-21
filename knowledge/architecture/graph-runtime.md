@@ -6,7 +6,7 @@ tags:
 - components
 - graph-runtime
 - rust
-timestamp: 2026-08-18
+timestamp: 2026-08-21
 title: Graph Runtime Architecture
 type: architecture
 ---
@@ -52,6 +52,8 @@ The core owns three cross-cutting duties:
 ## Central MCP ownership and process isolation
 
 All MCP processes for one managed storage root or Direct destination pair contend for one nonblocking `coordinator.lock`. The holder writes a mode-0600 loopback endpoint and random token to `coordinator.json`, owns the Public API Core, and is the only MCP process that opens Ladybug databases. Followers keep only the bounded route state, retry the owner on connection failure, and independently attempt takeover. Their monitor detects owner death and operating-system lock release permits takeover within five seconds.
+
+Coordinator request framing keeps transport recovery separate from application semantics. Receive failures detected before dispatch are explicit retryable replies, and clients retry them on the same live owner within a 15-second bound. Authentication failures refresh the route, while ambiguous disconnects retain a single replay limit. Ping reads use a five-second timeout, but operation replies remain unbounded because materialization and other valid requests may run longer.
 
 Refresh and coordinator-triggered explicit materialization use the same versioned Materialization Worker protocol. The owner writes request/result files under one worker workspace, holds `worker.lock`, drains bounded newline-delimited progress, and samples RSS every 25 ms. A parent-owned pipe and persisted `worker.json` identity prevent an orphan from continuing after coordinator death: the child exits when the pipe closes, and the next owner reaps the recorded PID and recovers abandoned run journals before starting another worker. Standalone CLI builds remain short-lived and execute the canonical pipeline directly.
 
