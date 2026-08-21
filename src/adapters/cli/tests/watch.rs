@@ -253,12 +253,16 @@ fn watch_filter_accepts_relative_notify_paths() {
 fn watch_filter_accepts_verbatim_absolute_notify_paths() {
     let root = unique_temp_dir("codebase-graph-rust-watch-verbatim");
     fs::create_dir_all(&root).unwrap();
-    let filter = watch_filter_for(&root, &[]);
+    let source_root = root.canonicalize().unwrap();
+    let event_path = source_root.join("verbatim.py");
+    fs::write(&event_path, "def verbatim():\n    return True\n").unwrap();
+    let event_path = event_path.canonicalize().unwrap();
+    let filter = watch_filter_for(&source_root, &[]);
     let event = Event {
         kind: EventKind::Modify(notify::event::ModifyKind::Data(
             notify::event::DataChange::Content,
         )),
-        paths: vec![windows_verbatim_path(&root.join("verbatim.py"))],
+        paths: vec![event_path],
         attrs: Default::default(),
     };
 
@@ -584,27 +588,27 @@ fn watch_probe_discards_verbatim_absolute_probe_events() {
     set_test_env("CODEBASE_GRAPH_WATCH_PROBE_TIMEOUT_MS", "5");
     set_test_env("CODEBASE_GRAPH_WATCH_PROBE_SKIP_WRITE", "1");
     let root = unique_temp_dir("codebase-graph-rust-watch-probe-verbatim");
-    let probe_dir = root.join(".codebaseGraph/watch-probe");
+    fs::create_dir_all(&root).unwrap();
+    let source_root = root.canonicalize().unwrap();
+    let probe_dir = source_root.join(".codebaseGraph/watch-probe");
     fs::create_dir_all(&probe_dir).unwrap();
-    let filter = watch_filter_for(&root, &[]);
+    let probe_path = probe_dir.join("probe-test.tmp");
+    fs::write(&probe_path, b"probe").unwrap();
+    let probe_path = probe_path.canonicalize().unwrap();
+    let filter = watch_filter_for(&source_root, &[]);
     let (tx, rx) = mpsc::channel();
     tx.send(WatchMessage::Event(Event {
         kind: EventKind::Create(notify::event::CreateKind::File),
-        paths: vec![windows_verbatim_path(&probe_dir.join("probe-test.tmp"))],
+        paths: vec![probe_path],
         attrs: Default::default(),
     }))
     .unwrap();
 
-    let outcome = probe_native_watcher(&root, &filter, &rx).unwrap();
+    let outcome = probe_native_watcher(&source_root, &filter, &rx).unwrap();
 
     assert!(outcome.delivered);
     assert!(outcome.queued.is_empty());
     let _ = fs::remove_dir_all(root);
-}
-
-#[cfg(windows)]
-fn windows_verbatim_path(path: &Path) -> PathBuf {
-    PathBuf::from(format!(r"\\?\{}", path.display()))
 }
 
 #[test]

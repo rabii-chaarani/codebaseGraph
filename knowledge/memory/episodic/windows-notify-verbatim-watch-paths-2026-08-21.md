@@ -3,7 +3,7 @@ agent_memory:
   version: 1
   kind: episodic
   scope: repository
-  status: active
+  status: quarantined
   owner: codex
   created_at: 2026-08-21T16:33:39+09:30
   last_verified_at: 2026-08-21T16:35:00+09:30
@@ -30,6 +30,11 @@ agent_memory:
     actor: codex
     at: 2026-08-21T16:35:00+09:30
     reason: Verified against both repeated Windows CI logs, the absolute-path-only normalization defect in src/api/refresh.rs, Windows-gated source/probe regressions, four focused release process passes, and the complete workspace suite.
+  - from: active
+    to: quarantined
+    actor: codex
+    at: 2026-08-21T16:58:00+09:30
+    reason: 'Windows CI run 32457114055 job 96696415398 failed the new verbatim-path regression itself: relevant_paths returned an empty set. The current normalization procedure is therefore incomplete and must not guide future work until the Windows path semantics are isolated.'
 description: Windows notify events may use \\?\ paths that must be normalized before source-root, protected-root, and probe-directory comparisons.
 tags:
 - ci
