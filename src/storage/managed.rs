@@ -7,7 +7,9 @@ use crate::storage::layout::{
 use crate::storage::locks::{
     open_locked, try_open_locked, LockMode, LockedFile, StateLease, WriterLease,
 };
-use crate::storage::run_workspace::{RunJournal, RunPhase, RunWorkspace, RunWorkspaceRecovery};
+use crate::storage::run_workspace::{
+    remove_run_root_confined, RunJournal, RunPhase, RunWorkspace, RunWorkspaceRecovery,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -509,7 +511,7 @@ impl ManagedStore {
             };
             drop(lease);
             if !recovered {
-                remove_run_root_safe(&path, &runs_root)?;
+                remove_run_root_confined(&path, &runs_root)?;
                 report.deleted += 1;
             }
         }
@@ -525,7 +527,7 @@ impl ManagedStore {
     ) -> Result<(), NativeError> {
         let Some(candidate_id) = journal.candidate_generation_id.as_ref() else {
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
             return Ok(());
         };
@@ -545,7 +547,7 @@ impl ManagedStore {
         if active_id.as_deref() == Some(candidate_id.as_str()) && published_valid {
             self.finalize_previous_retirement(journal.base_generation_id.as_deref())?;
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
             return Ok(());
         }
@@ -565,7 +567,7 @@ impl ManagedStore {
                 )?;
             }
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
                 return Ok(());
             }
             return Err(NativeError::InvalidInput(
@@ -584,7 +586,7 @@ impl ManagedStore {
             )?;
             *active = Some(activated);
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
             return Ok(());
         }
@@ -597,7 +599,7 @@ impl ManagedStore {
             )?;
             *active = Some(activated);
             if cleanup_run_root {
-                remove_run_root_safe(run_root, &self.layout.runs_root())?;
+                remove_run_root_confined(run_root, &self.layout.runs_root())?;
             }
             return Ok(());
         }
@@ -609,7 +611,7 @@ impl ManagedStore {
             )?;
         }
         if cleanup_run_root {
-            remove_run_root_safe(run_root, &self.layout.runs_root())?;
+            remove_run_root_confined(run_root, &self.layout.runs_root())?;
         }
         Ok(())
     }
@@ -964,20 +966,6 @@ fn ensure_directory_without_symlinks(path: &Path) -> Result<(), NativeError> {
             }
         }
     }
-    Ok(())
-}
-
-fn remove_run_root_safe(run_root: &Path, runs_root: &Path) -> Result<(), NativeError> {
-    let canonical_runs_root = fs::canonicalize(runs_root)?;
-    let canonical_run_root = fs::canonicalize(run_root)?;
-    if canonical_run_root.parent() != Some(canonical_runs_root.as_path()) {
-        return Err(NativeError::InvalidInput(format!(
-            "refusing to remove run path outside runs root: {}",
-            run_root.display()
-        )));
-    }
-    ensure_directory_without_symlinks(&canonical_run_root)?;
-    remove_path_without_symlinks(&canonical_run_root)?;
     Ok(())
 }
 

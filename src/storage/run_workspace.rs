@@ -247,9 +247,27 @@ fn remove_run_tree(root: &Path) -> Result<(), NativeError> {
     let parent = root.parent().ok_or_else(|| {
         NativeError::InvalidInput(format!("run path {} has no parent", root.display()))
     })?;
-    let canonical_parent = fs::canonicalize(parent)?;
-    let canonical_root = fs::canonicalize(root)?;
-    if canonical_root.parent() != Some(canonical_parent.as_path()) {
+    remove_run_root_confined(root, parent)
+}
+
+pub(super) fn remove_run_root_confined(root: &Path, runs_root: &Path) -> Result<(), NativeError> {
+    let Some(metadata) = symlink_metadata_if_present(root)? else {
+        return Ok(());
+    };
+    if metadata.file_type().is_symlink() {
+        return Err(NativeError::InvalidInput(format!(
+            "refusing to remove symlinked path {}",
+            root.display()
+        )));
+    }
+
+    let canonical_runs_root = fs::canonicalize(runs_root)?;
+    let canonical_root = match fs::canonicalize(root) {
+        Ok(path) => path,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error.into()),
+    };
+    if canonical_root.parent() != Some(canonical_runs_root.as_path()) {
         return Err(NativeError::InvalidInput(format!(
             "refusing to remove run path outside root: {}",
             root.display()
@@ -264,7 +282,9 @@ fn remove_path_without_symlinks(path: &Path) -> Result<(), NativeError> {
 }
 
 fn validate_tree_has_no_symlinks(path: &Path) -> Result<(), NativeError> {
-    let metadata = fs::symlink_metadata(path)?;
+    let Some(metadata) = symlink_metadata_if_present(path)? else {
+        return Ok(());
+    };
     if metadata.file_type().is_symlink() {
         return Err(NativeError::InvalidInput(format!(
             "refusing to remove symlinked path {}",
@@ -272,8 +292,17 @@ fn validate_tree_has_no_symlinks(path: &Path) -> Result<(), NativeError> {
         )));
     }
     if metadata.is_dir() {
-        for entry in fs::read_dir(path)? {
-            let entry = entry?;
+        let entries = match fs::read_dir(path) {
+            Ok(entries) => entries,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+            Err(error) => return Err(error.into()),
+        };
+        for entry in entries {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(error.into()),
+            };
             validate_tree_has_no_symlinks(&entry.path())?;
         }
     }
@@ -281,7 +310,9 @@ fn validate_tree_has_no_symlinks(path: &Path) -> Result<(), NativeError> {
 }
 
 fn remove_validated_path(path: &Path) -> Result<(), NativeError> {
-    let metadata = fs::symlink_metadata(path)?;
+    let Some(metadata) = symlink_metadata_if_present(path)? else {
+        return Ok(());
+    };
     if metadata.file_type().is_symlink() {
         return Err(NativeError::InvalidInput(format!(
             "refusing to remove symlinked path {}",
@@ -289,13 +320,75 @@ fn remove_validated_path(path: &Path) -> Result<(), NativeError> {
         )));
     }
     if metadata.is_dir() {
-        for entry in fs::read_dir(path)? {
-            let entry = entry?;
+        let entries = match fs::read_dir(path) {
+            Ok(entries) => entries,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+            Err(error) => return Err(error.into()),
+        };
+        for entry in entries {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(error.into()),
+            };
             remove_validated_path(&entry.path())?;
         }
-        fs::remove_dir(path)?;
+        remove_dir_if_present(path)?;
     } else {
-        fs::remove_file(path)?;
+        remove_file_if_present(path)?;
     }
     Ok(())
+}
+
+fn symlink_metadata_if_present(path: &Path) -> Result<Option<fs::Metadata>, NativeError> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) => Ok(Some(metadata)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error.into()),
+    }
+}
+
+fn remove_dir_if_present(path: &Path) -> Result<(), NativeError> {
+    match fs::remove_dir(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
+    }
+}
+
+fn remove_file_if_present(path: &Path) -> Result<(), NativeError> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn confined_run_cleanup_is_idempotent() {
+        let root = std::env::temp_dir().join(format!(
+            "codebase-graph-run-cleanup-{}",
+            managed_generation_id()
+        ));
+        let runs_root = root.join("runs");
+        let run_root = runs_root.join("run-repeat");
+        fs::create_dir_all(run_root.join("staging")).unwrap();
+        fs::write(run_root.join("staging/source.rs"), "fn main() {}\n").unwrap();
+
+        remove_run_root_confined(&run_root, &runs_root).unwrap();
+        remove_run_root_confined(&run_root, &runs_root).unwrap();
+        assert!(!run_root.exists());
+
+        let raced_run_root = runs_root.join("run-raced");
+        fs::create_dir_all(raced_run_root.join("candidate")).unwrap();
+        validate_tree_has_no_symlinks(&raced_run_root).unwrap();
+        fs::remove_dir_all(&raced_run_root).unwrap();
+        remove_validated_path(&raced_run_root).unwrap();
+
+        fs::remove_dir_all(root).unwrap();
+    }
 }

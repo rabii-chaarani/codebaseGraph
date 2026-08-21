@@ -102,10 +102,7 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
         .iter_mut()
         .find(|client| client.pid() != first_pid)
         .expect("a follower MCP client should exist");
-    // Publication precedes supervisor reaping and workspace cleanup. Those
-    // finalization steps can exceed ten seconds on Windows CI before the
-    // completed worker metrics become visible through health.
-    let health_deadline = Instant::now() + Duration::from_secs(30);
+    let health_deadline = Instant::now() + Duration::from_secs(10);
     let mut health_id = 10_000;
     let health = loop {
         let health = follower.call(
