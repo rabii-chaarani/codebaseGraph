@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.6...v1.5.0) (2026-08-21)
+
+
+### Features
+
+* **mcp:** share one managed HTTP daemon ([#90](https://github.com/rabii-chaarani/codebaseGraph/issues/90)) ([731367c](https://github.com/rabii-chaarani/codebaseGraph/commit/731367ccf91b822da05c5895aa118e785e36f35d))
+
+
+### Bug Fixes
+
+* **release:** bundle Ladybug 0.19 extensions ([#89](https://github.com/rabii-chaarani/codebaseGraph/issues/89)) ([e52bdf4](https://github.com/rabii-chaarani/codebaseGraph/commit/e52bdf4a0bc0b9613125495befc136759a73c630))
+* **runtime:** integrate materialization and coordinator stack ([#88](https://github.com/rabii-chaarani/codebaseGraph/issues/88)) ([b248cd6](https://github.com/rabii-chaarani/codebaseGraph/commit/b248cd61a4dcf0e687809144f673a00772bd4f59))
+
 ## [1.4.6](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.5...v1.4.6) (2026-08-17)
 
 
