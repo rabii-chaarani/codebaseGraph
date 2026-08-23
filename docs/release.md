@@ -55,7 +55,13 @@ Pull requests targeting `main` and pushes to `main` run:
    `vX.Y.Z` tag, proves that the tag resolves to the triggering CI SHA, validates all four
    archives/checksums/provenance records from that exact run, and uploads the public assets from one publisher.
 6. `cargo publish --dry-run --locked` runs at the immutable tag, then the crate publishes automatically after native
-   assets succeed. Manual recovery never publishes the crate.
+   assets succeed. The upload uses bounded backoff and checks the exact immutable version before and after failures, so
+   a transient registry error or a lost success response can be retried safely. Manual recovery never publishes the
+   crate.
+
+Cargo's package verification compiles the extracted source package with the `dev` profile by default. That compile is
+not a distributed binary. The native GitHub Release archives are built separately with `cargo build --release`, and
+crates.io distributes source for downstream users to compile with the profile they select.
 
 If the release pull request merge fails CI, later successful commits cannot publish its stale tag. A corrected release
 must be represented by a new release pull request whose own merge commit passes CI, preserving the exact-run artifact

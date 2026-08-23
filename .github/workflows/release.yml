@@ -503,6 +503,49 @@ jobs:
       - name: Verify crates.io package
         run: cargo publish --dry-run --locked
       - name: Publish crates.io package
+        shell: bash
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish --locked
+          CRATE_NAME: codebase-graph
+          CRATE_VERSION: ${{ needs.release-target.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          version_is_published() {
+            curl --fail --silent --show-error \
+              --connect-timeout 10 \
+              --max-time 30 \
+              --user-agent "codebaseGraph-release-workflow ($GITHUB_SERVER_URL/$GITHUB_REPOSITORY)" \
+              "https://crates.io/api/v1/crates/$CRATE_NAME/$CRATE_VERSION" \
+              >/dev/null 2>&1
+          }
+
+          if version_is_published; then
+            echo "$CRATE_NAME $CRATE_VERSION is already published; nothing to do."
+            exit 0
+          fi
+
+          max_attempts=4
+          for (( attempt=1; attempt<=max_attempts; attempt++ )); do
+            echo "Publishing $CRATE_NAME $CRATE_VERSION (attempt $attempt/$max_attempts)."
+            if cargo publish --locked; then
+              exit 0
+            else
+              publish_status=$?
+            fi
+
+            # An upload can succeed even when the client loses the response. Treat the
+            # immutable version appearing in the registry as authoritative success.
+            if version_is_published; then
+              echo "$CRATE_NAME $CRATE_VERSION is now visible on crates.io."
+              exit 0
+            fi
+            if (( attempt == max_attempts )); then
+              echo "Failed to publish $CRATE_NAME $CRATE_VERSION after $max_attempts attempts." >&2
+              exit "$publish_status"
+            fi
+
+            sleep_seconds=$((15 * attempt))
+            echo "Publish failed; retrying in $sleep_seconds seconds."
+            sleep "$sleep_seconds"
+          done

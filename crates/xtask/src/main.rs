@@ -1309,15 +1309,36 @@ fn check_workflow_policy(
                 .to_string(),
         );
     }
-    if !yaml_contains_string(
-        yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null),
-        "cargo publish --dry-run --locked",
-    ) || !yaml_contains_string(
-        yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null),
-        "cargo publish --locked",
-    ) {
+    let publish_crate = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
+    if !yaml_contains_string(publish_crate, "cargo publish --dry-run --locked")
+        || !yaml_contains_string(publish_crate, "cargo publish --locked")
+    {
         issues.push(
             "FAIL: release-publish-gate-missing: crate publication must retain dry-run and publish steps."
+                .to_string(),
+        );
+    }
+    let publish_step =
+        yaml_step_by_name(publish_crate, "Publish crates.io package").unwrap_or(&YamlValue::Null);
+    let publish_run = yaml_path(publish_step, &["run"])
+        .and_then(YamlValue::as_str)
+        .unwrap_or_default();
+    if yaml_path(publish_step, &["env", "CRATE_NAME"]).and_then(YamlValue::as_str)
+        != Some("codebase-graph")
+        || yaml_path(publish_step, &["env", "CRATE_VERSION"]).and_then(YamlValue::as_str)
+            != Some("${{ needs.release-target.outputs.version }}")
+        || publish_run.matches("if version_is_published").count() < 2
+        || [
+            "https://crates.io/api/v1/crates/$CRATE_NAME/$CRATE_VERSION",
+            "max_attempts=4",
+            "for (( attempt=1; attempt<=max_attempts; attempt++ ))",
+            "sleep_seconds=$((15 * attempt))",
+        ]
+        .iter()
+        .any(|marker| !publish_run.contains(marker))
+    {
+        issues.push(
+            "FAIL: release-publish-retry-missing: crate publication must use bounded, registry-aware retries."
                 .to_string(),
         );
     }
@@ -2379,7 +2400,23 @@ jobs:
   publish-crate:
     steps:
       - {run: 'cargo publish --dry-run --locked'}
-      - {run: 'cargo publish --locked'}
+      - name: Publish crates.io package
+        shell: bash
+        env:
+          CRATE_NAME: codebase-graph
+          CRATE_VERSION: ${{ needs.release-target.outputs.version }}
+        run: |
+          version_is_published() {
+            curl -fsS "https://crates.io/api/v1/crates/$CRATE_NAME/$CRATE_VERSION"
+          }
+          if version_is_published; then exit 0; fi
+          max_attempts=4
+          for (( attempt=1; attempt<=max_attempts; attempt++ )); do
+            if cargo publish --locked; then exit 0; fi
+            if version_is_published; then exit 0; fi
+            sleep_seconds=$((15 * attempt))
+            sleep "$sleep_seconds"
+          done
 "#
         .to_string()
     }
@@ -2553,6 +2590,39 @@ jobs:
             issues
                 .iter()
                 .any(|issue| issue.contains("release-automatic-rebuild")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_crate_publish_retry() {
+        for (required, replacement) in [
+            ("max_attempts=4", "max_attempts=1"),
+            (
+                "https://crates.io/api/v1/crates/$CRATE_NAME/$CRATE_VERSION",
+                "https://example.invalid/crate",
+            ),
+        ] {
+            let broken = valid_release_workflow_text().replace(required, replacement);
+            let issues = workflow_policy_issues(&broken);
+            assert!(
+                issues
+                    .iter()
+                    .any(|issue| issue.contains("release-publish-retry-missing")),
+                "{required}: {issues:?}"
+            );
+        }
+
+        let broken = valid_release_workflow_text().replacen(
+            "if version_is_published; then exit 0; fi",
+            "if false; then exit 0; fi",
+            1,
+        );
+        let issues = workflow_policy_issues(&broken);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("release-publish-retry-missing")),
             "{issues:?}"
         );
     }
