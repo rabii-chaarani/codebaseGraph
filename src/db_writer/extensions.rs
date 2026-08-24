@@ -1,4 +1,5 @@
 use crate::error::NativeError;
+use std::io::Cursor;
 use std::path::{Path, PathBuf};
 
 // Both the prebuilt and source-built Ladybug 0.19.0 libraries resolve
@@ -16,20 +17,39 @@ pub fn preseed_ladybug_extensions(include_fts: bool) -> Result<(), NativeError> 
         extensions.push("fts");
     }
     for extension in extensions {
-        let Some(bytes) = bundled_extension_bytes(extension) else {
+        let missing: Vec<(PathBuf, PathBuf)> = LADYBUG_EXTENSION_CACHE_VERSIONS
+            .iter()
+            .filter_map(|cache_version| {
+                let extension_dir = extension_dir(&home, cache_version, platform, extension);
+                let extension_path = extension_dir.join(format!("lib{extension}.lbug_extension"));
+                (!extension_path.exists()).then_some((extension_dir, extension_path))
+            })
+            .collect();
+        if missing.is_empty() {
+            continue;
+        }
+        let Some(bytes) = bundled_extension_bytes(extension)? else {
             continue;
         };
-        for cache_version in LADYBUG_EXTENSION_CACHE_VERSIONS {
-            let extension_dir = extension_dir(&home, cache_version, platform, extension);
-            let extension_path = extension_dir.join(format!("lib{extension}.lbug_extension"));
-            if extension_path.exists() {
-                continue;
-            }
+        for (extension_dir, extension_path) in missing {
             std::fs::create_dir_all(&extension_dir)?;
-            std::fs::write(extension_path, bytes)?;
+            std::fs::write(extension_path, &bytes)?;
         }
     }
     Ok(())
+}
+
+fn bundled_extension_bytes(extension: &str) -> Result<Option<Vec<u8>>, NativeError> {
+    let Some(compressed) = bundled_extension_xz(extension) else {
+        return Ok(None);
+    };
+    let mut bytes = Vec::new();
+    lzma_rs::xz_decompress(&mut Cursor::new(compressed), &mut bytes).map_err(|error| {
+        NativeError::Database(format!(
+            "failed to decompress bundled LadyBug {extension} extension: {error}"
+        ))
+    })?;
+    Ok(Some(bytes))
 }
 
 fn extension_dir(home: &Path, cache_version: &str, platform: &str, extension: &str) -> PathBuf {
@@ -69,52 +89,52 @@ fn ladybug_platform() -> Option<&'static str> {
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
+fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/linux_amd64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/linux_amd64/json/libjson.lbug_extension.xz"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/linux_amd64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/linux_amd64/fts/libfts.lbug_extension.xz"
         )),
         _ => None,
     }
 }
 
 #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
-fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
+fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/linux_arm64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/linux_arm64/json/libjson.lbug_extension.xz"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/linux_arm64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/linux_arm64/fts/libfts.lbug_extension.xz"
         )),
         _ => None,
     }
 }
 
 #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
+fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/osx_amd64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/osx_amd64/json/libjson.lbug_extension.xz"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/osx_amd64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/osx_amd64/fts/libfts.lbug_extension.xz"
         )),
         _ => None,
     }
 }
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
+fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/osx_arm64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/osx_arm64/json/libjson.lbug_extension.xz"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension.xz"
         )),
         _ => None,
     }
@@ -125,13 +145,13 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
     target_arch = "x86_64",
     feature = "bundled-windows-extensions"
 ))]
-fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
+fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
     match extension {
         "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension.xz"
         )),
         "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension"
+            "../../assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension.xz"
         )),
         _ => None,
     }
@@ -148,13 +168,13 @@ fn bundled_extension_bytes(extension: &str) -> Option<&'static [u8]> {
         feature = "bundled-windows-extensions"
     )
 )))]
-fn bundled_extension_bytes(_extension: &str) -> Option<&'static [u8]> {
+fn bundled_extension_xz(_extension: &str) -> Option<&'static [u8]> {
     None
 }
 
 #[cfg(test)]
 mod tests {
-    use super::extension_dir;
+    use super::{bundled_extension_bytes, extension_dir};
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -164,5 +184,15 @@ mod tests {
             extension_dir(Path::new("cache"), "0.19.0", "osx_arm64", "json"),
             PathBuf::from("cache/.lbdb/extension/0.19.0/osx_arm64/json")
         );
+    }
+
+    #[test]
+    fn bundled_extension_archives_decompress_before_cache_seed() {
+        for extension in ["json", "fts"] {
+            let Some(bytes) = bundled_extension_bytes(extension).unwrap() else {
+                continue;
+            };
+            assert!(bytes.len() > 500_000, "{extension} extension is truncated");
+        }
     }
 }

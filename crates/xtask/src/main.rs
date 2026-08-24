@@ -14,6 +14,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use yaml_serde::Value as YamlValue;
 
 const CONFIRMATIONS: &[&str] = &["release-environment", "private-vulnerability-reporting"];
+const CRATES_IO_PACKAGE_LIMIT_BYTES: u64 = 10 * 1024 * 1024;
 const NATIVE_TARGETS: [NativeTarget; 4] = [
     NativeTarget::LinuxX86_64,
     NativeTarget::MacosArm64,
@@ -117,11 +118,41 @@ fn run() -> Result<(), String> {
                 .ok_or_else(|| "verify-release-version requires a vX.Y.Z tag".to_string())?;
             verify_release_version(&tag)
         }
+        Some("verify-crate-size") => {
+            let archive = args
+                .next()
+                .ok_or_else(|| "verify-crate-size requires a .crate path".to_string())?;
+            verify_crate_size(Path::new(&archive))
+        }
         Some(command) => Err(format!("unknown xtask command: {command}")),
         None => Err(
-            "usage: cargo run -p xtask -- <release-gate|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version>"
+            "usage: cargo run -p xtask -- <release-gate|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version|verify-crate-size>"
                 .to_string(),
         ),
+    }
+}
+
+fn verify_crate_size(archive: &Path) -> Result<(), String> {
+    let bytes = fs::metadata(archive)
+        .map_err(|error| {
+            format!(
+                "failed to read crate package {}: {error}",
+                archive.display()
+            )
+        })?
+        .len();
+    validate_crate_size(bytes)?;
+    println!("crate package size verified: {bytes} bytes <= {CRATES_IO_PACKAGE_LIMIT_BYTES} bytes");
+    Ok(())
+}
+
+fn validate_crate_size(bytes: u64) -> Result<(), String> {
+    if bytes <= CRATES_IO_PACKAGE_LIMIT_BYTES {
+        Ok(())
+    } else {
+        Err(format!(
+            "crate package is {bytes} bytes, exceeding the crates.io limit of {CRATES_IO_PACKAGE_LIMIT_BYTES} bytes"
+        ))
     }
 }
 
@@ -1015,6 +1046,15 @@ fn check_workflow_policy(
                 .to_string(),
         );
     }
+    if !yaml_contains_string(
+        yaml_path(ci, &["jobs", "publish-dry-run"]).unwrap_or(&YamlValue::Null),
+        "verify-crate-size",
+    ) {
+        issues.push(
+            "FAIL: crates-io-package-size-gate-missing: CI must reject .crate files above the registry limit."
+                .to_string(),
+        );
+    }
     if yaml_path(ci, &["jobs", "required", "if"]).and_then(YamlValue::as_str)
         != Some("${{ always() }}")
     {
@@ -1315,6 +1355,12 @@ fn check_workflow_policy(
     {
         issues.push(
             "FAIL: release-publish-gate-missing: crate publication must retain dry-run and publish steps."
+                .to_string(),
+        );
+    }
+    if !yaml_contains_string(publish_crate, "verify-crate-size") {
+        issues.push(
+            "FAIL: crates-io-package-size-gate-missing: Release must recheck the .crate file before upload."
                 .to_string(),
         );
     }
@@ -2162,8 +2208,8 @@ mod tests {
     use super::{
         check_workflow_policy, create_native_archive, extract_and_validate_native_archive,
         native_test_command, release_version_from_tag, sha256_file, validate_commit_sha,
-        validate_native_artifact_set, workflow_yaml_error, NativeProvenance, NativeTarget,
-        YamlValue, NATIVE_TARGETS,
+        validate_crate_size, validate_native_artifact_set, workflow_yaml_error, NativeProvenance,
+        NativeTarget, YamlValue, CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
     };
     use std::fs;
     use std::path::Path;
@@ -2308,7 +2354,7 @@ mod tests {
 
     fn valid_ci_workflow() -> YamlValue {
         yaml_serde::from_str(
-            "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
+            "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  publish-dry-run:\n    steps: [{run: 'cargo run -p xtask -- verify-crate-size package.crate'}]\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
         )
         .unwrap()
     }
@@ -2400,6 +2446,7 @@ jobs:
   publish-crate:
     steps:
       - {run: 'cargo publish --dry-run --locked'}
+      - {run: 'cargo run -p xtask -- verify-crate-size package.crate'}
       - name: Publish crates.io package
         shell: bash
         env:
@@ -2625,5 +2672,41 @@ jobs:
                 .any(|issue| issue.contains("release-publish-retry-missing")),
             "{issues:?}"
         );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_crate_size_gates() {
+        let broken_release = valid_release_workflow_text().replace(
+            "cargo run -p xtask -- verify-crate-size package.crate",
+            "echo size unchecked",
+        );
+        let issues = workflow_policy_issues(&broken_release);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("crates-io-package-size-gate-missing")),
+            "{issues:?}"
+        );
+
+        let broken_ci: YamlValue = yaml_serde::from_str(
+            "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  publish-dry-run:\n    steps: [{run: 'echo size unchecked'}]\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
+        )
+        .unwrap();
+        let release = yaml_serde::from_str(&valid_release_workflow_text()).unwrap();
+        let mut issues = Vec::new();
+        check_workflow_policy(&broken_ci, &valid_native_workflow(), &release, &mut issues);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("crates-io-package-size-gate-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn crate_size_validation_enforces_the_registry_limit() {
+        assert!(validate_crate_size(CRATES_IO_PACKAGE_LIMIT_BYTES).is_ok());
+        let error = validate_crate_size(CRATES_IO_PACKAGE_LIMIT_BYTES + 1).unwrap_err();
+        assert!(error.contains("exceeding the crates.io limit"), "{error}");
     }
 }
