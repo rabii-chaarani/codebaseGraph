@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.5.0...v1.5.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* **release:** retry crates.io publish failures ([#96](https://github.com/rabii-chaarani/codebaseGraph/issues/96)) ([b3ebd83](https://github.com/rabii-chaarani/codebaseGraph/commit/b3ebd83f103d4f420eefa8d0b778eed05739d40f))
+
 ## [1.5.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.4.6...v1.5.0) (2026-08-21)
 
 
