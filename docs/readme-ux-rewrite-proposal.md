@@ -1,3 +1,148 @@
+# README UX Rewrite Proposal
+
+Status: approved and implemented in `README.md` on 2026-08-24.
+
+## Outcome
+
+Rewrite the README around the reader's next task: understand the product, get a
+working graph, run a first query, connect an MCP client, and recover from common
+failures. Keep `codebaseGraph` as the primary journey and present `k-wiki` as an
+optional, separate subsystem.
+
+The proposed rewrite keeps the current commands and safety boundaries, removes
+duplicated detail where a maintained guide already exists, and corrects the
+obsolete flat graph-state layout shown in the current README.
+
+## UX audit
+
+### P0 — the primary journey starts too late
+
+The opening introduces `k-wiki` at lines 9–12, then devotes lines 14–83 to its
+setup and registration before the `codebaseGraph` quick start at line 85. A new
+reader must understand a secondary subsystem before reaching the repository's
+main activation path.
+
+**Principles:** task orientation, progressive disclosure, aesthetic and
+minimalist design.
+
+**Proposal:** put the three-command graph quick start immediately after the
+value proposition. Move `k-wiki` below the core graph workflows and label it as
+optional.
+
+### P0 — quick start stops before first value
+
+The current quick start installs and checks the daemon, but does not show a
+search or explain the success signal. Readers can complete setup without knowing
+how to prove that the graph is useful.
+
+**Principles:** visibility of system status, recognition rather than recall.
+
+**Proposal:** add `check-health`, name the expected `health ok=true` signal, and
+show one editable `codebase-search` example.
+
+### P1 — two products are presented as one flow
+
+`codebase-graph` and `k-wiki` have different purposes, state roots, refresh
+models, and MCP registration behavior. The current order makes their
+relationship harder to understand than the architecture requires.
+
+**Principles:** match between the system and the user's mental model,
+consistency and standards.
+
+**Proposal:** use a compact comparison table and consistently distinguish the
+product name (`codebaseGraph`), graph binary (`codebase-graph`), and wiki binary
+(`k-wiki`).
+
+### P1 — operational guardrails are buried in dense prose
+
+The `k-wiki` registration rules at lines 45–72 and the remote HTTP warning at
+lines 170–172 are important, but difficult to find while scanning. Migration,
+naming, transport, and threat-boundary information compete with routine setup.
+
+**Principles:** error prevention, help users recognize and recover from errors,
+progressive disclosure.
+
+**Proposal:** keep safety warnings beside the command they constrain. Summarize
+advanced `k-wiki` behavior and link to `docs/k-wiki.md`, where those rules are
+already maintained in detail.
+
+### P1 — the documented state layout is stale
+
+Lines 99–106 describe `manifest.json` and `<repositoryName>_graph.ldb` directly
+beneath `.codebaseGraph/`. Current install tests assert schema-v3 configuration
+without static database or manifest paths, and runtime health reports
+`managed_v2` generations beneath `.codebaseGraph/storage/`.
+
+**Principles:** trustworthy feedback, consistency with the real system.
+
+**Proposal:** describe only the stable, user-relevant state roots. Do not expose
+generation filenames as a user contract.
+
+### P2 — navigation and recovery are feature-oriented
+
+Headings such as “MCP Install,” “MCP Usage,” and “CLI Workflow” describe product
+areas instead of reader goals. Troubleshooting appears only after all setup,
+usage, development, and release content.
+
+**Principles:** information scent, recognition rather than recall, user control.
+
+**Proposal:** use verb-led headings, add a “Choose a workflow” table, and format
+troubleshooting as symptom/action pairs.
+
+## Audiences and top tasks
+
+| Audience | Top tasks | Success signal |
+| --- | --- | --- |
+| First-time user | Install, initialize, verify, run a first query | Health is OK and search returns repository matches |
+| MCP user | Register a client and confirm the shared local daemon | Client connects to the repository's loopback MCP endpoint |
+| CLI user | Search, fetch context, inspect schema, and run bounded read-only queries | Commands return compact block output or requested JSON |
+| Wiki user | Initialize curated knowledge and register the wiki MCP server | `knowledge/` is source-controlled and `.kwiki/` is generated |
+| Maintainer | Develop, verify, release, and recover state | Repository checks pass and recovery guidance is easy to find |
+
+## Proposed information architecture
+
+1. Value proposition and two-tool distinction
+2. Quick start with an observable success signal
+3. Workflow selector
+4. Core graph tasks: query, connect, refresh
+5. Optional `k-wiki` workflow
+6. Development, release, and security
+7. Symptom-led troubleshooting
+
+This order follows progressive disclosure: first value, routine operation,
+optional capability, then maintainer and recovery detail.
+
+## Content rules
+
+- Lead sections with outcomes and actions, not internal implementation terms.
+- Use one term for each concept and distinguish product names from binary names.
+- Keep one primary action per code block where sequencing is not required.
+- Place expected results immediately after setup commands.
+- Put security constraints next to transport commands.
+- Prefer short tables for repeated task-to-command and symptom-to-action mappings.
+- Use descriptive link text; do not rely on color, badges, or icons for meaning.
+- Preserve a valid heading hierarchy and plain-language link destinations.
+- Link to maintained detail instead of duplicating long option catalogs.
+- Treat generated paths as implementation detail unless users must act on them.
+
+## Content migration map
+
+| Current content | Proposed destination |
+| --- | --- |
+| Product overview, lines 3–12 | Short opening plus “Understand the two tools” |
+| `k-wiki` setup, lines 14–83 | “Add curated knowledge with k-wiki (optional)” plus `docs/k-wiki.md` |
+| Quick start and install effects, lines 85–115 | “Quick start” and “What setup changes” |
+| MCP installation and usage, lines 117–183 | “Connect an MCP client” with adjacent transport warning |
+| CLI workflow, lines 184–207 | “Use the graph” task table and refresh note |
+| Development and release, lines 209–230 | “Develop and verify” and “Release and security” |
+| Troubleshooting, lines 232–241 | Symptom/action table at the end, linked near the top |
+
+## Proposed README
+
+The following approved candidate is retained as the review record. `README.md`
+matches this content.
+
+~~~markdown
 # codebaseGraph
 
 `codebaseGraph` turns a local source repository into a searchable code graph for
@@ -260,3 +405,29 @@ and the local-first MCP security boundary.
 | Binary not found | Ensure the native `codebase-graph` binary is on `PATH`. |
 | Expected file is missing from the graph | Check `.gitignore`, `.codebaseGraphignore`, configured include/exclude rules, and whether the path is binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, or `.codebaseGraph`. |
 | Repository lock error | Stop other graph build, install, or daemon processes using the same repository state, then retry. |
+~~~
+
+## Acceptance criteria
+
+- The primary graph quick start appears before optional `k-wiki` setup.
+- A first-time user reaches an observable success signal and first search without
+  following another document.
+- The graph product, graph binary, wiki binary, curated source, and generated
+  state use distinct, consistent terms.
+- Every heading communicates a user goal or decision.
+- Security constraints appear beside the affected transport commands.
+- Troubleshooting uses symptom/action language and contains no obsolete flat
+  database path.
+- All links are descriptive, relative, and valid from the repository root.
+- Heading levels are sequential; tables have headers; instructions do not rely
+  on color or icons.
+- Every proposed command is checked against current CLI behavior as part of the
+  implementation.
+- `README.md` was not modified before the proposal was approved.
+
+## Verification notes
+
+After replacing `README.md` with the approved candidate, run the repository's
+Markdown/link checks and exercise the quick-start, daemon-status, search, and
+registration dry-run commands. Keep deeper `k-wiki` registration behavior in
+`docs/k-wiki.md` to prevent two long copies from drifting.
