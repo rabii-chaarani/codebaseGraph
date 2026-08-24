@@ -32,6 +32,7 @@ Pull requests targeting `main` and pushes to `main` run:
 - `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
 - Rust advisory scanning with `cargo audit`
 - `cargo publish --dry-run --locked`
+- An exact-byte check that the generated `.crate` does not exceed crates.io's 10 MiB upload limit.
 - `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
   unpublished wiki binary uses the in-tree codebase-graph registrar, while the preceding root
   package check verifies that publishable shared API in isolation.
@@ -55,7 +56,17 @@ Pull requests targeting `main` and pushes to `main` run:
    `vX.Y.Z` tag, proves that the tag resolves to the triggering CI SHA, validates all four
    archives/checksums/provenance records from that exact run, and uploads the public assets from one publisher.
 6. `cargo publish --dry-run --locked` runs at the immutable tag, then the crate publishes automatically after native
-   assets succeed. Manual recovery never publishes the crate.
+   assets succeed. The upload uses bounded backoff and checks the exact immutable version before and after failures, so
+   a transient registry error or a lost success response can be retried safely. Manual recovery never publishes the
+   crate.
+
+Cargo's package verification compiles the extracted source package with the `dev` profile by default. That compile is
+not a distributed binary. The native GitHub Release archives are built separately with `cargo build --release`, and
+crates.io distributes source for downstream users to compile with the profile they select.
+
+Bundled Ladybug extensions are stored as lossless XZ streams in the source package and decompressed before the runtime
+cache is seeded. This keeps the publishable `.crate` below the registry limit without changing the extension bytes or
+the optimized native archive contract.
 
 If the release pull request merge fails CI, later successful commits cannot publish its stale tag. A corrected release
 must be represented by a new release pull request whose own merge commit passes CI, preserving the exact-run artifact
@@ -72,6 +83,7 @@ Before publishing a production release, confirm:
 - Golden graph fixtures or expected graph-contract tests are current.
 - `SECURITY.md` is present and vulnerability reporting expectations are current.
 - Root `Cargo.toml` has complete crates.io package metadata and matches the release tag.
+- The generated `.crate` passes `cargo run -p xtask -- verify-crate-size <archive>` and remains at or below 10 MiB.
 - `crates/k-wiki/Cargo.toml` matches the root version and points its `codebase-graph` dependency at the same release version.
 - The protected `cargo` GitHub environment and release-please token posture have been verified in GitHub settings.
 - Conda-forge submission is either out of scope or the recipe placeholders have been replaced with the release version,

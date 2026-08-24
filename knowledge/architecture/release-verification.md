@@ -7,7 +7,7 @@ tags:
 - ci
 - provenance
 - release
-timestamp: 2026-08-17
+timestamp: 2026-08-24
 title: Native Release Verification
 type: architecture
 ---
@@ -49,6 +49,10 @@ Automatic mode binds release identity directly to `github.event.workflow_run.id`
 Automatic publication downloads all four retained internal artifacts from the exact CI run that triggered Release. A single validation job verifies target completeness, provenance, versions, digests, extraction, installers, and packaged behavior. Missing or expired artifacts stop automatic publication.
 
 Only the single asset publisher receives `contents: write`; it uploads the already validated complete set. Crate publication is automatic-release-only, remains protected by the `cargo` environment, and starts after native asset publication succeeds. The environment restricts deployments to `main` but has no required reviewers, so publication remains unattended.
+
+Crate upload is bounded and registry-aware. The publisher checks whether the exact immutable version already exists before uploading, retries transient failures with backoff, and checks again after every failed response so an accepted upload with a lost response is treated as success. Cargo's package verification may compile the extracted source package with the `dev` profile; that is not a distributed binary. Native release archives remain separate `--release` builds produced and smoked by the artifact contract.
+
+The compressed crates.io source package must not exceed 10 MiB. CI and Release verify the generated `.crate` by exact byte count after Cargo's dry-run. Bundled Ladybug extension binaries are stored as lossless XZ streams in the source package and decompressed before cache seeding; checksum comparison preserves the official extension bytes, while native archives retain the same optimized runtime behavior.
 
 ## Recovery and dry-run
 

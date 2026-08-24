@@ -77,6 +77,14 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Verify crates.io package
         run: cargo publish --dry-run --locked
+      - name: Enforce crates.io package size limit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo package --locked --no-verify
+          crate_path="$(find target/package -maxdepth 1 -type f -name 'codebase-graph-*.crate' -print -quit)"
+          test -n "$crate_path"
+          cargo run -p xtask -- verify-crate-size "$crate_path"
       - name: Verify Knowledge Wiki package archive
         run: cargo package -p k-wiki --locked --no-verify --config 'patch.crates-io.codebase-graph.path="."'
 
