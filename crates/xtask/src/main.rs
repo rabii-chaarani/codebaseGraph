@@ -1046,10 +1046,10 @@ fn check_workflow_policy(
                 .to_string(),
         );
     }
-    if !yaml_contains_string(
-        yaml_path(ci, &["jobs", "publish-dry-run"]).unwrap_or(&YamlValue::Null),
-        "verify-crate-size",
-    ) {
+    let ci_publish = yaml_path(ci, &["jobs", "publish-dry-run"]).unwrap_or(&YamlValue::Null);
+    if !yaml_contains_string(ci_publish, "cargo package --locked --no-verify")
+        || !yaml_contains_string(ci_publish, "verify-crate-size")
+    {
         issues.push(
             "FAIL: crates-io-package-size-gate-missing: CI must reject .crate files above the registry limit."
                 .to_string(),
@@ -1358,7 +1358,9 @@ fn check_workflow_policy(
                 .to_string(),
         );
     }
-    if !yaml_contains_string(publish_crate, "verify-crate-size") {
+    if !yaml_contains_string(publish_crate, "cargo package --locked --no-verify")
+        || !yaml_contains_string(publish_crate, "verify-crate-size")
+    {
         issues.push(
             "FAIL: crates-io-package-size-gate-missing: Release must recheck the .crate file before upload."
                 .to_string(),
@@ -2354,7 +2356,7 @@ mod tests {
 
     fn valid_ci_workflow() -> YamlValue {
         yaml_serde::from_str(
-            "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  publish-dry-run:\n    steps: [{run: 'cargo run -p xtask -- verify-crate-size package.crate'}]\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
+            "on:\n  pull_request: {branches: [main]}\n  push: {branches: [main]}\njobs:\n  native: {uses: './.github/workflows/native.yml'}\n  publish-dry-run:\n    steps: [{run: 'cargo package --locked --no-verify && cargo run -p xtask -- verify-crate-size package.crate'}]\n  required:\n    if: '${{ always() }}'\n    needs: [fmt, clippy, supply-chain, publish-dry-run, native]\n",
         )
         .unwrap()
     }
@@ -2446,7 +2448,7 @@ jobs:
   publish-crate:
     steps:
       - {run: 'cargo publish --dry-run --locked'}
-      - {run: 'cargo run -p xtask -- verify-crate-size package.crate'}
+      - {run: 'cargo package --locked --no-verify && cargo run -p xtask -- verify-crate-size package.crate'}
       - name: Publish crates.io package
         shell: bash
         env:
@@ -2677,7 +2679,7 @@ jobs:
     #[test]
     fn workflow_policy_rejects_missing_crate_size_gates() {
         let broken_release = valid_release_workflow_text().replace(
-            "cargo run -p xtask -- verify-crate-size package.crate",
+            "cargo package --locked --no-verify && cargo run -p xtask -- verify-crate-size package.crate",
             "echo size unchecked",
         );
         let issues = workflow_policy_issues(&broken_release);
