@@ -1,6 +1,6 @@
 # README UX Rewrite Proposal
 
-Status: proposal only. This document does not modify `README.md`.
+Status: approved and implemented in `README.md` on 2026-08-24.
 
 ## Outcome
 
@@ -139,8 +139,8 @@ optional capability, then maintainer and recovery detail.
 
 ## Proposed README
 
-The following is a copy-ready candidate. It is intentionally embedded in this
-proposal rather than written to `README.md`.
+The following approved candidate is retained as the review record. `README.md`
+matches this content.
 
 ~~~markdown
 # codebaseGraph
@@ -421,14 +421,13 @@ and the local-first MCP security boundary.
 - All links are descriptive, relative, and valid from the repository root.
 - Heading levels are sequential; tables have headers; instructions do not rely
   on color or icons.
-- Every proposed command is checked against current CLI behavior before the
-  README is replaced.
-- `README.md` remains unchanged until the proposal is approved.
+- Every proposed command is checked against current CLI behavior as part of the
+  implementation.
+- `README.md` was not modified before the proposal was approved.
 
-## Implementation notes
+## Verification notes
 
-If approved, replace `README.md` with the candidate, then run the repository's
-Markdown/link checks and exercise the quick-start, daemon-status, search,
-registration dry-run, and troubleshooting commands. Keep deeper `k-wiki`
-registration behavior in `docs/k-wiki.md` to prevent two long copies from
-drifting.
+After replacing `README.md` with the approved candidate, run the repository's
+Markdown/link checks and exercise the quick-start, daemon-status, search, and
+registration dry-run commands. Keep deeper `k-wiki` registration behavior in
+`docs/k-wiki.md` to prevent two long copies from drifting.
