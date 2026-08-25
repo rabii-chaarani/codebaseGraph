@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.5.2...v1.6.0) (2026-08-25)
+
+
+### Features
+
+* **parser:** add CSS support ([#104](https://github.com/rabii-chaarani/codebaseGraph/issues/104)) ([6666b8e](https://github.com/rabii-chaarani/codebaseGraph/commit/6666b8edcaaba603a4a7a61236a458d20d8e602b))
+
 ## [1.5.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.5.1...v1.5.2) (2026-08-25)
 
 
