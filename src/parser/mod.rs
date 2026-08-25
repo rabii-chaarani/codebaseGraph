@@ -148,6 +148,23 @@ mod tests {
     }
 
     #[test]
+    fn html_tree_sitter_parser_preserves_document_structure() {
+        let output = parse_source(
+            "<!doctype html><html><head><style>.card { color: red; }</style></head><body><main>Welcome</main><script>boot();</script></body></html>",
+            &profile("html"),
+        )
+        .expect("HTML parsing should succeed");
+
+        assert_eq!(output.root.node_type, "document");
+        assert!(output.diagnostics.is_empty());
+        assert!(contains_node_type(&output.root, "doctype"));
+        assert!(contains_node_type(&output.root, "element"));
+        assert!(contains_node_type(&output.root, "style_element"));
+        assert!(contains_node_type(&output.root, "script_element"));
+        assert!(marked_captures(&output.root).is_empty());
+    }
+
+    #[test]
     fn c_tree_sitter_parser_marks_profile_captures() {
         let output = parse_source(
             "#include <stdio.h>\nstruct Service { int id; };\nint helper() { printf(\"ok\"); return 1; }\n",
