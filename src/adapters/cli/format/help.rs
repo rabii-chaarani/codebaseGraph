@@ -3,7 +3,7 @@ pub(in crate::adapters::cli) fn top_level_help() -> &'static str {
 }
 
 pub(crate) fn mcp_help() -> &'static str {
-    "codebase-graph mcp\n\nUSAGE:\n  codebase-graph mcp install [--client <client>] [--scope <scope>] [--mcp-transport auto|stdio|http-daemon] [--mcp-daemon-port <port>] [--config-path <path>] [--client-config-path <path>] [--dry-run] [--json]\n  codebase-graph mcp start [stdio options]\n  codebase-graph mcp http [HTTP options]\n  codebase-graph mcp daemon serve|start|stop|status [--repo-root <path>] [--config <path>] [--port <port>]\n\nThe managed daemon binds to loopback, exposes Streamable HTTP at /mcp, and is shared by every local harness for the repository."
+    "codebase-graph mcp\n\nUSAGE:\n  codebase-graph mcp install [--client <client>] [--scope <scope>] [--mcp-transport auto|stdio|http-daemon] [--mcp-daemon-port <port>] [--config-path <path>] [--client-config-path <path>] [--dry-run] [--json]\n  codebase-graph mcp start [stdio options]\n  codebase-graph mcp http [HTTP options]\n  codebase-graph mcp daemon serve|start|stop|status [--repo-root <path>] [--config <path>] [--port <port>]\n\nThe managed daemon binds to loopback, exposes Streamable HTTP at /mcp, and is shared by every local harness for the repository. Daemon status reports runtime identity, supervisor state, and the latest bounded failure; daemon start reconciles stopped, stale-version, and stale-manifest services."
 }
 
 pub(in crate::adapters::cli) fn mcp_install_help() -> &'static str {

@@ -23,9 +23,12 @@ pub(crate) const DAEMON_TRANSPORT_VERSION: &str = "streamable-http-v1";
 const DAEMON_HEALTH_PATH: &str = "/_codebasegraph/health";
 const DAEMON_SHUTDOWN_PATH: &str = "/_codebasegraph/shutdown";
 const DAEMON_STATE_FILE: &str = "mcp-daemon.json";
+const DAEMON_FAILURE_FILE: &str = "mcp-daemon-failure.json";
 const DAEMON_LOCK_FILE: &str = "mcp-daemon.lock";
 const DAEMON_SERVICE_LOCK_FILE: &str = "mcp-daemon-service.lock";
 const CONTROL_HEADER: &str = "x-codebasegraph-control-token";
+const DAEMON_FAILURE_SCHEMA_VERSION: u64 = 1;
+const MAX_FAILURE_MESSAGE_BYTES: usize = 4 * 1024;
 const START_TIMEOUT: Duration = Duration::from_secs(10);
 const STOP_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -89,10 +92,55 @@ fn required<'a>(args: &'a [String], index: usize, option: &str) -> Result<&'a st
 pub(crate) struct McpDaemonState {
     pub(crate) pid: u32,
     pub(crate) version: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) started_at_unix_ms: Option<u64>,
     pub(crate) endpoint: String,
     pub(crate) repository_fingerprint: String,
     pub(crate) service_id: String,
     pub(crate) control_token: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+struct McpDaemonFailure {
+    schema_version: u64,
+    recorded_at_unix_ms: u64,
+    pid: u32,
+    version: String,
+    repository_fingerprint: String,
+    service_id: String,
+    phase: String,
+    message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct PlatformServiceStatus {
+    manager: &'static str,
+    manifest_present: bool,
+    manifest_current: bool,
+    loaded: Option<bool>,
+    state: String,
+    manager_state: Option<String>,
+    pid: Option<u32>,
+    last_exit_code: Option<i32>,
+    result: Option<String>,
+    query_error: Option<String>,
+}
+
+impl PlatformServiceStatus {
+    fn new(manager: &'static str, manifest_present: bool, manifest_current: bool) -> Self {
+        Self {
+            manager,
+            manifest_present,
+            manifest_current,
+            loaded: None,
+            state: "unknown".to_string(),
+            manager_state: None,
+            pid: None,
+            last_exit_code: None,
+            result: None,
+            query_error: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -164,6 +212,10 @@ impl McpDaemonSpec {
         self.state_dir.join(DAEMON_STATE_FILE)
     }
 
+    fn failure_path(&self) -> PathBuf {
+        self.state_dir.join(DAEMON_FAILURE_FILE)
+    }
+
     fn lock_path(&self) -> PathBuf {
         self.state_dir.join(DAEMON_LOCK_FILE)
     }
@@ -200,29 +252,41 @@ pub(crate) fn service_id(fingerprint: &str) -> String {
 
 pub(crate) fn serve_mcp_daemon(options: &McpDaemonOptions) -> Result<(), String> {
     let spec = McpDaemonSpec::from_options(options)?;
-    become_process_group_owner()?;
     fs::create_dir_all(&spec.state_dir).map_err(|error| {
         format!(
             "failed to create daemon state directory {}: {error}",
             spec.state_dir.display()
         )
     })?;
-    let lock = open_private_file(&spec.lock_path())?;
+    become_process_group_owner()
+        .map_err(|error| record_daemon_failure_message(&spec, "process_group", error))?;
+    let lock = open_private_file(&spec.lock_path())
+        .map_err(|error| record_daemon_failure_message(&spec, "lock_open", error))?;
     lock.try_lock_exclusive().map_err(|error| {
-        format!(
-            "MCP daemon is already running for repository {}: {error}",
-            spec.repo_root.display()
+        record_daemon_failure_message(
+            &spec,
+            "lock_acquire",
+            format!(
+                "MCP daemon is already running for repository {}: {error}",
+                spec.repo_root.display()
+            ),
         )
     })?;
-    let listener = TcpListener::bind(("127.0.0.1", spec.port))
-        .map_err(|error| format!("failed to bind managed MCP daemon: {error}"))?;
+    let listener = bind_daemon_listener(&spec).map_err(|error| {
+        record_daemon_failure_message(
+            &spec,
+            "listener_bind",
+            format!("failed to bind or activate managed MCP daemon: {error}"),
+        )
+    })?;
     let serve = McpServeOptions::parse(
         &[
             "--config".to_string(),
             spec.config_path.to_string_lossy().to_string(),
         ],
         "",
-    )?;
+    )
+    .map_err(|error| record_daemon_failure_message(&spec, "api_options", error))?;
     let mut http = McpHttpOptions {
         serve,
         host: "127.0.0.1".to_string(),
@@ -231,20 +295,75 @@ pub(crate) fn serve_mcp_daemon(options: &McpDaemonOptions) -> Result<(), String>
         allow_remote: false,
         auth_token: None,
     };
-    http.serve.api = Some(start_configured_api(&http.serve)?);
+    http.serve.api = Some(
+        start_configured_api(&http.serve)
+            .map_err(|error| record_daemon_failure_message(&spec, "api_initialization", error))?,
+    );
     let state = McpDaemonState {
         pid: std::process::id(),
         version: env!("CARGO_PKG_VERSION").to_string(),
+        started_at_unix_ms: Some(now_unix_ms()),
         endpoint: spec.endpoint.clone(),
         repository_fingerprint: spec.repository_fingerprint.clone(),
         service_id: spec.service_id.clone(),
         control_token: rotating_control_token(&spec),
     };
-    write_private_state(&spec.state_path(), &state)?;
+    write_private_state(&spec.state_path(), &state)
+        .map_err(|error| record_daemon_failure_message(&spec, "state_publish", error))?;
     let result = daemon_accept_loop(&http, listener, &state);
     remove_state_if_owned(&spec.state_path(), state.pid);
     let _ = FileExt::unlock(&lock);
-    result
+    result.map_err(|error| record_daemon_failure_message(&spec, "accept_loop", error))
+}
+
+fn bind_daemon_listener(spec: &McpDaemonSpec) -> Result<TcpListener, String> {
+    #[cfg(target_os = "macos")]
+    if let Some(listener) = activate_launchd_listener()? {
+        return Ok(listener);
+    }
+    TcpListener::bind(("127.0.0.1", spec.port)).map_err(|error| error.to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn activate_launchd_listener() -> Result<Option<TcpListener>, String> {
+    use std::ffi::CString;
+    use std::os::fd::FromRawFd;
+
+    extern "C" {
+        fn launch_activate_socket(
+            name: *const libc::c_char,
+            fds: *mut *mut libc::c_int,
+            count: *mut libc::size_t,
+        ) -> libc::c_int;
+    }
+
+    let name = CString::new("mcp-http").expect("launchd socket name is static");
+    let mut fds = std::ptr::null_mut();
+    let mut count = 0_usize;
+    let result = unsafe { launch_activate_socket(name.as_ptr(), &mut fds, &mut count) };
+    if result == libc::ENOENT || result == libc::ESRCH {
+        return Ok(None);
+    }
+    if result != 0 {
+        return Err(format!(
+            "launchd socket activation failed: {}",
+            std::io::Error::from_raw_os_error(result)
+        ));
+    }
+    if count != 1 || fds.is_null() {
+        if !fds.is_null() {
+            for index in 0..count {
+                unsafe { libc::close(*fds.add(index)) };
+            }
+            unsafe { libc::free(fds.cast()) };
+        }
+        return Err(format!(
+            "launchd returned {count} descriptors for the managed MCP socket; expected one"
+        ));
+    }
+    let fd = unsafe { *fds };
+    unsafe { libc::free(fds.cast()) };
+    Ok(Some(unsafe { TcpListener::from_raw_fd(fd) }))
 }
 
 fn daemon_accept_loop(
@@ -326,14 +445,17 @@ pub(crate) fn start_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json:
         START_TIMEOUT,
     )?;
     let service = PlatformService::for_spec(&spec)?;
-    if let Ok(state) = read_daemon_state(&spec.state_path()) {
-        if probe_health(&state).is_ok() {
-            if !service.manifest_path().exists() {
-                return Err(format!(
-                    "an unmanaged MCP daemon is already running as PID {}; stop it before installing the user service",
-                    state.pid
-                ));
-            }
+    let attempt_started_at = now_unix_ms();
+    let previous = read_daemon_state(&spec.state_path()).ok();
+    let healthy = previous
+        .as_ref()
+        .filter(|state| probe_health(state).is_ok())
+        .cloned();
+    let service_status = service.inspect();
+    let reasons =
+        reconciliation_reasons(&spec, previous.as_ref(), healthy.is_some(), &service_status)?;
+    if let Some(state) = healthy.as_ref() {
+        if reasons.is_empty() {
             verify_daemon_endpoint(&state.endpoint, Some(&spec.repository_fingerprint))?;
             return Ok(json!({
                 "action": "unchanged",
@@ -342,10 +464,14 @@ pub(crate) fn start_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json:
                 "endpoint": state.endpoint,
                 "service_id": state.service_id,
                 "repository_fingerprint": state.repository_fingerprint,
+                "runtime_version": state.version,
+                "reasons": [],
             }));
         }
+        stop_mcp_daemon_inner(&spec, false)?;
     }
     if let Err(start_error) = service.install_and_start() {
+        record_service_failure_if_newer(&spec, attempt_started_at, "service_install", &start_error);
         let cleanup_error = service.stop(true).err();
         let _ = fs::remove_file(service.manifest_path());
         return Err(match cleanup_error {
@@ -360,15 +486,35 @@ pub(crate) fn start_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json:
     while Instant::now() < deadline {
         if let Ok(state) = read_daemon_state(&spec.state_path()) {
             if probe_health(&state).is_ok() {
-                match verify_daemon_endpoint(&state.endpoint, Some(&spec.repository_fingerprint)) {
+                let state_matches = validate_daemon_identity(&spec, &state).and_then(|_| {
+                    if state.endpoint != spec.endpoint {
+                        Err(
+                            "managed MCP daemon endpoint does not match requested endpoint"
+                                .to_string(),
+                        )
+                    } else if state.version != env!("CARGO_PKG_VERSION") {
+                        Err(
+                            "managed MCP daemon version does not match controller version"
+                                .to_string(),
+                        )
+                    } else {
+                        Ok(())
+                    }
+                });
+                match state_matches.and_then(|_| {
+                    verify_daemon_endpoint(&state.endpoint, Some(&spec.repository_fingerprint))
+                        .map(|_| ())
+                }) {
                     Ok(_) => {
                         return Ok(json!({
-                            "action": "started",
+                            "action": if healthy.is_some() { "restarted" } else { "started" },
                             "running": true,
                             "pid": state.pid,
                             "endpoint": state.endpoint,
                             "service_id": state.service_id,
                             "repository_fingerprint": state.repository_fingerprint,
+                            "runtime_version": state.version,
+                            "reasons": reasons,
                             "service_manifest": service.manifest_path(),
                         }));
                     }
@@ -387,12 +533,51 @@ pub(crate) fn start_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json:
         Some(error) => format!("{message}: last MCP verification error: {error}"),
         None => message,
     };
+    record_service_failure_if_newer(
+        &spec,
+        attempt_started_at,
+        "service_health_timeout",
+        &message,
+    );
+    let message = append_latest_failure(&spec, message, attempt_started_at);
     let cleanup_error = service.stop(true).err();
     let _ = fs::remove_file(service.manifest_path());
     Err(match cleanup_error {
         Some(error) => format!("{message}; additionally failed to roll back the service: {error}"),
         None => message,
     })
+}
+
+fn reconciliation_reasons(
+    spec: &McpDaemonSpec,
+    state: Option<&McpDaemonState>,
+    healthy: bool,
+    service: &PlatformServiceStatus,
+) -> Result<Vec<&'static str>, String> {
+    if let Some(state) = state {
+        validate_daemon_identity(spec, state)?;
+    }
+    let mut reasons = Vec::new();
+    if let Some(state) = state {
+        if state.endpoint != spec.endpoint {
+            reasons.push("endpoint_mismatch");
+        }
+        if state.version != env!("CARGO_PKG_VERSION") {
+            reasons.push("runtime_version_mismatch");
+        }
+    }
+    if !service.manifest_current {
+        reasons.push("manifest_drift");
+    }
+    if service.loaded == Some(false) {
+        reasons.push("service_not_loaded");
+    }
+    if !healthy && reasons.is_empty() {
+        reasons.push("not_running");
+    }
+    reasons.sort_unstable();
+    reasons.dedup();
+    Ok(reasons)
 }
 
 fn acquire_bounded_lock(path: &Path, timeout: Duration) -> Result<File, String> {
@@ -427,6 +612,13 @@ pub(crate) fn stop_mcp_daemon(
     remove_service: bool,
 ) -> Result<serde_json::Value, String> {
     let spec = McpDaemonSpec::from_options(options)?;
+    stop_mcp_daemon_inner(&spec, remove_service)
+}
+
+fn stop_mcp_daemon_inner(
+    spec: &McpDaemonSpec,
+    remove_service: bool,
+) -> Result<serde_json::Value, String> {
     let previous = read_daemon_state(&spec.state_path()).ok();
     let verified_owner = previous
         .as_ref()
@@ -435,16 +627,16 @@ pub(crate) fn stop_mcp_daemon(
         if verified_owner {
             let _ = request_shutdown(state);
         }
-        let deadline = Instant::now() + STOP_TIMEOUT;
-        while Instant::now() < deadline && pid_is_alive(state.pid) {
-            thread::sleep(Duration::from_millis(50));
-        }
     }
-    let service = PlatformService::for_spec(&spec)?;
+    let service = PlatformService::for_spec(spec)?;
     let service_error = service.stop(remove_service).err();
     if let Some(state) = previous.as_ref() {
         if verified_owner {
-            if service_error.is_some() && pid_is_alive(state.pid) {
+            let deadline = Instant::now() + STOP_TIMEOUT;
+            while Instant::now() < deadline && pid_is_alive(state.pid) {
+                thread::sleep(Duration::from_millis(50));
+            }
+            if pid_is_alive(state.pid) {
                 force_stop_process_group(state.pid)?;
             }
             let deadline = Instant::now() + STOP_TIMEOUT;
@@ -459,6 +651,7 @@ pub(crate) fn stop_mcp_daemon(
         }
         remove_state_if_owned(&spec.state_path(), state.pid);
     }
+    remove_stale_daemon_state(spec);
     if let Some(error) = service_error {
         return Err(error);
     }
@@ -535,10 +728,64 @@ fn force_stop_process_group(pid: u32) -> Result<(), String> {
 pub(crate) fn status_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json::Value, String> {
     let spec = McpDaemonSpec::from_options(options)?;
     let service = PlatformService::for_spec(&spec)?;
-    let state = read_daemon_state(&spec.state_path()).ok();
-    let running = state
+    let state_present = spec.state_path().exists();
+    let (state, read_error) = match read_daemon_state(&spec.state_path()) {
+        Ok(state) => (Some(state), None),
+        Err(_error) if !state_present => (None, None),
+        Err(error) => (None, Some(error)),
+    };
+    let (running, health_error) = match state.as_ref() {
+        Some(state) => match probe_health(state) {
+            Ok(_) => (true, None),
+            Err(error) => (false, Some(error)),
+        },
+        None => (false, None),
+    };
+    let mut service_status = service.inspect();
+    if running && service_status.loaded != Some(false) {
+        service_status.state = "running".to_string();
+    } else if !running
+        && service_status.loaded == Some(true)
+        && service_status.state == "unknown"
+        && read_daemon_failure(&spec.failure_path()).is_ok()
+    {
+        service_status.state = "failed".to_string();
+    }
+    let latest_failure = read_daemon_failure(&spec.failure_path()).ok();
+    let recovered = latest_failure.as_ref().map(|failure| {
+        state
+            .as_ref()
+            .and_then(|state| state.started_at_unix_ms)
+            .map(|started| running && started >= failure.recorded_at_unix_ms)
+    });
+    let runtime_version = state
         .as_ref()
-        .is_some_and(|state| probe_health(state).is_ok());
+        .filter(|_| running)
+        .map(|state| state.version.clone());
+    let version_mismatch = state
+        .as_ref()
+        .map(|state| state.version != env!("CARGO_PKG_VERSION"));
+    let recommended_action = if !running
+        || version_mismatch == Some(true)
+        || !service_status.manifest_current
+        || service_status.loaded == Some(false)
+    {
+        Some(json!({
+            "code": "start_daemon",
+            "command": [
+                spec.executable.to_string_lossy(),
+                "mcp",
+                "daemon",
+                "start",
+                "--config",
+                spec.config_path.to_string_lossy(),
+                "--port",
+                spec.port.to_string(),
+            ],
+        }))
+    } else {
+        None
+    };
     Ok(json!({
         "running": running,
         "pid": state.as_ref().map(|state| state.pid),
@@ -548,6 +795,22 @@ pub(crate) fn status_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json
         "state_path": spec.state_path(),
         "managed_service_installed": service.manifest_path().exists(),
         "service_manifest": service.manifest_path(),
+        "controller_version": env!("CARGO_PKG_VERSION"),
+        "runtime_version": runtime_version,
+        "version_mismatch": version_mismatch,
+        "daemon_state": {
+            "present": state_present,
+            "healthy": running,
+            "pid": state.as_ref().map(|state| state.pid),
+            "version": state.as_ref().map(|state| state.version.clone()),
+            "started_at_unix_ms": state.as_ref().and_then(|state| state.started_at_unix_ms),
+            "read_error": read_error,
+            "health_error": health_error,
+        },
+        "service": service_status,
+        "latest_failure": latest_failure,
+        "recovered": recovered.flatten(),
+        "recommended_action": recommended_action,
     }))
 }
 
@@ -556,6 +819,124 @@ pub(crate) fn read_daemon_state(path: &Path) -> Result<McpDaemonState, String> {
         .map_err(|error| format!("failed to read daemon state {}: {error}", path.display()))?;
     serde_json::from_str(&text)
         .map_err(|error| format!("failed to decode daemon state {}: {error}", path.display()))
+}
+
+fn read_daemon_failure(path: &Path) -> Result<McpDaemonFailure, String> {
+    let text = fs::read_to_string(path)
+        .map_err(|error| format!("failed to read daemon failure {}: {error}", path.display()))?;
+    serde_json::from_str(&text).map_err(|error| {
+        format!(
+            "failed to decode daemon failure {}: {error}",
+            path.display()
+        )
+    })
+}
+
+fn write_daemon_failure(
+    spec: &McpDaemonSpec,
+    phase: &str,
+    message: &str,
+) -> Result<McpDaemonFailure, String> {
+    let failure = McpDaemonFailure {
+        schema_version: DAEMON_FAILURE_SCHEMA_VERSION,
+        recorded_at_unix_ms: now_unix_ms(),
+        pid: std::process::id(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        repository_fingerprint: spec.repository_fingerprint.clone(),
+        service_id: spec.service_id.clone(),
+        phase: phase.to_string(),
+        message: truncate_utf8(message, MAX_FAILURE_MESSAGE_BYTES),
+    };
+    let value = serde_json::to_value(&failure).map_err(|error| error.to_string())?;
+    write_json_atomically(&spec.failure_path(), &value).map_err(|error| {
+        format!(
+            "failed to write daemon failure {}: {error}",
+            spec.failure_path().display()
+        )
+    })?;
+    set_private_permissions(&spec.failure_path())?;
+    Ok(failure)
+}
+
+fn record_daemon_failure_message(
+    spec: &McpDaemonSpec,
+    phase: &str,
+    message: impl Into<String>,
+) -> String {
+    let message = message.into();
+    match write_daemon_failure(spec, phase, &message) {
+        Ok(_) => message,
+        Err(error) => format!("{message}; additionally failed to record daemon failure: {error}"),
+    }
+}
+
+fn record_service_failure_if_newer(
+    spec: &McpDaemonSpec,
+    attempt_started_at: u64,
+    phase: &str,
+    message: &str,
+) {
+    if read_daemon_failure(&spec.failure_path())
+        .ok()
+        .is_some_and(|failure| failure.recorded_at_unix_ms >= attempt_started_at)
+    {
+        return;
+    }
+    let _ = write_daemon_failure(spec, phase, message);
+}
+
+fn append_latest_failure(spec: &McpDaemonSpec, message: String, attempt_started_at: u64) -> String {
+    match read_daemon_failure(&spec.failure_path()) {
+        Ok(failure) if failure.recorded_at_unix_ms >= attempt_started_at => format!(
+            "{message}: latest daemon failure during {}: {}",
+            failure.phase, failure.message
+        ),
+        _ => message,
+    }
+}
+
+fn validate_daemon_identity(spec: &McpDaemonSpec, state: &McpDaemonState) -> Result<(), String> {
+    if state.repository_fingerprint != spec.repository_fingerprint {
+        return Err(
+            "managed MCP daemon repository fingerprint does not match setup config".to_string(),
+        );
+    }
+    if state.service_id != spec.service_id {
+        return Err("managed MCP daemon service identity does not match setup config".to_string());
+    }
+    Ok(())
+}
+
+fn remove_stale_daemon_state(spec: &McpDaemonSpec) {
+    let Ok(state) = read_daemon_state(&spec.state_path()) else {
+        return;
+    };
+    if state.repository_fingerprint == spec.repository_fingerprint
+        && state.service_id == spec.service_id
+        && !pid_is_alive(state.pid)
+    {
+        remove_state_if_owned(&spec.state_path(), state.pid);
+    }
+}
+
+fn now_unix_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis()
+        .try_into()
+        .unwrap_or(u64::MAX)
+}
+
+fn truncate_utf8(value: &str, max_bytes: usize) -> String {
+    if value.len() <= max_bytes {
+        return value.to_string();
+    }
+    let mut boundary = max_bytes.min(value.len());
+    while boundary > 0 && !value.is_char_boundary(boundary) {
+        boundary -= 1;
+    }
+    value[..boundary].to_string()
 }
 
 pub(crate) fn probe_daemon_endpoint(endpoint: &str) -> Result<serde_json::Value, String> {
@@ -915,6 +1296,33 @@ impl PlatformService {
         }
     }
 
+    fn manager_name(&self) -> &'static str {
+        match self {
+            Self::Launchd { .. } => "launchd",
+            Self::Systemd { .. } => "systemd",
+            Self::TaskScheduler { .. } => "task_scheduler",
+        }
+    }
+
+    fn manifest_current(&self) -> bool {
+        fs::read_to_string(self.manifest_path()).is_ok_and(|current| current == self.render())
+    }
+
+    fn inspect(&self) -> PlatformServiceStatus {
+        let manifest_present = self.manifest_path().exists();
+        let mut status = PlatformServiceStatus::new(
+            self.manager_name(),
+            manifest_present,
+            self.manifest_current(),
+        );
+        match self {
+            Self::Launchd { spec, .. } => inspect_launchd(spec, &mut status),
+            Self::Systemd { spec, .. } => inspect_systemd(spec, &mut status),
+            Self::TaskScheduler { spec, .. } => inspect_task_scheduler(spec, &mut status),
+        }
+        status
+    }
+
     fn install_and_start(&self) -> Result<(), String> {
         let manager = match self {
             Self::Launchd { .. } => require_executable("launchctl")?,
@@ -1030,6 +1438,158 @@ impl PlatformService {
     }
 }
 
+fn inspect_launchd(spec: &McpDaemonSpec, status: &mut PlatformServiceStatus) {
+    let Some(launchctl) = executable_in_path("launchctl") else {
+        status.query_error =
+            Some("platform service manager executable launchctl is unavailable".to_string());
+        return;
+    };
+    let target = format!("gui/{}/{}", effective_user_id(), spec.service_id);
+    match run_output_bounded(&launchctl, &["print", &target], STOP_TIMEOUT) {
+        Ok(output) if output.status.success() => {
+            status.loaded = Some(true);
+            parse_launchd_status(&String::from_utf8_lossy(&output.stdout), status);
+        }
+        Ok(output) if service_not_loaded(&output) => {
+            status.loaded = Some(false);
+            status.state = "not_loaded".to_string();
+        }
+        Ok(output) => status.query_error = Some(command_failure(&launchctl, &output)),
+        Err(error) => status.query_error = Some(error),
+    }
+}
+
+fn parse_launchd_status(output: &str, status: &mut PlatformServiceStatus) {
+    for line in output.lines().map(str::trim) {
+        if let Some(value) = line.strip_prefix("state = ") {
+            if status.manager_state.is_none() {
+                status.manager_state = Some(value.to_string());
+            }
+        } else if let Some(value) = line.strip_prefix("pid = ") {
+            if status.pid.is_none() {
+                status.pid = value.parse::<u32>().ok();
+            }
+        } else if let Some(value) = line.strip_prefix("last exit code = ") {
+            if status.last_exit_code.is_none() {
+                status.last_exit_code = value.parse::<i32>().ok();
+            }
+        } else if let Some(value) = line.strip_prefix("last terminating signal = ") {
+            if status.result.is_none() {
+                status.result = Some(value.to_string());
+            }
+        }
+    }
+    status.state = match status.manager_state.as_deref() {
+        Some("running") => "running",
+        Some("not running")
+            if status.last_exit_code.is_some_and(|code| code != 0) || status.result.is_some() =>
+        {
+            "failed"
+        }
+        Some("not running") => "stopped",
+        Some(_) | None => "unknown",
+    }
+    .to_string();
+}
+
+fn inspect_systemd(spec: &McpDaemonSpec, status: &mut PlatformServiceStatus) {
+    let Some(systemctl) = executable_in_path("systemctl") else {
+        status.query_error =
+            Some("platform service manager executable systemctl is unavailable".to_string());
+        return;
+    };
+    let unit = format!("{}.service", spec.service_id);
+    let args = [
+        "--user",
+        "show",
+        unit.as_str(),
+        "--property=LoadState",
+        "--property=ActiveState",
+        "--property=SubState",
+        "--property=MainPID",
+        "--property=ExecMainStatus",
+        "--property=Result",
+        "--no-pager",
+    ];
+    match run_output_bounded(&systemctl, &args, STOP_TIMEOUT) {
+        Ok(output) if output.status.success() => {
+            parse_systemd_status(&String::from_utf8_lossy(&output.stdout), status);
+        }
+        Ok(output) if service_not_loaded(&output) => {
+            status.loaded = Some(false);
+            status.state = "not_loaded".to_string();
+        }
+        Ok(output) => status.query_error = Some(command_failure(&systemctl, &output)),
+        Err(error) => status.query_error = Some(error),
+    }
+}
+
+fn parse_systemd_status(output: &str, status: &mut PlatformServiceStatus) {
+    let values = output
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let load_state = values.get("LoadState").copied();
+    let active_state = values.get("ActiveState").copied();
+    let sub_state = values.get("SubState").copied();
+    let result = values
+        .get("Result")
+        .copied()
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    status.loaded = load_state.map(|value| value != "not-found");
+    status.manager_state = match (active_state, sub_state) {
+        (Some(active), Some(sub)) => Some(format!("{active}/{sub}")),
+        (Some(active), None) => Some(active.to_string()),
+        _ => None,
+    };
+    status.pid = values
+        .get("MainPID")
+        .and_then(|value| value.parse::<u32>().ok())
+        .filter(|pid| *pid != 0);
+    status.last_exit_code = values
+        .get("ExecMainStatus")
+        .and_then(|value| value.parse::<i32>().ok());
+    status.result = result.clone();
+    status.state = if load_state == Some("not-found") {
+        "not_loaded"
+    } else if active_state == Some("active") {
+        "running"
+    } else if active_state == Some("failed")
+        || result.as_deref().is_some_and(|value| value != "success")
+    {
+        "failed"
+    } else if active_state == Some("inactive") {
+        "stopped"
+    } else {
+        "unknown"
+    }
+    .to_string();
+}
+
+fn inspect_task_scheduler(spec: &McpDaemonSpec, status: &mut PlatformServiceStatus) {
+    let Some(schtasks) = executable_in_path("schtasks.exe") else {
+        status.query_error =
+            Some("platform service manager executable schtasks.exe is unavailable".to_string());
+        return;
+    };
+    match run_output_bounded(
+        &schtasks,
+        &["/Query", "/TN", &spec.service_id, "/XML"],
+        STOP_TIMEOUT,
+    ) {
+        Ok(output) if output.status.success() => {
+            status.loaded = Some(true);
+        }
+        Ok(output) if service_not_loaded(&output) => {
+            status.loaded = Some(false);
+            status.state = "not_loaded".to_string();
+        }
+        Ok(output) => status.query_error = Some(command_failure(&schtasks, &output)),
+        Err(error) => status.query_error = Some(error),
+    }
+}
+
 fn render_launchd(spec: &McpDaemonSpec) -> String {
     let mut args = vec![spec.executable.to_string_lossy().to_string()];
     args.extend(spec.launch_args());
@@ -1039,8 +1599,8 @@ fn render_launchd(spec: &McpDaemonSpec) -> String {
         .collect::<Vec<_>>()
         .join("\n");
     format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n  <key>Label</key><string>{}</string>\n  <key>ProgramArguments</key>\n  <array>\n{}\n  </array>\n  <key>RunAtLoad</key><true/>\n  <key>ProcessType</key><string>Background</string>\n  <key>KeepAlive</key>\n  <dict><key>SuccessfulExit</key><false/></dict>\n</dict>\n</plist>\n",
-        xml_escape(&spec.service_id), arguments
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n  <key>Label</key><string>{}</string>\n  <key>ProgramArguments</key>\n  <array>\n{}\n  </array>\n  <key>RunAtLoad</key><true/>\n  <key>ProcessType</key><string>Background</string>\n  <key>KeepAlive</key><true/>\n  <key>ThrottleInterval</key><integer>10</integer>\n  <key>Sockets</key>\n  <dict>\n    <key>mcp-http</key>\n    <dict>\n      <key>SockNodeName</key><string>127.0.0.1</string>\n      <key>SockServiceName</key><integer>{}</integer>\n      <key>SockFamily</key><string>IPv4</string>\n      <key>SockType</key><string>stream</string>\n      <key>SockProtocol</key><string>TCP</string>\n    </dict>\n  </dict>\n</dict>\n</plist>\n",
+        xml_escape(&spec.service_id), arguments, spec.port
     )
 }
 
@@ -1051,7 +1611,7 @@ fn render_systemd(spec: &McpDaemonSpec) -> String {
         .collect::<Vec<_>>()
         .join(" ");
     format!(
-        "[Unit]\nDescription=CodebaseGraph MCP daemon for {}\n\n[Service]\nType=simple\nExecStart={}\nRestart=on-failure\nRestartSec=1\nTimeoutStopSec=5s\nKillMode=control-group\n\n[Install]\nWantedBy=default.target\n",
+        "[Unit]\nDescription=CodebaseGraph MCP daemon for {}\n\n[Service]\nType=simple\nExecStart={}\nRestart=always\nRestartSec=10\nTimeoutStopSec=5s\nKillMode=control-group\n\n[Install]\nWantedBy=default.target\n",
         spec.repository_fingerprint, command
     )
 }
@@ -1064,7 +1624,7 @@ fn render_task_scheduler(spec: &McpDaemonSpec) -> String {
         .collect::<Vec<_>>()
         .join(" ");
     format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.4\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><RestartOnFailure><Interval>PT1M</Interval><Count>3</Count></RestartOnFailure></Settings>\n  <Triggers><LogonTrigger><Enabled>true</Enabled></LogonTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>{}</Command><Arguments>{}</Arguments></Exec></Actions>\n</Task>\n",
+        "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n<Task version=\"1.4\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\n  <Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><RestartOnFailure><Interval>PT1M</Interval><Count>255</Count></RestartOnFailure></Settings>\n  <Triggers><LogonTrigger><Enabled>true</Enabled></LogonTrigger></Triggers>\n  <Actions Context=\"Author\"><Exec><Command>{}</Command><Arguments>{}</Arguments></Exec></Actions>\n</Task>\n",
         xml_escape(&spec.executable.to_string_lossy()),
         xml_escape(&arguments)
     )
@@ -1133,19 +1693,29 @@ fn run_output_bounded(
 }
 
 fn command_failure(program: &Path, output: &std::process::Output) -> String {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let detail = if stderr.trim().is_empty() {
+        stdout.trim()
+    } else {
+        stderr.trim()
+    };
     format!(
         "{} failed with status {}: {}",
         program.display(),
         output.status,
-        String::from_utf8_lossy(&output.stderr).trim()
+        truncate_utf8(detail, MAX_FAILURE_MESSAGE_BYTES)
     )
 }
 
 fn service_not_loaded(output: &std::process::Output) -> bool {
     let stderr = String::from_utf8_lossy(&output.stderr).to_ascii_lowercase();
     stderr.contains("could not find service")
+        || stderr.contains("could not be found")
+        || stderr.contains("not found")
         || stderr.contains("no such process")
         || stderr.contains("cannot find the file")
+        || stderr.contains("the system cannot find")
         || stderr.contains("does not exist")
 }
 
@@ -1190,6 +1760,41 @@ fn effective_user_id() -> u32 {
 mod tests {
     use super::*;
 
+    fn temp_spec() -> McpDaemonSpec {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let repo_root = env::temp_dir().join(format!(
+            "codebase-graph-daemon-unit-{}-{unique}",
+            std::process::id()
+        ));
+        let state_dir = repo_root.join(".codebaseGraph");
+        fs::create_dir_all(&state_dir).unwrap();
+        McpDaemonSpec {
+            config_path: state_dir.join("config.json"),
+            repo_root,
+            state_dir,
+            port: 43123,
+            endpoint: "http://127.0.0.1:43123/mcp".to_string(),
+            repository_fingerprint: "0123456789abcdef0123456789abcdef".to_string(),
+            service_id: "io.codebasegraph.mcp.0123456789abcdef".to_string(),
+            executable: PathBuf::from("/Applications/Codebase Graph/codebase-graph"),
+        }
+    }
+
+    fn matching_state(spec: &McpDaemonSpec) -> McpDaemonState {
+        McpDaemonState {
+            pid: 42,
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            started_at_unix_ms: Some(100),
+            endpoint: spec.endpoint.clone(),
+            repository_fingerprint: spec.repository_fingerprint.clone(),
+            service_id: spec.service_id.clone(),
+            control_token: "do-not-log-this-token".to_string(),
+        }
+    }
+
     fn spec() -> McpDaemonSpec {
         McpDaemonSpec {
             config_path: PathBuf::from("/tmp/repo with spaces/.codebaseGraph/config.json"),
@@ -1219,13 +1824,174 @@ mod tests {
     fn service_manifests_quote_paths_and_request_single_instance_restart() {
         let spec = spec();
         let launchd = render_launchd(&spec);
-        assert!(launchd.contains("SuccessfulExit"));
+        assert!(launchd.contains("<key>KeepAlive</key><true/>"));
+        assert!(launchd.contains("<key>ThrottleInterval</key><integer>10</integer>"));
+        assert!(launchd.contains("<key>mcp-http</key>"));
+        assert!(launchd.contains("<key>SockServiceName</key><integer>43123</integer>"));
         assert!(launchd.contains("repo with spaces"));
         let systemd = render_systemd(&spec);
-        assert!(systemd.contains("Restart=on-failure"));
+        assert!(systemd.contains("Restart=always"));
+        assert!(systemd.contains("RestartSec=10"));
         assert!(systemd.contains("\"/Applications/Codebase Graph/codebase-graph\""));
         let task = render_task_scheduler(&spec);
         assert!(task.contains("<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>"));
         assert!(task.contains("<RestartOnFailure>"));
+        assert!(task.contains("<Interval>PT1M</Interval><Count>255</Count>"));
+    }
+
+    #[test]
+    fn failure_snapshot_is_bounded_private_and_replaced_atomically() {
+        let spec = temp_spec();
+        let message = format!("{}é", "x".repeat(MAX_FAILURE_MESSAGE_BYTES));
+        let first = write_daemon_failure(&spec, "listener_bind", &message).unwrap();
+        assert!(first.message.len() <= MAX_FAILURE_MESSAGE_BYTES);
+        assert!(std::str::from_utf8(first.message.as_bytes()).is_ok());
+        assert!(!first.message.contains("do-not-log-this-token"));
+
+        let second = write_daemon_failure(&spec, "accept_loop", "replacement").unwrap();
+        assert_eq!(read_daemon_failure(&spec.failure_path()).unwrap(), second);
+        assert_eq!(second.phase, "accept_loop");
+        assert_eq!(second.message, "replacement");
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                fs::metadata(spec.failure_path())
+                    .unwrap()
+                    .permissions()
+                    .mode()
+                    & 0o777,
+                0o600
+            );
+        }
+        fs::remove_dir_all(&spec.repo_root).unwrap();
+    }
+
+    #[test]
+    fn older_daemon_state_without_start_timestamp_remains_readable() {
+        let spec = spec();
+        let state: McpDaemonState = serde_json::from_value(json!({
+            "pid": 7,
+            "version": "1.4.2",
+            "endpoint": spec.endpoint,
+            "repository_fingerprint": spec.repository_fingerprint,
+            "service_id": spec.service_id,
+            "control_token": "legacy",
+        }))
+        .unwrap();
+        assert_eq!(state.started_at_unix_ms, None);
+    }
+
+    #[test]
+    fn launchd_status_parser_reports_running_and_failed_jobs() {
+        let mut running = PlatformServiceStatus::new("launchd", true, true);
+        running.loaded = Some(true);
+        parse_launchd_status(
+            "state = running\npid = 123\nlast exit code = 1\nstate = active\n",
+            &mut running,
+        );
+        assert_eq!(running.state, "running");
+        assert_eq!(running.manager_state.as_deref(), Some("running"));
+        assert_eq!(running.pid, Some(123));
+        assert_eq!(running.last_exit_code, Some(1));
+
+        let mut failed = PlatformServiceStatus::new("launchd", true, true);
+        failed.loaded = Some(true);
+        parse_launchd_status("state = not running\nlast exit code = 1\n", &mut failed);
+        assert_eq!(failed.state, "failed");
+        assert_eq!(failed.pid, None);
+
+        let mut killed = PlatformServiceStatus::new("launchd", true, true);
+        killed.loaded = Some(true);
+        parse_launchd_status(
+            "state = not running\nlast terminating signal = Killed: 9\n",
+            &mut killed,
+        );
+        assert_eq!(killed.state, "failed");
+        assert_eq!(killed.result.as_deref(), Some("Killed: 9"));
+
+        let mut stopped = PlatformServiceStatus::new("launchd", true, true);
+        stopped.loaded = Some(true);
+        parse_launchd_status("state = not running\nlast exit code = 0\n", &mut stopped);
+        assert_eq!(stopped.state, "stopped");
+    }
+
+    #[test]
+    fn systemd_status_parser_reports_running_failed_and_missing_fields() {
+        let mut running = PlatformServiceStatus::new("systemd", true, true);
+        parse_systemd_status(
+            "LoadState=loaded\nActiveState=active\nSubState=running\nMainPID=81\nExecMainStatus=0\nResult=success\n",
+            &mut running,
+        );
+        assert_eq!(running.loaded, Some(true));
+        assert_eq!(running.state, "running");
+        assert_eq!(running.manager_state.as_deref(), Some("active/running"));
+        assert_eq!(running.pid, Some(81));
+
+        let mut failed = PlatformServiceStatus::new("systemd", true, true);
+        parse_systemd_status(
+            "LoadState=loaded\nActiveState=failed\nSubState=failed\nMainPID=0\nExecMainStatus=1\nResult=exit-code\n",
+            &mut failed,
+        );
+        assert_eq!(failed.state, "failed");
+        assert_eq!(failed.last_exit_code, Some(1));
+        assert_eq!(failed.result.as_deref(), Some("exit-code"));
+
+        let mut unknown = PlatformServiceStatus::new("systemd", true, true);
+        parse_systemd_status("unexpected output", &mut unknown);
+        assert_eq!(unknown.loaded, None);
+        assert_eq!(unknown.state, "unknown");
+    }
+
+    #[test]
+    fn reconciliation_is_idempotent_and_fails_closed_on_identity_mismatch() {
+        let spec = spec();
+        let state = matching_state(&spec);
+        let mut service = PlatformServiceStatus::new("launchd", true, true);
+        service.loaded = Some(true);
+        assert!(reconciliation_reasons(&spec, Some(&state), true, &service)
+            .unwrap()
+            .is_empty());
+
+        let mut stale = state.clone();
+        stale.version = "0.0.0".to_string();
+        stale.endpoint = "http://127.0.0.1:49999/mcp".to_string();
+        service.loaded = Some(false);
+        service.manifest_current = false;
+        assert_eq!(
+            reconciliation_reasons(&spec, Some(&stale), false, &service).unwrap(),
+            vec![
+                "endpoint_mismatch",
+                "manifest_drift",
+                "runtime_version_mismatch",
+                "service_not_loaded",
+            ]
+        );
+
+        let mut foreign = state;
+        foreign.repository_fingerprint = "foreign".to_string();
+        assert!(reconciliation_reasons(&spec, Some(&foreign), true, &service).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn manager_missing_messages_are_recognized_without_localized_status_parsing() {
+        fn output(stderr: &str) -> std::process::Output {
+            use std::os::unix::process::ExitStatusExt;
+            std::process::Output {
+                status: std::process::ExitStatus::from_raw(1 << 8),
+                stdout: Vec::new(),
+                stderr: stderr.as_bytes().to_vec(),
+            }
+        }
+
+        assert!(service_not_loaded(&output("Could not find service")));
+        assert!(service_not_loaded(&output(
+            "Unit example.service could not be found"
+        )));
+        assert!(service_not_loaded(&output(
+            "The system cannot find the file specified"
+        )));
     }
 }
