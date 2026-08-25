@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.6.0...v1.7.0) (2026-08-25)
+
+
+### Features
+
+* **parser:** add web and WebAssembly language support ([#107](https://github.com/rabii-chaarani/codebaseGraph/issues/107)) ([9afad95](https://github.com/rabii-chaarani/codebaseGraph/commit/9afad9533fa9d1f80398120cbd8ea9a7e0bd3276))
+
 ## [1.6.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.5.2...v1.6.0) (2026-08-25)
 
 
