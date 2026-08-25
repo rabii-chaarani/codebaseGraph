@@ -43,7 +43,7 @@ pub(in crate::adapters::cli) fn graph_schema_help() -> &'static str {
 }
 
 pub(in crate::adapters::cli) fn graph_syntax_help() -> &'static str {
-    "codebase-graph syntax\n\nUSAGE:\n  codebase-graph syntax <language> [--format json|block] [--json] [--pretty]\n\nOPTIONS:\n  <language>                 One of c, cpp, css, fortran, go, markdown, python, or rust\n  --format <format>         block or json; defaults to block\n  --json                    Emit compact JSON output\n  --pretty                  Pretty-print JSON output"
+    "codebase-graph syntax\n\nUSAGE:\n  codebase-graph syntax <language> [--format json|block] [--json] [--pretty]\n\nOPTIONS:\n  <language>                 One of c, cpp, css, fortran, go, javascript, markdown, python, or rust\n  --format <format>         block or json; defaults to block\n  --json                    Emit compact JSON output\n  --pretty                  Pretty-print JSON output"
 }
 
 pub(in crate::adapters::cli) fn graph_query_helpers_help() -> &'static str {

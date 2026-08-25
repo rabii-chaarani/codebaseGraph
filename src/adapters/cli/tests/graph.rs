@@ -40,6 +40,14 @@ fn graph_syntax_outputs_language_catalog_and_validates_language() {
         .as_array()
         .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "rule_set")));
 
+    let mut javascript_output = Vec::new();
+    run(["syntax", "javascript", "--json"], &mut javascript_output).unwrap();
+    let javascript: serde_json::Value = serde_json::from_slice(&javascript_output).unwrap();
+    assert_eq!(javascript["language"], "javascript");
+    assert!(javascript["node_types"]
+        .as_array()
+        .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "jsx_element")));
+
     let error = run(["syntax", "custom"], &mut Vec::new()).unwrap_err();
     assert!(error.contains("Unknown syntax language"));
     assert!(run(["syntax"], &mut Vec::new())

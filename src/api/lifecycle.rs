@@ -722,6 +722,7 @@ fn language_for_path(path: &Path) -> Option<&'static str> {
         Some("rs") => Some("rust"),
         Some("go") => Some("go"),
         Some("css") => Some("css"),
+        Some("js") | Some("jsx") | Some("mjs") | Some("cjs") => Some("javascript"),
         Some("c") | Some("h") => Some("c"),
         Some("cc") | Some("cpp") | Some("cxx") | Some("hpp") | Some("hh") => Some("cpp"),
         Some("f") | Some("f90") | Some("f95") | Some("for") => Some("fortran"),

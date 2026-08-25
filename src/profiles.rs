@@ -94,6 +94,19 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
             capture_mappings: Vec::new(),
         },
         LanguageProfile {
+            language: "javascript".to_string(),
+            suffixes: vec![
+                ".js".to_string(),
+                ".jsx".to_string(),
+                ".mjs".to_string(),
+                ".cjs".to_string(),
+            ],
+            grammar_package: "tree_sitter_javascript".to_string(),
+            grammar_version: "tree_sitter_javascript@0.25.0".to_string(),
+            root_node_types: vec!["program".to_string()],
+            capture_mappings: javascript_mappings(),
+        },
+        LanguageProfile {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
@@ -177,6 +190,24 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
     ]
 }
 
+fn javascript_mappings() -> Vec<CaptureMapping> {
+    vec![
+        mapping("definition.class", &["class_declaration"], "Class"),
+        mapping(
+            "definition.function",
+            &["function_declaration", "generator_function_declaration"],
+            "Function",
+        ),
+        mapping("definition.method", &["method_definition"], "Method"),
+        mapping(
+            "reference.import",
+            &["import_statement"],
+            "ImportDeclaration",
+        ),
+        mapping("reference.call", &["call_expression"], "CallExpression"),
+    ]
+}
+
 fn c_family_mappings() -> Vec<CaptureMapping> {
     vec![
         mapping("definition.function", &["function_definition"], "Function"),
@@ -239,6 +270,10 @@ mod tests {
             ("README.md", "markdown"),
             ("README.mdx", "markdown"),
             ("styles.css", "css"),
+            ("service.js", "javascript"),
+            ("component.jsx", "javascript"),
+            ("module.mjs", "javascript"),
+            ("config.cjs", "javascript"),
             ("src/lib.rs", "rust"),
             ("main.go", "go"),
             ("service.c", "c"),
