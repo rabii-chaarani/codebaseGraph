@@ -327,6 +327,19 @@ fn materialize_html_source_root_without_profiles() {
     let _ = fs::remove_dir_all(root);
 }
 
+#[test]
+fn materialize_webassembly_source_root_without_profiles() {
+    let root = unique_temp_dir("codebase-graph-webassembly-source-root");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(
+        root.join("math.wat"),
+        "(module $math (func $add (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))\n",
+    )
+    .unwrap();
+    assert_materializes_language(&root, "math.wat", "webassembly");
+    let _ = fs::remove_dir_all(root);
+}
+
 fn assert_materializes_language(root: &Path, path: &str, language: &str) {
     assert_materializes_languages(root, &[(path, language)]);
 }

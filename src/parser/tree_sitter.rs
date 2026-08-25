@@ -60,6 +60,7 @@ fn grammar_language(profile: &LanguageProfile) -> Option<Language> {
         ("tree_sitter_typescript", _) | (_, "typescript") => {
             Some(tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into())
         }
+        ("tree_sitter_wat", _) | (_, "webassembly") => Some(super::wat::LANGUAGE.into()),
         _ => None,
     }
 }
@@ -81,6 +82,7 @@ pub(super) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static s
         ("tree_sitter_typescript", _) | (_, "typescript") => {
             Some(tree_sitter_typescript::TYPESCRIPT_NODE_TYPES)
         }
+        ("tree_sitter_wat", _) | (_, "webassembly") => Some(super::wat::NODE_TYPES),
         _ => None,
     }
 }

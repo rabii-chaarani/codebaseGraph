@@ -240,7 +240,8 @@ mod tests {
                 "python",
                 "rust",
                 "tsx",
-                "typescript"
+                "typescript",
+                "webassembly"
             ])
         );
     }

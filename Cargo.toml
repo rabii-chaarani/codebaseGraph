@@ -12,9 +12,11 @@ keywords = ["codebase", "graph", "mcp", "cli", "analysis"]
 categories = ["command-line-utilities", "development-tools"]
 include = [
     "src/**",
+    "!src/**/.DS_Store",
     "tests/**",
     "assets/*.json",
     "assets/ladybug-extensions/0.19.0/**/*.xz",
+    "vendor/tree-sitter-wat/**",
     "build.rs",
     "README.md",
     "LICENSE",
@@ -49,10 +51,14 @@ tree-sitter-fortran = "0.6.0"
 tree-sitter-go = "0.25.0"
 tree-sitter-html = "0.23.2"
 tree-sitter-javascript = "0.25.0"
+tree-sitter-language = "0.1"
 tree-sitter-python = "0.25.0"
 tree-sitter-rust = "0.24.2"
 tree-sitter-typescript = "0.23.2"
 walkdir = "2"
+
+[build-dependencies]
+cc = "1.2"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_ProcessStatus", "Win32_System_Threading"] }

@@ -717,7 +717,11 @@ fn scan_source_snapshots_inner(
 }
 
 fn language_for_path(path: &Path) -> Option<&'static str> {
-    match path.extension().and_then(|value| value.to_str()) {
+    let extension = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(str::to_ascii_lowercase);
+    match extension.as_deref() {
         Some("py") => Some("python"),
         Some("rs") => Some("rust"),
         Some("go") => Some("go"),
@@ -729,6 +733,7 @@ fn language_for_path(path: &Path) -> Option<&'static str> {
         Some("c") | Some("h") => Some("c"),
         Some("cc") | Some("cpp") | Some("cxx") | Some("hpp") | Some("hh") => Some("cpp"),
         Some("f") | Some("f90") | Some("f95") | Some("for") => Some("fortran"),
+        Some("wat") => Some("webassembly"),
         _ => None,
     }
 }
@@ -4499,14 +4504,14 @@ fn install_safe_name(value: &str) -> String {
 mod tests {
     use super::{
         codex_toml_block, descriptor_signature, hermes_yaml_block_from_entries, inspect_mcp_server,
-        install_mcp_endpoint, install_mcp_server, instruction_block, native_client_command,
-        parse_hermes_managed_entries, parse_toml_stdio_entry, reinstall_state, remove_mcp_server,
-        remove_partial_state_tree, rename_mcp_server, render_client_http_config,
-        resolve_mcp_target, run_reinstall_activation_boundary, select_available_daemon_port,
-        upsert_instruction_text, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
-        McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
-        McpEndpointDescriptor, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
-        McpTargetLocality, ResolvedMcpTarget,
+        install_mcp_endpoint, install_mcp_server, instruction_block, language_for_path,
+        native_client_command, parse_hermes_managed_entries, parse_toml_stdio_entry,
+        reinstall_state, remove_mcp_server, remove_partial_state_tree, rename_mcp_server,
+        render_client_http_config, resolve_mcp_target, run_reinstall_activation_boundary,
+        select_available_daemon_port, upsert_instruction_text, yaml_scalar, GraphStatePaths,
+        ManagedStdioEntry, McpClientInstallOptions, McpClientRemovalOptions,
+        McpClientRenameOptions, McpEndpointDescriptor, McpExistingEntryPolicy, McpInstallMode,
+        McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -4546,6 +4551,20 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.path);
         }
+    }
+
+    #[test]
+    fn dry_run_language_detection_recognizes_webassembly_case_insensitively() {
+        assert_eq!(
+            language_for_path(Path::new("module.wat")),
+            Some("webassembly")
+        );
+        assert_eq!(
+            language_for_path(Path::new("MODULE.WAT")),
+            Some("webassembly")
+        );
+        assert_eq!(language_for_path(Path::new("module.wast")), None);
+        assert_eq!(language_for_path(Path::new("module.wasm")), None);
     }
 
     fn test_descriptor(repo_root: &Path, name: &str) -> McpServerDescriptor {

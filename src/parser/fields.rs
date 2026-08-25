@@ -72,11 +72,44 @@ pub(super) fn augment_field_metadata(
     }
     if matches!(
         node_type,
-        "use_declaration" | "import_declaration" | "preproc_include" | "use_statement"
+        "use_declaration"
+            | "import_declaration"
+            | "preproc_include"
+            | "use_statement"
+            | "module_field_import"
     ) {
-        let module = import_module(node, source_bytes);
+        let module = if node_type == "module_field_import" {
+            wat_import_parts(node, source_bytes).0
+        } else {
+            import_module(node, source_bytes)
+        };
         if !module.is_empty() {
             fields.insert("module".to_string(), json!(module));
+        }
+    }
+    if node_type == "module_field_import" {
+        let imported_name = wat_import_parts(node, source_bytes).1;
+        if !imported_name.is_empty() {
+            fields.insert(
+                "names".to_string(),
+                json!([{"type": "alias", "name": imported_name}]),
+            );
+        }
+    }
+    if matches!(node_type, "module_field_export" | "export") {
+        let name = direct_named_child_text(node, source_bytes, &["string"]);
+        let name = strip_import_delimiters(&name);
+        if !name.is_empty() {
+            fields.insert("name".to_string(), json!(name));
+        }
+    }
+    if node_type == "plain_instr" {
+        let instruction = direct_named_child_text(node, source_bytes, &["instr_name"]);
+        if matches!(instruction.as_str(), "call" | "return_call") {
+            let function = direct_named_child_text(node, source_bytes, &["identifier", "uinteger"]);
+            if !function.is_empty() {
+                fields.insert("function".to_string(), json!(function));
+            }
         }
     }
     if matches!(node_type, "call_expression" | "subroutine_call")
@@ -261,13 +294,42 @@ pub(super) fn derived_name(node: Node<'_>, source_bytes: &[u8]) -> String {
                 })
                 .and_then(|name| node_text(name, source_bytes))
                 .map(|value| clean_label(&value))
-                .unwrap_or_default()
+                .unwrap_or_else(|| direct_named_child_text(node, source_bytes, &["identifier"]))
+        }
+        "module_field_func" | "type_def" => {
+            direct_named_child_text(node, source_bytes, &["identifier"])
         }
         "package_clause" => {
             first_descendant_text(node, source_bytes, &["package_identifier", "identifier"])
         }
         _ => String::new(),
     }
+}
+
+fn wat_import_parts(node: Node<'_>, source_bytes: &[u8]) -> (String, String) {
+    let strings = named_children(node)
+        .into_iter()
+        .filter(|child| child.kind() == "string")
+        .filter_map(|child| node_text(child, source_bytes))
+        .map(|value| strip_import_delimiters(&value))
+        .collect::<Vec<_>>();
+    (
+        strings.first().cloned().unwrap_or_default(),
+        strings.get(1).cloned().unwrap_or_default(),
+    )
+}
+
+fn direct_named_child_text(node: Node<'_>, source_bytes: &[u8], node_types: &[&str]) -> String {
+    named_children(node)
+        .into_iter()
+        .find(|child| {
+            node_types
+                .iter()
+                .any(|node_type| child.kind() == *node_type)
+        })
+        .and_then(|child| node_text(child, source_bytes))
+        .map(|value| clean_label(&value))
+        .unwrap_or_default()
 }
 
 pub(super) fn declarator_name(node: Option<Node<'_>>, source_bytes: &[u8]) -> String {

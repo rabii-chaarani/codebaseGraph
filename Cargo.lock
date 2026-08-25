@@ -189,6 +189,7 @@ dependencies = [
 name = "codebase-graph"
 version = "1.6.0"
 dependencies = [
+ "cc",
  "fs2",
  "lbug",
  "libc",
@@ -207,6 +208,7 @@ dependencies = [
  "tree-sitter-go",
  "tree-sitter-html",
  "tree-sitter-javascript",
+ "tree-sitter-language",
  "tree-sitter-python",
  "tree-sitter-rust",
  "tree-sitter-typescript",

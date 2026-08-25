@@ -131,6 +131,14 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
             capture_mappings: Vec::new(),
         },
         LanguageProfile {
+            language: "webassembly".to_string(),
+            suffixes: vec![".wat".to_string()],
+            grammar_package: "tree_sitter_wat".to_string(),
+            grammar_version: "tree_sitter_wat@0.1.0+e3769473".to_string(),
+            root_node_types: vec!["root".to_string()],
+            capture_mappings: webassembly_mappings(),
+        },
+        LanguageProfile {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
@@ -269,6 +277,40 @@ fn javascript_mappings() -> Vec<CaptureMapping> {
     ]
 }
 
+fn webassembly_mappings() -> Vec<CaptureMapping> {
+    vec![
+        mapping_with_context("definition.module", &["module"], "Module", "has name"),
+        mapping_with_context(
+            "definition.function",
+            &["module_field_func"],
+            "Function",
+            "has name",
+        ),
+        mapping_with_context(
+            "definition.type_alias",
+            &["type_def"],
+            "TypeAlias",
+            "has name",
+        ),
+        mapping(
+            "reference.import",
+            &["module_field_import"],
+            "ImportDeclaration",
+        ),
+        mapping(
+            "definition.export",
+            &["module_field_export", "export"],
+            "ExportDeclaration",
+        ),
+        mapping_with_context(
+            "reference.call",
+            &["plain_instr"],
+            "CallExpression",
+            "has function",
+        ),
+    ]
+}
+
 fn c_family_mappings() -> Vec<CaptureMapping> {
     vec![
         mapping("definition.function", &["function_definition"], "Function"),
@@ -341,6 +383,8 @@ mod tests {
             ("config.cjs", "javascript"),
             ("index.html", "html"),
             ("legacy.htm", "html"),
+            ("module.wat", "webassembly"),
+            ("MODULE.WAT", "webassembly"),
             ("src/lib.rs", "rust"),
             ("main.go", "go"),
             ("service.c", "c"),
@@ -363,5 +407,8 @@ mod tests {
                 "{path} should resolve to {language}"
             );
         }
+
+        assert_eq!(profiles.language_for_path(Path::new("module.wast")), None);
+        assert_eq!(profiles.language_for_path(Path::new("module.wasm")), None);
     }
 }
