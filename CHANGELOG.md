@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.5.1...v1.5.2) (2026-08-25)
+
+
+### Bug Fixes
+
+* **mcp:** harden managed daemon recovery ([#99](https://github.com/rabii-chaarani/codebaseGraph/issues/99)) ([1f676d3](https://github.com/rabii-chaarani/codebaseGraph/commit/1f676d3f2fc5f233790891ace29f3c4d8fd3d148))
+
 ## [1.5.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.5.0...v1.5.1) (2026-08-24)
 
 
