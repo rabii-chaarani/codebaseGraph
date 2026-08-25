@@ -50,6 +50,7 @@ fn grammar_language(profile: &LanguageProfile) -> Option<Language> {
         ("tree_sitter_css", _) | (_, "css") => Some(tree_sitter_css::LANGUAGE.into()),
         ("tree_sitter_fortran", _) | (_, "fortran") => Some(tree_sitter_fortran::LANGUAGE.into()),
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::LANGUAGE.into()),
+        ("tree_sitter_html", _) | (_, "html") => Some(tree_sitter_html::LANGUAGE.into()),
         ("tree_sitter_javascript", _) | (_, "javascript") => {
             Some(tree_sitter_javascript::LANGUAGE.into())
         }
@@ -70,6 +71,7 @@ pub(super) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static s
         ("tree_sitter_css", _) | (_, "css") => Some(tree_sitter_css::NODE_TYPES),
         ("tree_sitter_fortran", _) | (_, "fortran") => Some(tree_sitter_fortran::NODE_TYPES),
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::NODE_TYPES),
+        ("tree_sitter_html", _) | (_, "html") => Some(tree_sitter_html::NODE_TYPES),
         ("tree_sitter_javascript", _) | (_, "javascript") => {
             Some(tree_sitter_javascript::NODE_TYPES)
         }

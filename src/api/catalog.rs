@@ -235,6 +235,23 @@ mod tests {
     }
 
     #[test]
+    fn syntax_catalog_describes_html_document_nodes() {
+        let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut payload, Some("html"))
+            .expect("HTML syntax catalog should load");
+
+        assert_eq!(payload["grammar_version"], "tree_sitter_html@0.23.2");
+        let nodes = payload["node_types"]
+            .as_array()
+            .expect("node types should be an array");
+        assert!(nodes.iter().any(|node| node["type"] == "document"));
+        assert!(nodes.iter().any(|node| node["type"] == "element"));
+        assert!(payload["capture_mappings"]
+            .as_array()
+            .is_some_and(Vec::is_empty));
+    }
+
+    #[test]
     fn syntax_catalog_rejects_missing_and_unsupported_languages() {
         let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
         assert_eq!(
@@ -244,7 +261,7 @@ mod tests {
         assert!(filter_catalog("syntax", &mut payload, Some("custom"))
             .unwrap_err()
             .contains(
-                "Valid languages: c, cpp, css, fortran, go, javascript, markdown, python, rust, tsx, typescript"
+                "Valid languages: c, cpp, css, fortran, go, html, javascript, markdown, python, rust, tsx, typescript"
             ));
     }
 }

@@ -123,6 +123,14 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
             capture_mappings: javascript_mappings(),
         },
         LanguageProfile {
+            language: "html".to_string(),
+            suffixes: vec![".html".to_string(), ".htm".to_string()],
+            grammar_package: "tree_sitter_html".to_string(),
+            grammar_version: "tree_sitter_html@0.23.2".to_string(),
+            root_node_types: vec!["document".to_string()],
+            capture_mappings: Vec::new(),
+        },
+        LanguageProfile {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
@@ -331,6 +339,8 @@ mod tests {
             ("component.jsx", "javascript"),
             ("module.mjs", "javascript"),
             ("config.cjs", "javascript"),
+            ("index.html", "html"),
+            ("legacy.htm", "html"),
             ("src/lib.rs", "rust"),
             ("main.go", "go"),
             ("service.c", "c"),
