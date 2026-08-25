@@ -276,9 +276,38 @@ fn materialize_css_source_root_without_profiles() {
         ".card { color: red; width: calc(100% - 1rem); }\n",
     )
     .unwrap();
+    assert_materializes_language(&root, "styles.css", "css");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn materialize_typescript_and_tsx_source_root_without_profiles() {
+    let root = unique_temp_dir("codebase-graph-ts-source-root");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(
+        root.join("service.ts"),
+        "export function helper(): number { return 1; }\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join("component.tsx"),
+        "export function Card() { return <section>Hello</section>; }\n",
+    )
+    .unwrap();
+    assert_materializes_languages(
+        &root,
+        &[("service.ts", "typescript"), ("component.tsx", "tsx")],
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+fn assert_materializes_language(root: &Path, path: &str, language: &str) {
+    assert_materializes_languages(root, &[(path, language)]);
+}
+
+fn assert_materializes_languages(root: &Path, expected: &[(&str, &str)]) {
     let db_path = root.join(".codebaseGraph").join("graph.ldb");
     let manifest_path = root.join(".codebaseGraph").join("manifest.json");
-
     let mut output = Vec::new();
     run(
         [
@@ -303,8 +332,9 @@ fn materialize_css_source_root_without_profiles() {
     assert_eq!(value["database_written"], true);
     let manifest: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(&manifest_path).unwrap()).unwrap();
-    assert_eq!(manifest["files"]["styles.css"]["language"], "css");
-    let _ = fs::remove_dir_all(root);
+    for (path, language) in expected {
+        assert_eq!(manifest["files"][path]["language"], *language);
+    }
 }
 
 #[test]

@@ -52,6 +52,10 @@ fn grammar_language(profile: &LanguageProfile) -> Option<Language> {
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::LANGUAGE.into()),
         ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::LANGUAGE.into()),
         ("tree_sitter_rust", _) | (_, "rust") => Some(tree_sitter_rust::LANGUAGE.into()),
+        (_, "tsx") => Some(tree_sitter_typescript::LANGUAGE_TSX.into()),
+        ("tree_sitter_typescript", _) | (_, "typescript") => {
+            Some(tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into())
+        }
         _ => None,
     }
 }
@@ -65,6 +69,10 @@ pub(super) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static s
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::NODE_TYPES),
         ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::NODE_TYPES),
         ("tree_sitter_rust", _) | (_, "rust") => Some(tree_sitter_rust::NODE_TYPES),
+        (_, "tsx") => Some(tree_sitter_typescript::TSX_NODE_TYPES),
+        ("tree_sitter_typescript", _) | (_, "typescript") => {
+            Some(tree_sitter_typescript::TYPESCRIPT_NODE_TYPES)
+        }
         _ => None,
     }
 }

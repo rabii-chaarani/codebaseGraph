@@ -148,6 +148,41 @@ mod tests {
     }
 
     #[test]
+    fn typescript_tree_sitter_parser_marks_profile_captures() {
+        let output = parse_source(
+            "import { value } from './dep';\ninterface Service { run(): void }\ntype Id = string;\nclass Worker implements Service { run() { value(); } }\nfunction helper(): Id { return 'ok'; }\n",
+            &profile("typescript"),
+        )
+        .expect("TypeScript parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+        assert!(captures
+            .iter()
+            .any(|(capture, _)| capture == "reference.import"));
+        assert!(captures.contains(&("definition.interface".to_string(), "Service".to_string())));
+        assert!(captures.contains(&("definition.type_alias".to_string(), "Id".to_string())));
+        assert!(captures.contains(&("definition.class".to_string(), "Worker".to_string())));
+        assert!(captures.contains(&("definition.method".to_string(), "run".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "helper".to_string())));
+        assert!(captures.contains(&("reference.call".to_string(), "value".to_string())));
+        assert_eq!(output.root.node_type, "program");
+        assert!(output.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn tsx_tree_sitter_parser_uses_the_tsx_grammar() {
+        let output = parse_source(
+            "export function Card() { return <section><h1>Hello</h1></section>; }\n",
+            &profile("tsx"),
+        )
+        .expect("TSX parsing should succeed");
+
+        assert_eq!(output.root.node_type, "program");
+        assert!(output.diagnostics.is_empty());
+        assert!(contains_node_type(&output.root, "jsx_element"));
+    }
+
+    #[test]
     fn c_tree_sitter_parser_marks_profile_captures() {
         let output = parse_source(
             "#include <stdio.h>\nstruct Service { int id; };\nint helper() { printf(\"ok\"); return 1; }\n",
