@@ -8,7 +8,7 @@ tags:
 - mcp
 - runtime
 - storage
-timestamp: 2026-08-20
+timestamp: 2026-08-25
 title: Public Operations and Runtime Paths
 type: architecture
 ---
@@ -47,7 +47,7 @@ external input
 
 `auto` selects one Streamable HTTP daemon per canonical repository for every loopback-capable harness. The daemon holds `mcp-daemon.lock` before it initializes the listener, API core, coordinator, or watcher, so concurrent starts cannot create duplicate owners. Setup persists its loopback URL, service ID, and transport version while retaining the stdio launch command for explicit compatibility mode.
 
-The daemon is supervised by launchd, a systemd user service, or Windows Task Scheduler. Runtime state records its PID, repository fingerprint, endpoint, version, and a rotating control token in the repository state directory. Health is loopback-only; shutdown requires the control token. Stop, reinstall, and uninstall request graceful shutdown, wait for release, and use service-manager or process-group termination only after the bounded grace period.
+The daemon is supervised by launchd, a systemd user service, or Windows Task Scheduler with persistent, throttled restart policies. On macOS, launchd owns the configured IPv4 loopback listening socket and the daemon activates that inherited descriptor; a client connection therefore supplies real launch demand and recovers the daemon even when the GUI launchd domain is on-demand-only. Runtime state records its PID, repository fingerprint, endpoint, version, optional start timestamp, and a rotating control token in the repository state directory. A separate mode-0600 `mcp-daemon-failure.json` atomically retains only the latest bounded startup, runtime, or provisioning failure; it never records the control token. `mcp daemon status` combines endpoint health with best-effort service-manager state, manifest drift, controller/runtime version drift, the latest failure, and a directly executable recovery action. `mcp daemon start` is an idempotent reconciler: it returns unchanged only when the healthy runtime identity, endpoint, version, loaded service, and rendered manifest all match, otherwise it reprovisions the same repository service. Health is loopback-only and shutdown requires the control token. Intentional stop requests authenticated shutdown and immediately stops or unloads the supervisor before the bounded wait, preventing automatic restart from racing cleanup; a surviving same-repository process is then terminated through its process group and only dead matching state is removed.
 
 Codex, Claude Code, repository `.mcp.json`, GitHub Copilot/VS Code, LM Studio, Hermes, OpenClaw, and generic local adapters render their native HTTP form with the same URL and no command field. Registration is preflighted before mutation, only recognized managed stdio entries migrate automatically, and file-backed multi-client changes roll back together. Copilot Studio, Microsoft 365 Copilot, and other cloud-brokered connectors remain manual public-HTTPS targets; lifecycle code never exposes the loopback listener or provisions a tunnel.
 
@@ -89,6 +89,7 @@ For schema-v1 state, search, context, query, and health remain available. Build,
 - Repository selection and storage-format failures fail during runtime resolution.
 - A failed candidate build, memory-budget termination, coordinator death, orphan-worker reap, or publication failure preserves the active generation.
 - A managed daemon is registered only after its identity, repository fingerprint, initialization, and required tool schemas verify; failed provisioning removes a newly created service and restores changed registrations.
+- Daemon failure snapshots are bounded, atomically replaced, repository-owned, and advisory: inability to record diagnostics never hides the primary service failure.
 - Structured memory failures report the phase, configured limit, accounted bytes, and observed RSS.
 - Cleanup errors are reported separately and never hide the primary build error.
 - Application failures are translated once into stable public errors.

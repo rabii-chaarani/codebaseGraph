@@ -130,9 +130,17 @@ codebase-graph mcp daemon start --config .codebaseGraph/config.json
 codebase-graph mcp daemon stop --config .codebaseGraph/config.json
 ```
 
+`status` keeps its original top-level fields and also reports the service
+manager state, running/controller versions, manifest drift, the latest bounded
+failure from `.codebaseGraph/mcp-daemon-failure.json`, and a directly executable
+recommended action. Rerunning `start` repairs an inactive service and reconciles
+stale daemon versions or supervisor manifests without changing the MCP URL.
+
 Setup installs the user service through launchd on macOS, a systemd user unit on
 Linux, or Task Scheduler on Windows. A repository lock prevents a second daemon
-from starting.
+from starting. On macOS, launchd owns the configured loopback listener and
+starts or restarts the daemon when a client connects, including in
+on-demand-only user sessions.
 
 ### Client-specific behavior
 
@@ -254,7 +262,8 @@ and the local-first MCP security boundary.
 | --- | --- |
 | Missing LadyBugDB | Install `codebase-graph` from crates.io, a release archive, or this checkout. |
 | Stale graph | Run `codebase-graph mcp daemon status --config .codebaseGraph/config.json`. Use `watch` for an explicit foreground watcher or `build --mode full` for a manual rebuild. |
-| Daemon service unavailable | Ensure launchd, the systemd user manager, or Task Scheduler is available, then rerun setup. Setup fails closed instead of silently creating stdio registrations. |
+| MCP HTTP transport send error | Run `codebase-graph mcp daemon status --config .codebaseGraph/config.json`, inspect `service`, `latest_failure`, and `recommended_action`, then run the reported `start_daemon` command. |
+| Daemon service unavailable | Ensure launchd, the systemd user manager, or Task Scheduler is available, then run `codebase-graph mcp daemon start --config .codebaseGraph/config.json`. Setup fails closed instead of silently creating stdio registrations. |
 | Broken setup state | Run `codebase-graph reinstall` to recreate `.codebaseGraph/` and refresh the selected registration. |
 | Broken client configuration only | Run `codebase-graph mcp install --client <client> --verify`. |
 | Binary not found | Ensure the native `codebase-graph` binary is on `PATH`. |
