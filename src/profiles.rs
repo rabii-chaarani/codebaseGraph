@@ -94,6 +94,22 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
             capture_mappings: Vec::new(),
         },
         LanguageProfile {
+            language: "typescript".to_string(),
+            suffixes: vec![".ts".to_string(), ".mts".to_string(), ".cts".to_string()],
+            grammar_package: "tree_sitter_typescript".to_string(),
+            grammar_version: "tree_sitter_typescript@0.23.2".to_string(),
+            root_node_types: vec!["program".to_string()],
+            capture_mappings: typescript_mappings(),
+        },
+        LanguageProfile {
+            language: "tsx".to_string(),
+            suffixes: vec![".tsx".to_string()],
+            grammar_package: "tree_sitter_typescript".to_string(),
+            grammar_version: "tree_sitter_typescript@0.23.2".to_string(),
+            root_node_types: vec!["program".to_string()],
+            capture_mappings: typescript_mappings(),
+        },
+        LanguageProfile {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
@@ -177,6 +193,43 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
     ]
 }
 
+fn typescript_mappings() -> Vec<CaptureMapping> {
+    vec![
+        mapping(
+            "definition.class",
+            &["class_declaration", "abstract_class_declaration"],
+            "Class",
+        ),
+        mapping("definition.interface", &["interface_declaration"], "Class"),
+        mapping("definition.enum", &["enum_declaration"], "Class"),
+        mapping(
+            "definition.type_alias",
+            &["type_alias_declaration"],
+            "TypeAlias",
+        ),
+        mapping(
+            "definition.function",
+            &["function_declaration", "generator_function_declaration"],
+            "Function",
+        ),
+        mapping(
+            "definition.method",
+            &[
+                "method_definition",
+                "method_signature",
+                "abstract_method_signature",
+            ],
+            "Method",
+        ),
+        mapping(
+            "reference.import",
+            &["import_statement"],
+            "ImportDeclaration",
+        ),
+        mapping("reference.call", &["call_expression"], "CallExpression"),
+    ]
+}
+
 fn c_family_mappings() -> Vec<CaptureMapping> {
     vec![
         mapping("definition.function", &["function_definition"], "Function"),
@@ -239,6 +292,10 @@ mod tests {
             ("README.md", "markdown"),
             ("README.mdx", "markdown"),
             ("styles.css", "css"),
+            ("service.ts", "typescript"),
+            ("service.mts", "typescript"),
+            ("service.cts", "typescript"),
+            ("component.tsx", "tsx"),
             ("src/lib.rs", "rust"),
             ("main.go", "go"),
             ("service.c", "c"),

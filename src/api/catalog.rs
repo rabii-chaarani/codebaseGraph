@@ -197,6 +197,28 @@ mod tests {
     }
 
     #[test]
+    fn syntax_catalog_distinguishes_typescript_and_tsx_grammars() {
+        let mut typescript = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut typescript, Some("typescript"))
+            .expect("TypeScript syntax catalog should load");
+        assert_eq!(
+            typescript["grammar_version"],
+            "tree_sitter_typescript@0.23.2"
+        );
+        assert!(typescript["node_types"]
+            .as_array()
+            .is_some_and(|nodes| nodes
+                .iter()
+                .any(|node| node["type"] == "interface_declaration")));
+
+        let mut tsx = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut tsx, Some("tsx")).expect("TSX syntax catalog should load");
+        assert!(tsx["node_types"]
+            .as_array()
+            .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "jsx_element")));
+    }
+
+    #[test]
     fn syntax_catalog_rejects_missing_and_unsupported_languages() {
         let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
         assert_eq!(
@@ -205,6 +227,8 @@ mod tests {
         );
         assert!(filter_catalog("syntax", &mut payload, Some("custom"))
             .unwrap_err()
-            .contains("Valid languages: c, cpp, css, fortran, go, markdown, python, rust"));
+            .contains(
+                "Valid languages: c, cpp, css, fortran, go, markdown, python, rust, tsx, typescript"
+            ));
     }
 }
