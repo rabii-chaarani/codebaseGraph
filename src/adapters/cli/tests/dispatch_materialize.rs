@@ -301,6 +301,19 @@ fn materialize_typescript_and_tsx_source_root_without_profiles() {
     let _ = fs::remove_dir_all(root);
 }
 
+#[test]
+fn materialize_javascript_source_root_without_profiles() {
+    let root = unique_temp_dir("codebase-graph-js-source-root");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(
+        root.join("component.jsx"),
+        "export function Card() { return <section>Hello</section>; }\n",
+    )
+    .unwrap();
+    assert_materializes_language(&root, "component.jsx", "javascript");
+    let _ = fs::remove_dir_all(root);
+}
+
 fn assert_materializes_language(root: &Path, path: &str, language: &str) {
     assert_materializes_languages(root, &[(path, language)]);
 }

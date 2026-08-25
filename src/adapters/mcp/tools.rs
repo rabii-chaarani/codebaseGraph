@@ -234,6 +234,7 @@ mod tests {
                 "css",
                 "fortran",
                 "go",
+                "javascript",
                 "markdown",
                 "python",
                 "rust",

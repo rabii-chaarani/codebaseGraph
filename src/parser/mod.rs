@@ -183,6 +183,27 @@ mod tests {
     }
 
     #[test]
+    fn javascript_tree_sitter_parser_marks_profile_captures_and_jsx() {
+        let output = parse_source(
+            "import { value } from './dep.js';\nclass Worker { run() { value(); } }\nfunction Card() { return <section>Hello</section>; }\n",
+            &profile("javascript"),
+        )
+        .expect("JavaScript parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+        assert!(captures
+            .iter()
+            .any(|(capture, _)| capture == "reference.import"));
+        assert!(captures.contains(&("definition.class".to_string(), "Worker".to_string())));
+        assert!(captures.contains(&("definition.method".to_string(), "run".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "Card".to_string())));
+        assert!(captures.contains(&("reference.call".to_string(), "value".to_string())));
+        assert_eq!(output.root.node_type, "program");
+        assert!(output.diagnostics.is_empty());
+        assert!(contains_node_type(&output.root, "jsx_element"));
+    }
+
+    #[test]
     fn c_tree_sitter_parser_marks_profile_captures() {
         let output = parse_source(
             "#include <stdio.h>\nstruct Service { int id; };\nint helper() { printf(\"ok\"); return 1; }\n",

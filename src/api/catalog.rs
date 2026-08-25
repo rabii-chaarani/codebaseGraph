@@ -219,6 +219,22 @@ mod tests {
     }
 
     #[test]
+    fn syntax_catalog_describes_javascript_and_jsx_nodes() {
+        let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut payload, Some("javascript"))
+            .expect("JavaScript syntax catalog should load");
+
+        assert_eq!(payload["grammar_version"], "tree_sitter_javascript@0.25.0");
+        let nodes = payload["node_types"]
+            .as_array()
+            .expect("node types should be an array");
+        assert!(nodes
+            .iter()
+            .any(|node| node["type"] == "function_declaration"));
+        assert!(nodes.iter().any(|node| node["type"] == "jsx_element"));
+    }
+
+    #[test]
     fn syntax_catalog_rejects_missing_and_unsupported_languages() {
         let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
         assert_eq!(
@@ -228,7 +244,7 @@ mod tests {
         assert!(filter_catalog("syntax", &mut payload, Some("custom"))
             .unwrap_err()
             .contains(
-                "Valid languages: c, cpp, css, fortran, go, markdown, python, rust, tsx, typescript"
+                "Valid languages: c, cpp, css, fortran, go, javascript, markdown, python, rust, tsx, typescript"
             ));
     }
 }
