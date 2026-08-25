@@ -2,6 +2,7 @@ mod captures;
 mod fields;
 mod markdown;
 mod tree_sitter;
+mod wat;
 
 use crate::error::NativeError;
 use crate::normalize::SyntaxNode;
@@ -127,6 +128,60 @@ mod tests {
         assert!(captures.contains(&("reference.import".to_string(), "fmt".to_string())));
         assert!(captures.contains(&("definition.function".to_string(), "helper".to_string())));
         assert!(captures.contains(&("reference.call".to_string(), "fmt.Println".to_string())));
+    }
+
+    #[test]
+    fn webassembly_tree_sitter_parser_marks_named_semantics() {
+        let output = parse_source(
+            r#"(module $math
+  (type $binary (func (param i32 i32) (result i32)))
+  (import "env" "log" (func $log (param i32)))
+  (func $add (export "add") (param i32 i32) (result i32)
+    local.get 0
+    call $log
+    return_call $log)
+  (memory 1)
+  (export "memory" (memory 0)))
+"#,
+            &profile("webassembly"),
+        )
+        .expect("WebAssembly parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+
+        assert_eq!(output.root.node_type, "root");
+        assert!(output.diagnostics.is_empty());
+        assert!(captures.contains(&("definition.module".to_string(), "$math".to_string())));
+        assert!(captures.contains(&("definition.type_alias".to_string(), "$binary".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "$add".to_string())));
+        assert!(captures.contains(&("reference.import".to_string(), "env".to_string())));
+        assert!(captures.contains(&("definition.export".to_string(), "add".to_string())));
+        assert!(captures.contains(&("definition.export".to_string(), "memory".to_string())));
+        assert_eq!(
+            captures
+                .iter()
+                .filter(|capture| capture.0 == "reference.call" && capture.1 == "$log")
+                .count(),
+            2
+        );
+    }
+
+    #[test]
+    fn webassembly_tree_sitter_parser_keeps_anonymous_constructs_syntax_only() {
+        let output = parse_source(
+            "(module (type (func)) (func (param i32) local.get 0))\n",
+            &profile("webassembly"),
+        )
+        .expect("anonymous WebAssembly constructs should parse");
+
+        let captures = marked_captures(&output.root);
+
+        assert_eq!(output.root.node_type, "root");
+        assert!(output.diagnostics.is_empty());
+        assert!(captures.iter().all(|(capture, _)| !matches!(
+            capture.as_str(),
+            "definition.module" | "definition.function" | "definition.type_alias"
+        )));
     }
 
     #[test]

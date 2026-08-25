@@ -51,6 +51,7 @@ fn grammar_language(profile: &LanguageProfile) -> Option<Language> {
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::LANGUAGE.into()),
         ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::LANGUAGE.into()),
         ("tree_sitter_rust", _) | (_, "rust") => Some(tree_sitter_rust::LANGUAGE.into()),
+        ("tree_sitter_wat", _) | (_, "webassembly") => Some(super::wat::LANGUAGE.into()),
         _ => None,
     }
 }
@@ -63,6 +64,7 @@ pub(super) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static s
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::NODE_TYPES),
         ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::NODE_TYPES),
         ("tree_sitter_rust", _) | (_, "rust") => Some(tree_sitter_rust::NODE_TYPES),
+        ("tree_sitter_wat", _) | (_, "webassembly") => Some(super::wat::NODE_TYPES),
         _ => None,
     }
 }

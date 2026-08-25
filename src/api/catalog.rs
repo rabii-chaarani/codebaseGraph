@@ -180,6 +180,33 @@ mod tests {
     }
 
     #[test]
+    fn syntax_catalog_describes_webassembly_nodes_and_captures() {
+        let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut payload, Some("webassembly"))
+            .expect("WebAssembly syntax catalog should load");
+
+        assert_eq!(payload["grammar_package"], "tree_sitter_wat");
+        assert_eq!(payload["grammar_version"], "tree_sitter_wat@0.1.0+e3769473");
+        assert_eq!(payload["root_node_types"][0], "root");
+        let node_types = payload["node_types"]
+            .as_array()
+            .expect("node types should be an array");
+        assert!(node_types.iter().any(|node| node["type"] == "root"));
+        assert!(node_types
+            .iter()
+            .any(|node| node["type"] == "module_field_func"));
+        let captures = payload["capture_mappings"]
+            .as_array()
+            .expect("capture mappings should be an array");
+        assert!(captures
+            .iter()
+            .any(|mapping| mapping["capture_name"] == "definition.function"));
+        assert!(captures
+            .iter()
+            .any(|mapping| mapping["capture_name"] == "reference.call"));
+    }
+
+    #[test]
     fn syntax_catalog_rejects_missing_and_unsupported_languages() {
         let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
         assert_eq!(
@@ -188,6 +215,6 @@ mod tests {
         );
         assert!(filter_catalog("syntax", &mut payload, Some("custom"))
             .unwrap_err()
-            .contains("Valid languages: c, cpp, fortran, go, markdown, python, rust"));
+            .contains("Valid languages: c, cpp, fortran, go, markdown, python, rust, webassembly"));
     }
 }

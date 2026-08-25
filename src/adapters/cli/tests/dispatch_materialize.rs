@@ -268,6 +268,46 @@ fn materialize_python_source_root_without_python_request() {
 }
 
 #[test]
+fn materialize_webassembly_source_root_without_profiles() {
+    let root = unique_temp_dir("codebase-graph-webassembly-source-root");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(
+        root.join("math.wat"),
+        "(module $math (func $add (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))\n",
+    )
+    .unwrap();
+    let db_path = root.join(".codebaseGraph").join("graph.ldb");
+    let manifest_path = root.join(".codebaseGraph").join("manifest.json");
+
+    let mut output = Vec::new();
+    run(
+        [
+            "build",
+            "--source-root",
+            root.to_str().unwrap(),
+            "--db",
+            db_path.to_str().unwrap(),
+            "--manifest",
+            manifest_path.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["database_written"], true);
+    let manifest: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&manifest_path).unwrap()).unwrap();
+    assert_eq!(manifest["files"]["math.wat"]["language"], "webassembly");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn plan_lists_rebuild_delete_skip_and_ignore_paths() {
     let root = unique_temp_dir("codebase-graph-rust-plan");
     fs::create_dir_all(&root).unwrap();

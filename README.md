@@ -1,9 +1,10 @@
 # codebaseGraph
 
 `codebaseGraph` turns a local source repository into a searchable code graph for
-AI coding agents. It indexes Python, Rust, Go, C, C++, Fortran, Markdown, and
-MDX, then exposes compact context, schema information, query helpers, and
-bounded read-only graph queries through a native CLI and MCP server.
+AI coding agents. It indexes Python, Rust, Go, C, C++, Fortran, WebAssembly
+Text, Markdown, and MDX, then exposes compact context, schema information,
+query helpers, and bounded read-only graph queries through a native CLI and MCP
+server.
 
 This workspace also ships `k-wiki`, an optional subsystem for curated repository
 knowledge. The graph and wiki have separate source and generated state.

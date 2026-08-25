@@ -1,4 +1,6 @@
 fn main() {
+    build_tree_sitter_wat();
+
     if !cfg!(windows) && std::env::var_os("LBUG_SHARED").is_none() {
         println!("cargo:rustc-link-arg=-rdynamic");
     }
@@ -30,6 +32,31 @@ fn main() {
     {
         link_macos_x86_compiler_runtime();
     }
+}
+
+fn build_tree_sitter_wat() {
+    let source_dir = std::path::Path::new("vendor/tree-sitter-wat/src");
+    let parser = source_dir.join("parser.c");
+    let scanner = source_dir.join("scanner.c");
+
+    let mut build = cc::Build::new();
+    build
+        .std("c11")
+        .include(source_dir)
+        .flag_if_supported("-Wno-unused-parameter")
+        .file(&parser)
+        .file(&scanner);
+    if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
+        build.flag("-utf-8");
+    }
+    build.compile("tree-sitter-wat");
+
+    println!("cargo:rerun-if-changed={}", parser.display());
+    println!("cargo:rerun-if-changed={}", scanner.display());
+    println!(
+        "cargo:rerun-if-changed={}",
+        source_dir.join("tree_sitter/parser.h").display()
+    );
 }
 
 fn link_macos_x86_compiler_runtime() {
