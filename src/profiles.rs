@@ -86,6 +86,14 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
             ],
         },
         LanguageProfile {
+            language: "css".to_string(),
+            suffixes: vec![".css".to_string()],
+            grammar_package: "tree_sitter_css".to_string(),
+            grammar_version: "tree_sitter_css@0.25.0".to_string(),
+            root_node_types: vec!["stylesheet".to_string()],
+            capture_mappings: Vec::new(),
+        },
+        LanguageProfile {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
@@ -230,6 +238,7 @@ mod tests {
             ("service.py", "python"),
             ("README.md", "markdown"),
             ("README.mdx", "markdown"),
+            ("styles.css", "css"),
             ("src/lib.rs", "rust"),
             ("main.go", "go"),
             ("service.c", "c"),

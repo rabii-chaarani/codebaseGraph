@@ -32,6 +32,14 @@ fn graph_syntax_outputs_language_catalog_and_validates_language() {
     assert_eq!(value["language"], "markdown");
     assert_eq!(value["grammar_version"], "builtin-markdown@1");
 
+    let mut css_output = Vec::new();
+    run(["syntax", "css", "--json"], &mut css_output).unwrap();
+    let css: serde_json::Value = serde_json::from_slice(&css_output).unwrap();
+    assert_eq!(css["language"], "css");
+    assert!(css["node_types"]
+        .as_array()
+        .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "rule_set")));
+
     let error = run(["syntax", "custom"], &mut Vec::new()).unwrap_err();
     assert!(error.contains("Unknown syntax language"));
     assert!(run(["syntax"], &mut Vec::new())

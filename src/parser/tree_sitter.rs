@@ -47,6 +47,7 @@ fn grammar_language(profile: &LanguageProfile) -> Option<Language> {
     match (profile.grammar_package.as_str(), profile.language.as_str()) {
         ("tree_sitter_c", _) | (_, "c") => Some(tree_sitter_c::LANGUAGE.into()),
         ("tree_sitter_cpp", _) | (_, "cpp") => Some(tree_sitter_cpp::LANGUAGE.into()),
+        ("tree_sitter_css", _) | (_, "css") => Some(tree_sitter_css::LANGUAGE.into()),
         ("tree_sitter_fortran", _) | (_, "fortran") => Some(tree_sitter_fortran::LANGUAGE.into()),
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::LANGUAGE.into()),
         ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::LANGUAGE.into()),
@@ -59,6 +60,7 @@ pub(super) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static s
     match (profile.grammar_package.as_str(), profile.language.as_str()) {
         ("tree_sitter_c", _) | (_, "c") => Some(tree_sitter_c::NODE_TYPES),
         ("tree_sitter_cpp", _) | (_, "cpp") => Some(tree_sitter_cpp::NODE_TYPES),
+        ("tree_sitter_css", _) | (_, "css") => Some(tree_sitter_css::NODE_TYPES),
         ("tree_sitter_fortran", _) | (_, "fortran") => Some(tree_sitter_fortran::NODE_TYPES),
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::NODE_TYPES),
         ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::NODE_TYPES),

@@ -130,6 +130,24 @@ mod tests {
     }
 
     #[test]
+    fn css_tree_sitter_parser_preserves_stylesheet_structure() {
+        let output = parse_source(
+            "@import 'theme.css';\n.card, #hero { color: red; width: calc(100% - 1rem); }\n",
+            &profile("css"),
+        )
+        .expect("CSS parsing should succeed");
+
+        assert_eq!(output.root.node_type, "stylesheet");
+        assert!(output.diagnostics.is_empty());
+        assert!(contains_node_type(&output.root, "import_statement"));
+        assert!(contains_node_type(&output.root, "rule_set"));
+        assert!(contains_node_type(&output.root, "class_selector"));
+        assert!(contains_node_type(&output.root, "id_selector"));
+        assert!(contains_node_type(&output.root, "declaration"));
+        assert!(marked_captures(&output.root).is_empty());
+    }
+
+    #[test]
     fn c_tree_sitter_parser_marks_profile_captures() {
         let output = parse_source(
             "#include <stdio.h>\nstruct Service { int id; };\nint helper() { printf(\"ok\"); return 1; }\n",
@@ -181,6 +199,14 @@ mod tests {
         let mut captures = Vec::new();
         collect_marked_captures(root, &mut captures);
         captures
+    }
+
+    fn contains_node_type(node: &SyntaxNode, node_type: &str) -> bool {
+        node.node_type == node_type
+            || node
+                .children
+                .iter()
+                .any(|child| contains_node_type(child, node_type))
     }
 
     fn collect_marked_captures(node: &SyntaxNode, captures: &mut Vec<(String, String)>) {
