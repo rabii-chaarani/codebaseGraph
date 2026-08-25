@@ -197,6 +197,88 @@ mod tests {
     }
 
     #[test]
+    fn syntax_catalog_distinguishes_typescript_and_tsx_grammars() {
+        let mut typescript = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut typescript, Some("typescript"))
+            .expect("TypeScript syntax catalog should load");
+        assert_eq!(
+            typescript["grammar_version"],
+            "tree_sitter_typescript@0.23.2"
+        );
+        assert!(typescript["node_types"]
+            .as_array()
+            .is_some_and(|nodes| nodes
+                .iter()
+                .any(|node| node["type"] == "interface_declaration")));
+
+        let mut tsx = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut tsx, Some("tsx")).expect("TSX syntax catalog should load");
+        assert!(tsx["node_types"]
+            .as_array()
+            .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "jsx_element")));
+    }
+
+    #[test]
+    fn syntax_catalog_describes_javascript_and_jsx_nodes() {
+        let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut payload, Some("javascript"))
+            .expect("JavaScript syntax catalog should load");
+
+        assert_eq!(payload["grammar_version"], "tree_sitter_javascript@0.25.0");
+        let nodes = payload["node_types"]
+            .as_array()
+            .expect("node types should be an array");
+        assert!(nodes
+            .iter()
+            .any(|node| node["type"] == "function_declaration"));
+        assert!(nodes.iter().any(|node| node["type"] == "jsx_element"));
+    }
+
+    #[test]
+    fn syntax_catalog_describes_html_document_nodes() {
+        let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut payload, Some("html"))
+            .expect("HTML syntax catalog should load");
+
+        assert_eq!(payload["grammar_version"], "tree_sitter_html@0.23.2");
+        let nodes = payload["node_types"]
+            .as_array()
+            .expect("node types should be an array");
+        assert!(nodes.iter().any(|node| node["type"] == "document"));
+        assert!(nodes.iter().any(|node| node["type"] == "element"));
+        assert!(payload["capture_mappings"]
+            .as_array()
+            .is_some_and(Vec::is_empty));
+    }
+
+    #[test]
+    fn syntax_catalog_describes_webassembly_nodes_and_captures() {
+        let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
+        filter_catalog("syntax", &mut payload, Some("webassembly"))
+            .expect("WebAssembly syntax catalog should load");
+
+        assert_eq!(payload["grammar_package"], "tree_sitter_wat");
+        assert_eq!(payload["grammar_version"], "tree_sitter_wat@0.1.0+e3769473");
+        assert_eq!(payload["root_node_types"][0], "root");
+        let node_types = payload["node_types"]
+            .as_array()
+            .expect("node types should be an array");
+        assert!(node_types.iter().any(|node| node["type"] == "root"));
+        assert!(node_types
+            .iter()
+            .any(|node| node["type"] == "module_field_func"));
+        let captures = payload["capture_mappings"]
+            .as_array()
+            .expect("capture mappings should be an array");
+        assert!(captures
+            .iter()
+            .any(|mapping| mapping["capture_name"] == "definition.function"));
+        assert!(captures
+            .iter()
+            .any(|mapping| mapping["capture_name"] == "reference.call"));
+    }
+
+    #[test]
     fn syntax_catalog_rejects_missing_and_unsupported_languages() {
         let mut payload = load_catalog("syntax").expect("syntax catalog index should load");
         assert_eq!(
@@ -205,6 +287,8 @@ mod tests {
         );
         assert!(filter_catalog("syntax", &mut payload, Some("custom"))
             .unwrap_err()
-            .contains("Valid languages: c, cpp, css, fortran, go, markdown, python, rust"));
+            .contains(
+                "Valid languages: c, cpp, css, fortran, go, html, javascript, markdown, python, rust, tsx, typescript, webassembly"
+            ));
     }
 }

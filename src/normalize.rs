@@ -52,6 +52,13 @@ fn context_rule_matches(rule: &str, node: &SyntaxNode, ancestors: &[String]) -> 
     if let Some(expected_type) = normalized.strip_prefix("type is ") {
         return field_type_matches(node, "type", expected_type);
     }
+    if let Some(field_name) = normalized.strip_prefix("has ") {
+        return node
+            .fields
+            .get(field_name)
+            .and_then(Value::as_str)
+            .is_some_and(|value| !value.is_empty());
+    }
     if normalized == "qualified declarator" {
         return field_descendant_has(node, "declarator", "qualified_identifier");
     }

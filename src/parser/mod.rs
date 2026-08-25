@@ -2,6 +2,7 @@ mod captures;
 mod fields;
 mod markdown;
 mod tree_sitter;
+mod wat;
 
 use crate::error::NativeError;
 use crate::normalize::SyntaxNode;
@@ -145,6 +146,133 @@ mod tests {
         assert!(contains_node_type(&output.root, "id_selector"));
         assert!(contains_node_type(&output.root, "declaration"));
         assert!(marked_captures(&output.root).is_empty());
+    }
+
+    #[test]
+    fn typescript_tree_sitter_parser_marks_profile_captures() {
+        let output = parse_source(
+            "import { value } from './dep';\ninterface Service { run(): void }\ntype Id = string;\nclass Worker implements Service { run() { value(); } }\nfunction helper(): Id { return 'ok'; }\n",
+            &profile("typescript"),
+        )
+        .expect("TypeScript parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+        assert!(captures
+            .iter()
+            .any(|(capture, _)| capture == "reference.import"));
+        assert!(captures.contains(&("definition.interface".to_string(), "Service".to_string())));
+        assert!(captures.contains(&("definition.type_alias".to_string(), "Id".to_string())));
+        assert!(captures.contains(&("definition.class".to_string(), "Worker".to_string())));
+        assert!(captures.contains(&("definition.method".to_string(), "run".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "helper".to_string())));
+        assert!(captures.contains(&("reference.call".to_string(), "value".to_string())));
+        assert_eq!(output.root.node_type, "program");
+        assert!(output.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn tsx_tree_sitter_parser_uses_the_tsx_grammar() {
+        let output = parse_source(
+            "export function Card() { return <section><h1>Hello</h1></section>; }\n",
+            &profile("tsx"),
+        )
+        .expect("TSX parsing should succeed");
+
+        assert_eq!(output.root.node_type, "program");
+        assert!(output.diagnostics.is_empty());
+        assert!(contains_node_type(&output.root, "jsx_element"));
+    }
+
+    #[test]
+    fn javascript_tree_sitter_parser_marks_profile_captures_and_jsx() {
+        let output = parse_source(
+            "import { value } from './dep.js';\nclass Worker { run() { value(); } }\nfunction Card() { return <section>Hello</section>; }\n",
+            &profile("javascript"),
+        )
+        .expect("JavaScript parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+        assert!(captures
+            .iter()
+            .any(|(capture, _)| capture == "reference.import"));
+        assert!(captures.contains(&("definition.class".to_string(), "Worker".to_string())));
+        assert!(captures.contains(&("definition.method".to_string(), "run".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "Card".to_string())));
+        assert!(captures.contains(&("reference.call".to_string(), "value".to_string())));
+        assert_eq!(output.root.node_type, "program");
+        assert!(output.diagnostics.is_empty());
+        assert!(contains_node_type(&output.root, "jsx_element"));
+    }
+
+    #[test]
+    fn html_tree_sitter_parser_preserves_document_structure() {
+        let output = parse_source(
+            "<!doctype html><html><head><style>.card { color: red; }</style></head><body><main>Welcome</main><script>boot();</script></body></html>",
+            &profile("html"),
+        )
+        .expect("HTML parsing should succeed");
+
+        assert_eq!(output.root.node_type, "document");
+        assert!(output.diagnostics.is_empty());
+        assert!(contains_node_type(&output.root, "doctype"));
+        assert!(contains_node_type(&output.root, "element"));
+        assert!(contains_node_type(&output.root, "style_element"));
+        assert!(contains_node_type(&output.root, "script_element"));
+        assert!(marked_captures(&output.root).is_empty());
+    }
+
+    #[test]
+    fn webassembly_tree_sitter_parser_marks_named_semantics() {
+        let output = parse_source(
+            r#"(module $math
+  (type $binary (func (param i32 i32) (result i32)))
+  (import "env" "log" (func $log (param i32)))
+  (func $add (export "add") (param i32 i32) (result i32)
+    local.get 0
+    call $log
+    return_call $log)
+  (memory 1)
+  (export "memory" (memory 0)))
+"#,
+            &profile("webassembly"),
+        )
+        .expect("WebAssembly parsing should succeed");
+
+        let captures = marked_captures(&output.root);
+
+        assert_eq!(output.root.node_type, "root");
+        assert!(output.diagnostics.is_empty());
+        assert!(captures.contains(&("definition.module".to_string(), "$math".to_string())));
+        assert!(captures.contains(&("definition.type_alias".to_string(), "$binary".to_string())));
+        assert!(captures.contains(&("definition.function".to_string(), "$add".to_string())));
+        assert!(captures.contains(&("reference.import".to_string(), "env".to_string())));
+        assert!(captures.contains(&("definition.export".to_string(), "add".to_string())));
+        assert!(captures.contains(&("definition.export".to_string(), "memory".to_string())));
+        assert_eq!(
+            captures
+                .iter()
+                .filter(|capture| capture.0 == "reference.call" && capture.1 == "$log")
+                .count(),
+            2
+        );
+    }
+
+    #[test]
+    fn webassembly_tree_sitter_parser_keeps_anonymous_constructs_syntax_only() {
+        let output = parse_source(
+            "(module (type (func)) (func (param i32) local.get 0))\n",
+            &profile("webassembly"),
+        )
+        .expect("anonymous WebAssembly constructs should parse");
+
+        let captures = marked_captures(&output.root);
+
+        assert_eq!(output.root.node_type, "root");
+        assert!(output.diagnostics.is_empty());
+        assert!(captures.iter().all(|(capture, _)| !matches!(
+            capture.as_str(),
+            "definition.module" | "definition.function" | "definition.type_alias"
+        )));
     }
 
     #[test]

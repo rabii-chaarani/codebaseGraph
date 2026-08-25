@@ -50,8 +50,17 @@ fn grammar_language(profile: &LanguageProfile) -> Option<Language> {
         ("tree_sitter_css", _) | (_, "css") => Some(tree_sitter_css::LANGUAGE.into()),
         ("tree_sitter_fortran", _) | (_, "fortran") => Some(tree_sitter_fortran::LANGUAGE.into()),
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::LANGUAGE.into()),
+        ("tree_sitter_html", _) | (_, "html") => Some(tree_sitter_html::LANGUAGE.into()),
+        ("tree_sitter_javascript", _) | (_, "javascript") => {
+            Some(tree_sitter_javascript::LANGUAGE.into())
+        }
         ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::LANGUAGE.into()),
         ("tree_sitter_rust", _) | (_, "rust") => Some(tree_sitter_rust::LANGUAGE.into()),
+        (_, "tsx") => Some(tree_sitter_typescript::LANGUAGE_TSX.into()),
+        ("tree_sitter_typescript", _) | (_, "typescript") => {
+            Some(tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into())
+        }
+        ("tree_sitter_wat", _) | (_, "webassembly") => Some(super::wat::LANGUAGE.into()),
         _ => None,
     }
 }
@@ -63,8 +72,17 @@ pub(super) fn grammar_node_types(profile: &LanguageProfile) -> Option<&'static s
         ("tree_sitter_css", _) | (_, "css") => Some(tree_sitter_css::NODE_TYPES),
         ("tree_sitter_fortran", _) | (_, "fortran") => Some(tree_sitter_fortran::NODE_TYPES),
         ("tree_sitter_go", _) | (_, "go") => Some(tree_sitter_go::NODE_TYPES),
+        ("tree_sitter_html", _) | (_, "html") => Some(tree_sitter_html::NODE_TYPES),
+        ("tree_sitter_javascript", _) | (_, "javascript") => {
+            Some(tree_sitter_javascript::NODE_TYPES)
+        }
         ("tree_sitter_python", _) | (_, "python") => Some(tree_sitter_python::NODE_TYPES),
         ("tree_sitter_rust", _) | (_, "rust") => Some(tree_sitter_rust::NODE_TYPES),
+        (_, "tsx") => Some(tree_sitter_typescript::TSX_NODE_TYPES),
+        ("tree_sitter_typescript", _) | (_, "typescript") => {
+            Some(tree_sitter_typescript::TYPESCRIPT_NODE_TYPES)
+        }
+        ("tree_sitter_wat", _) | (_, "webassembly") => Some(super::wat::NODE_TYPES),
         _ => None,
     }
 }

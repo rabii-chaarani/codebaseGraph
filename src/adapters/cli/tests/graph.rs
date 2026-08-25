@@ -40,6 +40,48 @@ fn graph_syntax_outputs_language_catalog_and_validates_language() {
         .as_array()
         .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "rule_set")));
 
+    let mut tsx_output = Vec::new();
+    run(["syntax", "tsx", "--json"], &mut tsx_output).unwrap();
+    let tsx: serde_json::Value = serde_json::from_slice(&tsx_output).unwrap();
+    assert_eq!(tsx["language"], "tsx");
+    assert!(tsx["node_types"]
+        .as_array()
+        .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "jsx_element")));
+
+    let mut javascript_output = Vec::new();
+    run(["syntax", "javascript", "--json"], &mut javascript_output).unwrap();
+    let javascript: serde_json::Value = serde_json::from_slice(&javascript_output).unwrap();
+    assert_eq!(javascript["language"], "javascript");
+    assert!(javascript["node_types"]
+        .as_array()
+        .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "jsx_element")));
+
+    let mut html_output = Vec::new();
+    run(["syntax", "html", "--json"], &mut html_output).unwrap();
+    let html: serde_json::Value = serde_json::from_slice(&html_output).unwrap();
+    assert_eq!(html["language"], "html");
+    assert!(html["node_types"]
+        .as_array()
+        .is_some_and(|nodes| nodes.iter().any(|node| node["type"] == "element")));
+
+    let mut webassembly_output = Vec::new();
+    run(["syntax", "webassembly", "--json"], &mut webassembly_output).unwrap();
+    let webassembly: serde_json::Value = serde_json::from_slice(&webassembly_output).unwrap();
+    assert_eq!(webassembly["language"], "webassembly");
+    assert_eq!(
+        webassembly["grammar_version"],
+        "tree_sitter_wat@0.1.0+e3769473"
+    );
+    assert!(webassembly["node_types"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|node| node["type"] == "module_field_func"));
+
+    let mut help = Vec::new();
+    run(["syntax", "--help"], &mut help).unwrap();
+    assert!(String::from_utf8(help).unwrap().contains("webassembly"));
+
     let error = run(["syntax", "custom"], &mut Vec::new()).unwrap_err();
     assert!(error.contains("Unknown syntax language"));
     assert!(run(["syntax"], &mut Vec::new())
@@ -353,6 +395,11 @@ fn setup_indexes_documented_language_defaults() {
         "module fortran_service\ncontains\nsubroutine fortran_helper()\nuse iso_fortran_env\ncall run()\nend subroutine fortran_helper\nend module fortran_service\n",
     )
     .unwrap();
+    fs::write(
+        root.join("src/service.wat"),
+        "(module $wasm_service\n  (type $binary (func (param i32 i32) (result i32)))\n  (import \"env\" \"log\" (func $log (param i32)))\n  (func $wasm_helper (export \"add\") (param i32 i32) (result i32)\n    local.get 0\n    call $log\n    local.get 1\n    i32.add))\n",
+    )
+    .unwrap();
 
     let mut setup_output = Vec::new();
     run(
@@ -389,6 +436,7 @@ fn setup_indexes_documented_language_defaults() {
         "src/service.c",
         "src/service.cpp",
         "src/solver.f90",
+        "src/service.wat",
     ] {
         assert!(
             manifest["files"].get(path).is_some(),
@@ -402,6 +450,10 @@ fn setup_indexes_documented_language_defaults() {
         "CService",
         "CppService",
         "fortran_service",
+        "$wasm_service",
+        "$wasm_helper",
+        "$binary",
+        "env.log",
     ] {
         let mut search_output = Vec::new();
         run(

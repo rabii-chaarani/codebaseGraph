@@ -94,6 +94,51 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
             capture_mappings: Vec::new(),
         },
         LanguageProfile {
+            language: "typescript".to_string(),
+            suffixes: vec![".ts".to_string(), ".mts".to_string(), ".cts".to_string()],
+            grammar_package: "tree_sitter_typescript".to_string(),
+            grammar_version: "tree_sitter_typescript@0.23.2".to_string(),
+            root_node_types: vec!["program".to_string()],
+            capture_mappings: typescript_mappings(),
+        },
+        LanguageProfile {
+            language: "tsx".to_string(),
+            suffixes: vec![".tsx".to_string()],
+            grammar_package: "tree_sitter_typescript".to_string(),
+            grammar_version: "tree_sitter_typescript@0.23.2".to_string(),
+            root_node_types: vec!["program".to_string()],
+            capture_mappings: typescript_mappings(),
+        },
+        LanguageProfile {
+            language: "javascript".to_string(),
+            suffixes: vec![
+                ".js".to_string(),
+                ".jsx".to_string(),
+                ".mjs".to_string(),
+                ".cjs".to_string(),
+            ],
+            grammar_package: "tree_sitter_javascript".to_string(),
+            grammar_version: "tree_sitter_javascript@0.25.0".to_string(),
+            root_node_types: vec!["program".to_string()],
+            capture_mappings: javascript_mappings(),
+        },
+        LanguageProfile {
+            language: "html".to_string(),
+            suffixes: vec![".html".to_string(), ".htm".to_string()],
+            grammar_package: "tree_sitter_html".to_string(),
+            grammar_version: "tree_sitter_html@0.23.2".to_string(),
+            root_node_types: vec!["document".to_string()],
+            capture_mappings: Vec::new(),
+        },
+        LanguageProfile {
+            language: "webassembly".to_string(),
+            suffixes: vec![".wat".to_string()],
+            grammar_package: "tree_sitter_wat".to_string(),
+            grammar_version: "tree_sitter_wat@0.1.0+e3769473".to_string(),
+            root_node_types: vec!["root".to_string()],
+            capture_mappings: webassembly_mappings(),
+        },
+        LanguageProfile {
             language: "rust".to_string(),
             suffixes: vec![".rs".to_string()],
             grammar_package: "tree_sitter_rust".to_string(),
@@ -177,6 +222,95 @@ pub(crate) fn built_in_profiles() -> Vec<LanguageProfile> {
     ]
 }
 
+fn typescript_mappings() -> Vec<CaptureMapping> {
+    vec![
+        mapping(
+            "definition.class",
+            &["class_declaration", "abstract_class_declaration"],
+            "Class",
+        ),
+        mapping("definition.interface", &["interface_declaration"], "Class"),
+        mapping("definition.enum", &["enum_declaration"], "Class"),
+        mapping(
+            "definition.type_alias",
+            &["type_alias_declaration"],
+            "TypeAlias",
+        ),
+        mapping(
+            "definition.function",
+            &["function_declaration", "generator_function_declaration"],
+            "Function",
+        ),
+        mapping(
+            "definition.method",
+            &[
+                "method_definition",
+                "method_signature",
+                "abstract_method_signature",
+            ],
+            "Method",
+        ),
+        mapping(
+            "reference.import",
+            &["import_statement"],
+            "ImportDeclaration",
+        ),
+        mapping("reference.call", &["call_expression"], "CallExpression"),
+    ]
+}
+
+fn javascript_mappings() -> Vec<CaptureMapping> {
+    vec![
+        mapping("definition.class", &["class_declaration"], "Class"),
+        mapping(
+            "definition.function",
+            &["function_declaration", "generator_function_declaration"],
+            "Function",
+        ),
+        mapping("definition.method", &["method_definition"], "Method"),
+        mapping(
+            "reference.import",
+            &["import_statement"],
+            "ImportDeclaration",
+        ),
+        mapping("reference.call", &["call_expression"], "CallExpression"),
+    ]
+}
+
+fn webassembly_mappings() -> Vec<CaptureMapping> {
+    vec![
+        mapping_with_context("definition.module", &["module"], "Module", "has name"),
+        mapping_with_context(
+            "definition.function",
+            &["module_field_func"],
+            "Function",
+            "has name",
+        ),
+        mapping_with_context(
+            "definition.type_alias",
+            &["type_def"],
+            "TypeAlias",
+            "has name",
+        ),
+        mapping(
+            "reference.import",
+            &["module_field_import"],
+            "ImportDeclaration",
+        ),
+        mapping(
+            "definition.export",
+            &["module_field_export", "export"],
+            "ExportDeclaration",
+        ),
+        mapping_with_context(
+            "reference.call",
+            &["plain_instr"],
+            "CallExpression",
+            "has function",
+        ),
+    ]
+}
+
 fn c_family_mappings() -> Vec<CaptureMapping> {
     vec![
         mapping("definition.function", &["function_definition"], "Function"),
@@ -239,6 +373,18 @@ mod tests {
             ("README.md", "markdown"),
             ("README.mdx", "markdown"),
             ("styles.css", "css"),
+            ("service.ts", "typescript"),
+            ("service.mts", "typescript"),
+            ("service.cts", "typescript"),
+            ("component.tsx", "tsx"),
+            ("service.js", "javascript"),
+            ("component.jsx", "javascript"),
+            ("module.mjs", "javascript"),
+            ("config.cjs", "javascript"),
+            ("index.html", "html"),
+            ("legacy.htm", "html"),
+            ("module.wat", "webassembly"),
+            ("MODULE.WAT", "webassembly"),
             ("src/lib.rs", "rust"),
             ("main.go", "go"),
             ("service.c", "c"),
@@ -261,5 +407,8 @@ mod tests {
                 "{path} should resolve to {language}"
             );
         }
+
+        assert_eq!(profiles.language_for_path(Path::new("module.wast")), None);
+        assert_eq!(profiles.language_for_path(Path::new("module.wasm")), None);
     }
 }

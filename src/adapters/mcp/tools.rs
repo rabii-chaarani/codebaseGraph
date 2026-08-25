@@ -228,7 +228,21 @@ mod tests {
         assert_eq!(syntax["inputSchema"]["required"], json!(["language"]));
         assert_eq!(
             syntax["inputSchema"]["properties"]["language"]["enum"],
-            json!(["c", "cpp", "css", "fortran", "go", "markdown", "python", "rust"])
+            json!([
+                "c",
+                "cpp",
+                "css",
+                "fortran",
+                "go",
+                "html",
+                "javascript",
+                "markdown",
+                "python",
+                "rust",
+                "tsx",
+                "typescript",
+                "webassembly"
+            ])
         );
     }
 }
