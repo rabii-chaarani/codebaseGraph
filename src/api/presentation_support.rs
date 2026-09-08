@@ -122,7 +122,7 @@ pub(crate) fn serialize_syntax_block(payload: &serde_json::Value) -> String {
 
 pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
     let mut lines = vec![format!(
-        "health ok={} database_exists={} manifest_exists={} graph_readable={} total_nodes={} storage_format={} writable={} active_generation={} pending_runs={} cleanup_pending={} physical_database_bytes={} logical_database_bytes={}",
+        "health ok={} database_exists={} manifest_exists={} graph_readable={} total_nodes={} storage_format={} writable={} active_generation={} active_generation_published_at_unix_ms={} pending_runs={} cleanup_pending={} physical_database_bytes={} logical_database_bytes={}",
         value_bool(payload, "ok"),
         value_bool(payload, "database_exists"),
         value_bool(payload, "manifest_exists"),
@@ -134,6 +134,7 @@ pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
         block_value(value_str(payload, "storage_format")),
         value_bool(payload, "writable"),
         block_value(value_str(payload, "active_generation")),
+        block_optional_payload_scalar(payload, "active_generation_published_at_unix_ms"),
         payload
             .get("pending_runs")
             .and_then(serde_json::Value::as_u64)
@@ -248,6 +249,14 @@ fn value_bool_or_unknown(
 
 fn block_optional_scalar(value: &serde_json::Map<String, serde_json::Value>, key: &str) -> String {
     match value.get(key) {
+        None | Some(serde_json::Value::Null) => "null".to_string(),
+        Some(serde_json::Value::String(value)) => block_value(value),
+        Some(value) => value.to_string(),
+    }
+}
+
+fn block_optional_payload_scalar(payload: &serde_json::Value, key: &str) -> String {
+    match payload.get(key) {
         None | Some(serde_json::Value::Null) => "null".to_string(),
         Some(serde_json::Value::String(value)) => block_value(value),
         Some(value) => value.to_string(),

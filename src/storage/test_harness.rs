@@ -350,10 +350,34 @@ fn managed_last_reader_drop_triggers_best_effort_retirement_cleanup() {
     let store = open_managed_store(root.join("storage"));
     let first = publish_managed_generation(&store, b"db-one", json!({"files": ["one"]}));
     let reader = store.open_read().unwrap();
+    let first_metadata: serde_json::Value = serde_json::from_str(
+        &fs::read_to_string(store.layout().generation(&first).unwrap().metadata_path()).unwrap(),
+    )
+    .unwrap();
+    let first_published_at = first_metadata["published_at_ms"]
+        .as_u64()
+        .expect("published generation should carry a timestamp");
+    assert!(first_published_at > 0);
+    assert_eq!(reader.published_at_ms, first_published_at);
 
     let second = publish_managed_generation(&store, b"db-two", json!({"files": ["two"]}));
     assert_ne!(first, second);
     assert!(store.layout().generation(&first).unwrap().root().exists());
+
+    let active_reader = store.open_read().unwrap();
+    assert_eq!(active_reader.generation_id, second);
+    assert_eq!(
+        active_reader.published_at_ms,
+        serde_json::from_str::<serde_json::Value>(
+            &fs::read_to_string(store.layout().generation(&second).unwrap().metadata_path(),)
+                .unwrap(),
+        )
+        .unwrap()["published_at_ms"]
+            .as_u64()
+            .unwrap()
+    );
+    assert_eq!(reader.published_at_ms, first_published_at);
+    drop(active_reader);
 
     drop(reader);
 

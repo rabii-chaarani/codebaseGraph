@@ -85,6 +85,8 @@ mod tests {
             "database_exists": true,
             "manifest_exists": true,
             "storage_format": "managed_v2",
+            "active_generation": "generation-one",
+            "active_generation_published_at_unix_ms": 1234,
             "refresh": {
                 "state": "blocked",
                 "task_alive": true,
@@ -117,6 +119,7 @@ mod tests {
             .expect("health block text should be present");
 
         assert!(text.contains("graph_readable=true"));
+        assert!(text.contains("active_generation_published_at_unix_ms=1234"));
         assert!(text.contains("refresh_freshness=unknown refresh_readiness=blocked"));
         assert!(text.contains(
             "refresh state=blocked task_alive=true root=\"/tmp/repo with spaces\" last_success=null pending=true retry=null"

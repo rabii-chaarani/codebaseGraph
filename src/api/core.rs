@@ -633,6 +633,10 @@ fn execute_health(
         graph_readable,
         unix_time_millis(),
     );
+    let active_generation_published_at_unix_ms = runtime
+        .active_read
+        .as_ref()
+        .and_then(|snapshot| (snapshot.published_at_ms > 0).then_some(snapshot.published_at_ms));
 
     let payload = json!({
         "ok": graph_readable,
@@ -647,6 +651,7 @@ fn execute_health(
         "storage_format": runtime.storage_format(),
         "writable": runtime.writable,
         "active_generation": runtime.active_generation,
+        "active_generation_published_at_unix_ms": active_generation_published_at_unix_ms,
         "pending_runs": runtime.pending_runs,
         "cleanup_pending": runtime.cleanup_pending,
         "physical_database_bytes": physical_database_bytes,
