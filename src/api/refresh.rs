@@ -1167,13 +1167,35 @@ pub(crate) struct RefreshStatusMetrics<'a> {
 #[derive(Clone, Debug)]
 pub(crate) struct RefreshStatus {
     pub(crate) enabled: bool,
+    /// Whether the refresh task is still running and able to make progress.
+    ///
+    /// This is deliberately separate from `enabled`: a configured service can
+    /// remain enabled after its detached task has stopped.
+    pub(crate) task_alive: bool,
+    /// Supervised task state.  The values are part of the structured status
+    /// contract: starting, running, retrying, blocked, stopped, standby, and
+    /// disabled.
+    pub(crate) state: String,
     pub(crate) role: String,
     pub(crate) leader_pid: Option<u32>,
     pub(crate) worker_pid: Option<u32>,
     pub(crate) backend: String,
+    /// The source root selected by the refresh runtime, when resolution has
+    /// completed.  This is kept separate from the storage paths so clients
+    /// can diagnose split repository identity.
+    pub(crate) effective_root: Option<PathBuf>,
     pub(crate) refreshing: bool,
     pub(crate) pending: bool,
     pub(crate) last_refresh_unix_ms: Option<u128>,
+    pub(crate) last_successful_reconciliation_unix_ms: Option<u128>,
+    pub(crate) oldest_pending_unix_ms: Option<u128>,
+    pub(crate) next_retry_unix_ms: Option<u128>,
+    /// Monotonic input epoch and the latest epoch acknowledged by a
+    /// successful reconciliation.  A success may acknowledge only the epoch
+    /// captured when its attempt began, preserving edits received while it
+    /// was running.
+    pub(crate) dirty_epoch: u64,
+    pub(crate) reconciled_epoch: u64,
     pub(crate) last_error: Option<String>,
     pub(crate) last_error_count: usize,
     pub(crate) last_retry_unix_ms: Option<u128>,
@@ -1193,19 +1215,30 @@ pub(crate) struct RefreshStatus {
     pub(crate) max_parallelism: usize,
     pub(crate) phase_high_water_marks: BTreeMap<String, u64>,
     pub(crate) spill_bytes: u64,
+    /// Epoch captured by the currently running reconciliation.  This is an
+    /// implementation detail and is intentionally omitted from JSON status.
+    refreshing_epoch: u64,
 }
 
 impl Default for RefreshStatus {
     fn default() -> Self {
         Self {
             enabled: true,
+            task_alive: true,
+            state: "starting".to_string(),
             role: "starting".to_string(),
             leader_pid: None,
             worker_pid: None,
             backend: "starting".to_string(),
+            effective_root: None,
             refreshing: false,
             pending: false,
             last_refresh_unix_ms: None,
+            last_successful_reconciliation_unix_ms: None,
+            oldest_pending_unix_ms: None,
+            next_retry_unix_ms: None,
+            dirty_epoch: 0,
+            reconciled_epoch: 0,
             last_error: None,
             last_error_count: 0,
             last_retry_unix_ms: None,
@@ -1225,6 +1258,7 @@ impl Default for RefreshStatus {
             max_parallelism: crate::api::context::DEFAULT_MAX_PARALLELISM,
             phase_high_water_marks: BTreeMap::new(),
             spill_bytes: 0,
+            refreshing_epoch: 0,
         }
     }
 }
@@ -1254,13 +1288,21 @@ impl RefreshState {
             .map(|status| status.clone())
             .unwrap_or_else(|_| RefreshStatus {
                 enabled: false,
+                task_alive: false,
+                state: "stopped".to_string(),
                 role: "failed".to_string(),
                 leader_pid: None,
                 worker_pid: None,
                 backend: "failed".to_string(),
+                effective_root: None,
                 refreshing: false,
-                pending: false,
+                pending: true,
                 last_refresh_unix_ms: None,
+                last_successful_reconciliation_unix_ms: None,
+                oldest_pending_unix_ms: Some(unix_ms()),
+                next_retry_unix_ms: None,
+                dirty_epoch: 0,
+                reconciled_epoch: 0,
                 last_error: Some("refresh status lock poisoned".to_string()),
                 last_error_count: 1,
                 last_retry_unix_ms: None,
@@ -1280,6 +1322,7 @@ impl RefreshState {
                 max_parallelism: 0,
                 phase_high_water_marks: BTreeMap::new(),
                 spill_bytes: 0,
+                refreshing_epoch: 0,
             })
     }
 
@@ -1287,13 +1330,21 @@ impl RefreshState {
         let status = self.snapshot();
         json!({
             "enabled": status.enabled,
+            "task_alive": status.task_alive,
+            "state": status.state,
             "role": status.role,
             "leader_pid": status.leader_pid,
             "worker_pid": status.worker_pid,
             "backend": status.backend,
+            "effective_root": status.effective_root,
             "refreshing": status.refreshing,
             "pending": status.pending,
             "last_refresh_unix_ms": status.last_refresh_unix_ms,
+            "last_successful_reconciliation_unix_ms": status.last_successful_reconciliation_unix_ms,
+            "oldest_pending_unix_ms": status.oldest_pending_unix_ms,
+            "next_retry_unix_ms": status.next_retry_unix_ms,
+            "dirty_epoch": status.dirty_epoch,
+            "reconciled_epoch": status.reconciled_epoch,
             "last_error": status.last_error,
             "last_error_count": status.last_error_count,
             "last_retry_unix_ms": status.last_retry_unix_ms,
@@ -1320,6 +1371,8 @@ impl RefreshState {
 
     pub(crate) fn mark_leader(&self) {
         if let Ok(mut status) = self.status.lock() {
+            status.task_alive = true;
+            status.state = "running".to_string();
             status.role = "leader".to_string();
             status.leader_pid = Some(std::process::id());
             status.enabled = true;
@@ -1328,19 +1381,34 @@ impl RefreshState {
 
     pub(crate) fn mark_standby(&self) {
         if let Ok(mut status) = self.status.lock() {
+            status.task_alive = true;
+            status.state = "standby".to_string();
             status.role = "standby".to_string();
             status.leader_pid = None;
+            status.worker_pid = None;
             status.backend = "standby".to_string();
             status.refreshing = false;
             status.enabled = true;
         }
     }
 
+    /// Record the source root selected by the refresh runtime.
+    pub(crate) fn set_effective_root(&self, root: PathBuf) {
+        if let Ok(mut status) = self.status.lock() {
+            status.effective_root = Some(root);
+        }
+    }
+
     pub(crate) fn set_backend(&self, backend: &str) {
         if let Ok(mut status) = self.status.lock() {
+            status.task_alive = true;
+            if status.state != "standby" {
+                status.state = "running".to_string();
+            }
             status.backend = backend.to_string();
             status.enabled = true;
             status.last_error = None;
+            status.next_retry_unix_ms = None;
         }
     }
 
@@ -1348,8 +1416,24 @@ impl RefreshState {
         if let Ok(mut status) = self.status.lock() {
             status.backend = backend.to_string();
             status.enabled = true;
-            status.refreshing = false;
-            status.pending = false;
+            if backend == "failed" {
+                // The detached service calls this form only after its task
+                // has actually terminated.  Fallback errors use another
+                // backend (currently `poll`) and must keep reporting the
+                // still-live owner while the fallback loop takes over.
+                status.task_alive = false;
+                status.state = "stopped".to_string();
+                status.role = "stopped".to_string();
+                status.leader_pid = None;
+                status.worker_pid = None;
+                status.refreshing = false;
+            } else {
+                status.task_alive = true;
+                if status.state != "standby" {
+                    status.state = "running".to_string();
+                }
+            }
+            status.next_retry_unix_ms = None;
             status.last_error = Some(error);
             status.last_error_count = status.last_error_count.saturating_add(1);
         }
@@ -1359,10 +1443,14 @@ impl RefreshState {
         if let Ok(mut status) = self.status.lock() {
             status.backend = backend.to_string();
             status.enabled = false;
+            status.task_alive = false;
+            status.state = "disabled".to_string();
             status.role = "disabled".to_string();
             status.leader_pid = None;
+            status.worker_pid = None;
             status.refreshing = false;
             status.pending = false;
+            status.next_retry_unix_ms = None;
             status.last_error = Some(error);
             status.last_error_count = status.last_error_count.saturating_add(1);
         }
@@ -1371,6 +1459,92 @@ impl RefreshState {
     pub(crate) fn mark_pending(&self) {
         if let Ok(mut status) = self.status.lock() {
             status.pending = true;
+            if status.oldest_pending_unix_ms.is_none() {
+                status.oldest_pending_unix_ms = Some(unix_ms());
+            }
+        }
+    }
+
+    /// Mark a new source change epoch.  The returned epoch can be captured by
+    /// an in-flight reconciliation and acknowledged after it completes.
+    pub(crate) fn mark_dirty(&self) -> u64 {
+        self.mark_dirty_at(unix_ms())
+    }
+
+    fn mark_dirty_at(&self, timestamp_unix_ms: u128) -> u64 {
+        if let Ok(mut status) = self.status.lock() {
+            status.dirty_epoch = status.dirty_epoch.saturating_add(1);
+            status.pending = true;
+            if status.oldest_pending_unix_ms.is_none() {
+                status.oldest_pending_unix_ms = Some(timestamp_unix_ms);
+            }
+            status.dirty_epoch
+        } else {
+            0
+        }
+    }
+
+    /// Acknowledge work through `epoch` after a successful reconciliation.
+    /// A newer dirty epoch remains pending and keeps its original age.
+    pub(crate) fn acknowledge_reconciliation(&self, epoch: u64) {
+        if let Ok(mut status) = self.status.lock() {
+            let acknowledged = epoch.min(status.dirty_epoch);
+            status.reconciled_epoch = status.reconciled_epoch.max(acknowledged);
+            status.last_successful_reconciliation_unix_ms = Some(unix_ms());
+            if status.reconciled_epoch >= status.dirty_epoch {
+                status.pending = false;
+                status.oldest_pending_unix_ms = None;
+            } else {
+                status.pending = true;
+            }
+        }
+    }
+
+    /// Record a retry schedule supplied by a supervising loop.
+    pub(crate) fn mark_retrying(&self, next_retry_unix_ms: u128) {
+        if let Ok(mut status) = self.status.lock() {
+            status.task_alive = true;
+            status.state = "retrying".to_string();
+            status.refreshing = false;
+            status.pending = true;
+            if status.oldest_pending_unix_ms.is_none() {
+                status.oldest_pending_unix_ms = Some(unix_ms());
+            }
+            status.next_retry_unix_ms = Some(next_retry_unix_ms);
+        }
+    }
+
+    /// Mark a live task as blocked on a non-retryable error while retaining
+    /// unsatisfied work for later recovery.
+    pub(crate) fn mark_blocked(&self) {
+        if let Ok(mut status) = self.status.lock() {
+            status.task_alive = true;
+            status.state = "blocked".to_string();
+            status.role = "blocked".to_string();
+            status.leader_pid = None;
+            status.worker_pid = None;
+            status.refreshing = false;
+            if status.pending && status.oldest_pending_unix_ms.is_none() {
+                status.oldest_pending_unix_ms = Some(unix_ms());
+            }
+            status.next_retry_unix_ms = None;
+        }
+    }
+
+    /// Mark the refresh task as terminal.  Terminal tasks must not retain
+    /// leadership or worker identity in status.
+    pub(crate) fn mark_stopped(&self) {
+        if let Ok(mut status) = self.status.lock() {
+            status.task_alive = false;
+            status.state = "stopped".to_string();
+            status.role = "stopped".to_string();
+            status.leader_pid = None;
+            status.worker_pid = None;
+            status.refreshing = false;
+            if status.pending && status.oldest_pending_unix_ms.is_none() {
+                status.oldest_pending_unix_ms = Some(unix_ms());
+            }
+            status.next_retry_unix_ms = None;
         }
     }
 
@@ -1382,9 +1556,16 @@ impl RefreshState {
 
     pub(crate) fn mark_refreshing(&self, backend: &str) {
         if let Ok(mut status) = self.status.lock() {
+            status.task_alive = true;
+            status.state = "running".to_string();
+            status.refreshing_epoch = status.dirty_epoch;
             status.backend = backend.to_string();
             status.refreshing = true;
-            status.pending = false;
+            status.pending = true;
+            if status.oldest_pending_unix_ms.is_none() {
+                status.oldest_pending_unix_ms = Some(unix_ms());
+            }
+            status.next_retry_unix_ms = None;
             status.last_error = None;
         }
     }
@@ -1400,10 +1581,24 @@ impl RefreshState {
         if let Ok(mut status) = self.status.lock() {
             status.backend = backend.to_string();
             status.refreshing = false;
-            status.pending = retrying;
+            status.pending = true;
+            if status.oldest_pending_unix_ms.is_none() {
+                status.oldest_pending_unix_ms = Some(unix_ms());
+            }
+            if retrying {
+                status.task_alive = true;
+                status.state = "retrying".to_string();
+            } else {
+                status.task_alive = true;
+                status.state = "blocked".to_string();
+                status.role = "blocked".to_string();
+                status.leader_pid = None;
+                status.worker_pid = None;
+            }
             status.last_error = Some(error);
             status.last_error_count = status.last_error_count.saturating_add(1);
             status.last_retry_unix_ms = retrying.then_some(unix_ms());
+            status.next_retry_unix_ms = None;
             status.last_event_count = event_count;
             status.last_changed_paths = changed_paths;
         }
@@ -1412,9 +1607,11 @@ impl RefreshState {
     pub(crate) fn mark_refreshed(&self, metrics: RefreshStatusMetrics<'_>) {
         if let Ok(mut status) = self.status.lock() {
             status.backend = metrics.backend.to_string();
+            status.task_alive = true;
+            status.state = "running".to_string();
             status.refreshing = false;
-            status.pending = false;
             status.last_refresh_unix_ms = Some(unix_ms());
+            status.next_retry_unix_ms = None;
             status.last_error = None;
             status.last_error_count = 0;
             status.last_retry_unix_ms = None;
@@ -1430,6 +1627,13 @@ impl RefreshState {
             status.filtered_event_count = status
                 .filtered_event_count
                 .saturating_add(metrics.filtered_event_count);
+            let acknowledged_epoch = status.refreshing_epoch.min(status.dirty_epoch);
+            status.reconciled_epoch = status.reconciled_epoch.max(acknowledged_epoch);
+            status.last_successful_reconciliation_unix_ms = status.last_refresh_unix_ms;
+            status.pending = status.reconciled_epoch < status.dirty_epoch;
+            if !status.pending {
+                status.oldest_pending_unix_ms = None;
+            }
             if metrics.database_written {
                 status.last_noop_reason = None;
                 status.phase_high_water_marks = metrics.phase_high_water_marks.clone();
@@ -1467,6 +1671,7 @@ fn run_refresh_service(
     state: &Arc<RefreshState>,
 ) -> Result<(), String> {
     let runtime = resolve_refresh_runtime(&selector)?;
+    state.set_effective_root(runtime.repo_root.clone());
     if let Err(error) = runtime.require_graph_write() {
         state.disable("disabled", error);
         return Ok(());
@@ -1810,6 +2015,70 @@ mod tests {
         assert_eq!(status["memory_limits"]["max_parallelism"], 1);
         assert_eq!(status["phase_high_water_marks"], serde_json::json!({}));
         assert_eq!(status["spill_bytes"], 0);
+        assert_eq!(status["task_alive"], true);
+        assert_eq!(status["state"], "starting");
+        assert_eq!(status["effective_root"], serde_json::Value::Null);
+        assert_eq!(
+            status["last_successful_reconciliation_unix_ms"],
+            serde_json::Value::Null
+        );
+        assert_eq!(status["oldest_pending_unix_ms"], serde_json::Value::Null);
+        assert_eq!(status["next_retry_unix_ms"], serde_json::Value::Null);
+        assert_eq!(status["dirty_epoch"], 0);
+        assert_eq!(status["reconciled_epoch"], 0);
+    }
+
+    #[test]
+    fn refresh_status_acknowledges_only_the_epoch_captured_by_a_refresh() {
+        let state = RefreshState::with_config(RefreshServiceConfig::default());
+        let first_epoch = state.mark_dirty_at(100);
+        state.mark_refreshing("test");
+        let second_epoch = state.mark_dirty_at(200);
+        assert_eq!((first_epoch, second_epoch), (1, 2));
+
+        let response = skipped_response();
+        state.mark_refreshed(RefreshStatusMetrics {
+            backend: "test",
+            event_count: 1,
+            changed_paths: 1,
+            rebuilt: 0,
+            deleted: 0,
+            database_written: response.database_written,
+            overflow_count: 0,
+            filtered_event_count: 0,
+            phase_high_water_marks: &response.phase_high_water_marks,
+            spill_bytes: response.spill_bytes,
+        });
+
+        let status = state.snapshot();
+        assert_eq!(status.dirty_epoch, 2);
+        assert_eq!(status.reconciled_epoch, 1);
+        assert!(status.pending);
+        assert_eq!(status.oldest_pending_unix_ms, Some(100));
+        assert!(status.last_successful_reconciliation_unix_ms.is_some());
+
+        state.acknowledge_reconciliation(2);
+        let status = state.snapshot();
+        assert_eq!(status.reconciled_epoch, 2);
+        assert!(!status.pending);
+        assert_eq!(status.oldest_pending_unix_ms, None);
+    }
+
+    #[test]
+    fn terminal_refresh_status_drops_leadership_and_keeps_work_pending() {
+        let state = RefreshState::with_config(RefreshServiceConfig::default());
+        state.mark_leader();
+        state.mark_dirty_at(123);
+        state.set_error("failed", "refresh task exited".to_string());
+
+        let status = state.snapshot();
+        assert!(!status.task_alive);
+        assert_eq!(status.state, "stopped");
+        assert_eq!(status.role, "stopped");
+        assert_eq!(status.leader_pid, None);
+        assert_eq!(status.worker_pid, None);
+        assert!(status.pending);
+        assert_eq!(status.oldest_pending_unix_ms, Some(123));
     }
 
     #[test]
