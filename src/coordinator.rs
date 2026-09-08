@@ -1,4 +1,4 @@
-use crate::api::context::resolve_runtime;
+use crate::api::context::{bind_repo_selector, resolve_runtime, RepositoryIdentity};
 use crate::api::{
     ApiError, CodebaseGraphApi, OperationInvocation, OperationResponse, RefreshServiceConfig,
     RepoSelector,
@@ -33,11 +33,16 @@ static TOKEN_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 pub(crate) struct CoordinatorApiConfig {
     selector: RepoSelector,
     refresh: Option<RefreshServiceConfig>,
+    identity: Option<RepositoryIdentity>,
 }
 
 impl CoordinatorApiConfig {
     pub(crate) fn new(selector: RepoSelector, refresh: Option<RefreshServiceConfig>) -> Self {
-        Self { selector, refresh }
+        Self {
+            selector,
+            refresh,
+            identity: None,
+        }
     }
 
     fn build_api(&self) -> CodebaseGraphApi {
@@ -142,7 +147,9 @@ enum CoordinatorReply {
 }
 
 impl CoordinatorClient {
-    pub(crate) fn connect_or_start(config: CoordinatorApiConfig) -> Result<Self, String> {
+    pub(crate) fn connect_or_start(mut config: CoordinatorApiConfig) -> Result<Self, String> {
+        config.selector = bind_repo_selector(&config.selector)?;
+        config.identity = Some(RepositoryIdentity::capture(&config.selector)?);
         let control = coordinator_control_paths(&config.selector)?;
         let client = Self {
             inner: Arc::new(ClientInner {
@@ -366,10 +373,16 @@ fn start_owner(
         .name("codebase-graph-coordinator".to_string())
         .spawn(move || {
             let api = config.build_api();
+            let identity = config
+                .identity
+                .as_ref()
+                .expect("coordinator identity is captured before owner startup")
+                .clone();
             serve_owner(
                 listener,
                 &api,
                 &config.selector,
+                &identity,
                 &server_state,
                 &server_stop,
             );
@@ -390,6 +403,7 @@ fn serve_owner(
     listener: TcpListener,
     api: &CodebaseGraphApi,
     selector: &RepoSelector,
+    identity: &RepositoryIdentity,
     state: &CoordinatorState,
     stop: &AtomicBool,
 ) {
@@ -398,7 +412,7 @@ fn serve_owner(
             Ok((mut stream, _)) => {
                 let _ = stream.set_read_timeout(Some(STREAM_IO_TIMEOUT));
                 let _ = stream.set_write_timeout(Some(STREAM_IO_TIMEOUT));
-                let reply = handle_connection(&mut stream, api, selector, state);
+                let reply = handle_connection(&mut stream, api, selector, identity, state);
                 let _ = write_frame(&mut stream, &reply);
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
@@ -413,6 +427,7 @@ fn handle_connection(
     stream: &mut TcpStream,
     api: &CodebaseGraphApi,
     selector: &RepoSelector,
+    identity: &RepositoryIdentity,
     state: &CoordinatorState,
 ) -> CoordinatorReply {
     let request = match receive_request(stream) {
@@ -431,6 +446,12 @@ fn handle_connection(
             operation_id,
             mut invocation,
         } => {
+            if let Err(error) = identity.validate() {
+                return CoordinatorReply::Failure(ApiError::new(
+                    "repository_identity_changed",
+                    error,
+                ));
+            }
             invocation.repo = selector.clone();
             match api.execute_invocation(&operation_id, &invocation) {
                 Ok(mut response) => {

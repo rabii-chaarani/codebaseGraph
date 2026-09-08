@@ -4,7 +4,10 @@ use super::{
     refresh::start_configured_api,
     state::McpHttpState,
 };
-use crate::api::context::{read_install_config, resolve_repository_root};
+use crate::api::context::{
+    bind_repo_selector, read_install_config, resolve_identity_path, resolve_repository_root,
+};
+use crate::api::RepoSelector;
 use crate::storage::atomic::write_json_atomically;
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
@@ -29,7 +32,7 @@ const DAEMON_SERVICE_LOCK_FILE: &str = "mcp-daemon-service.lock";
 const CONTROL_HEADER: &str = "x-codebasegraph-control-token";
 const DAEMON_FAILURE_SCHEMA_VERSION: u64 = 1;
 const MAX_FAILURE_MESSAGE_BYTES: usize = 4 * 1024;
-const START_TIMEOUT: Duration = Duration::from_secs(10);
+const START_TIMEOUT: Duration = Duration::from_secs(20);
 const STOP_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Clone)]
@@ -157,28 +160,49 @@ pub(crate) struct McpDaemonSpec {
 
 impl McpDaemonSpec {
     pub(crate) fn from_options(options: &McpDaemonOptions) -> Result<Self, String> {
-        Self::from_config(&options.config_path()?, options.port)
+        let config_path = options.config_path()?;
+        let spec = Self::from_config(&config_path, options.port)?;
+        if let Some(explicit_root) = options.repo_root.as_deref() {
+            let bound = bind_repo_selector(&RepoSelector {
+                repo_root: Some(explicit_root.to_path_buf()),
+                config_path: Some(config_path.clone()),
+                db_path: None,
+                manifest_path: None,
+            })?;
+            if bound.repo_root.as_deref() != Some(spec.repo_root.as_path()) {
+                return Err(format!(
+                    "daemon repository root {} conflicts with config-selected root {}",
+                    bound
+                        .repo_root
+                        .as_deref()
+                        .map(Path::display)
+                        .map(|value| value.to_string())
+                        .unwrap_or_else(|| "unknown".to_string()),
+                    spec.repo_root.display()
+                ));
+            }
+        }
+        Ok(spec)
     }
 
     pub(crate) fn from_config(
         config_path: &Path,
         port_override: Option<u16>,
     ) -> Result<Self, String> {
-        let config_path = absolutize(config_path);
-        let config = read_install_config(&config_path)?;
-        let repo_root = config.repo_root.clone().unwrap_or_else(|| {
-            config_path
-                .parent()
-                .and_then(Path::parent)
-                .unwrap_or(Path::new("."))
-                .to_path_buf()
-        });
-        let repo_root = repo_root.canonicalize().map_err(|error| {
-            format!(
-                "failed to resolve daemon repository {}: {error}",
-                repo_root.display()
-            )
+        let supplied_config_path = absolutize(config_path);
+        let bound = bind_repo_selector(&RepoSelector {
+            repo_root: None,
+            config_path: Some(supplied_config_path),
+            db_path: None,
+            manifest_path: None,
         })?;
+        let config_path = bound
+            .config_path
+            .ok_or_else(|| "daemon selector did not resolve an install config".to_string())?;
+        let config = read_install_config(&config_path)?;
+        let repo_root = bound
+            .repo_root
+            .ok_or_else(|| "daemon repository selector did not resolve a root".to_string())?;
         let fingerprint = repository_fingerprint(&repo_root);
         let persisted_http = config.mcp.as_ref().and_then(|mcp| mcp.http.as_ref());
         let persisted_port = persisted_http.and_then(|http| endpoint_port(&http.url));
@@ -193,6 +217,8 @@ impl McpDaemonSpec {
             .unwrap_or_else(|| service_id(&fingerprint));
         let state_dir = config
             .state_dir
+            .map(|path| resolve_identity_path(&path, Some(&config_path)))
+            .transpose()?
             .unwrap_or_else(|| repo_root.join(".codebaseGraph"));
         let executable = env::current_exe()
             .map_err(|error| format!("failed to resolve codebase-graph executable: {error}"))?;
@@ -281,6 +307,8 @@ pub(crate) fn serve_mcp_daemon(options: &McpDaemonOptions) -> Result<(), String>
     })?;
     let serve = McpServeOptions::parse(
         &[
+            "--repo-root".to_string(),
+            spec.repo_root.to_string_lossy().to_string(),
             "--config".to_string(),
             spec.config_path.to_string_lossy().to_string(),
         ],
@@ -456,7 +484,11 @@ pub(crate) fn start_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json:
         reconciliation_reasons(&spec, previous.as_ref(), healthy.is_some(), &service_status)?;
     if let Some(state) = healthy.as_ref() {
         if reasons.is_empty() {
-            verify_daemon_endpoint(&state.endpoint, Some(&spec.repository_fingerprint))?;
+            verify_daemon_endpoint_with_root(
+                &state.endpoint,
+                Some(&spec.repository_fingerprint),
+                Some(&spec.repo_root),
+            )?;
             return Ok(json!({
                 "action": "unchanged",
                 "running": true,
@@ -502,8 +534,12 @@ pub(crate) fn start_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json:
                     }
                 });
                 match state_matches.and_then(|_| {
-                    verify_daemon_endpoint(&state.endpoint, Some(&spec.repository_fingerprint))
-                        .map(|_| ())
+                    verify_daemon_endpoint_with_root(
+                        &state.endpoint,
+                        Some(&spec.repository_fingerprint),
+                        Some(&spec.repo_root),
+                    )
+                    .map(|_| ())
                 }) {
                     Ok(_) => {
                         return Ok(json!({
@@ -948,6 +984,14 @@ pub(crate) fn verify_daemon_endpoint(
     endpoint: &str,
     expected_fingerprint: Option<&str>,
 ) -> Result<serde_json::Value, String> {
+    verify_daemon_endpoint_with_root(endpoint, expected_fingerprint, None)
+}
+
+fn verify_daemon_endpoint_with_root(
+    endpoint: &str,
+    expected_fingerprint: Option<&str>,
+    expected_repo_root: Option<&Path>,
+) -> Result<serde_json::Value, String> {
     let health = probe_daemon_endpoint(endpoint)?;
     if health.get("server").and_then(serde_json::Value::as_str) != Some("codebase-graph") {
         return Err("HTTP endpoint did not identify itself as codebase-graph".to_string());
@@ -1014,16 +1058,86 @@ pub(crate) fn verify_daemon_endpoint(
     if !has_health || !has_search {
         return Err("HTTP endpoint is missing required graph tool schemas".to_string());
     }
+    let graph_health = http_json_response_with_timeout(
+        port,
+        "POST",
+        "/mcp",
+        &[
+            ("mcp-session-id", session_id.as_str()),
+            (
+                "mcp-protocol-version",
+                crate::api::CodebaseGraphApi::latest_mcp_protocol_version(),
+            ),
+        ],
+        Some(&json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "tools/call",
+            "params": {
+                "name": "graph_health",
+                "arguments": {"include_structured_content": true}
+            }
+        })),
+        Duration::from_secs(15),
+    )?;
+    if graph_health.status / 100 != 2 {
+        return Err(format!(
+            "HTTP graph_health request returned status {}",
+            graph_health.status
+        ));
+    }
+    if graph_health
+        .payload
+        .pointer("/result/isError")
+        .and_then(serde_json::Value::as_bool)
+        == Some(true)
+    {
+        return Err("HTTP graph_health tool returned an MCP error".to_string());
+    }
+    if graph_health
+        .payload
+        .pointer("/result/structuredContent/graph_readable")
+        .and_then(serde_json::Value::as_bool)
+        != Some(true)
+    {
+        return Err("HTTP graph_health reported an unreadable graph".to_string());
+    }
+    let mut repository_root_verified = expected_repo_root.is_none();
+    if let Some(expected_root) = expected_repo_root {
+        let actual_root = graph_health
+            .payload
+            .pointer("/result/structuredContent/repo_root")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                "HTTP graph_health response did not contain structured repository root".to_string()
+            })?;
+        let actual_root = PathBuf::from(actual_root).canonicalize().map_err(|error| {
+            format!("HTTP graph_health repository root is not readable: {error}")
+        })?;
+        let expected_root = expected_root
+            .canonicalize()
+            .map_err(|error| format!("expected daemon repository root is not readable: {error}"))?;
+        if actual_root != expected_root {
+            return Err(format!(
+                "HTTP graph_health repository root {} does not match expected {}",
+                actual_root.display(),
+                expected_root.display()
+            ));
+        }
+        repository_root_verified = true;
+    }
     Ok(json!({
         "ok": true,
         "health": health,
         "initialize": initialized.payload,
+        "graph_health": graph_health.payload,
         "tool_count": listed.len(),
         "checks": {
             "server_identity": true,
             "repository_fingerprint": expected_fingerprint.is_none_or(|expected| health["repository_fingerprint"] == expected),
             "initialize": true,
             "tool_schemas": true,
+            "repository_root": repository_root_verified,
         }
     }))
 }
@@ -1068,6 +1182,7 @@ fn http_json_request(
 }
 
 struct HttpClientResponse {
+    status: u16,
     payload: serde_json::Value,
     headers: std::collections::BTreeMap<String, String>,
 }
@@ -1079,10 +1194,21 @@ fn http_json_response(
     headers: &[(&str, &str)],
     body: Option<&serde_json::Value>,
 ) -> Result<HttpClientResponse, String> {
+    http_json_response_with_timeout(port, method, path, headers, body, Duration::from_secs(2))
+}
+
+fn http_json_response_with_timeout(
+    port: u16,
+    method: &str,
+    path: &str,
+    headers: &[(&str, &str)],
+    body: Option<&serde_json::Value>,
+    timeout: Duration,
+) -> Result<HttpClientResponse, String> {
     let mut stream = TcpStream::connect(("127.0.0.1", port))
         .map_err(|error| format!("failed to connect to managed MCP daemon: {error}"))?;
     stream
-        .set_read_timeout(Some(Duration::from_secs(2)))
+        .set_read_timeout(Some(timeout))
         .map_err(|error| error.to_string())?;
     let body = body
         .map(serde_json::to_vec)
@@ -1128,7 +1254,11 @@ fn http_json_response(
         .filter_map(|line| line.split_once(':'))
         .map(|(name, value)| (name.trim().to_ascii_lowercase(), value.trim().to_string()))
         .collect();
-    Ok(HttpClientResponse { payload, headers })
+    Ok(HttpClientResponse {
+        status,
+        payload,
+        headers,
+    })
 }
 
 fn endpoint_port(endpoint: &str) -> Option<u16> {

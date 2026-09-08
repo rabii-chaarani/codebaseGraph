@@ -98,6 +98,30 @@ fn request(
     }
 }
 
+fn mcp_call(
+    port: u16,
+    session: &str,
+    id: u64,
+    name: &str,
+    arguments: serde_json::Value,
+) -> HttpResponse {
+    request(
+        port,
+        "POST",
+        "/mcp",
+        &[
+            ("mcp-session-id", session),
+            ("mcp-protocol-version", MCP_PROTOCOL_VERSION),
+        ],
+        Some(&json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "method": "tools/call",
+            "params": {"name": name, "arguments": arguments}
+        })),
+    )
+}
+
 fn wait_for_file(path: &Path) {
     let deadline = Instant::now() + Duration::from_secs(15);
     while Instant::now() < deadline {
@@ -381,4 +405,195 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
     );
     assert!(TcpStream::connect(("127.0.0.1", port)).is_err());
     let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn config_only_daemon_from_unrelated_cwd_tracks_source_changes() {
+    let root = temp_repo();
+    let unrelated = temp_repo();
+    fs::create_dir_all(&root).unwrap();
+    fs::create_dir_all(&unrelated).unwrap();
+    fs::write(
+        root.join("initial.py"),
+        "def initial_symbol():\n    return 1\n",
+    )
+    .unwrap();
+    let install = Command::new(binary())
+        .current_dir(&root)
+        .args([
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-semantic-enrichment",
+            "--json",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        install.status.success(),
+        "install failed: {}",
+        String::from_utf8_lossy(&install.stderr)
+    );
+
+    let config_path = root.join(".codebaseGraph/config.json");
+    let mut config: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+    config["repo_root"] = json!("..");
+    config["refresh"]["reconcile_interval_ms"] = json!(100);
+    config["refresh"]["backend"] = json!("poll");
+    fs::write(&config_path, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+
+    let mut daemon = ChildGuard(
+        Command::new(binary())
+            .current_dir(&unrelated)
+            .args([
+                "mcp",
+                "daemon",
+                "serve",
+                "--config",
+                config_path.to_str().unwrap(),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap(),
+    );
+    let state_path = root.join(".codebaseGraph/mcp-daemon.json");
+    wait_for_file(&state_path);
+    let state: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&state_path).unwrap()).unwrap();
+    let port = state["endpoint"]
+        .as_str()
+        .unwrap()
+        .strip_prefix("http://127.0.0.1:")
+        .unwrap()
+        .split('/')
+        .next()
+        .unwrap()
+        .parse::<u16>()
+        .unwrap();
+
+    let initialized = request(
+        port,
+        "POST",
+        "/mcp",
+        &[],
+        Some(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": MCP_PROTOCOL_VERSION}
+        })),
+    );
+    assert_eq!(initialized.status, 200);
+    let session = initialized.headers.get("mcp-session-id").unwrap();
+
+    let health = mcp_call(
+        port,
+        session,
+        2,
+        "graph_health",
+        json!({"include_structured_content": true}),
+    );
+    assert_eq!(health.status, 200);
+    assert_eq!(health.body["result"]["isError"], false);
+    assert_eq!(
+        health.body["result"]["structuredContent"]["repo_root"],
+        root.canonicalize().unwrap().to_string_lossy().to_string()
+    );
+
+    let search = |id, query| {
+        mcp_call(
+            port,
+            session,
+            id,
+            "graph_search",
+            json!({
+                "query": query,
+                "layer": "semantic",
+                "limit": 10,
+                "context_limit": 0,
+                "budget": 0,
+                "include_structured_content": true
+            }),
+        )
+    };
+    let result_paths = |response: &HttpResponse| {
+        assert_eq!(
+            response.status, 200,
+            "graph_search HTTP response: {response:?}"
+        );
+        assert_eq!(
+            response.body["result"]["isError"], false,
+            "graph_search MCP response: {response:?}"
+        );
+        response.body["result"]["structuredContent"]["results"]
+            .as_array()
+            .expect("graph_search structured results should be an array")
+            .iter()
+            .filter_map(|result| result["path"].as_str())
+            .map(str::to_string)
+            .collect::<Vec<_>>()
+    };
+    let wait_for = |id: &mut u64, predicate: &dyn Fn(&[String]) -> bool| {
+        let deadline = Instant::now() + Duration::from_secs(20);
+        loop {
+            let response = search(*id, "tracked_symbol");
+            let paths = result_paths(&response);
+            if predicate(&paths) {
+                return;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "graph did not converge: {response:?}"
+            );
+            *id += 1;
+            thread::sleep(Duration::from_millis(100));
+        }
+    };
+
+    fs::write(
+        root.join("created.py"),
+        "def tracked_symbol():\n    return 2\n",
+    )
+    .unwrap();
+    let mut search_id = 3;
+    wait_for(&mut search_id, &|paths| {
+        paths.iter().any(|path| path == "created.py")
+    });
+
+    fs::rename(root.join("created.py"), root.join("renamed.py")).unwrap();
+    wait_for(&mut search_id, &|paths| {
+        paths.iter().any(|path| path == "renamed.py")
+            && !paths.iter().any(|path| path == "created.py")
+    });
+
+    fs::remove_file(root.join("renamed.py")).unwrap();
+    wait_for(&mut search_id, &|paths| paths.is_empty());
+
+    let shutdown = request(
+        port,
+        "POST",
+        "/_codebasegraph/shutdown",
+        &[(
+            "x-codebasegraph-control-token",
+            state["control_token"].as_str().unwrap(),
+        )],
+        Some(&json!({})),
+    );
+    assert_eq!(shutdown.status, 200);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < deadline && daemon.0.try_wait().unwrap().is_none() {
+        thread::sleep(Duration::from_millis(50));
+    }
+    assert!(daemon.0.try_wait().unwrap().is_some());
+    let _ = fs::remove_dir_all(root);
+    let _ = fs::remove_dir_all(unrelated);
 }
