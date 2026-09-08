@@ -78,6 +78,7 @@ pub(super) fn test_http_options(root: PathBuf, auth_token: Option<&str>) -> McpH
             manifest: None,
             api: None,
             refresh_policy: None,
+            refresh_backend: None,
             worker_memory_mib: None,
             rust_memory_mib: None,
             spill_chunk_mib: None,
