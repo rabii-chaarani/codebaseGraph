@@ -28,7 +28,13 @@ use crate::materialization_worker::execute_explicit_worker;
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
 use crate::storage::layout::direct_bundle_paths;
 use serde_json::json;
-use std::{collections::BTreeMap, fs, path::Path, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::Path,
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 #[derive(Debug, Clone, Copy)]
 pub struct OperationDescriptor {
@@ -622,6 +628,16 @@ fn execute_health(
         ));
     }
 
+    let refresh_health = refresh_health_payload(
+        request.refresh_status.as_ref(),
+        graph_readable,
+        unix_time_millis(),
+    );
+    let active_generation_published_at_unix_ms = runtime
+        .active_read
+        .as_ref()
+        .and_then(|snapshot| (snapshot.published_at_ms > 0).then_some(snapshot.published_at_ms));
+
     let payload = json!({
         "ok": graph_readable,
         "repo_root": runtime.repo_root,
@@ -635,6 +651,7 @@ fn execute_health(
         "storage_format": runtime.storage_format(),
         "writable": runtime.writable,
         "active_generation": runtime.active_generation,
+        "active_generation_published_at_unix_ms": active_generation_published_at_unix_ms,
         "pending_runs": runtime.pending_runs,
         "cleanup_pending": runtime.cleanup_pending,
         "physical_database_bytes": physical_database_bytes,
@@ -642,12 +659,187 @@ fn execute_health(
         "remediation": runtime.remediation(),
         "error": error_message,
         "refresh": request.refresh_status,
+        "freshness": refresh_health["freshness"].clone(),
+        "refresh_readiness": refresh_health["readiness"].clone(),
+        "refresh_health": refresh_health,
     });
     Ok(OperationResponse::from_payload(
         "health",
         output_format,
         payload,
     ))
+}
+
+fn unix_time_millis() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or_default()
+}
+
+fn refresh_health_payload(
+    refresh_status: Option<&serde_json::Value>,
+    graph_readable: bool,
+    now_unix_ms: u128,
+) -> serde_json::Value {
+    let Some(status) = refresh_status.and_then(serde_json::Value::as_object) else {
+        return json!({
+            "freshness": "unknown",
+            "readiness": "unknown",
+            "state": "unknown",
+            "task_alive": null,
+            "effective_root": null,
+            "last_successful_reconciliation_unix_ms": null,
+            "oldest_pending_unix_ms": null,
+            "next_retry_unix_ms": null,
+            "pending": null,
+            "dirty_epoch": null,
+            "reconciled_epoch": null,
+            "last_error": null,
+        });
+    };
+
+    let state = status
+        .get("state")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("unknown");
+    let task_alive = status
+        .get("task_alive")
+        .and_then(serde_json::Value::as_bool);
+    let enabled = status.get("enabled").and_then(serde_json::Value::as_bool);
+    let pending = status.get("pending").and_then(serde_json::Value::as_bool);
+    let dirty_epoch = value_u128(status.get("dirty_epoch"));
+    let reconciled_epoch = value_u128(status.get("reconciled_epoch"));
+    let last_success = value_u128(status.get("last_successful_reconciliation_unix_ms"));
+    let has_pending_epoch = dirty_epoch
+        .zip(reconciled_epoch)
+        .is_some_and(|(dirty, reconciled)| dirty > reconciled);
+    let pending_work = pending.unwrap_or(false) || has_pending_epoch;
+    let last_error = status
+        .get("last_error")
+        .and_then(serde_json::Value::as_str)
+        .filter(|error| !error.is_empty());
+
+    let readiness = refresh_readiness(state, enabled, task_alive);
+    let freshness = refresh_freshness(
+        &RefreshHealthFacts {
+            graph_readable,
+            state,
+            enabled,
+            task_alive,
+            pending: pending_work,
+            dirty_epoch,
+            reconciled_epoch,
+            last_success,
+            has_error: last_error.is_some(),
+            interval_unix_ms: refresh_interval_unix_ms(status),
+        },
+        now_unix_ms,
+    );
+
+    json!({
+        "freshness": freshness,
+        "readiness": readiness,
+        "state": state,
+        "task_alive": task_alive,
+        "effective_root": status.get("effective_root").cloned().unwrap_or(serde_json::Value::Null),
+        "last_successful_reconciliation_unix_ms": status
+            .get("last_successful_reconciliation_unix_ms")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null),
+        "oldest_pending_unix_ms": status
+            .get("oldest_pending_unix_ms")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null),
+        "next_retry_unix_ms": status
+            .get("next_retry_unix_ms")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null),
+        "pending": pending_work,
+        "dirty_epoch": status.get("dirty_epoch").cloned().unwrap_or(serde_json::Value::Null),
+        "reconciled_epoch": status
+            .get("reconciled_epoch")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null),
+        "last_error": status.get("last_error").cloned().unwrap_or(serde_json::Value::Null),
+    })
+}
+
+fn refresh_readiness(state: &str, enabled: Option<bool>, task_alive: Option<bool>) -> &'static str {
+    if enabled == Some(false) || matches!(state, "disabled" | "off") {
+        return "disabled";
+    }
+    match state {
+        "running" => match task_alive {
+            Some(true) => "ready",
+            Some(false) => "stopped",
+            None => "unknown",
+        },
+        "starting" => "starting",
+        "retrying" => "retrying",
+        "blocked" => "blocked",
+        "standby" => "standby",
+        "stopped" => "stopped",
+        _ => "unknown",
+    }
+}
+
+struct RefreshHealthFacts<'a> {
+    graph_readable: bool,
+    state: &'a str,
+    enabled: Option<bool>,
+    task_alive: Option<bool>,
+    pending: bool,
+    dirty_epoch: Option<u128>,
+    reconciled_epoch: Option<u128>,
+    last_success: Option<u128>,
+    has_error: bool,
+    interval_unix_ms: Option<u128>,
+}
+
+fn refresh_freshness(facts: &RefreshHealthFacts<'_>, now_unix_ms: u128) -> &'static str {
+    if !facts.graph_readable
+        || facts.enabled == Some(false)
+        || !matches!(facts.state, "running")
+        || facts.task_alive != Some(true)
+        || facts.has_error
+    {
+        return "unknown";
+    }
+    if facts.pending {
+        return "pending";
+    }
+    let (Some(dirty), Some(reconciled), Some(last_success)) = (
+        facts.dirty_epoch,
+        facts.reconciled_epoch,
+        facts.last_success,
+    ) else {
+        return "unknown";
+    };
+    if reconciled < dirty {
+        return "pending";
+    }
+    if last_success > now_unix_ms {
+        return "unknown";
+    }
+    if let Some(interval) = facts.interval_unix_ms {
+        if now_unix_ms > last_success.saturating_add(interval) {
+            return "overdue";
+        }
+    }
+    "current"
+}
+
+fn refresh_interval_unix_ms(status: &serde_json::Map<String, serde_json::Value>) -> Option<u128> {
+    value_u128(status.get("reconcile_interval_ms"))
+}
+
+fn value_u128(value: Option<&serde_json::Value>) -> Option<u128> {
+    match value {
+        Some(serde_json::Value::Number(value)) => value.as_u64().map(u128::from),
+        Some(serde_json::Value::String(value)) => value.parse().ok(),
+        _ => None,
+    }
 }
 
 fn execute_search(
@@ -950,7 +1142,7 @@ fn materialization_payload(
 
 #[cfg(test)]
 mod tests {
-    use super::materialization_api_error;
+    use super::{materialization_api_error, refresh_health_payload};
     use crate::api::contracts::{
         MaterializationRequest, McpInstallRequest, OperationInvocation, OperationRequest,
         OutputFormat, RepoSelector, RepositoryLifecycleRequest,
@@ -1312,5 +1504,67 @@ mod tests {
         let repeat = install_mcp_server(&descriptor, &options).expect("reuse MCP registration");
         assert_eq!(repeat["action"], "unchanged");
         let _ = fs::remove_dir_all(root);
+    }
+
+    fn refresh_status_for_health_test() -> serde_json::Value {
+        json!({
+            "enabled": true,
+            "task_alive": true,
+            "state": "running",
+            "effective_root": "/tmp/repo",
+            "pending": false,
+            "last_successful_reconciliation_unix_ms": 1_000,
+            "oldest_pending_unix_ms": null,
+            "next_retry_unix_ms": null,
+            "dirty_epoch": 4,
+            "reconciled_epoch": 4,
+            "last_error": null,
+        })
+    }
+
+    #[test]
+    fn refresh_health_classification_requires_live_acknowledged_reconciliation() {
+        let healthy = refresh_status_for_health_test();
+        let summary = refresh_health_payload(Some(&healthy), true, 1_100);
+        assert_eq!(summary["freshness"], "current");
+        assert_eq!(summary["readiness"], "ready");
+
+        let mut pending = healthy.clone();
+        pending["dirty_epoch"] = json!(5);
+        pending["pending"] = json!(false);
+        let summary = refresh_health_payload(Some(&pending), true, 1_100);
+        assert_eq!(summary["freshness"], "pending");
+        assert_eq!(summary["pending"], true);
+
+        let mut overdue = healthy.clone();
+        overdue["reconcile_interval_ms"] = json!(50);
+        let summary = refresh_health_payload(Some(&overdue), true, 1_100);
+        assert_eq!(summary["freshness"], "overdue");
+
+        let mut disabled = healthy;
+        disabled["enabled"] = json!(false);
+        disabled["state"] = json!("disabled");
+        disabled["task_alive"] = json!(false);
+        let summary = refresh_health_payload(Some(&disabled), true, 1_100);
+        assert_eq!(summary["freshness"], "unknown");
+        assert_eq!(summary["readiness"], "disabled");
+
+        let summary = refresh_health_payload(None, true, 1_100);
+        assert_eq!(summary["freshness"], "unknown");
+        assert_eq!(summary["readiness"], "unknown");
+
+        let mut standby = refresh_status_for_health_test();
+        standby["state"] = json!("standby");
+        let summary = refresh_health_payload(Some(&standby), true, 1_100);
+        assert_eq!(summary["freshness"], "unknown");
+        assert_eq!(summary["readiness"], "standby");
+
+        let summary = refresh_health_payload(Some(&refresh_status_for_health_test()), false, 1_100);
+        assert_eq!(summary["freshness"], "unknown");
+
+        let mut future = refresh_status_for_health_test();
+        future["last_successful_reconciliation_unix_ms"] = json!(2_000);
+        let summary = refresh_health_payload(Some(&future), true, 1_100);
+        assert_eq!(summary["freshness"], "unknown");
     }
 }

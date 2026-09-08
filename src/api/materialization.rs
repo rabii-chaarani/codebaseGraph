@@ -1,6 +1,8 @@
 use crate::api::contracts::RepoSelector;
 use crate::api::{
-    context::{resolve_repository_root, RepoPaths, RepoRuntime},
+    context::{
+        resolve_identity_path, resolve_repository_root, RepoPaths, RepoRuntime, RepositoryIdentity,
+    },
     contracts::MaterializationRequest,
 };
 use crate::artifact_store::ArtifactStore;
@@ -25,6 +27,8 @@ use crate::api::contracts::OutputFormat;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct MaterializeOptions {
     pub(crate) native_request: Option<PathBuf>,
+    #[serde(default)]
+    pub(crate) native_request_unbound: bool,
     pub(crate) source_root: Option<PathBuf>,
     pub(crate) config: Option<PathBuf>,
     pub(crate) db: Option<PathBuf>,
@@ -61,6 +65,7 @@ impl Default for MaterializeOptions {
     fn default() -> Self {
         Self {
             native_request: None,
+            native_request_unbound: false,
             source_root: None,
             config: None,
             db: None,
@@ -95,6 +100,12 @@ impl MaterializeOptions {
         plan_only: bool,
     ) -> Self {
         Self {
+            native_request: request.native_request_path.clone(),
+            native_request_unbound: request.native_request_path.is_some()
+                && matches!(&runtime.storage_mode, &StorageMode::Direct)
+                && request.repo.repo_root.is_none()
+                && request.repo.config_path.is_none()
+                && request.source_root.is_none(),
             source_root: Some(runtime.repo_root.clone()),
             config: runtime.config_path.clone(),
             db: Some(runtime.db_path.clone()),
@@ -120,6 +131,71 @@ impl MaterializeOptions {
             ..Self::default()
         }
     }
+}
+
+fn capture_materialization_identity(
+    options: &MaterializeOptions,
+) -> Result<Option<RepositoryIdentity>, String> {
+    // A standalone native request has always been allowed to choose its own
+    // source root while the caller supplies only direct output paths. There is
+    // no caller-bound repository tuple to validate in that mode.
+    if options.native_request_unbound && options.storage_root.is_none() {
+        return Ok(None);
+    }
+    RepositoryIdentity::capture(&RepoSelector {
+        repo_root: options.source_root.clone(),
+        config_path: options.config.clone(),
+        db_path: options.db.clone(),
+        manifest_path: options.manifest.clone(),
+    })
+    .map(Some)
+    .map_err(|error| format!("failed to capture materialization repository identity: {error}"))
+}
+
+fn validate_native_request_identity(
+    identity: Option<&RepositoryIdentity>,
+    request_source_root: &str,
+) -> Result<(), String> {
+    let Some(identity) = identity else {
+        return Ok(());
+    };
+    let request_root = resolve_materialization_path(Path::new(request_source_root))?;
+    if request_root == identity.repo_root {
+        return Ok(());
+    }
+    Err(format!(
+        "materialization source root {} does not match selected repository root {}",
+        request_root.display(),
+        identity.repo_root.display()
+    ))
+}
+
+fn validate_configured_storage_root(
+    options: &MaterializeOptions,
+    identity: Option<&RepositoryIdentity>,
+) -> Result<(), String> {
+    let Some(identity) = identity else {
+        return Ok(());
+    };
+    let Some(configured_storage_root) = identity.storage_root.as_deref() else {
+        return Ok(());
+    };
+    let Some(selected_storage_root) = options.storage_root.as_deref() else {
+        return Ok(());
+    };
+    let selected_storage_root = resolve_materialization_path(selected_storage_root)?;
+    if selected_storage_root == configured_storage_root {
+        return Ok(());
+    }
+    Err(format!(
+        "materialization storage root {} does not match configured repository storage root {}",
+        selected_storage_root.display(),
+        configured_storage_root.display()
+    ))
+}
+
+fn resolve_materialization_path(path: &Path) -> Result<PathBuf, String> {
+    resolve_identity_path(path, None)
 }
 
 #[derive(Default)]
@@ -210,6 +286,10 @@ pub(crate) fn execute_materialization_request(
     ),
     String,
 > {
+    let identity = capture_materialization_identity(options)?;
+    validate_native_request_identity(identity.as_ref(), &request.source_root)?;
+    validate_configured_storage_root(options, identity.as_ref())?;
+
     let mut request = request;
     request.semantic_enrichment = false;
     request.semantic_provider_mode = "local_only".to_string();
@@ -219,15 +299,20 @@ pub(crate) fn execute_materialization_request(
     request.previous_manifest = execution.previous_manifest().clone();
     request.artifact_root = execution.artifact_root().to_string_lossy().into_owned();
     request.manifest_schema_version = MATERIALIZATION_MANIFEST_SCHEMA_VERSION;
+    if let Some(identity) = identity.as_ref() {
+        if let Err(error) = identity.validate() {
+            return Err(execution.abort_with_cleanup(format!(
+                "materialization repository identity changed before execution: {error}"
+            )));
+        }
+    }
     if options.intent == MaterializationIntent::Refresh {
         let mut response = match crate::plan_materialization(&request) {
             Ok(response) => response,
             Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
         };
         if refresh_plan_is_current(&response) {
-            response.storage_format = execution.storage_format().to_string();
-            response.active_generation = execution.active_generation();
-            execution.finish_without_publish()?;
+            acknowledge_refresh_noop(execution, identity.as_ref(), &mut response)?;
             return Ok((request, response));
         }
     }
@@ -241,8 +326,25 @@ pub(crate) fn execute_materialization_request(
         "native_cli_seconds".to_string(),
         started.elapsed().as_secs_f64(),
     );
-    finalize_materialization(execution, &final_request, &mut response)?;
+    finalize_materialization(execution, &final_request, &mut response, identity.as_ref())?;
     Ok((final_request, response))
+}
+
+fn acknowledge_refresh_noop(
+    execution: StorageExecution,
+    identity: Option<&RepositoryIdentity>,
+    response: &mut NativeSyntaxMaterializationResponse,
+) -> Result<(), String> {
+    if let Some(identity) = identity {
+        if let Err(error) = identity.validate() {
+            return Err(execution.abort_with_cleanup(format!(
+                "materialization repository identity changed before refresh acknowledgement: {error}"
+            )));
+        }
+    }
+    response.storage_format = execution.storage_format().to_string();
+    response.active_generation = execution.active_generation();
+    execution.finish_without_publish()
 }
 
 pub(crate) fn plan_materialization_payload(
@@ -814,6 +916,7 @@ fn finalize_materialization(
     execution: StorageExecution,
     request: &NativeSyntaxMaterializationRequest,
     response: &mut NativeSyntaxMaterializationResponse,
+    identity: Option<&RepositoryIdentity>,
 ) -> Result<(), String> {
     let request_db_path = execution.request_db_path();
     let request_manifest_path = execution.request_manifest_path();
@@ -836,6 +939,14 @@ fn finalize_materialization(
         response,
     ) {
         return Err(execution.abort_with_cleanup(error));
+    }
+
+    if let Some(identity) = identity {
+        if let Err(error) = identity.validate() {
+            return Err(execution.abort_with_cleanup(format!(
+                "materialization repository identity changed before publication: {error}"
+            )));
+        }
     }
 
     match execution {
@@ -1178,6 +1289,124 @@ mod tests {
                 .expect("clock should be after epoch")
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn native_request_source_root_must_match_a_bound_repository_identity() {
+        let selected_root = unique_temp_dir("codebase-graph-materialization-identity-source");
+        let request_root = unique_temp_dir("codebase-graph-materialization-identity-request");
+        fs::create_dir_all(&selected_root).unwrap();
+        fs::create_dir_all(&request_root).unwrap();
+        let options = MaterializeOptions {
+            source_root: Some(selected_root.clone()),
+            mode: "full".to_string(),
+            ..MaterializeOptions::default()
+        };
+        let mut request = build_request(&options).unwrap();
+        request.source_root = request_root.to_string_lossy().into_owned();
+        let error = execute_materialization_request(&options, request).unwrap_err();
+        assert!(error.contains("source root"));
+        assert!(error.contains("does not match"));
+        assert!(!selected_root.join(".codebaseGraph").exists());
+
+        let _ = fs::remove_dir_all(selected_root);
+        let _ = fs::remove_dir_all(request_root);
+    }
+
+    #[test]
+    fn refresh_noop_aborts_prepared_writer_when_storage_identity_rebinds() {
+        let root = unique_temp_dir("codebase-graph-materialization-noop-rebind");
+        let storage_one = root.join("storage-one");
+        let storage_two = root.join("storage-two");
+        let state = root.join(".codebaseGraph");
+        fs::create_dir_all(&storage_one).unwrap();
+        fs::create_dir_all(&storage_two).unwrap();
+        fs::create_dir_all(&state).unwrap();
+        let config_path = state.join("config.json");
+        let write_config = |storage: &Path, configured_root: &Path| {
+            fs::write(
+                &config_path,
+                serde_json::to_vec(&json!({
+                    "schema_version": 3,
+                    "repo_root": configured_root,
+                    "storage_root": storage,
+                }))
+                .unwrap(),
+            )
+            .unwrap();
+        };
+        write_config(&storage_one, &root);
+        let options = MaterializeOptions {
+            source_root: Some(root.clone()),
+            config: Some(config_path.clone()),
+            storage_root: Some(storage_one.clone()),
+            intent: MaterializationIntent::Refresh,
+            ..MaterializeOptions::default()
+        };
+        let identity = capture_materialization_identity(&options)
+            .unwrap()
+            .expect("bound refresh should capture identity");
+        let execution = prepare_storage_execution(&options).unwrap();
+        let active_pointer = GraphStorage::managed(storage_one.clone())
+            .layout()
+            .active_pointer_path();
+        assert!(!active_pointer.exists());
+
+        write_config(&storage_two, &root);
+        let mut response = NativeSyntaxMaterializationResponse::skipped(
+            BTreeMap::new(),
+            crate::protocol::ManifestDiff {
+                added: Vec::new(),
+                modified: Vec::new(),
+                unchanged: Vec::new(),
+                deleted: Vec::new(),
+                force_rebuild: false,
+            },
+            Vec::new(),
+            Vec::new(),
+            BTreeMap::new(),
+        );
+        let error =
+            acknowledge_refresh_noop(execution, Some(&identity), &mut response).unwrap_err();
+        assert!(error.contains("storage root changed"));
+        assert!(!active_pointer.exists());
+        assert!(fs::read_dir(
+            GraphStorage::managed(storage_one.clone())
+                .layout()
+                .runs_root()
+        )
+        .unwrap()
+        .next()
+        .is_none());
+
+        let other_root = unique_temp_dir("codebase-graph-materialization-noop-root-rebind");
+        fs::create_dir_all(&other_root).unwrap();
+        write_config(&storage_one, &root);
+        let execution = prepare_storage_execution(&options).unwrap();
+        write_config(&storage_one, &other_root);
+        let mut response = NativeSyntaxMaterializationResponse::skipped(
+            BTreeMap::new(),
+            crate::protocol::ManifestDiff {
+                added: Vec::new(),
+                modified: Vec::new(),
+                unchanged: Vec::new(),
+                deleted: Vec::new(),
+                force_rebuild: false,
+            },
+            Vec::new(),
+            Vec::new(),
+            BTreeMap::new(),
+        );
+        let error =
+            acknowledge_refresh_noop(execution, Some(&identity), &mut response).unwrap_err();
+        assert!(
+            error.contains("repository root")
+                || error.contains("conflicts with install config root")
+        );
+        assert!(!active_pointer.exists());
+
+        let _ = fs::remove_dir_all(root);
+        let _ = fs::remove_dir_all(other_root);
     }
 
     #[test]

@@ -5,6 +5,7 @@ use crate::api::context::{
     DEFAULT_MAX_PARALLELISM, DEFAULT_RUST_MEMORY_MIB, DEFAULT_SPILL_CHUNK_MIB,
     DEFAULT_WORKER_MEMORY_MIB,
 };
+use crate::api::RefreshConfigOverrides;
 use crate::api::{CoordinatorCodebaseGraphApi, RepoSelector};
 use std::{env, net::TcpListener, path::PathBuf};
 
@@ -12,12 +13,14 @@ use std::{env, net::TcpListener, path::PathBuf};
 pub(crate) struct McpRuntimeSettings {
     pub(crate) refresh_policy: GraphRefreshPolicy,
     pub(crate) refresh_backend: GraphRefreshBackend,
+    pub(crate) reconcile_interval_ms: u64,
     pub(crate) include_fts: bool,
     pub(crate) semantic_enrichment: bool,
     pub(crate) worker_memory_mib: u64,
     pub(crate) rust_memory_mib: u64,
     pub(crate) spill_chunk_mib: u64,
     pub(crate) max_parallelism: usize,
+    pub(crate) explicit_overrides: RefreshConfigOverrides,
 }
 
 impl Default for McpRuntimeSettings {
@@ -25,12 +28,14 @@ impl Default for McpRuntimeSettings {
         Self {
             refresh_policy: GraphRefreshPolicy::Leader,
             refresh_backend: GraphRefreshBackend::Auto,
+            reconcile_interval_ms: crate::api::context::DEFAULT_RECONCILE_INTERVAL_MS,
             include_fts: true,
             semantic_enrichment: false,
             worker_memory_mib: DEFAULT_WORKER_MEMORY_MIB,
             rust_memory_mib: DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: DEFAULT_SPILL_CHUNK_MIB,
             max_parallelism: DEFAULT_MAX_PARALLELISM,
+            explicit_overrides: RefreshConfigOverrides::default(),
         }
     }
 }
@@ -43,6 +48,7 @@ pub(crate) struct McpServeOptions {
     pub(in crate::adapters) manifest: Option<PathBuf>,
     pub(in crate::adapters) api: Option<CoordinatorCodebaseGraphApi>,
     pub(in crate::adapters) refresh_policy: Option<GraphRefreshPolicy>,
+    pub(in crate::adapters) refresh_backend: Option<GraphRefreshBackend>,
     pub(in crate::adapters) worker_memory_mib: Option<u64>,
     pub(in crate::adapters) rust_memory_mib: Option<u64>,
     pub(in crate::adapters) spill_chunk_mib: Option<u64>,
@@ -74,6 +80,7 @@ impl McpServeOptions {
             manifest: None,
             api: None,
             refresh_policy: None,
+            refresh_backend: None,
             worker_memory_mib: None,
             rust_memory_mib: None,
             spill_chunk_mib: None,
@@ -108,6 +115,14 @@ impl McpServeOptions {
                     args,
                     index,
                     "--refresh-policy",
+                )?)?);
+                index + 2
+            }
+            "--refresh-backend" => {
+                self.refresh_backend = Some(parse_refresh_backend(required_arg(
+                    args,
+                    index,
+                    "--refresh-backend",
                 )?)?);
                 index + 2
             }
@@ -159,18 +174,27 @@ impl McpServeOptions {
             .unwrap_or_default();
         if let Some(value) = self.refresh_policy {
             settings.refresh_policy = value;
+            settings.explicit_overrides.policy = true;
+        }
+        if let Some(value) = self.refresh_backend {
+            settings.refresh_backend = value;
+            settings.explicit_overrides.backend = true;
         }
         if let Some(value) = self.worker_memory_mib {
             settings.worker_memory_mib = value;
+            settings.explicit_overrides.worker_memory_mib = true;
         }
         if let Some(value) = self.rust_memory_mib {
             settings.rust_memory_mib = value;
+            settings.explicit_overrides.rust_memory_mib = true;
         }
         if let Some(value) = self.spill_chunk_mib {
             settings.spill_chunk_mib = value;
+            settings.explicit_overrides.spill_chunk_mib = true;
         }
         if let Some(value) = self.max_parallelism {
             settings.max_parallelism = value;
+            settings.explicit_overrides.max_parallelism = true;
         }
         validate_runtime_settings(settings)
     }
@@ -180,12 +204,14 @@ fn settings_from_install_config(config: GraphInstallConfig) -> McpRuntimeSetting
     McpRuntimeSettings {
         refresh_policy: config.refresh.policy,
         refresh_backend: config.refresh.backend,
+        reconcile_interval_ms: config.refresh.reconcile_interval_ms,
         include_fts: config.materialization.include_fts,
         semantic_enrichment: false,
         worker_memory_mib: config.materialization.worker_memory_mib,
         rust_memory_mib: config.materialization.rust_memory_mib,
         spill_chunk_mib: config.materialization.spill_chunk_mib,
         max_parallelism: config.materialization.max_parallelism,
+        explicit_overrides: RefreshConfigOverrides::default(),
     }
 }
 
@@ -213,6 +239,15 @@ fn parse_refresh_policy(value: &str) -> Result<GraphRefreshPolicy, String> {
         "off" => Ok(GraphRefreshPolicy::Off),
         "leader" => Ok(GraphRefreshPolicy::Leader),
         _ => Err("--refresh-policy must be off or leader".to_string()),
+    }
+}
+
+fn parse_refresh_backend(value: &str) -> Result<GraphRefreshBackend, String> {
+    match value {
+        "auto" => Ok(GraphRefreshBackend::Auto),
+        "native" => Ok(GraphRefreshBackend::Native),
+        "poll" => Ok(GraphRefreshBackend::Poll),
+        _ => Err("--refresh-backend must be auto, native, or poll".to_string()),
     }
 }
 

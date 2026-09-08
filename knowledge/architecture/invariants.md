@@ -7,7 +7,7 @@ tags:
 - decisions
 - graph-storage
 - invariants
-timestamp: 2026-08-20
+timestamp: 2026-09-08
 title: Architecture Invariants
 type: architecture
 ---
@@ -19,7 +19,7 @@ These constraints are the shortest durable test for whether a change still fits 
 
 1. **All product interfaces share one operation model.** CLI, MCP, and embedded clients translate to public typed requests and must not implement separate product semantics.
 2. **The operation registry is authoritative.** Dispatch, schemas, catalog output, and MCP tool generation derive from one registered operation catalog.
-3. **Repository context is canonical per operation.** Source root, storage mode, configuration, and manifest selection are resolved once and reused by the handler.
+3. **Repository identity is bound before execution.** Explicit and configured roots are resolved before discovery defaults. Coordinators pin source/configuration/destination identity while resolving active generations per operation; identity rebinds fail before work or publication. Direct path spelling remains stable where it identifies existing journals and locks.
 4. **Validation precedes execution.** Canonical defaults and operation rules are applied before side effects or storage access.
 5. **Graph reads are bounded and non-mutating.** Raw statements are single, parameterized, read-only, and result-limited; adapters never bypass the Graph Read Service.
 6. **Materialization has one pipeline.** Explicit builds, setup, lifecycle refresh, and watch refresh converge on Source Scanner -> bounded Execution Planner -> deterministic Graph Writer -> Search Index Builder -> isolated database loading -> Graph Store.
@@ -34,10 +34,10 @@ These constraints are the shortest durable test for whether a change still fits 
 15. **Cleanup is confined and primary errors survive.** Cleanup rejects symlinks and escaping paths, is idempotent, and never masks the failure that caused abort.
 16. **Artifacts optimize parsing, not persistence correctness.** Raw partitions are content-addressed across every invalidation dimension, compact manifest v5 carries only publication metadata, and all partitions are externally assembled deterministically.
 17. **Legacy state is read-only until explicit reinstall.** Schema-v1 reads remain available; mutations return `legacy_storage_requires_reinstall`. Successful reinstall deletes renamed legacy state immediately after validated v2 activation.
-18. **Refresh orchestrates rather than reimplements.** Event filtering, batching, recovery, and retry wrap generation-backed materialization instead of duplicating indexing logic.
-19. **Refresh ownership and admission are bounded.** One nonblocking refresh lease holder creates the watcher; followers remain read-only. Event churn collapses to one bounded dirty state, overflow forces a full rescan, CodebaseGraph-owned roots are never admitted, and only refresh intent may close an unchanged writer session without publication.
+18. **Refresh orchestrates and converges.** Event filtering, batching, recovery, and retry wrap generation-backed materialization. Pending dirty epochs survive failures; successful work acknowledges only its captured epoch. Periodic content reconciliation recovers missed notifications.
+19. **Refresh ownership and admission are bounded.** One nonblocking refresh lease holder creates the watcher before catch-up; followers remain read-only. Source selection is shared with scanning, excluded directories are pruned, and irrelevant access/output events are rejected before queue admission. Relevant overflow forces a full rescan. Failures retain pending work with paced, observable retries, and only refresh intent may acknowledge unchanged state without publication.
 20. **MCP graph and local transport access have one repository owner.** One coordinator lease holder owns the API core and every MCP Ladybug open. One service-managed Streamable HTTP daemon holds the repository daemon lock and gives every loopback-capable harness the same endpoint; concurrent starts cannot initialize a second listener, watcher, or API. Stdio remains explicit compatibility mode, and cloud connectors require a separately deployed public HTTPS endpoint.
-21. **Materialization workers cannot outlive supervision.** One worker lease covers request creation through result reconciliation. The child begins only after durable identity and a start gate, exits when its parent control pipe closes, and a successor reaps the recorded PID before cleanup or new work.
+21. **Materialization workers cannot outlive supervision.** One worker lease covers request creation through result reconciliation. The child begins only after durable identity and a start gate, exits when its parent control pipe closes, and a successor reaps the recorded PID before cleanup or new work. Isolated refresh workers additionally support cancellation during lock waits and execution when coordinator ownership ends.
 
 ## Knowledge invariants
 

@@ -9,12 +9,16 @@ pub(in crate::adapters) fn start_configured_api(
     let refresh = match settings.refresh_policy {
         GraphRefreshPolicy::Off => None,
         GraphRefreshPolicy::Leader => Some(RefreshServiceConfig {
+            policy: settings.refresh_policy,
             include_fts: settings.include_fts,
             semantic_enrichment: settings.semantic_enrichment,
             worker_memory_mib: settings.worker_memory_mib,
             rust_memory_mib: settings.rust_memory_mib,
             spill_chunk_mib: settings.spill_chunk_mib,
             max_parallelism: settings.max_parallelism,
+            backend: settings.refresh_backend,
+            reconcile_interval: std::time::Duration::from_millis(settings.reconcile_interval_ms),
+            explicit_overrides: settings.explicit_overrides,
         }),
     };
     CoordinatorCodebaseGraphApi::connect(options.repo_selector(), refresh)

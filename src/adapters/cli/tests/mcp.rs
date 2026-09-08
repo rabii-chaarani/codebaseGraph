@@ -10,7 +10,7 @@ fn mcp_options_resolve_config_defaults_and_cli_overrides() {
         serde_json::to_vec(&json!({
             "schema_version": 3,
             "repo_root": root,
-            "refresh": {"policy": "off", "backend": "auto"},
+            "refresh": {"policy": "off", "backend": "auto", "reconcile_interval_ms": 1234},
             "materialization": {
                 "worker_memory_mib": 900,
                 "rust_memory_mib": 450,
@@ -28,6 +28,8 @@ fn mcp_options_resolve_config_defaults_and_cli_overrides() {
             root.to_string_lossy().into_owned(),
             "--refresh-policy".into(),
             "leader".into(),
+            "--refresh-backend".into(),
+            "poll".into(),
             "--worker-memory-mib".into(),
             "1024".into(),
             "--rust-memory-mib".into(),
@@ -45,6 +47,11 @@ fn mcp_options_resolve_config_defaults_and_cli_overrides() {
         settings.refresh_policy,
         crate::api::context::GraphRefreshPolicy::Leader
     );
+    assert_eq!(
+        settings.refresh_backend,
+        crate::api::context::GraphRefreshBackend::Poll
+    );
+    assert_eq!(settings.reconcile_interval_ms, 1234);
     assert_eq!(settings.worker_memory_mib, 1024);
     assert_eq!(settings.rust_memory_mib, 512);
     assert_eq!(settings.spill_chunk_mib, 64);
@@ -113,6 +120,7 @@ fn mcp_graph_query_binds_json_parameters() {
         manifest: None,
         api: None,
         refresh_policy: None,
+        refresh_backend: None,
         worker_memory_mib: None,
         rust_memory_mib: None,
         spill_chunk_mib: None,
@@ -212,6 +220,7 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         manifest: None,
         api: None,
         refresh_policy: None,
+        refresh_backend: None,
         worker_memory_mib: None,
         rust_memory_mib: None,
         spill_chunk_mib: None,
@@ -310,6 +319,7 @@ fn mcp_stdio_refresh_policy_off_is_watcher_free() {
         manifest: None,
         api: None,
         refresh_policy: Some(crate::api::context::GraphRefreshPolicy::Off),
+        refresh_backend: None,
         worker_memory_mib: None,
         rust_memory_mib: None,
         spill_chunk_mib: None,

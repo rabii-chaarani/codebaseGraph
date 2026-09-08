@@ -37,7 +37,7 @@ pub use lifecycle::{
 pub(crate) use materialization::{
     execute_candidate_materialization, execute_materialization, read_manifest, MaterializeOptions,
 };
-pub(crate) use refresh::RefreshServiceConfig;
+pub(crate) use refresh::{RefreshConfigOverrides, RefreshServiceConfig};
 
 #[cfg(test)]
 pub(crate) use refresh::{

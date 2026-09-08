@@ -17,7 +17,7 @@ use std::collections::BTreeMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::thread;
@@ -31,6 +31,7 @@ const MAX_CHILD_ERROR_BYTES: usize = 64 * 1024;
 const SUPERVISOR_CHECK_INTERVAL: Duration = Duration::from_millis(50);
 const ORPHAN_EXIT_TIMEOUT: Duration = Duration::from_secs(5);
 const MIB: u64 = 1024 * 1024;
+const MATERIALIZATION_CANCELLED_ERROR: &str = r#"{"error":"materialization_cancelled"}"#;
 static WORKER_EXECUTABLE: OnceLock<PathBuf> = OnceLock::new();
 static WORKER_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
@@ -81,37 +82,67 @@ pub(crate) fn register_worker_executable(path: PathBuf) {
     let _ = WORKER_EXECUTABLE.set(path);
 }
 
-pub(crate) fn execute_refresh_worker(
+pub(crate) fn execute_refresh_worker_cancellable(
     options: &MaterializeOptions,
     candidate_paths: Vec<String>,
     worker_pid: impl FnMut(Option<u32>),
+    should_cancel: impl Fn() -> bool,
 ) -> Result<NativeSyntaxMaterializationResponse, String> {
-    execute_worker(options, Some(candidate_paths), worker_pid)
+    execute_worker(
+        options,
+        Some(candidate_paths),
+        worker_pid,
+        should_cancel,
+        true,
+    )
 }
 
 pub(crate) fn execute_explicit_worker(
     options: &MaterializeOptions,
     worker_pid: impl FnMut(Option<u32>),
 ) -> Result<NativeSyntaxMaterializationResponse, String> {
-    execute_worker(options, None, worker_pid)
+    execute_worker(options, None, worker_pid, || false, false)
 }
 
 fn execute_worker(
     options: &MaterializeOptions,
     candidate_paths: Option<Vec<String>>,
     mut worker_pid: impl FnMut(Option<u32>),
+    should_cancel: impl Fn() -> bool,
+    wait_for_lock: bool,
 ) -> Result<NativeSyntaxMaterializationResponse, String> {
+    if should_cancel() {
+        return Err(materialization_cancelled_error());
+    }
     let Some(executable) = WORKER_EXECUTABLE.get() else {
+        // The in-process fallback has no child supervisor and therefore cannot
+        // interrupt synchronous materialization after dispatch. The pre-dispatch
+        // cancellation check above is the strongest guarantee available here;
+        // production MCP refreshes register an isolated worker executable.
         return match candidate_paths {
             Some(candidate_paths) => execute_candidate_materialization(options, candidate_paths),
             None => execute_materialization(options),
         }
         .map(|(_, response)| response);
     };
-    let _lease = acquire_worker_lease(options)?;
-    recover_orphan_worker(options)?;
+    let _lease = if wait_for_lock {
+        acquire_worker_lease_cancellable(options, &should_cancel)?
+    } else {
+        acquire_worker_lease(options)?
+    };
+    if should_cancel() {
+        return Err(materialization_cancelled_error());
+    }
+    recover_orphan_worker(options, &should_cancel)?;
+    if should_cancel() {
+        return Err(materialization_cancelled_error());
+    }
     let build_id = managed_generation_id();
     let workspace = create_worker_workspace(options, &build_id)?;
+    if should_cancel() {
+        cleanup_worker_workspace(&workspace);
+        return Err(materialization_cancelled_error());
+    }
     let request_path = workspace.join("request.json");
     let result_path = workspace.join("result.json");
     let stderr_path = workspace.join("stderr.log");
@@ -154,6 +185,10 @@ fn execute_worker(
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::from(stderr));
+    if should_cancel() {
+        cleanup_worker_workspace(&workspace);
+        return Err(materialization_cancelled_error());
+    }
     let mut child = match command.spawn() {
         Ok(child) => child,
         Err(error) => {
@@ -162,6 +197,11 @@ fn execute_worker(
         }
     };
     let pid = child.id();
+    if should_cancel() {
+        let _ = kill_and_reap_child(&mut child);
+        cleanup_worker_workspace(&workspace);
+        return Err(materialization_cancelled_error());
+    }
     if let Err(error) = write_json_atomically(
         &state_path,
         &WorkerState {
@@ -170,23 +210,33 @@ fn execute_worker(
             worker_pid: pid,
         },
     ) {
-        let _ = child.kill();
-        let _ = child.wait();
+        let _ = kill_and_reap_child(&mut child);
         remove_worker_state(&state_path, &build_id);
         cleanup_worker_workspace(&workspace);
         return Err(format!(
             "failed to record materialization worker state: {error}"
         ));
     }
+    if should_cancel() {
+        let _ = kill_and_reap_child(&mut child);
+        remove_worker_state(&state_path, &build_id);
+        cleanup_worker_workspace(&workspace);
+        return Err(materialization_cancelled_error());
+    }
     if let Err(error) = fs::write(&start_path, b"ready\n") {
-        let _ = child.kill();
-        let _ = child.wait();
+        let _ = kill_and_reap_child(&mut child);
         remove_worker_state(&state_path, &build_id);
         cleanup_worker_workspace(&workspace);
         return Err(format!("failed to release materialization worker: {error}"));
     }
+    if should_cancel() {
+        let _ = kill_and_reap_child(&mut child);
+        remove_worker_state(&state_path, &build_id);
+        cleanup_worker_workspace(&workspace);
+        return Err(materialization_cancelled_error());
+    }
     worker_pid(Some(pid));
-    let progress = child
+    let mut progress = child
         .stdout
         .take()
         .map(|stdout| thread::spawn(move || drain_progress(stdout)));
@@ -197,86 +247,148 @@ fn execute_worker(
     {
         Some(memory_limit) => memory_limit,
         None => {
-            let _ = child.kill();
-            let _ = child.wait();
-            worker_pid(None);
-            remove_worker_state(&state_path, &build_id);
-            cleanup_worker_workspace(&workspace);
+            let _ = kill_and_reap_child(&mut child);
+            join_progress(progress.take());
+            clear_worker_execution_state(&state_path, &build_id, &workspace, &mut worker_pid);
             return Err("materialization worker memory limit overflowed".to_string());
         }
     };
-    let kill_threshold = memory_limit.saturating_sub(MEMORY_HEADROOM_BYTES);
-    let mut high_water_bytes = 0_u64;
-    let mut budget_failure = None;
-    let status = loop {
-        match child.try_wait() {
-            Ok(Some(status)) => break status,
-            Ok(None) => {}
-            Err(error) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                worker_pid(None);
-                remove_worker_state(&state_path, &build_id);
-                cleanup_worker_workspace(&workspace);
-                return Err(format!(
-                    "failed to supervise materialization worker: {error}"
-                ));
-            }
+    let supervision = supervise_worker_process(&mut child, pid, memory_limit, &should_cancel);
+    let supervision = match supervision {
+        Ok(supervision) => supervision,
+        Err(error) => {
+            join_progress(progress);
+            clear_worker_execution_state(&state_path, &build_id, &workspace, &mut worker_pid);
+            return Err(format!(
+                "failed to supervise materialization worker: {error}"
+            ));
         }
-        if let Ok(rss) = sample_process_rss(pid) {
-            high_water_bytes = high_water_bytes.max(rss);
-            if rss > kill_threshold {
-                let _ = child.kill();
-                budget_failure = Some(
-                    NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-                        "materialization_worker",
-                        memory_limit,
-                        rss,
-                        rss,
-                    ))
-                    .to_string(),
-                );
-                match child.wait() {
-                    Ok(status) => break status,
-                    Err(error) => {
-                        worker_pid(None);
-                        remove_worker_state(&state_path, &build_id);
-                        cleanup_worker_workspace(&workspace);
-                        return Err(format!(
-                            "failed to reap materialization worker after budget kill: {error}"
-                        ));
-                    }
-                }
-            }
-        }
-        thread::sleep(RSS_SAMPLE_INTERVAL);
     };
-    worker_pid(None);
-    if let Some(progress) = progress {
-        let _ = progress.join();
+    if supervision.cancelled {
+        join_progress(progress);
+        clear_worker_execution_state(&state_path, &build_id, &workspace, &mut worker_pid);
+        return Err(materialization_cancelled_error());
     }
+    worker_pid(None);
+    join_progress(progress);
 
     let outcome = if result_path.exists() {
         read_worker_result(&result_path, &build_id).and_then(|result| result.outcome)
-    } else if let Some(error) = budget_failure {
+    } else if let Some(error) = supervision.budget_failure {
         reconcile_completed_publication(options, before_publication, &build_id).or(Err(error))
-    } else if status.success() {
+    } else if supervision.status.success() {
         reconcile_completed_publication(options, before_publication, &build_id)
     } else {
         let error = bounded_child_error(&fs::read(&stderr_path).unwrap_or_default());
         Err(format!(
-            "materialization worker exited with {status}: {error}"
+            "materialization worker exited with {}: {error}",
+            supervision.status
         ))
     };
     let outcome = outcome.map(|mut response| {
-        response
-            .phase_high_water_marks
-            .insert("materialization_worker_rss".to_string(), high_water_bytes);
+        response.phase_high_water_marks.insert(
+            "materialization_worker_rss".to_string(),
+            supervision.high_water_bytes,
+        );
         response
     });
     remove_worker_state(&state_path, &build_id);
     cleanup_worker_workspace(&workspace);
     outcome
+}
+
+fn materialization_cancelled_error() -> String {
+    MATERIALIZATION_CANCELLED_ERROR.to_string()
+}
+
+#[derive(Debug)]
+struct WorkerProcessSupervision {
+    status: ExitStatus,
+    high_water_bytes: u64,
+    budget_failure: Option<String>,
+    cancelled: bool,
+}
+
+fn supervise_worker_process(
+    child: &mut Child,
+    pid: u32,
+    memory_limit: u64,
+    should_cancel: &impl Fn() -> bool,
+) -> Result<WorkerProcessSupervision, String> {
+    let kill_threshold = memory_limit.saturating_sub(MEMORY_HEADROOM_BYTES);
+    let mut high_water_bytes = 0_u64;
+    loop {
+        if should_cancel() {
+            let status = kill_and_reap_child(child)?;
+            return Ok(WorkerProcessSupervision {
+                status,
+                high_water_bytes,
+                budget_failure: None,
+                cancelled: true,
+            });
+        }
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                return Ok(WorkerProcessSupervision {
+                    status,
+                    high_water_bytes,
+                    budget_failure: None,
+                    cancelled: false,
+                })
+            }
+            Ok(None) => {}
+            Err(error) => {
+                let _ = kill_and_reap_child(child);
+                return Err(error.to_string());
+            }
+        }
+        if let Ok(rss) = sample_process_rss(pid) {
+            high_water_bytes = high_water_bytes.max(rss);
+            if rss > kill_threshold {
+                let budget_failure = NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
+                    "materialization_worker",
+                    memory_limit,
+                    rss,
+                    rss,
+                ))
+                .to_string();
+                let status = kill_and_reap_child(child).map_err(|error| {
+                    format!("failed to reap materialization worker after budget kill: {error}")
+                })?;
+                return Ok(WorkerProcessSupervision {
+                    status,
+                    high_water_bytes,
+                    budget_failure: Some(budget_failure),
+                    cancelled: false,
+                });
+            }
+        }
+        thread::sleep(RSS_SAMPLE_INTERVAL);
+    }
+}
+
+fn kill_and_reap_child(child: &mut Child) -> Result<ExitStatus, String> {
+    let _ = child.kill();
+    child
+        .wait()
+        .map_err(|error| format!("failed to reap materialization worker: {error}"))
+}
+
+fn join_progress(progress: Option<thread::JoinHandle<ProgressDrainStats>>) {
+    if let Some(progress) = progress {
+        let _ = progress.join();
+    }
+}
+
+fn clear_worker_execution_state(
+    state_path: &Path,
+    build_id: &str,
+    workspace: &Path,
+    worker_pid: &mut impl FnMut(Option<u32>),
+) {
+    worker_pid(None);
+    remove_worker_state(state_path, build_id);
+    cleanup_worker_workspace(workspace);
 }
 
 pub(crate) fn execute_worker_file(request_path: &Path, result_path: &Path) -> Result<(), String> {
@@ -345,6 +457,30 @@ fn acquire_worker_lease(options: &MaterializeOptions) -> Result<WorkerLease, Str
         .ok_or_else(|| "another materialization worker is already active".to_string())
 }
 
+fn acquire_worker_lease_cancellable(
+    options: &MaterializeOptions,
+    should_cancel: &impl Fn() -> bool,
+) -> Result<WorkerLease, String> {
+    let lock_path = worker_control_paths(options)?.0;
+    loop {
+        if should_cancel() {
+            return Err(materialization_cancelled_error());
+        }
+        match try_open_locked(&lock_path, LockMode::Exclusive)
+            .map_err(|error| format!("failed to acquire materialization worker lock: {error}"))?
+        {
+            Some(lease) => {
+                if should_cancel() {
+                    drop(lease);
+                    return Err(materialization_cancelled_error());
+                }
+                return Ok(lease);
+            }
+            None => thread::sleep(SUPERVISOR_CHECK_INTERVAL),
+        }
+    }
+}
+
 fn worker_control_paths(options: &MaterializeOptions) -> Result<(PathBuf, PathBuf), String> {
     if let Some(storage_root) = options.storage_root.as_ref() {
         let layout = ManagedLayout::new(storage_root);
@@ -366,7 +502,10 @@ fn worker_state_path(options: &MaterializeOptions) -> Result<PathBuf, String> {
     worker_control_paths(options).map(|(_, state)| state)
 }
 
-fn recover_orphan_worker(options: &MaterializeOptions) -> Result<(), String> {
+fn recover_orphan_worker(
+    options: &MaterializeOptions,
+    should_cancel: &impl Fn() -> bool,
+) -> Result<(), String> {
     let state_path = worker_state_path(options)?;
     if state_path.exists() {
         let metadata = fs::symlink_metadata(&state_path)
@@ -387,6 +526,9 @@ fn recover_orphan_worker(options: &MaterializeOptions) -> Result<(), String> {
         }
         let deadline = std::time::Instant::now() + ORPHAN_EXIT_TIMEOUT;
         while process_is_alive(state.worker_pid) && std::time::Instant::now() < deadline {
+            if should_cancel() {
+                return Err(materialization_cancelled_error());
+            }
             thread::sleep(SUPERVISOR_CHECK_INTERVAL);
         }
         if process_is_alive(state.worker_pid) {
@@ -396,6 +538,9 @@ fn recover_orphan_worker(options: &MaterializeOptions) -> Result<(), String> {
             ));
         }
         remove_worker_state(&state_path, &state.build_id);
+    }
+    if should_cancel() {
+        return Err(materialization_cancelled_error());
     }
     cleanup_abandoned_workspaces(options)
 }
@@ -818,6 +963,33 @@ mod tests {
     }
 
     #[test]
+    fn cancellable_worker_lock_wait_stops_when_cancelled() {
+        let root = std::env::temp_dir().join(format!(
+            "codebase-graph-worker-lock-cancel-{}-{}",
+            std::process::id(),
+            WORKER_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let options = MaterializeOptions {
+            db: Some(root.join("graph.ldb")),
+            manifest: Some(root.join("manifest.json")),
+            ..MaterializeOptions::default()
+        };
+        let held = acquire_worker_lease(&options).unwrap();
+        let polls = AtomicU64::new(0);
+        let should_cancel = || polls.fetch_add(1, Ordering::SeqCst) >= 1;
+        let started = std::time::Instant::now();
+        let result = acquire_worker_lease_cancellable(&options, &should_cancel);
+        assert!(matches!(
+            result,
+            Err(error) if error == materialization_cancelled_error()
+        ));
+        assert!(started.elapsed() < Duration::from_secs(1));
+        drop(held);
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn memory_failure_is_structured() {
         let error = NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
             "materialization_worker",
@@ -852,5 +1024,59 @@ mod tests {
                 oversized_frames: 1,
             }
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn cancellation_kills_reaps_and_cleans_worker_state() {
+        let mut child = Command::new("tail")
+            .args(["-f", "/dev/null"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("tail should be available for the supervision regression");
+        let pid = child.id();
+        let polls = AtomicU64::new(0);
+        let should_cancel = || polls.fetch_add(1, Ordering::SeqCst) >= 1;
+        let supervision = supervise_worker_process(&mut child, pid, u64::MAX, &should_cancel)
+            .expect("cancellation should reap the child");
+
+        assert!(supervision.cancelled);
+        assert!(child
+            .try_wait()
+            .expect("reaped child status should be readable")
+            .is_some());
+        assert!(!process_is_alive(pid));
+
+        let root = std::env::temp_dir().join(format!(
+            "codebase-graph-worker-cancel-cleanup-{}-{}",
+            std::process::id(),
+            WORKER_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        let workspace = root.join("worker-build");
+        let state_path = root.join("worker.json");
+        fs::create_dir_all(&workspace).unwrap();
+        fs::write(
+            &state_path,
+            serde_json::to_vec(&WorkerState {
+                version: WORKER_PROTOCOL_VERSION,
+                build_id: "build-cancelled".to_string(),
+                worker_pid: pid,
+            })
+            .unwrap(),
+        )
+        .unwrap();
+        let mut pids = Vec::new();
+        clear_worker_execution_state(
+            &state_path,
+            "build-cancelled",
+            &workspace,
+            &mut |worker_pid| pids.push(worker_pid),
+        );
+        assert_eq!(pids, vec![None]);
+        assert!(!state_path.exists());
+        assert!(!workspace.exists());
+        let _ = fs::remove_dir_all(root);
     }
 }

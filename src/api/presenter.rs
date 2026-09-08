@@ -76,4 +76,55 @@ mod tests {
             .expect("block text should be present")
             .starts_with("query rows=1"));
     }
+
+    #[test]
+    fn health_block_surfaces_refresh_error_and_retains_structured_payload() {
+        let payload = json!({
+            "ok": true,
+            "graph_readable": true,
+            "database_exists": true,
+            "manifest_exists": true,
+            "storage_format": "managed_v2",
+            "active_generation": "generation-one",
+            "active_generation_published_at_unix_ms": 1234,
+            "refresh": {
+                "state": "blocked",
+                "task_alive": true,
+                "effective_root": "/tmp/repo with spaces",
+                "last_successful_reconciliation_unix_ms": null,
+                "pending": true,
+                "next_retry_unix_ms": null,
+                "last_error": "permission denied\nwhile scanning"
+            },
+            "refresh_health": {
+                "freshness": "unknown",
+                "readiness": "blocked",
+                "state": "blocked",
+                "task_alive": true,
+                "effective_root": "/tmp/repo with spaces",
+                "last_successful_reconciliation_unix_ms": null,
+                "pending": true,
+                "next_retry_unix_ms": null,
+                "last_error": "permission denied\nwhile scanning"
+            },
+            "freshness": "unknown",
+            "refresh_readiness": "blocked"
+        });
+        let response = present_operation_response(
+            OperationResponse::from_payload("health", OutputFormat::Typed, payload.clone()),
+            OutputFormat::Block,
+        );
+        let text = response.payload["text"]
+            .as_str()
+            .expect("health block text should be present");
+
+        assert!(text.contains("graph_readable=true"));
+        assert!(text.contains("active_generation_published_at_unix_ms=1234"));
+        assert!(text.contains("refresh_freshness=unknown refresh_readiness=blocked"));
+        assert!(text.contains(
+            "refresh state=blocked task_alive=true root=\"/tmp/repo with spaces\" last_success=null pending=true retry=null"
+        ));
+        assert!(text.contains("last_error \"permission denied\\nwhile scanning\""));
+        assert_eq!(response.payload["structured"], payload);
+    }
 }

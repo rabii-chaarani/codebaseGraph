@@ -25,7 +25,21 @@ use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
 pub(crate) fn is_retryable_refresh_failure(error: &str) -> bool {
+    let normalized = error.to_ascii_lowercase();
+    let source_changed = serde_json::from_str::<serde_json::Value>(error)
+        .ok()
+        .and_then(|value| {
+            value
+                .get("error")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string)
+        })
+        .is_some_and(|kind| kind == "source_changed");
     crate::db_writer::is_transient_database_error(error)
+        || source_changed
+        || normalized.contains("materialization worker exited")
+        || normalized.contains("worker process exited")
+        || normalized.contains("worker disconnected")
 }
 
 pub(crate) fn setup_repository(
@@ -4504,14 +4518,15 @@ fn install_safe_name(value: &str) -> String {
 mod tests {
     use super::{
         codex_toml_block, descriptor_signature, hermes_yaml_block_from_entries, inspect_mcp_server,
-        install_mcp_endpoint, install_mcp_server, instruction_block, language_for_path,
-        native_client_command, parse_hermes_managed_entries, parse_toml_stdio_entry,
-        reinstall_state, remove_mcp_server, remove_partial_state_tree, rename_mcp_server,
-        render_client_http_config, resolve_mcp_target, run_reinstall_activation_boundary,
-        select_available_daemon_port, upsert_instruction_text, yaml_scalar, GraphStatePaths,
-        ManagedStdioEntry, McpClientInstallOptions, McpClientRemovalOptions,
-        McpClientRenameOptions, McpEndpointDescriptor, McpExistingEntryPolicy, McpInstallMode,
-        McpServerDescriptor, McpTargetLocality, ResolvedMcpTarget,
+        install_mcp_endpoint, install_mcp_server, instruction_block, is_retryable_refresh_failure,
+        language_for_path, native_client_command, parse_hermes_managed_entries,
+        parse_toml_stdio_entry, reinstall_state, remove_mcp_server, remove_partial_state_tree,
+        rename_mcp_server, render_client_http_config, resolve_mcp_target,
+        run_reinstall_activation_boundary, select_available_daemon_port, upsert_instruction_text,
+        yaml_scalar, GraphStatePaths, ManagedStdioEntry, McpClientInstallOptions,
+        McpClientRemovalOptions, McpClientRenameOptions, McpEndpointDescriptor,
+        McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
+        ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -4519,6 +4534,20 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::process;
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn refresh_failure_classifier_retries_source_changes_and_worker_exit() {
+        assert!(is_retryable_refresh_failure(
+            r#"{"error":"source_changed","path":"src/lib.rs"}"#
+        ));
+        assert!(is_retryable_refresh_failure(
+            "materialization worker exited with exit status: 1"
+        ));
+        assert!(is_retryable_refresh_failure("database is locked"));
+        assert!(!is_retryable_refresh_failure(
+            "invalid refresh configuration"
+        ));
+    }
 
     struct TestDir {
         path: PathBuf,

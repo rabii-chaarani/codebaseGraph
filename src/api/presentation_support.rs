@@ -122,7 +122,7 @@ pub(crate) fn serialize_syntax_block(payload: &serde_json::Value) -> String {
 
 pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
     let mut lines = vec![format!(
-        "health ok={} database_exists={} manifest_exists={} graph_readable={} total_nodes={} storage_format={} writable={} active_generation={} pending_runs={} cleanup_pending={} physical_database_bytes={} logical_database_bytes={}",
+        "health ok={} database_exists={} manifest_exists={} graph_readable={} total_nodes={} storage_format={} writable={} active_generation={} active_generation_published_at_unix_ms={} pending_runs={} cleanup_pending={} physical_database_bytes={} logical_database_bytes={}",
         value_bool(payload, "ok"),
         value_bool(payload, "database_exists"),
         value_bool(payload, "manifest_exists"),
@@ -134,6 +134,7 @@ pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
         block_value(value_str(payload, "storage_format")),
         value_bool(payload, "writable"),
         block_value(value_str(payload, "active_generation")),
+        block_optional_payload_scalar(payload, "active_generation_published_at_unix_ms"),
         payload
             .get("pending_runs")
             .and_then(serde_json::Value::as_u64)
@@ -165,7 +166,101 @@ pub(crate) fn serialize_health_block(payload: &serde_json::Value) -> String {
     if let Some(error) = payload.get("error").and_then(serde_json::Value::as_str) {
         lines.push(format!("error {}", block_value(error)));
     }
+    append_refresh_health_lines(&mut lines, payload);
     format!("{}\n", lines.join("\n"))
+}
+
+fn append_refresh_health_lines(lines: &mut Vec<String>, payload: &serde_json::Value) {
+    let Some(refresh) = payload
+        .get("refresh_health")
+        .and_then(serde_json::Value::as_object)
+        .or_else(|| {
+            payload
+                .get("refresh")
+                .and_then(serde_json::Value::as_object)
+        })
+    else {
+        return;
+    };
+
+    let freshness = payload
+        .get("freshness")
+        .and_then(serde_json::Value::as_str)
+        .or_else(|| refresh.get("freshness").and_then(serde_json::Value::as_str))
+        .unwrap_or("unknown");
+    let readiness = payload
+        .get("refresh_readiness")
+        .and_then(serde_json::Value::as_str)
+        .or_else(|| refresh.get("readiness").and_then(serde_json::Value::as_str))
+        .unwrap_or("unknown");
+    lines.push(format!(
+        "refresh_freshness={} refresh_readiness={}",
+        block_value(freshness),
+        block_value(readiness)
+    ));
+    lines.push(format!(
+        "refresh state={} task_alive={} root={} last_success={} pending={} retry={}",
+        block_value(value_str_map(refresh, "state")),
+        value_bool_or_unknown(refresh, "task_alive"),
+        block_value(refresh_root(refresh, payload)),
+        block_optional_scalar(refresh, "last_successful_reconciliation_unix_ms"),
+        value_bool_or_unknown(refresh, "pending"),
+        block_optional_scalar(refresh, "next_retry_unix_ms")
+    ));
+    if let Some(error) = refresh
+        .get("last_error")
+        .and_then(serde_json::Value::as_str)
+    {
+        if !error.is_empty() {
+            lines.push(format!("last_error {}", block_value(error)));
+        }
+    }
+}
+
+fn refresh_root<'a>(
+    refresh: &'a serde_json::Map<String, serde_json::Value>,
+    payload: &'a serde_json::Value,
+) -> &'a str {
+    let root = value_str_map(refresh, "effective_root");
+    if root.is_empty() {
+        value_str(payload, "repo_root")
+    } else {
+        root
+    }
+}
+
+fn value_str_map<'a>(value: &'a serde_json::Map<String, serde_json::Value>, key: &str) -> &'a str {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+}
+
+fn value_bool_or_unknown(
+    value: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> &'static str {
+    value
+        .get(key)
+        .and_then(serde_json::Value::as_bool)
+        .map(|value| if value { "true" } else { "false" })
+        .unwrap_or("unknown")
+}
+
+fn block_optional_scalar(value: &serde_json::Map<String, serde_json::Value>, key: &str) -> String {
+    match value.get(key) {
+        None | Some(serde_json::Value::Null) => "null".to_string(),
+        Some(serde_json::Value::String(value)) => block_value(value),
+        Some(value) => value.to_string(),
+    }
+}
+
+fn block_optional_payload_scalar(payload: &serde_json::Value, key: &str) -> String {
+    match payload.get(key) {
+        None | Some(serde_json::Value::Null) => "null".to_string(),
+        Some(serde_json::Value::String(value)) => block_value(value),
+        Some(value) => value.to_string(),
+    }
 }
 
 pub(crate) fn serialize_search_block(payload: &serde_json::Value) -> String {

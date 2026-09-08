@@ -43,6 +43,7 @@ pub enum NativeError {
     Json(serde_json::Error),
     Database(String),
     InvalidInput(String),
+    SourceChanged { path: String },
     MemoryBudgetExceeded(MemoryBudgetExceeded),
     Unsupported(String),
 }
@@ -56,6 +57,13 @@ impl fmt::Display for NativeError {
             NativeError::Json(error) => write!(formatter, "{error}"),
             NativeError::Database(message) => write!(formatter, "{message}"),
             NativeError::InvalidInput(message) => write!(formatter, "{message}"),
+            NativeError::SourceChanged { path } => {
+                let payload = serde_json::json!({
+                    "error": "source_changed",
+                    "path": path,
+                });
+                write!(formatter, "{payload}")
+            }
             NativeError::MemoryBudgetExceeded(error) => {
                 let mut payload = serde_json::json!({
                     "error": "memory_budget_exceeded",
@@ -119,5 +127,16 @@ mod tests {
 
         assert_eq!(value["parent_rss_bytes"], 300);
         assert_eq!(value["child_rss_bytes"], 600);
+    }
+
+    #[test]
+    fn source_change_failure_has_a_stable_machine_readable_message() {
+        let error = NativeError::SourceChanged {
+            path: "src/lib.rs".to_string(),
+        };
+        let value: serde_json::Value = serde_json::from_str(&error.to_string()).unwrap();
+
+        assert_eq!(value["error"], "source_changed");
+        assert_eq!(value["path"], "src/lib.rs");
     }
 }
