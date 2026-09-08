@@ -6,7 +6,7 @@ tags:
 - components
 - graph-runtime
 - rust
-timestamp: 2026-08-21
+timestamp: 2026-09-08
 title: Graph Runtime Architecture
 type: architecture
 ---
@@ -57,6 +57,8 @@ Coordinator request framing keeps transport recovery separate from application s
 
 Refresh and coordinator-triggered explicit materialization use the same versioned Materialization Worker protocol. The owner writes request/result files under one worker workspace, holds `worker.lock`, drains bounded newline-delimited progress, and samples RSS every 25 ms. A parent-owned pipe and persisted `worker.json` identity prevent an orphan from continuing after coordinator death: the child exits when the pipe closes, and the next owner reaps the recorded PID and recovers abandoned run journals before starting another worker. Standalone CLI builds remain short-lived and execute the canonical pipeline directly.
 
+The coordinator binds the configured repository before resolving storage and pins source/configuration/destination identity for its lifetime. Per-operation reads still resolve the latest generation. Rebinding identity is rejected before execution and publication; direct destination spelling remains stable for existing journal/lock recovery.
+
 Graph reads do not wait for a build-wide in-process lock. They continue leasing the previous immutable active generation until candidate validation and atomic publication advance `active.json`.
 
 ## Read and write separation
@@ -82,7 +84,13 @@ The Materialization API requests these operations but does not publish paths its
 
 ## Refresh behavior
 
-The Repository Refresh Service supports continuous and one-shot refresh. Continuous refresh is a cross-process elected role: one nonblocking `refresh.lock` holder performs a manifest catch-up before creating the watcher, while followers remain read-only and retry election with deterministic jitter. Install schema v3 defaults to `refresh.policy = leader`; `off` starts a watcher-free MCP runtime.\n\nThe leader admits supported source and rebuild-triggering configuration events, never admits CodebaseGraph-owned state or storage roots, and collapses churn into one dirty signal plus a bounded path set. Path-count, byte-count, or watcher-channel overflow becomes one full-rescan marker. After the materialization writer lock is held, refresh intent may discard an unchanged candidate without publishing a generation; explicit builds retain their publication semantics. Transient failures are classified and retried with bounded backoff.
+The Repository Refresh Service supports continuous and one-shot refresh. One nonblocking `refresh.lock` holder starts native event collection before startup catch-up; followers remain read-only and retry election. Install schema v3 defaults to `refresh.policy = leader`, backend `auto`, and a positive `reconcile_interval_ms = 30000`. Initial policy off creates a watcher-free MCP runtime.
+
+Source scanning and event filtering share source-selection rules. Excluded/generated directories are pruned before traversal; relevant configuration paths are tracked separately. Read/access events and owned output are rejected before bounded queue admission. Relevant overflow or OS rescan flags request a full reconciliation.
+
+Dirty work remains pending until a successful reconciliation acknowledges its captured epoch. Native and polling paths also reconcile periodically. Configuration and ignore-file content hashes detect missed configuration notifications; effective settings reload before retrying while explicit command-line overrides retain precedence.
+
+The service supervises recoverable failures with bounded retry scheduling and visible blocked state. Releasing the coordinator owner cancels isolated refresh workers and releases their state and leases. Graph readability stays separate from freshness in health responses and default block output. See [Graph Freshness and Recovery](./graph-freshness-recovery.md) for contracts, failure behavior, and verification.
 
 ## Source evidence
 
