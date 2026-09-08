@@ -19,6 +19,7 @@ mod profiles;
 pub mod protocol;
 mod scan;
 mod search_index;
+mod source_selection;
 mod staging_writer;
 mod storage;
 mod syntax_materializer;

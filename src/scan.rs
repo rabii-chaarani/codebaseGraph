@@ -4,6 +4,7 @@ use crate::profiles::ProfileSet;
 use crate::protocol::{
     LanguageProfile, ManifestDiff, NativeSyntaxMaterializationRequest, SourceSnapshot,
 };
+use crate::source_selection::SourceSelection;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -31,14 +32,31 @@ pub(crate) fn scan_sources(
     let excluded_parts = request
         .excluded_parts
         .iter()
-        .map(|part| part.as_str())
+        .cloned()
         .collect::<BTreeSet<_>>();
+    let selection = SourceSelection::new(
+        &excluded_parts,
+        &request.include_patterns,
+        &request.exclude_patterns,
+        &request.ignore_patterns,
+    );
     let full_rebuild = requires_full_source_rebuild(request);
     let mut snapshots = BTreeMap::new();
     let mut supported = BTreeMap::new();
     let mut diagnostics = Vec::new();
 
-    for entry in WalkDir::new(&source_root).sort_by_file_name() {
+    let walker = WalkDir::new(&source_root)
+        .sort_by_file_name()
+        .into_iter()
+        .filter_entry(|entry| {
+            if entry.path() == source_root || !entry.file_type().is_dir() {
+                return true;
+            }
+            relative_path(entry.path(), &source_root)
+                .map(|relative| selection.should_descend(&relative))
+                .unwrap_or(false)
+        });
+    for entry in walker {
         let entry = entry.map_err(|error| NativeError::InvalidInput(error.to_string()))?;
         let path = entry.path();
         if path == source_root {
@@ -48,15 +66,21 @@ pub(crate) fn scan_sources(
             continue;
         }
         let relative_path = relative_path(path, &source_root)?;
-        if is_excluded(path, &source_root, &excluded_parts)
-            || ignored_by_patterns(&relative_path, request)
-        {
+        if !selection.includes_file(&relative_path) {
             diagnostics.push(format!("Ignored file: {relative_path}"));
             continue;
         }
         let language = profiles.language_for_path(path);
         let content_hash = if language.is_some() {
-            hash::sha256_file(path)?
+            hash::sha256_file(path).map_err(|error| {
+                if error.kind() == std::io::ErrorKind::NotFound {
+                    NativeError::SourceChanged {
+                        path: relative_path.clone(),
+                    }
+                } else {
+                    NativeError::Io(error)
+                }
+            })?
         } else {
             String::new()
         };
@@ -64,7 +88,17 @@ pub(crate) fn scan_sources(
             diagnostics.push(format!("Skipped unsupported file: {relative_path}"));
         }
         let byte_len = if language.is_some() {
-            fs::metadata(path)?.len()
+            fs::metadata(path)
+                .map_err(|error| {
+                    if error.kind() == std::io::ErrorKind::NotFound {
+                        NativeError::SourceChanged {
+                            path: relative_path.clone(),
+                        }
+                    } else {
+                        NativeError::Io(error)
+                    }
+                })?
+                .len()
         } else {
             0
         };
@@ -139,6 +173,7 @@ fn spool_stable_source(
     let shard = snapshot_root.join(&partition_id[..2]);
     fs::create_dir_all(&shard)?;
     let mut last_error = None;
+    let mut source_changed = false;
 
     for attempt in 0..SOURCE_SNAPSHOT_ATTEMPTS {
         let temporary_path = shard.join(format!(
@@ -152,6 +187,9 @@ fn spool_stable_source(
                     Ok(value) => value,
                     Err(error) => {
                         last_error = Some(error.to_string());
+                        if error.kind() == std::io::ErrorKind::NotFound {
+                            source_changed = true;
+                        }
                         let _ = fs::remove_file(&temporary_path);
                         continue;
                     }
@@ -160,11 +198,15 @@ fn spool_stable_source(
                     Ok(value) => value,
                     Err(error) => {
                         last_error = Some(error.to_string());
+                        if error.kind() == std::io::ErrorKind::NotFound {
+                            source_changed = true;
+                        }
                         let _ = fs::remove_file(&temporary_path);
                         continue;
                     }
                 };
                 if copied_hash != expected_hash || current_hash != expected_hash {
+                    source_changed = true;
                     last_error =
                         Some("source changed after its scan metadata was captured".to_string());
                     let _ = fs::remove_file(&temporary_path);
@@ -187,11 +229,19 @@ fn spool_stable_source(
             }
             Err(error) => {
                 last_error = Some(error.to_string());
+                if error.kind() == std::io::ErrorKind::NotFound {
+                    source_changed = true;
+                }
                 let _ = fs::remove_file(&temporary_path);
             }
         }
     }
 
+    if source_changed {
+        return Err(NativeError::SourceChanged {
+            path: relative_path.to_string(),
+        });
+    }
     Err(NativeError::InvalidInput(format!(
         "source remained unstable after {SOURCE_SNAPSHOT_ATTEMPTS} snapshot attempts: {relative_path}: {}",
         last_error.unwrap_or_else(|| "unknown snapshot failure".to_string())
@@ -230,86 +280,6 @@ fn validate_profile_grammar_versions(profiles: &[LanguageProfile]) -> Result<(),
         }
     }
     Ok(())
-}
-
-fn ignored_by_patterns(relative_path: &str, request: &NativeSyntaxMaterializationRequest) -> bool {
-    if !request.include_patterns.is_empty()
-        && !matches_any_pattern(relative_path, &request.include_patterns)
-    {
-        return true;
-    }
-    matches_any_pattern(relative_path, &request.ignore_patterns)
-        || matches_any_pattern(relative_path, &request.exclude_patterns)
-}
-
-fn matches_any_pattern(path: &str, patterns: &[String]) -> bool {
-    patterns
-        .iter()
-        .map(|pattern| pattern.trim())
-        .filter(|pattern| !pattern.is_empty() && !pattern.starts_with('#'))
-        .any(|pattern| glob_matches(path, pattern))
-}
-
-fn glob_matches(path: &str, pattern: &str) -> bool {
-    let pattern = normalize_relative_pattern(pattern);
-    if pattern.ends_with('/') {
-        return path.starts_with(pattern.trim_end_matches('/'));
-    }
-    if !pattern.contains('/') && wildcard_match(path.rsplit('/').next().unwrap_or(path), &pattern) {
-        return true;
-    }
-    wildcard_match(path, &pattern)
-}
-
-fn normalize_relative_pattern(pattern: &str) -> String {
-    pattern
-        .trim()
-        .trim_start_matches("./")
-        .replace('\\', "/")
-        .to_string()
-}
-
-fn wildcard_match(text: &str, pattern: &str) -> bool {
-    wildcard_match_bytes(text.as_bytes(), pattern.as_bytes())
-}
-
-fn wildcard_match_bytes(text: &[u8], pattern: &[u8]) -> bool {
-    let (mut text_index, mut pattern_index) = (0_usize, 0_usize);
-    let mut star_index = None;
-    let mut match_index = 0_usize;
-    while text_index < text.len() {
-        if pattern_index < pattern.len()
-            && (pattern[pattern_index] == b'?' || pattern[pattern_index] == text[text_index])
-        {
-            text_index += 1;
-            pattern_index += 1;
-        } else if pattern_index < pattern.len() && pattern[pattern_index] == b'*' {
-            star_index = Some(pattern_index);
-            match_index = text_index;
-            pattern_index += 1;
-        } else if let Some(star) = star_index {
-            pattern_index = star + 1;
-            match_index += 1;
-            text_index = match_index;
-        } else {
-            return false;
-        }
-    }
-    while pattern_index < pattern.len() && pattern[pattern_index] == b'*' {
-        pattern_index += 1;
-    }
-    pattern_index == pattern.len()
-}
-
-fn is_excluded(path: &Path, source_root: &Path, excluded_parts: &BTreeSet<&str>) -> bool {
-    path.strip_prefix(source_root)
-        .ok()
-        .map(|relative| {
-            relative.components().any(|component| {
-                excluded_parts.contains(component.as_os_str().to_string_lossy().as_ref())
-            })
-        })
-        .unwrap_or(false)
 }
 
 fn relative_path(path: &Path, source_root: &Path) -> Result<String, NativeError> {
@@ -402,6 +372,8 @@ mod tests {
         LanguageProfile, ManifestEntry, NativeManifest, OntologySchema,
         MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
     };
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {
@@ -624,7 +596,77 @@ mod tests {
         let error =
             spool_stable_source(&source, &snapshots, "source.rs", "stale-hash").unwrap_err();
 
-        assert!(error.to_string().contains("remained unstable after 3"));
+        assert!(matches!(error, NativeError::SourceChanged { path } if path == "source.rs"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn snapshot_copy_reports_a_source_that_disappeared_after_discovery() {
+        let root = unique_temp_dir("codebase-graph-scan-disappeared-source");
+        fs::create_dir_all(&root).unwrap();
+        let source = root.join("missing.rs");
+        let snapshots = root.join("snapshots");
+
+        let error =
+            spool_stable_source(&source, &snapshots, "missing.rs", "stale-hash").unwrap_err();
+
+        assert!(matches!(error, NativeError::SourceChanged { path } if path == "missing.rs"));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn scan_prunes_unreadable_hard_excluded_subtrees_before_traversal() {
+        let root = unique_temp_dir("codebase-graph-scan-unreadable-excluded");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::create_dir_all(root.join("node_modules/hidden")).unwrap();
+        fs::write(root.join("src/allowed.rs"), "fn allowed() {}\n").unwrap();
+        fs::write(
+            root.join("node_modules/hidden/ignored.rs"),
+            "fn ignored() {}\n",
+        )
+        .unwrap();
+        let excluded = root.join("node_modules");
+        fs::set_permissions(&excluded, fs::Permissions::from_mode(0o000)).unwrap();
+
+        let mut request = request(&root, None);
+        request.excluded_parts = vec!["node_modules".to_string()];
+        let result = scan_sources(&request);
+
+        // Restore access before asserting so a failure never leaves the temp
+        // tree with an inaccessible directory.
+        fs::set_permissions(&excluded, fs::Permissions::from_mode(0o755)).unwrap();
+        let scan = result.unwrap();
+        assert!(scan.supported.contains_key("src/allowed.rs"));
+        assert!(!scan
+            .supported
+            .keys()
+            .any(|path| path.starts_with("node_modules/")));
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn scan_excludes_generated_output_unless_explicitly_included() {
+        let root = unique_temp_dir("codebase-graph-scan-generated-output");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::create_dir_all(root.join(".kwiki/site")).unwrap();
+        fs::write(root.join("src/allowed.rs"), "fn allowed() {}\n").unwrap();
+        fs::write(root.join(".kwiki/site/generated.rs"), "fn generated() {}\n").unwrap();
+
+        let default_scan = scan_sources(&request(&root, None)).unwrap();
+        assert!(default_scan.supported.contains_key("src/allowed.rs"));
+        assert!(!default_scan
+            .supported
+            .contains_key(".kwiki/site/generated.rs"));
+
+        let mut explicit_request = request(&root, None);
+        explicit_request.include_patterns = vec![".kwiki/site/*.rs".to_string()];
+        let explicit_scan = scan_sources(&explicit_request).unwrap();
+        assert!(explicit_scan
+            .supported
+            .contains_key(".kwiki/site/generated.rs"));
+
         let _ = fs::remove_dir_all(root);
     }
 
