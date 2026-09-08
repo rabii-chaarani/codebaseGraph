@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.7.0...v1.7.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* keep repository graphs fresh under MCP ([#115](https://github.com/rabii-chaarani/codebaseGraph/issues/115)) ([e29a46b](https://github.com/rabii-chaarani/codebaseGraph/commit/e29a46b9528cc596486f529c5ca9531a9748687c))
+
 ## [1.7.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.6.0...v1.7.0) (2026-08-25)
 
 
