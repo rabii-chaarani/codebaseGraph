@@ -2494,7 +2494,7 @@ fn run_refresh_leader(
                 );
             }
             state.set_backend("native");
-            startup("startup")?;
+            startup("native")?;
             let watch_runtime =
                 RefreshWatchRuntime::new(service, loop_config, &filter, config.reconcile_interval);
             match run_service_native_loop(watch_runtime, watcher, rx, overflowed, probe.queued) {
@@ -3383,6 +3383,99 @@ mod tests {
         assert!(snapshot.last_error.as_deref().is_some_and(|error| error
             .contains("legacy installed graph storage requires reinstall before writes")));
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn native_refresh_startup_reports_native_after_reconciliation() {
+        let root = unique_temp_dir("codebase-graph-refresh-native-startup");
+        let state_dir = root.join(".codebaseGraph");
+        let storage_root = state_dir.join("storage");
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::create_dir_all(&state_dir).unwrap();
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn native_startup_regression() -> bool { true }\n",
+        )
+        .unwrap();
+        fs::write(
+            state_dir.join("config.json"),
+            serde_json::to_vec(&json!({
+                "schema_version": 3,
+                "repo_root": root,
+                "storage_root": storage_root,
+                "refresh": {"reconcile_interval_ms": 60_000},
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let selector = RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: None,
+            manifest_path: None,
+        };
+        let state = start_refresh_service(
+            selector.clone(),
+            RefreshServiceConfig {
+                backend: GraphRefreshBackend::Native,
+                reconcile_interval: Duration::from_secs(60),
+                explicit_overrides: RefreshConfigOverrides {
+                    backend: true,
+                    reconcile_interval: true,
+                    ..RefreshConfigOverrides::default()
+                },
+                ..RefreshServiceConfig::default()
+            },
+        );
+
+        let startup_deadline = Instant::now() + Duration::from_secs(20);
+        let snapshot = loop {
+            let snapshot = state.snapshot();
+            if snapshot.last_successful_reconciliation_unix_ms.is_some()
+                || snapshot.state == "blocked"
+                || snapshot.state == "stopped"
+            {
+                break snapshot;
+            }
+            assert!(
+                Instant::now() < startup_deadline,
+                "native refresh startup did not complete: {:?}",
+                snapshot
+            );
+            thread::sleep(Duration::from_millis(10));
+        };
+        assert_eq!(snapshot.backend, "native", "{snapshot:?}");
+        assert_eq!(snapshot.state, "running", "{snapshot:?}");
+        assert!(
+            snapshot.last_successful_reconciliation_unix_ms.is_some(),
+            "native startup did not record a successful reconciliation: {snapshot:?}"
+        );
+        assert_eq!(snapshot.reconcile_interval_ms, 60_000);
+        assert!(snapshot.last_error.is_none(), "{snapshot:?}");
+
+        let runtime = resolve_refresh_runtime(&selector).unwrap();
+        let lock_path = refresh_lock_path(&runtime);
+        drop(runtime);
+        drop(state);
+
+        let release_deadline = Instant::now() + Duration::from_secs(5);
+        let released = loop {
+            match try_open_locked(&lock_path, LockMode::Exclusive) {
+                Ok(Some(lease)) => {
+                    drop(lease);
+                    break true;
+                }
+                Ok(None) if Instant::now() < release_deadline => {
+                    thread::sleep(Duration::from_millis(10));
+                }
+                Ok(None) => break false,
+                Err(error) => panic!("failed to inspect refresh lease: {error}"),
+            }
+        };
+        let cleanup = fs::remove_dir_all(&root);
+        assert!(released, "refresh service did not release its lease");
+        assert!(cleanup.is_ok(), "refresh test cleanup failed: {cleanup:?}");
     }
 
     #[test]

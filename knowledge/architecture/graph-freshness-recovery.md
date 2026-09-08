@@ -4,8 +4,8 @@ resource: repository-architecture
 tags:
 - architecture
 - graph-runtime
-- refresh
 - recovery
+- refresh
 timestamp: 2026-09-08
 title: Graph Freshness and Recovery
 type: architecture
@@ -58,7 +58,7 @@ The interval must be positive. Backends are `auto`, `native`, and `poll`; auto m
 
 ## Health contract
 
-Existing `ok` continues to mean graph readability. It does not claim freshness. Health adds `freshness`, `refresh_readiness`, and `refresh_health`, while retaining the raw `refresh` details.
+Existing `ok` continues to mean graph readability. It does not claim freshness. Successful startup reconciliation preserves the selected `native` or `poll` backend in `refresh.backend`; lifecycle progress is reported separately through `state` and `refreshing`. Health adds `freshness`, `refresh_readiness`, and `refresh_health`, while retaining the raw `refresh` details.
 
 - `current` means a readable graph with a live, running task, successful reconciliation, and no newer known dirty epoch, as of that reconciliation.
 - `pending` means newer known work remains.
