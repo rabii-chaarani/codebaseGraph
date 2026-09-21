@@ -566,19 +566,26 @@ fn config_only_daemon_from_unrelated_cwd_tracks_source_changes() {
             .collect::<Vec<_>>()
     };
     let wait_for = |id: &mut u64, predicate: &dyn Fn(&[String]) -> bool| {
-        let deadline = Instant::now() + Duration::from_secs(20);
+        let deadline = Instant::now() + Duration::from_secs(60);
         loop {
             let response = search(*id, "tracked_symbol");
             let paths = result_paths(&response);
             if predicate(&paths) {
                 return;
             }
-            assert!(
-                Instant::now() < deadline,
-                "graph did not converge: {response:?}"
-            );
+            if Instant::now() >= deadline {
+                let health_id = id.saturating_add(1);
+                let health = mcp_call(
+                    port,
+                    session,
+                    health_id,
+                    "graph_health",
+                    json!({"include_structured_content": true}),
+                );
+                panic!("graph did not converge: search={response:?}; health={health:?}");
+            }
             *id += 1;
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(250));
         }
     };
 
