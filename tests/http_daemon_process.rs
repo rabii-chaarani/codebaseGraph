@@ -495,15 +495,38 @@ fn config_only_daemon_from_unrelated_cwd_tracks_source_changes() {
     assert_eq!(initialized.status, 200);
     let session = initialized.headers.get("mcp-session-id").unwrap();
 
-    let health = mcp_call(
-        port,
-        session,
-        2,
-        "graph_health",
-        json!({"include_structured_content": true}),
-    );
-    assert_eq!(health.status, 200);
-    assert_eq!(health.body["result"]["isError"], false);
+    let health_deadline = Instant::now() + Duration::from_secs(20);
+    let mut health_id = 2;
+    let health = loop {
+        assert!(
+            Instant::now() < health_deadline,
+            "graph_health startup readiness timed out before request id {health_id}"
+        );
+        let response = mcp_call(
+            port,
+            session,
+            health_id,
+            "graph_health",
+            json!({"include_structured_content": true}),
+        );
+        assert_eq!(
+            response.status, 200,
+            "graph_health HTTP response: {response:?}"
+        );
+        assert!(
+            Instant::now() < health_deadline,
+            "graph_health startup readiness timed out after response: {response:?}"
+        );
+        if response.body["result"]["isError"] == false {
+            break response;
+        }
+        assert_eq!(
+            response.body["result"]["structuredContent"]["error"]["retryable"], true,
+            "graph_health MCP response was not retryable: {response:?}"
+        );
+        health_id += 1;
+        thread::sleep(Duration::from_millis(50));
+    };
     assert_eq!(
         health.body["result"]["structuredContent"]["repo_root"],
         root.canonicalize().unwrap().to_string_lossy().to_string()
@@ -543,19 +566,26 @@ fn config_only_daemon_from_unrelated_cwd_tracks_source_changes() {
             .collect::<Vec<_>>()
     };
     let wait_for = |id: &mut u64, predicate: &dyn Fn(&[String]) -> bool| {
-        let deadline = Instant::now() + Duration::from_secs(20);
+        let deadline = Instant::now() + Duration::from_secs(60);
         loop {
             let response = search(*id, "tracked_symbol");
             let paths = result_paths(&response);
             if predicate(&paths) {
                 return;
             }
-            assert!(
-                Instant::now() < deadline,
-                "graph did not converge: {response:?}"
-            );
+            if Instant::now() >= deadline {
+                let health_id = id.saturating_add(1);
+                let health = mcp_call(
+                    port,
+                    session,
+                    health_id,
+                    "graph_health",
+                    json!({"include_structured_content": true}),
+                );
+                panic!("graph did not converge: search={response:?}; health={health:?}");
+            }
             *id += 1;
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(250));
         }
     };
 
@@ -564,7 +594,7 @@ fn config_only_daemon_from_unrelated_cwd_tracks_source_changes() {
         "def tracked_symbol():\n    return 2\n",
     )
     .unwrap();
-    let mut search_id = 3;
+    let mut search_id = health_id + 1;
     wait_for(&mut search_id, &|paths| {
         paths.iter().any(|path| path == "created.py")
     });

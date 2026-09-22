@@ -1,6 +1,7 @@
 # README UX Rewrite Proposal
 
-Status: approved and implemented in `README.md` on 2026-08-24.
+Status: approved and implemented on 2026-08-24; superseded by the
+conversion-focused README refresh on 2026-09-21.
 
 ## Outcome
 
@@ -139,8 +140,8 @@ optional capability, then maintainer and recovery detail.
 
 ## Proposed README
 
-The following approved candidate is retained as the review record. `README.md`
-matches this content.
+The following approved candidate is retained as the historical review record.
+It no longer matches the current `README.md`.
 
 ~~~markdown
 # codebaseGraph

@@ -1,18 +1,42 @@
 # codebaseGraph
 
-`codebaseGraph` turns a local source repository into a searchable code graph for
-AI coding agents. It indexes Python, Rust, Go, C, C++, Fortran, CSS, HTML,
-JavaScript, JSX, TypeScript, TSX, WebAssembly Text, Markdown, and MDX, then
-exposes compact context, schema information, query helpers, and bounded
-read-only graph queries through a native CLI and MCP server.
+> Give coding agents a map before they touch the code.
 
-This workspace also ships `k-wiki`, an optional subsystem for curated repository
-knowledge. The graph and wiki have separate source and generated state.
+[![crates.io](https://img.shields.io/crates/v/codebase-graph.svg)](https://crates.io/crates/codebase-graph)
+[![CI](https://github.com/rabii-chaarani/codebaseGraph/actions/workflows/ci.yml/badge.svg)](https://github.com/rabii-chaarani/codebaseGraph/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+`codebaseGraph` builds a local, automatically refreshed graph of your repository
+and exposes it through a native CLI and MCP, giving developers and AI coding
+agents focused answers about unfamiliar code.
+
+Use it to:
+
+- find definitions, symbols, and architectural entry points;
+- trace dependencies, callers, and runtime paths;
+- inspect likely change impact before editing; and
+- retrieve compact context, schemas, and bounded read-only query results.
+
+[Install](#quick-start) · [See a query](#a-first-query) ·
+[Connect MCP](#connect-an-mcp-client) · [Understand the flow](#how-it-works)
+
+## A first query
+
+After setup, search for a symbol or concept from your repository:
+
+```text
+$ codebase-graph codebase-search "run_refresh_leader" --repo-root .
+q run_refresh_leader layer=semantic
+file path src/api/refresh.rs
+- Function run_refresh_leader L2392-L2519 rank_score=0.97
+```
+
+This is illustrative compact block output; exact matches depend on the graph.
 
 ## Quick start
 
-For a crates.io install, you need Rust 1.82 or newer and Cargo. Run these commands
-from the repository you want to index:
+Install from crates.io with Cargo (Rust 1.82 or newer) from the repository you
+want to index:
 
 ```bash
 cargo install codebase-graph
@@ -20,89 +44,61 @@ codebase-graph install
 codebase-graph check-health --repo-root .
 ```
 
-Setup is healthy when the first output line includes `health ok=true`. Try a
-search by replacing the example text with a symbol or concept from your
-repository:
-
-```bash
-codebase-graph codebase-search "your search term" --repo-root .
-```
-
+Prefer a prebuilt binary? Download a platform archive from [GitHub
+Releases](https://github.com/rabii-chaarani/codebaseGraph/releases), put
+`codebase-graph` on your `PATH`, and run the same `install` and health commands.
 For development from this checkout:
 
 ```bash
 cargo install --path . --bin codebase-graph
 ```
 
+Setup is ready when the first health line includes `health ok=true`. The managed
+MCP service refreshes the graph as the repository changes; do not rerun
+`install` just to refresh. Use the managed service or an explicit `watch`/`build`.
+
 ### What setup changes
 
-`codebase-graph install`:
+`codebase-graph install` materializes the first graph, creates repository-local
+configuration and runtime state under `.codebaseGraph/`, updates one marked
+`codebaseGraph` block in `AGENTS.md` or `CLAUDE.md`, and registers Codex MCP by
+default. Use `codebase-graph reinstall` only when setup state must be recreated;
+unrelated MCP client entries are preserved.
 
-- materializes the first graph;
-- creates repository-local configuration and managed graph state under
-  `.codebaseGraph/`;
-- writes or updates one marked `codebaseGraph` block in `AGENTS.md` or
-  `CLAUDE.md`; and
-- installs a Codex MCP client entry unless you skip registration.
+## How it works
 
-The managed MCP service refreshes the graph automatically. Do not rerun
-`install` to refresh it. Use `codebase-graph reinstall` only when setup state
-must be recreated; reinstall preserves unrelated MCP client entries.
+```mermaid
+flowchart LR
+    R[Source repository] --> G[Local graph and managed runtime]
+    G --> C[codebase-graph CLI]
+    G --> M[MCP tools]
+    C --> U[Developer or coding agent]
+    M --> U
+    K[Optional curated knowledge<br/>knowledge/ source] --> W[k-wiki / .kwiki projection]
+    W --> U
+```
 
-## Choose a workflow
-
-| Goal | Start here |
-| --- | --- |
-| Search or inspect the graph | [Use the graph](#use-the-graph) |
-| Connect an AI coding client | [Connect an MCP client](#connect-an-mcp-client) |
-| Add curated repository knowledge | [Add curated knowledge with k-wiki](#add-curated-knowledge-with-k-wiki-optional) |
-| Work on this repository | [Develop and verify](#develop-and-verify) |
-| Recover a broken setup | [Troubleshoot](#troubleshoot) |
-
-## Understand the two tools
-
-| Tool | Purpose | Authored source | Generated state |
-| --- | --- | --- | --- |
-| `codebase-graph` | Builds and queries the source-code graph | Your repository source | `.codebaseGraph/` |
-| `k-wiki` | Builds and publishes curated OKF knowledge | `knowledge/` | `.kwiki/` |
-
-`knowledge/` is curated intent. `.kwiki/` is disposable wiki projection state,
-and `.codebaseGraph/` is graph runtime state. Do not edit either generated root
-as source.
+The graph and wiki are separate products with separate source and generated
+state: `codebaseGraph` indexes source code, while `k-wiki` publishes curated
+knowledge when you need durable concepts, decisions, or runbooks.
+`.codebaseGraph/` is graph runtime state and `.kwiki/` is generated projection
+state; do not edit either directory as source.
 
 ## Use the graph
 
-| Task | Command |
+| Goal | Command |
 | --- | --- |
-| Check graph health | `codebase-graph check-health --repo-root .` |
-| Search for a symbol or concept | `codebase-graph codebase-search "SampleService" --repo-root .` |
-| Fetch compact context | `codebase-graph codebase-context SampleService --repo-root . --profile definitions` |
-| Inspect a manual rebuild | `codebase-graph plan --repo-root . --json` |
-| Inspect a Git diff rebuild | `codebase-graph plan --repo-root . --git-diff --git-base main --json` |
-| Start an explicit foreground watcher | `codebase-graph watch --repo-root . --debounce-ms 250` |
-| Run an explicit full rebuild | `codebase-graph build --repo-root . --mode full --parallel --progress --json` |
+| Check health | `codebase-graph check-health --repo-root .` |
+| Search a symbol or concept | `codebase-graph codebase-search "SampleService" --repo-root .` |
+| Fetch focused context | `codebase-graph codebase-context SampleService --repo-root . --profile definitions` |
+| Preview a rebuild | `codebase-graph plan --repo-root . --json` |
+| Watch explicitly | `codebase-graph watch --repo-root . --debounce-ms 250` |
+| Rebuild explicitly | `codebase-graph build --repo-root . --mode full --json` |
+| Run a bounded read-only query | `codebase-graph graph-query "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" --repo-root .` |
 
-Retrieval commands emit compact block output by default. Use `--json --pretty`
-or `--format json` when you need structured output.
-
-Freshness is automatic while the managed MCP daemon, explicit `mcp start`, or
-`watch` is running. `build` is for an explicit manual rebuild; use `plan` first
-when you want to see what it would touch.
-
-To tune discovery, use `.codebaseGraphignore`, `--include`, `--exclude`, or the
-materialization include/exclude arrays in `.codebaseGraph/config.json`. Git
-discovery respects `.gitignore` by default and falls back to filesystem scanning
-when Git is unavailable.
-
-### Run a read-only graph query
-
-```bash
-codebase-graph graph-query \
-  "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1" \
-  --repo-root .
-```
-
-Write-like graph statements are blocked.
+Retrieval commands emit compact block output by default. Add `--json --pretty`
+or `--format json` for structured output. Profiles include `definitions`,
+`dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.
 
 ## Connect an MCP client
 
@@ -113,160 +109,77 @@ codebase-graph mcp install --client codex
 codebase-graph mcp install --client all --mcp-transport http-daemon
 ```
 
-Supported clients are `codex`, `claude`, `claude-project`, `github-copilot`,
-`lmstudio`, `hermes`, `openclaw`, `generic`, `copilot-studio`, and
-`microsoft-copilot`.
+Supported clients include Codex, Claude Code, Claude projects, GitHub Copilot,
+LM Studio, Hermes, OpenClaw, generic local MCP hosts, Copilot Studio, and
+Microsoft Copilot. For local clients, `auto` uses one repository-scoped
+Streamable HTTP daemon and shared loopback endpoint; stdio remains available
+for compatibility. See the [MCP guide](docs/mcp.md) for details.
 
-For local clients, the default `auto` transport resolves to one
-repository-scoped Streamable HTTP daemon. Local harnesses share the persisted
-`http://127.0.0.1:<port>/mcp` endpoint, coordinator, and watcher. Use
-`--mcp-transport stdio` only for compatibility, or `--mcp-daemon-port` to
-override the stable repository-derived port.
+The graph exposes these read-oriented tools:
 
-Check or control the daemon with:
-
-```bash
-codebase-graph mcp daemon status --config .codebaseGraph/config.json
-codebase-graph mcp daemon start --config .codebaseGraph/config.json
-codebase-graph mcp daemon stop --config .codebaseGraph/config.json
-```
-
-`status` keeps its original top-level fields and also reports the service
-manager state, running/controller versions, manifest drift, the latest bounded
-failure from `.codebaseGraph/mcp-daemon-failure.json`, and a directly executable
-recommended action. Rerunning `start` repairs an inactive service and reconciles
-stale daemon versions or supervisor manifests without changing the MCP URL.
-
-Setup installs the user service through launchd on macOS, a systemd user unit on
-Linux, or Task Scheduler on Windows. A repository lock prevents a second daemon
-from starting. On macOS, launchd owns the configured loopback listener and
-starts or restarts the daemon when a client connects, including in
-on-demand-only user sessions.
-
-### Client-specific behavior
-
-- `github-copilot` writes workspace configuration to `.vscode/mcp.json`.
-- `claude` targets Claude Code; `claude-project` targets the repository
-  `.mcp.json`.
-- An explicit Claude Desktop configuration rejects loopback HTTP, but may be
-  registered with explicit stdio.
-- `copilot-studio` and `microsoft-copilot` report `manual_remote_required`
-  because their cloud runtimes require a public HTTPS endpoint.
-
-The installer does not publish a loopback URL or provision tunnels, TLS, OAuth,
-or remote deployment.
-
-### Use a lower-level transport
-
-The managed daemon is the normal local path. Stdio and direct HTTP remain
-available for diagnostics and compatibility:
-
-```bash
-codebase-graph mcp start --config .codebaseGraph/config.json
-codebase-graph mcp http \
-  --config .codebaseGraph/config.json \
-  --host 127.0.0.1 \
-  --port 8765
-```
-
-> **Security:** keep HTTP bound to `127.0.0.1` for normal use. Remote binding
-> requires `--allow-remote` and a bearer token, but does not provide TLS, rate
-> limiting, authorization scopes, or a multi-user security model. HTTP clients
-> must initialize first and send the returned `Mcp-Session-Id` header on later
-> requests.
-
-The daemon exposes MCP at `/mcp`, local health metadata at
-`/_codebasegraph/health`, and authenticated shutdown using a rotating state-file
-token.
-
-### Available graph tools
-
-| Tool | Purpose |
+| Tool | What it answers |
 | --- | --- |
-| `graph_health` | Check database and manifest health |
-| `graph_search` | Find graph entities with compact context |
-| `graph_context` | Retrieve definitions, dependencies, call graphs, docs, runtime, or change impact |
-| `graph_schema` | Inspect the ontology and indexes |
-| `graph_query_helpers` | Discover named query helpers |
-| `graph_architecture_queries` | Discover architecture-oriented queries |
-| `graph_query` | Execute one bounded, read-only graph statement |
+| `graph_health` | Is the graph and manifest healthy? |
+| `graph_search` | Which entities match this symbol or concept? |
+| `graph_context` | What are the definitions, dependencies, callers, docs, runtime paths, or likely change impact? |
+| `graph_schema` | What ontology and indexes are available? |
+| `graph_query_helpers` | Which named query helpers can I use? |
+| `graph_architecture_queries` | Which architecture-oriented queries are available? |
+| `graph_query` | What does one bounded, read-only graph statement return? |
 
-### Refresh a registration after upgrading
+### Local-first safety
 
-Upgrading the binary does not rewrite an existing client registration. If a
-client still invokes `codebase-graph mcp start`, rerun the installer for that
-registration, then restart the client:
+The normal MCP path is a repository-scoped service bound to loopback. Graph
+retrieval is bounded and non-mutating: raw statements are validated as one
+read-only operation, write-like statements are blocked, and results are bounded.
+Remote HTTP binding is explicit and does not add TLS, rate limiting,
+authorization scopes, or a multi-user security model. Keep it on `127.0.0.1`;
+see [SECURITY.md](SECURITY.md) for the security boundary and reporting policy.
 
-```bash
-codebase-graph mcp install --client codex --scope local \
-  --config-path .codebaseGraph/config.json \
-  --mcp-transport http-daemon \
-  --verify
-```
+## Supported languages
+
+The default parser profiles cover Python, Rust, Go, C, C++, Fortran, CSS, HTML,
+JavaScript, JSX, TypeScript, TSX, WebAssembly Text, Markdown, and MDX. Use
+`.codebaseGraphignore`, `--include`, `--exclude`, or the repository config to
+tune discovery; Git discovery respects `.gitignore` by default.
 
 ## Add curated knowledge with k-wiki (optional)
 
-Use `k-wiki` when your repository needs curated, searchable knowledge alongside
-the generated code graph.
+Use `k-wiki` when generated code relationships are not enough and your team
+needs curated, searchable repository knowledge:
 
 ```bash
 k-wiki install
 k-wiki mcp install --client codex
 ```
 
-`k-wiki install` creates a starter source bundle at `knowledge/index.md` and
-generated state beneath `.kwiki/`. Rerunning it is safe. It also maintains the
-MCP-only `k-wiki` workflow block in `AGENTS.md` and `CLAUDE.md` while preserving
-surrounding instructions.
+`knowledge/` is the authored source; `.kwiki/` is generated projection state.
+The wiki is a separate MCP workflow and does not replace the code graph. Read
+the [k-wiki guide](docs/k-wiki.md) for authoring, validation, publishing, and
+registration details.
 
-Wiki MCP registration records a stdio command; it does not start a persistent
-server process, so `k-wiki` must be on `PATH` when the client starts it.
+## Develop and contribute
 
-See the [Knowledge Wiki guide](docs/k-wiki.md) for other repository roots, static
-site builds, supported clients, registration locality and naming, validation,
-authoring, and upgrade steps.
-
-## Develop and verify
+Run the core checks from a checkout:
 
 ```bash
 cargo fmt --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 cargo test --workspace --locked
 cargo build --locked --release --bin codebase-graph
-cargo publish --dry-run --locked
 ```
 
-Release maintainers also use the policy and packaged-artifact checks:
+See the [release process](docs/release.md) for packaging and CI policy. File
+[issues](https://github.com/rabii-chaarani/codebaseGraph/issues) or open
+[pull requests](https://github.com/rabii-chaarani/codebaseGraph/pulls).
 
-```bash
-cargo run -p xtask -- release-gate --production \
-  --confirm release-environment \
-  --confirm hosted-ci-green \
-  --confirm private-vulnerability-reporting
-cargo run -p xtask -- smoke-artifact target/release/codebase-graph
-```
+## Recovery and further reading
 
-## Release and security
+If health is not ready, a daemon is unavailable, or a registration is stale,
+start with the [troubleshooting guide](docs/troubleshooting.md) for status
+checks, recovery actions, reinstall boundaries, and stale graph diagnostics.
 
-CI runs formatting, linting, tests, advisory scanning, package dry-run checks,
-native package builds, and artifact smoke tests. See the
-[release process](docs/release.md) for the full workflow and conda-forge
-checklist.
-
-Report suspected vulnerabilities privately. See the
-[security policy](SECURITY.md) for supported versions, reporting expectations,
-and the local-first MCP security boundary.
-
-## Troubleshoot
-
-| Symptom | Action |
-| --- | --- |
-| Missing LadyBugDB | Install `codebase-graph` from crates.io, a release archive, or this checkout. |
-| Stale graph | Run `codebase-graph mcp daemon status --config .codebaseGraph/config.json`. Use `watch` for an explicit foreground watcher or `build --mode full` for a manual rebuild. |
-| MCP HTTP transport send error | Run `codebase-graph mcp daemon status --config .codebaseGraph/config.json`, inspect `service`, `latest_failure`, and `recommended_action`, then run the reported `start_daemon` command. |
-| Daemon service unavailable | Ensure launchd, the systemd user manager, or Task Scheduler is available, then run `codebase-graph mcp daemon start --config .codebaseGraph/config.json`. Setup fails closed instead of silently creating stdio registrations. |
-| Broken setup state | Run `codebase-graph reinstall` to recreate `.codebaseGraph/` and refresh the selected registration. |
-| Broken client configuration only | Run `codebase-graph mcp install --client <client> --verify`. |
-| Binary not found | Ensure the native `codebase-graph` binary is on `PATH`. |
-| Expected file is missing from the graph | Check `.gitignore`, `.codebaseGraphignore`, configured include/exclude rules, and whether the path is binary, vendor, cache, virtualenv, build, dist, `.codebase_graph`, or `.codebaseGraph`. |
-| Repository lock error | Stop other graph build, install, or daemon processes using the same repository state, then retry. |
+- [MCP guide](docs/mcp.md) — client registration and transport choices
+- [k-wiki guide](docs/k-wiki.md) — curated knowledge workflow
+- [Release process](docs/release.md) — CI, packaging, and publishing
+- [Security policy](SECURITY.md) — local-first boundary and disclosures
