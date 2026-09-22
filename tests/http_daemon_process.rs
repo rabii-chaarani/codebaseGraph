@@ -182,7 +182,8 @@ fn abort_connection(stream: TcpStream) {
     };
     let result = unsafe {
         setsockopt(
-            stream.as_raw_socket(),
+            usize::try_from(stream.as_raw_socket())
+                .expect("Windows socket handle should fit in usize"),
             SOL_SOCKET,
             SO_LINGER,
             (&linger as *const Linger).cast(),
