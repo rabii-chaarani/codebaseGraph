@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.7.1...v1.8.0) (2026-09-22)
+
+
+### Features
+
+* add agent-loop graph hooks ([#118](https://github.com/rabii-chaarani/codebaseGraph/issues/118)) ([d091d4f](https://github.com/rabii-chaarani/codebaseGraph/commit/d091d4fee000c69550313833dd8436260571f9c9))
+
 ## [1.7.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.7.0...v1.7.1) (2026-09-08)
 
 
