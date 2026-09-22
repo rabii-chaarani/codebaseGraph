@@ -2,12 +2,12 @@
 description: Component boundaries and dependency direction inside the transport-neutral graph runtime.
 resource: repository-architecture
 tags:
+- agents
 - architecture
 - components
 - graph-runtime
-- rust
-- agents
 - hooks
+- rust
 timestamp: 2026-09-08
 title: Graph Runtime Architecture
 type: architecture
@@ -59,6 +59,8 @@ The core owns three cross-cutting duties:
 ## Central MCP ownership and process isolation
 
 All MCP processes for one managed storage root or Direct destination pair contend for one nonblocking `coordinator.lock`. The holder writes a mode-0600 loopback endpoint and random token to `coordinator.json`, owns the Public API Core, and is the only MCP process that opens Ladybug databases. Followers keep only the bounded route state, retry the owner on connection failure, and independently attempt takeover. Their monitor detects owner death and operating-system lock release permits takeover within five seconds.
+
+Managed HTTP response writes are connection-local. A hook deadline, client cancellation, or disconnected socket may prevent delivery to that client, but it must not terminate the repository daemon or discard other initialized MCP sessions. Listener acceptance failures remain process-fatal, and authenticated shutdown remains intentional.
 
 Coordinator request framing keeps transport recovery separate from application semantics. Receive failures detected before dispatch are explicit retryable replies, and clients retry them on the same live owner within a 15-second bound. Authentication failures refresh the route, while ambiguous disconnects retain a single replay limit. Ping reads use a five-second timeout, but operation replies remain unbounded because materialization and other valid requests may run longer.
 

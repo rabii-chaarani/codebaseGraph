@@ -402,6 +402,8 @@ fn daemon_accept_loop(
 ) -> Result<(), String> {
     let mut sessions = McpHttpState::default();
     loop {
+        // A client timeout or disconnect is local to its connection and must not
+        // terminate the repository daemon; only listener failures are fatal.
         let (mut stream, _) = listener
             .accept()
             .map_err(|error| format!("failed to accept managed MCP request: {error}"))?;
@@ -414,7 +416,7 @@ fn daemon_accept_loop(
         };
         if request.path == DAEMON_HEALTH_PATH {
             let status = if request.method == "GET" { 200 } else { 405 };
-            write_http_json(
+            let _ = write_http_json(
                 &mut stream,
                 status,
                 &json!({
@@ -428,7 +430,7 @@ fn daemon_accept_loop(
                     "transport_version": DAEMON_TRANSPORT_VERSION,
                 }),
                 &[],
-            )?;
+            );
             continue;
         }
         if request.path == DAEMON_SHUTDOWN_PATH {
@@ -439,24 +441,24 @@ fn daemon_accept_loop(
             } else {
                 HttpResponse::json(401, json!({"ok": false, "error": "unauthorized"}))
             };
-            write_http_json(
+            let _ = write_http_json(
                 &mut stream,
                 response.status,
                 &response.payload,
                 &response.headers,
-            )?;
+            );
             if authorized {
                 break;
             }
             continue;
         }
         let response = handle_mcp_http_request(options, &mut sessions, request);
-        write_http_json(
+        let _ = write_http_json(
             &mut stream,
             response.status,
             &response.payload,
             &response.headers,
-        )?;
+        );
     }
     Ok(())
 }

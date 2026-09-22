@@ -1,6 +1,10 @@
+use fs2::FileExt;
 use serde_json::json;
 use std::fs;
+use std::fs::OpenOptions;
 use std::io::{Read, Write};
+#[cfg(not(any(unix, windows)))]
+use std::net::Shutdown;
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -120,6 +124,110 @@ fn mcp_call(
             "params": {"name": name, "arguments": arguments}
         })),
     )
+}
+
+/// Close a request socket with an abortive reset instead of a graceful FIN.
+///
+/// A client-side hook timeout usually tears down its HTTP connection while the
+/// daemon is still producing the response.  Setting zero linger makes that
+/// condition deterministic in this process regression, while keeping the test
+/// independent of production-only hooks.
+#[cfg(unix)]
+fn abort_connection(stream: TcpStream) {
+    use std::os::fd::AsRawFd;
+
+    let linger = libc::linger {
+        l_onoff: 1,
+        l_linger: 0,
+    };
+    let result = unsafe {
+        libc::setsockopt(
+            stream.as_raw_fd(),
+            libc::SOL_SOCKET,
+            libc::SO_LINGER,
+            (&linger as *const libc::linger).cast(),
+            std::mem::size_of::<libc::linger>() as libc::socklen_t,
+        )
+    };
+    assert_eq!(result, 0, "failed to configure abortive test connection");
+    drop(stream);
+}
+
+#[cfg(windows)]
+fn abort_connection(stream: TcpStream) {
+    use std::os::windows::io::AsRawSocket;
+
+    #[repr(C)]
+    struct Linger {
+        onoff: u16,
+        linger: u16,
+    }
+
+    #[link(name = "Ws2_32")]
+    extern "system" {
+        fn setsockopt(
+            socket: usize,
+            level: i32,
+            option_name: i32,
+            option_value: *const i8,
+            option_length: i32,
+        ) -> i32;
+    }
+
+    const SOL_SOCKET: i32 = 0xffff;
+    const SO_LINGER: i32 = 0x0080;
+    let linger = Linger {
+        onoff: 1,
+        linger: 0,
+    };
+    let result = unsafe {
+        setsockopt(
+            stream.as_raw_socket(),
+            SOL_SOCKET,
+            SO_LINGER,
+            (&linger as *const Linger).cast(),
+            std::mem::size_of::<Linger>() as i32,
+        )
+    };
+    assert_eq!(result, 0, "failed to configure abortive test connection");
+    drop(stream);
+}
+
+#[cfg(not(any(unix, windows)))]
+fn abort_connection(stream: TcpStream) {
+    let _ = stream.shutdown(Shutdown::Both);
+    drop(stream);
+}
+
+fn disconnect_before_response(
+    port: u16,
+    session: &str,
+    id: u64,
+    name: &str,
+    arguments: serde_json::Value,
+) {
+    let body = serde_json::to_vec(&json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "method": "tools/call",
+        "params": {"name": name, "arguments": arguments}
+    }))
+    .unwrap();
+    let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    write!(
+        stream,
+        "POST /mcp HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\nMcp-Session-Id: {session}\r\nMcp-Protocol-Version: {MCP_PROTOCOL_VERSION}\r\n\r\n",
+        body.len()
+    )
+    .unwrap();
+    stream.write_all(&body).unwrap();
+    // The graph operation takes a shared state lock. The test owns that lock
+    // while sending the request, so give the daemon/coordinator time to reach
+    // the blocked acquisition before resetting the client socket.
+    thread::sleep(Duration::from_millis(250));
+    // Do not read any response bytes: this models a hook deadline expiring
+    // while the daemon is still handling the request.
+    abort_connection(stream);
 }
 
 fn wait_for_file(path: &Path) {
@@ -362,6 +470,70 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
         request(port, "GET", "/_codebasegraph/health", &[], None).body["pid"],
         pid
     );
+
+    // Hook-style clients can time out after sending a request and before
+    // reading its response.  Their abortive disconnect must not terminate the
+    // daemon or discard the initialized sessions.
+    let first_session = first.headers.get("mcp-session-id").unwrap();
+    let second_session = second.headers.get("mcp-session-id").unwrap();
+    let state_lock_path = root.join(".codebaseGraph/storage/state.lock");
+    for id in 6..=10 {
+        let state_lock = OpenOptions::new()
+            .create(true)
+            .read(true)
+            .write(true)
+            .truncate(false)
+            .open(&state_lock_path)
+            .unwrap();
+        state_lock.lock_exclusive().unwrap();
+        disconnect_before_response(
+            port,
+            first_session,
+            id,
+            "graph_health",
+            json!({"include_structured_content": true}),
+        );
+        drop(state_lock);
+        let health = request(port, "GET", "/_codebasegraph/health", &[], None);
+        assert_eq!(
+            health.status, 200,
+            "daemon health after abort {id}: {health:?}"
+        );
+        assert_eq!(
+            health.body["pid"], pid,
+            "daemon was replaced after abort {id}"
+        );
+    }
+
+    let reused = mcp_call(
+        port,
+        first_session,
+        11,
+        "graph_health",
+        json!({"include_structured_content": true}),
+    );
+    assert_eq!(reused.status, 200);
+    assert_eq!(reused.body["result"]["isError"], false);
+
+    let second_reused = mcp_call(
+        port,
+        second_session,
+        12,
+        "graph_health",
+        json!({"include_structured_content": true}),
+    );
+    assert_eq!(second_reused.status, 200);
+    assert_eq!(second_reused.body["result"]["isError"], false);
+
+    let unknown = mcp_call(
+        port,
+        "unknown-session",
+        13,
+        "graph_health",
+        json!({"include_structured_content": true}),
+    );
+    assert_eq!(unknown.status, 400);
+    assert_eq!(unknown.body["error"]["code"], -32002);
 
     let unauthorized = request(
         port,
