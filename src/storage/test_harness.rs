@@ -24,11 +24,37 @@ use storage::atomic::{
 };
 use storage::direct::{DirectPublishJournal, DirectPublishPhase, DirectStore};
 use storage::layout::{managed_generation_id, DirectLayout, GenerationPaths, ManagedLayout};
-use storage::locks::{try_open_locked, CoordinatorLease, LockMode, RefreshLease, WorkerLease};
+use storage::locks::{
+    try_open_locked, try_open_locked_in_existing_parent, CoordinatorLease, LockMode, RefreshLease,
+    WorkerLease,
+};
 use storage::managed::{ActiveGeneration, ManagedStore, ManagedWriteSession};
 use storage::run_workspace::{RunJournal, RunPhase, RunWorkspace};
 
 static TEST_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+#[test]
+fn existing_lock_probe_does_not_recreate_a_vanished_workspace() {
+    let root = temp_dir("existing-lock-probe-does-not-recreate-workspace");
+    let run_root = root.join("runs/run-vanished");
+    let error =
+        try_open_locked_in_existing_parent(run_root.join("lease.lock"), LockMode::Exclusive)
+            .expect_err("a vanished workspace should report not found");
+
+    assert!(matches!(
+        error,
+        error::NativeError::Io(ref error) if error.kind() == std::io::ErrorKind::NotFound
+    ));
+    assert!(!run_root.exists());
+
+    fs::create_dir_all(&run_root).unwrap();
+    let lease =
+        try_open_locked_in_existing_parent(run_root.join("lease.lock"), LockMode::Exclusive)
+            .unwrap()
+            .expect("an existing workspace should receive a cleanup lease");
+    assert!(run_root.join("lease.lock").is_file());
+    drop(lease);
+}
 
 #[test]
 fn managed_control_lock_paths_are_stable_and_role_scoped() {

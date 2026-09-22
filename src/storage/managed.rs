@@ -5,7 +5,8 @@ use crate::storage::layout::{
     GenerationPaths, ManagedLayout,
 };
 use crate::storage::locks::{
-    open_locked, try_open_locked, LockMode, LockedFile, StateLease, WriterLease,
+    open_locked, try_open_locked, try_open_locked_in_existing_parent, LockMode, LockedFile,
+    StateLease, WriterLease,
 };
 use crate::storage::run_workspace::{
     remove_run_root_confined, RunJournal, RunPhase, RunWorkspace, RunWorkspaceRecovery,
@@ -479,9 +480,21 @@ impl ManagedStore {
         }
         let mut report = RunWorkspaceRecovery::default();
         for entry in fs::read_dir(&runs_root)? {
-            let entry = entry?;
+            // A worker can finish and remove its run workspace after the
+            // directory iterator yields an entry. Windows reports that
+            // observation as ERROR_PATH_NOT_FOUND; only that race is benign.
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(error.into()),
+            };
             let path = entry.path();
-            if !entry.file_type()?.is_dir() {
+            let is_directory = match entry.file_type() {
+                Ok(file_type) => file_type.is_dir(),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => return Err(error.into()),
+            };
+            if !is_directory {
                 continue;
             }
             let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
@@ -490,14 +503,29 @@ impl ManagedStore {
             if !name.starts_with("run-") {
                 continue;
             }
-            let lease = match try_open_locked(path.join("lease.lock"), LockMode::Exclusive)? {
-                Some(lease) => lease,
-                None => {
+
+            // A cleanup reader must not recreate a workspace that disappeared
+            // after read_dir observed it.
+            let lease = match try_open_locked_in_existing_parent(
+                path.join("lease.lock"),
+                LockMode::Exclusive,
+            ) {
+                Ok(Some(lease)) => lease,
+                Ok(None) => {
                     report.skipped_locked += 1;
                     continue;
                 }
+                Err(error) if is_not_found_error(&error) => continue,
+                Err(error) => return Err(error),
             };
-            let journal = read_run_journal_or_default(&path, name)?;
+            let journal = match read_run_journal_or_default(&path, name) {
+                Ok(journal) => journal,
+                Err(error) if is_not_found_error(&error) => {
+                    drop(lease);
+                    continue;
+                }
+                Err(error) => return Err(error),
+            };
             let recovered = match journal.phase {
                 RunPhase::Publishing | RunPhase::Published => {
                     self.finish_run_locked(&path, &journal, active, true)?;
@@ -999,18 +1027,25 @@ fn remove_path_without_symlinks(path: &Path) -> Result<(), NativeError> {
 
 fn read_run_journal_or_default(path: &Path, name: &str) -> Result<RunJournal, NativeError> {
     let journal_path = path.join("journal.json");
-    if !journal_path.exists() {
-        return Ok(RunJournal {
-            run_id: name.trim_start_matches("run-").to_string(),
-            phase: RunPhase::CleanupPending,
-            base_generation_id: None,
-            candidate_generation_id: None,
-            active_generation_id: None,
-            last_error: Some("missing journal".to_string()),
-        });
-    }
-    let text = fs::read_to_string(journal_path)?;
+    let text = match fs::read_to_string(&journal_path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(RunJournal {
+                run_id: name.trim_start_matches("run-").to_string(),
+                phase: RunPhase::CleanupPending,
+                base_generation_id: None,
+                candidate_generation_id: None,
+                active_generation_id: None,
+                last_error: Some("missing journal".to_string()),
+            });
+        }
+        Err(error) => return Err(error.into()),
+    };
     Ok(serde_json::from_str(&text)?)
+}
+
+fn is_not_found_error(error: &NativeError) -> bool {
+    matches!(error, NativeError::Io(error) if error.kind() == std::io::ErrorKind::NotFound)
 }
 
 fn sync_parent_dir(path: &Path) -> Result<(), NativeError> {
