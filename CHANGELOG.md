@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.8.0...v1.8.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* keep MCP daemon alive after client disconnects ([#120](https://github.com/rabii-chaarani/codebaseGraph/issues/120)) ([fd357ab](https://github.com/rabii-chaarani/codebaseGraph/commit/fd357abd37824687db2b1e910add87c264969f2b))
+
 ## [1.8.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.7.1...v1.8.0) (2026-09-22)
 
 
