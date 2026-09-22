@@ -349,6 +349,71 @@ fn install_dry_run_reports_changes_without_creating_hook_files() {
 }
 
 #[test]
+fn verify_requires_a_managed_handler_for_every_required_event() {
+    let repo = TempRepo::new("verify-per-event");
+    let install = run(
+        &repo,
+        &[
+            "agent-hooks",
+            "install",
+            "--client",
+            "codex",
+            "--repo-root",
+            repo.path.to_str().unwrap(),
+            "--config",
+            repo.config().to_str().unwrap(),
+        ],
+    );
+    assert_eq!(json_stdout(&install)["action"], "updated");
+
+    let hook_path = repo.hook(".codex/hooks.json");
+    let mut hooks: Value = serde_json::from_str(&text(&hook_path)).unwrap();
+    let session_start = hooks["hooks"]["SessionStart"]
+        .as_array_mut()
+        .expect("generated SessionStart hooks");
+    session_start.push(session_start[0].clone());
+    hooks["hooks"]
+        .as_object_mut()
+        .expect("generated hooks object")
+        .remove("UserPromptSubmit");
+    write_json(&hook_path, &hooks);
+
+    let verify = run(
+        &repo,
+        &[
+            "agent-hooks",
+            "verify",
+            "--client",
+            "codex",
+            "--repo-root",
+            repo.path.to_str().unwrap(),
+            "--config",
+            repo.config().to_str().unwrap(),
+        ],
+    );
+    let payload = json_stdout(&verify);
+    assert_eq!(payload["ok"], false);
+    let client = &payload["clients"][0];
+    assert_eq!(
+        client["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|event| event["event"] == "SessionStart")
+            .unwrap()["managed_handler_count"],
+        2
+    );
+    let missing = client["events"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|event| event["event"] == "UserPromptSubmit")
+        .unwrap();
+    assert_eq!(missing["managed_handler_count"], 0);
+    assert_eq!(missing["ok"], false);
+}
+
+#[test]
 fn prompt_hook_uses_one_loopback_session_for_health_and_semantic_search() {
     let repo = TempRepo::new("loopback-search");
     let listener = match TcpListener::bind("127.0.0.1:0") {

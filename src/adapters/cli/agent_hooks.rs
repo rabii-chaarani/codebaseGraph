@@ -201,16 +201,18 @@ mod tests {
 
     #[test]
     fn options_resolve_repo_local_config_by_default() {
+        let expected_root = env::temp_dir().join("codebase-graph-agent-hooks-options-repo");
         let options = AgentHooksOptions::parse(
-            &["--repo-root".to_string(), "/tmp/repo".to_string()],
+            &[
+                "--repo-root".to_string(),
+                expected_root.to_string_lossy().into_owned(),
+            ],
             "install",
         )
         .unwrap();
         let (root, config) = options.paths().unwrap();
-        assert_eq!(root, PathBuf::from("/tmp/repo"));
-        assert_eq!(
-            config,
-            PathBuf::from("/tmp/repo/.codebaseGraph/config.json")
-        );
+        assert!(root.is_absolute());
+        assert_eq!(root, expected_root);
+        assert_eq!(config, expected_root.join(".codebaseGraph/config.json"));
     }
 }

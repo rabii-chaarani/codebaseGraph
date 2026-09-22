@@ -117,8 +117,13 @@ pub(crate) fn install_mcp_client(
     preflight.dry_run = true;
     let preflight_result = install_mcp_endpoint(&descriptor, &endpoint, &preflight)
         .map_err(|error| ApiError::new("mcp_install_failed", error))?;
-    let needs_local_daemon = transport == McpTransport::HttpDaemon
-        && (request.client == "all" || !manual_metadata_client(&request.client));
+    let hooks_require_daemon =
+        !crate::agent_hooks::resolve_agent_hook_clients(&request.agent_hooks, &request.client)
+            .map_err(|error| ApiError::new("mcp_install_failed", error))?
+            .is_empty();
+    let needs_local_daemon = hooks_require_daemon
+        || (transport == McpTransport::HttpDaemon
+            && (request.client == "all" || !manual_metadata_client(&request.client)));
     if request.dry_run {
         let daemon = if needs_local_daemon {
             Some(
@@ -387,7 +392,44 @@ fn reconcile_agent_hooks_for_lifecycle(
         Some(paths.config_path.clone()),
         Some(repo_root.to_path_buf()),
     )?;
-    let payload = reconcile_agent_hooks_for_mcp_install(
+    if options.agent_hooks == "none" {
+        // Explicit `none` is a no-op policy: preserve existing hook files and
+        // ownership metadata rather than interpreting an empty desired set as
+        // declarative removal.
+        return reconcile_agent_hooks_for_mcp_install(
+            &options.agent_hooks,
+            &options.mcp_client,
+            repo_root,
+            Some(&paths.config_path),
+            dry_run,
+            false,
+            Some(&descriptor.command),
+        );
+    }
+    // Lifecycle setup/reinstall replaces the desired hook ownership set. Remove
+    // previously managed clients that are no longer selected before installing
+    // the new set. The caller snapshots all affected hook files so a later
+    // failure can restore both sides of this transaction.
+    let desired =
+        crate::agent_hooks::resolve_agent_hook_clients(&options.agent_hooks, &options.mcp_client)?;
+    let previous = configured_agent_hook_clients(&paths.config_path)?;
+    let stale = previous
+        .iter()
+        .copied()
+        .filter(|client| !desired.contains(client))
+        .collect::<Vec<_>>();
+    let removal = if !stale.is_empty() {
+        Some(crate::agent_hooks::remove_agent_hooks(
+            repo_root,
+            &paths.config_path,
+            &stale,
+            dry_run,
+        )?)
+    } else {
+        None
+    };
+
+    let mut payload = reconcile_agent_hooks_for_mcp_install(
         &options.agent_hooks,
         &options.mcp_client,
         repo_root,
@@ -396,42 +438,39 @@ fn reconcile_agent_hooks_for_lifecycle(
         false,
         Some(&descriptor.command),
     )?;
+    if let Some(removal) = removal {
+        if let Some(object) = payload.as_object_mut() {
+            object.insert("removed".to_string(), removal);
+        }
+    }
     Ok(payload)
 }
 
-fn remove_agent_hooks_for_lifecycle(
-    selection: &str,
-    mcp_client: &str,
-    repo_root: &Path,
+fn configured_agent_hook_clients(
     config_path: &Path,
-    dry_run: bool,
-) -> Result<serde_json::Value, String> {
-    if selection == "none" {
-        return Ok(json!({
-            "action": "skipped",
-            "selection": "none",
-            "clients": [],
-            "reason": "disabled",
-        }));
-    }
+) -> Result<Vec<crate::agent_hooks::AgentHookClient>, String> {
     if !config_path.exists() {
-        return Ok(json!({
-            "action": "not_applicable",
-            "selection": selection,
-            "clients": [],
-            "reason": "repository setup config is unavailable",
-        }));
+        return Ok(Vec::new());
     }
-    let clients = crate::agent_hooks::resolve_agent_hook_clients(selection, mcp_client)?;
-    if clients.is_empty() {
-        return Ok(json!({
-            "action": "not_applicable",
-            "selection": selection,
-            "clients": [],
-            "reason": format!("MCP client {mcp_client} has no local agent-hook adapter"),
-        }));
+    let payload = read_json_file(config_path)?;
+    let Some(installed) = payload
+        .get("agent_hooks")
+        .and_then(|value| value.get("installed_clients"))
+        .and_then(serde_json::Value::as_array)
+    else {
+        return Ok(Vec::new());
+    };
+    let mut clients = Vec::new();
+    for value in installed.iter().filter_map(serde_json::Value::as_str) {
+        if let Ok(mut resolved) = crate::agent_hooks::resolve_agent_hook_clients(value, "none") {
+            if let Some(client) = resolved.pop() {
+                if !clients.contains(&client) {
+                    clients.push(client);
+                }
+            }
+        }
     }
-    crate::agent_hooks::remove_agent_hooks(repo_root, config_path, &clients, dry_run)
+    Ok(clients)
 }
 
 fn persist_agent_hooks_config(
@@ -490,7 +529,20 @@ fn snapshot_agent_hook_files(
     options: &LifecycleOptions,
     repo_root: &Path,
 ) -> Result<BTreeMap<PathBuf, Option<Vec<u8>>>, String> {
-    snapshot_agent_hook_files_for_selection(&options.agent_hooks, &options.mcp_client, repo_root)
+    let mut clients =
+        crate::agent_hooks::resolve_agent_hook_clients(&options.agent_hooks, &options.mcp_client)?;
+    let config_path = repo_root.join(".codebaseGraph/config.json");
+    for client in configured_agent_hook_clients(&config_path)? {
+        if !clients.contains(&client) {
+            clients.push(client);
+        }
+    }
+    let mut snapshots = BTreeMap::new();
+    for client in clients {
+        let path = crate::agent_hooks::hook_target_path(repo_root, client);
+        snapshots.insert(path.clone(), snapshot_file(&path)?);
+    }
+    Ok(snapshots)
 }
 
 fn snapshot_agent_hook_files_for_selection(
@@ -684,6 +736,9 @@ fn setup_payload_for_root(
     let source_root = source_root.to_path_buf();
     let paths = GraphStatePaths::derive(&source_root);
     reject_state_dir_root(&source_root)?;
+    let hooks_require_daemon =
+        !crate::agent_hooks::resolve_agent_hook_clients(&options.agent_hooks, &options.mcp_client)?
+            .is_empty();
 
     let materialize_options = MaterializeOptions {
         source_root: Some(source_root.clone()),
@@ -768,8 +823,10 @@ fn setup_payload_for_root(
             Ok(result) => result,
             Err(error) => {
                 let daemon_cleanup = if !daemon_state_existed
-                    && options.mcp_transport.resolved() == McpTransport::HttpDaemon
-                    && (options.mcp_client == "all" || !manual_metadata_client(&options.mcp_client))
+                    && (hooks_require_daemon
+                        || (options.mcp_transport.resolved() == McpTransport::HttpDaemon
+                            && (options.mcp_client == "all"
+                                || !manual_metadata_client(&options.mcp_client))))
                 {
                     stop_managed_daemon(&paths.config_path, true, false).err()
                 } else {
@@ -924,6 +981,26 @@ fn reinstall_payload_for_request(
                 let mut activation_options = options.clone();
                 activation_options.skip_mcp_config = true;
                 activation_options.instructions_target = "skip".to_string();
+                // `reinstall_state` moves the old .codebaseGraph directory
+                // away before activation. Seed the replacement config with
+                // its ownership metadata so setup can transactionally remove
+                // deselected hook clients (and still preserve `none`).
+                if let Some(previous) = previous_setup_config.as_deref() {
+                    if let Some(parent) = paths.config_path.parent() {
+                        fs::create_dir_all(parent).map_err(|error| {
+                            format!(
+                                "failed to recreate setup config directory {}: {error}",
+                                parent.display()
+                            )
+                        })?;
+                    }
+                    write_bytes_atomically(&paths.config_path, previous).map_err(|error| {
+                        format!(
+                            "failed to seed replacement setup config {}: {error}",
+                            paths.config_path.display()
+                        )
+                    })?;
+                }
                 setup_payload_for_root(&activation_options, &repo_root)
             },
             |mut payload| {
@@ -987,13 +1064,12 @@ fn uninstall_payload_for_request(
         .mcp_client
         .clone()
         .unwrap_or_else(|| "all".to_string());
-    let agent_hooks = remove_agent_hooks_for_lifecycle(
-        &request.agent_hooks,
-        &mcp_client,
-        &repo_root,
-        &config_path,
-        request.dry_run,
-    )?;
+    // Hook ownership is repository-scoped and independent from MCP
+    // registration filtering. Uninstall every recorded managed hook client;
+    // for legacy configs without ownership metadata, inspect all supported
+    // hook files and remove only our stable managed handlers.
+    let agent_hooks =
+        remove_all_agent_hooks_for_uninstall(&repo_root, &config_path, request.dry_run)?;
     let server_name = uninstall_server_name(&repo_root, &config_path)?;
     uninstall_mcp_clients(
         &mcp_client,
@@ -1031,6 +1107,41 @@ fn uninstall_payload_for_request(
         "agent_hooks": agent_hooks,
         "daemon": daemon,
     }))
+}
+
+fn remove_all_agent_hooks_for_uninstall(
+    repo_root: &Path,
+    config_path: &Path,
+    dry_run: bool,
+) -> Result<serde_json::Value, String> {
+    if !config_path.exists() {
+        return Ok(json!({
+            "action": "not_applicable",
+            "selection": "all",
+            "clients": [],
+            "reason": "repository setup config is unavailable",
+        }));
+    }
+    let payload = read_json_file(config_path)?;
+    let clients = if payload
+        .get("agent_hooks")
+        .and_then(|value| value.get("installed_clients"))
+        .and_then(serde_json::Value::as_array)
+        .is_some()
+    {
+        configured_agent_hook_clients(config_path)?
+    } else {
+        crate::agent_hooks::resolve_agent_hook_clients("all", "all")?
+    };
+    if clients.is_empty() {
+        return Ok(json!({
+            "action": "unchanged",
+            "selection": "recorded",
+            "clients": [],
+            "reason": "no managed agent-hook clients recorded",
+        }));
+    }
+    crate::agent_hooks::remove_agent_hooks(repo_root, config_path, &clients, dry_run)
 }
 
 fn reject_state_dir_root(repo_root: &Path) -> Result<(), String> {
@@ -1219,18 +1330,33 @@ fn setup_mcp_config(
                 .unwrap_or_else(|| PathBuf::from(".")),
         ),
     )?;
+    let hooks_require_daemon =
+        !crate::agent_hooks::resolve_agent_hook_clients(&options.agent_hooks, &options.mcp_client)?
+            .is_empty();
     if options.skip_mcp_config || options.mcp_client == "none" {
-        return Ok(json!({
-            "action": "skipped",
-            "client": options.mcp_client,
-            "scope": "local",
-            "server_name": descriptor.name,
-            "method": serde_json::Value::Null,
-            "path": serde_json::Value::Null,
-            "command": serde_json::Value::Null,
-            "descriptor": descriptor.as_json(),
-            "entry": descriptor.stdio_entry(false, true),
-        }));
+        let daemon = if hooks_require_daemon {
+            Some(ensure_managed_daemon(
+                &paths.config_path,
+                options.mcp_daemon_port,
+                dry_run,
+            )?)
+        } else {
+            None
+        };
+        return Ok(attach_daemon_payload(
+            json!({
+                "action": "skipped",
+                "client": options.mcp_client,
+                "scope": "local",
+                "server_name": descriptor.name,
+                "method": serde_json::Value::Null,
+                "path": serde_json::Value::Null,
+                "command": serde_json::Value::Null,
+                "descriptor": descriptor.as_json(),
+                "entry": descriptor.stdio_entry(false, true),
+            }),
+            daemon,
+        ));
     }
 
     let transport = options.mcp_transport.resolved();
@@ -1253,7 +1379,7 @@ fn setup_mcp_config(
     let preflight_result = install_mcp_endpoint(&descriptor, &endpoint, &preflight)?;
     let needs_local_daemon = transport == McpTransport::HttpDaemon
         && (options.mcp_client == "all" || !manual_metadata_client(&options.mcp_client));
-    let daemon = if needs_local_daemon {
+    let daemon = if needs_local_daemon || hooks_require_daemon {
         Some(ensure_managed_daemon(
             &paths.config_path,
             options.mcp_daemon_port,
@@ -1336,7 +1462,27 @@ fn ensure_managed_daemon(
     dry_run: bool,
 ) -> Result<serde_json::Value, String> {
     if dry_run {
-        let spec = crate::daemon_service::McpDaemonSpec::from_config(config_path, port)?;
+        let spec = match crate::daemon_service::McpDaemonSpec::from_config(config_path, port) {
+            Ok(spec) => spec,
+            // A first-install dry run intentionally has no config file yet.
+            // Still report the daemon that would be provisioned instead of
+            // turning preview into a failing read of future state.
+            Err(_) => {
+                let repo_root = config_path
+                    .parent()
+                    .and_then(Path::parent)
+                    .unwrap_or_else(|| Path::new("."));
+                let repo_root = canonical_or_self(repo_root);
+                let port = port.unwrap_or_else(|| stable_daemon_port(&repo_root));
+                let fingerprint = repository_fingerprint(&repo_root);
+                return Ok(json!({
+                    "action": "dry_run",
+                    "endpoint": format!("http://127.0.0.1:{port}/mcp"),
+                    "service_id": service_id(&fingerprint),
+                    "repository_fingerprint": fingerprint,
+                }));
+            }
+        };
         return Ok(json!({
             "action": "dry_run",
             "endpoint": spec.endpoint,
@@ -1711,10 +1857,16 @@ fn write_setup_config(
     repo_root: &Path,
     daemon_port: u16,
 ) -> Result<&'static str, String> {
-    let payload = setup_config_payload(paths, repo_root, daemon_port);
+    let mut payload = setup_config_payload(paths, repo_root, daemon_port);
     let mut action = "created";
     if paths.config_path.exists() {
         let previous = read_json_file(&paths.config_path)?;
+        // Keep the prior ownership record long enough for lifecycle
+        // reconciliation to remove deselected managed handlers. The
+        // reconciler then writes the desired replacement set atomically.
+        if let Some(agent_hooks) = previous.get("agent_hooks") {
+            payload["agent_hooks"] = agent_hooks.clone();
+        }
         if previous == payload {
             return Ok("unchanged");
         }

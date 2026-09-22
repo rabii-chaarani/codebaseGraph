@@ -177,6 +177,127 @@ fn install_configures_selected_agent_hook_and_persists_advisory_ownership() {
             .unwrap();
     assert_eq!(config["agent_hooks"]["policy"], "advisory");
     assert_eq!(config["agent_hooks"]["installed_clients"], json!(["codex"]));
+    let output: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(output["mcp_config"]["daemon"]["action"], "test_managed");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn install_agent_hooks_provisions_daemon_when_mcp_registration_is_skipped_or_stdio() {
+    for (label, extra) in [
+        ("skip", vec!["--skip-mcp-config"]),
+        ("stdio", vec!["--mcp-transport", "stdio"]),
+    ] {
+        let root = unique_temp_dir(&format!("codebase-graph-rust-agent-hook-daemon-{label}"));
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+        let mut args = vec![
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--agent-hooks",
+            "codex",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+        ];
+        args.extend(extra);
+        args.push("--json");
+        let mut output = Vec::new();
+        run(args, &mut output).unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+        assert_eq!(value["mcp_config"]["daemon"]["action"], "test_managed");
+        assert!(root.join(".codex/hooks.json").exists());
+        let _ = fs::remove_dir_all(root);
+    }
+}
+
+#[test]
+fn reinstall_hook_selection_removes_only_deselected_managed_clients() {
+    let root = unique_temp_dir("codebase-graph-rust-reinstall-agent-hook-selection");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--agent-hooks",
+            "all",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+
+    for (path, event, command) in [
+        (
+            root.join(".codex/hooks.json"),
+            "UserPromptSubmit",
+            "foreign-codex",
+        ),
+        (
+            root.join(".claude/settings.json"),
+            "UserPromptSubmit",
+            "foreign-claude",
+        ),
+        (
+            root.join(".github/hooks/codebase-graph.json"),
+            "userPromptSubmitted",
+            "foreign-copilot",
+        ),
+    ] {
+        let mut value: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        value["hooks"][event].as_array_mut().unwrap().push(json!({
+            "hooks": [{"type": "command", "command": command}],
+            "type": "command",
+            "bash": command,
+        }));
+        fs::write(&path, serde_json::to_vec_pretty(&value).unwrap()).unwrap();
+    }
+
+    run(
+        [
+            "reinstall",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--agent-hooks",
+            "codex",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+
+    let codex = fs::read_to_string(root.join(".codex/hooks.json")).unwrap();
+    let claude = fs::read_to_string(root.join(".claude/settings.json")).unwrap();
+    let copilot = fs::read_to_string(root.join(".github/hooks/codebase-graph.json")).unwrap();
+    assert!(codex.contains("codebase-graph-v1"));
+    assert!(codex.contains("foreign-codex"));
+    assert!(!claude.contains("codebase-graph-v1"));
+    assert!(claude.contains("foreign-claude"));
+    assert!(!copilot.contains("codebase-graph-v1"));
+    assert!(copilot.contains("foreign-copilot"));
+    let config: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(root.join(".codebaseGraph/config.json")).unwrap())
+            .unwrap();
+    assert_eq!(config["agent_hooks"]["installed_clients"], json!(["codex"]));
     let _ = fs::remove_dir_all(root);
 }
 
@@ -581,6 +702,62 @@ fn mcp_install_preserves_explicit_stdio_compatibility() {
 }
 
 #[test]
+fn mcp_install_agent_hooks_provisions_http_daemon_for_stdio_registration() {
+    let root = unique_temp_dir("codebase-graph-rust-mcp-agent-hook-stdio");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--agent-hooks",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+    let setup_config = root.join(".codebaseGraph/config.json");
+    let client_config = root.join("client/mcp.json");
+    let mut output = Vec::new();
+    run(
+        [
+            "mcp",
+            "install",
+            "--client",
+            "generic",
+            "--mcp-transport",
+            "stdio",
+            "--agent-hooks",
+            "codex",
+            "--config-path",
+            setup_config.to_str().unwrap(),
+            "--client-config-path",
+            client_config.to_str().unwrap(),
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["daemon"]["action"], "test_managed");
+    assert!(value["agent_hooks"]["clients"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|client| client["client"] == "codex"));
+    assert!(root.join(".codex/hooks.json").exists());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn mcp_install_reports_copilot_studio_metadata() {
     let root = unique_temp_dir("codebase-graph-rust-copilot-install");
     fs::create_dir_all(&root).unwrap();
@@ -767,5 +944,76 @@ fn uninstall_dry_run_reports_without_removing_files() {
     let client_payload: serde_json::Value =
         serde_json::from_str(&fs::read_to_string(&client_config).unwrap()).unwrap();
     assert!(client_payload["mcpServers"].get("codebase_graph").is_some());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn uninstall_removes_recorded_hooks_independent_of_mcp_client() {
+    let root = unique_temp_dir("codebase-graph-rust-uninstall-agent-hooks");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--agent-hooks",
+            "all",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+
+    let config_path = root.join(".codebaseGraph/config.json");
+    let mut config: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+    config.as_object_mut().unwrap().remove("agent_hooks");
+    fs::write(&config_path, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+
+    let client_config = root.join("client/mcp.json");
+    fs::create_dir_all(client_config.parent().unwrap()).unwrap();
+    fs::write(
+        &client_config,
+        serde_json::to_vec_pretty(&json!({
+            "mcpServers": {"other_server": {"command": "other", "args": []}}
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let mut output = Vec::new();
+    run(
+        [
+            "uninstall",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "generic",
+            "--client-config-path",
+            client_config.to_str().unwrap(),
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    for path in [
+        root.join(".codex/hooks.json"),
+        root.join(".claude/settings.json"),
+        root.join(".github/hooks/codebase-graph.json"),
+    ] {
+        assert!(path.exists());
+        assert!(!fs::read_to_string(path)
+            .unwrap()
+            .contains("codebase-graph-v1"));
+    }
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(value["agent_hooks"]["clients"].as_array().unwrap().len(), 3);
     let _ = fs::remove_dir_all(root);
 }

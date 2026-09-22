@@ -656,22 +656,28 @@ pub(crate) fn verify_agent_hooks(
     for client in clients {
         let path = hook_target_path(&root, *client);
         let value = load_json(&path)?;
-        let mut count = 0;
-        if let Some(hooks) = value.get("hooks").and_then(Value::as_object) {
-            for entries in hooks.values().filter_map(Value::as_array) {
-                for entry in entries {
-                    if managed_command(entry) {
-                        count += 1;
-                    }
-                    if let Some(children) = entry.get("hooks").and_then(Value::as_array) {
-                        count += children
-                            .iter()
-                            .filter(|child| managed_command(child))
-                            .count();
-                    }
-                }
-            }
-        }
+        let hooks = value.get("hooks").and_then(Value::as_object);
+        let event_details = event_names(*client)
+            .iter()
+            .map(|name| {
+                let managed_handler_count = hooks
+                    .and_then(|events| events.get(*name))
+                    .map(count_managed_handlers)
+                    .unwrap_or(0);
+                json!({
+                    "event": name,
+                    "managed_handler_count": managed_handler_count,
+                    "ok": managed_handler_count > 0,
+                })
+            })
+            .collect::<Vec<_>>();
+        let all_events_present = event_details
+            .iter()
+            .all(|event| event["ok"].as_bool().unwrap_or(false));
+        let managed_handler_count = event_details
+            .iter()
+            .filter_map(|event| event["managed_handler_count"].as_u64())
+            .sum::<u64>();
         let runner_smoke = run_agent_hook_json(*client, &setup_config, "{");
         let runner_ok = runner_smoke
             .get("advisory")
@@ -680,14 +686,34 @@ pub(crate) fn verify_agent_hooks(
         results.push(json!({
             "client": client.id(),
             "path": path,
-            "ok": count >= event_names(*client).len() && runner_ok,
-            "managed_handler_count": count,
+            "ok": all_events_present && runner_ok,
+            "managed_handler_count": managed_handler_count,
+            "events": event_details,
             "runner_smoke": if runner_ok { "fail_open" } else { "failed" },
             "trust_required": true,
             "restart_instructions": reload_instructions(*client),
         }));
     }
     Ok(json!({"ok": results.iter().all(|item| item["ok"] == true), "clients": results}))
+}
+
+fn count_managed_handlers(event: &Value) -> u64 {
+    event
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|entry| {
+            let direct = managed_command(entry) as u64;
+            let nested = entry
+                .get("hooks")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter(|child| managed_command(child))
+                .count() as u64;
+            direct + nested
+        })
+        .sum()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
