@@ -8,6 +8,7 @@ use crate::api::context::{
     bind_repo_selector, read_install_config, resolve_identity_path, resolve_repository_root,
 };
 use crate::api::RepoSelector;
+use crate::mcp_client::call_mcp_tool;
 use crate::storage::atomic::write_json_atomically;
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
@@ -1058,54 +1059,33 @@ fn verify_daemon_endpoint_with_root(
     if !has_health || !has_search {
         return Err("HTTP endpoint is missing required graph tool schemas".to_string());
     }
-    let graph_health = http_json_response_with_timeout(
-        port,
-        "POST",
-        "/mcp",
-        &[
-            ("mcp-session-id", session_id.as_str()),
-            (
-                "mcp-protocol-version",
-                crate::api::CodebaseGraphApi::latest_mcp_protocol_version(),
-            ),
-        ],
-        Some(&json!({
-            "jsonrpc": "2.0",
-            "id": 3,
-            "method": "tools/call",
-            "params": {
-                "name": "graph_health",
-                "arguments": {"include_structured_content": true}
-            }
-        })),
+    let graph_health_result = call_mcp_tool(
+        endpoint,
+        expected_fingerprint,
+        expected_repo_root,
+        "graph_health",
+        json!({
+            "include_structured_content": true,
+            "output_format": "json",
+        }),
         Duration::from_secs(15),
     )?;
-    if graph_health.status / 100 != 2 {
-        return Err(format!(
-            "HTTP graph_health request returned status {}",
-            graph_health.status
-        ));
-    }
-    if graph_health
-        .payload
-        .pointer("/result/isError")
-        .and_then(serde_json::Value::as_bool)
-        == Some(true)
-    {
-        return Err("HTTP graph_health tool returned an MCP error".to_string());
-    }
-    if graph_health
-        .payload
-        .pointer("/result/structuredContent/graph_readable")
+    if graph_health_result
+        .pointer("/structuredContent/graph_readable")
         .and_then(serde_json::Value::as_bool)
         != Some(true)
     {
         return Err("HTTP graph_health reported an unreadable graph".to_string());
     }
+    let graph_health = json!({
+        "status": 200,
+        "payload": {"result": graph_health_result},
+    });
     let mut repository_root_verified = expected_repo_root.is_none();
     if let Some(expected_root) = expected_repo_root {
         let actual_root = graph_health
-            .payload
+            .get("payload")
+            .unwrap_or(&serde_json::Value::Null)
             .pointer("/result/structuredContent/repo_root")
             .and_then(serde_json::Value::as_str)
             .ok_or_else(|| {
@@ -1130,7 +1110,7 @@ fn verify_daemon_endpoint_with_root(
         "ok": true,
         "health": health,
         "initialize": initialized.payload,
-        "graph_health": graph_health.payload,
+        "graph_health": graph_health["payload"].clone(),
         "tool_count": listed.len(),
         "checks": {
             "server_identity": true,
@@ -1182,7 +1162,6 @@ fn http_json_request(
 }
 
 struct HttpClientResponse {
-    status: u16,
     payload: serde_json::Value,
     headers: std::collections::BTreeMap<String, String>,
 }
@@ -1254,11 +1233,7 @@ fn http_json_response_with_timeout(
         .filter_map(|line| line.split_once(':'))
         .map(|(name, value)| (name.trim().to_ascii_lowercase(), value.trim().to_string()))
         .collect();
-    Ok(HttpClientResponse {
-        status,
-        payload,
-        headers,
-    })
+    Ok(HttpClientResponse { payload, headers })
 }
 
 fn endpoint_port(endpoint: &str) -> Option<u16> {

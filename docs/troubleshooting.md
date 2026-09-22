@@ -66,3 +66,86 @@ Keep the output from `check-health` and daemon `status`, including any
 Then consult the [MCP guide](mcp.md) for transport and service-manager
 diagnosis, or return to the [README](../README.md) for the supported setup
 paths.
+
+## Agent-loop hooks
+
+Agent-loop hooks are deliberately advisory. A hook failure should not stop an
+agent from working; use the checks below to restore graph context when it is
+missing.
+
+### Check the generated configuration
+
+Start with a read-only verification:
+
+```bash
+codebase-graph agent-hooks verify --client all
+```
+
+If a project file is malformed or truncated, restore the file's valid JSON
+shape, preserve unrelated settings, and reinstall only the managed entries:
+
+```bash
+codebase-graph agent-hooks install --client <client> --verify
+```
+
+The generated files are `.codex/hooks.json`, `.claude/settings.json`, and
+`.github/hooks/codebase-graph.json`. Do not copy a project hook file into a
+user-level configuration file: hosts may merge both layers and run handlers
+twice. Inspect the generated command for the stable
+`--managed-id codebase-graph-v1` marker, and remove only codebaseGraph's
+managed entries with:
+
+```bash
+codebase-graph agent-hooks remove --client <client>
+```
+
+### The hook cannot find the binary
+
+The generated command must resolve the installed `codebase-graph` executable.
+Check the client environment and shell `PATH`, then rerun verification. A
+missing executable is a successful no-op from the hook's point of view, so MCP
+registration and direct graph commands remain usable while the path is fixed.
+
+### The daemon is unavailable or the graph is stale
+
+Inspect the existing managed daemon; do not create a second database or force a
+rebuild from the hook:
+
+```bash
+codebase-graph mcp daemon status --config .codebaseGraph/config.json
+codebase-graph mcp daemon start --config .codebaseGraph/config.json
+```
+
+The hook reports health or freshness uncertainty and exits successfully. The
+managed watcher refreshes the graph after source changes. Use an explicit
+`build --mode full` only when a manual rebuild is intentional.
+
+### The hook reports a repository mismatch
+
+Hooks resolve identity from the repository's fixed
+`.codebaseGraph/config.json`. Confirm the client starts in the repository that
+owns that file and that the endpoint is the matching managed daemon. An
+identity mismatch is fail-open: the hook returns a warning rather than using
+another repository's graph.
+
+### Nothing appears in the prompt
+
+Check, in order:
+
+1. The client or workspace trusts project hooks.
+2. The host has not disabled lifecycle hooks through policy or settings.
+3. The generated project file is valid JSON and contains the managed command.
+4. The client has been restarted or reloaded after installation.
+5. `agent-hooks verify` reports the expected client and path.
+
+An empty prompt intentionally produces no search. A non-empty prompt can still
+produce no context when the graph is unavailable, the input exceeds the bounded
+limit, or no semantic matches exist.
+
+### Copilot-specific behavior
+
+GitHub Copilot CLI and VS Code use the project hook file at
+`.github/hooks/codebase-graph.json`. Local Copilot delivery may use the bounded
+session cache under `.codebaseGraph/agent-hooks/sessions/`; it never stores raw
+prompts. A cloud-agent invocation is intentionally a successful no-op because
+the local loopback daemon is not available there.

@@ -154,6 +154,16 @@ fn setup_defaults_repo_root_to_auto_detection() {
     assert_eq!(options.repo_root, None);
     assert_eq!(options.mcp_transport, crate::api::McpTransport::Auto);
     assert_eq!(options.mcp_daemon_port, None);
+    assert_eq!(options.agent_hooks, "auto");
+}
+
+#[test]
+fn setup_parses_agent_hook_selection() {
+    let options =
+        SetupOptions::parse(&["--agent-hooks".to_string(), "github-copilot".to_string()]).unwrap();
+
+    assert_eq!(options.agent_hooks, "github-copilot");
+    assert!(SetupOptions::parse(&["--agent-hooks".to_string(), "invalid".to_string()]).is_err());
 }
 
 #[test]

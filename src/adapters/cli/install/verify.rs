@@ -1,4 +1,5 @@
 use super::McpInstallOptions;
+use crate::agent_hooks::{resolve_agent_hook_clients, verify_agent_hooks};
 use crate::api::CodebaseGraphApi;
 use crate::daemon_service::{repository_fingerprint, verify_daemon_endpoint};
 use serde_json::json;
@@ -22,24 +23,77 @@ pub(in crate::adapters::cli) fn attach_install_verification(
         .and_then(serde_json::Value::as_array_mut)
     {
         for result in results {
-            attach_result_verification(result);
+            attach_result_verification(result, options);
         }
     } else {
-        attach_result_verification(&mut payload);
+        attach_result_verification(&mut payload, options);
     }
     payload
 }
 
-fn attach_result_verification(result: &mut serde_json::Value) {
+fn attach_result_verification(result: &mut serde_json::Value, options: &McpInstallOptions) {
     if result.get("error").is_some() {
         return;
     }
     let client = result
         .get("client")
         .and_then(serde_json::Value::as_str)
-        .unwrap_or("generic");
+        .unwrap_or("generic")
+        .to_string();
     let descriptor = result.get("descriptor").cloned().unwrap_or_default();
-    result["verification"] = verify_mcp_install(&descriptor, client);
+    result["verification"] = verify_mcp_install(&descriptor, &client);
+    result["agent_hooks_verification"] =
+        verify_agent_hooks_for_install(&descriptor, &client, options);
+}
+
+fn verify_agent_hooks_for_install(
+    descriptor: &serde_json::Value,
+    client: &str,
+    options: &McpInstallOptions,
+) -> serde_json::Value {
+    let selection = options.agent_hooks.as_str();
+    let clients = match resolve_agent_hook_clients(selection, client) {
+        Ok(clients) => clients,
+        Err(error) => return json!({"ok": false, "error": error}),
+    };
+    if clients.is_empty() {
+        return json!({
+            "ok": true,
+            "action": "not_applicable",
+            "selection": selection,
+            "clients": [],
+        });
+    }
+    let Some(config) = descriptor
+        .get("setup_config_path")
+        .and_then(serde_json::Value::as_str)
+    else {
+        return json!({
+            "ok": false,
+            "action": "not_applicable",
+            "selection": selection,
+            "error": "install response did not contain a setup config path",
+        });
+    };
+    let Some(root) = descriptor
+        .get("repo_root")
+        .and_then(serde_json::Value::as_str)
+    else {
+        return json!({
+            "ok": false,
+            "action": "not_applicable",
+            "selection": selection,
+            "error": "install response did not contain a repository root",
+        });
+    };
+    match verify_agent_hooks(
+        std::path::Path::new(root),
+        std::path::Path::new(config),
+        &clients,
+    ) {
+        Ok(payload) => payload,
+        Err(error) => json!({"ok": false, "selection": selection, "error": error}),
+    }
 }
 
 pub(in crate::adapters::cli) fn verify_mcp_install(

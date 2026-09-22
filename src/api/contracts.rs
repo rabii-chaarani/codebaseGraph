@@ -190,6 +190,10 @@ pub struct RepositoryLifecycleRequest {
     pub output_format: OutputFormat,
     pub dry_run: bool,
     pub mcp_client: Option<String>,
+    /// Agent-loop hook policy. `auto` follows `mcp_client`; `none` leaves
+    /// existing hook files untouched.
+    #[serde(default = "default_agent_hooks_selection")]
+    pub agent_hooks: String,
     pub mcp_config_path: Option<PathBuf>,
     pub instructions_target: Option<String>,
     pub skip_mcp_config: bool,
@@ -210,12 +214,19 @@ pub struct McpInstallRequest {
     pub scope: String,
     pub name: Option<String>,
     pub client_config_path: Option<PathBuf>,
+    /// Agent-loop hook policy for this MCP install operation.
+    #[serde(default = "default_agent_hooks_selection")]
+    pub agent_hooks: String,
     pub dry_run: bool,
     #[serde(default)]
     pub transport: McpTransport,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub daemon_port: Option<u16>,
     pub output_format: OutputFormat,
+}
+
+fn default_agent_hooks_selection() -> String {
+    "auto".to_string()
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -407,6 +418,7 @@ mod tests {
             output_format: OutputFormat::Typed,
             dry_run: false,
             mcp_client: Some("none".to_string()),
+            agent_hooks: "none".to_string(),
             mcp_config_path: Some(PathBuf::from("/tmp/mcp.json")),
             instructions_target: None,
             skip_mcp_config: true,
@@ -476,6 +488,7 @@ mod tests {
                 scope: "local".to_string(),
                 name: Some("codebase_graph".to_string()),
                 client_config_path: Some(PathBuf::from("/tmp/mcp.json")),
+                agent_hooks: "none".to_string(),
                 dry_run: true,
                 transport: McpTransport::Auto,
                 daemon_port: None,

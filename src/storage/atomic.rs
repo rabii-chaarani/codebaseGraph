@@ -21,9 +21,23 @@ pub(crate) fn write_json_atomically<T: Serialize>(
     write_json_atomically_with_fault(path, value, AtomicWriteFailure::None)
 }
 
+pub(crate) fn write_bytes_atomically(path: &Path, payload: &[u8]) -> Result<(), NativeError> {
+    write_bytes_atomically_with_fault(path, payload, AtomicWriteFailure::None)
+}
+
 pub(crate) fn write_json_atomically_with_fault<T: Serialize>(
     path: &Path,
     value: &T,
+    fault: AtomicWriteFailure,
+) -> Result<(), NativeError> {
+    let mut payload = serde_json::to_vec_pretty(value)?;
+    payload.push(b'\n');
+    write_bytes_atomically_with_fault(path, &payload, fault)
+}
+
+fn write_bytes_atomically_with_fault(
+    path: &Path,
+    payload: &[u8],
     fault: AtomicWriteFailure,
 ) -> Result<(), NativeError> {
     let parent = path.parent().ok_or_else(|| {
@@ -31,10 +45,8 @@ pub(crate) fn write_json_atomically_with_fault<T: Serialize>(
     })?;
     fs::create_dir_all(parent)?;
     let temp_path = temp_path_for(path);
-    let payload = serde_json::to_vec_pretty(value)?;
     let mut file = create_new_file(&temp_path)?;
-    file.write_all(&payload)?;
-    file.write_all(b"\n")?;
+    file.write_all(payload)?;
     file.sync_all()?;
     if fault == AtomicWriteFailure::AfterFileSync {
         let _ = fs::remove_file(&temp_path);

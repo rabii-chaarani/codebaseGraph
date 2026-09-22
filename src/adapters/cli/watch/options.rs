@@ -111,6 +111,7 @@ pub(in crate::adapters::cli) struct SetupOptions {
     pub(in crate::adapters::cli) semantic_enrichment: bool,
     pub(in crate::adapters::cli) semantic_provider_mode: String,
     pub(in crate::adapters::cli) mcp_client: String,
+    pub(in crate::adapters::cli) agent_hooks: String,
     pub(in crate::adapters::cli) mcp_config_path: Option<PathBuf>,
     pub(in crate::adapters::cli) skip_mcp_config: bool,
     pub(in crate::adapters::cli) mcp_transport: McpTransport,
@@ -137,6 +138,7 @@ impl SetupOptions {
             semantic_enrichment: false,
             semantic_provider_mode: String::new(),
             mcp_client: "codex".to_string(),
+            agent_hooks: "auto".to_string(),
             mcp_config_path: None,
             skip_mcp_config: false,
             mcp_transport: McpTransport::Auto,
@@ -171,6 +173,23 @@ impl SetupOptions {
                         .get(index + 1)
                         .ok_or_else(|| "--mcp-client requires a client id".to_string())?;
                     options.mcp_client = value.clone();
+                    index += 2;
+                }
+                "--agent-hooks" => {
+                    let value = args.get(index + 1).ok_or_else(|| {
+                        "--agent-hooks requires auto, none, codex, claude, github-copilot, or all"
+                            .to_string()
+                    })?;
+                    if !matches!(
+                        value.as_str(),
+                        "auto" | "none" | "codex" | "claude" | "github-copilot" | "all"
+                    ) {
+                        return Err(
+                            "--agent-hooks must be auto, none, codex, claude, github-copilot, or all"
+                                .to_string(),
+                        );
+                    }
+                    options.agent_hooks = value.clone();
                     index += 2;
                 }
                 "--mcp-config-path" => {

@@ -25,6 +25,7 @@ pub(in crate::adapters::cli) fn run_mcp_install<W: Write>(
         scope: options.scope.clone(),
         name: options.name.clone(),
         client_config_path: options.client_config_path.clone(),
+        agent_hooks: options.agent_hooks.clone(),
         dry_run: options.dry_run,
         transport: options.transport,
         daemon_port: options.daemon_port,

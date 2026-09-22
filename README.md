@@ -65,6 +65,11 @@ configuration and runtime state under `.codebaseGraph/`, updates one marked
 default. Use `codebase-graph reinstall` only when setup state must be recreated;
 unrelated MCP client entries are preserved.
 
+Setup also installs the matching repository-local agent-loop hook by default.
+Use `--agent-hooks none` to leave existing hook configuration untouched, or
+select `codex`, `claude`, `github-copilot`, or `all`. The same option is
+available on `reinstall` and `mcp install`.
+
 ## How it works
 
 ```mermaid
@@ -114,6 +119,47 @@ LM Studio, Hermes, OpenClaw, generic local MCP hosts, Copilot Studio, and
 Microsoft Copilot. For local clients, `auto` uses one repository-scoped
 Streamable HTTP daemon and shared loopback endpoint; stdio remains available
 for compatibility. See the [MCP guide](docs/mcp.md) for details.
+
+MCP registration and hook installation are independent. To manage hooks
+without changing the MCP registration, use:
+
+```bash
+codebase-graph agent-hooks install --client all --verify
+codebase-graph agent-hooks verify --client all
+codebase-graph agent-hooks remove --client all
+```
+
+The `agent-hooks run` subcommand is the managed runtime entrypoint used by
+client hook configuration; it reads one client event as JSON from standard
+input and emits advisory context. It is not intended for interactive use.
+
+### Agent-loop hooks
+
+The local hook adapters connect Codex, Claude Code, GitHub Copilot CLI, and
+Copilot in VS Code to the same managed loopback graph daemon. They write only
+project-local configuration:
+
+| Client | Hook configuration |
+| --- | --- |
+| Codex | `.codex/hooks.json` |
+| Claude Code | `.claude/settings.json` |
+| GitHub Copilot CLI and VS Code | `.github/hooks/codebase-graph.json` |
+
+On `SessionStart`, a hook checks graph health and reports the repository
+identity and freshness. On every non-empty prompt, it performs a bounded,
+semantic `graph_search` and adds compact advisory context. Hook context is
+supplemental: agents should request `graph_context` explicitly when they need
+dependencies, call graphs, runtime behavior, documentation, or change impact.
+
+Hooks fail open within three seconds. A stopped or stale daemon, an endpoint
+for another repository, a malformed event, or a disabled host hook produces a
+warning or no-op and never blocks the agent, writes to the graph, or triggers
+a rebuild. The repository watcher remains responsible for refresh. Copilot's
+cloud agent is intentionally unsupported; its wrapper exits successfully
+without running.
+
+For event payloads, trust/reload behavior, and recovery guidance, see
+[Agent-loop hooks and MCP](docs/mcp.md) and [Hook troubleshooting](docs/troubleshooting.md).
 
 The graph exposes these read-oriented tools:
 
@@ -180,6 +226,7 @@ start with the [troubleshooting guide](docs/troubleshooting.md) for status
 checks, recovery actions, reinstall boundaries, and stale graph diagnostics.
 
 - [MCP guide](docs/mcp.md) — client registration and transport choices
+- [Hook troubleshooting](docs/troubleshooting.md) — hook trust, daemon, and recovery checks
 - [k-wiki guide](docs/k-wiki.md) — curated knowledge workflow
 - [Release process](docs/release.md) — CI, packaging, and publishing
 - [Security policy](SECURITY.md) — local-first boundary and disclosures

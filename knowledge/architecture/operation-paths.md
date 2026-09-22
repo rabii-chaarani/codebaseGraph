@@ -8,6 +8,8 @@ tags:
 - mcp
 - runtime
 - storage
+- agents
+- hooks
 timestamp: 2026-08-25
 title: Public Operations and Runtime Paths
 type: architecture
@@ -42,6 +44,11 @@ external input
 | MCP stdio | Negotiate MCP messages and serve newline-delimited requests over standard streams. | Tool specifications derive from public operation metadata; the process routes repository operations to the elected owner. |
 | MCP HTTP | Serve MCP requests from one repository-scoped managed loopback daemon. | Every compatible local harness registers the same endpoint; the daemon uses the same MCP dispatch and repository coordinator as stdio. |
 | Embedded Rust API | Accept typed operation requests and return typed or block-form results. | Enters directly at the Public API Facade. |
+
+
+## Agent-loop hook path
+
+Repository-local hooks are an adapter edge into the same managed MCP path. The Agent Hook Adapter translates Codex, Claude Code, GitHub Copilot CLI, and VS Code lifecycle events into bounded advisory health and semantic-search requests. `SessionStart` checks health; each non-empty prompt searches the graph; deeper `graph_context` remains an explicit agent operation. Hooks fail open within three seconds, never rebuild or own refresh, and reject repository identity mismatches. See [Agent-Loop Hooks](./agent-loop-hooks.md).
 
 ## Managed local MCP daemon
 

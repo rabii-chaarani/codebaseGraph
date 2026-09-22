@@ -49,14 +49,30 @@ pub(crate) fn open_locked(
     path: impl AsRef<Path>,
     mode: LockMode,
 ) -> Result<LockedFile, NativeError> {
-    open_locked_inner(path.as_ref(), mode, false)
+    open_locked_inner(path.as_ref(), mode, false, true, true)
 }
 
 pub(crate) fn try_open_locked(
     path: impl AsRef<Path>,
     mode: LockMode,
 ) -> Result<Option<LockedFile>, NativeError> {
-    match open_locked_inner(path.as_ref(), mode, true) {
+    try_open_locked_inner(path.as_ref(), mode, true, true)
+}
+
+pub(crate) fn try_open_locked_in_existing_parent(
+    path: impl AsRef<Path>,
+    mode: LockMode,
+) -> Result<Option<LockedFile>, NativeError> {
+    try_open_locked_inner(path.as_ref(), mode, false, true)
+}
+
+fn try_open_locked_inner(
+    path: &Path,
+    mode: LockMode,
+    create_parent: bool,
+    create_file: bool,
+) -> Result<Option<LockedFile>, NativeError> {
+    match open_locked_inner(path, mode, true, create_parent, create_file) {
         Ok(locked) => Ok(Some(locked)),
         Err(NativeError::Io(error)) if is_lock_contended(&error) => Ok(None),
         Err(other) => Err(other),
@@ -73,9 +89,13 @@ fn open_locked_inner(
     path: &Path,
     mode: LockMode,
     non_blocking: bool,
+    create_parent: bool,
+    create_file: bool,
 ) -> Result<LockedFile, NativeError> {
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
+        if create_parent {
+            fs::create_dir_all(parent)?;
+        }
         let parent_metadata = fs::symlink_metadata(parent)?;
         if parent_metadata.file_type().is_symlink() || !parent_metadata.is_dir() {
             return Err(NativeError::InvalidInput(format!(
@@ -84,17 +104,19 @@ fn open_locked_inner(
             )));
         }
     }
-    if path.exists() {
-        let metadata = fs::symlink_metadata(path)?;
-        if metadata.file_type().is_symlink() || !metadata.is_file() {
-            return Err(NativeError::InvalidInput(format!(
-                "lock path must be a real file: {}",
-                path.display()
-            )));
-        }
+    let metadata = match fs::symlink_metadata(path) {
+        Ok(metadata) => Some(metadata),
+        Err(error) if create_file && error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(error.into()),
+    };
+    if metadata.is_some_and(|metadata| metadata.file_type().is_symlink() || !metadata.is_file()) {
+        return Err(NativeError::InvalidInput(format!(
+            "lock path must be a real file: {}",
+            path.display()
+        )));
     }
     let file = OpenOptions::new()
-        .create(true)
+        .create(create_file)
         .read(true)
         .write(true)
         .truncate(false)

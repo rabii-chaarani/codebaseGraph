@@ -187,3 +187,103 @@ Repeat for each client whose registration should use the new binary. If the
 daemon itself is stale, `codebase-graph mcp daemon start --config
 .codebaseGraph/config.json` reconciles the service manifest and runtime before
 the client reconnects.
+
+## Agent-loop hooks
+
+codebaseGraph has two related but independent integrations:
+
+- MCP registration makes graph tools available to a client.
+- Agent-loop hooks add bounded graph context at lifecycle and prompt events.
+
+The hooks use the repository's existing managed loopback daemon. They do not
+open a second graph database, start a second watcher, or rebuild the graph.
+
+### Installation
+
+Repository setup enables the matching local hook by default:
+
+```bash
+codebase-graph install --agent-hooks auto
+codebase-graph reinstall --agent-hooks all
+codebase-graph mcp install --client codex --agent-hooks codex
+```
+
+`auto` maps Codex to `codex`, Claude Code (including `claude-project`) to
+`claude`, and GitHub Copilot to `github-copilot`. `all` installs Codex, Claude
+Code, and GitHub Copilot hooks. `none` leaves existing hook files unchanged.
+Other MCP clients report `not_applicable` and are not modified.
+
+Install and lifecycle responses include an `agent_hooks` result with each
+client's action, target path, verification status, reload guidance, and trust
+status. This makes a successful MCP registration distinguishable from a hook
+that was skipped, not applicable, or left untouched by `none`.
+
+Manage hooks independently from MCP registration:
+
+```bash
+codebase-graph agent-hooks install --client <codex|claude|github-copilot|all>
+codebase-graph agent-hooks remove --client <client|all>
+codebase-graph agent-hooks verify --client <client|all>
+```
+
+Add `--config <path>` when a client uses a non-default project configuration.
+Use `--dry-run` to inspect the planned merge without changing files and
+`--verify` after installation to validate the rendered configuration and
+managed command. `agent-hooks run --client <client> --config <path>` is the
+runtime entrypoint called by a generated hook; it reads one JSON event from
+stdin and writes the client-native advisory response to stdout.
+
+### Project files
+
+The installer preserves unrelated configuration and owns only its marked
+handlers. Reinstalling is idempotent, and removal deletes only handlers
+managed by codebaseGraph. Managed commands carry the stable
+`--managed-id codebase-graph-v1` marker, so unrelated handlers remain intact:
+
+| Client | Project file |
+| --- | --- |
+| Codex | `.codex/hooks.json` |
+| Claude Code | `.claude/settings.json` |
+| GitHub Copilot CLI and VS Code | `.github/hooks/codebase-graph.json` |
+
+Project-local hook files require the client or workspace to be trusted. The
+installer reports trust and reload guidance but does not bypass host policy.
+Restart or reload the client after changing hooks when that client does not
+watch its project settings automatically.
+
+### Event behavior
+
+`SessionStart` checks `graph_health` and reports repository identity, graph
+freshness, and the guidance to use graph tools. Every non-empty
+`UserPromptSubmit` checks health, then performs a semantic `graph_search` with
+slim results, one context level, and a limit of five matches. Context is
+labelled advisory; an overdue, pending, or unknown graph is not presented as
+current.
+
+The hook bridge accepts the native Codex, Claude, Copilot CLI, and VS Code
+event envelopes. It bounds prompt input to 4 KiB, event input to 1 MiB, and
+injected context to 6,000 Unicode-safe characters. It retries one retryable
+startup failure only when the three-second total deadline permits it. Raw
+prompts and transcripts are never persisted.
+
+Copilot's local CLI and VS Code hooks may use a short-lived session record under
+`.codebaseGraph/agent-hooks/sessions/`. A record contains only a prompt hash,
+bounded graph result, delivery state, and timestamp; entries older than 24
+hours are removed. Copilot cloud agent events are detected and no-op
+successfully.
+
+The watcher owns graph refresh. Hooks do not add a post-edit rebuild or a
+forced stop action. When an agent needs callers, dependencies, runtime paths,
+documentation, or change impact, it should call `graph_context` explicitly.
+
+### Output and failure policy
+
+Hook output is advisory and client-native. Health or graph transport failures,
+repository identity mismatches, malformed events, unavailable binaries, and
+stale configuration produce a concise warning or empty context and exit
+successfully. A hook must never approve a permission, deny a tool, block the
+agent, or silently use a graph belonging to another repository.
+
+For repair steps, see [Hook troubleshooting](troubleshooting.md). For the
+shared daemon and request path, see [Public Operations and Runtime Paths](../knowledge/architecture/operation-paths.md)
+and [Graph Runtime Architecture](../knowledge/architecture/graph-runtime.md).

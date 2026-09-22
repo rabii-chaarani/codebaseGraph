@@ -1,7 +1,7 @@
 use crate::api::context::{
-    read_install_config, resolve_runtime, GraphInstallConfig, GraphInstallMaterializationConfig,
-    GraphInstallMcpConfig, GraphInstallMcpHttpConfig, GraphInstallRefreshConfig, RepoRuntime,
-    INSTALL_CONFIG_SCHEMA_VERSION,
+    read_install_config, resolve_runtime, GraphInstallAgentHooksConfig, GraphInstallConfig,
+    GraphInstallMaterializationConfig, GraphInstallMcpConfig, GraphInstallMcpHttpConfig,
+    GraphInstallRefreshConfig, RepoRuntime, INSTALL_CONFIG_SCHEMA_VERSION,
 };
 use crate::api::contracts::{
     ApiError, McpInstallRequest, McpTransport, RefreshRequest, RepoSelector,
@@ -15,7 +15,7 @@ use crate::daemon_service::{
     repository_fingerprint, service_id, stable_daemon_port, DAEMON_TRANSPORT_VERSION,
 };
 use crate::protocol::{NativeSyntaxMaterializationRequest, NativeSyntaxMaterializationResponse};
-use crate::storage::atomic::write_json_atomically;
+use crate::storage::atomic::{write_bytes_atomically, write_json_atomically};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -117,8 +117,13 @@ pub(crate) fn install_mcp_client(
     preflight.dry_run = true;
     let preflight_result = install_mcp_endpoint(&descriptor, &endpoint, &preflight)
         .map_err(|error| ApiError::new("mcp_install_failed", error))?;
-    let needs_local_daemon = transport == McpTransport::HttpDaemon
-        && (request.client == "all" || !manual_metadata_client(&request.client));
+    let hooks_require_daemon =
+        !crate::agent_hooks::resolve_agent_hook_clients(&request.agent_hooks, &request.client)
+            .map_err(|error| ApiError::new("mcp_install_failed", error))?
+            .is_empty();
+    let needs_local_daemon = hooks_require_daemon
+        || (transport == McpTransport::HttpDaemon
+            && (request.client == "all" || !manual_metadata_client(&request.client)));
     if request.dry_run {
         let daemon = if needs_local_daemon {
             Some(
@@ -137,7 +142,19 @@ pub(crate) fn install_mcp_client(
         } else {
             None
         };
-        return Ok(attach_daemon_payload(preflight_result, daemon));
+        let hooks = reconcile_agent_hooks_for_mcp_install(
+            &request.agent_hooks,
+            &request.client,
+            &runtime.repo_root,
+            config_path.as_deref(),
+            true,
+            true,
+            Some(&descriptor.command),
+        )
+        .map_err(|error| ApiError::new("mcp_install_failed", error))?;
+        let mut payload = attach_daemon_payload(preflight_result, daemon);
+        payload["agent_hooks"] = hooks;
+        return Ok(payload);
     }
 
     let previous_config = config_path
@@ -145,6 +162,12 @@ pub(crate) fn install_mcp_client(
         .map(|path| snapshot_file(path))
         .transpose()
         .map_err(|error| ApiError::new("mcp_install_failed", error))?;
+    let hook_snapshots = snapshot_agent_hook_files_for_selection(
+        &request.agent_hooks,
+        &request.client,
+        &runtime.repo_root,
+    )
+    .map_err(|error| ApiError::new("mcp_install_failed", error))?;
     if transport == McpTransport::HttpDaemon {
         let path = config_path
             .as_ref()
@@ -158,6 +181,8 @@ pub(crate) fn install_mcp_client(
         )
         .map_err(|error| ApiError::new("mcp_install_failed", error))?;
     }
+    let mcp_snapshots = snapshot_mcp_registration_files_for_request(request, &descriptor)
+        .map_err(|error| ApiError::new("mcp_install_failed", error))?;
     let daemon = if needs_local_daemon {
         let setup_path = descriptor.setup_config_path.as_deref().ok_or_else(|| {
             ApiError::new(
@@ -180,7 +205,65 @@ pub(crate) fn install_mcp_client(
         None
     };
     match install_mcp_endpoint(&descriptor, &endpoint, &install_options) {
-        Ok(result) => Ok(attach_daemon_payload(result, daemon)),
+        Ok(result) => {
+            let hooks = match reconcile_agent_hooks_for_mcp_install(
+                &request.agent_hooks,
+                &request.client,
+                &runtime.repo_root,
+                config_path.as_deref(),
+                false,
+                true,
+                Some(&descriptor.command),
+            ) {
+                Ok(payload) => payload,
+                Err(error) => {
+                    let mut rollback_errors = Vec::new();
+                    if daemon
+                        .as_ref()
+                        .is_some_and(|payload| payload["action"] == "started")
+                    {
+                        if let Some(path) = descriptor.setup_config_path.as_deref() {
+                            if let Err(cleanup) = stop_managed_daemon(path, true, false) {
+                                rollback_errors.push(format!("daemon rollback failed: {cleanup}"));
+                            }
+                        }
+                    }
+                    if let (Some(path), Some(previous)) =
+                        (config_path.as_ref(), previous_config.as_ref())
+                    {
+                        if let Err(cleanup) = restore_file(path, previous.as_deref()) {
+                            rollback_errors.push(format!("config rollback failed: {cleanup}"));
+                        }
+                    }
+                    for (path, previous) in &hook_snapshots {
+                        if let Err(cleanup) = restore_file(path, previous.as_deref()) {
+                            rollback_errors.push(format!("hook rollback failed: {cleanup}"));
+                        }
+                    }
+                    for (path, previous) in &mcp_snapshots {
+                        if let Err(cleanup) = restore_file(path, previous.as_deref()) {
+                            rollback_errors
+                                .push(format!("MCP registration rollback failed: {cleanup}"));
+                        }
+                    }
+                    if request.client_config_path.is_none() {
+                        rollback_errors.push(
+                            "native client registration rollback is best effort; inspect the host config if native installation ran"
+                                .to_string(),
+                        );
+                    }
+                    let message = if rollback_errors.is_empty() {
+                        error
+                    } else {
+                        format!("{error}; {}", rollback_errors.join("; "))
+                    };
+                    return Err(ApiError::new("mcp_install_failed", message));
+                }
+            };
+            let mut payload = attach_daemon_payload(result, daemon);
+            payload["agent_hooks"] = hooks;
+            Ok(payload)
+        }
         Err(error) => {
             let mut rollback_errors = Vec::new();
             if daemon
@@ -198,6 +281,22 @@ pub(crate) fn install_mcp_client(
                     rollback_errors.push(format!("config rollback failed: {cleanup}"));
                 }
             }
+            for (path, previous) in &hook_snapshots {
+                if let Err(cleanup) = restore_file(path, previous.as_deref()) {
+                    rollback_errors.push(format!("hook rollback failed: {cleanup}"));
+                }
+            }
+            for (path, previous) in &mcp_snapshots {
+                if let Err(cleanup) = restore_file(path, previous.as_deref()) {
+                    rollback_errors.push(format!("MCP registration rollback failed: {cleanup}"));
+                }
+            }
+            if request.client_config_path.is_none() {
+                rollback_errors.push(
+                    "native client registration rollback is best effort; inspect the host config if native installation ran"
+                        .to_string(),
+                );
+            }
             let message = if rollback_errors.is_empty() {
                 error
             } else {
@@ -206,6 +305,328 @@ pub(crate) fn install_mcp_client(
             Err(ApiError::new("mcp_install_failed", message))
         }
     }
+}
+
+/// Resolve and reconcile the repository-local hook adapters after MCP
+/// preflight/registration has succeeded. The hook service owns its own file
+/// merge transaction; this layer only maps lifecycle policy to the selected
+/// clients and records the result in the operation payload.
+fn reconcile_agent_hooks_for_mcp_install(
+    selection: &str,
+    mcp_client: &str,
+    repo_root: &Path,
+    setup_config_path: Option<&Path>,
+    dry_run: bool,
+    union_existing: bool,
+    server_command: Option<&str>,
+) -> Result<serde_json::Value, String> {
+    if selection == "none" {
+        return Ok(json!({
+            "action": "skipped",
+            "selection": "none",
+            "clients": [],
+            "reason": "disabled",
+        }));
+    }
+    let Some(config_path) = setup_config_path else {
+        return Ok(json!({
+            "action": "not_applicable",
+            "selection": selection,
+            "clients": [],
+            "reason": "repository setup config is unavailable",
+        }));
+    };
+    let clients = crate::agent_hooks::resolve_agent_hook_clients(selection, mcp_client)?;
+    if clients.is_empty() {
+        if !dry_run && !union_existing && config_path.exists() {
+            persist_agent_hooks_config(config_path, selection, mcp_client, false)?;
+        }
+        return Ok(json!({
+            "action": "not_applicable",
+            "selection": selection,
+            "clients": [],
+            "reason": format!("MCP client {mcp_client} has no local agent-hook adapter"),
+        }));
+    }
+    if !config_path.exists() && dry_run {
+        return Ok(json!({
+            "action": "dry_run",
+            "selection": selection,
+            "managed_id": crate::agent_hooks::MANAGED_ID,
+            "clients": clients
+                .iter()
+                .map(|client| json!({
+                    "client": client.id(),
+                    "action": "dry_run",
+                    "path": crate::agent_hooks::hook_target_path(repo_root, *client),
+                    "trust_required": true,
+                }))
+                .collect::<Vec<_>>(),
+        }));
+    }
+    let payload = if let Some(server_command) = server_command {
+        crate::agent_hooks::reconcile_agent_hooks_with_command(
+            repo_root,
+            config_path,
+            server_command,
+            &clients,
+            dry_run,
+        )?
+    } else {
+        crate::agent_hooks::reconcile_agent_hooks(repo_root, config_path, &clients, dry_run)?
+    };
+    if !dry_run && payload.get("action").and_then(serde_json::Value::as_str) != Some("failed") {
+        persist_agent_hooks_config(config_path, selection, mcp_client, union_existing)?;
+    }
+    Ok(payload)
+}
+
+fn reconcile_agent_hooks_for_lifecycle(
+    options: &LifecycleOptions,
+    paths: &GraphStatePaths,
+    dry_run: bool,
+) -> Result<serde_json::Value, String> {
+    let repo_root = paths.state_dir.parent().unwrap_or_else(|| Path::new("."));
+    let descriptor = build_mcp_descriptor(
+        Some("codebase_graph".to_string()),
+        Some(paths.config_path.clone()),
+        Some(repo_root.to_path_buf()),
+    )?;
+    if options.agent_hooks == "none" {
+        // Explicit `none` is a no-op policy: preserve existing hook files and
+        // ownership metadata rather than interpreting an empty desired set as
+        // declarative removal.
+        return reconcile_agent_hooks_for_mcp_install(
+            &options.agent_hooks,
+            &options.mcp_client,
+            repo_root,
+            Some(&paths.config_path),
+            dry_run,
+            false,
+            Some(&descriptor.command),
+        );
+    }
+    // Lifecycle setup/reinstall replaces the desired hook ownership set. Remove
+    // previously managed clients that are no longer selected before installing
+    // the new set. The caller snapshots all affected hook files so a later
+    // failure can restore both sides of this transaction.
+    let desired =
+        crate::agent_hooks::resolve_agent_hook_clients(&options.agent_hooks, &options.mcp_client)?;
+    let previous = configured_agent_hook_clients(&paths.config_path)?;
+    let stale = previous
+        .iter()
+        .copied()
+        .filter(|client| !desired.contains(client))
+        .collect::<Vec<_>>();
+    let removal = if !stale.is_empty() {
+        Some(crate::agent_hooks::remove_agent_hooks(
+            repo_root,
+            &paths.config_path,
+            &stale,
+            dry_run,
+        )?)
+    } else {
+        None
+    };
+
+    let mut payload = reconcile_agent_hooks_for_mcp_install(
+        &options.agent_hooks,
+        &options.mcp_client,
+        repo_root,
+        Some(&paths.config_path),
+        dry_run,
+        false,
+        Some(&descriptor.command),
+    )?;
+    if let Some(removal) = removal {
+        if let Some(object) = payload.as_object_mut() {
+            object.insert("removed".to_string(), removal);
+        }
+    }
+    Ok(payload)
+}
+
+fn configured_agent_hook_clients(
+    config_path: &Path,
+) -> Result<Vec<crate::agent_hooks::AgentHookClient>, String> {
+    if !config_path.exists() {
+        return Ok(Vec::new());
+    }
+    let payload = read_json_file(config_path)?;
+    let Some(installed) = payload
+        .get("agent_hooks")
+        .and_then(|value| value.get("installed_clients"))
+        .and_then(serde_json::Value::as_array)
+    else {
+        return Ok(Vec::new());
+    };
+    let mut clients = Vec::new();
+    for value in installed.iter().filter_map(serde_json::Value::as_str) {
+        if let Ok(mut resolved) = crate::agent_hooks::resolve_agent_hook_clients(value, "none") {
+            if let Some(client) = resolved.pop() {
+                if !clients.contains(&client) {
+                    clients.push(client);
+                }
+            }
+        }
+    }
+    Ok(clients)
+}
+
+fn persist_agent_hooks_config(
+    config_path: &Path,
+    selection: &str,
+    mcp_client: &str,
+    union_existing: bool,
+) -> Result<(), String> {
+    if !config_path.exists() {
+        return Ok(());
+    }
+    let mut payload = read_json_file(config_path)?;
+    let mut clients = match selection {
+        "none" => Vec::new(),
+        "all" => vec!["codex", "claude", "github-copilot"],
+        "codex" => vec!["codex"],
+        "claude" => vec!["claude"],
+        "github-copilot" => vec!["github-copilot"],
+        "auto" => match mcp_client {
+            "codex" => vec!["codex"],
+            "claude" | "claude-project" => vec!["claude"],
+            "github-copilot" => vec!["github-copilot"],
+            "all" => vec!["codex", "claude", "github-copilot"],
+            _ => Vec::new(),
+        },
+        _ => Vec::new(),
+    };
+    if union_existing {
+        if let Some(existing) = payload
+            .get("agent_hooks")
+            .and_then(|value| value.get("installed_clients"))
+            .and_then(serde_json::Value::as_array)
+        {
+            for client in existing.iter().filter_map(serde_json::Value::as_str) {
+                if !clients.contains(&client) {
+                    clients.push(client);
+                }
+            }
+            clients.sort_unstable();
+        }
+    }
+    payload["agent_hooks"] = json!({
+        "format_version": 1,
+        "policy": "advisory",
+        "installed_clients": clients,
+    });
+    write_json_atomically(config_path, &payload).map_err(|error| {
+        format!(
+            "failed to persist agent-hook ownership in {}: {error}",
+            config_path.display()
+        )
+    })
+}
+
+fn snapshot_agent_hook_files(
+    options: &LifecycleOptions,
+    repo_root: &Path,
+) -> Result<BTreeMap<PathBuf, Option<Vec<u8>>>, String> {
+    let mut clients =
+        crate::agent_hooks::resolve_agent_hook_clients(&options.agent_hooks, &options.mcp_client)?;
+    let config_path = repo_root.join(".codebaseGraph/config.json");
+    for client in configured_agent_hook_clients(&config_path)? {
+        if !clients.contains(&client) {
+            clients.push(client);
+        }
+    }
+    let mut snapshots = BTreeMap::new();
+    for client in clients {
+        let path = crate::agent_hooks::hook_target_path(repo_root, client);
+        snapshots.insert(path.clone(), snapshot_file(&path)?);
+    }
+    Ok(snapshots)
+}
+
+fn snapshot_agent_hook_files_for_selection(
+    selection: &str,
+    mcp_client: &str,
+    repo_root: &Path,
+) -> Result<BTreeMap<PathBuf, Option<Vec<u8>>>, String> {
+    let clients = crate::agent_hooks::resolve_agent_hook_clients(selection, mcp_client)?;
+    let mut snapshots = BTreeMap::new();
+    for client in clients {
+        let path = crate::agent_hooks::hook_target_path(repo_root, client);
+        snapshots.insert(path.clone(), snapshot_file(&path)?);
+    }
+    Ok(snapshots)
+}
+
+fn snapshot_mcp_registration_files(
+    options: &LifecycleOptions,
+    paths: &GraphStatePaths,
+) -> Result<BTreeMap<PathBuf, Option<Vec<u8>>>, String> {
+    if options.skip_mcp_config || options.mcp_client == "none" {
+        return Ok(BTreeMap::new());
+    }
+    let repo_root = paths
+        .state_dir
+        .parent()
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from("."));
+    let descriptor = build_mcp_descriptor(
+        Some("codebase_graph".to_string()),
+        Some(paths.config_path.clone()),
+        Some(repo_root),
+    )?;
+    let clients: Vec<&str> = if options.mcp_client == "all" {
+        supported_mcp_clients().to_vec()
+    } else {
+        vec![options.mcp_client.as_str()]
+    };
+    let scope = if options.mcp_client == "claude-project" {
+        "project"
+    } else {
+        "local"
+    };
+    let mut snapshots = BTreeMap::new();
+    for client in clients {
+        let target =
+            resolve_mcp_target(client, scope, &descriptor, options.mcp_config_path.clone())?;
+        if let Some(path) = target.path {
+            snapshots.insert(path.clone(), snapshot_file(&path)?);
+        }
+    }
+    Ok(snapshots)
+}
+
+fn snapshot_mcp_registration_files_for_request(
+    request: &McpInstallRequest,
+    descriptor: &McpServerDescriptor,
+) -> Result<BTreeMap<PathBuf, Option<Vec<u8>>>, String> {
+    if request.client == "all" && request.client_config_path.is_some() {
+        return Ok(BTreeMap::new());
+    }
+    let clients: Vec<&str> = if request.client == "all" {
+        supported_mcp_clients().to_vec()
+    } else {
+        vec![request.client.as_str()]
+    };
+    let scope = if request.client == "claude-project" {
+        "project"
+    } else {
+        request.scope.as_str()
+    };
+    let mut snapshots = BTreeMap::new();
+    for client in clients {
+        let target = resolve_mcp_target(
+            client,
+            scope,
+            descriptor,
+            request.client_config_path.clone(),
+        )?;
+        if let Some(path) = target.path {
+            snapshots.insert(path.clone(), snapshot_file(&path)?);
+        }
+    }
+    Ok(snapshots)
 }
 
 fn validate_lifecycle_action(
@@ -267,6 +688,7 @@ struct LifecycleOptions {
     include_fts: bool,
     semantic_provider_mode: String,
     mcp_client: String,
+    agent_hooks: String,
     mcp_config_path: Option<PathBuf>,
     skip_mcp_config: bool,
     mcp_transport: McpTransport,
@@ -285,6 +707,7 @@ impl LifecycleOptions {
                 .mcp_client
                 .clone()
                 .unwrap_or_else(|| "codex".to_string()),
+            agent_hooks: request.agent_hooks.clone(),
             mcp_config_path: request.mcp_config_path.clone(),
             skip_mcp_config: request.skip_mcp_config,
             mcp_transport: request.mcp_transport,
@@ -313,6 +736,9 @@ fn setup_payload_for_root(
     let source_root = source_root.to_path_buf();
     let paths = GraphStatePaths::derive(&source_root);
     reject_state_dir_root(&source_root)?;
+    let hooks_require_daemon =
+        !crate::agent_hooks::resolve_agent_hook_clients(&options.agent_hooks, &options.mcp_client)?
+            .is_empty();
 
     let materialize_options = MaterializeOptions {
         source_root: Some(source_root.clone()),
@@ -335,8 +761,11 @@ fn setup_payload_for_root(
         None => None,
     };
     let daemon_state_existed = paths.state_dir.join("mcp-daemon.json").exists();
+    let hook_snapshots = snapshot_agent_hook_files(options, &source_root)?;
+    let mcp_snapshots = snapshot_mcp_registration_files(options, &paths)?;
 
-    let (config_action, instructions, mcp_config, materialization) = if options.dry_run {
+    let (config_action, instructions, mcp_config, agent_hooks, materialization) = if options.dry_run
+    {
         let request = materialization_request(&materialize_options)?;
         let materialization = dry_run_materialization_payload(&request, &paths);
         let config_action = if json_file_would_change(&paths.config_path, &config_payload)? {
@@ -349,10 +778,12 @@ fn setup_payload_for_root(
             "path": instructions_path.as_ref().map(|path| path.to_string_lossy().to_string()),
         });
         let mcp_config = setup_mcp_config(options, &paths, true)?;
+        let agent_hooks = reconcile_agent_hooks_for_lifecycle(options, &paths, true)?;
         (
             config_action.to_string(),
             instructions,
             mcp_config,
+            agent_hooks,
             materialization,
         )
     } else {
@@ -364,6 +795,9 @@ fn setup_payload_for_root(
         })?;
         let result = (|| {
             let config_action = write_setup_config(&paths, &source_root, daemon_port)?;
+            if options.agent_hooks == "none" {
+                preserve_agent_hooks_config(&paths.config_path, previous_config.as_deref())?;
+            }
             let instructions = upsert_instruction_block(
                 &source_root,
                 &options.instructions_target,
@@ -376,10 +810,12 @@ fn setup_payload_for_root(
                 materialization_payload(&response, &materialize_options.mode, &paths)
             };
             let mcp_config = setup_mcp_config(options, &paths, false)?;
+            let agent_hooks = reconcile_agent_hooks_for_lifecycle(options, &paths, false)?;
             Ok::<_, String>((
                 config_action.to_string(),
                 instructions,
                 mcp_config,
+                agent_hooks,
                 materialization,
             ))
         })();
@@ -387,14 +823,22 @@ fn setup_payload_for_root(
             Ok(result) => result,
             Err(error) => {
                 let daemon_cleanup = if !daemon_state_existed
-                    && options.mcp_transport.resolved() == McpTransport::HttpDaemon
-                    && (options.mcp_client == "all" || !manual_metadata_client(&options.mcp_client))
+                    && (hooks_require_daemon
+                        || (options.mcp_transport.resolved() == McpTransport::HttpDaemon
+                            && (options.mcp_client == "all"
+                                || !manual_metadata_client(&options.mcp_client))))
                 {
                     stop_managed_daemon(&paths.config_path, true, false).err()
                 } else {
                     None
                 };
                 restore_file(&paths.config_path, previous_config.as_deref())?;
+                for (path, previous) in &hook_snapshots {
+                    restore_file(path, previous.as_deref())?;
+                }
+                for (path, previous) in &mcp_snapshots {
+                    restore_file(path, previous.as_deref())?;
+                }
                 if let Some((path, previous)) = previous_instructions.as_ref() {
                     restore_file(path, previous.as_deref())?;
                 }
@@ -408,10 +852,19 @@ fn setup_payload_for_root(
                         ));
                     }
                 }
-                return Err(match daemon_cleanup {
+                let rollback_message = match daemon_cleanup {
                     Some(cleanup) => format!("{error}; daemon rollback failed: {cleanup}"),
                     None => error,
-                });
+                };
+                if !options.skip_mcp_config
+                    && options.mcp_client != "none"
+                    && options.mcp_config_path.is_none()
+                {
+                    return Err(format!(
+                        "{rollback_message}; native client registration rollback is best effort; inspect the host config if native installation ran"
+                    ));
+                }
+                return Err(rollback_message);
             }
         }
     };
@@ -463,6 +916,7 @@ fn setup_payload_for_root(
             .unwrap_or(false),
         "config_action": config_action,
         "mcp_config": mcp_config,
+        "agent_hooks": agent_hooks,
         "instructions": instructions,
         "materialization": materialization,
         "database_written": materialization.get("database_written").cloned().unwrap_or(json!(false)),
@@ -474,6 +928,29 @@ fn setup_payload_for_root(
     }))
 }
 
+fn preserve_agent_hooks_config(config_path: &Path, previous: Option<&[u8]>) -> Result<(), String> {
+    let Some(previous) = previous else {
+        return Ok(());
+    };
+    let previous = serde_json::from_slice::<serde_json::Value>(previous).map_err(|error| {
+        format!(
+            "failed to decode previous setup config {} while preserving agent hooks: {error}",
+            config_path.display()
+        )
+    })?;
+    let Some(agent_hooks) = previous.get("agent_hooks") else {
+        return Ok(());
+    };
+    let mut current = read_json_file(config_path)?;
+    current["agent_hooks"] = agent_hooks.clone();
+    write_json_atomically(config_path, &current).map_err(|error| {
+        format!(
+            "failed to preserve agent-hook ownership in {}: {error}",
+            config_path.display()
+        )
+    })
+}
+
 fn reinstall_payload_for_request(
     request: &RepositoryLifecycleRequest,
     repo_root: &Path,
@@ -483,6 +960,9 @@ fn reinstall_payload_for_request(
     reject_state_dir_root(&repo_root)?;
 
     let paths = GraphStatePaths::derive(&repo_root);
+    let previous_setup_config = snapshot_file(&paths.config_path)?;
+    let hook_snapshots = snapshot_agent_hook_files(&options, &repo_root)?;
+    let mcp_snapshots = snapshot_mcp_registration_files(&options, &paths)?;
     if paths.config_path.exists() {
         setup_mcp_config(&options, &paths, true)?;
     }
@@ -490,8 +970,8 @@ fn reinstall_payload_for_request(
         stop_managed_daemon(&paths.config_path, true, false)?;
     }
     let state = reinstall_state(&repo_root, &paths, options.dry_run)?;
-    let install = if options.dry_run {
-        setup_payload_for_root(&options, &repo_root)?
+    let install_result = if options.dry_run {
+        setup_payload_for_root(&options, &repo_root)
     } else {
         run_reinstall_activation_boundary(
             &repo_root,
@@ -501,6 +981,26 @@ fn reinstall_payload_for_request(
                 let mut activation_options = options.clone();
                 activation_options.skip_mcp_config = true;
                 activation_options.instructions_target = "skip".to_string();
+                // `reinstall_state` moves the old .codebaseGraph directory
+                // away before activation. Seed the replacement config with
+                // its ownership metadata so setup can transactionally remove
+                // deselected hook clients (and still preserve `none`).
+                if let Some(previous) = previous_setup_config.as_deref() {
+                    if let Some(parent) = paths.config_path.parent() {
+                        fs::create_dir_all(parent).map_err(|error| {
+                            format!(
+                                "failed to recreate setup config directory {}: {error}",
+                                parent.display()
+                            )
+                        })?;
+                    }
+                    write_bytes_atomically(&paths.config_path, previous).map_err(|error| {
+                        format!(
+                            "failed to seed replacement setup config {}: {error}",
+                            paths.config_path.display()
+                        )
+                    })?;
+                }
                 setup_payload_for_root(&activation_options, &repo_root)
             },
             |mut payload| {
@@ -510,14 +1010,34 @@ fn reinstall_payload_for_request(
                     &paths.config_path,
                 )?;
                 let mcp_config = setup_mcp_config(&options, &paths, false)?;
+                let agent_hooks = reconcile_agent_hooks_for_lifecycle(&options, &paths, false)?;
+                if options.agent_hooks == "none" {
+                    preserve_agent_hooks_config(
+                        &paths.config_path,
+                        previous_setup_config.as_deref(),
+                    )?;
+                }
                 let payload_object = payload.as_object_mut().ok_or_else(|| {
                     "reinstall activation payload must be a JSON object".to_string()
                 })?;
                 payload_object.insert("instructions".to_string(), instructions);
                 payload_object.insert("mcp_config".to_string(), mcp_config);
+                payload_object.insert("agent_hooks".to_string(), agent_hooks);
                 Ok(payload)
             },
-        )?
+        )
+    };
+    let install = match install_result {
+        Ok(payload) => payload,
+        Err(error) => {
+            for (path, previous) in &hook_snapshots {
+                let _ = restore_file(path, previous.as_deref());
+            }
+            for (path, previous) in &mcp_snapshots {
+                let _ = restore_file(path, previous.as_deref());
+            }
+            return Err(error);
+        }
     };
 
     Ok(json!({
@@ -544,6 +1064,12 @@ fn uninstall_payload_for_request(
         .mcp_client
         .clone()
         .unwrap_or_else(|| "all".to_string());
+    // Hook ownership is repository-scoped and independent from MCP
+    // registration filtering. Uninstall every recorded managed hook client;
+    // for legacy configs without ownership metadata, inspect all supported
+    // hook files and remove only our stable managed handlers.
+    let agent_hooks =
+        remove_all_agent_hooks_for_uninstall(&repo_root, &config_path, request.dry_run)?;
     let server_name = uninstall_server_name(&repo_root, &config_path)?;
     uninstall_mcp_clients(
         &mcp_client,
@@ -578,8 +1104,44 @@ fn uninstall_payload_for_request(
         "state": state,
         "instructions": instructions,
         "mcp_clients": mcp_clients,
+        "agent_hooks": agent_hooks,
         "daemon": daemon,
     }))
+}
+
+fn remove_all_agent_hooks_for_uninstall(
+    repo_root: &Path,
+    config_path: &Path,
+    dry_run: bool,
+) -> Result<serde_json::Value, String> {
+    if !config_path.exists() {
+        return Ok(json!({
+            "action": "not_applicable",
+            "selection": "all",
+            "clients": [],
+            "reason": "repository setup config is unavailable",
+        }));
+    }
+    let payload = read_json_file(config_path)?;
+    let clients = if payload
+        .get("agent_hooks")
+        .and_then(|value| value.get("installed_clients"))
+        .and_then(serde_json::Value::as_array)
+        .is_some()
+    {
+        configured_agent_hook_clients(config_path)?
+    } else {
+        crate::agent_hooks::resolve_agent_hook_clients("all", "all")?
+    };
+    if clients.is_empty() {
+        return Ok(json!({
+            "action": "unchanged",
+            "selection": "recorded",
+            "clients": [],
+            "reason": "no managed agent-hook clients recorded",
+        }));
+    }
+    crate::agent_hooks::remove_agent_hooks(repo_root, config_path, &clients, dry_run)
 }
 
 fn reject_state_dir_root(repo_root: &Path) -> Result<(), String> {
@@ -768,18 +1330,33 @@ fn setup_mcp_config(
                 .unwrap_or_else(|| PathBuf::from(".")),
         ),
     )?;
+    let hooks_require_daemon =
+        !crate::agent_hooks::resolve_agent_hook_clients(&options.agent_hooks, &options.mcp_client)?
+            .is_empty();
     if options.skip_mcp_config || options.mcp_client == "none" {
-        return Ok(json!({
-            "action": "skipped",
-            "client": options.mcp_client,
-            "scope": "local",
-            "server_name": descriptor.name,
-            "method": serde_json::Value::Null,
-            "path": serde_json::Value::Null,
-            "command": serde_json::Value::Null,
-            "descriptor": descriptor.as_json(),
-            "entry": descriptor.stdio_entry(false, true),
-        }));
+        let daemon = if hooks_require_daemon {
+            Some(ensure_managed_daemon(
+                &paths.config_path,
+                options.mcp_daemon_port,
+                dry_run,
+            )?)
+        } else {
+            None
+        };
+        return Ok(attach_daemon_payload(
+            json!({
+                "action": "skipped",
+                "client": options.mcp_client,
+                "scope": "local",
+                "server_name": descriptor.name,
+                "method": serde_json::Value::Null,
+                "path": serde_json::Value::Null,
+                "command": serde_json::Value::Null,
+                "descriptor": descriptor.as_json(),
+                "entry": descriptor.stdio_entry(false, true),
+            }),
+            daemon,
+        ));
     }
 
     let transport = options.mcp_transport.resolved();
@@ -802,7 +1379,7 @@ fn setup_mcp_config(
     let preflight_result = install_mcp_endpoint(&descriptor, &endpoint, &preflight)?;
     let needs_local_daemon = transport == McpTransport::HttpDaemon
         && (options.mcp_client == "all" || !manual_metadata_client(&options.mcp_client));
-    let daemon = if needs_local_daemon {
+    let daemon = if needs_local_daemon || hooks_require_daemon {
         Some(ensure_managed_daemon(
             &paths.config_path,
             options.mcp_daemon_port,
@@ -885,7 +1462,27 @@ fn ensure_managed_daemon(
     dry_run: bool,
 ) -> Result<serde_json::Value, String> {
     if dry_run {
-        let spec = crate::daemon_service::McpDaemonSpec::from_config(config_path, port)?;
+        let spec = match crate::daemon_service::McpDaemonSpec::from_config(config_path, port) {
+            Ok(spec) => spec,
+            // A first-install dry run intentionally has no config file yet.
+            // Still report the daemon that would be provisioned instead of
+            // turning preview into a failing read of future state.
+            Err(_) => {
+                let repo_root = config_path
+                    .parent()
+                    .and_then(Path::parent)
+                    .unwrap_or_else(|| Path::new("."));
+                let repo_root = canonical_or_self(repo_root);
+                let port = port.unwrap_or_else(|| stable_daemon_port(&repo_root));
+                let fingerprint = repository_fingerprint(&repo_root);
+                return Ok(json!({
+                    "action": "dry_run",
+                    "endpoint": format!("http://127.0.0.1:{port}/mcp"),
+                    "service_id": service_id(&fingerprint),
+                    "repository_fingerprint": fingerprint,
+                }));
+            }
+        };
         return Ok(json!({
             "action": "dry_run",
             "endpoint": spec.endpoint,
@@ -1165,6 +1762,11 @@ fn setup_config_payload(
         package_version: Some(env!("CARGO_PKG_VERSION").to_string()),
         materialization: GraphInstallMaterializationConfig::default(),
         refresh: GraphInstallRefreshConfig::default(),
+        agent_hooks: Some(GraphInstallAgentHooksConfig {
+            format_version: 1,
+            policy: "advisory".to_string(),
+            installed_clients: Vec::new(),
+        }),
         mcp: Some(GraphInstallMcpConfig {
             server_name: "codebase_graph".to_string(),
             command: vec![
@@ -1255,10 +1857,16 @@ fn write_setup_config(
     repo_root: &Path,
     daemon_port: u16,
 ) -> Result<&'static str, String> {
-    let payload = setup_config_payload(paths, repo_root, daemon_port);
+    let mut payload = setup_config_payload(paths, repo_root, daemon_port);
     let mut action = "created";
     if paths.config_path.exists() {
         let previous = read_json_file(&paths.config_path)?;
+        // Keep the prior ownership record long enough for lifecycle
+        // reconciliation to remove deselected managed handlers. The
+        // reconciler then writes the desired replacement set atomically.
+        if let Some(agent_hooks) = previous.get("agent_hooks") {
+            payload["agent_hooks"] = agent_hooks.clone();
+        }
         if previous == payload {
             return Ok("unchanged");
         }
@@ -1390,6 +1998,8 @@ fn instruction_block(config_path: &Path) -> String {
 - Prefer the `codebase_graph` MCP server tools over shell commands whenever they are exposed in the current agent session.\n\
 - AI agents receive block output by default for graph CLI and MCP tools; request `output_format: \"json\"` or `include_structured_content: true` only for tests, APIs, or explicit structured-payload debugging.\n\
 - Use MCP `graph_search` with `layer: \"semantic\"`, `detail: \"slim\"`, and `context_limit: 1` before answering entity, relationship, or repository-structure questions and before coding tasks.\n\
+- Repository-local agent hooks may inject bounded `graph_health` and semantic `graph_search` results for each non-empty prompt. Treat this context as advisory; hook failures fail open after a short deadline and never authorize, deny, or rebuild anything.\n\
+- Automatic hook context is only orientation. Before edits or architectural conclusions, call `graph_context` explicitly with `change_impact`, `dependencies`, `callgraph`, or `runtime` as appropriate.\n\
 - Use MCP `graph_context` with `layer: \"semantic\"`, `profile: \"<profile>\"`, `detail: \"slim\"`, and `context_limit: 2` when semantic relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.\n\
 - For parse-tree, grammar-field, source-construct, or Tree-sitter node questions, first use MCP `graph_syntax` with the file language, then use `graph_search` with `layer: \"syntax\"` to find `SyntaxCapture` nodes.\n\
 - Use MCP `graph_context` with `layer: \"syntax\"` only for a `SyntaxCapture` result, passing its `node_id` and `node_type: \"SyntaxCapture\"`; follow ordered `SyntaxChild` rows through `field_name` and `child_index`.\n\
@@ -1454,18 +2064,8 @@ fn snapshot_file(path: &Path) -> Result<Option<Vec<u8>>, String> {
 
 fn restore_file(path: &Path, previous: Option<&[u8]>) -> Result<(), String> {
     match previous {
-        Some(previous) => {
-            if let Some(parent) = path.parent() {
-                fs::create_dir_all(parent).map_err(|error| {
-                    format!(
-                        "failed to create restore directory {}: {error}",
-                        parent.display()
-                    )
-                })?;
-            }
-            fs::write(path, previous)
-                .map_err(|error| format!("failed to restore {}: {error}", path.display()))
-        }
+        Some(previous) => write_bytes_atomically(path, previous)
+            .map_err(|error| format!("failed to restore {}: {error}", path.display())),
         None => {
             if path.exists() {
                 fs::remove_file(path)
@@ -4520,13 +5120,13 @@ mod tests {
         codex_toml_block, descriptor_signature, hermes_yaml_block_from_entries, inspect_mcp_server,
         install_mcp_endpoint, install_mcp_server, instruction_block, is_retryable_refresh_failure,
         language_for_path, native_client_command, parse_hermes_managed_entries,
-        parse_toml_stdio_entry, reinstall_state, remove_mcp_server, remove_partial_state_tree,
-        rename_mcp_server, render_client_http_config, resolve_mcp_target,
-        run_reinstall_activation_boundary, select_available_daemon_port, upsert_instruction_text,
-        yaml_scalar, GraphStatePaths, ManagedStdioEntry, McpClientInstallOptions,
-        McpClientRemovalOptions, McpClientRenameOptions, McpEndpointDescriptor,
-        McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
-        ResolvedMcpTarget,
+        parse_toml_stdio_entry, persist_agent_hooks_config, reinstall_state, remove_mcp_server,
+        remove_partial_state_tree, rename_mcp_server, render_client_http_config,
+        resolve_mcp_target, run_reinstall_activation_boundary, select_available_daemon_port,
+        upsert_instruction_text, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
+        McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
+        McpEndpointDescriptor, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
+        McpTargetLocality, ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::collections::BTreeMap;
@@ -4547,6 +5147,35 @@ mod tests {
         assert!(!is_retryable_refresh_failure(
             "invalid refresh configuration"
         ));
+    }
+
+    #[test]
+    fn mcp_agent_hook_persistence_unions_existing_clients() {
+        let repo = TestDir::new("agent-hook-union");
+        let config_dir = repo.join(".codebaseGraph");
+        fs::create_dir_all(&config_dir).unwrap();
+        let config_path = config_dir.join("config.json");
+        fs::write(
+            &config_path,
+            serde_json::to_vec(&json!({
+                "schema_version": 3,
+                "agent_hooks": {
+                    "format_version": 1,
+                    "policy": "advisory",
+                    "installed_clients": ["claude"]
+                }
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        persist_agent_hooks_config(&config_path, "codex", "codex", true).unwrap();
+        let payload: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(config_path).unwrap()).unwrap();
+        assert_eq!(
+            payload["agent_hooks"]["installed_clients"],
+            json!(["claude", "codex"])
+        );
     }
 
     struct TestDir {
@@ -4642,6 +5271,10 @@ mod tests {
             "--layer syntax",
             "--layer hybrid",
             "--node-type SyntaxCapture",
+            "agent hooks may inject bounded `graph_health`",
+            "hook failures fail open",
+            "Automatic hook context is only orientation",
+            "`change_impact`",
         ] {
             assert!(updated.contains(expected), "missing {expected}");
         }
