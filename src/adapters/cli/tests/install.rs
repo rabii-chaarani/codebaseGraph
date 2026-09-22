@@ -138,6 +138,102 @@ fn install_writes_schema_v3_managed_config_without_static_database_or_manifest_p
 }
 
 #[test]
+fn install_configures_selected_agent_hook_and_persists_advisory_ownership() {
+    let root = unique_temp_dir("codebase-graph-rust-install-agent-hook");
+    fs::create_dir_all(root.join(".codex")).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    fs::write(
+        root.join(".codex/hooks.json"),
+        r#"{"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"foreign-hook"}]}]}}"#,
+    )
+    .unwrap();
+
+    let mut output = Vec::new();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--agent-hooks",
+            "codex",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut output,
+    )
+    .unwrap();
+
+    let hooks: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(root.join(".codex/hooks.json")).unwrap()).unwrap();
+    assert!(hooks.to_string().contains("foreign-hook"));
+    assert!(hooks.to_string().contains("codebase-graph-v1"));
+    let config: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(root.join(".codebaseGraph/config.json")).unwrap())
+            .unwrap();
+    assert_eq!(config["agent_hooks"]["policy"], "advisory");
+    assert_eq!(config["agent_hooks"]["installed_clients"], json!(["codex"]));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn reinstall_with_agent_hooks_none_preserves_hook_files_and_ownership() {
+    let root = unique_temp_dir("codebase-graph-rust-reinstall-preserve-agent-hooks");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("service.py"), "def helper():\n    return 1\n").unwrap();
+    run(
+        [
+            "install",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--agent-hooks",
+            "codex",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+    let hook_path = root.join(".codex/hooks.json");
+    let hook_before = fs::read(&hook_path).unwrap();
+
+    run(
+        [
+            "reinstall",
+            "--repo-root",
+            root.to_str().unwrap(),
+            "--mcp-client",
+            "none",
+            "--agent-hooks",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--no-semantic-enrichment",
+            "--json",
+        ],
+        &mut Vec::new(),
+    )
+    .unwrap();
+
+    assert_eq!(fs::read(&hook_path).unwrap(), hook_before);
+    let config: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(root.join(".codebaseGraph/config.json")).unwrap())
+            .unwrap();
+    assert_eq!(config["agent_hooks"]["installed_clients"], json!(["codex"]));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn install_rejects_legacy_v1_state_until_reinstall() {
     let root = unique_temp_dir("codebase-graph-rust-install-legacy-v1");
     let state = root.join(".codebaseGraph");

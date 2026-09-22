@@ -296,12 +296,14 @@ fn normalize_lifecycle(request: &mut RepositoryLifecycleRequest) {
         DEFAULT_SEMANTIC_PROVIDER_MODE,
     );
     request.mcp_client = normalized_optional_string(request.mcp_client.take());
+    request.agent_hooks = normalize_agent_hooks_selection(&request.agent_hooks);
     request.instructions_target = normalized_optional_string(request.instructions_target.take());
 }
 
 fn normalize_mcp_install(request: &mut McpInstallRequest) {
     request.client = request.client.trim().to_ascii_lowercase();
     request.scope = request.scope.trim().to_ascii_lowercase();
+    request.agent_hooks = normalize_agent_hooks_selection(&request.agent_hooks);
     request.name = normalized_optional_string(request.name.take());
     request.client_config_path = request
         .client_config_path
@@ -317,6 +319,29 @@ fn normalize_mcp_install(request: &mut McpInstallRequest) {
         .config_path
         .take()
         .map(|path| expand_path(&path.to_string_lossy()));
+}
+
+fn normalize_agent_hooks_selection(value: &str) -> String {
+    let normalized = value.trim().to_ascii_lowercase();
+    if normalized.is_empty() {
+        "auto".to_string()
+    } else {
+        normalized
+    }
+}
+
+fn validate_agent_hooks_selection(value: &str) -> Result<(), ApiError> {
+    if matches!(
+        value,
+        "auto" | "none" | "codex" | "claude" | "github-copilot" | "all"
+    ) {
+        Ok(())
+    } else {
+        Err(ApiError::new(
+            "invalid_agent_hooks",
+            "agent_hooks must be auto, none, codex, claude, github-copilot, or all",
+        ))
+    }
 }
 
 fn validate_search_fields(query: &str, detail: &str, limit: usize) -> Result<(), ApiError> {
@@ -383,6 +408,7 @@ fn validate_lifecycle(
         &request.semantic_provider_mode,
         expected_action,
     )?;
+    validate_agent_hooks_selection(&request.agent_hooks)?;
     if let Some(client) = request.mcp_client.as_deref() {
         let special_allowed = match expected_action {
             "uninstall" => client == "all",
@@ -405,6 +431,7 @@ fn validate_lifecycle(
 }
 
 fn validate_mcp_install(request: &McpInstallRequest) -> Result<(), ApiError> {
+    validate_agent_hooks_selection(&request.agent_hooks)?;
     if request.client != "all" && !supported_mcp_clients().contains(&request.client.as_str()) {
         return Err(ApiError::new(
             "invalid_mcp_client",
@@ -684,6 +711,7 @@ mod tests {
                 scope: scope.to_string(),
                 name: None,
                 client_config_path: None,
+                agent_hooks: "auto".to_string(),
                 dry_run: true,
                 transport: crate::api::McpTransport::Auto,
                 daemon_port: None,
@@ -698,6 +726,43 @@ mod tests {
         let scope_error = validate_request(&request("generic", "unknown-scope"))
             .expect_err("unsupported scopes should be rejected by the API");
         assert_eq!(scope_error.code, "invalid_mcp_scope");
+    }
+
+    #[test]
+    fn agent_hook_selection_is_normalized_and_validated() {
+        let request = OperationRequest::InstallMcp(McpInstallRequest {
+            repo: RepoSelector::default(),
+            client: "generic".to_string(),
+            scope: "local".to_string(),
+            name: None,
+            client_config_path: None,
+            agent_hooks: "  CLAUDE  ".to_string(),
+            dry_run: true,
+            transport: crate::api::McpTransport::Auto,
+            daemon_port: None,
+            output_format: OutputFormat::Typed,
+        });
+        let normalized = normalize_request(&request);
+        let OperationRequest::InstallMcp(normalized) = normalized else {
+            panic!("request should remain MCP install");
+        };
+        assert_eq!(normalized.agent_hooks, "claude");
+        assert!(validate_request(&OperationRequest::InstallMcp(normalized)).is_ok());
+
+        let invalid = OperationRequest::InstallMcp(McpInstallRequest {
+            repo: RepoSelector::default(),
+            client: "generic".to_string(),
+            scope: "local".to_string(),
+            name: None,
+            client_config_path: None,
+            agent_hooks: "unsupported".to_string(),
+            dry_run: true,
+            transport: crate::api::McpTransport::Auto,
+            daemon_port: None,
+            output_format: OutputFormat::Typed,
+        });
+        let error = validate_request(&invalid).expect_err("invalid hook policy should fail");
+        assert_eq!(error.code, "invalid_agent_hooks");
     }
 
     #[test]

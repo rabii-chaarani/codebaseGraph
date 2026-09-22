@@ -1,3 +1,4 @@
+pub(crate) mod agent_hooks;
 mod dispatch;
 pub(crate) mod format;
 pub(crate) mod graph;

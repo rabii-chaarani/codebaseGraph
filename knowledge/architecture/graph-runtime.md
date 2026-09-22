@@ -6,6 +6,8 @@ tags:
 - components
 - graph-runtime
 - rust
+- agents
+- hooks
 timestamp: 2026-09-08
 title: Graph Runtime Architecture
 type: architecture
@@ -18,7 +20,7 @@ The Graph Runtime is the product executable and embeddable library. It exposes o
 
 | Layer | Components | Accountability |
 | --- | --- | --- |
-| Process and adapters | Process Bootstrap, CLI Adapter, Repository Lifecycle Adapter, CLI Materialization Adapter, Repository Refresh Adapter, MCP Server Adapter, Repository Coordinator, Command Request Mapper | Select an interface, elect one repository-scoped MCP owner, translate external input into public requests, and frame results without changing product semantics. |
+| Process and adapters | Process Bootstrap, CLI Adapter, Repository Lifecycle Adapter, Agent Hook Adapter, CLI Materialization Adapter, Repository Refresh Adapter, MCP Server Adapter, Repository Coordinator, Command Request Mapper | Select an interface, elect one repository-scoped MCP owner, translate external input into public requests, inject bounded advisory graph context, and frame results without changing product semantics. |
 | Public boundary | Public API Contracts, Public API Facade, Unified API Core, Catalog Provider, Response Presenter | Define stable requests and responses, register operations once, dispatch them, and present typed or compact block output. |
 | Runtime preparation | Request Normalizer, Repository Runtime Resolver | Apply canonical defaults, reject invalid requests, resolve schema-v1 versus storage-v2 state, and select Managed or Direct storage mode. |
 | Application services | Graph Read Service, Materialization API, Materialization Worker, Repository Lifecycle Service, Repository Refresh Service | Execute graph reads, isolated generation builds, installation lifecycle, and refresh behavior independently of transport. |
@@ -38,6 +40,11 @@ MCP stdio or HTTP -> Public API Facade -> repository coordinator loopback route
         -> Response Presenter
         -> transport framing
 ```
+
+
+## Agent-loop hook adapter
+
+The Agent Hook Adapter is the project-local boundary for Codex, Claude Code, GitHub Copilot CLI, and VS Code lifecycle hooks. It preserves the canonical repository identity, requests health and bounded semantic search through the managed MCP daemon, and returns advisory context to the client. It does not open graph storage, rebuild generations, or own refresh; the Repository Refresh Service and watcher remain authoritative. See [Agent-Loop Hooks](./agent-loop-hooks.md).
 
 ## Public boundary
 

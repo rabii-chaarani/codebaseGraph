@@ -24,6 +24,7 @@ pub(in crate::adapters::cli) fn run_reinstall<W: Write>(
         output_format: OutputFormat::Typed,
         dry_run: options.dry_run,
         mcp_client: Some(options.mcp_client.clone()),
+        agent_hooks: options.agent_hooks.clone(),
         mcp_config_path: options.mcp_config_path.clone(),
         instructions_target: Some(options.instructions_target.clone()),
         skip_mcp_config: options.skip_mcp_config,

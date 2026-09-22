@@ -9,6 +9,7 @@ pub(in crate::adapters::cli) struct McpInstallOptions {
     pub(in crate::adapters::cli) name: Option<String>,
     pub(in crate::adapters::cli) config_path: Option<PathBuf>,
     pub(in crate::adapters::cli) client_config_path: Option<PathBuf>,
+    pub(in crate::adapters::cli) agent_hooks: String,
     pub(in crate::adapters::cli) repo_root: Option<PathBuf>,
     pub(in crate::adapters::cli) dry_run: bool,
     pub(in crate::adapters::cli) verify: bool,
@@ -26,6 +27,7 @@ impl McpInstallOptions {
             name: None,
             config_path: None,
             client_config_path: None,
+            agent_hooks: "auto".to_string(),
             repo_root: None,
             dry_run: false,
             verify: false,
@@ -64,6 +66,20 @@ impl McpInstallOptions {
                         index,
                         "--client-config-path",
                     )?));
+                    index += 2;
+                }
+                "--agent-hooks" => {
+                    let value = required_arg(args, index, "--agent-hooks")?;
+                    if !matches!(
+                        value,
+                        "auto" | "none" | "codex" | "claude" | "github-copilot" | "all"
+                    ) {
+                        return Err(
+                            "--agent-hooks must be auto, none, codex, claude, github-copilot, or all"
+                                .to_string(),
+                        );
+                    }
+                    options.agent_hooks = value.to_string();
                     index += 2;
                 }
                 "--repo-root" => {

@@ -103,6 +103,7 @@ pub(in crate::adapters::cli) fn run_uninstall<W: Write>(
         },
         dry_run: options.dry_run,
         mcp_client: Some(options.mcp_client.clone()),
+        agent_hooks: "auto".to_string(),
         mcp_config_path: options.client_config_path.clone(),
         instructions_target: None,
         skip_mcp_config: false,

@@ -1,4 +1,5 @@
 use super::{
+    agent_hooks::run_agent_hooks_command,
     format::{
         graph_architecture_queries_help, graph_context_help, graph_health_help, graph_query_help,
         graph_query_helpers_help, graph_schema_help, graph_search_help, graph_syntax_help,
@@ -48,6 +49,7 @@ where
         Some("codebase-context") => run_graph_context(&args[1..], stdout),
         Some("graph-query") => run_graph_query(&args[1..], stdout),
         Some("mcp") => run_mcp_command(&args[1..], stdout),
+        Some("agent-hooks") => run_agent_hooks_command(&args[1..], stdout),
         Some(command) => Err(format!(
             "unknown command: {command}\n\n{}",
             top_level_help()

@@ -2,6 +2,7 @@
 static GLOBAL_ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 pub mod adapters;
+pub mod agent_hooks;
 pub mod api;
 mod artifact_store;
 mod bootstrap;
@@ -12,6 +13,7 @@ pub mod error;
 mod execution;
 mod hash;
 mod materialization_worker;
+pub(crate) mod mcp_client;
 mod normalize;
 mod parser;
 mod partition_builder;

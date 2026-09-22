@@ -394,8 +394,25 @@ pub(crate) struct GraphInstallConfig {
     pub materialization: GraphInstallMaterializationConfig,
     #[serde(default)]
     pub refresh: GraphInstallRefreshConfig,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent_hooks: Option<GraphInstallAgentHooksConfig>,
     #[serde(default)]
     pub mcp: Option<GraphInstallMcpConfig>,
+}
+
+/// Persisted policy and ownership record for repository-local agent hooks.
+///
+/// This is deliberately additive to schema v3: older binaries deserialize
+/// unknown fields away, while newer binaries treat a missing value as no
+/// managed hooks installed.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub(crate) struct GraphInstallAgentHooksConfig {
+    #[serde(default)]
+    pub format_version: u64,
+    #[serde(default)]
+    pub policy: String,
+    #[serde(default)]
+    pub installed_clients: Vec<String>,
 }
 
 /// Resolve one repository selector into the canonical repository identity used by
