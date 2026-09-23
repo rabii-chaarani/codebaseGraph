@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.8.1...v2.0.0) (2026-09-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove semantic_enrichment and semantic_provider_mode Rust fields and the retired CLI flags. Existing JSON/config keys remain readable through unknown-field handling; graph and storage compatibility is unchanged.
+
+### Code Refactoring
+
+* remove retired semantic enrichment interfaces ([#122](https://github.com/rabii-chaarani/codebaseGraph/issues/122)) ([d32d3e3](https://github.com/rabii-chaarani/codebaseGraph/commit/d32d3e3a2b5f35e2b1ebb74fd5931c363757a8a6))
+
 ## [1.8.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.8.0...v1.8.1) (2026-09-22)
 
 
