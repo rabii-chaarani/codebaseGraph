@@ -5,7 +5,7 @@ use super::{
         rpc_error,
     },
     refresh::start_configured_api,
-    state::McpHttpState,
+    state::{McpHttpState, SessionIdGenerationError},
 };
 use crate::api::{ApiError, ExecutionContext, HOOK_TIMEOUT_HEADER, MAX_HOOK_TIMEOUT};
 use serde_json::json;
@@ -67,26 +67,22 @@ pub(crate) fn handle_mcp_http_request_with_context(
         .cloned()
         .unwrap_or(serde_json::Value::Null);
     let session_id = request.header("mcp-session-id");
-    let (resolved_session_id, session) = if method == "initialize" {
-        let id = session_id
-            .filter(|id| state.sessions.contains_key(*id))
-            .map(str::to_string)
-            .unwrap_or_else(|| state.next_session_id());
-        let session = state.sessions.entry(id.clone()).or_default();
-        (id, session)
-    } else {
-        match session_id.and_then(|id| {
-            state
-                .sessions
-                .get_mut(id)
-                .map(|session| (id.to_string(), session))
-        }) {
-            Some((id, session)) => (id, session),
-            None => {
-                return HttpResponse::json(
-                    400,
-                    rpc_error(request_id, -32002, "MCP session is not initialized"),
-                )
+    let session_request =
+        match resolve_session_request(state, &method, session_id, request_id.clone()) {
+            Ok(session_request) => session_request,
+            Err(response) => return response,
+        };
+    let (resolved_session_id, session) = match session_request {
+        SessionRequest::Existing(session_id) => {
+            let session = state.sessions.entry(session_id.clone()).or_default();
+            (session_id, session)
+        }
+        SessionRequest::Create => {
+            match create_session_with(state, request_id.clone(), |bytes| {
+                getrandom::fill(bytes).map_err(|_| ())
+            }) {
+                Ok(session) => session,
+                Err(response) => return response,
             }
         }
     };
@@ -130,9 +126,18 @@ pub(crate) fn prepare_deferred_tool_call(
         .get("id")
         .cloned()
         .unwrap_or(serde_json::Value::Null);
-    let session_is_ready = request
-        .header("mcp-session-id")
-        .and_then(|session_id| state.sessions.get(session_id))
+    let session_request = resolve_session_request(
+        state,
+        method,
+        request.header("mcp-session-id"),
+        request_id.clone(),
+    )?;
+    let SessionRequest::Existing(session_id) = session_request else {
+        return Err(session_header_error(400, request_id));
+    };
+    let session_is_ready = state
+        .sessions
+        .get(&session_id)
         .is_some_and(|session| session.protocol_version.is_some());
     if !session_is_ready {
         return Err(HttpResponse::json(
@@ -141,6 +146,60 @@ pub(crate) fn prepare_deferred_tool_call(
         ));
     }
     Ok(Some((message, context)))
+}
+
+enum SessionRequest {
+    Create,
+    Existing(String),
+}
+
+fn resolve_session_request(
+    state: &McpHttpState,
+    method: &str,
+    session_id: Option<&str>,
+    request_id: serde_json::Value,
+) -> Result<SessionRequest, HttpResponse> {
+    match session_id {
+        Some(session_id) if state.sessions.contains_key(session_id) => {
+            Ok(SessionRequest::Existing(session_id.to_string()))
+        }
+        Some(_) => Err(session_header_error(404, request_id)),
+        None if method == "initialize" => Ok(SessionRequest::Create),
+        None => Err(session_header_error(400, request_id)),
+    }
+}
+
+fn session_header_error(status: u16, request_id: serde_json::Value) -> HttpResponse {
+    HttpResponse::json(
+        status,
+        rpc_error(request_id, -32002, "MCP session is not initialized"),
+    )
+}
+
+fn map_session_id_generation(
+    result: Result<String, SessionIdGenerationError>,
+    request_id: serde_json::Value,
+) -> Result<String, HttpResponse> {
+    result.map_err(|_| {
+        HttpResponse::json(
+            500,
+            rpc_error(request_id, -32603, "Failed to generate MCP session ID"),
+        )
+    })
+}
+
+fn create_session_with<F, E>(
+    state: &mut McpHttpState,
+    request_id: serde_json::Value,
+    fill_random: F,
+) -> Result<(String, &mut super::McpSession), HttpResponse>
+where
+    F: FnOnce(&mut [u8]) -> Result<(), E>,
+{
+    let session_id =
+        map_session_id_generation(state.next_session_id_with(fill_random), request_id)?;
+    let session = state.sessions.entry(session_id.clone()).or_default();
+    Ok((session_id, session))
 }
 
 pub(crate) fn graph_busy_response(request: &HttpRequest) -> HttpResponse {
@@ -412,6 +471,20 @@ mod tests {
         request
     }
 
+    fn session_request(headers: &[(&str, &str)], payload: serde_json::Value) -> HttpRequest {
+        let headers = headers
+            .iter()
+            .map(|(name, value)| (name.to_ascii_lowercase(), value.to_string()))
+            .collect();
+        HttpRequest {
+            method: "POST".to_string(),
+            path: "/mcp".to_string(),
+            headers,
+            body: serde_json::to_vec(&payload).expect("JSON value serializes"),
+            body_too_large: false,
+        }
+    }
+
     #[test]
     fn hook_deadline_is_clamped_and_includes_time_spent_receiving() {
         let request = request_with_timeout("5000", "graph_search");
@@ -450,5 +523,124 @@ mod tests {
                 .status,
             400
         );
+    }
+
+    #[test]
+    fn session_id_entropy_failure_returns_internal_error_without_inserting_session() {
+        let mut state = McpHttpState::default();
+        let existing = super::super::McpSession {
+            protocol_version: Some("2025-11-25".to_string()),
+            initialized: true,
+        };
+        state
+            .sessions
+            .insert("existing-session".to_string(), existing);
+
+        let response = create_session_with(&mut state, json!(71), |_| Err::<(), _>(()))
+            .expect_err("entropy failure must reject allocation");
+
+        assert_eq!(response.status, 500);
+        assert_eq!(response.payload["id"], json!(71));
+        assert_eq!(response.payload["error"]["code"], -32603);
+        assert_eq!(state.sessions.len(), 1);
+        assert_eq!(
+            state.sessions["existing-session"]
+                .protocol_version
+                .as_deref(),
+            Some("2025-11-25")
+        );
+        assert!(state.sessions["existing-session"].initialized);
+    }
+
+    #[test]
+    fn session_id_collision_returns_internal_error_without_overwriting_session() {
+        let mut state = McpHttpState::default();
+        let collision_id = format!("native-http-session-{}", "ab".repeat(32));
+        let existing = super::super::McpSession {
+            protocol_version: Some("2025-11-25".to_string()),
+            initialized: true,
+        };
+        state.sessions.insert(collision_id.clone(), existing);
+
+        let response = create_session_with(&mut state, json!(72), |bytes| {
+            bytes.fill(0xab);
+            Ok::<(), ()>(())
+        })
+        .expect_err("ID collision must reject allocation");
+
+        assert_eq!(response.status, 500);
+        assert_eq!(response.payload["id"], json!(72));
+        assert_eq!(response.payload["error"]["code"], -32603);
+        assert_eq!(state.sessions.len(), 1);
+        assert_eq!(
+            state.sessions[&collision_id].protocol_version.as_deref(),
+            Some("2025-11-25")
+        );
+        assert!(state.sessions[&collision_id].initialized);
+    }
+
+    #[test]
+    fn deferred_tool_admission_classifies_missing_unknown_valid_and_removed_sessions() {
+        let options = McpHttpOptions::parse(&[], "").expect("default HTTP options");
+        let mut state = McpHttpState::default();
+        let initialize = handle_mcp_http_request(
+            &options,
+            &mut state,
+            session_request(
+                &[("mcp-protocol-version", "2025-11-25")],
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {"protocolVersion": "2025-11-25"},
+                }),
+            ),
+        );
+        assert_eq!(initialize.status, 200);
+        let session_id = initialize
+            .headers
+            .iter()
+            .find(|(name, _)| name == "Mcp-Session-Id")
+            .map(|(_, value)| value.clone())
+            .expect("initialize returns a session ID");
+
+        let payload = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {"name": "graph_health", "arguments": {}},
+        });
+        let missing_request = session_request(&[], payload.clone());
+        let missing =
+            prepare_deferred_tool_call(&options, &state, &missing_request, Instant::now())
+                .expect_err("missing session is rejected before admission");
+        assert_eq!(missing.status, 400);
+        assert_eq!(missing.payload["error"]["code"], -32002);
+        assert_eq!(missing.payload["id"], 2);
+
+        let unknown_request = session_request(
+            &[("mcp-session-id", "native-http-session-unknown")],
+            payload.clone(),
+        );
+        let unknown =
+            prepare_deferred_tool_call(&options, &state, &unknown_request, Instant::now())
+                .expect_err("unknown session is rejected before admission");
+        assert_eq!(unknown.status, 404);
+        assert_eq!(unknown.payload["error"]["code"], -32002);
+        assert_eq!(unknown.payload["id"], 2);
+
+        let valid_request = session_request(&[("mcp-session-id", session_id.as_str())], payload);
+        assert!(
+            prepare_deferred_tool_call(&options, &state, &valid_request, Instant::now())
+                .expect("valid session passes admission checks")
+                .is_some()
+        );
+
+        state.sessions.remove(&session_id);
+        let removed = prepare_deferred_tool_call(&options, &state, &valid_request, Instant::now())
+            .expect_err("removed session is rejected before admission");
+        assert_eq!(removed.status, 404);
+        assert_eq!(removed.payload["error"]["code"], -32002);
+        assert_eq!(removed.payload["id"], 2);
     }
 }

@@ -409,6 +409,101 @@ fn mcp_http_handles_initialize_list_call_and_protocol_errors() {
     );
     assert_eq!(missing_session.status, 400);
     assert_eq!(missing_session.payload["error"]["code"], -32002);
+    assert_eq!(missing_session.payload["id"], 2);
+
+    let unknown_session = handle_mcp_http_request(
+        &options,
+        &mut state,
+        http_json_request(
+            "POST",
+            "/mcp",
+            &[
+                ("mcp-protocol-version", "2025-11-25"),
+                ("mcp-session-id", "native-http-session-unknown"),
+            ],
+            json!({"jsonrpc": "2.0", "id": 6, "method": "tools/list", "params": {}}),
+        ),
+    );
+    assert_eq!(unknown_session.status, 404);
+    assert_eq!(unknown_session.payload["error"]["code"], -32002);
+    assert_eq!(unknown_session.payload["id"], 6);
+
+    let unknown_notification = handle_mcp_http_request(
+        &options,
+        &mut state,
+        http_json_request(
+            "POST",
+            "/mcp",
+            &[
+                ("mcp-protocol-version", "2025-11-25"),
+                ("mcp-session-id", "native-http-session-unknown"),
+            ],
+            json!({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+        ),
+    );
+    assert_eq!(unknown_notification.status, 404);
+    assert_eq!(unknown_notification.payload["error"]["code"], -32002);
+    assert!(unknown_notification.payload["id"].is_null());
+
+    let stale_initialize = handle_mcp_http_request(
+        &options,
+        &mut state,
+        http_json_request(
+            "POST",
+            "/mcp",
+            &[
+                ("mcp-protocol-version", "2025-11-25"),
+                ("mcp-session-id", "native-http-session-stale"),
+            ],
+            json!({
+                "jsonrpc": "2.0",
+                "id": 7,
+                "method": "initialize",
+                "params": {"protocolVersion": "2025-11-25"},
+            }),
+        ),
+    );
+    assert_eq!(stale_initialize.status, 404);
+    assert_eq!(stale_initialize.payload["error"]["code"], -32002);
+    assert_eq!(stale_initialize.payload["id"], 7);
+    assert_eq!(state.sessions.len(), 1);
+
+    let reinitialized = handle_mcp_http_request(
+        &options,
+        &mut state,
+        http_json_request(
+            "POST",
+            "/mcp",
+            &[
+                ("mcp-protocol-version", "2025-06-18"),
+                ("mcp-session-id", session_id.as_str()),
+            ],
+            json!({
+                "jsonrpc": "2.0",
+                "id": 9,
+                "method": "initialize",
+                "params": {"protocolVersion": "2025-06-18"},
+            }),
+        ),
+    );
+    assert_eq!(reinitialized.status, 200);
+    assert_eq!(
+        reinitialized.payload["result"]["protocolVersion"],
+        "2025-06-18"
+    );
+    assert_eq!(state.sessions.len(), 1);
+    assert_eq!(
+        state.sessions[&session_id].protocol_version.as_deref(),
+        Some("2025-06-18")
+    );
+    assert_eq!(
+        reinitialized
+            .headers
+            .iter()
+            .find(|(name, _)| name == "Mcp-Session-Id")
+            .map(|(_, value)| value.as_str()),
+        Some(session_id.as_str())
+    );
 
     let listed = handle_mcp_http_request(
         &options,
@@ -471,6 +566,24 @@ fn mcp_http_handles_initialize_list_call_and_protocol_errors() {
     );
     assert_eq!(protocol_error.status, 400);
     assert_eq!(protocol_error.payload["error"]["code"], -32602);
+
+    state.sessions.remove(&session_id);
+    let removed_session = handle_mcp_http_request(
+        &options,
+        &mut state,
+        http_json_request(
+            "POST",
+            "/mcp",
+            &[
+                ("mcp-protocol-version", "2025-11-25"),
+                ("mcp-session-id", session_id.as_str()),
+            ],
+            json!({"jsonrpc": "2.0", "id": 8, "method": "tools/list", "params": {}}),
+        ),
+    );
+    assert_eq!(removed_session.status, 404);
+    assert_eq!(removed_session.payload["error"]["code"], -32002);
+    assert_eq!(removed_session.payload["id"], 8);
 
     let _ = fs::remove_dir_all(root);
 }
