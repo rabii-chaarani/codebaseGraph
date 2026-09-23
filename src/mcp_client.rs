@@ -5,7 +5,7 @@
 //! repository; callers are expected to use the managed daemon selected by the
 //! install config.
 
-use crate::execution_context::{HOOK_TIMEOUT_HEADER, MAX_HOOK_TIMEOUT};
+use crate::api::{HOOK_TIMEOUT_HEADER, MAX_HOOK_TIMEOUT};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::io::{Read, Write};

@@ -22,7 +22,7 @@ The initial assessment covered v1.8.1 at `885454f2`. The hook follow-up was chec
 
 | ID | Priority | Task | Status |
 | --- | --- | --- | --- |
-| STAB-01 | P1 | Isolate HTTP clients and bound transport waits and queued hook reads | Implemented; final verification pending |
+| STAB-01 | P1 | Isolate HTTP clients and bound transport waits and queued hook reads | Implemented; acceptance evidence linked |
 | STAB-02 | P1 | Restore MCP sessions correctly after daemon restart | Open |
 | STAB-03 | P1 | Make Direct publication recovery safe to repeat at every rename boundary | Open |
 | STAB-04 | P2 | Enforce the required CI check before merging to main | Open |
@@ -49,7 +49,7 @@ Source: `src/adapters/mcp/daemon.rs::daemon_accept_loop`, `src/adapters/mcp/disp
 
 Implementation: `16ecb52` adds bounded nonblocking HTTP serving, absolute I/O deadlines, coordinator admission with one execution permit and no graph queue, hook timeout propagation, and shutdown acknowledgement followed by drain. Expired native reads retain their permit until they really finish. Ambiguous operation transport failures are not replayed. The daemon reports null executor state when a remote owner's activity cannot be observed.
 
-Verification on macOS ARM64: all 48 focused tests passed, including real-process idle/partial/trickled connections, admission saturation, timed-out hook reads, busy replies, session continuity, stable PID, and shutdown drain. Strict workspace Clippy and formatting pass. Full workspace and Linux/Windows CI results are pending. Scryer change `chg-5e3czh` is implemented with source/test anchors and ingested JUnit evidence.
+Verification on macOS ARM64: all 48 focused tests passed, including real-process idle/partial/trickled connections, admission saturation, timed-out hook reads, busy replies, session continuity, stable PID, and shutdown drain. Strict workspace Clippy and formatting pass. Full workspace and Linux/macOS/Windows acceptance evidence is tracked in [PR #123 checks](https://github.com/rabii-chaarani/codebaseGraph/pull/123/checks). Scryer change `chg-5e3czh` is implemented with source/test anchors and ingested JUnit evidence.
 
 The accepted scope is STAB-01 plus the hook deadline contract. Fast successful hook context delivery under refresh remains STAB-08/10; full typed timeout classification remains STAB-09.
 

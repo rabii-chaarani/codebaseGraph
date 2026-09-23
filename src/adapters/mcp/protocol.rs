@@ -1,7 +1,7 @@
 use super::options::McpServeOptions;
 use super::tools::generate_mcp_specs;
 use crate::api::CodebaseGraphApi;
-use crate::execution_context::ExecutionContext;
+use crate::api::ExecutionContext;
 use serde_json::json;
 
 pub(in crate::adapters) fn handle_mcp_message(

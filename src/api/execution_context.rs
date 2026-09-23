@@ -1,4 +1,4 @@
-//! Private transport budget; never part of the public operation arguments.
+//! Private API execution budget; never part of the public operation arguments.
 use crate::api::ApiError;
 use std::time::{Duration, Instant};
 

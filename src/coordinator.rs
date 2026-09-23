@@ -1,9 +1,9 @@
 use crate::api::context::{bind_repo_selector, resolve_runtime, RepositoryIdentity};
+use crate::api::ExecutionContext;
 use crate::api::{
     ApiError, CodebaseGraphApi, OperationInvocation, OperationResponse, RefreshServiceConfig,
     RepoSelector,
 };
-use crate::execution_context::ExecutionContext;
 use crate::storage::atomic::write_json_atomically;
 use crate::storage::layout::{DirectLayout, ManagedLayout};
 use crate::storage::locks::{try_open_locked, CoordinatorLease, LockMode};
@@ -1337,7 +1337,7 @@ fn read_frame_with_policy<T: DeserializeOwned>(
                     deadline = Some(Instant::now() + COORDINATOR_FRAME_TIMEOUT);
                 }
                 let frame_end = buffer[..read].iter().position(|byte| *byte == b'\n');
-                let bytes_to_append = frame_end.map_or(read, |index| index);
+                let bytes_to_append = frame_end.unwrap_or(read);
                 if payload.len().saturating_add(bytes_to_append) > MAX_FRAME_BYTES {
                     return Err(format!(
                         "repository coordinator frame exceeds {MAX_FRAME_BYTES} bytes"

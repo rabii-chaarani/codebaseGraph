@@ -1,3 +1,4 @@
+use crate::api::ExecutionContext;
 use crate::api::{
     contracts::{
         ApiError, MaterializationRequest, OperationInvocation, OperationRequest, OperationResponse,
@@ -7,7 +8,6 @@ use crate::api::{
     refresh::{run_refresh_watch, start_refresh_service, RefreshServiceConfig},
 };
 use crate::coordinator::{CoordinatorApiConfig, CoordinatorClient};
-use crate::execution_context::ExecutionContext;
 
 pub trait OperationExecutor {
     fn execute(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError>;

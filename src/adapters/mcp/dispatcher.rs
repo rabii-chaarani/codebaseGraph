@@ -7,7 +7,7 @@ use super::{
     options::McpHttpOptions,
     state::McpHttpState,
 };
-use crate::execution_context::{ExecutionContext, MAX_CONNECTIONS, POLL_INTERVAL};
+use crate::api::{ExecutionContext, MAX_CONNECTIONS, POLL_INTERVAL};
 use serde_json::json;
 use std::{
     io,

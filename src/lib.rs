@@ -11,7 +11,6 @@ mod daemon_service;
 pub mod db_writer;
 pub mod error;
 mod execution;
-mod execution_context;
 mod hash;
 mod materialization_worker;
 pub(crate) mod mcp_client;

@@ -7,10 +7,7 @@ use super::{
     refresh::start_configured_api,
     state::McpHttpState,
 };
-use crate::{
-    api::ApiError,
-    execution_context::{ExecutionContext, HOOK_TIMEOUT_HEADER, MAX_HOOK_TIMEOUT},
-};
+use crate::api::{ApiError, ExecutionContext, HOOK_TIMEOUT_HEADER, MAX_HOOK_TIMEOUT};
 use serde_json::json;
 use std::{
     collections::BTreeMap,

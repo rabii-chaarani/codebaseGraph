@@ -5,7 +5,7 @@
 //! response when the daemon is unavailable.
 
 use crate::api::context::{read_install_config, GraphInstallConfig};
-use crate::execution_context::MAX_HOOK_TIMEOUT;
+use crate::api::MAX_HOOK_TIMEOUT;
 use crate::mcp_client::McpLoopbackSession;
 use crate::storage::atomic::{write_bytes_atomically, write_json_atomically};
 use serde_json::{json, Map, Value};
