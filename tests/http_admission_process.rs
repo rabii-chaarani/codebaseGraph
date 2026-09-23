@@ -5,10 +5,6 @@ use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
-use std::sync::{
-    atomic::{AtomicBool, AtomicUsize, Ordering},
-    Arc,
-};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -372,44 +368,25 @@ fn http_admission_bounds_idle_clients_and_expires_stalled_requests() {
     assert_eq!(initial_ping.status, 200);
     assert_eq!(initial_ping.body["result"], json!({}));
 
-    // Bytes arrive frequently enough to keep an idle timeout alive, but the
-    // absolute header deadline must still close the connection at two seconds.
+    // A late header fragment must not renew the two-second deadline. An idle
+    // timeout restarted by this fragment would expire after 3.1 seconds.
     let mut trickled = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    let trickle_started = Instant::now();
     trickled
         .set_read_timeout(Some(Duration::from_secs(3)))
         .unwrap();
     trickled
         .write_all(b"GET /_codebasegraph/health HTTP/1.1\r\nHost: localhost\r\nX-Trickle: ")
         .unwrap();
-    let trickled_reader = trickled.try_clone().unwrap();
-    let finished = Arc::new(AtomicBool::new(false));
-    let written = Arc::new(AtomicUsize::new(0));
-    let writer_finished = Arc::clone(&finished);
-    let writer_count = Arc::clone(&written);
-    let writer = thread::spawn(move || {
-        let mut stream = trickled;
-        while !writer_finished.load(Ordering::SeqCst) {
-            thread::sleep(Duration::from_millis(150));
-            if writer_finished.load(Ordering::SeqCst) {
-                break;
-            }
-            if stream.write_all(b"x").is_err() {
-                break;
-            }
-            writer_count.fetch_add(1, Ordering::SeqCst);
-        }
-    });
-    let trickle_started = Instant::now();
-    let mut reader = trickled_reader;
-    let trickle_response = read_response(&mut reader).unwrap();
-    let trickle_elapsed = trickle_started.elapsed();
-    finished.store(true, Ordering::SeqCst);
-    writer.join().unwrap();
-    assert_eq!(decode_response(&trickle_response).unwrap().status, 408);
+    thread::sleep(Duration::from_millis(1100));
     assert!(
-        written.load(Ordering::SeqCst) >= 10,
-        "header was not trickled long enough"
+        trickle_started.elapsed() < Duration::from_millis(1800),
+        "runner did not schedule the late-fragment fixture before header expiry"
     );
+    trickled.write_all(b"still incomplete").unwrap();
+    let trickle_response = read_response(&mut trickled).unwrap();
+    let trickle_elapsed = trickle_started.elapsed();
+    assert_eq!(decode_response(&trickle_response).unwrap().status, 408);
     assert!(
         trickle_elapsed < Duration::from_millis(2800),
         "trickled header extended its absolute deadline: {trickle_elapsed:?}"
