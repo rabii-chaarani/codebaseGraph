@@ -11,8 +11,6 @@ pub(crate) struct MaterializeOptions {
     pub(crate) manifest: Option<PathBuf>,
     pub(crate) mode: String,
     pub(crate) include_fts: bool,
-    pub(crate) semantic_enrichment: bool,
-    pub(crate) semantic_provider_mode: String,
     pub(crate) use_git: bool,
     pub(crate) git_diff: bool,
     pub(crate) git_base: Option<String>,
@@ -39,8 +37,6 @@ impl Default for MaterializeOptions {
             manifest: None,
             mode: String::new(),
             include_fts: false,
-            semantic_enrichment: false,
-            semantic_provider_mode: String::new(),
             use_git: false,
             git_diff: false,
             git_base: None,
@@ -67,7 +63,6 @@ impl MaterializeOptions {
     pub(crate) fn parse_with_command(args: &[String], command_name: &str) -> Result<Self, String> {
         let mut options = Self {
             include_fts: true,
-            semantic_enrichment: false,
             use_git: true,
             ..Self::default()
         };
@@ -116,17 +111,6 @@ impl MaterializeOptions {
                 "--no-fts" => {
                     options.include_fts = false;
                     index += 1;
-                }
-                "--no-semantic-enrichment" => {
-                    options.semantic_enrichment = false;
-                    index += 1;
-                }
-                "--semantic-provider-mode" => {
-                    let value = args
-                        .get(index + 1)
-                        .ok_or_else(|| "--semantic-provider-mode requires a value".to_string())?;
-                    options.semantic_provider_mode = value.clone();
-                    index += 2;
                 }
                 "--no-git" => {
                     options.use_git = false;
@@ -244,8 +228,6 @@ pub(in crate::adapters::cli) fn materialize_request(
             .map(|path| path.to_string_lossy().to_string()),
         mode: options.mode.clone(),
         include_fts: options.include_fts,
-        semantic_enrichment: false,
-        semantic_provider_mode: options.semantic_provider_mode.clone(),
         use_git: options.use_git,
         git_diff: options.git_diff,
         git_base: options.git_base.clone(),

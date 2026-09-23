@@ -249,7 +249,6 @@ fn install(root: &Path) -> PathBuf {
             "none",
             "--instructions-target",
             "skip",
-            "--no-semantic-enrichment",
             "--json",
         ])
         .output()
@@ -267,7 +266,6 @@ fn install(root: &Path) -> PathBuf {
             root.to_str().unwrap(),
             "--mode",
             "full",
-            "--no-semantic-enrichment",
             "--json",
         ])
         .output()

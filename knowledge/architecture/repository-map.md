@@ -6,7 +6,7 @@ tags:
 - ownership
 - repository-map
 - source-layout
-timestamp: 2026-08-13
+timestamp: 2026-09-23
 title: Repository Ownership Map
 type: architecture
 ---
@@ -24,7 +24,6 @@ This map connects durable architecture responsibilities to current source locati
 | `src/execution/` | Materialization planning and scan-to-write orchestration. |
 | `src/parser/` | Language-profile parsing support and normalized syntax inputs. |
 | `src/syntax_materializer/` | Syntax-tree traversal and graph node/relationship emission. |
-| `src/semantic_enrichment/` | Cross-file resolution, evidence, semantic metadata, and fallbacks. |
 | `src/staging_writer/` | Deterministic row accumulation, merge, connector creation, and staging. |
 | `src/db_writer/` | Embedded graph-store writes, deletion planning, concurrency, retry, and extension setup. |
 | `crates/k-wiki/` | Knowledge Wiki container: OKF API, source reading, validation, compilation, projection, search, rendering, authoring, refresh, and transports. |
@@ -44,8 +43,7 @@ This map connects durable architecture responsibilities to current source locati
 | Change CLI behavior | `src/adapters/cli` | Public contracts and facade; do not bypass them. |
 | Change MCP behavior | MCP adapter under `src/adapters` | Public operation registry and facade; tool schemas derive from operation metadata. |
 | Change source discovery | Source Scanner / materialization support in `src/api` and `src/execution` | Execution Planner and manifest contracts. |
-| Change parsing or graph ontology emission | `src/parser` and `src/syntax_materializer` | Execution plan row contracts, semantic enrichment, and ontology validation. |
-| Change cross-file resolution | `src/semantic_enrichment` | Evidence metadata and deterministic row staging. |
+| Change parsing or graph ontology emission | `src/parser` and `src/syntax_materializer` | Execution plan row contracts, deterministic row staging, and ontology validation. |
 | Change persistence | `src/staging_writer` and `src/db_writer` | Graph schema catalog, deletion safety, readers/writers, retry, and manifest publication. |
 | Change watch behavior | refresh services in `src/api` and watch adapters under `src/adapters/cli` | Incremental Materialization API; never create a second indexing pipeline. |
 

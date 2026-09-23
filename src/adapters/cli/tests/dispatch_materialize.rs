@@ -1,5 +1,12 @@
 use super::*;
 
+fn assert_retired_semantic_options_absent(help: &str) {
+    assert!(!help.contains("--no-semantic-enrichment"));
+    assert!(!help.contains("--semantic-provider-mode"));
+    assert!(!help.contains("local_only only"));
+    assert!(!help.contains("Semantic provider mode"));
+}
+
 #[test]
 fn prints_top_level_help() {
     let mut output = Vec::new();
@@ -53,9 +60,7 @@ fn materialize_help_is_product_command_help() {
     assert!(text.contains(
         "--single-thread           Disable concurrent parsing and build partitions serially"
     ));
-    assert!(text.contains("local_only only"));
-    assert!(!text.contains("opportunistic"));
-    assert!(!text.contains("provider_first"));
+    assert_retired_semantic_options_absent(&text);
 }
 
 #[test]
@@ -71,6 +76,7 @@ fn watch_help_documents_parallel_default_and_opt_out() {
     assert!(text.contains(
         "--single-thread           Disable concurrent parsing and build partitions serially"
     ));
+    assert_retired_semantic_options_absent(&text);
 }
 
 #[test]
@@ -85,9 +91,7 @@ fn setup_help_is_product_command_help() {
     ));
     assert!(!text.contains("codebase-graph install [--repo-root <path>]"));
     assert!(text.contains("--mcp-client"));
-    assert!(text.contains("local_only only"));
-    assert!(!text.contains("opportunistic"));
-    assert!(!text.contains("provider_first"));
+    assert_retired_semantic_options_absent(&text);
 }
 
 #[test]
@@ -98,31 +102,32 @@ fn reinstall_help_is_product_command_help() {
     assert!(text.contains("codebase-graph reinstall"));
     assert!(text.contains("Remove existing graph state and run install again"));
     assert!(text.contains("--mcp-client"));
-    assert!(text.contains("local_only only"));
-    assert!(!text.contains("opportunistic"));
-    assert!(!text.contains("provider_first"));
+    assert_retired_semantic_options_absent(&text);
 }
 
 #[test]
-fn materialize_rejects_provider_backed_semantic_modes() {
-    let error = run(
-        ["build", "--semantic-provider-mode", "provider_first"],
-        &mut Vec::new(),
-    )
-    .unwrap_err();
-
-    assert!(error.contains("materialization semantic provider mode must be local_only"));
+fn retired_semantic_options_are_rejected_by_each_affected_parser() {
+    for command in ["build", "plan", "watch", "install", "reinstall"] {
+        for args in [
+            vec![command, "--no-semantic-enrichment"],
+            vec![command, "--semantic-provider-mode", "local_only"],
+        ] {
+            let error = run(args, &mut Vec::new()).unwrap_err();
+            assert!(
+                error.contains(&format!("unknown {command} option:")),
+                "{command}: {error}"
+            );
+        }
+    }
 }
 
 #[test]
-fn setup_rejects_provider_backed_semantic_modes() {
-    let error = run(
-        ["install", "--semantic-provider-mode", "opportunistic"],
-        &mut Vec::new(),
-    )
-    .unwrap_err();
-
-    assert!(error.contains("setup semantic provider mode must be local_only"));
+fn retired_semantic_options_are_absent_from_all_materialization_help() {
+    for command in ["build", "plan", "watch", "install", "reinstall"] {
+        let mut output = Vec::new();
+        run([command, "--help"], &mut output).unwrap();
+        assert_retired_semantic_options_absent(&String::from_utf8(output).unwrap());
+    }
 }
 
 #[test]
@@ -203,8 +208,6 @@ fn materialize_empty_project_from_native_request() {
   "excluded_parts": [],
   "db_path": "{db}",
   "include_fts": false,
-  "semantic_enrichment": false,
-  "semantic_provider_mode": "local_only",
   "schema_statements": [],
   "staging_dir": "{staging}",
   "atomic_rebuild": true,
@@ -259,7 +262,6 @@ fn materialize_python_source_root_without_python_request() {
             "--mode",
             "full",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
         &mut output,
@@ -370,7 +372,6 @@ fn assert_materializes_languages(root: &Path, expected: &[(&str, &str)]) {
             "--mode",
             "full",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
         &mut output,
@@ -524,7 +525,6 @@ fn git_diff_plan_scopes_to_changed_paths() {
             "--mode",
             "full",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
         &mut Vec::new(),
@@ -568,7 +568,6 @@ fn parallel_materialize_reports_progress_events() {
             "--parallel",
             "--progress",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
         &mut output,
@@ -608,7 +607,6 @@ fn setup_materializes_graph_and_writes_config() {
             "--mcp-client",
             "none",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
         &mut output,
@@ -633,7 +631,12 @@ fn setup_materializes_graph_and_writes_config() {
     assert_eq!(config["refresh"]["policy"], "leader");
     assert_eq!(config["refresh"]["backend"], "auto");
     assert_eq!(config["materialization"]["include_fts"], true);
-    assert_eq!(config["materialization"]["semantic_enrichment"], false);
+    assert!(config["materialization"]
+        .get("semantic_enrichment")
+        .is_none());
+    assert!(config["materialization"]
+        .get("semantic_provider_mode")
+        .is_none());
     assert_eq!(config["materialization"]["worker_memory_mib"], 768);
     assert_eq!(config["materialization"]["rust_memory_mib"], 384);
     assert_eq!(config["materialization"]["spill_chunk_mib"], 32);

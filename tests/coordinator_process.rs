@@ -526,7 +526,6 @@ fn write_config_with_policy(
             "refresh": {"policy": policy, "backend": "auto"},
             "materialization": {
                 "include_fts": true,
-                "semantic_enrichment": false,
                 "worker_memory_mib": worker,
                 "rust_memory_mib": rust,
                 "spill_chunk_mib": spill,

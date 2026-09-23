@@ -737,7 +737,6 @@ fn watch_poll_backend_refreshes_after_create() {
                 "1",
                 "--no-git",
                 "--no-fts",
-                "--no-semantic-enrichment",
             ],
             &mut output,
         )?;
@@ -778,7 +777,6 @@ fn watch_auto_backend_refreshes_after_probe_resolution() {
                 "1",
                 "--no-git",
                 "--no-fts",
-                "--no-semantic-enrichment",
             ],
             &mut output,
         )?;
@@ -830,7 +828,6 @@ fn watch_rejects_legacy_v1_before_creating_probe() {
             "1",
             "--no-git",
             "--no-fts",
-            "--no-semantic-enrichment",
         ],
         &mut Vec::new(),
     )
@@ -878,7 +875,6 @@ fn watch_once_runs_single_refresh_and_exits() {
             "--once",
             "--no-git",
             "--no-fts",
-            "--no-semantic-enrichment",
         ],
         &mut output,
     )
@@ -908,7 +904,6 @@ fn unchanged_refresh_keeps_generation_but_explicit_build_still_publishes() {
             "--once",
             "--no-git",
             "--no-fts",
-            "--no-semantic-enrichment",
         ],
         &mut watch_output,
     )
@@ -928,7 +923,6 @@ fn unchanged_refresh_keeps_generation_but_explicit_build_still_publishes() {
             "changed",
             "--no-git",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
         &mut build_output,
@@ -975,7 +969,6 @@ fn changed_build_recovers_when_manifest_loses_existing_file_entry() {
             "service.py",
             "--no-git",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
         &mut output,

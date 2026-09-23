@@ -55,10 +55,6 @@ pub struct NativeSyntaxMaterializationRequest {
     pub db_path: String,
     pub include_fts: bool,
     #[serde(default)]
-    pub semantic_enrichment: bool,
-    #[serde(default = "default_semantic_provider_mode")]
-    pub semantic_provider_mode: String,
-    #[serde(default)]
     pub schema_statements: Vec<String>,
     pub staging_dir: String,
     #[serde(default)]
@@ -80,10 +76,6 @@ pub struct NativeSyntaxMaterializationRequest {
 }
 
 pub type MaterializationInput = NativeSyntaxMaterializationRequest;
-
-fn default_semantic_provider_mode() -> String {
-    "local_only".to_string()
-}
 
 fn default_parallel() -> bool {
     true
@@ -858,20 +850,6 @@ mod tests {
         );
 
         let mut changed = request.clone();
-        changed.semantic_enrichment = !request.semantic_enrichment;
-        assert_eq!(
-            baseline,
-            changed.graph_build_compatibility_digest().unwrap()
-        );
-
-        let mut changed = request.clone();
-        changed.semantic_provider_mode = "provider".to_string();
-        assert_eq!(
-            baseline,
-            changed.graph_build_compatibility_digest().unwrap()
-        );
-
-        let mut changed = request.clone();
         changed.schema_statements =
             vec!["CREATE NODE TABLE symbols(id STRING, PRIMARY KEY(id));".to_string()];
         assert_ne!(
@@ -918,6 +896,26 @@ mod tests {
         assert_eq!(
             baseline,
             changed.graph_build_compatibility_digest().unwrap()
+        );
+    }
+
+    #[test]
+    fn retired_semantic_request_keys_do_not_change_native_build_digest() {
+        let current: NativeSyntaxMaterializationRequest =
+            serde_json::from_str(&request_json("")).unwrap();
+        let mut legacy_json: serde_json::Value = serde_json::from_str(&request_json("")).unwrap();
+        let object = legacy_json.as_object_mut().unwrap();
+        object.insert("semantic_enrichment".to_string(), serde_json::json!(true));
+        object.insert(
+            "semantic_provider_mode".to_string(),
+            serde_json::json!("remote"),
+        );
+        let legacy: NativeSyntaxMaterializationRequest =
+            serde_json::from_value(legacy_json).unwrap();
+
+        assert_eq!(
+            current.graph_build_compatibility_digest().unwrap(),
+            legacy.graph_build_compatibility_digest().unwrap()
         );
     }
 }

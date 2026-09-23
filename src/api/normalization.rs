@@ -15,7 +15,6 @@ pub(crate) const DEFAULT_SEARCH_BUDGET: usize = 600;
 pub(crate) const DEFAULT_CONTEXT_LIMIT: usize = 3;
 pub(crate) const DEFAULT_QUERY_LIMIT: usize = 100;
 const DEFAULT_MATERIALIZATION_MODE: &str = "changed";
-const DEFAULT_SEMANTIC_PROVIDER_MODE: &str = "local_only";
 
 pub(crate) fn prepare_operation_request(
     operation_id: &str,
@@ -140,12 +139,7 @@ fn normalize_layer(layer: &mut String) {
 }
 
 pub(crate) fn normalize_materialize_options(options: &mut MaterializeOptions) {
-    options.semantic_enrichment = false;
     default_string(&mut options.mode, DEFAULT_MATERIALIZATION_MODE);
-    default_string(
-        &mut options.semantic_provider_mode,
-        DEFAULT_SEMANTIC_PROVIDER_MODE,
-    );
     normalize_paths(&mut options.candidate_paths);
 }
 
@@ -194,17 +188,11 @@ pub(crate) fn validate_request(request: &OperationRequest) -> Result<(), ApiErro
             Ok(())
         }
         OperationRequest::Materialize(request) | OperationRequest::Plan(request) => {
-            validate_materialization_fields(
-                &request.mode,
-                &request.semantic_provider_mode,
-                "materialization",
-            )
+            validate_materialization_fields(&request.mode, "materialization")
         }
-        OperationRequest::Refresh(request) => validate_materialization_fields(
-            &request.mode,
-            &request.semantic_provider_mode,
-            "refresh",
-        ),
+        OperationRequest::Refresh(request) => {
+            validate_materialization_fields(&request.mode, "refresh")
+        }
         OperationRequest::Setup(request) => validate_lifecycle(request, "setup"),
         OperationRequest::Reinstall(request) => validate_lifecycle(request, "reinstall"),
         OperationRequest::Uninstall(request) => validate_lifecycle(request, "uninstall"),
@@ -263,12 +251,7 @@ pub(crate) fn required_fields(operation_id: &str) -> &'static [&'static str] {
 }
 
 fn normalize_materialization(request: &mut MaterializationRequest) {
-    request.semantic_enrichment = false;
     default_string(&mut request.mode, DEFAULT_MATERIALIZATION_MODE);
-    default_string(
-        &mut request.semantic_provider_mode,
-        DEFAULT_SEMANTIC_PROVIDER_MODE,
-    );
     request.source_root = normalized_optional_string(request.source_root.take());
     if request.repo.repo_root.is_none() {
         request.repo.repo_root = request.source_root.as_deref().map(std::path::PathBuf::from);
@@ -278,23 +261,13 @@ fn normalize_materialization(request: &mut MaterializationRequest) {
 }
 
 fn normalize_refresh(request: &mut RefreshRequest) {
-    request.semantic_enrichment = false;
     default_string(&mut request.mode, DEFAULT_MATERIALIZATION_MODE);
-    default_string(
-        &mut request.semantic_provider_mode,
-        DEFAULT_SEMANTIC_PROVIDER_MODE,
-    );
     normalize_paths(&mut request.paths);
 }
 
 fn normalize_lifecycle(request: &mut RepositoryLifecycleRequest) {
-    request.semantic_enrichment = false;
     request.action = request.action.trim().to_string();
     default_string(&mut request.mode, DEFAULT_MATERIALIZATION_MODE);
-    default_string(
-        &mut request.semantic_provider_mode,
-        DEFAULT_SEMANTIC_PROVIDER_MODE,
-    );
     request.mcp_client = normalized_optional_string(request.mcp_client.take());
     request.agent_hooks = normalize_agent_hooks_selection(&request.agent_hooks);
     request.instructions_target = normalized_optional_string(request.instructions_target.take());
@@ -370,21 +343,11 @@ fn validate_detail_and_limit(detail: &str, limit: usize) -> Result<(), ApiError>
     Ok(())
 }
 
-fn validate_materialization_fields(
-    mode: &str,
-    semantic_provider_mode: &str,
-    operation: &str,
-) -> Result<(), ApiError> {
+fn validate_materialization_fields(mode: &str, operation: &str) -> Result<(), ApiError> {
     if mode != "full" && mode != "changed" {
         return Err(ApiError::new(
             "invalid_materialization_mode",
             format!("{operation} mode must be full or changed"),
-        ));
-    }
-    if semantic_provider_mode != "local_only" {
-        return Err(ApiError::new(
-            "invalid_semantic_provider_mode",
-            format!("{operation} semantic provider mode must be local_only"),
         ));
     }
     Ok(())
@@ -403,11 +366,7 @@ fn validate_lifecycle(
             ),
         ));
     }
-    validate_materialization_fields(
-        &request.mode,
-        &request.semantic_provider_mode,
-        expected_action,
-    )?;
+    validate_materialization_fields(&request.mode, expected_action)?;
     validate_agent_hooks_selection(&request.agent_hooks)?;
     if let Some(client) = request.mcp_client.as_deref() {
         let special_allowed = match expected_action {
@@ -547,8 +506,6 @@ mod tests {
                 source_root: Some(" ./repository ".to_string()),
                 mode: String::new(),
                 include_fts: true,
-                semantic_enrichment: true,
-                semantic_provider_mode: String::new(),
                 use_git: false,
                 git_diff: false,
                 git_base: None,
@@ -567,8 +524,6 @@ mod tests {
             panic!("materialization request should remain a materialization request");
         };
         assert_eq!(materialization.mode, "changed");
-        assert!(!materialization.semantic_enrichment);
-        assert_eq!(materialization.semantic_provider_mode, "local_only");
         assert_eq!(
             materialization.repo.repo_root,
             Some(std::path::PathBuf::from("./repository"))

@@ -433,8 +433,6 @@ mod tests {
             artifact_root: state_root.join("artifacts").to_string_lossy().into_owned(),
             db_path: state_root.join("graph").to_string_lossy().into_owned(),
             include_fts: false,
-            semantic_enrichment: false,
-            semantic_provider_mode: "local_only".to_string(),
             schema_statements: Vec::new(),
             staging_dir: state_root.join("staging").to_string_lossy().into_owned(),
             atomic_rebuild: false,

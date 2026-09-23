@@ -42,8 +42,6 @@ fn native_request(root: &Path, db: &Path, staging: &Path) -> PathBuf {
         "excluded_parts": [],
         "db_path": db,
         "include_fts": false,
-        "semantic_enrichment": false,
-        "semantic_provider_mode": "local_only",
         "schema_statements": [],
         "staging_dir": staging,
         "atomic_rebuild": true,
@@ -87,7 +85,6 @@ fn standalone_native_request_uses_its_source_root_from_an_unrelated_cwd() {
             manifest.to_str().unwrap(),
             "--no-git",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
     );
@@ -136,7 +133,6 @@ fn bound_native_request_source_mismatch_is_rejected_before_direct_publication() 
             manifest.to_str().unwrap(),
             "--no-git",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
     );

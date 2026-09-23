@@ -2,15 +2,15 @@
 description: How CLI, MCP, and embedded calls share one operation catalog, runtime resolution, storage recovery, and execution path.
 resource: repository-architecture
 tags:
+- agents
 - api
 - architecture
 - cli
+- hooks
 - mcp
 - runtime
 - storage
-- agents
-- hooks
-timestamp: 2026-08-25
+timestamp: 2026-09-23
 title: Public Operations and Runtime Paths
 type: architecture
 ---
@@ -76,7 +76,13 @@ Every repository-scoped operation resolves one `RepoRuntime`: source root, confi
 
 Managed reads resolve `active.json` and lease its generation for the entire operation. Direct reads recover any interrupted paired publication before opening their destinations. Runtime entry also recovers abandoned managed runs and retries pending retirement.
 
-Config schema v3 supplies a managed `storage_root`, refresh policy and backend, and bounded materialization defaults: 768 MiB worker RSS, 384 MiB Rust working state, 32 MiB spill chunks, and parallelism two. Schema-v2 remains readable and receives these defaults. The legacy semantic-enrichment field remains readable but is normalized to disabled. Schema-v1 deserialization remains available for reads, but the resolved runtime is not writable until explicit reinstall.
+Config schema v3 supplies a managed `storage_root`, refresh policy and backend, and bounded materialization defaults: 768 MiB worker RSS, 384 MiB Rust working state, 32 MiB spill chunks, and parallelism two. Schema-v2 remains readable and receives these defaults. Retired semantic-enrichment keys are ignored as unknown JSON fields and are omitted from newly serialized configuration. Schema-v1 deserialization remains available for reads, but the resolved runtime is not writable until explicit reinstall.
+
+## Removed semantic-enrichment options
+
+The retired enrichment interfaces are removed from Rust request types, CLI parsers, internal options, and serialized output. Rust consumers must remove `semantic_enrichment` and `semantic_provider_mode` from request struct construction. Scripts must remove `--no-semantic-enrichment` and `--semantic-provider-mode` (including its value); these flags now produce ordinary unknown-option errors.
+
+Existing JSON requests and configuration files remain readable: their retired keys are ignored by the existing Serde unknown-field behavior, regardless of the old value. There is no enrichment-specific compatibility shim or provider-mode validation. No graph rebuild, reinstall, storage migration, or digest/schema-version change is required. Existing files are not rewritten merely by reading them; normal configuration writes omit the removed fields. The `semantic` graph-search/context layer is still supported.
 
 ## Graph read path
 

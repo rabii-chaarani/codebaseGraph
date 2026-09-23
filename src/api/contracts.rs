@@ -162,8 +162,6 @@ pub struct MaterializationRequest {
     pub source_root: Option<String>,
     pub mode: String,
     pub include_fts: bool,
-    pub semantic_enrichment: bool,
-    pub semantic_provider_mode: String,
     pub use_git: bool,
     pub git_diff: bool,
     pub git_base: Option<String>,
@@ -203,8 +201,6 @@ pub struct RepositoryLifecycleRequest {
     pub mcp_daemon_port: Option<u16>,
     pub mode: String,
     pub include_fts: bool,
-    pub semantic_enrichment: bool,
-    pub semantic_provider_mode: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -262,8 +258,6 @@ pub struct RefreshRequest {
     pub paths: Vec<String>,
     pub mode: String,
     pub include_fts: bool,
-    pub semantic_enrichment: bool,
-    pub semantic_provider_mode: String,
     pub parallel: bool,
     pub progress: bool,
     pub output_format: OutputFormat,
@@ -375,6 +369,7 @@ impl ApiError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::{de::DeserializeOwned, Serialize};
     use serde_json::json;
 
     fn repository() -> RepoSelector {
@@ -393,8 +388,6 @@ mod tests {
             source_root: Some("/tmp/repository".to_string()),
             mode: "changed".to_string(),
             include_fts: true,
-            semantic_enrichment: true,
-            semantic_provider_mode: "local_only".to_string(),
             use_git: true,
             git_diff: false,
             git_base: None,
@@ -426,9 +419,23 @@ mod tests {
             mcp_daemon_port: None,
             mode: "full".to_string(),
             include_fts: true,
-            semantic_enrichment: false,
-            semantic_provider_mode: "local_only".to_string(),
         }
+    }
+
+    fn assert_legacy_semantic_fields_are_ignored<T>(baseline: serde_json::Value)
+    where
+        T: Serialize + DeserializeOwned,
+    {
+        let mut legacy = baseline.clone();
+        let object = legacy.as_object_mut().unwrap();
+        object.insert("semantic_enrichment".to_string(), json!(true));
+        object.insert("semantic_provider_mode".to_string(), json!("remote"));
+
+        let decoded = serde_json::from_value::<T>(legacy).unwrap();
+        let encoded = serde_json::to_value(decoded).unwrap();
+        assert_eq!(encoded, baseline);
+        assert!(encoded.get("semantic_enrichment").is_none());
+        assert!(encoded.get("semantic_provider_mode").is_none());
     }
 
     #[test]
@@ -499,8 +506,6 @@ mod tests {
                 paths: vec!["src/lib.rs".to_string()],
                 mode: "changed".to_string(),
                 include_fts: true,
-                semantic_enrichment: true,
-                semantic_provider_mode: "local_only".to_string(),
                 parallel: true,
                 progress: false,
                 output_format: OutputFormat::Typed,
@@ -579,6 +584,28 @@ mod tests {
         assert_eq!(
             serde_json::to_value(decoded).expect("decoded invocation should serialize"),
             encoded
+        );
+    }
+
+    #[test]
+    fn public_materialization_lifecycle_and_refresh_requests_ignore_retired_fields() {
+        assert_legacy_semantic_fields_are_ignored::<MaterializationRequest>(
+            serde_json::to_value(materialization()).unwrap(),
+        );
+        assert_legacy_semantic_fields_are_ignored::<RepositoryLifecycleRequest>(
+            serde_json::to_value(lifecycle("setup")).unwrap(),
+        );
+        assert_legacy_semantic_fields_are_ignored::<RefreshRequest>(
+            serde_json::to_value(RefreshRequest {
+                repo: repository(),
+                paths: vec!["src/lib.rs".to_string()],
+                mode: "changed".to_string(),
+                include_fts: true,
+                parallel: true,
+                progress: false,
+                output_format: OutputFormat::Typed,
+            })
+            .unwrap(),
         );
     }
 }

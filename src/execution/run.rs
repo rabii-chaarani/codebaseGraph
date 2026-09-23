@@ -289,7 +289,7 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
-    fn scanned_payload_completes_enrichment_and_graph_write_after_source_removal() {
+    fn scanned_payload_completes_materialization_after_source_removal() {
         let root = unique_temp_dir("codebase-graph-scanned-pipeline");
         let source_root = root.join("repository");
         let state_root = root.join("state");
@@ -300,7 +300,7 @@ mod tests {
             "pub fn scanned_pipeline() -> bool { true }\n",
         )
         .expect("source file should be written");
-        let request = request(&source_root, &state_root, None, Vec::new(), true);
+        let request = request(&source_root, &state_root, None, Vec::new());
         let mut timings = BTreeMap::new();
         let scan = crate::scan::scan_sources(&request).expect("scan should succeed");
         timings.insert("scan_seconds".to_string(), 0.0);
@@ -339,7 +339,6 @@ mod tests {
             &initial_state,
             None,
             Vec::new(),
-            true,
         ))
         .unwrap();
         let previous = manifest_from_response(&initial);
@@ -356,7 +355,6 @@ mod tests {
             &second_state,
             Some(previous),
             vec!["src/caller.rs".to_string()],
-            true,
         ))
         .unwrap();
 
@@ -390,7 +388,6 @@ mod tests {
             &initial_state,
             None,
             Vec::new(),
-            true,
         ))
         .unwrap();
         let previous = manifest_from_response(&initial);
@@ -415,7 +412,6 @@ mod tests {
             &rebuild_state,
             Some(previous.clone()),
             Vec::new(),
-            true,
         ))
         .unwrap();
         assert!(response.artifacts_rebuilt >= 2);
@@ -439,7 +435,6 @@ mod tests {
             &corrupt_state,
             Some(corrupt_previous),
             Vec::new(),
-            true,
         ))
         .unwrap();
         assert!(corrupt_response.artifacts_rebuilt >= 1);
@@ -470,7 +465,6 @@ mod tests {
             &initial_state,
             None,
             Vec::new(),
-            true,
         ))
         .unwrap();
         let previous = manifest_from_response(&initial);
@@ -487,7 +481,6 @@ mod tests {
             &cached_state,
             Some(previous),
             vec!["src/caller.rs".to_string()],
-            true,
         ))
         .unwrap();
 
@@ -498,7 +491,6 @@ mod tests {
             &clean_state,
             None,
             Vec::new(),
-            true,
         ))
         .unwrap();
 
@@ -535,7 +527,6 @@ mod tests {
             &initial_state,
             None,
             Vec::new(),
-            true,
         ))
         .unwrap();
         let previous = manifest_from_response(&initial);
@@ -553,7 +544,6 @@ mod tests {
             &delete_state,
             Some(previous),
             Vec::new(),
-            true,
         ))
         .unwrap();
 
@@ -629,7 +619,6 @@ mod tests {
             &initial_state,
             None,
             Vec::new(),
-            false,
         ))
         .unwrap();
         let mut previous = manifest_from_response(&initial);
@@ -641,7 +630,6 @@ mod tests {
             &second_state,
             Some(previous.clone()),
             Vec::new(),
-            false,
         );
         second_request.include_fts = true;
         let response = execute_materialization_pipeline(&second_request).unwrap();
@@ -654,8 +642,8 @@ mod tests {
     }
 
     #[test]
-    fn retired_semantic_settings_do_not_change_materialization() {
-        let root = unique_temp_dir("codebase-graph-artifact-semantic-reuse");
+    fn artifact_reuse_preserves_materialization_output() {
+        let root = unique_temp_dir("codebase-graph-artifact-reuse");
         let source_root = root.join("repository");
         let initial_state = root.join("state-initial");
         fs::create_dir_all(source_root.join("src")).unwrap();
@@ -676,28 +664,25 @@ mod tests {
             &initial_state,
             None,
             Vec::new(),
-            false,
         ))
         .unwrap();
         let previous = manifest_from_response(&initial);
 
-        let semantic_state = root.join("state-semantic");
-        fs::create_dir_all(&semantic_state).unwrap();
-        let semantic = execute_materialization_pipeline(&request(
+        let reuse_state = root.join("state-reuse");
+        fs::create_dir_all(&reuse_state).unwrap();
+        let reused = execute_materialization_pipeline(&request(
             &source_root,
-            &semantic_state,
+            &reuse_state,
             Some(previous),
             Vec::new(),
-            true,
         ))
         .unwrap();
 
-        assert_eq!(semantic.artifacts_reused, 2);
-        assert_eq!(semantic.artifacts_rebuilt, 0);
-        assert_eq!(initial.graph_build_digest, semantic.graph_build_digest);
-        assert_eq!(initial.edge_rows, semantic.edge_rows);
-        assert_eq!(initial.connector_rows, semantic.connector_rows);
-        assert!(!semantic.phase_high_water_marks.contains_key("semantic"));
+        assert_eq!(reused.artifacts_reused, 2);
+        assert_eq!(reused.artifacts_rebuilt, 0);
+        assert_eq!(initial.graph_build_digest, reused.graph_build_digest);
+        assert_eq!(initial.edge_rows, reused.edge_rows);
+        assert_eq!(initial.connector_rows, reused.connector_rows);
 
         let _ = fs::remove_dir_all(root);
     }
@@ -707,7 +692,6 @@ mod tests {
         state_root: &Path,
         previous_manifest: Option<NativeManifest>,
         candidate_paths: Vec<String>,
-        semantic_enrichment: bool,
     ) -> NativeSyntaxMaterializationRequest {
         NativeSyntaxMaterializationRequest {
             source_root: source_root.to_string_lossy().into_owned(),
@@ -732,8 +716,6 @@ mod tests {
                 .into_owned(),
             db_path: state_root.join("graph.ldb").to_string_lossy().into_owned(),
             include_fts: false,
-            semantic_enrichment,
-            semantic_provider_mode: "local_only".to_string(),
             schema_statements: Vec::new(),
             staging_dir: state_root.join("staging").to_string_lossy().into_owned(),
             atomic_rebuild: false,

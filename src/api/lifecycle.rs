@@ -659,8 +659,6 @@ pub(crate) fn refresh_repository(
         use_git: false,
         mode: request.mode.clone(),
         include_fts: request.include_fts,
-        semantic_enrichment: false,
-        semantic_provider_mode: request.semantic_provider_mode.clone(),
         git_diff: false,
         git_base: None,
         include_patterns: Vec::new(),
@@ -686,7 +684,6 @@ pub(crate) fn refresh_repository(
 struct LifecycleOptions {
     mode: String,
     include_fts: bool,
-    semantic_provider_mode: String,
     mcp_client: String,
     agent_hooks: String,
     mcp_config_path: Option<PathBuf>,
@@ -702,7 +699,6 @@ impl LifecycleOptions {
         Self {
             mode: request.mode.clone(),
             include_fts: request.include_fts,
-            semantic_provider_mode: request.semantic_provider_mode.clone(),
             mcp_client: request
                 .mcp_client
                 .clone()
@@ -745,8 +741,6 @@ fn setup_payload_for_root(
         config: Some(paths.config_path.clone()),
         mode: options.mode.clone(),
         include_fts: options.include_fts,
-        semantic_enrichment: false,
-        semantic_provider_mode: options.semantic_provider_mode.clone(),
         use_git: true,
         ..MaterializeOptions::default()
     };

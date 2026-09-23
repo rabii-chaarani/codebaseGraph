@@ -111,8 +111,6 @@ pub(in crate::adapters::cli) fn run_uninstall<W: Write>(
         mcp_daemon_port: None,
         mode: "changed".to_string(),
         include_fts: true,
-        semantic_enrichment: false,
-        semantic_provider_mode: "local_only".to_string(),
     };
     let payload = CodebaseGraphApi::new()
         .execute_operation(&OperationRequest::Uninstall(request))

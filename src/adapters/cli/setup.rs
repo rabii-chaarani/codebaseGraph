@@ -29,8 +29,6 @@ pub(super) fn run_setup<W: Write>(args: &[String], stdout: &mut W) -> Result<(),
         mcp_daemon_port: options.mcp_daemon_port,
         mode: options.mode.clone(),
         include_fts: options.include_fts,
-        semantic_enrichment: false,
-        semantic_provider_mode: options.semantic_provider_mode.clone(),
     };
     let output = CodebaseGraphApi::new()
         .execute_operation(&OperationRequest::Setup(request))
