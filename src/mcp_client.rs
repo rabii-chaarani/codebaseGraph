@@ -5,6 +5,7 @@
 //! repository; callers are expected to use the managed daemon selected by the
 //! install config.
 
+use crate::execution_context::{HOOK_TIMEOUT_HEADER, MAX_HOOK_TIMEOUT};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
@@ -52,41 +53,76 @@ pub(crate) fn loopback_http_json_request(
     body: Option<&Value>,
     timeout: Duration,
 ) -> Result<McpHttpResponse, String> {
+    loopback_http_json_request_with_hook_deadline(
+        endpoint, method, path, headers, body, timeout, None,
+    )
+}
+
+fn loopback_http_json_request_with_hook_deadline(
+    endpoint: &str,
+    method: &str,
+    path: &str,
+    headers: &[(&str, &str)],
+    body: Option<&Value>,
+    timeout: Duration,
+    hook_deadline: Option<Instant>,
+) -> Result<McpHttpResponse, String> {
+    let started = Instant::now();
+    let request_deadline = started
+        .checked_add(timeout)
+        .ok_or_else(|| "managed MCP request timeout is out of range".to_string())?;
+    let io_deadline = hook_deadline
+        .map(|deadline| deadline.min(request_deadline))
+        .unwrap_or(request_deadline);
     let port = endpoint_port(endpoint)?;
-    let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
-    let mut stream = TcpStream::connect_timeout(&address, timeout)
-        .map_err(|error| format!("failed to connect to managed MCP daemon: {error}"))?;
-    stream
-        .set_read_timeout(Some(timeout))
-        .map_err(|error| error.to_string())?;
-    stream
-        .set_write_timeout(Some(timeout))
-        .map_err(|error| error.to_string())?;
     let body = body
         .map(serde_json::to_vec)
         .transpose()
         .map_err(|error| error.to_string())?
         .unwrap_or_default();
-    write!(
-        stream,
+
+    let remaining = remaining_until(io_deadline, "managed MCP request")?;
+    let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
+    let mut stream = TcpStream::connect_timeout(&address, remaining)
+        .map_err(|error| format_io_error("failed to connect to managed MCP daemon", error))?;
+
+    // Compute hook metadata only after connect and directly before writing the
+    // request. This keeps the header aligned with the budget that remains when
+    // the server receives the call, instead of the budget at hook dispatch.
+    let mut request = format!(
         "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n",
         body.len()
-    )
-    .map_err(|error| error.to_string())?;
+    );
     for (name, value) in headers {
-        write!(stream, "{name}: {value}\r\n").map_err(|error| error.to_string())?;
+        request.push_str(name);
+        request.push_str(": ");
+        request.push_str(value);
+        request.push_str("\r\n");
     }
-    write!(stream, "\r\n").map_err(|error| error.to_string())?;
-    stream.write_all(&body).map_err(|error| error.to_string())?;
+    if let Some(timeout_ms) = hook_deadline
+        .map(|deadline| hook_timeout_header_value(deadline, io_deadline))
+        .transpose()?
+    {
+        request.push_str(HOOK_TIMEOUT_HEADER);
+        request.push_str(": ");
+        request.push_str(&timeout_ms);
+        request.push_str("\r\n");
+    }
+    request.push_str("\r\n");
+    write_all_until(
+        &mut stream,
+        request.as_bytes(),
+        io_deadline,
+        "failed to write managed MCP request",
+    )?;
+    write_all_until(
+        &mut stream,
+        &body,
+        io_deadline,
+        "failed to write managed MCP request body",
+    )?;
 
-    let mut response = Vec::new();
-    stream
-        .take((MAX_RESPONSE_BYTES + 1) as u64)
-        .read_to_end(&mut response)
-        .map_err(|error| format!("failed to read managed MCP daemon response: {error}"))?;
-    if response.len() > MAX_RESPONSE_BYTES {
-        return Err("managed MCP daemon response exceeded the bounded size".to_string());
-    }
+    let response = read_http_response(&mut stream, io_deadline)?;
     let split = response
         .windows(4)
         .position(|window| window == b"\r\n\r\n")
@@ -111,6 +147,148 @@ pub(crate) fn loopback_http_json_request(
         payload,
         headers: response_headers,
     })
+}
+
+fn remaining_until(deadline: Instant, operation: &str) -> Result<Duration, String> {
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        return Err(format!("{operation} exceeded its deadline"));
+    }
+    Ok(remaining)
+}
+
+fn hook_timeout_header_value(
+    hook_deadline: Instant,
+    io_deadline: Instant,
+) -> Result<String, String> {
+    let hook_remaining = hook_deadline.saturating_duration_since(Instant::now());
+    let io_remaining = io_deadline.saturating_duration_since(Instant::now());
+    let remaining = hook_remaining.min(io_remaining).min(MAX_HOOK_TIMEOUT);
+    let millis = remaining.as_millis();
+    if millis == 0 {
+        return Err("managed MCP tool call exceeded its deadline".to_string());
+    }
+    Ok(millis.to_string())
+}
+
+fn format_io_error(operation: &str, error: std::io::Error) -> String {
+    if matches!(
+        error.kind(),
+        std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock
+    ) {
+        format!("{operation}: managed MCP request exceeded its deadline")
+    } else {
+        format!("{operation}: {error}")
+    }
+}
+
+fn write_all_until(
+    stream: &mut TcpStream,
+    mut bytes: &[u8],
+    deadline: Instant,
+    operation: &str,
+) -> Result<(), String> {
+    while !bytes.is_empty() {
+        let remaining = remaining_until(deadline, "managed MCP request")?;
+        stream
+            .set_write_timeout(Some(remaining))
+            .map_err(|error| format_io_error(operation, error))?;
+        match stream.write(bytes) {
+            Ok(0) => return Err(format!("{operation}: connection closed while writing")),
+            Ok(written) => bytes = &bytes[written..],
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(error) => return Err(format_io_error(operation, error)),
+        }
+    }
+    Ok(())
+}
+
+fn read_http_response(stream: &mut TcpStream, deadline: Instant) -> Result<Vec<u8>, String> {
+    let mut response = Vec::new();
+    let mut buffer = [0_u8; 8192];
+    let split = loop {
+        let read_limit = (MAX_RESPONSE_BYTES + 1 - response.len()).min(buffer.len());
+        if read_limit == 0 {
+            return Err("managed MCP daemon response exceeded the bounded size".to_string());
+        }
+        let count = read_until(stream, &mut buffer[..read_limit], deadline)?;
+        if count == 0 {
+            return Err("managed MCP daemon returned an invalid HTTP response".to_string());
+        }
+        response.extend_from_slice(&buffer[..count]);
+        if let Some(split) = response.windows(4).position(|window| window == b"\r\n\r\n") {
+            break split;
+        }
+    };
+
+    let head = String::from_utf8_lossy(&response[..split]);
+    let mut content_length = None;
+    let mut chunked = false;
+    for line in head.lines().skip(1) {
+        if let Some((name, value)) = line.split_once(':') {
+            if name.trim().eq_ignore_ascii_case("content-length") {
+                content_length = value.trim().parse::<usize>().ok();
+            } else if name.trim().eq_ignore_ascii_case("transfer-encoding") {
+                chunked = value
+                    .split(',')
+                    .any(|encoding| encoding.trim().eq_ignore_ascii_case("chunked"));
+            }
+        }
+    }
+    let body_start = split + 4;
+    if let Some(content_length) = content_length.filter(|_| !chunked) {
+        let expected_len = body_start
+            .checked_add(content_length)
+            .filter(|length| *length <= MAX_RESPONSE_BYTES)
+            .ok_or_else(|| "managed MCP daemon response exceeded the bounded size".to_string())?;
+        if response.len() > expected_len {
+            response.truncate(expected_len);
+        }
+        while response.len() < expected_len {
+            let read_limit = (expected_len - response.len()).min(buffer.len());
+            let count = read_until(stream, &mut buffer[..read_limit], deadline)?;
+            if count == 0 {
+                return Err("managed MCP daemon returned an incomplete HTTP response".to_string());
+            }
+            response.extend_from_slice(&buffer[..count]);
+        }
+    } else {
+        while response.len() <= MAX_RESPONSE_BYTES {
+            let read_limit = (MAX_RESPONSE_BYTES + 1 - response.len()).min(buffer.len());
+            let count = read_until(stream, &mut buffer[..read_limit], deadline)?;
+            if count == 0 {
+                break;
+            }
+            response.extend_from_slice(&buffer[..count]);
+        }
+        if response.len() > MAX_RESPONSE_BYTES {
+            return Err("managed MCP daemon response exceeded the bounded size".to_string());
+        }
+    }
+    Ok(response)
+}
+
+fn read_until(
+    stream: &mut TcpStream,
+    buffer: &mut [u8],
+    deadline: Instant,
+) -> Result<usize, String> {
+    loop {
+        let remaining = remaining_until(deadline, "managed MCP response")?;
+        stream.set_read_timeout(Some(remaining)).map_err(|error| {
+            format_io_error("failed to read managed MCP daemon response", error)
+        })?;
+        match stream.read(buffer) {
+            Ok(count) => return Ok(count),
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(error) => {
+                return Err(format_io_error(
+                    "failed to read managed MCP daemon response",
+                    error,
+                ));
+            }
+        }
+    }
 }
 
 fn verify_health_identity(
@@ -219,7 +397,40 @@ impl McpLoopbackSession {
         expected_repo_root: Option<&Path>,
         timeout: Duration,
     ) -> Result<Value, String> {
-        let response = loopback_http_json_request(
+        self.call_tool_inner(tool_name, arguments, expected_repo_root, timeout, None)
+    }
+
+    pub(crate) fn call_tool_with_deadline(
+        &self,
+        tool_name: &str,
+        arguments: Value,
+        expected_repo_root: Option<&Path>,
+        timeout: Duration,
+        deadline: Instant,
+    ) -> Result<Value, String> {
+        if !matches!(tool_name, "graph_health" | "graph_search") {
+            return Err(
+                "hook deadlines are only supported for graph_health and graph_search".to_string(),
+            );
+        }
+        self.call_tool_inner(
+            tool_name,
+            arguments,
+            expected_repo_root,
+            timeout,
+            Some(deadline),
+        )
+    }
+
+    fn call_tool_inner(
+        &self,
+        tool_name: &str,
+        arguments: Value,
+        expected_repo_root: Option<&Path>,
+        timeout: Duration,
+        hook_deadline: Option<Instant>,
+    ) -> Result<Value, String> {
+        let response = loopback_http_json_request_with_hook_deadline(
             &self.endpoint,
             "POST",
             "/mcp",
@@ -237,6 +448,7 @@ impl McpLoopbackSession {
                 "params": {"name": tool_name, "arguments": arguments}
             })),
             timeout,
+            hook_deadline,
         )?;
         if response.status / 100 != 2 {
             return Err(format!(
@@ -296,11 +508,201 @@ impl McpLoopbackSession {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::TcpListener;
+    use std::sync::mpsc;
+    use std::thread;
 
     #[test]
     fn endpoint_validation_rejects_non_loopback_and_wrong_path() {
         assert!(endpoint_port("http://localhost:41000/mcp").is_err());
         assert!(endpoint_port("http://127.0.0.1:41000/other").is_err());
         assert_eq!(endpoint_port("http://127.0.0.1:41000/mcp").unwrap(), 41000);
+    }
+
+    fn fake_mcp_server() -> (String, mpsc::Receiver<String>, thread::JoinHandle<()>) {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (sender, receiver) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut byte = [0_u8; 1];
+            while !request.windows(4).any(|window| window == b"\r\n\r\n") {
+                if stream.read_exact(&mut byte).is_err() {
+                    return;
+                }
+                request.push(byte[0]);
+            }
+            let head = String::from_utf8_lossy(&request).into_owned();
+            let content_length = head
+                .lines()
+                .find_map(|line| {
+                    let (name, value) = line.split_once(':')?;
+                    name.eq_ignore_ascii_case("content-length")
+                        .then(|| value.trim().parse::<usize>().ok())
+                        .flatten()
+                })
+                .unwrap_or(0);
+            let body_start = request.len();
+            request.resize(body_start + content_length, 0);
+            if stream.read_exact(&mut request[body_start..]).is_err() {
+                return;
+            }
+            sender.send(head).unwrap();
+            let body = br#"{"jsonrpc":"2.0","id":2,"result":{"structuredContent":{"ok":true}}}"#;
+            write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            )
+            .unwrap();
+            stream.write_all(body).unwrap();
+        });
+        (format!("http://127.0.0.1:{port}/mcp"), receiver, worker)
+    }
+
+    fn hook_timeout_header(request: &str) -> Option<u64> {
+        request.lines().find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            name.eq_ignore_ascii_case(HOOK_TIMEOUT_HEADER)
+                .then(|| value.trim().parse::<u64>().ok())
+                .flatten()
+        })
+    }
+
+    fn test_session(endpoint: String) -> McpLoopbackSession {
+        McpLoopbackSession {
+            endpoint,
+            session_id: "test-session".to_string(),
+        }
+    }
+
+    #[test]
+    fn hook_tool_calls_send_clamped_remaining_deadline_and_regular_calls_omit_it() {
+        let (endpoint, request, worker) = fake_mcp_server();
+        test_session(endpoint)
+            .call_tool_with_deadline(
+                "graph_health",
+                json!({}),
+                None,
+                Duration::from_secs(2),
+                Instant::now() + Duration::from_secs(5),
+            )
+            .unwrap();
+        let clamped = hook_timeout_header(&request.recv().unwrap()).unwrap();
+        worker.join().unwrap();
+        assert!((1..=900).contains(&clamped));
+        assert!(clamped >= 800, "expected the 900 ms cap, got {clamped} ms");
+
+        let (endpoint, request, worker) = fake_mcp_server();
+        test_session(endpoint)
+            .call_tool_with_deadline(
+                "graph_search",
+                json!({}),
+                None,
+                Duration::from_secs(1),
+                Instant::now() + Duration::from_millis(180),
+            )
+            .unwrap();
+        let remaining = hook_timeout_header(&request.recv().unwrap()).unwrap();
+        worker.join().unwrap();
+        assert!((1..=180).contains(&remaining));
+
+        let (endpoint, request, worker) = fake_mcp_server();
+        test_session(endpoint)
+            .call_tool("graph_health", json!({}), None, Duration::from_secs(1))
+            .unwrap();
+        let regular = request.recv().unwrap();
+        worker.join().unwrap();
+        assert_eq!(hook_timeout_header(&regular), None);
+    }
+
+    #[test]
+    fn expired_hook_budget_does_not_connect() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let endpoint = format!(
+            "http://127.0.0.1:{}/mcp",
+            listener.local_addr().unwrap().port()
+        );
+        let error = test_session(endpoint)
+            .call_tool_with_deadline(
+                "graph_search",
+                json!({}),
+                None,
+                Duration::from_secs(2),
+                Instant::now() - Duration::from_millis(1),
+            )
+            .unwrap_err();
+        assert!(error.contains("deadline"));
+        assert!(matches!(
+            listener.accept().unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        ));
+    }
+
+    #[test]
+    fn trickled_response_cannot_extend_the_elapsed_deadline() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let worker = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut byte = [0_u8; 1];
+            while !request.windows(4).any(|window| window == b"\r\n\r\n") {
+                if stream.read_exact(&mut byte).is_err() {
+                    return;
+                }
+                request.push(byte[0]);
+            }
+            let body = br#"{"value":"a deliberately slow response"}"#;
+            let head = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            if stream.write_all(head.as_bytes()).is_err() {
+                return;
+            }
+            for byte in body {
+                thread::sleep(Duration::from_millis(55));
+                if stream.write_all(&[*byte]).is_err() {
+                    return;
+                }
+            }
+        });
+        let started = Instant::now();
+        let result = loopback_http_json_request(
+            &format!("http://127.0.0.1:{port}/mcp"),
+            "GET",
+            "/health",
+            &[],
+            None,
+            Duration::from_millis(250),
+        );
+        let elapsed = started.elapsed();
+        assert!(result.is_err(), "slow response unexpectedly completed");
+        assert!(
+            elapsed < Duration::from_millis(750),
+            "deadline took {elapsed:?}"
+        );
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn zero_timeout_does_not_connect() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let endpoint = format!(
+            "http://127.0.0.1:{}/mcp",
+            listener.local_addr().unwrap().port()
+        );
+        let error =
+            loopback_http_json_request(&endpoint, "GET", "/health", &[], None, Duration::ZERO)
+                .unwrap_err();
+        assert!(error.contains("deadline"));
+        assert!(matches!(
+            listener.accept().unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock
+        ));
     }
 }

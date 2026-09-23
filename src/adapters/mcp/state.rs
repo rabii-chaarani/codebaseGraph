@@ -12,4 +12,11 @@ impl McpHttpState {
         self.next_session += 1;
         format!("native-http-session-{}", self.next_session)
     }
+
+    pub(in crate::adapters) fn snapshot_session(&self, session_id: &str) -> Option<Self> {
+        self.sessions.get(session_id).cloned().map(|session| Self {
+            sessions: BTreeMap::from([(session_id.to_string(), session)]),
+            next_session: self.next_session,
+        })
+    }
 }

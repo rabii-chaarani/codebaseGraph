@@ -61,6 +61,12 @@ fn request(
         .unwrap()
         .unwrap_or_default();
     let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(20)))
+        .unwrap();
+    stream
+        .set_write_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
     write!(
         stream,
         "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n",
@@ -124,6 +130,94 @@ fn mcp_call(
             "params": {"name": name, "arguments": arguments}
         })),
     )
+}
+
+fn responsive_health(port: u16, pid: u64) -> HttpResponse {
+    let started = Instant::now();
+    let response = request(port, "GET", "/_codebasegraph/health", &[], None);
+    assert!(
+        started.elapsed() < Duration::from_secs(1),
+        "transport health blocked: {response:?}"
+    );
+    assert_eq!(response.status, 200);
+    assert_eq!(response.body["pid"], pid);
+    assert!(
+        response.body["transport"]["admitted_connections"]
+            .as_u64()
+            .unwrap()
+            <= 32
+    );
+    assert_eq!(response.body["transport"]["queued_operations"], 0);
+    response
+}
+
+fn wait_for_graph_health(port: u16, session: &str, id: u64) -> HttpResponse {
+    let deadline = Instant::now() + Duration::from_secs(20);
+    loop {
+        let response = mcp_call(
+            port,
+            session,
+            id,
+            "graph_health",
+            json!({"include_structured_content": true}),
+        );
+        if response.body["result"]["isError"] == false {
+            return response;
+        }
+        assert_eq!(
+            response.body["result"]["structuredContent"]["error"]["retryable"], true,
+            "unexpected graph failure: {response:?}"
+        );
+        assert!(
+            Instant::now() < deadline,
+            "graph did not become available: {response:?}"
+        );
+        thread::sleep(Duration::from_millis(20));
+    }
+}
+
+fn assert_stalled_clients_are_isolated(port: u16, pid: u64, session: &str) {
+    let mut idle = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    idle.set_read_timeout(Some(Duration::from_secs(4))).unwrap();
+    let mut partial_header = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    partial_header
+        .write_all(b"POST /mcp HTTP/1.1\r\nHost: localhost\r\n")
+        .unwrap();
+    let mut partial_body = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    partial_body
+        .write_all(b"POST /mcp HTTP/1.1\r\nHost: localhost\r\nContent-Length: 100\r\n\r\n{")
+        .unwrap();
+    responsive_health(port, pid);
+    let started = Instant::now();
+    let ping = request(
+        port,
+        "POST",
+        "/mcp",
+        &[("mcp-session-id", session)],
+        Some(&json!({"jsonrpc":"2.0","id":100,"method":"ping"})),
+    );
+    assert_eq!(ping.status, 200);
+    assert_eq!(ping.body["result"], json!({}));
+    assert!(started.elapsed() < Duration::from_secs(1));
+    let mut bytes = Vec::new();
+    idle.read_to_end(&mut bytes).unwrap();
+    assert!(String::from_utf8_lossy(&bytes).starts_with("HTTP/1.1 408"));
+    responsive_health(port, pid);
+
+    let mut oversized = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    oversized
+        .set_read_timeout(Some(Duration::from_secs(3)))
+        .unwrap();
+    let headers = format!(
+        "GET /_codebasegraph/health HTTP/1.1\r\nX-Large: {}\r\n\r\n",
+        "x".repeat(33 * 1024)
+    );
+    let _ = oversized.write_all(headers.as_bytes());
+    let mut response = Vec::new();
+    // A reset after the rejection is also connection-local; retain bytes read.
+    let _ = oversized.read_to_end(&mut response);
+    assert!(String::from_utf8_lossy(&response).starts_with("HTTP/1.1 431"));
+    responsive_health(port, pid);
 }
 
 /// Close a request socket with an abortive reset instead of a graceful FIN.
@@ -476,7 +570,55 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
     // daemon or discard the initialized sessions.
     let first_session = first.headers.get("mcp-session-id").unwrap();
     let second_session = second.headers.get("mcp-session-id").unwrap();
+    assert_stalled_clients_are_isolated(port, pid, first_session);
     let state_lock_path = root.join(".codebaseGraph/storage/state.lock");
+    {
+        let state_lock = OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(&state_lock_path)
+            .unwrap();
+        state_lock.lock_exclusive().unwrap();
+        let started = Instant::now();
+        let expired = request(
+            port,
+            "POST",
+            "/mcp",
+            &[
+                ("mcp-session-id", first_session),
+                ("x-codebasegraph-timeout-ms", "500"),
+            ],
+            Some(
+                &json!({"jsonrpc":"2.0", "id":104, "method":"tools/call", "params":{"name":"graph_health", "arguments":{"include_structured_content":true}}}),
+            ),
+        );
+        assert!(
+            started.elapsed() < Duration::from_secs(1),
+            "hook read exceeded its budget: {expired:?}"
+        );
+        assert_eq!(
+            expired.body["result"]["structuredContent"]["error"]["code"],
+            "deadline_exceeded"
+        );
+        responsive_health(port, pid);
+        for id in 105..108 {
+            let busy = mcp_call(
+                port,
+                second_session,
+                id,
+                "graph_health",
+                json!({"include_structured_content":true}),
+            );
+            assert_eq!(
+                busy.body["result"]["structuredContent"]["error"]["code"],
+                "graph_busy"
+            );
+        }
+        drop(state_lock);
+        wait_for_graph_health(port, first_session, 108);
+    }
     for id in 6..=10 {
         let state_lock = OpenOptions::new()
             .create(true)
@@ -505,13 +647,7 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
         );
     }
 
-    let reused = mcp_call(
-        port,
-        first_session,
-        11,
-        "graph_health",
-        json!({"include_structured_content": true}),
-    );
+    let reused = wait_for_graph_health(port, first_session, 11);
     assert_eq!(reused.status, 200);
     assert_eq!(reused.body["result"]["isError"], false);
 
@@ -548,6 +684,47 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
         pid
     );
 
+    // Hold a real storage lock rather than relying on a production delay switch.
+    // Transport and session operations must continue while graph execution waits.
+    let state_lock = OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(&state_lock_path)
+        .unwrap();
+    state_lock.lock_exclusive().unwrap();
+    let mut blocked = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    let body = json!({"jsonrpc":"2.0", "id":101, "method":"tools/call",
+        "params":{"name":"graph_health", "arguments":{"include_structured_content":true}}})
+    .to_string();
+    write!(blocked, "POST /mcp HTTP/1.1\r\nHost: localhost\r\nMcp-Session-Id: {first_session}\r\nContent-Length: {}\r\n\r\n{body}", body.len()).unwrap();
+    let wait_deadline = Instant::now() + Duration::from_secs(2);
+    loop {
+        let health = responsive_health(port, pid);
+        if health.body["transport"]["active_operation"] == true {
+            break;
+        }
+        assert!(
+            Instant::now() < wait_deadline,
+            "graph call never entered execution"
+        );
+        thread::sleep(Duration::from_millis(10));
+    }
+    let started = Instant::now();
+    let busy = mcp_call(
+        port,
+        second_session,
+        102,
+        "graph_health",
+        json!({"include_structured_content": true}),
+    );
+    assert!(started.elapsed() < Duration::from_secs(1));
+    assert_eq!(
+        busy.body["result"]["structuredContent"]["error"]["code"],
+        "graph_busy"
+    );
+    let started = Instant::now();
     let shutdown = request(
         port,
         "POST",
@@ -559,6 +736,21 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
         Some(&json!({})),
     );
     assert_eq!(shutdown.status, 200);
+    assert!(
+        started.elapsed() < Duration::from_secs(1),
+        "shutdown acknowledgement blocked on execution"
+    );
+    thread::sleep(Duration::from_millis(100));
+    assert!(
+        daemon.0.try_wait().unwrap().is_none(),
+        "shutdown abandoned the active operation"
+    );
+    assert!(
+        state_path.exists(),
+        "daemon released its state before draining execution"
+    );
+    drop(state_lock);
+    drop(blocked);
     let deadline = Instant::now() + Duration::from_secs(10);
     while Instant::now() < deadline {
         if daemon.0.try_wait().unwrap().is_some() {

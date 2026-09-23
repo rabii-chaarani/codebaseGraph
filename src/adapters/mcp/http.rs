@@ -1,17 +1,25 @@
 use super::{
     options::McpHttpOptions,
-    protocol::{handle_mcp_message, is_supported_protocol_version, parse_mcp_payload, rpc_error},
+    protocol::{
+        handle_mcp_message_with_context, is_supported_protocol_version, parse_mcp_payload,
+        rpc_error,
+    },
     refresh::start_configured_api,
     state::McpHttpState,
+};
+use crate::{
+    api::ApiError,
+    execution_context::{ExecutionContext, HOOK_TIMEOUT_HEADER, MAX_HOOK_TIMEOUT},
 };
 use serde_json::json;
 use std::{
     collections::BTreeMap,
-    io::{Read, Write},
-    net::{TcpListener, TcpStream},
+    net::TcpListener,
+    time::{Duration, Instant},
 };
 
-const MAX_HTTP_BODY_BYTES: usize = 1_000_000;
+pub(crate) const MAX_HTTP_HEADER_BYTES: usize = 32 * 1024;
+pub(crate) const MAX_HTTP_BODY_BYTES: usize = 1_000_000;
 
 pub(crate) fn serve_mcp_http(options: &McpHttpOptions) -> Result<(), String> {
     let listener = options.bind_listener()?;
@@ -25,41 +33,7 @@ pub(in crate::adapters) fn serve_mcp_http_listener(
     listener: TcpListener,
     max_requests: Option<usize>,
 ) -> Result<(), String> {
-    let mut state = McpHttpState::default();
-    let mut handled = 0_usize;
-    loop {
-        if max_requests.is_some_and(|limit| handled >= limit) {
-            break;
-        }
-        let (mut stream, _) = listener
-            .accept()
-            .map_err(|error| format!("failed to accept MCP HTTP request: {error}"))?;
-        if let Err(error) = handle_mcp_http_stream(options, &mut state, &mut stream) {
-            let _ = write_http_json(
-                &mut stream,
-                500,
-                &rpc_error(serde_json::Value::Null, -32000, &error),
-                &[],
-            );
-        }
-        handled += 1;
-    }
-    Ok(())
-}
-
-pub(in crate::adapters) fn handle_mcp_http_stream(
-    options: &McpHttpOptions,
-    state: &mut McpHttpState,
-    stream: &mut TcpStream,
-) -> Result<(), String> {
-    let request = read_http_request(stream)?;
-    let response = handle_mcp_http_request(options, state, request);
-    write_http_json(
-        stream,
-        response.status,
-        &response.payload,
-        &response.headers,
-    )
+    super::dispatcher::serve_http_dispatcher(listener, options, max_requests, |_, _| None)
 }
 
 pub(in crate::adapters) fn handle_mcp_http_request(
@@ -67,81 +41,25 @@ pub(in crate::adapters) fn handle_mcp_http_request(
     state: &mut McpHttpState,
     request: HttpRequest,
 ) -> HttpResponse {
-    if request.path != options.endpoint_path {
-        return HttpResponse::json(
-            404,
-            rpc_error(serde_json::Value::Null, -32601, "MCP endpoint not found"),
-        );
-    }
-    if request.method != "POST" {
-        return HttpResponse {
-            status: 405,
-            payload: json!({}),
-            headers: vec![("Allow".to_string(), "POST".to_string())],
-        };
-    }
-    if !valid_http_origin(request.header("origin")) {
-        return HttpResponse::json(
-            403,
-            rpc_error(serde_json::Value::Null, -32000, "Forbidden origin"),
-        );
-    }
-    if let Some(auth_token) = options.auth_token.as_deref() {
-        let authorization = request.header("authorization").unwrap_or("");
-        if authorization.strip_prefix("Bearer ") != Some(auth_token) {
-            return HttpResponse {
-                status: 401,
-                payload: rpc_error(serde_json::Value::Null, -32000, "Unauthorized"),
-                headers: vec![("WWW-Authenticate".to_string(), "Bearer".to_string())],
-            };
-        }
-    }
-    if let Some(protocol) = request.header("mcp-protocol-version") {
-        if !is_supported_protocol_version(protocol) {
-            return HttpResponse::json(
-                400,
-                json!({
-                    "jsonrpc": "2.0",
-                    "id": null,
-                    "error": {
-                        "code": -32602,
-                        "message": "Unsupported MCP protocol version",
-                        "data": {
-                            "supported": ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"],
-                            "requested": protocol,
-                        },
-                    },
-                }),
-            );
-        }
-    }
-    if request.body_too_large {
-        return HttpResponse::json(
-            413,
-            json!({
-                "jsonrpc": "2.0",
-                "id": null,
-                "error": {
-                    "code": -32000,
-                    "message": "MCP request body is too large",
-                    "data": {"max_bytes": MAX_HTTP_BODY_BYTES},
-                },
-            }),
-        );
-    }
-    let message = match parse_mcp_payload(&request.body) {
+    let started = Instant::now();
+    let message = match validate_mcp_http_request(options, &request) {
         Ok(message) => message,
-        Err(error) => {
-            return HttpResponse::json(
-                400,
-                rpc_error(
-                    serde_json::Value::Null,
-                    -32700,
-                    &format!("Invalid JSON-RPC payload: {error}"),
-                ),
-            )
-        }
+        Err(response) => return response,
     };
+    let execution_context = match request_execution_context(&request, &message, started) {
+        Ok(context) => context,
+        Err(response) => return response,
+    };
+    handle_mcp_http_request_with_context(options, state, request, message, execution_context)
+}
+
+pub(crate) fn handle_mcp_http_request_with_context(
+    options: &McpHttpOptions,
+    state: &mut McpHttpState,
+    request: HttpRequest,
+    message: serde_json::Value,
+    execution_context: ExecutionContext,
+) -> HttpResponse {
     let method = message
         .get("method")
         .and_then(serde_json::Value::as_str)
@@ -175,7 +93,7 @@ pub(in crate::adapters) fn handle_mcp_http_request(
             }
         }
     };
-    match handle_mcp_message(message, session, &options.serve) {
+    match handle_mcp_message_with_context(message, session, &options.serve, execution_context) {
         Some(payload) => {
             let headers = if method == "initialize" {
                 vec![("Mcp-Session-Id".to_string(), resolved_session_id)]
@@ -194,6 +112,204 @@ pub(in crate::adapters) fn handle_mcp_http_request(
             headers: Vec::new(),
         },
     }
+}
+
+pub(crate) fn prepare_deferred_tool_call(
+    options: &McpHttpOptions,
+    state: &McpHttpState,
+    request: &HttpRequest,
+    accepted_at: Instant,
+) -> Result<Option<(serde_json::Value, ExecutionContext)>, HttpResponse> {
+    let message = validate_mcp_http_request(options, request)?;
+    let method = message
+        .get("method")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("");
+    let context = request_execution_context(request, &message, accepted_at)?;
+    if method != "tools/call" {
+        return Ok(None);
+    }
+    let request_id = message
+        .get("id")
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
+    let session_is_ready = request
+        .header("mcp-session-id")
+        .and_then(|session_id| state.sessions.get(session_id))
+        .is_some_and(|session| session.protocol_version.is_some());
+    if !session_is_ready {
+        return Err(HttpResponse::json(
+            400,
+            rpc_error(request_id, -32002, "MCP session is not initialized"),
+        ));
+    }
+    Ok(Some((message, context)))
+}
+
+pub(crate) fn graph_busy_response(request: &HttpRequest) -> HttpResponse {
+    tool_error_response(
+        request,
+        ApiError::new("graph_busy", "graph executor is busy; retry the request")
+            .with_details(json!({"retryable": true}))
+            .retryable(true),
+    )
+}
+
+pub(crate) fn deadline_tool_response(request: &HttpRequest) -> HttpResponse {
+    tool_error_response(request, ExecutionContext::expired_error())
+}
+
+fn tool_error_response(request: &HttpRequest, error: ApiError) -> HttpResponse {
+    let parsed = parse_mcp_payload(&request.body).ok();
+    let request_id = parsed
+        .as_ref()
+        .and_then(|message| message.get("id"))
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
+    let params = parsed.as_ref().and_then(|message| message.get("params"));
+    let tool_name = params
+        .and_then(|params| params.get("name"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("");
+    let arguments = params
+        .and_then(|params| params.get("arguments"))
+        .cloned()
+        .unwrap_or_else(|| json!({}));
+    let result = super::tools::mcp_tool_error_result(tool_name, &arguments, &error).unwrap_or_else(
+        |message| json!({"content":[{"type":"text","text":message}],"isError":true}),
+    );
+    HttpResponse::json(
+        200,
+        json!({"jsonrpc":"2.0","id":request_id,"result":result}),
+    )
+}
+
+fn validate_mcp_http_request(
+    options: &McpHttpOptions,
+    request: &HttpRequest,
+) -> Result<serde_json::Value, HttpResponse> {
+    if request.path != options.endpoint_path {
+        return Err(HttpResponse::json(
+            404,
+            rpc_error(serde_json::Value::Null, -32601, "MCP endpoint not found"),
+        ));
+    }
+    if request.method != "POST" {
+        return Err(HttpResponse {
+            status: 405,
+            payload: json!({}),
+            headers: vec![("Allow".to_string(), "POST".to_string())],
+        });
+    }
+    if !valid_http_origin(request.header("origin")) {
+        return Err(HttpResponse::json(
+            403,
+            rpc_error(serde_json::Value::Null, -32000, "Forbidden origin"),
+        ));
+    }
+    if let Some(auth_token) = options.auth_token.as_deref() {
+        let authorization = request.header("authorization").unwrap_or("");
+        if authorization.strip_prefix("Bearer ") != Some(auth_token) {
+            return Err(HttpResponse {
+                status: 401,
+                payload: rpc_error(serde_json::Value::Null, -32000, "Unauthorized"),
+                headers: vec![("WWW-Authenticate".to_string(), "Bearer".to_string())],
+            });
+        }
+    }
+    if let Some(protocol) = request.header("mcp-protocol-version") {
+        if !is_supported_protocol_version(protocol) {
+            return Err(HttpResponse::json(
+                400,
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": null,
+                    "error": {
+                        "code": -32602,
+                        "message": "Unsupported MCP protocol version",
+                        "data": {
+                            "supported": ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"],
+                            "requested": protocol,
+                        },
+                    },
+                }),
+            ));
+        }
+    }
+    if request.body_too_large {
+        return Err(HttpResponse::json(
+            413,
+            json!({
+                "jsonrpc": "2.0",
+                "id": null,
+                "error": {
+                    "code": -32000,
+                    "message": "MCP request body is too large",
+                    "data": {"max_bytes": MAX_HTTP_BODY_BYTES},
+                },
+            }),
+        ));
+    }
+    parse_mcp_payload(&request.body).map_err(|error| {
+        HttpResponse::json(
+            400,
+            rpc_error(
+                serde_json::Value::Null,
+                -32700,
+                &format!("Invalid JSON-RPC payload: {error}"),
+            ),
+        )
+    })
+}
+
+fn request_execution_context(
+    request: &HttpRequest,
+    message: &serde_json::Value,
+    accepted_at: Instant,
+) -> Result<ExecutionContext, HttpResponse> {
+    let Some(raw_timeout) = request.header(HOOK_TIMEOUT_HEADER) else {
+        return Ok(ExecutionContext::default());
+    };
+    let method = message
+        .get("method")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("");
+    let tool_name = message
+        .get("params")
+        .and_then(|params| params.get("name"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("");
+    if method != "tools/call" || !matches!(tool_name, "graph_health" | "graph_search") {
+        return Err(HttpResponse::json(
+            400,
+            rpc_error(
+                message
+                    .get("id")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null),
+                -32602,
+                "timeout header is supported only for graph_health and graph_search",
+            ),
+        ));
+    }
+    let timeout_ms = raw_timeout.parse::<u64>().ok().filter(|value| *value > 0);
+    let Some(timeout_ms) = timeout_ms else {
+        return Err(HttpResponse::json(
+            400,
+            rpc_error(
+                message
+                    .get("id")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null),
+                -32602,
+                "timeout header must be a positive integer in milliseconds",
+            ),
+        ));
+    };
+    let timeout = Duration::from_millis(timeout_ms).min(MAX_HOOK_TIMEOUT);
+    Ok(ExecutionContext {
+        deadline: Some(accepted_at.checked_add(timeout).unwrap_or(accepted_at)),
+    })
 }
 
 pub(in crate::adapters) fn valid_http_origin(origin: Option<&str>) -> bool {
@@ -222,110 +338,6 @@ pub(in crate::adapters) fn http_origin_host(origin: &str) -> Option<String> {
     }
 }
 
-pub(in crate::adapters) fn read_http_request(
-    stream: &mut TcpStream,
-) -> Result<HttpRequest, String> {
-    let mut buffer = Vec::new();
-    let mut chunk = [0_u8; 1024];
-    let header_end = loop {
-        let read = stream
-            .read(&mut chunk)
-            .map_err(|error| format!("failed to read HTTP request: {error}"))?;
-        if read == 0 {
-            return Err("HTTP request ended before headers were complete".to_string());
-        }
-        buffer.extend_from_slice(&chunk[..read]);
-        if let Some(position) = find_header_end(&buffer) {
-            break position;
-        }
-        if buffer.len() > MAX_HTTP_BODY_BYTES {
-            return Err("HTTP headers exceed maximum MCP request size".to_string());
-        }
-    };
-    let headers = String::from_utf8_lossy(&buffer[..header_end]).to_string();
-    let mut lines = headers.split("\r\n");
-    let request_line = lines
-        .next()
-        .ok_or_else(|| "HTTP request is missing a request line".to_string())?;
-    let mut request_parts = request_line.split_whitespace();
-    let method = request_parts.next().unwrap_or("").to_string();
-    let raw_path = request_parts.next().unwrap_or("/");
-    let path = raw_path.split('?').next().unwrap_or(raw_path).to_string();
-    let mut header_map = BTreeMap::new();
-    for line in lines {
-        if line.is_empty() {
-            continue;
-        }
-        if let Some((name, value)) = line.split_once(':') {
-            header_map.insert(name.trim().to_ascii_lowercase(), value.trim().to_string());
-        }
-    }
-    let length = match header_map.get("content-length") {
-        Some(raw) => raw
-            .parse::<usize>()
-            .map_err(|_| "Content-Length must be an integer".to_string())?,
-        None => 0,
-    };
-    if length > MAX_HTTP_BODY_BYTES {
-        return Ok(HttpRequest {
-            method,
-            path,
-            headers: header_map,
-            body: Vec::new(),
-            body_too_large: true,
-        });
-    }
-    let body_start = header_end + 4;
-    let mut body = buffer.get(body_start..).unwrap_or(&[]).to_vec();
-    while body.len() < length {
-        let read = stream
-            .read(&mut chunk)
-            .map_err(|error| format!("failed to read HTTP body: {error}"))?;
-        if read == 0 {
-            return Err("HTTP request ended before Content-Length bytes were read".to_string());
-        }
-        body.extend_from_slice(&chunk[..read]);
-    }
-    body.truncate(length);
-    Ok(HttpRequest {
-        method,
-        path,
-        headers: header_map,
-        body,
-        body_too_large: false,
-    })
-}
-
-pub(in crate::adapters) fn find_header_end(buffer: &[u8]) -> Option<usize> {
-    buffer.windows(4).position(|window| window == b"\r\n\r\n")
-}
-
-pub(in crate::adapters) fn write_http_json(
-    stream: &mut TcpStream,
-    status: u16,
-    payload: &serde_json::Value,
-    headers: &[(String, String)],
-) -> Result<(), String> {
-    let body = if status == 202 || status == 405 {
-        Vec::new()
-    } else {
-        serde_json::to_vec(payload).map_err(|error| error.to_string())?
-    };
-    let reason = http_reason(status);
-    write!(
-        stream,
-        "HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n",
-        body.len()
-    )
-    .map_err(|error| error.to_string())?;
-    for (name, value) in headers {
-        write!(stream, "{name}: {value}\r\n").map_err(|error| error.to_string())?;
-    }
-    write!(stream, "\r\n").map_err(|error| error.to_string())?;
-    stream.write_all(&body).map_err(|error| error.to_string())?;
-    stream.flush().map_err(|error| error.to_string())
-}
-
 pub(in crate::adapters) fn http_reason(status: u16) -> &'static str {
     match status {
         200 => "OK",
@@ -335,12 +347,14 @@ pub(in crate::adapters) fn http_reason(status: u16) -> &'static str {
         403 => "Forbidden",
         404 => "Not Found",
         405 => "Method Not Allowed",
+        408 => "Request Timeout",
         413 => "Payload Too Large",
+        431 => "Request Header Fields Too Large",
         _ => "Internal Server Error",
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(in crate::adapters) struct HttpRequest {
     pub(in crate::adapters) method: String,
     pub(in crate::adapters) path: String,
@@ -376,4 +390,68 @@ impl HttpResponse {
 
 pub(in crate::adapters) fn is_local_host(host: &str) -> bool {
     matches!(host, "localhost" | "127.0.0.1" | "::1")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn request_with_timeout(timeout: &str, tool_name: &str) -> HttpRequest {
+        let mut request = HttpRequest {
+            method: "POST".to_string(),
+            path: "/mcp".to_string(),
+            headers: BTreeMap::from([(HOOK_TIMEOUT_HEADER.to_string(), timeout.to_string())]),
+            body: Vec::new(),
+            body_too_large: false,
+        };
+        request.body = serde_json::to_vec(&json!({
+            "jsonrpc":"2.0",
+            "id":1,
+            "method":"tools/call",
+            "params":{"name":tool_name,"arguments":{"query":"term"}}
+        }))
+        .expect("JSON value serializes");
+        request
+    }
+
+    #[test]
+    fn hook_deadline_is_clamped_and_includes_time_spent_receiving() {
+        let request = request_with_timeout("5000", "graph_search");
+        let message = json!({"id":1,"method":"tools/call","params":{"name":"graph_search"}});
+        let accepted_at = Instant::now();
+        let context = request_execution_context(&request, &message, accepted_at)
+            .expect("supported hook deadline");
+        let remaining = context
+            .remaining()
+            .expect("fresh budget")
+            .expect("budget is set");
+        assert!(remaining <= MAX_HOOK_TIMEOUT);
+
+        let expired_at = Instant::now() - MAX_HOOK_TIMEOUT - Duration::from_millis(1);
+        let expired = request_execution_context(&request, &message, expired_at)
+            .expect("supported hook deadline");
+        assert_eq!(expired.remaining().unwrap_err().code, "deadline_exceeded");
+    }
+
+    #[test]
+    fn hook_deadline_rejects_malformed_or_unbounded_tools() {
+        let message = json!({"id":1,"method":"tools/call","params":{"name":"graph_search"}});
+        let malformed = request_with_timeout("soon", "graph_search");
+        assert_eq!(
+            request_execution_context(&malformed, &message, Instant::now())
+                .unwrap_err()
+                .status,
+            400
+        );
+
+        let unsupported = request_with_timeout("100", "graph_context");
+        let message = json!({"id":1,"method":"tools/call","params":{"name":"graph_context"}});
+        assert_eq!(
+            request_execution_context(&unsupported, &message, Instant::now())
+                .unwrap_err()
+                .status,
+            400
+        );
+    }
 }

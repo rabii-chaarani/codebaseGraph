@@ -1,5 +1,6 @@
 mod block;
 mod daemon;
+mod dispatcher;
 mod http;
 mod options;
 mod protocol;

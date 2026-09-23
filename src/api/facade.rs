@@ -7,6 +7,7 @@ use crate::api::{
     refresh::{run_refresh_watch, start_refresh_service, RefreshServiceConfig},
 };
 use crate::coordinator::{CoordinatorApiConfig, CoordinatorClient};
+use crate::execution_context::ExecutionContext;
 
 pub trait OperationExecutor {
     fn execute(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError>;
@@ -43,6 +44,25 @@ impl CoordinatorCodebaseGraphApi {
         invocation: &OperationInvocation,
     ) -> Result<OperationResponse, ApiError> {
         self.client.execute_invocation(operation_id, invocation)
+    }
+
+    pub(crate) fn execute_invocation_with_context(
+        &self,
+        operation_id: &str,
+        invocation: &OperationInvocation,
+        context: ExecutionContext,
+    ) -> Result<OperationResponse, ApiError> {
+        self.client
+            .execute_invocation_with_context(operation_id, invocation, context)
+    }
+
+    /// Returns the process-local coordinator executor state when this facade owns it.
+    pub(crate) fn active_operation(&self) -> Option<bool> {
+        self.client.active_operation()
+    }
+
+    pub(crate) fn drain_owned_operation(&self) {
+        self.client.drain_owned_operation();
     }
 }
 
