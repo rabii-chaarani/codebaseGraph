@@ -286,8 +286,6 @@ pub(crate) struct GraphInstallMaterializationConfig {
     pub exclude: Vec<String>,
     #[serde(default = "default_true")]
     pub include_fts: bool,
-    #[serde(default)]
-    pub semantic_enrichment: bool,
     #[serde(default = "default_worker_memory_mib")]
     pub worker_memory_mib: u64,
     #[serde(default = "default_rust_memory_mib")]
@@ -304,7 +302,6 @@ impl Default for GraphInstallMaterializationConfig {
             include: Vec::new(),
             exclude: Vec::new(),
             include_fts: true,
-            semantic_enrichment: false,
             worker_memory_mib: DEFAULT_WORKER_MEMORY_MIB,
             rust_memory_mib: DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: DEFAULT_SPILL_CHUNK_MIB,
@@ -1359,6 +1356,10 @@ mod tests {
                 "schema_version": 2,
                 "repo_root": root,
                 "mcp": {},
+                "materialization": {
+                    "semantic_enrichment": true,
+                    "semantic_provider_mode": "remote"
+                },
             }))
             .unwrap(),
         )
@@ -1375,7 +1376,9 @@ mod tests {
             DEFAULT_RECONCILE_INTERVAL_MS
         );
         assert!(config.materialization.include_fts);
-        assert!(!config.materialization.semantic_enrichment);
+        let materialization_json = serde_json::to_value(&config.materialization).unwrap();
+        assert!(materialization_json.get("semantic_enrichment").is_none());
+        assert!(materialization_json.get("semantic_provider_mode").is_none());
         assert_eq!(
             config.materialization.worker_memory_mib,
             DEFAULT_WORKER_MEMORY_MIB

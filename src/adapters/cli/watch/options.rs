@@ -108,8 +108,6 @@ pub(in crate::adapters::cli) struct SetupOptions {
     pub(in crate::adapters::cli) repo_root: Option<PathBuf>,
     pub(in crate::adapters::cli) mode: String,
     pub(in crate::adapters::cli) include_fts: bool,
-    pub(in crate::adapters::cli) semantic_enrichment: bool,
-    pub(in crate::adapters::cli) semantic_provider_mode: String,
     pub(in crate::adapters::cli) mcp_client: String,
     pub(in crate::adapters::cli) agent_hooks: String,
     pub(in crate::adapters::cli) mcp_config_path: Option<PathBuf>,
@@ -135,8 +133,6 @@ impl SetupOptions {
             repo_root: None,
             mode: String::new(),
             include_fts: true,
-            semantic_enrichment: false,
-            semantic_provider_mode: String::new(),
             mcp_client: "codex".to_string(),
             agent_hooks: "auto".to_string(),
             mcp_config_path: None,
@@ -243,17 +239,6 @@ impl SetupOptions {
                 "--no-fts" => {
                     options.include_fts = false;
                     index += 1;
-                }
-                "--no-semantic-enrichment" => {
-                    options.semantic_enrichment = false;
-                    index += 1;
-                }
-                "--semantic-provider-mode" => {
-                    let value = args
-                        .get(index + 1)
-                        .ok_or_else(|| "--semantic-provider-mode requires a value".to_string())?;
-                    options.semantic_provider_mode = value.clone();
-                    index += 2;
                 }
                 "--json" => {
                     index += 1;

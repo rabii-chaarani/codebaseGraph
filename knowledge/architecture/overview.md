@@ -3,10 +3,10 @@ description: System context, container boundaries, principal flows, and evidence
 resource: repository-architecture
 tags:
 - architecture
-- system-context
 - codebase-graph
 - scryer
-timestamp: 2026-08-04
+- system-context
+timestamp: 2026-09-23
 title: Repository Architecture Overview
 type: architecture
 ---
@@ -33,7 +33,7 @@ type: architecture
 ## Principal flows
 
 1. **Public operation flow:** a CLI, MCP, or embedded client submits a typed request to the public facade; the unified API core resolves repository context, normalizes the request, dispatches a registered operation, and presents a typed or compact result.
-2. **Graph materialization:** source discovery feeds a self-contained execution plan, semantic enrichment, deterministic graph-row assembly, and the embedded graph store. See [Materialization Pipeline](./materialization-pipeline.md).
+2. **Graph materialization:** source discovery feeds a self-contained execution plan, deterministic graph-row assembly, and the embedded graph store. See [Materialization Pipeline](./materialization-pipeline.md).
 3. **Graph reading:** health, search, context, catalog, and bounded read-only query operations go through the graph read service; transport adapters never query storage directly.
 4. **Repository refresh:** filesystem changes are filtered and coalesced into bounded batches, then reuse the incremental materialization path with bounded retry for transient failures.
 5. **Wiki publication:** curated Markdown is discovered, validated, compiled into a normalized projection, atomically published under `.kwiki`, indexed, and rendered. Graph context is optional and degrades explicitly when unavailable.

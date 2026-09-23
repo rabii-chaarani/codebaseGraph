@@ -8,7 +8,7 @@ tags:
 - graph-indexing
 - materialization
 - pipeline
-timestamp: 2026-08-18
+timestamp: 2026-09-23
 title: Graph Materialization Pipeline
 type: architecture
 ---
@@ -54,7 +54,7 @@ The Execution Planner computes an artifact key from repository identity, relativ
 
 Partitions are reloaded one at a time. Length-prefixed sorted runs merge nodes, edges, connectors, and endpoint types by deterministic keys. Shared identities keep the existing first-nonempty merge behavior, connector endpoints are resolved by merge join, and unique node and edge counts are computed during the final stream. Output chunks never require a graph-sized in-memory collection.
 
-Semantic enrichment is retired from the production pipeline. Legacy configuration and request fields remain readable for compatibility but normalize to disabled and do not affect materialization identity.
+Semantic enrichment and its dedicated request/configuration fields have been removed. Existing JSON inputs containing the retired keys remain readable through ordinary unknown-field handling; generated requests and configuration omit them. This removal does not change graph-build digests, artifact keys, or storage schemas and requires no rebuild. The supported semantic graph layer and parser-produced semantic nodes remain part of materialization.
 
 ### 6. Build the search sidecar
 

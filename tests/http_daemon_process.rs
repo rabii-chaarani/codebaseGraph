@@ -259,7 +259,6 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
             "--instructions-target",
             "skip",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ])
         .output()
@@ -603,7 +602,6 @@ fn config_only_daemon_from_unrelated_cwd_tracks_source_changes() {
             "none",
             "--instructions-target",
             "skip",
-            "--no-semantic-enrichment",
             "--json",
         ])
         .output()

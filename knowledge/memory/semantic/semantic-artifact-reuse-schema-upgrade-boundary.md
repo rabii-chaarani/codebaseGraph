@@ -3,7 +3,7 @@ agent_memory:
   version: 1
   kind: semantic
   scope: repository
-  status: candidate
+  status: quarantined
   owner: codex
   created_at: 2026-08-17T00:00:00+09:30
   last_verified_at: null
@@ -24,12 +24,17 @@ agent_memory:
   - kind: test
     reference: src/execution/run.rs::tests::semantic_enrichment_changes_reuse_raw_artifacts_and_rerun_global_enrichment
     content_hash: null
-  history: []
+  history:
+  - from: candidate
+    to: quarantined
+    actor: codex
+    at: 2026-09-23T00:00:00Z
+    reason: The record cites removed global-enrichment behavior and a replaced test. Preserve its history while verifying a replacement for the still-supported artifact-reuse contract.
 description: Defines the compatibility boundary between forced graph rebuilds and raw partition artifact reuse.
 tags:
 - artifacts
-- manifest
 - compatibility
+- manifest
 - memory
 timestamp: 2026-08-17T00:00:00+09:30
 title: Raw artifact reuse is invalidated only by manifest schema upgrades

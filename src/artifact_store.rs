@@ -655,8 +655,6 @@ mod tests {
             artifact_root: String::new(),
             db_path: "/repo/.codebaseGraph/graph.ldb".to_string(),
             include_fts: true,
-            semantic_enrichment: false,
-            semantic_provider_mode: "local_only".to_string(),
             schema_statements: Vec::new(),
             staging_dir: "/repo/.codebaseGraph/staging".to_string(),
             atomic_rebuild: false,

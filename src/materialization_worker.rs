@@ -910,7 +910,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn worker_request_round_trips_without_semantic_state() {
+    fn worker_request_ignores_retired_semantic_keys() {
         let request = MaterializationWorkerRequest {
             version: WORKER_PROTOCOL_VERSION,
             build_id: "build-1".to_string(),
@@ -918,15 +918,23 @@ mod tests {
             candidate_paths: Some(vec!["src/lib.rs".to_string()]),
             supervisor_pid: std::process::id(),
         };
-        let encoded = serde_json::to_vec(&request).unwrap();
-        let decoded: MaterializationWorkerRequest = serde_json::from_slice(&encoded).unwrap();
+        let mut encoded = serde_json::to_value(&request).unwrap();
+        let options = encoded["options"].as_object_mut().unwrap();
+        options.insert("semantic_enrichment".to_string(), serde_json::json!(true));
+        options.insert(
+            "semantic_provider_mode".to_string(),
+            serde_json::json!("remote"),
+        );
+        let decoded: MaterializationWorkerRequest = serde_json::from_value(encoded).unwrap();
         assert_eq!(decoded.version, WORKER_PROTOCOL_VERSION);
         assert_eq!(decoded.build_id, "build-1");
         assert_eq!(
             decoded.candidate_paths,
             Some(vec!["src/lib.rs".to_string()])
         );
-        assert!(!decoded.options.semantic_enrichment);
+        let encoded = serde_json::to_value(decoded).unwrap();
+        assert!(encoded["options"].get("semantic_enrichment").is_none());
+        assert!(encoded["options"].get("semantic_provider_mode").is_none());
     }
 
     #[test]

@@ -8,7 +8,7 @@ tags:
 - graph-runtime
 - hooks
 - rust
-timestamp: 2026-09-08
+timestamp: 2026-09-23
 title: Graph Runtime Architecture
 type: architecture
 ---
@@ -76,7 +76,7 @@ The Graph Read Service reads health and metadata, performs ranked search and rel
 
 A managed read resolves `active.json` under a shared state lock and holds a shared lease on that generation for the complete database operation. This lease, rather than a stale timestamp, prevents retirement while a reader is active.
 
-Graph writes enter through the Materialization API and [Materialization Pipeline](./materialization-pipeline.md). The bounded pipeline releases each partition after use, stages deterministic sorted runs, builds a generation-owned disk search sidecar, and runs Ladybug loading in an RSS-supervised child. Semantic enrichment is retired from production; its legacy options are accepted only for compatibility. The Graph Store holds the exclusive writer lock for the complete mutation, validates the reopened candidate and sidecar, and atomically publishes its generation pointer. It never applies source deltas to the active database.
+Graph writes enter through the Materialization API and [Materialization Pipeline](./materialization-pipeline.md). The bounded pipeline releases each partition after use, stages deterministic sorted runs, builds a generation-owned disk search sidecar, and runs Ladybug loading in an RSS-supervised child. Semantic enrichment and its dedicated options have been removed; old JSON keys are ignored through ordinary deserialization. See [Public Operations and Runtime Paths](./operation-paths.md) for CLI and Rust caller migration. The Graph Store holds the exclusive writer lock for the complete mutation, validates the reopened candidate and sidecar, and atomically publishes its generation pointer. It never applies source deltas to the active database.
 
 ## Storage and recovery boundary
 

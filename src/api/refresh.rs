@@ -50,7 +50,6 @@ const REFRESH_ELECTION_INTERVAL: Duration = Duration::from_secs(1);
 pub(crate) struct RefreshServiceConfig {
     pub(crate) policy: GraphRefreshPolicy,
     pub(crate) include_fts: bool,
-    pub(crate) semantic_enrichment: bool,
     pub(crate) worker_memory_mib: u64,
     pub(crate) rust_memory_mib: u64,
     pub(crate) spill_chunk_mib: u64,
@@ -68,7 +67,6 @@ pub(crate) struct RefreshServiceConfig {
 pub(crate) struct RefreshConfigOverrides {
     pub(crate) policy: bool,
     pub(crate) include_fts: bool,
-    pub(crate) semantic_enrichment: bool,
     pub(crate) worker_memory_mib: bool,
     pub(crate) rust_memory_mib: bool,
     pub(crate) spill_chunk_mib: bool,
@@ -82,7 +80,6 @@ impl Default for RefreshServiceConfig {
         Self {
             policy: GraphRefreshPolicy::Leader,
             include_fts: true,
-            semantic_enrichment: false,
             worker_memory_mib: crate::api::context::DEFAULT_WORKER_MEMORY_MIB,
             rust_memory_mib: crate::api::context::DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: crate::api::context::DEFAULT_SPILL_CHUNK_MIB,
@@ -2407,8 +2404,6 @@ fn run_refresh_leader(
         storage_root: runtime.storage_root.clone(),
         mode: "changed".to_string(),
         include_fts: config.include_fts,
-        semantic_enrichment: config.semantic_enrichment,
-        semantic_provider_mode: "local_only".to_string(),
         use_git: false,
         worker_memory_mib: Some(config.worker_memory_mib),
         rust_memory_mib: Some(config.rust_memory_mib),
@@ -2535,9 +2530,6 @@ fn resolve_service_config(
     }
     if !overrides.include_fts {
         configured.include_fts = install.materialization.include_fts;
-    }
-    if !overrides.semantic_enrichment {
-        configured.semantic_enrichment = install.materialization.semantic_enrichment;
     }
     if !overrides.worker_memory_mib {
         configured.worker_memory_mib = install.materialization.worker_memory_mib;
@@ -2740,7 +2732,6 @@ mod tests {
         let state = RefreshState::with_config(RefreshServiceConfig {
             policy: GraphRefreshPolicy::Leader,
             include_fts: false,
-            semantic_enrichment: false,
             worker_memory_mib: 640,
             rust_memory_mib: 320,
             spill_chunk_mib: 16,

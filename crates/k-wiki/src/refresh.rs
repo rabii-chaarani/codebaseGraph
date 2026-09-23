@@ -445,8 +445,6 @@ impl GraphRefreshConsumer for PublicGraphRefreshConsumer {
                 paths: changed_paths.to_vec(),
                 mode: "changed".to_string(),
                 include_fts: true,
-                semantic_enrichment: false,
-                semantic_provider_mode: "local_only".to_string(),
                 parallel: true,
                 progress: false,
                 output_format: OutputFormat::Typed,

@@ -1291,8 +1291,6 @@ mod tests {
                 mcp_daemon_port: None,
                 mode: "full".to_string(),
                 include_fts: false,
-                semantic_enrichment: false,
-                semantic_provider_mode: "local_only".to_string(),
             }))
             .expect_err("legacy setup should require reinstall");
 
@@ -1332,8 +1330,6 @@ mod tests {
                 source_root: None,
                 mode: "full".to_string(),
                 include_fts: false,
-                semantic_enrichment: false,
-                semantic_provider_mode: "local_only".to_string(),
                 use_git: false,
                 git_diff: false,
                 git_base: None,
@@ -1358,8 +1354,6 @@ mod tests {
                 source_root: None,
                 mode: "full".to_string(),
                 include_fts: false,
-                semantic_enrichment: false,
-                semantic_provider_mode: "local_only".to_string(),
                 use_git: false,
                 git_diff: false,
                 git_base: None,

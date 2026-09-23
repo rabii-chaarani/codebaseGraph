@@ -64,7 +64,6 @@ fn setup_search_repo(root: &Path) {
             "none",
             "--instructions-target",
             "skip",
-            "--no-semantic-enrichment",
             "--json",
         ],
     );
@@ -131,15 +130,7 @@ fn build_and_plan_auto_detect_git_root_from_nested_directory() {
 
     let build = run_cli(
         &nested,
-        [
-            "build",
-            "--mode",
-            "full",
-            "--no-git",
-            "--no-fts",
-            "--no-semantic-enrichment",
-            "--json",
-        ],
+        ["build", "--mode", "full", "--no-git", "--no-fts", "--json"],
     );
     assert_success(&build);
     assert!(root.join(".codebaseGraph").join("manifest.json").exists());
@@ -186,7 +177,6 @@ fn install_auto_detects_git_root_from_nested_directory() {
             "--instructions-target",
             "skip",
             "--no-fts",
-            "--no-semantic-enrichment",
             "--json",
         ],
     );

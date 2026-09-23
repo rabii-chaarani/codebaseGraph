@@ -415,8 +415,6 @@ mod tests {
                 .to_string_lossy()
                 .into_owned(),
             include_fts: false,
-            semantic_enrichment: false,
-            semantic_provider_mode: "local_only".to_string(),
             schema_statements: Vec::new(),
             staging_dir: root
                 .join(".codebaseGraph/staging")

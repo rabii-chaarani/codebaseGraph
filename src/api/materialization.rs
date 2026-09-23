@@ -36,8 +36,6 @@ pub(crate) struct MaterializeOptions {
     pub(crate) storage_root: Option<PathBuf>,
     pub(crate) mode: String,
     pub(crate) include_fts: bool,
-    pub(crate) semantic_enrichment: bool,
-    pub(crate) semantic_provider_mode: String,
     pub(crate) use_git: bool,
     pub(crate) git_diff: bool,
     pub(crate) git_base: Option<String>,
@@ -73,8 +71,6 @@ impl Default for MaterializeOptions {
             storage_root: None,
             mode: String::new(),
             include_fts: false,
-            semantic_enrichment: false,
-            semantic_provider_mode: String::new(),
             use_git: false,
             git_diff: false,
             git_base: None,
@@ -113,8 +109,6 @@ impl MaterializeOptions {
             storage_root: runtime.storage_root.clone(),
             mode: request.mode.clone(),
             include_fts: request.include_fts,
-            semantic_enrichment: false,
-            semantic_provider_mode: request.semantic_provider_mode.clone(),
             use_git: request.use_git,
             git_diff: request.git_diff,
             git_base: request.git_base.clone(),
@@ -227,8 +221,6 @@ pub(crate) fn materialization_request(
             .map(|path| path.to_string_lossy().to_string()),
         mode: options.mode.clone(),
         include_fts: options.include_fts,
-        semantic_enrichment: false,
-        semantic_provider_mode: options.semantic_provider_mode.clone(),
         use_git: options.use_git,
         git_diff: options.git_diff,
         git_base: options.git_base.clone(),
@@ -291,8 +283,6 @@ pub(crate) fn execute_materialization_request(
     validate_configured_storage_root(options, identity.as_ref())?;
 
     let mut request = request;
-    request.semantic_enrichment = false;
-    request.semantic_provider_mode = "local_only".to_string();
     let execution = prepare_storage_execution(options)?;
     request.db_path = execution.request_db_path().to_string_lossy().into_owned();
     request.staging_dir = execution.staging_root().to_string_lossy().into_owned();
@@ -594,8 +584,6 @@ pub(crate) fn build_request(
         artifact_root: artifact_root.to_string_lossy().into_owned(),
         db_path: db_path.to_string_lossy().to_string(),
         include_fts: options.include_fts,
-        semantic_enrichment: false,
-        semantic_provider_mode: options.semantic_provider_mode.clone(),
         schema_statements: Vec::new(),
         staging_dir: staging_dir.to_string_lossy().to_string(),
         atomic_rebuild: true,
@@ -1454,13 +1442,7 @@ mod tests {
 
     #[test]
     fn prepublication_failures_clean_managed_and_direct_run_state() {
-        for phase in [
-            "parsing",
-            "enrichment",
-            "staging",
-            "database",
-            "candidate_validation",
-        ] {
+        for phase in ["parsing", "staging", "database", "candidate_validation"] {
             let root = unique_temp_dir(&format!("codebase-graph-cleanup-{phase}"));
             let managed_root = root.join("managed");
             let managed_store = GraphStorage::managed(&managed_root);
@@ -1528,9 +1510,9 @@ mod tests {
             previous_manifest: None,
             store,
         }
-        .abort_with_cleanup("enrichment failed".to_string());
+        .abort_with_cleanup("staging failed".to_string());
 
-        assert!(error.contains("enrichment failed"));
+        assert!(error.contains("staging failed"));
         assert!(error.contains("cleanup failed"));
         assert_eq!(fs::read_to_string(outside).unwrap(), "keep");
     }
@@ -1549,8 +1531,6 @@ mod tests {
                 manifest: Some(root.join("manifest.json")),
                 mode: "changed".to_string(),
                 include_fts: true,
-                semantic_enrichment: false,
-                semantic_provider_mode: "local_only".to_string(),
                 use_git: true,
                 git_diff: true,
                 git_base: Some("origin/main".to_string()),
@@ -1614,8 +1594,6 @@ mod tests {
             plan_only: true,
             mode: "full".to_string(),
             include_fts: true,
-            semantic_enrichment: true,
-            semantic_provider_mode: "local_only".to_string(),
             use_git: false,
             include_patterns: vec!["tests/**/*.rs".to_string()],
             exclude_patterns: vec!["dist/**".to_string()],
