@@ -1,8 +1,8 @@
 use super::{
-    http::{handle_mcp_http_request, read_http_request, write_http_json, HttpResponse},
+    dispatcher::{serve_http_dispatcher, ControlResponse, DispatcherSnapshot},
+    http::HttpResponse,
     options::{McpHttpOptions, McpServeOptions},
     refresh::start_configured_api,
-    state::McpHttpState,
 };
 use crate::api::context::{
     bind_repo_selector, read_install_config, resolve_identity_path, resolve_repository_root,
@@ -400,67 +400,56 @@ fn daemon_accept_loop(
     listener: TcpListener,
     daemon: &McpDaemonState,
 ) -> Result<(), String> {
-    let mut sessions = McpHttpState::default();
-    loop {
-        // A client timeout or disconnect is local to its connection and must not
-        // terminate the repository daemon; only listener failures are fatal.
-        let (mut stream, _) = listener
-            .accept()
-            .map_err(|error| format!("failed to accept managed MCP request: {error}"))?;
-        let request = match read_http_request(&mut stream) {
-            Ok(request) => request,
-            Err(error) => {
-                let _ = write_http_json(&mut stream, 500, &json!({"error": error}), &[]);
-                continue;
+    let result = serve_http_dispatcher(
+        listener,
+        options,
+        None,
+        |request, stats: DispatcherSnapshot| {
+            if request.path == DAEMON_HEALTH_PATH {
+                let status = if request.method == "GET" { 200 } else { 405 };
+                return Some(ControlResponse {
+                    response: HttpResponse::json(
+                        status,
+                        json!({
+                            "ok": true,
+                            "server": "codebase-graph",
+                            "pid": daemon.pid,
+                            "version": daemon.version,
+                            "endpoint": daemon.endpoint,
+                            "repository_fingerprint": daemon.repository_fingerprint,
+                            "service_id": daemon.service_id,
+                            "transport_version": DAEMON_TRANSPORT_VERSION,
+                            "transport": {
+                                "admitted_connections": stats.admitted_connections,
+                                "active_operation": stats.active_operation,
+                                "overload_rejections": stats.overload_rejections,
+                                "deadline_expirations": stats.deadline_expirations,
+                                "queued_operations": 0,
+                            },
+                        }),
+                    ),
+                    shutdown_after_response: false,
+                });
             }
-        };
-        if request.path == DAEMON_HEALTH_PATH {
-            let status = if request.method == "GET" { 200 } else { 405 };
-            let _ = write_http_json(
-                &mut stream,
-                status,
-                &json!({
-                    "ok": true,
-                    "server": "codebase-graph",
-                    "pid": daemon.pid,
-                    "version": daemon.version,
-                    "endpoint": daemon.endpoint,
-                    "repository_fingerprint": daemon.repository_fingerprint,
-                    "service_id": daemon.service_id,
-                    "transport_version": DAEMON_TRANSPORT_VERSION,
-                }),
-                &[],
-            );
-            continue;
-        }
-        if request.path == DAEMON_SHUTDOWN_PATH {
-            let authorized = request.method == "POST"
-                && request.header(CONTROL_HEADER) == Some(daemon.control_token.as_str());
-            let response = if authorized {
-                HttpResponse::json(200, json!({"ok": true, "pid": daemon.pid}))
-            } else {
-                HttpResponse::json(401, json!({"ok": false, "error": "unauthorized"}))
-            };
-            let _ = write_http_json(
-                &mut stream,
-                response.status,
-                &response.payload,
-                &response.headers,
-            );
-            if authorized {
-                break;
+            if request.path == DAEMON_SHUTDOWN_PATH {
+                let authorized = request.method == "POST"
+                    && request.header(CONTROL_HEADER) == Some(daemon.control_token.as_str());
+                return Some(ControlResponse {
+                    response: if authorized {
+                        HttpResponse::json(200, json!({"ok": true, "pid": daemon.pid}))
+                    } else {
+                        HttpResponse::json(401, json!({"ok": false, "error": "unauthorized"}))
+                    },
+                    shutdown_after_response: authorized,
+                });
             }
-            continue;
-        }
-        let response = handle_mcp_http_request(options, &mut sessions, request);
-        let _ = write_http_json(
-            &mut stream,
-            response.status,
-            &response.payload,
-            &response.headers,
-        );
+            None
+        },
+    );
+    if let Some(api) = options.serve.api.as_ref() {
+        api.drain_owned_operation();
     }
-    Ok(())
+    result
 }
 
 pub(crate) fn start_mcp_daemon(options: &McpDaemonOptions) -> Result<serde_json::Value, String> {

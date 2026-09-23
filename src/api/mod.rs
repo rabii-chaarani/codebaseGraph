@@ -9,6 +9,7 @@ pub mod catalog;
 pub mod context;
 pub mod contracts;
 pub mod core;
+mod execution_context;
 pub mod facade;
 pub(crate) mod graph_read;
 pub mod lifecycle;
@@ -25,6 +26,9 @@ pub use contracts::{
     SearchRequest,
 };
 pub use core::OperationDescriptor;
+pub(crate) use execution_context::{
+    ExecutionContext, HOOK_TIMEOUT_HEADER, MAX_CONNECTIONS, MAX_HOOK_TIMEOUT, POLL_INTERVAL,
+};
 pub(crate) use facade::CoordinatorCodebaseGraphApi;
 pub use facade::{CodebaseGraphApi, OperationExecutor};
 pub use lifecycle::{

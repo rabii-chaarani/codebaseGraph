@@ -2,8 +2,8 @@
 description: Repository-local hooks that inject bounded, advisory graph context into supported coding-agent loops.
 resource: repository-architecture
 tags:
-- architecture
 - agents
+- architecture
 - hooks
 - mcp
 - runtime
@@ -34,6 +34,12 @@ agent lifecycle event
 ```
 
 `SessionStart` checks graph health and reports repository identity and freshness. Each non-empty user prompt performs a health check followed by a semantic, slim search limited to five matches and one context level. Agents request `graph_context` explicitly for deeper dependencies, call graphs, runtime, docs, or change-impact analysis.
+
+## Transport budget
+
+Connection establishment, request writes, and response reads share one elapsed deadline. Hook `graph_health` and `graph_search` requests send their remaining per-call budget in `X-CodebaseGraph-Timeout-Ms`, capped at 900 ms; ordinary MCP callers omit this metadata. The server subtracts receive time and carries the remaining budget to the repository coordinator.
+
+There is no graph execution queue. A busy executor returns `graph_busy`; an expired request returns `deadline_exceeded` and never dispatches if it has not started. Tool calls are not retried. An already-running native read retains the execution slot until completion even after the hook times out. This bounds abandoned work; it does not guarantee successful context delivery within the budget under refresh contention. That latency work remains in STAB-08/10.
 
 ## Invariants
 

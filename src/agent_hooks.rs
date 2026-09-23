@@ -5,6 +5,7 @@
 //! response when the daemon is unavailable.
 
 use crate::api::context::{read_install_config, GraphInstallConfig};
+use crate::api::MAX_HOOK_TIMEOUT;
 use crate::mcp_client::McpLoopbackSession;
 use crate::storage::atomic::{write_bytes_atomically, write_json_atomically};
 use serde_json::{json, Map, Value};
@@ -1045,7 +1046,7 @@ fn open_session_with_budget(
         match McpLoopbackSession::connect(
             endpoint,
             Some(fingerprint),
-            remaining.min(Duration::from_millis(900)),
+            remaining.min(MAX_HOOK_TIMEOUT),
         ) {
             Ok(session) => return Ok(session),
             Err(error) if attempts == 0 && retryable(&error) => attempts += 1,
@@ -1065,11 +1066,12 @@ fn call_session_with_budget(
     if remaining.is_zero() {
         return Err("agent hook graph lookup exceeded its deadline".to_string());
     }
-    session.call_tool(
+    session.call_tool_with_deadline(
         name,
         arguments,
         Some(repo_root),
-        remaining.min(Duration::from_millis(900)),
+        remaining.min(MAX_HOOK_TIMEOUT),
+        deadline,
     )
 }
 

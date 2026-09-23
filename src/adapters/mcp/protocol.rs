@@ -1,12 +1,22 @@
+use super::options::McpServeOptions;
 use super::tools::generate_mcp_specs;
-use super::{options::McpServeOptions, tools::mcp_call_tool_result};
 use crate::api::CodebaseGraphApi;
+use crate::api::ExecutionContext;
 use serde_json::json;
 
 pub(in crate::adapters) fn handle_mcp_message(
     message: serde_json::Value,
     session: &mut McpSession,
     options: &McpServeOptions,
+) -> Option<serde_json::Value> {
+    handle_mcp_message_with_context(message, session, options, ExecutionContext::default())
+}
+
+pub(in crate::adapters) fn handle_mcp_message_with_context(
+    message: serde_json::Value,
+    session: &mut McpSession,
+    options: &McpServeOptions,
+    execution_context: ExecutionContext,
 ) -> Option<serde_json::Value> {
     let request_id = message
         .get("id")
@@ -57,7 +67,12 @@ pub(in crate::adapters) fn handle_mcp_message(
                 .get("arguments")
                 .cloned()
                 .unwrap_or_else(|| json!({}));
-            mcp_call_tool_result(tool_name, &arguments, options)
+            super::tools::mcp_call_tool_result_with_context(
+                tool_name,
+                &arguments,
+                options,
+                execution_context,
+            )
         }
         _ => {
             return Some(rpc_error(
@@ -111,7 +126,7 @@ pub(in crate::adapters) fn is_supported_protocol_version(version: &str) -> bool 
     )
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(in crate::adapters) struct McpSession {
     pub(in crate::adapters) protocol_version: Option<String>,
     pub(in crate::adapters) initialized: bool,

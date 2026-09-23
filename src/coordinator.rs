@@ -1,4 +1,5 @@
 use crate::api::context::{bind_repo_selector, resolve_runtime, RepositoryIdentity};
+use crate::api::ExecutionContext;
 use crate::api::{
     ApiError, CodebaseGraphApi, OperationInvocation, OperationResponse, RefreshServiceConfig,
     RepoSelector,
@@ -9,11 +10,11 @@ use crate::storage::locks::{try_open_locked, CoordinatorLease, LockMode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, Weak};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -22,11 +23,14 @@ const COORDINATOR_AUTHENTICATION_FAILED: &str = "coordinator_authentication_fail
 const COORDINATOR_REQUEST_RECEIVE_FAILED: &str = "coordinator_request_receive_failed";
 const MAX_FRAME_BYTES: usize = 16 * 1024 * 1024;
 const ELECTION_TIMEOUT: Duration = Duration::from_secs(5);
-const ELECTION_RETRY_INTERVAL: Duration = Duration::from_millis(50);
 const CONNECT_TIMEOUT: Duration = Duration::from_millis(500);
 const STREAM_IO_TIMEOUT: Duration = Duration::from_secs(5);
 const COMMAND_RETRY_TIMEOUT: Duration = Duration::from_secs(15);
 const MONITOR_INTERVAL: Duration = Duration::from_secs(1);
+const COORDINATOR_MAX_CONNECTIONS: usize = 32;
+const COORDINATOR_POLL_INTERVAL: Duration = Duration::from_millis(10);
+const COORDINATOR_FRAME_TIMEOUT: Duration = Duration::from_secs(5);
+const MAX_DEADLINE_MILLIS: u64 = 900;
 static TOKEN_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Debug)]
@@ -85,11 +89,13 @@ struct CoordinatorRoute {
 struct CoordinatorOwner {
     stop: Arc<AtomicBool>,
     thread: Mutex<Option<JoinHandle<()>>>,
+    dispatcher: Arc<ExecutionDispatcher>,
 }
 
 impl Drop for CoordinatorOwner {
     fn drop(&mut self) {
         self.stop.store(true, Ordering::Release);
+        self.dispatcher.stop_admission();
         if let Ok(mut thread) = self.thread.lock() {
             if let Some(thread) = thread.take() {
                 let _ = thread.join();
@@ -105,6 +111,16 @@ impl CoordinatorOwner {
             .map(|thread| thread.as_ref().is_some_and(|thread| !thread.is_finished()))
             .unwrap_or(false)
     }
+
+    fn stop_and_drain(&self) {
+        self.stop.store(true, Ordering::Release);
+        self.dispatcher.stop_admission();
+        if let Ok(mut thread) = self.thread.lock() {
+            if let Some(thread) = thread.take() {
+                let _ = thread.join();
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -119,13 +135,199 @@ struct CoordinatorState {
     endpoint: SocketAddr,
     token: String,
     pid: u32,
+    #[serde(default)]
+    supports_deadlines: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct CoordinatorRequest {
     version: u64,
     token: String,
+    #[serde(default)]
+    timeout_ms: Option<u64>,
     command: CoordinatorCommand,
+}
+
+#[derive(Debug)]
+struct ExecutionJob {
+    operation_id: String,
+    invocation: OperationInvocation,
+    context: ExecutionContext,
+    stream: TcpStream,
+    _connection: ConnectionPermit,
+}
+
+#[derive(Debug, Default)]
+struct ExecutionDispatchState {
+    job: Option<ExecutionJob>,
+    active: bool,
+    stopping: bool,
+}
+
+#[derive(Debug, Default)]
+struct ExecutionDispatcher {
+    state: Mutex<ExecutionDispatchState>,
+    ready: Condvar,
+    active_snapshot: AtomicBool,
+}
+
+impl ExecutionDispatcher {
+    fn try_submit(&self, job: ExecutionJob) -> Result<(), Box<ExecutionJob>> {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if state.stopping || state.active || state.job.is_some() {
+            return Err(Box::new(job));
+        }
+        state.active = true;
+        self.active_snapshot.store(true, Ordering::Release);
+        state.job = Some(job);
+        self.ready.notify_one();
+        Ok(())
+    }
+
+    fn take(&self) -> Option<ExecutionJob> {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        loop {
+            if let Some(job) = state.job.take() {
+                return Some(job);
+            }
+            if state.stopping {
+                return None;
+            }
+            state = self
+                .ready
+                .wait(state)
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+        }
+    }
+
+    fn finish_one(&self) {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.active = false;
+        self.active_snapshot.store(false, Ordering::Release);
+        self.ready.notify_all();
+    }
+
+    fn stop_admission(&self) {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.stopping = true;
+        self.ready.notify_all();
+    }
+
+    fn active(&self) -> bool {
+        self.active_snapshot.load(Ordering::Acquire)
+    }
+}
+
+#[derive(Debug, Default)]
+struct ConnectionRegistry {
+    next_id: AtomicU64,
+    streams: Mutex<std::collections::HashMap<u64, TcpStream>>,
+    writers: Mutex<Vec<JoinHandle<()>>>,
+}
+
+impl ConnectionRegistry {
+    fn register(self: &Arc<Self>, stream: &TcpStream) -> std::io::Result<ConnectionPermit> {
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let mut streams = self
+            .streams
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if streams.len() >= COORDINATOR_MAX_CONNECTIONS {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::WouldBlock,
+                "repository coordinator connection limit reached",
+            ));
+        }
+        streams.insert(id, stream.try_clone()?);
+        Ok(ConnectionPermit {
+            registry: Arc::clone(self),
+            id,
+        })
+    }
+
+    fn close_all(&self) {
+        let streams = self
+            .streams
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        for stream in streams.values() {
+            let _ = stream.shutdown(std::net::Shutdown::Both);
+        }
+    }
+
+    fn send_response(
+        self: &Arc<Self>,
+        mut stream: TcpStream,
+        reply: CoordinatorReply,
+        connection: ConnectionPermit,
+    ) {
+        let writer = thread::Builder::new()
+            .name("codebase-graph-coordinator-response".to_string())
+            .spawn(move || {
+                let _ = write_frame_until(
+                    &mut stream,
+                    &reply,
+                    Instant::now() + COORDINATOR_FRAME_TIMEOUT,
+                );
+                drop(connection);
+            });
+        if let Ok(writer) = writer {
+            let mut writers = self
+                .writers
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let mut index = 0;
+            while index < writers.len() {
+                if writers[index].is_finished() {
+                    let finished = writers.swap_remove(index);
+                    let _ = finished.join();
+                } else {
+                    index += 1;
+                }
+            }
+            writers.push(writer);
+        }
+    }
+
+    fn join_writers(&self) {
+        let writers = std::mem::take(
+            &mut *self
+                .writers
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()),
+        );
+        for writer in writers {
+            let _ = writer.join();
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ConnectionPermit {
+    registry: Arc<ConnectionRegistry>,
+    id: u64,
+}
+
+impl Drop for ConnectionPermit {
+    fn drop(&mut self) {
+        self.registry
+            .streams
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .remove(&self.id);
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -184,13 +386,20 @@ impl CoordinatorClient {
         operation_id: &str,
         invocation: &OperationInvocation,
     ) -> Result<OperationResponse, ApiError> {
+        self.execute_invocation_with_context(operation_id, invocation, ExecutionContext::default())
+    }
+
+    pub(crate) fn execute_invocation_with_context(
+        &self,
+        operation_id: &str,
+        invocation: &OperationInvocation,
+        context: ExecutionContext,
+    ) -> Result<OperationResponse, ApiError> {
         let command = CoordinatorCommand::Execute {
             operation_id: operation_id.to_string(),
             invocation: invocation.clone(),
         };
-        let reply = self
-            .send_command_with_recovery(&command)
-            .map_err(|error| ApiError::new("coordinator_unavailable", error).retryable(true))?;
+        let reply = self.send_command_with_recovery(&command, context)?;
         match reply {
             CoordinatorReply::Success(response) => Ok(response),
             CoordinatorReply::Failure(error) => Err(error),
@@ -201,88 +410,217 @@ impl CoordinatorClient {
     }
 
     fn refresh_route(&self) -> Result<(), String> {
-        let mut route = self
-            .inner
-            .route
-            .lock()
-            .map_err(|_| "coordinator route lock is poisoned".to_string())?;
-        route.state = None;
-        route.owner = None;
-        let deadline = Instant::now() + ELECTION_TIMEOUT;
+        self.refresh_route_with_context(ExecutionContext::default())
+            .map_err(|error| error.message)
+    }
+
+    fn refresh_route_with_context(&self, context: ExecutionContext) -> Result<(), ApiError> {
+        let election_deadline = context.deadline.map_or_else(
+            || Instant::now() + ELECTION_TIMEOUT,
+            |deadline| deadline.min(Instant::now() + ELECTION_TIMEOUT),
+        );
         loop {
+            context.remaining()?;
             if let Some(lease) = try_open_locked(&self.inner.control.lock, LockMode::Exclusive)
-                .map_err(|error| error.to_string())?
+                .map_err(|error| {
+                    ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
+                })?
             {
                 let (state, owner) = start_owner(
                     self.inner.control.clone(),
                     lease,
                     self.inner.api_config.clone(),
-                )?;
-                route.state = Some(state);
-                route.owner = Some(Arc::new(owner));
+                )
+                .map_err(|error| ApiError::new("coordinator_unavailable", error).retryable(true))?;
+                context.remaining()?;
+                let old_owner = {
+                    let mut route = self.lock_route(context)?;
+                    route.state = Some(state);
+                    route.owner.replace(Arc::new(owner))
+                };
+                drop(old_owner);
                 return Ok(());
             }
             if let Ok(state) = read_coordinator_state(&self.inner.control.state) {
-                if ping_state(&state).is_ok() {
+                if ping_state_with_context(&state, context).is_ok() {
+                    let mut route = self.lock_route(context)?;
+                    let same_endpoint = route
+                        .state
+                        .as_ref()
+                        .is_some_and(|current| current.endpoint == state.endpoint);
+                    let old_owner = if same_endpoint {
+                        None
+                    } else {
+                        route.owner.take()
+                    };
                     route.state = Some(state);
+                    drop(route);
+                    drop(old_owner);
                     return Ok(());
                 }
             }
-            if Instant::now() >= deadline {
-                return Err(format!(
-                    "timed out waiting for repository coordinator at {}",
-                    self.inner.control.state.display()
-                ));
+            if Instant::now() >= election_deadline {
+                if context.deadline.is_some() && Instant::now() >= context.deadline.unwrap() {
+                    return Err(ExecutionContext::expired_error());
+                }
+                return Err(ApiError::new(
+                    "coordinator_unavailable",
+                    format!(
+                        "timed out waiting for repository coordinator at {}",
+                        self.inner.control.state.display()
+                    ),
+                )
+                .retryable(true));
             }
-            thread::sleep(ELECTION_RETRY_INTERVAL);
+            thread::sleep(
+                COORDINATOR_POLL_INTERVAL
+                    .min(election_deadline.saturating_duration_since(Instant::now())),
+            );
         }
     }
 
-    fn send_command(&self, command: &CoordinatorCommand) -> Result<CoordinatorReply, String> {
-        let state = self
-            .inner
-            .route
-            .lock()
-            .map_err(|_| "coordinator route lock is poisoned".to_string())?
-            .state
-            .clone()
-            .ok_or_else(|| "repository coordinator route is unavailable".to_string())?;
-        send_to_state(&state, command)
+    fn lock_route(
+        &self,
+        context: ExecutionContext,
+    ) -> Result<MutexGuard<'_, CoordinatorRoute>, ApiError> {
+        if context.deadline.is_none() {
+            return self.inner.route.lock().map_err(|_| {
+                ApiError::new(
+                    "coordinator_unavailable",
+                    "coordinator route lock is poisoned",
+                )
+                .retryable(true)
+            });
+        }
+        loop {
+            context.remaining()?;
+            match self.inner.route.try_lock() {
+                Ok(route) => return Ok(route),
+                Err(std::sync::TryLockError::Poisoned(error)) => {
+                    return Err(ApiError::new(
+                        "coordinator_unavailable",
+                        format!("coordinator route lock is poisoned: {error}"),
+                    )
+                    .retryable(true));
+                }
+                Err(std::sync::TryLockError::WouldBlock) => {
+                    thread::sleep(COORDINATOR_POLL_INTERVAL);
+                }
+            }
+        }
+    }
+
+    fn send_command(
+        &self,
+        command: &CoordinatorCommand,
+        context: ExecutionContext,
+    ) -> Result<CoordinatorReply, ApiError> {
+        let state = self.lock_route(context)?.state.clone().ok_or_else(|| {
+            ApiError::new(
+                "coordinator_unavailable",
+                "repository coordinator route is unavailable",
+            )
+            .retryable(true)
+        })?;
+        if context.deadline.is_some() && !state.supports_deadlines {
+            return Err(ApiError::new(
+                "coordinator_deadline_unsupported",
+                "the repository coordinator owner does not support bounded graph execution",
+            ));
+        }
+        send_to_state(&state, command, context)
     }
 
     fn send_command_with_recovery(
         &self,
         command: &CoordinatorCommand,
-    ) -> Result<CoordinatorReply, String> {
-        let deadline = Instant::now() + COMMAND_RETRY_TIMEOUT;
-        let mut retried_ambiguous_failure = false;
+        context: ExecutionContext,
+    ) -> Result<CoordinatorReply, ApiError> {
+        let deadline = context
+            .deadline
+            .unwrap_or_else(|| Instant::now() + COMMAND_RETRY_TIMEOUT);
         loop {
-            match self.send_command(command) {
+            context.remaining()?;
+            match self.send_command(command, context) {
                 Ok(reply) if reply_is_safe_to_retry(&reply) => {
                     if Instant::now() >= deadline {
-                        return Err(format!(
-                            "repository coordinator request kept failing before dispatch: {reply:?}"
-                        ));
+                        return Err(if context.deadline.is_some() {
+                            ExecutionContext::expired_error()
+                        } else {
+                            ApiError::new(
+                                "coordinator_unavailable",
+                                format!("repository coordinator kept rejecting the request before dispatch: {reply:?}"),
+                            )
+                            .retryable(true)
+                        });
                     }
-                    thread::sleep(ELECTION_RETRY_INTERVAL);
+                    thread::sleep(
+                        COORDINATOR_POLL_INTERVAL
+                            .min(deadline.saturating_duration_since(Instant::now())),
+                    );
                 }
                 Ok(reply) if reply_requires_route_refresh(&reply) => {
                     if Instant::now() >= deadline {
-                        return Err(format!(
-                            "repository coordinator route stayed stale: {reply:?}"
-                        ));
+                        return Err(if context.deadline.is_some() {
+                            ExecutionContext::expired_error()
+                        } else {
+                            ApiError::new(
+                                "coordinator_unavailable",
+                                format!("repository coordinator route stayed stale: {reply:?}"),
+                            )
+                            .retryable(true)
+                        });
                     }
-                    self.refresh_route()?;
+                    if context.deadline.is_some() {
+                        return Err(ApiError::new(
+                            "coordinator_route_stale",
+                            "repository coordinator rejected the request; route recovery continues in the background",
+                        )
+                        .retryable(true));
+                    }
+                    self.refresh_route_with_context(context)?;
                 }
                 Ok(reply) => return Ok(reply),
-                Err(error) => {
-                    if retried_ambiguous_failure || Instant::now() >= deadline {
-                        return Err(error);
-                    }
-                    retried_ambiguous_failure = true;
-                    self.refresh_route()?;
+                // A transport failure after connect or request transmission is
+                // ambiguous: the owner may already be executing the request.
+                // Never replay an operation without an explicit pre-dispatch reply.
+                Err(error) => return Err(error),
+            }
+        }
+    }
+
+    /// Returns the local executor state, or `None` when this process is a follower
+    /// or cannot take a nonblocking route snapshot.
+    pub(crate) fn active_operation(&self) -> Option<bool> {
+        self.inner
+            .route
+            .try_lock()
+            .ok()
+            .and_then(|route| route.owner.as_ref().map(|owner| owner.dispatcher.active()))
+    }
+
+    pub(crate) fn drain_owned_operation(&self) {
+        self.inner.monitor_stop.store(true, Ordering::Release);
+        if let Ok(mut monitor) = self.inner.monitor.lock() {
+            if let Some(monitor) = monitor.take() {
+                if monitor.thread().id() != thread::current().id() {
+                    let _ = monitor.join();
                 }
             }
+        }
+        let owner = loop {
+            match self.inner.route.try_lock() {
+                Ok(route) => break route.owner.clone(),
+                Err(std::sync::TryLockError::Poisoned(error)) => {
+                    break error.into_inner().owner.clone()
+                }
+                Err(std::sync::TryLockError::WouldBlock) => {
+                    thread::sleep(COORDINATOR_POLL_INTERVAL)
+                }
+            }
+        };
+        if let Some(owner) = owner {
+            owner.stop_and_drain();
         }
     }
 
@@ -306,7 +644,10 @@ impl CoordinatorClient {
 
     #[cfg(test)]
     fn ping(&self) -> Result<(), String> {
-        match self.send_command_with_recovery(&CoordinatorCommand::Ping)? {
+        match self
+            .send_command_with_recovery(&CoordinatorCommand::Ping, ExecutionContext::default())
+            .map_err(|error| error.message)?
+        {
             CoordinatorReply::Pong => Ok(()),
             reply => Err(format!(
                 "repository coordinator returned a non-pong reply: {reply:?}"
@@ -361,6 +702,7 @@ fn start_owner(
         endpoint,
         token: coordinator_token(endpoint),
         pid: std::process::id(),
+        supports_deadlines: true,
     };
     write_json_atomically(&control.state, &state).map_err(|error| error.to_string())?;
     restrict_state_permissions(&control.state)?;
@@ -369,6 +711,8 @@ fn start_owner(
     let server_stop = Arc::clone(&stop);
     let server_state = state.clone();
     let state_path = control.state.clone();
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    let server_dispatcher = Arc::clone(&dispatcher);
     let thread = thread::Builder::new()
         .name("codebase-graph-coordinator".to_string())
         .spawn(move || {
@@ -378,13 +722,15 @@ fn start_owner(
                 .as_ref()
                 .expect("coordinator identity is captured before owner startup")
                 .clone();
+            let owner_selector = config.selector.clone();
             serve_owner(
                 listener,
                 &api,
-                &config.selector,
+                &owner_selector,
                 &identity,
                 &server_state,
                 &server_stop,
+                &server_dispatcher,
             );
             remove_owned_state(&state_path, &server_state.token);
             drop(lease);
@@ -395,6 +741,7 @@ fn start_owner(
         CoordinatorOwner {
             stop,
             thread: Mutex::new(Some(thread)),
+            dispatcher,
         },
     ))
 }
@@ -406,66 +753,270 @@ fn serve_owner(
     identity: &RepositoryIdentity,
     state: &CoordinatorState,
     stop: &AtomicBool,
+    dispatcher: &Arc<ExecutionDispatcher>,
 ) {
+    let api = api.clone();
+    let selector = selector.clone();
+    let identity = identity.clone();
+    let owner_api = api.clone();
+    serve_owner_with_executor(
+        listener,
+        state,
+        stop,
+        dispatcher,
+        move |mut invocation| {
+            identity
+                .validate()
+                .map_err(|error| ApiError::new("repository_identity_changed", error))?;
+            invocation.repo = selector.clone();
+            Ok(invocation)
+        },
+        move |operation_id, invocation, context| {
+            context.remaining()?;
+            owner_api.execute_invocation(operation_id, invocation)
+        },
+    );
+}
+
+fn serve_owner_with_executor<P, E>(
+    listener: TcpListener,
+    state: &CoordinatorState,
+    stop: &AtomicBool,
+    dispatcher: &Arc<ExecutionDispatcher>,
+    prepare: P,
+    execute: E,
+) where
+    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
+    E: Fn(&str, &OperationInvocation, ExecutionContext) -> Result<OperationResponse, ApiError>
+        + Send
+        + Sync
+        + 'static,
+{
+    let dispatcher = Arc::clone(dispatcher);
+    let worker_dispatcher = Arc::clone(&dispatcher);
+    let worker_state = state.clone();
+    let prepare = Arc::new(prepare);
+    let execute = Arc::new(execute);
+    let worker_execute = Arc::clone(&execute);
+    let worker = thread::Builder::new()
+        .name("codebase-graph-coordinator-executor".to_string())
+        .spawn(move || {
+            while let Some(job) = worker_dispatcher.take() {
+                let reply = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    if job.context.remaining().is_err() {
+                        None
+                    } else {
+                        match worker_execute(&job.operation_id, &job.invocation, job.context) {
+                            Ok(mut response) if job.context.remaining().is_ok() => {
+                                attach_coordinator_status(&mut response, &worker_state);
+                                Some(CoordinatorReply::Success(response))
+                            }
+                            Ok(_) if job.context.remaining().is_err() => None,
+                            Ok(_) => None,
+                            Err(_) if job.context.remaining().is_err() => None,
+                            Err(error) => Some(CoordinatorReply::Failure(error)),
+                        }
+                    }
+                }))
+                .unwrap_or(None);
+                worker_dispatcher.finish_one();
+                if let Some(reply) = reply {
+                    let registry = Arc::clone(&job._connection.registry);
+                    registry.send_response(job.stream, reply, job._connection);
+                } else {
+                    let _ = job.stream.shutdown(std::net::Shutdown::Both);
+                    drop(job._connection);
+                }
+            }
+        });
+
+    let Ok(worker) = worker else {
+        dispatcher.stop_admission();
+        return;
+    };
+    let registry = Arc::new(ConnectionRegistry::default());
+    let mut handlers = Vec::new();
     while !stop.load(Ordering::Acquire) {
         match listener.accept() {
             Ok((mut stream, _)) => {
-                let _ = stream.set_read_timeout(Some(STREAM_IO_TIMEOUT));
-                let _ = stream.set_write_timeout(Some(STREAM_IO_TIMEOUT));
-                let reply = handle_connection(&mut stream, api, selector, identity, state);
-                let _ = write_frame(&mut stream, &reply);
+                let accepted_at = Instant::now();
+                if stream.set_nonblocking(true).is_err() {
+                    continue;
+                }
+                let Ok(connection) = registry.register(&stream) else {
+                    let _ = stream.shutdown(std::net::Shutdown::Both);
+                    continue;
+                };
+                let server_state = state.clone();
+                let server_dispatcher = Arc::clone(&dispatcher);
+                let server_prepare = Arc::clone(&prepare);
+                if let Ok(handler) = thread::Builder::new()
+                    .name("codebase-graph-coordinator-client".to_string())
+                    .spawn(move || {
+                        handle_connection_dispatch(
+                            &mut stream,
+                            accepted_at,
+                            &server_state,
+                            &server_dispatcher,
+                            connection,
+                            server_prepare,
+                        );
+                    })
+                {
+                    handlers.push(handler);
+                }
+                let mut index = 0;
+                while index < handlers.len() {
+                    if handlers[index].is_finished() {
+                        let handler = handlers.swap_remove(index);
+                        let _ = handler.join();
+                    } else {
+                        index += 1;
+                    }
+                }
             }
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                thread::sleep(ELECTION_RETRY_INTERVAL);
+                thread::sleep(COORDINATOR_POLL_INTERVAL);
             }
-            Err(_) => thread::sleep(ELECTION_RETRY_INTERVAL),
+            Err(_) => thread::sleep(COORDINATOR_POLL_INTERVAL),
         }
     }
+    dispatcher.stop_admission();
+    registry.close_all();
+    for handler in handlers {
+        let _ = handler.join();
+    }
+    let _ = worker.join();
+    registry.close_all();
+    registry.join_writers();
 }
 
-fn handle_connection(
+fn handle_connection_dispatch<P>(
     stream: &mut TcpStream,
-    api: &CodebaseGraphApi,
-    selector: &RepoSelector,
-    identity: &RepositoryIdentity,
+    accepted_at: Instant,
     state: &CoordinatorState,
-) -> CoordinatorReply {
-    let request = match receive_request(stream) {
+    dispatcher: &ExecutionDispatcher,
+    connection: ConnectionPermit,
+    prepare: Arc<P>,
+) where
+    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
+{
+    let request_deadline = accepted_at + COORDINATOR_FRAME_TIMEOUT;
+    let request: CoordinatorRequest = match read_frame_until(stream, request_deadline) {
         Ok(request) => request,
-        Err(reply) => return reply,
+        Err(error) => {
+            let reply = coordinator_request_receive_failure(error);
+            let _ = write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+            return;
+        }
     };
     if request.version != COORDINATOR_PROTOCOL_VERSION || request.token != state.token {
-        return CoordinatorReply::Failure(ApiError::new(
+        let reply = CoordinatorReply::Failure(ApiError::new(
             COORDINATOR_AUTHENTICATION_FAILED,
             "repository coordinator protocol or token is invalid",
         ));
+        let _ = write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+        return;
     }
     match request.command {
-        CoordinatorCommand::Ping => CoordinatorReply::Pong,
+        CoordinatorCommand::Ping => {
+            let _ = write_frame_until(
+                stream,
+                &CoordinatorReply::Pong,
+                Instant::now() + COORDINATOR_FRAME_TIMEOUT,
+            );
+        }
         CoordinatorCommand::Execute {
             operation_id,
-            mut invocation,
+            invocation,
         } => {
-            if let Err(error) = identity.validate() {
-                return CoordinatorReply::Failure(ApiError::new(
-                    "repository_identity_changed",
-                    error,
+            if request.timeout_ms.is_some() && !matches!(operation_id.as_str(), "health" | "search")
+            {
+                let reply = CoordinatorReply::Failure(ApiError::new(
+                    "invalid_coordinator_deadline",
+                    "bounded coordinator execution is only supported for health and search",
                 ));
+                let _ =
+                    write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+                return;
             }
-            invocation.repo = selector.clone();
-            match api.execute_invocation(&operation_id, &invocation) {
-                Ok(mut response) => {
-                    attach_coordinator_status(&mut response, state);
-                    CoordinatorReply::Success(response)
+            let context = match coordinator_execution_context(request.timeout_ms, accepted_at) {
+                Ok(context) => context,
+                Err(error) => {
+                    let reply = CoordinatorReply::Failure(error);
+                    let _ = write_frame_until(
+                        stream,
+                        &reply,
+                        Instant::now() + COORDINATOR_FRAME_TIMEOUT,
+                    );
+                    return;
                 }
-                Err(error) => CoordinatorReply::Failure(error),
+            };
+            let invocation = match prepare(invocation) {
+                Ok(invocation) => invocation,
+                Err(error) => {
+                    let reply = CoordinatorReply::Failure(error);
+                    let _ = write_frame_until(
+                        stream,
+                        &reply,
+                        Instant::now() + COORDINATOR_FRAME_TIMEOUT,
+                    );
+                    return;
+                }
+            };
+            if context.remaining().is_err() {
+                let reply = CoordinatorReply::Failure(ExecutionContext::expired_error());
+                let _ =
+                    write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+                return;
+            }
+            let Ok(job_stream) = stream.try_clone() else {
+                return;
+            };
+            let job = ExecutionJob {
+                operation_id,
+                invocation,
+                context,
+                stream: job_stream,
+                _connection: connection,
+            };
+            if let Err(job) = dispatcher.try_submit(job) {
+                let reply = CoordinatorReply::Failure(
+                    ApiError::new(
+                        "graph_busy",
+                        "repository graph executor is already handling another operation",
+                    )
+                    .retryable(true),
+                );
+                let _ =
+                    write_frame_until(stream, &reply, Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+                drop(job);
             }
         }
     }
 }
 
+fn coordinator_execution_context(
+    timeout_ms: Option<u64>,
+    accepted_at: Instant,
+) -> Result<ExecutionContext, ApiError> {
+    let Some(timeout_ms) = timeout_ms else {
+        return Ok(ExecutionContext::default());
+    };
+    if timeout_ms == 0 {
+        return Err(ApiError::new(
+            "invalid_coordinator_deadline",
+            "coordinator timeout_ms must be greater than zero",
+        ));
+    }
+    let timeout = Duration::from_millis(timeout_ms.min(MAX_DEADLINE_MILLIS));
+    Ok(ExecutionContext::with_timeout(accepted_at, timeout))
+}
+
+#[cfg(test)]
 fn receive_request(stream: &mut TcpStream) -> Result<CoordinatorRequest, CoordinatorReply> {
-    read_frame(stream).map_err(coordinator_request_receive_failure)
+    read_frame_until(stream, Instant::now() + COORDINATOR_FRAME_TIMEOUT)
+        .map_err(coordinator_request_receive_failure)
 }
 
 fn coordinator_request_receive_failure(error: String) -> CoordinatorReply {
@@ -495,31 +1046,107 @@ fn attach_coordinator_status(response: &mut OperationResponse, state: &Coordinat
 fn send_to_state(
     state: &CoordinatorState,
     command: &CoordinatorCommand,
-) -> Result<CoordinatorReply, String> {
-    validate_state(state)?;
-    let mut stream = TcpStream::connect_timeout(&state.endpoint, CONNECT_TIMEOUT)
-        .map_err(|error| format!("failed to connect to repository coordinator: {error}"))?;
-    if matches!(command, CoordinatorCommand::Ping) {
-        stream
-            .set_read_timeout(Some(STREAM_IO_TIMEOUT))
-            .map_err(|error| format!("failed to configure coordinator ping reads: {error}"))?;
+    context: ExecutionContext,
+) -> Result<CoordinatorReply, ApiError> {
+    send_to_state_with_context(state, command, context)
+}
+
+fn send_to_state_with_context(
+    state: &CoordinatorState,
+    command: &CoordinatorCommand,
+    context: ExecutionContext,
+) -> Result<CoordinatorReply, ApiError> {
+    validate_state(state).map_err(|error| ApiError::new("coordinator_protocol_error", error))?;
+    context.remaining()?;
+    let ping = matches!(command, CoordinatorCommand::Ping);
+    let connect_deadline = context.deadline.unwrap_or_else(|| {
+        Instant::now()
+            + if ping {
+                STREAM_IO_TIMEOUT
+            } else {
+                CONNECT_TIMEOUT
+            }
+    });
+    let connect_budget =
+        CONNECT_TIMEOUT.min(connect_deadline.saturating_duration_since(Instant::now()));
+    if connect_budget.is_zero() {
+        return Err(ExecutionContext::expired_error());
     }
-    stream
-        .set_write_timeout(Some(STREAM_IO_TIMEOUT))
-        .map_err(|error| format!("failed to configure coordinator stream writes: {error}"))?;
-    write_frame(
+    let mut stream =
+        TcpStream::connect_timeout(&state.endpoint, connect_budget).map_err(|error| {
+            if context
+                .deadline
+                .is_some_and(|deadline| Instant::now() >= deadline)
+            {
+                ExecutionContext::expired_error()
+            } else {
+                ApiError::new(
+                    "coordinator_unavailable",
+                    format!("failed to connect to repository coordinator: {error}"),
+                )
+                .retryable(true)
+            }
+        })?;
+    stream.set_nonblocking(true).map_err(|error| {
+        ApiError::new(
+            "coordinator_unavailable",
+            format!("failed to configure coordinator stream: {error}"),
+        )
+        .retryable(true)
+    })?;
+    let timeout_ms = context
+        .remaining()?
+        .map(|remaining| remaining.as_nanos().saturating_add(999_999) / 1_000_000)
+        .map(|millis| millis.clamp(1, u128::from(MAX_DEADLINE_MILLIS)) as u64);
+    let coordinator_deadline =
+        timeout_ms.map(|timeout| Instant::now() + Duration::from_millis(timeout));
+    let execution_deadline = context
+        .deadline
+        .into_iter()
+        .chain(coordinator_deadline)
+        .min();
+    let write_deadline = execution_deadline
+        .unwrap_or_else(|| Instant::now() + COORDINATOR_FRAME_TIMEOUT)
+        .min(Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+    write_frame_until(
         &mut stream,
         &CoordinatorRequest {
             version: COORDINATOR_PROTOCOL_VERSION,
             token: state.token.clone(),
+            timeout_ms,
             command: clone_command(command),
         },
-    )?;
-    read_frame(&mut stream)
+        write_deadline,
+    )
+    .map_err(|error| {
+        if execution_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+            ExecutionContext::expired_error()
+        } else {
+            ApiError::new("coordinator_transport_error", error).retryable(ping)
+        }
+    })?;
+    let read_deadline =
+        execution_deadline.or_else(|| ping.then_some(Instant::now() + STREAM_IO_TIMEOUT));
+    read_frame_with_policy(&mut stream, read_deadline, read_deadline.is_none()).map_err(|error| {
+        if execution_deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+            ExecutionContext::expired_error()
+        } else {
+            ApiError::new("coordinator_transport_error", error).retryable(ping)
+        }
+    })
 }
 
 fn ping_state(state: &CoordinatorState) -> Result<(), String> {
-    match send_to_state(state, &CoordinatorCommand::Ping)? {
+    ping_state_with_context(state, ExecutionContext::default())
+}
+
+fn ping_state_with_context(
+    state: &CoordinatorState,
+    context: ExecutionContext,
+) -> Result<(), String> {
+    match send_to_state_with_context(state, &CoordinatorCommand::Ping, context)
+        .map_err(|error| error.message)?
+    {
         CoordinatorReply::Pong => Ok(()),
         _ => Err("repository coordinator did not answer ping".to_string()),
     }
@@ -620,7 +1247,16 @@ fn coordinator_token(endpoint: SocketAddr) -> String {
         .collect()
 }
 
+#[cfg(test)]
 fn write_frame<T: Serialize>(stream: &mut TcpStream, value: &T) -> Result<(), String> {
+    write_frame_until(stream, value, Instant::now() + COORDINATOR_FRAME_TIMEOUT)
+}
+
+fn write_frame_until<T: Serialize>(
+    stream: &mut TcpStream,
+    value: &T,
+    deadline: Instant,
+) -> Result<(), String> {
     let mut payload = Vec::new();
     payload
         .try_reserve(4096)
@@ -634,30 +1270,105 @@ fn write_frame<T: Serialize>(stream: &mut TcpStream, value: &T) -> Result<(), St
     }
     payload.push(b'\n');
     stream
-        .write_all(&payload)
-        .map_err(|error| format!("failed to write repository coordinator frame: {error}"))?;
-    stream
-        .flush()
-        .map_err(|error| format!("failed to flush repository coordinator frame: {error}"))
+        .set_nonblocking(true)
+        .map_err(|error| format!("failed to configure coordinator stream: {error}"))?;
+    let mut offset = 0;
+    while offset < payload.len() {
+        if Instant::now() >= deadline {
+            return Err("timed out writing repository coordinator frame".to_string());
+        }
+        match stream.write(&payload[offset..]) {
+            Ok(0) => return Err("repository coordinator stream closed while writing".to_string()),
+            Ok(written) => offset += written,
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                thread::sleep(
+                    COORDINATOR_POLL_INTERVAL
+                        .min(deadline.saturating_duration_since(Instant::now())),
+                );
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
+            Err(error) => {
+                return Err(format!(
+                    "failed to write repository coordinator frame: {error}"
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
+#[cfg(test)]
 fn read_frame<T: DeserializeOwned>(stream: &mut TcpStream) -> Result<T, String> {
+    read_frame_until(stream, Instant::now() + COORDINATOR_FRAME_TIMEOUT)
+}
+
+fn read_frame_until<T: DeserializeOwned>(
+    stream: &mut TcpStream,
+    deadline: Instant,
+) -> Result<T, String> {
+    read_frame_with_policy(stream, Some(deadline), false)
+}
+
+fn read_frame_with_policy<T: DeserializeOwned>(
+    stream: &mut TcpStream,
+    deadline: Option<Instant>,
+    start_timeout_after_first_byte: bool,
+) -> Result<T, String> {
+    stream
+        .set_nonblocking(true)
+        .map_err(|error| format!("failed to configure coordinator stream: {error}"))?;
     let mut payload = Vec::new();
     payload
         .try_reserve(4096)
         .map_err(|_| "repository coordinator frame allocation failed".to_string())?;
-    let mut reader = BufReader::new(stream);
-    reader
-        .by_ref()
-        .take((MAX_FRAME_BYTES + 1) as u64)
-        .read_until(b'\n', &mut payload)
-        .map_err(|error| format!("failed to read repository coordinator frame: {error}"))?;
-    if payload.is_empty() || payload.len() > MAX_FRAME_BYTES || payload.last() != Some(&b'\n') {
-        return Err("repository coordinator frame is missing or too large".to_string());
+    let mut buffer = [0_u8; 8192];
+    let mut deadline = deadline;
+    loop {
+        if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+            return Err("timed out reading repository coordinator frame".to_string());
+        }
+        match stream.read(&mut buffer) {
+            Ok(0) if payload.is_empty() => {
+                return Err("repository coordinator frame is missing".to_string());
+            }
+            Ok(0) => return Err("repository coordinator frame ended before newline".to_string()),
+            Ok(read) => {
+                if start_timeout_after_first_byte && deadline.is_none() {
+                    deadline = Some(Instant::now() + COORDINATOR_FRAME_TIMEOUT);
+                }
+                let frame_end = buffer[..read].iter().position(|byte| *byte == b'\n');
+                let bytes_to_append = frame_end.unwrap_or(read);
+                if payload.len().saturating_add(bytes_to_append) > MAX_FRAME_BYTES {
+                    return Err(format!(
+                        "repository coordinator frame exceeds {MAX_FRAME_BYTES} bytes"
+                    ));
+                }
+                payload.extend_from_slice(&buffer[..bytes_to_append]);
+                if frame_end.is_some() {
+                    return serde_json::from_slice(&payload).map_err(|error| {
+                        format!("failed to decode repository coordinator frame: {error}")
+                    });
+                }
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                let pause = deadline
+                    .map(|deadline| {
+                        COORDINATOR_POLL_INTERVAL
+                            .min(deadline.saturating_duration_since(Instant::now()))
+                    })
+                    .unwrap_or(COORDINATOR_POLL_INTERVAL);
+                if !pause.is_zero() {
+                    thread::sleep(pause);
+                }
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
+            Err(error) => {
+                return Err(format!(
+                    "failed to read repository coordinator frame: {error}"
+                ))
+            }
+        }
     }
-    payload.pop();
-    serde_json::from_slice(&payload)
-        .map_err(|error| format!("failed to decode repository coordinator frame: {error}"))
 }
 
 fn coordinator_protocol_error(message: impl Into<String>) -> ApiError {
@@ -686,180 +1397,5 @@ fn restrict_state_permissions(_path: &Path) -> Result<(), String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn request_receive_failure_is_retryable_before_dispatch() {
-        use std::net::Shutdown;
-
-        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
-        let client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
-        let (mut server, _) = listener.accept().unwrap();
-        client.shutdown(Shutdown::Write).unwrap();
-
-        let reply = receive_request(&mut server).unwrap_err();
-        assert!(reply_is_safe_to_retry(&reply));
-        assert!(!reply_requires_route_refresh(&reply));
-        let CoordinatorReply::Failure(error) = reply else {
-            panic!("closed request stream should produce a failure reply");
-        };
-        assert_eq!(error.code, COORDINATOR_REQUEST_RECEIVE_FAILED);
-        assert!(error.retryable);
-    }
-
-    #[test]
-    fn retryable_receive_failure_retries_the_same_owner() {
-        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
-        let endpoint = listener.local_addr().unwrap();
-        let token = "a".repeat(64);
-        let server_token = token.clone();
-        let server = thread::spawn(move || {
-            for attempt in 0..2 {
-                let (mut stream, _) = listener.accept().unwrap();
-                let request: CoordinatorRequest = read_frame(&mut stream).unwrap();
-                assert_eq!(request.token, server_token);
-                let reply = if attempt == 0 {
-                    coordinator_request_receive_failure("timed out before dispatch".to_string())
-                } else {
-                    CoordinatorReply::Pong
-                };
-                write_frame(&mut stream, &reply).unwrap();
-            }
-        });
-
-        let root = temp_dir("retry-receive");
-        let client = CoordinatorClient {
-            inner: Arc::new(ClientInner {
-                control: CoordinatorControlPaths {
-                    lock: root.join("coordinator.lock"),
-                    state: root.join("coordinator.json"),
-                },
-                api_config: direct_config(&root),
-                route: Mutex::new(CoordinatorRoute {
-                    state: Some(CoordinatorState {
-                        version: COORDINATOR_PROTOCOL_VERSION,
-                        endpoint,
-                        token,
-                        pid: std::process::id(),
-                    }),
-                    owner: None,
-                }),
-                monitor_stop: AtomicBool::new(false),
-                monitor: Mutex::new(None),
-            }),
-        };
-
-        client.ping().unwrap();
-        assert_eq!(client.endpoint(), Some(endpoint));
-        server.join().unwrap();
-    }
-
-    #[test]
-    fn concurrent_clients_share_one_repository_coordinator() {
-        let root = temp_dir("shared");
-        let config = direct_config(&root);
-        let mut clients = Vec::new();
-        for _ in 0..20 {
-            clients.push(CoordinatorClient::connect_or_start(config.clone()).unwrap());
-        }
-
-        let endpoint = clients[0].endpoint().unwrap();
-        assert!(clients
-            .iter()
-            .all(|client| client.endpoint() == Some(endpoint)));
-        assert_eq!(clients.iter().filter(|client| client.is_owner()).count(), 1);
-        for client in &clients {
-            client.ping().unwrap();
-        }
-        let refreshed_endpoint = clients[0].endpoint().unwrap();
-        assert!(clients
-            .iter()
-            .all(|client| client.endpoint() == Some(refreshed_endpoint)));
-        assert_eq!(clients.iter().filter(|client| client.is_owner()).count(), 1);
-    }
-
-    #[test]
-    fn follower_takes_over_after_owner_release() {
-        let root = temp_dir("takeover");
-        let config = direct_config(&root);
-        let owner = CoordinatorClient::connect_or_start(config.clone()).unwrap();
-        let follower = CoordinatorClient::connect_or_start(config).unwrap();
-        let previous = owner.endpoint().unwrap();
-        assert!(owner.is_owner());
-        assert!(!follower.is_owner());
-
-        drop(owner);
-        let deadline = Instant::now() + ELECTION_TIMEOUT;
-        while !follower.is_owner() && Instant::now() < deadline {
-            thread::sleep(Duration::from_millis(50));
-        }
-        assert!(
-            follower.is_owner(),
-            "standby did not take over within five seconds"
-        );
-        assert_ne!(follower.endpoint(), Some(previous));
-    }
-
-    #[test]
-    fn follower_refreshes_a_stale_authenticated_route() {
-        let root = temp_dir("stale-route");
-        let config = direct_config(&root);
-        let owner = CoordinatorClient::connect_or_start(config.clone()).unwrap();
-        let follower = CoordinatorClient::connect_or_start(config).unwrap();
-
-        let invalidate_route = || {
-            follower
-                .inner
-                .route
-                .lock()
-                .unwrap()
-                .state
-                .as_mut()
-                .unwrap()
-                .token = "0".repeat(64);
-        };
-
-        invalidate_route();
-        let response = follower
-            .execute_invocation(
-                "syntax",
-                &OperationInvocation {
-                    repo: RepoSelector::default(),
-                    arguments: serde_json::json!({"language": "python"}),
-                    output_format: crate::api::OutputFormat::Typed,
-                },
-            )
-            .unwrap();
-        assert_eq!(response.operation, "syntax");
-
-        invalidate_route();
-        follower.ping().unwrap();
-        assert_eq!(follower.endpoint(), owner.endpoint());
-        assert!(owner.is_owner());
-        assert!(!follower.is_owner());
-    }
-
-    fn direct_config(root: &Path) -> CoordinatorApiConfig {
-        let selector = RepoSelector {
-            repo_root: Some(root.to_path_buf()),
-            config_path: None,
-            db_path: Some(root.join("graph.ldb")),
-            manifest_path: Some(root.join("manifest.json")),
-        };
-        CoordinatorApiConfig::new(selector, None)
-    }
-
-    fn temp_dir(label: &str) -> PathBuf {
-        let nonce = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "codebase-graph-coordinator-{label}-{}-{nonce}",
-            std::process::id()
-        ));
-        fs::create_dir_all(&path).unwrap();
-        path
-    }
-}
+#[path = "coordinator/tests.rs"]
+mod tests;

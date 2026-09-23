@@ -3,7 +3,7 @@ agent_memory:
   version: 1
   kind: episodic
   scope: repository
-  status: active
+  status: quarantined
   owner: codex
   created_at: 2026-08-21T14:34:08+09:30
   last_verified_at: 2026-08-21T14:34:08+09:30
@@ -33,6 +33,11 @@ agent_memory:
     actor: codex
     at: 2026-08-21T14:34:08+09:30
     reason: Verified against GitHub Actions run 32440497451 job 96650083565, the implemented coordinator retry path, two deterministic regressions, 20 stress repetitions, and the complete workspace test suite.
+  - from: active
+    to: quarantined
+    actor: codex
+    at: 2026-09-23T00:00:00Z
+    reason: STAB-01 review found the advice to replay one ambiguous post-dispatch disconnect unsafe for mutations; the approved contract allows retries only with proof execution did not begin. Retain history pending verified replacement.
 description: macOS reports socket read timeouts as EAGAIN; pre-dispatch coordinator receive failures must be retryable without forcing owner election.
 tags:
 - ci

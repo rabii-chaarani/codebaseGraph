@@ -1,4 +1,5 @@
 use super::{block::serialize_error_block, options::McpServeOptions};
+use crate::api::ExecutionContext;
 use crate::api::{
     ApiError, CodebaseGraphApi, OperationDescriptor, OperationInvocation, OperationResponse,
     OutputFormat,
@@ -55,13 +56,29 @@ fn map_error_to_transport(tool_name: &str, error: &ApiError) -> serde_json::Valu
     })
 }
 
+#[cfg(test)]
 pub(in crate::adapters) fn mcp_call_tool_result(
     tool_name: &str,
     arguments: &serde_json::Value,
     options: &McpServeOptions,
 ) -> Result<serde_json::Value, String> {
+    mcp_call_tool_result_with_context(tool_name, arguments, options, ExecutionContext::default())
+}
+
+pub(in crate::adapters) fn mcp_call_tool_result_with_context(
+    tool_name: &str,
+    arguments: &serde_json::Value,
+    options: &McpServeOptions,
+    execution_context: ExecutionContext,
+) -> Result<serde_json::Value, String> {
     let output_format = parse_output_format(arguments).map_err(|error| error.message)?;
-    let response = mcp_tool_payload(tool_name, arguments, options, output_format);
+    let response = mcp_tool_payload_with_context(
+        tool_name,
+        arguments,
+        options,
+        output_format,
+        execution_context,
+    );
     let include_structured = arguments
         .get("include_structured_content")
         .and_then(serde_json::Value::as_bool)
@@ -96,30 +113,16 @@ pub(in crate::adapters) fn mcp_call_tool_result(
             Ok(result)
         }
         Err(error) if tool_name.is_empty() || error.code == "unknown_tool" => Err(error.message),
-        Err(error) => {
-            let payload = map_error_to_transport(tool_name, &error);
-            let text = if output_format == OutputFormat::Typed {
-                serde_json::to_string(&payload).map_err(|error| error.to_string())?
-            } else {
-                serialize_error_block(&payload)
-            };
-            let mut result = json!({
-                "content": [{"type": "text", "text": text}],
-                "isError": true,
-            });
-            if include_structured {
-                result["structuredContent"] = payload;
-            }
-            Ok(result)
-        }
+        Err(error) => mcp_tool_error_result(tool_name, arguments, &error),
     }
 }
 
-pub(in crate::adapters) fn mcp_tool_payload(
+pub(in crate::adapters) fn mcp_tool_payload_with_context(
     tool_name: &str,
     arguments: &serde_json::Value,
     options: &McpServeOptions,
     output_format: OutputFormat,
+    execution_context: ExecutionContext,
 ) -> Result<OperationResponse, ApiError> {
     let operation = CodebaseGraphApi::new()
         .resolve_mcp_operation(tool_name)
@@ -135,9 +138,43 @@ pub(in crate::adapters) fn mcp_tool_payload(
         output_format,
     };
     match options.api.as_ref() {
-        Some(api) => api.execute_invocation(operation.id, &invocation),
-        None => CodebaseGraphApi::new().execute_invocation(operation.id, &invocation),
+        Some(api) if execution_context.deadline.is_none() => {
+            api.execute_invocation(operation.id, &invocation)
+        }
+        Some(api) => {
+            api.execute_invocation_with_context(operation.id, &invocation, execution_context)
+        }
+        None => {
+            execution_context.remaining()?;
+            CodebaseGraphApi::new().execute_invocation(operation.id, &invocation)
+        }
     }
+}
+
+pub(in crate::adapters) fn mcp_tool_error_result(
+    tool_name: &str,
+    arguments: &serde_json::Value,
+    error: &ApiError,
+) -> Result<serde_json::Value, String> {
+    let output_format = parse_output_format(arguments).map_err(|error| error.message)?;
+    let include_structured = arguments
+        .get("include_structured_content")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    let payload = map_error_to_transport(tool_name, error);
+    let text = if output_format == OutputFormat::Typed {
+        serde_json::to_string(&payload).map_err(|error| error.to_string())?
+    } else {
+        serialize_error_block(&payload)
+    };
+    let mut result = json!({
+        "content": [{"type": "text", "text": text}],
+        "isError": true,
+    });
+    if include_structured {
+        result["structuredContent"] = payload;
+    }
+    Ok(result)
 }
 
 fn parse_output_format(arguments: &serde_json::Value) -> Result<OutputFormat, ApiError> {
