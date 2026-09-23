@@ -283,15 +283,28 @@ fn http_admission_bounds_idle_clients_and_expires_stalled_requests() {
     }
 
     let mut idle = Vec::with_capacity(MAX_ADMITTED_CONNECTIONS);
-    for _ in 0..MAX_ADMITTED_CONNECTIONS {
+    for _ in 0..MAX_ADMITTED_CONNECTIONS - 1 {
         let stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
         stream
             .set_read_timeout(Some(Duration::from_secs(4)))
             .unwrap();
         idle.push(stream);
-        // Let the dispatcher admit this socket before opening the next one.
-        thread::sleep(Duration::from_millis(12));
     }
+    // The health request occupies the final slot and confirms the other 31
+    // sockets were admitted. Per-connection sleeps can consume the two-second
+    // header deadline on a loaded runner and accidentally test a free slot.
+    let saturated = health(port).unwrap();
+    assert_eq!(
+        saturated.body["transport"]["admitted_connections"], MAX_ADMITTED_CONNECTIONS,
+        "failed to establish the admission fixture: {saturated:?}"
+    );
+    assert_eq!(saturated.body["transport"]["deadline_expirations"], 0);
+    // Replace the now-closed health connection, then probe the excess slot.
+    let final_idle = TcpStream::connect(("127.0.0.1", port)).unwrap();
+    final_idle
+        .set_read_timeout(Some(Duration::from_secs(4)))
+        .unwrap();
+    idle.push(final_idle);
     let mut excess = TcpStream::connect(("127.0.0.1", port)).unwrap();
     excess
         .set_read_timeout(Some(Duration::from_secs(1)))
@@ -301,7 +314,7 @@ fn http_admission_bounds_idle_clients_and_expires_stalled_requests() {
     let excess_result = excess.read(&mut byte);
     assert!(
         started.elapsed() < Duration::from_secs(1),
-        "excess connection was not rejected promptly"
+        "excess connection was not rejected promptly: {excess_result:?}"
     );
     assert!(
         matches!(excess_result, Ok(0))
