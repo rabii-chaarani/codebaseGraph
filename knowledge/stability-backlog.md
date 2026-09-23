@@ -8,7 +8,7 @@ tags:
 - recovery
 - stability
 - testing
-timestamp: 2026-09-23
+timestamp: 2026-09-24
 title: CodebaseGraph Stability Backlog
 type: plan
 ---
@@ -23,7 +23,7 @@ The initial assessment covered v1.8.1 at `885454f2`. The hook follow-up was chec
 | ID | Priority | Task | Status |
 | --- | --- | --- | --- |
 | STAB-01 | P1 | Isolate HTTP clients and bound transport waits and queued hook reads | Implemented; acceptance evidence linked |
-| STAB-02 | P1 | Restore MCP sessions correctly after daemon restart | Open |
+| STAB-02 | P1 | Restore MCP sessions correctly after daemon restart | Implemented; acceptance evidence linked |
 | STAB-03 | P1 | Make Direct publication recovery safe to repeat at every rename boundary | Open |
 | STAB-04 | P2 | Enforce the required CI check before merging to main | Open |
 | STAB-05 | P2 | Align the declared Rust minimum with locked dependencies | Open |
@@ -55,13 +55,19 @@ The accepted scope is STAB-01 plus the hook deadline contract. Fast successful h
 
 ### STAB-02 — Recover sessions after restart
 
-Unknown supplied session IDs currently receive HTTP 400, and generated IDs restart from a per-process counter.
+Previously, unknown supplied session IDs received HTTP 400, and generated IDs restarted from a per-process counter.
 
 Work: distinguish missing session headers (400) from unknown or terminated sessions (404); generate IDs unique across daemon lifetimes.
 
 Acceptance: a real client retains its session across a daemon restart, receives 404, initializes again, and successfully calls a graph tool. An old ID never aliases a newly created session. Update the test that currently asserts 400 for an unknown supplied ID.
 
 Source: `src/adapters/mcp/http.rs`, `src/adapters/mcp/state.rs`, `tests/http_daemon_process.rs`. Contract: [MCP session management](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#session-management).
+
+Implementation: `eae5ae3` returns HTTP 404 for unknown supplied IDs, including initialization and notifications, while missing required headers retain HTTP 400. Session IDs use 32 bytes of OS randomness; entropy failure or collision returns HTTP 500 without changing sessions. Ordinary handling and deferred tool admission share session classification, and existing-session reinitialization remains supported.
+
+Verification on macOS ARM64: all 38 focused MCP, HTTP admission, and real-daemon tests passed. The restart regression covers clean shutdown and forced termination, initializes competing clients before checking retired IDs, then reinitializes after 404 and successfully calls `graph_health`. Tests also cover removed IDs, busy-executor precedence, entropy/collision failure, and session continuity. Formatting and strict workspace Clippy pass. Full workspace and Linux/macOS/Windows acceptance evidence is tracked in [PR #125 checks](https://github.com/rabii-chaarani/codebaseGraph/pull/125/checks). Scryer change `chg-b4am2n` is implemented with source/test anchors and ingested JUnit evidence.
+
+The scope is the server contract. Automatic hook-client reconnect, persistent sessions, session expiry/capacity limits, and DELETE support are not added by STAB-02.
 
 ### STAB-03 — Make Direct recovery idempotent
 
