@@ -8,7 +8,6 @@ tags:
 - graph-runtime
 - hooks
 - rust
-timestamp: 2026-09-23
 title: Graph Runtime Architecture
 type: architecture
 ---
@@ -58,11 +57,19 @@ The core owns three cross-cutting duties:
 
 ## Central MCP ownership and process isolation
 
-All MCP processes for one managed storage root or Direct destination pair contend for one nonblocking `coordinator.lock`. The holder writes a mode-0600 loopback endpoint and random token to `coordinator.json`, owns the Public API Core, and is the only MCP process that opens Ladybug databases. Followers keep only the bounded route state, retry the owner on connection failure, and independently attempt takeover. Their monitor detects owner death and operating-system lock release permits takeover within five seconds.
+All MCP processes for one managed storage root or Direct destination pair contend for one nonblocking `coordinator.lock`. The holder writes a mode-0600 loopback endpoint and random token to `coordinator.json`, owns the Public API Core, and is the only MCP process that opens Ladybug databases. Followers keep only bounded route state and independently attempt takeover. A failed operation is never automatically replayed after an ambiguous transport failure. Their monitor detects owner death and operating-system lock release permits takeover within five seconds.
 
 Managed HTTP response writes are connection-local. A hook deadline, client cancellation, or disconnected socket may prevent delivery to that client, but it must not terminate the repository daemon or discard other initialized MCP sessions. Listener acceptance failures remain process-fatal, and authenticated shutdown remains intentional.
 
-Coordinator request framing keeps transport recovery separate from application semantics. Receive failures detected before dispatch are explicit retryable replies, and clients retry them on the same live owner within a 15-second bound. Authentication failures refresh the route, while ambiguous disconnects retain a single replay limit. Ping reads use a five-second timeout, but operation replies remain unbounded because materialization and other valid requests may run longer.
+Coordinator request framing keeps transport recovery separate from application semantics. Receive failures proven to occur before dispatch are explicitly retryable, within the remaining request budget or a 15-second recovery bound. Ordinary authentication failures refresh the route; deadline-bearing calls fail promptly and leave recovery to the monitor. Ambiguous operation write/read failures are non-retryable and are never replayed. Requests without an execution deadline can still wait for long-running operations; their response-frame transfer is bounded once bytes begin arriving.
+
+HTTP serving admits at most 32 connections, bounds headers to 32 KiB and bodies to 1,000,000 bytes, and enforces elapsed deadlines: two seconds for headers, five seconds for a complete request, and two seconds for response transmission. Incremental I/O never renews these deadlines. A fair nonblocking dispatcher sleeps at most 10 ms when idle; progressing transfers continue without an artificial bandwidth limit. Excess connections close promptly. Health, session negotiation, ping, and authorized shutdown do not wait for graph execution. Header/request expiry returns 408 and oversized headers return 431 when the connection can still carry a response.
+
+The coordinator independently bounds its admitted connections to 32 and frame transfer to five seconds. One graph execution permit covers the complete native operation, with no waiting graph queue. Competing graph operations receive a retryable `graph_busy` error. Response writers retain their connection permits while transmitting but release graph execution admission when native work finishes.
+
+Hook health/search calls carry a remaining timeout of at most 900 ms in `X-CodebaseGraph-Timeout-Ms`. A private execution context propagates the remaining budget through MCP and coordinator routing; the coordinator wire envelope adds optional `timeout_ms`, and owner state advertises `supports_deadlines`. Deadline-bearing calls fail against older owners without that capability. Expired undispatched reads never run; already-running native reads finish in their occupied slot, and late results are discarded. Native calls are not forcibly interrupted. Public graph tool arguments and embedded operation contracts are unchanged.
+
+Authenticated shutdown acknowledges promptly, stops admission, closes waiting sockets, and drains native execution and response writers before removing daemon state or releasing ownership. Exit can take longer than transport deadlines. Daemon health exposes `transport.admitted_connections`, `active_operation`, `queued_operations` (always zero), `overload_rejections`, and `deadline_expirations`. `active_operation` is true for a live relay or locally observed execution, false for an observed idle local owner, and null when a remote owner or unavailable route snapshot makes its state unknown. These counters contain no request bodies or prompts.
 
 Refresh and coordinator-triggered explicit materialization use the same versioned Materialization Worker protocol. The owner writes request/result files under one worker workspace, holds `worker.lock`, drains bounded newline-delimited progress, and samples RSS every 25 ms. A parent-owned pipe and persisted `worker.json` identity prevent an orphan from continuing after coordinator death: the child exits when the pipe closes, and the next owner reaps the recorded PID and recovers abandoned run journals before starting another worker. Standalone CLI builds remain short-lived and execute the canonical pipeline directly.
 
