@@ -20,7 +20,9 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     )
     .unwrap();
     fs::create_dir_all(&state).unwrap();
-    write_config(&repo, &storage, 768, 384, 32);
+    // Keep the periodic reconciliation fallback inside the generation-change
+    // deadline when auto backend selection falls back to polling.
+    write_config_with_policy_and_interval(&repo, &storage, "leader", 768, 384, 32, Some(1_000));
 
     let mut clients = ClientGroup::default();
     for index in 0..20 {
@@ -517,13 +519,29 @@ fn write_config_with_policy(
     rust: u64,
     spill: u64,
 ) {
+    write_config_with_policy_and_interval(repo, storage, policy, worker, rust, spill, None);
+}
+
+fn write_config_with_policy_and_interval(
+    repo: &Path,
+    storage: &Path,
+    policy: &str,
+    worker: u64,
+    rust: u64,
+    spill: u64,
+    reconcile_interval_ms: Option<u64>,
+) {
+    let mut refresh = json!({"policy": policy, "backend": "auto"});
+    if let Some(interval_ms) = reconcile_interval_ms {
+        refresh["reconcile_interval_ms"] = json!(interval_ms);
+    }
     fs::write(
         repo.join(".codebaseGraph/config.json"),
         serde_json::to_vec_pretty(&json!({
             "schema_version": 3,
             "repo_root": repo,
             "storage_root": storage,
-            "refresh": {"policy": policy, "backend": "auto"},
+            "refresh": refresh,
             "materialization": {
                 "include_fts": true,
                 "worker_memory_mib": worker,
