@@ -1258,6 +1258,142 @@ mod tests {
         let _ = fs::remove_dir_all(root);
     }
 
+    #[test]
+    fn direct_recovery_restores_real_graph_and_search_after_sidecar_rename() {
+        use crate::api::{
+            CodebaseGraphApi, MaterializationRequest, OperationRequest, OutputFormat, QueryRequest,
+            SearchRequest,
+        };
+        use crate::storage::direct::{
+            faults::{arm, Point},
+            DirectStore,
+        };
+        use crate::storage::layout::DIRECT_DB_SIDECAR_SUFFIXES;
+
+        let root = unique_temp_dir("drreal");
+        fs::create_dir_all(root.join("src")).unwrap();
+        let source_path = root.join("src/lib.rs");
+        let layout = DirectLayout::new(root.join("db/g.ldb"), root.join("manifest/m.json"));
+        let staged = DirectLayout::new(root.join("stage/g.ldb"), root.join("stage/m.json"));
+        let selector = |layout: &DirectLayout| RepoSelector {
+            repo_root: Some(root.clone()),
+            config_path: None,
+            db_path: Some(layout.db_path().to_path_buf()),
+            manifest_path: Some(layout.manifest_path().to_path_buf()),
+        };
+        for (output, name) in [(&layout, "previous_symbol"), (&staged, "recovered_symbol")] {
+            fs::write(
+                &source_path,
+                format!("pub fn {name}() -> bool {{ true }}\n"),
+            )
+            .unwrap();
+            CodebaseGraphApi::new()
+                .execute_operation(&OperationRequest::Materialize(MaterializationRequest {
+                    repo: selector(output),
+                    native_request_path: None,
+                    source_root: None,
+                    mode: "full".into(),
+                    include_fts: true,
+                    use_git: false,
+                    git_diff: false,
+                    git_base: None,
+                    include_patterns: vec![],
+                    exclude_patterns: vec![],
+                    candidate_paths: vec![],
+                    parallel: false,
+                    worker_memory_mib: None,
+                    rust_memory_mib: None,
+                    spill_chunk_mib: None,
+                    max_parallelism: None,
+                    progress: false,
+                    output_format: OutputFormat::Typed,
+                }))
+                .unwrap();
+        }
+        let expected_manifest = fs::read(staged.manifest_path()).unwrap();
+        let manifest: crate::protocol::NativeManifest =
+            serde_json::from_slice(&expected_manifest).unwrap();
+        assert!(!manifest.files.is_empty());
+        let expected_db = sha256(&fs::read(staged.db_path()).unwrap());
+        let source_before = fs::read(&source_path).unwrap();
+        let store = DirectStore::new(layout.clone()).unwrap();
+        let mut session = store.begin_write().unwrap();
+        fs::copy(staged.db_path(), session.db_candidate_path()).unwrap();
+        fs::copy(staged.manifest_path(), session.manifest_candidate_path()).unwrap();
+        let mut expected_sidecars = BTreeMap::new();
+        for suffix in DIRECT_DB_SIDECAR_SUFFIXES {
+            let from = PathBuf::from(format!("{}.{suffix}", staged.db_path().display()));
+            if from.exists() {
+                expected_sidecars.insert(*suffix, sha256(&fs::read(&from).unwrap()));
+                fs::copy(
+                    from,
+                    format!("{}.{suffix}", session.db_candidate_path().display()),
+                )
+                .unwrap();
+            }
+        }
+        assert!(expected_sidecars.contains_key("search.lexicon.bin"));
+        let fault = arm(Point::AfterCandidateRename(PathBuf::from(format!(
+            "{}.search.lexicon.bin",
+            layout.db_path().display()
+        ))));
+        assert!(session
+            .publish()
+            .unwrap_err()
+            .to_string()
+            .contains("injected Direct"));
+        drop(fault);
+        drop(session);
+        let interrupted: DirectPublishJournal =
+            serde_json::from_slice(&fs::read(layout.journal_path()).unwrap()).unwrap();
+        assert_eq!(interrupted.phase, DirectPublishPhase::Prepared);
+        for _ in 0..3 {
+            let runtime = resolve_runtime(&selector(&layout)).unwrap();
+            assert!(runtime.direct_read.is_some());
+            assert_eq!(fs::read(layout.manifest_path()).unwrap(), expected_manifest);
+            assert_eq!(sha256(&fs::read(layout.db_path()).unwrap()), expected_db);
+            for (suffix, expected) in &expected_sidecars {
+                assert_eq!(
+                    &sha256(&fs::read(format!("{}.{suffix}", layout.db_path().display())).unwrap()),
+                    expected
+                );
+            }
+            assert!(!layout.journal_path().exists());
+            drop(runtime);
+        }
+        let query = CodebaseGraphApi::new()
+            .execute_operation(&OperationRequest::Query(QueryRequest {
+                repo: selector(&layout),
+                statement: "MATCH (n) RETURN count(n) AS total_nodes LIMIT 1".into(),
+                parameters: json!({}),
+                limit: 1,
+                output_format: OutputFormat::Typed,
+            }))
+            .unwrap();
+        assert!(query.payload["rows"][0][0].as_u64().unwrap() > 0);
+        let search = CodebaseGraphApi::new()
+            .execute_operation(&OperationRequest::Search(SearchRequest {
+                repo: selector(&layout),
+                query: "recovered_symbol".into(),
+                layer: "semantic".into(),
+                profile: "brief".into(),
+                limit: 3,
+                budget: 0,
+                context_limit: 0,
+                max_depth: None,
+                detail: "slim".into(),
+                output_format: OutputFormat::Typed,
+            }))
+            .unwrap();
+        assert!(search.payload["results"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|row| row["label"] == "recovered_symbol"));
+        assert_eq!(fs::read(source_path).unwrap(), source_before);
+        fs::remove_dir_all(root).unwrap();
+    }
+
     fn sha256(bytes: &[u8]) -> String {
         Sha256::digest(bytes)
             .iter()

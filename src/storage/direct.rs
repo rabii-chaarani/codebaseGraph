@@ -257,6 +257,8 @@ impl DirectStore {
     }
 
     fn write_journal(&self, journal: &DirectPublishJournal) -> Result<(), NativeError> {
+        #[cfg(test)]
+        faults::check(&faults::Point::BeforeCheckpoint(journal.phase.clone()))?;
         write_json_atomically(&self.layout.journal_path(), journal)
     }
 
@@ -293,8 +295,11 @@ fn promote_database_bundle(journal: &DirectPublishJournal) -> Result<(), NativeE
             suffix
         ));
         let to = PathBuf::from(format!("{}.{}", journal.db_path.display(), suffix));
-        if from.exists() {
+        // A missing candidate can mean its rename already completed. Only the
+        // journal determines whether this sidecar belongs to the new bundle.
+        if journal.sidecar_sha256.contains_key(*suffix) {
             replace_with_shadow(&from, &to)?;
+            ensure_regular_file(&to)?;
         } else if to.exists() {
             remove_if_safe(&to)?;
         }
@@ -323,9 +328,13 @@ fn replace_with_shadow(from: &Path, to: &Path) -> Result<(), NativeError> {
     if to.exists() {
         ensure_not_symlink(to)?;
         fs::rename(to, &shadow)?;
+        #[cfg(test)]
+        faults::check(&faults::Point::AfterShadowRename(to.to_path_buf()))?;
         sync_parent(&shadow)?;
     }
     fs::rename(from, to)?;
+    #[cfg(test)]
+    faults::check(&faults::Point::AfterCandidateRename(to.to_path_buf()))?;
     sync_parent(to)?;
     Ok(())
 }
@@ -451,5 +460,52 @@ fn validate_checksum(path: &Path, expected: &str, label: &str) -> Result<(), Nat
             "{label} checksum mismatch for {}",
             path.display()
         )))
+    }
+}
+
+/// Thread-scoped, one-shot interruptions of the real publication path.
+#[cfg(test)]
+pub(crate) mod faults {
+    use super::{DirectPublishPhase, NativeError, PathBuf};
+    use std::cell::RefCell;
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub(crate) enum Point {
+        AfterShadowRename(PathBuf),
+        AfterCandidateRename(PathBuf),
+        BeforeCheckpoint(DirectPublishPhase),
+    }
+
+    thread_local! {
+        static ARMED: RefCell<Option<Point>> = const { RefCell::new(None) };
+    }
+
+    pub(crate) struct Guard;
+
+    pub(crate) fn arm(point: Point) -> Guard {
+        ARMED.with(|armed| {
+            assert!(armed.borrow().is_none(), "a Direct fault is already armed");
+            *armed.borrow_mut() = Some(point);
+        });
+        Guard
+    }
+
+    impl Drop for Guard {
+        fn drop(&mut self) {
+            ARMED.with(|armed| *armed.borrow_mut() = None);
+        }
+    }
+
+    pub(super) fn check(point: &Point) -> Result<(), NativeError> {
+        ARMED.with(|armed| {
+            if armed.borrow().as_ref() == Some(point) {
+                *armed.borrow_mut() = None;
+                Err(NativeError::Io(std::io::Error::other(format!(
+                    "injected Direct publication interruption: {point:?}"
+                ))))
+            } else {
+                Ok(())
+            }
+        })
     }
 }

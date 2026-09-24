@@ -585,6 +585,220 @@ fn direct_store_recovers_database_manifest_and_committed_journal_phases() {
     }
 }
 
+fn direct_sidecar(path: &std::path::Path, suffix: &str) -> PathBuf {
+    PathBuf::from(format!("{}.{suffix}", path.display()))
+}
+
+#[test]
+fn direct_recovery_replays_every_rename_and_checkpoint() {
+    use storage::direct::faults::{arm, Point};
+    use storage::layout::DIRECT_DB_SIDECAR_SUFFIXES;
+
+    for replacement in [false, true] {
+        // All sidecars exercise each rename; a sparse bundle also removes obsolete ones.
+        for sparse in [false, true] {
+            let suffixes: Vec<_> = DIRECT_DB_SIDECAR_SUFFIXES
+                .iter()
+                .copied()
+                .filter(|suffix| !sparse || suffix.starts_with("search."))
+                .collect();
+            let mut boundaries = vec![Point::BeforeCheckpoint(DirectPublishPhase::Prepared)];
+            // Relative paths are rebound to each isolated fixture below.
+            for path in std::iter::once(PathBuf::from("db/g.ldb"))
+                .chain(
+                    suffixes
+                        .iter()
+                        .map(|suffix| direct_sidecar(std::path::Path::new("db/g.ldb"), suffix)),
+                )
+                .chain(std::iter::once(PathBuf::from("manifest/m.json")))
+            {
+                if replacement {
+                    boundaries.push(Point::AfterShadowRename(path.clone()));
+                }
+                boundaries.push(Point::AfterCandidateRename(path));
+            }
+            for phase in [
+                DirectPublishPhase::DatabasePromoted,
+                DirectPublishPhase::ManifestPromoted,
+                DirectPublishPhase::Committed,
+            ] {
+                boundaries.push(Point::BeforeCheckpoint(phase));
+            }
+            for boundary in boundaries {
+                let root = temp_dir("dr");
+                let layout = DirectLayout::new(root.join("db/g.ldb"), root.join("manifest/m.json"));
+                let store = DirectStore::new(layout.clone()).unwrap();
+                let source = root.join("source.rs");
+                fs::write(&source, b"source stays untouched").unwrap();
+                let mut session = store.begin_write().unwrap();
+                if replacement {
+                    fs::write(layout.db_path(), b"db-v1").unwrap();
+                    fs::write(layout.manifest_path(), b"manifest-v1").unwrap();
+                    for suffix in DIRECT_DB_SIDECAR_SUFFIXES {
+                        fs::write(direct_sidecar(layout.db_path(), suffix), b"sidecar-v1").unwrap();
+                    }
+                }
+                fs::write(session.db_candidate_path(), b"db-v2").unwrap();
+                fs::write(session.manifest_candidate_path(), b"manifest-v2").unwrap();
+                for suffix in &suffixes {
+                    fs::write(
+                        direct_sidecar(&session.db_candidate_path(), suffix),
+                        format!("v2-{suffix}"),
+                    )
+                    .unwrap();
+                }
+                let point = match boundary.clone() {
+                    Point::AfterShadowRename(path) => Point::AfterShadowRename(root.join(path)),
+                    Point::AfterCandidateRename(path) => {
+                        Point::AfterCandidateRename(root.join(path))
+                    }
+                    point => point,
+                };
+                let fault = arm(point);
+                let error = session.publish().unwrap_err();
+                assert!(
+                    error.to_string().contains("injected Direct"),
+                    "{boundary:?}: {error}"
+                );
+                drop(fault);
+                drop(session);
+                if boundary == Point::BeforeCheckpoint(DirectPublishPhase::Prepared) {
+                    for _ in 0..3 {
+                        drop(store.begin_read().unwrap());
+                    }
+                    assert_eq!(layout.db_path().exists(), replacement);
+                    assert_eq!(layout.manifest_path().exists(), replacement);
+                    if replacement {
+                        assert_eq!(fs::read(layout.db_path()).unwrap(), b"db-v1");
+                        assert_eq!(fs::read(layout.manifest_path()).unwrap(), b"manifest-v1");
+                    }
+                } else {
+                    // Reinterrupt recovery twice, proving valid promoted sidecars survive replay.
+                    for _ in 0..2 {
+                        let fault = arm(Point::BeforeCheckpoint(DirectPublishPhase::Committed));
+                        assert!(store
+                            .begin_read()
+                            .unwrap_err()
+                            .to_string()
+                            .contains("injected Direct"));
+                        drop(fault);
+                        assert!(layout.journal_path().exists());
+                    }
+                    for _ in 0..3 {
+                        drop(store.begin_read().unwrap());
+                        assert_eq!(
+                            sha256_hex(&fs::read(layout.db_path()).unwrap()),
+                            sha256_hex(b"db-v2")
+                        );
+                        assert_eq!(
+                            sha256_hex(&fs::read(layout.manifest_path()).unwrap()),
+                            sha256_hex(b"manifest-v2")
+                        );
+                        for suffix in DIRECT_DB_SIDECAR_SUFFIXES {
+                            let path = direct_sidecar(layout.db_path(), suffix);
+                            if suffixes.contains(suffix) {
+                                assert_eq!(
+                                    sha256_hex(&fs::read(path).unwrap()),
+                                    sha256_hex(format!("v2-{suffix}").as_bytes())
+                                );
+                            } else {
+                                assert!(!path.exists());
+                            }
+                        }
+                    }
+                }
+                assert!(!layout.journal_path().exists());
+                assert!(!layout.db_candidate_path().exists());
+                assert!(!layout.manifest_candidate_path().exists());
+                for suffix in DIRECT_DB_SIDECAR_SUFFIXES {
+                    assert!(!direct_sidecar(&layout.db_candidate_path(), suffix).exists());
+                }
+                assert_eq!(fs::read(source).unwrap(), b"source stays untouched");
+                fs::remove_dir_all(root).unwrap();
+            }
+        }
+    }
+}
+
+#[test]
+fn direct_prepared_recovery_preserves_expected_sidecars_on_validation_failure() {
+    use storage::direct::faults::{arm, Point};
+    for damage in [
+        "missing",
+        "corrupt",
+        "directory",
+        #[cfg(unix)]
+        "symlink",
+    ] {
+        let root = temp_dir("drbad");
+        let layout = DirectLayout::new(root.join("g.ldb"), root.join("m.json"));
+        let store = DirectStore::new(layout.clone()).unwrap();
+        let mut session = store.begin_write().unwrap();
+        fs::write(session.db_candidate_path(), b"db-v2").unwrap();
+        fs::write(session.manifest_candidate_path(), b"manifest-v2").unwrap();
+        for suffix in ["search.lexicon.bin", "search.postings.bin"] {
+            fs::write(direct_sidecar(&session.db_candidate_path(), suffix), suffix).unwrap();
+        }
+        let fault = arm(Point::BeforeCheckpoint(
+            DirectPublishPhase::DatabasePromoted,
+        ));
+        assert!(session.publish().is_err());
+        drop(fault);
+        drop(session);
+        let damaged = direct_sidecar(layout.db_path(), "search.postings.bin");
+        let protected = root.join("protected-source.rs");
+        fs::write(&protected, b"search.postings.bin").unwrap();
+        let expected_error = match damage {
+            "missing" => {
+                fs::remove_file(&damaged).unwrap();
+                "publish source does not exist"
+            }
+            "directory" => {
+                fs::remove_file(&damaged).unwrap();
+                fs::create_dir(&damaged).unwrap();
+                "not a file"
+            }
+            #[cfg(unix)]
+            "symlink" => {
+                fs::remove_file(&damaged).unwrap();
+                std::os::unix::fs::symlink(&protected, &damaged).unwrap();
+                "symlinked file"
+            }
+            _ => {
+                fs::write(&damaged, b"corrupt").unwrap();
+                "checksum mismatch"
+            }
+        };
+        // A stray unjournaled candidate must not become part of the committed bundle.
+        fs::write(direct_sidecar(&layout.db_candidate_path(), "wal"), b"stray").unwrap();
+        for _ in 0..3 {
+            let error = store.begin_read().unwrap_err();
+            assert!(
+                error.to_string().contains(expected_error),
+                "{damage}: {error}"
+            );
+            assert_eq!(fs::read(&protected).unwrap(), b"search.postings.bin");
+            assert_eq!(
+                fs::read(direct_sidecar(layout.db_path(), "search.lexicon.bin")).unwrap(),
+                b"search.lexicon.bin"
+            );
+            assert!(!direct_sidecar(layout.db_path(), "wal").exists());
+            assert!(layout.journal_path().exists());
+            assert!(!layout.manifest_path().exists());
+        }
+        if damage == "directory" {
+            fs::remove_dir(&damaged).unwrap();
+        } else if damage != "missing" {
+            fs::remove_file(&damaged).unwrap();
+        }
+        fs::write(damaged, b"search.postings.bin").unwrap();
+        drop(store.begin_read().unwrap());
+        assert!(!layout.journal_path().exists());
+        assert!(!direct_sidecar(&layout.db_candidate_path(), "wal").exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+}
+
 #[test]
 fn direct_store_rejects_forged_journal_candidate_paths() {
     let root = temp_dir("direct-store-rejects-forged-journal-candidate-paths");

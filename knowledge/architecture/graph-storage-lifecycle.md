@@ -7,7 +7,7 @@ tags:
 - graph-storage
 - recovery
 - runbook
-timestamp: 2026-08-18
+timestamp: 2026-09-24
 title: Graph Storage Lifecycle and Recovery
 type: architecture
 ---
@@ -89,6 +89,12 @@ A failure records `failed`; a cleanup failure records `cleanup_pending`.
 Normal completion calls explicit `finish`; error paths call explicit `abort`. Both report cleanup errors without masking the primary build error. `Drop` is only a best-effort fallback.
 
 On later runtime entry, the janitor takes the run lease before acting. It removes unlocked pre-publication and published workspaces, completes or rolls back an interrupted publication deterministically from the journal, and leaves locked live runs untouched. Repeated recovery and cleanup are idempotent.
+
+## Direct publication replay
+
+The Direct journal’s `sidecar_sha256` membership defines the sidecars in the new bundle. During Prepared replay, an expected sidecar with no remaining candidate may already have been renamed into place: retain that destination and require its recorded checksum before advancing the journal. Remove obsolete destinations only for sidecars omitted from the journal; never publish an unlisted candidate. A missing or corrupt expected destination keeps recovery failed and the journal available, without deleting valid already-promoted sidecars.
+
+Recovery resumes the recorded publication under the existing exclusive writer lock. Before Prepared is durable, abandonment preserves the prior bundle; after Prepared is durable, recovery completes the new database/sidecar/manifest bundle. Individual shadow and candidate rename boundaries, phase checkpoints, and repeated recovery interruptions are regression-tested. Destination spelling remains part of the journal and lock identity. This does not change the journal format or promise stronger power-loss durability than the existing filesystem sync behavior.
 
 ## Durable partition artifacts
 
