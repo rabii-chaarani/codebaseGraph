@@ -13,6 +13,8 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use yaml_serde::Value as YamlValue;
 
+mod release;
+
 const CONFIRMATIONS: &[&str] = &["release-environment", "private-vulnerability-reporting"];
 const CRATES_IO_PACKAGE_LIMIT_BYTES: u64 = 10 * 1024 * 1024;
 const NATIVE_TARGETS: [NativeTarget; 4] = [
@@ -97,6 +99,7 @@ fn run() -> Result<(), String> {
     match args.next().as_deref() {
         Some("release-gate") => release_gate(args.collect()),
         Some("check-workflows") => check_workflows_command(),
+        Some("release-metadata") => release::metadata_command(args.collect()),
         Some("native-test") => native_test(args.collect()),
         Some("native-artifact") => native_artifact(args.collect()),
         Some("validate-native-artifacts") => validate_native_artifacts(args.collect()),
@@ -1112,11 +1115,10 @@ fn check_workflow_policy(
         );
     }
     if yaml_path(release, &["concurrency", "group"]).and_then(YamlValue::as_str)
-        != Some(
-            "release-${{ github.event_name == 'workflow_run' && 'main' || inputs.publish-existing-tag }}",
-        )
+        != Some("release-main")
         || yaml_path(release, &["concurrency", "cancel-in-progress"]).and_then(YamlValue::as_bool)
             != Some(false)
+        || yaml_path(release, &["concurrency", "queue"]).and_then(YamlValue::as_str) != Some("max")
     {
         issues.push(
             "FAIL: release-concurrency-invalid: automatic releases must serialize as release-main without cancellation."
@@ -1124,128 +1126,139 @@ fn check_workflow_policy(
         );
     }
 
-    let release_please =
-        yaml_path(release, &["jobs", "release-please"]).unwrap_or(&YamlValue::Null);
+    let release_target =
+        yaml_path(release, &["jobs", "release-target"]).unwrap_or(&YamlValue::Null);
     for marker in [
         "github.event_name == 'workflow_run'",
         "github.event.workflow_run.event == 'push'",
         "github.event.workflow_run.head_branch == 'main'",
         "github.event.workflow_run.conclusion == 'success'",
     ] {
-        if !yaml_path(release_please, &["if"])
-            .is_some_and(|condition| yaml_contains_string(condition, marker))
-        {
+        if !yaml_path(release_target, &["if"]).is_some_and(|v| yaml_contains_string(v, marker)) {
             issues.push(format!(
-                "FAIL: release-success-guard-missing: release-please must require {marker}."
+                "FAIL: release-success-guard-missing: target must require {marker}."
             ));
         }
     }
-    let trigger_step = yaml_step_by_id(release_please, "trigger").unwrap_or(&YamlValue::Null);
+    let verified = yaml_step_by_id(release_target, "verified").unwrap_or(&YamlValue::Null);
     for (field, expected) in [
-        ("CI_RUN_ID", "${{ github.event.workflow_run.id }}"),
-        ("CI_HEAD_SHA", "${{ github.event.workflow_run.head_sha }}"),
+        (
+            "ci-run-id",
+            "${{ github.event.workflow_run.id || inputs.resume-ci-run }}",
+        ),
+        ("expected-sha", "${{ github.event.workflow_run.head_sha }}"),
+        (
+            "require-release",
+            "${{ github.event_name == 'workflow_dispatch' }}",
+        ),
     ] {
-        if yaml_path(trigger_step, &["env", field]).and_then(YamlValue::as_str) != Some(expected) {
+        if yaml_path(verified, &["with", field]).and_then(YamlValue::as_str) != Some(expected) {
             issues.push(format!(
-                "FAIL: release-trigger-binding-missing: trigger step {field} must bind {expected}."
+                "FAIL: release-trigger-binding-missing: verified {field} must bind {expected}."
+            ));
+        }
+    }
+    if yaml_path(verified, &["uses"]).and_then(YamlValue::as_str)
+        != Some("./.github/actions/verified-release")
+    {
+        issues.push(
+            "FAIL: release-trigger-binding-missing: use the shared exact-release verifier.".into(),
+        );
+    }
+    let release_please =
+        yaml_path(release, &["jobs", "release-please"]).unwrap_or(&YamlValue::Null);
+    let action = yaml_step_by_id(release_please, "release").unwrap_or(&YamlValue::Null);
+    if yaml_path(action, &["uses"]).and_then(YamlValue::as_str)
+        != Some("googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7")
+    {
+        issues
+            .push("FAIL: release-please-action-missing: retain the pinned proposal action.".into());
+    }
+    if yaml_path(action, &["with", "skip-github-release"]).and_then(YamlValue::as_bool)
+        != Some(true)
+    {
+        issues.push(
+            "FAIL: release-publication-gate-missing: release-please must never create tags.".into(),
+        );
+    }
+    let publisher =
+        yaml_path(release, &["jobs", "publish-release-assets"]).unwrap_or(&YamlValue::Null);
+    let recheck = yaml_step_by_id(publisher, "verified").unwrap_or(&YamlValue::Null);
+    if yaml_path(recheck, &["uses"]).and_then(YamlValue::as_str)
+        != Some("./.github/actions/verified-release")
+        || yaml_path(recheck, &["with", "require-release"]).and_then(YamlValue::as_str)
+            != Some("true")
+        || yaml_path(recheck, &["with", "expected-sha"]).and_then(YamlValue::as_str)
+            != Some("${{ needs.release-target.outputs.source-sha }}")
+        || yaml_path(recheck, &["with", "ci-run-id"]).and_then(YamlValue::as_str)
+            != Some("${{ needs.release-target.outputs.ci-run-id }}")
+    {
+        issues.push("FAIL: release-publication-revalidation-missing: recheck exact CI and release identity before mutation.".into());
+    }
+    let create = yaml_step_by_name(publisher, "Create only the verified release")
+        .unwrap_or(&YamlValue::Null);
+    for marker in [
+        "tag_sha",
+        "SOURCE_SHA",
+        "VERIFIED_PR",
+        "RELEASE_PR",
+        "target_commitish: .source_sha",
+        "git/refs",
+        "make_latest",
+    ] {
+        if !yaml_contains_string(create, marker) {
+            issues.push(format!(
+                "FAIL: release-exact-publisher-missing: creation must preserve {marker}."
             ));
         }
     }
     for marker in [
-        "git/ref/heads/main",
-        "current-tip",
-        "commits/$CI_HEAD_SHA/pulls",
-        ".merged_at != null",
-        ".base.ref == \"main\"",
-        ".head.repo.full_name == $repository",
-        ".head.ref == \"release-please--branches--main--components--codebase-graph\"",
-        "autorelease: pending",
-        "release-merge",
+        "always()",
+        "needs.validate-artifacts.result == 'success'",
+        "needs.release-target.outputs.publish_assets == 'true'",
     ] {
-        if !yaml_path(trigger_step, &["run"]).is_some_and(|run| yaml_contains_string(run, marker)) {
+        if !yaml_path(publisher, &["if"]).is_some_and(|v| yaml_contains_string(v, marker)) {
             issues.push(format!(
-                "FAIL: release-trigger-binding-missing: trigger step must contain {marker}."
+                "FAIL: release-publication-gate-missing: publisher requires {marker}."
             ));
         }
     }
-    let release_action = yaml_step_by_id(release_please, "release").unwrap_or(&YamlValue::Null);
-    if yaml_path(release_action, &["uses"]).and_then(YamlValue::as_str)
-        != Some("googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7")
-    {
-        issues.push(
-            "FAIL: release-please-action-missing: release job must use the pinned release-please action."
-                .to_string(),
-        );
+    let crate_job = yaml_path(release, &["jobs", "publish-crate"]).unwrap_or(&YamlValue::Null);
+    for marker in [
+        "always()",
+        "needs.publish-release-assets.result == 'success'",
+        "needs.release-target.outputs.automatic == 'true'",
+        "needs.release-target.outputs.publish_assets == 'true'",
+    ] {
+        if !yaml_path(crate_job, &["if"]).is_some_and(|v| yaml_contains_string(v, marker)) {
+            issues.push(format!(
+                "FAIL: release-publication-gate-missing: crate job requires {marker}."
+            ));
+        }
     }
-    if yaml_path(release_action, &["with", "skip-github-release"]).and_then(YamlValue::as_str)
-        != Some("${{ steps.trigger.outputs.release-merge != 'true' }}")
-    {
-        issues.push(
-            "FAIL: release-publication-gate-missing: release-please must skip tag publication outside a verified release merge."
-                .to_string(),
-        );
-    }
-    let post_release_step = yaml_step_by_name(
-        release_please,
-        "Recheck current main tip after release-please",
-    )
-    .unwrap_or(&YamlValue::Null);
-    if yaml_path(post_release_step, &["env", "RELEASE_SHA"]).and_then(YamlValue::as_str)
-        != Some("${{ steps.release.outputs.sha }}")
-        || yaml_path(post_release_step, &["env", "RELEASE_MERGE"]).and_then(YamlValue::as_str)
-            != Some("${{ steps.trigger.outputs.release-merge }}")
-        || !yaml_path(post_release_step, &["run"]).is_some_and(|run| {
-            yaml_contains_string(run, "main_sha")
-                && yaml_contains_string(run, "CI_HEAD_SHA")
-                && yaml_contains_string(run, "RELEASE_MERGE")
-                && yaml_contains_string(
-                    run,
-                    "\"$RELEASE_CREATED\" == 'true' && \"$RELEASE_MERGE\" != 'true'",
-                )
-        })
-    {
-        issues.push(
-            "FAIL: release-post-action-freshness-missing: release-please must recheck the current main tip and release SHA."
-                .to_string(),
-        );
-    }
-    if [
-        release_please,
-        yaml_path(release, &["jobs", "release-target"]).unwrap_or(&YamlValue::Null),
+    for job in [
+        release_target,
+        publisher,
         yaml_path(release, &["jobs", "ci-gate"]).unwrap_or(&YamlValue::Null),
-    ]
-    .iter()
-    .any(|value| yaml_contains_string(value, "github.sha"))
-    {
-        issues.push(
-            "FAIL: release-github-sha-forbidden: workflow_run releases must use the triggering CI head SHA."
-                .to_string(),
-        );
-    }
-
-    let release_target =
-        yaml_path(release, &["jobs", "release-target"]).unwrap_or(&YamlValue::Null);
-    let resolve_step = yaml_step_by_id(release_target, "resolve").unwrap_or(&YamlValue::Null);
-    for (field, expected) in [
-        (
-            "RELEASE_CI_RUN_ID",
-            "${{ needs.release-please.outputs.ci-run-id }}",
-        ),
-        (
-            "RELEASE_CI_HEAD_SHA",
-            "${{ needs.release-please.outputs.ci-head-sha }}",
-        ),
     ] {
-        if yaml_path(resolve_step, &["env", field]).and_then(YamlValue::as_str) != Some(expected) {
-            issues.push(format!(
-                "FAIL: release-target-binding-missing: resolve step {field} must bind {expected}."
-            ));
+        if yaml_contains_string(job, "github.sha") {
+            issues.push(
+                "FAIL: release-github-sha-forbidden: source identity must come from verified CI."
+                    .into(),
+            );
         }
     }
-    for marker in ["tag_sha", "source_sha"] {
-        if !yaml_path(resolve_step, &["run"]).is_some_and(|run| yaml_contains_string(run, marker)) {
+    let proposal = yaml_step_by_id(release_please, "proposal").unwrap_or(&YamlValue::Null);
+    for marker in [
+        "main_sha",
+        "actions/workflows/ci.yml/runs",
+        "autorelease: pending",
+        "::error::",
+        "resume-ci-run",
+    ] {
+        if !yaml_contains_string(proposal, marker) {
             issues.push(format!(
-                "FAIL: release-target-binding-missing: resolve step must preserve {marker}."
+                "FAIL: release-proposal-gate-missing: proposal preflight requires {marker}."
             ));
         }
     }
@@ -2369,105 +2382,7 @@ mod tests {
     }
 
     fn valid_release_workflow_text() -> String {
-        r#"on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
-  workflow_dispatch: {}
-concurrency:
-  group: release-${{ github.event_name == 'workflow_run' && 'main' || inputs.publish-existing-tag }}
-  cancel-in-progress: false
-jobs:
-  release-please:
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success' }}
-    outputs:
-      ci-run-id: ${{ steps.trigger.outputs.ci-run-id }}
-      ci-head-sha: ${{ steps.trigger.outputs.ci-head-sha }}
-    steps:
-      - id: trigger
-        env:
-          CI_RUN_ID: ${{ github.event.workflow_run.id }}
-          CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          associated_pulls="$(gh api "repos/$GITHUB_REPOSITORY/commits/$CI_HEAD_SHA/pulls")"
-          release_merge_count="$(jq -r --arg repository "$GITHUB_REPOSITORY" '[.[] | select(.merged_at != null) | select(.base.ref == "main") | select(.head.repo.full_name == $repository) | select(.head.ref == "release-please--branches--main--components--codebase-graph") | select([.labels[].name] | index("autorelease: pending") != null)] | length' <<<"$associated_pulls")"
-          echo 'current-tip=true'
-          echo 'release-merge=true'
-      - id: release
-        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
-        with:
-          skip-github-release: ${{ steps.trigger.outputs.release-merge != 'true' }}
-      - name: Recheck current main tip after release-please
-        env:
-          RELEASE_MERGE: ${{ steps.trigger.outputs.release-merge }}
-          RELEASE_SHA: ${{ steps.release.outputs.sha }}
-        run: |
-          main_sha=current
-          test "$main_sha" = "$CI_HEAD_SHA"
-          if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_MERGE" != 'true' ]]; then exit 1; fi
-  release-target:
-    outputs:
-      ci-run-id: ${{ steps.resolve.outputs.ci-run-id }}
-    steps:
-      - id: resolve
-        env:
-          RELEASE_CI_RUN_ID: ${{ needs.release-please.outputs.ci-run-id }}
-          RELEASE_CI_HEAD_SHA: ${{ needs.release-please.outputs.ci-head-sha }}
-        run: |
-          tag_sha=tag
-          source_sha=source
-  ci-gate:
-    permissions: {actions: read}
-    outputs: {ci-run-id: x}
-    steps:
-      - id: wait
-        env:
-          REQUESTED_CI_RUN_ID: ${{ needs.release-target.outputs.ci-run-id }}
-          AUTOMATIC: ${{ needs.release-target.outputs.automatic }}
-        run: |
-          if [[ "$AUTOMATIC" == 'true' ]]; then
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_CI_RUN_ID"
-            jq '.path == ".github/workflows/ci.yml" and .event == "push" and .head_branch == "main" and .status == "completed" and .conclusion == "success"'
-          fi
-  select-artifacts:
-    steps:
-      - id: select
-        env:
-          AUTOMATIC: ${{ needs.release-target.outputs.automatic }}
-        run: |
-          if [[ "$AUTOMATIC" == 'false' && "$ARTIFACT_SOURCE" == 'rebuild-if-missing' ]]; then
-            echo rebuild
-          fi
-  rebuild-artifacts: {uses: './.github/workflows/native.yml'}
-  publish-release-assets:
-    permissions: {contents: write}
-    environment: {name: cargo}
-    steps: [{run: 'gh release upload'}]
-  publish-crate:
-    steps:
-      - {run: 'cargo publish --dry-run --locked'}
-      - {run: 'cargo package --locked --no-verify && cargo run -p xtask -- verify-crate-size package.crate'}
-      - name: Publish crates.io package
-        shell: bash
-        env:
-          CRATE_NAME: codebase-graph
-          CRATE_VERSION: ${{ needs.release-target.outputs.version }}
-        run: |
-          version_is_published() {
-            curl -fsS "https://crates.io/api/v1/crates/$CRATE_NAME/$CRATE_VERSION"
-          }
-          if version_is_published; then exit 0; fi
-          max_attempts=4
-          for (( attempt=1; attempt<=max_attempts; attempt++ )); do
-            if cargo publish --locked; then exit 0; fi
-            if version_is_published; then exit 0; fi
-            sleep_seconds=$((15 * attempt))
-            sleep "$sleep_seconds"
-          done
-"#
-        .to_string()
+        include_str!("../../../.github/workflows/release.yml").to_string()
     }
 
     fn workflow_policy_issues(release_text: &str) -> Vec<String> {
@@ -2491,8 +2406,8 @@ jobs:
     #[test]
     fn workflow_policy_rejects_direct_release_push_trigger() {
         let broken = valid_release_workflow_text().replace(
-            "  workflow_dispatch: {}",
-            "  push: {branches: [main]}\n  workflow_dispatch: {}",
+            "  workflow_dispatch:",
+            "  push: {branches: [main]}\n  workflow_dispatch:",
         );
         let issues = workflow_policy_issues(&broken);
         assert!(
@@ -2536,7 +2451,7 @@ jobs:
     #[test]
     fn workflow_policy_rejects_missing_triggering_run_binding() {
         let broken = valid_release_workflow_text().replace(
-            "${{ github.event.workflow_run.id }}",
+            "${{ github.event.workflow_run.id || inputs.resume-ci-run }}",
             "${{ github.run_id }}",
         );
         let issues = workflow_policy_issues(&broken);
@@ -2549,85 +2464,60 @@ jobs:
     }
 
     #[test]
-    fn workflow_policy_rejects_missing_post_action_freshness_check() {
-        let broken = valid_release_workflow_text().replace(
-            "Recheck current main tip after release-please",
-            "Do something unrelated",
-        );
-        let issues = workflow_policy_issues(&broken);
-        assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("release-post-action-freshness-missing")),
-            "{issues:?}"
-        );
-    }
-
-    #[test]
     fn workflow_policy_rejects_unconditional_release_publication() {
-        let broken = valid_release_workflow_text().replace(
-            "${{ steps.trigger.outputs.release-merge != 'true' }}",
-            "false",
-        );
-        let issues = workflow_policy_issues(&broken);
-        assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("release-publication-gate-missing")),
-            "{issues:?}"
-        );
+        let broken = valid_release_workflow_text()
+            .replace("skip-github-release: true", "skip-github-release: false");
+        assert!(workflow_policy_issues(&broken)
+            .iter()
+            .any(|x| x.contains("release-publication-gate-missing")));
     }
 
     #[test]
-    fn workflow_policy_rejects_missing_release_merge_detection() {
-        let broken = valid_release_workflow_text().replace(
-            ".head.ref == \"release-please--branches--main--components--codebase-graph\"",
-            "ordinary-feature-branch",
-        );
-        let issues = workflow_policy_issues(&broken);
-        assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("release-trigger-binding-missing")),
-            "{issues:?}"
-        );
-    }
-
-    #[test]
-    fn workflow_policy_rejects_untrusted_release_merge_identity() {
-        for (trusted, untrusted) in [
+    fn workflow_policy_requires_publication_revalidation() {
+        for (old, new) in [
+            ("require-release: 'true'", "require-release: 'false'"),
             (
-                ".head.repo.full_name == $repository",
-                ".head.repo.full_name != $repository",
+                "expected-sha: ${{ needs.release-target.outputs.source-sha }}",
+                "expected-sha: unverified",
             ),
-            ("autorelease: pending", "ordinary-label"),
-            (".merged_at != null", ".merged_at == null"),
-            (".base.ref == \"main\"", ".base.ref == \"other\""),
+            (
+                "ci-run-id: ${{ needs.release-target.outputs.ci-run-id }}",
+                "ci-run-id: unverified",
+            ),
         ] {
-            let broken = valid_release_workflow_text().replace(trusted, untrusted);
-            let issues = workflow_policy_issues(&broken);
+            let broken = valid_release_workflow_text().replace(old, new);
             assert!(
-                issues
+                workflow_policy_issues(&broken)
                     .iter()
-                    .any(|issue| issue.contains("release-trigger-binding-missing")),
-                "{trusted}: {issues:?}"
+                    .any(|x| x.contains("release-publication-revalidation-missing")),
+                "{old}"
             );
         }
     }
 
     #[test]
-    fn workflow_policy_rejects_missing_post_action_release_merge_guard() {
-        let broken = valid_release_workflow_text().replace(
-            "\"$RELEASE_CREATED\" == 'true' && \"$RELEASE_MERGE\" != 'true'",
-            "\"$RELEASE_CREATED\" == 'true' && \"$RELEASE_MERGE\" == 'true'",
-        );
-        let issues = workflow_policy_issues(&broken);
-        assert!(
-            issues
-                .iter()
-                .any(|issue| issue.contains("release-post-action-freshness-missing")),
-            "{issues:?}"
-        );
+    fn workflow_policy_rejects_unvalidated_publishers() {
+        for old in [
+            "needs.validate-artifacts.result == 'success'",
+            "needs.publish-release-assets.result == 'success'",
+            "needs.release-target.outputs.automatic == 'true'",
+        ] {
+            let broken = valid_release_workflow_text().replace(old, "true");
+            assert!(
+                workflow_policy_issues(&broken)
+                    .iter()
+                    .any(|x| x.contains("release-publication-gate-missing")),
+                "{old}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_policy_rejects_release_queue_replacement() {
+        let broken = valid_release_workflow_text().replace("queue: max", "queue: single");
+        assert!(workflow_policy_issues(&broken)
+            .iter()
+            .any(|x| x.contains("release-concurrency-invalid")));
     }
 
     #[test]
@@ -2663,8 +2553,8 @@ jobs:
         }
 
         let broken = valid_release_workflow_text().replacen(
-            "if version_is_published; then exit 0; fi",
-            "if false; then exit 0; fi",
+            "if version_is_published; then",
+            "if false; then",
             1,
         );
         let issues = workflow_policy_issues(&broken);
@@ -2678,10 +2568,8 @@ jobs:
 
     #[test]
     fn workflow_policy_rejects_missing_crate_size_gates() {
-        let broken_release = valid_release_workflow_text().replace(
-            "cargo package --locked --no-verify && cargo run -p xtask -- verify-crate-size package.crate",
-            "echo size unchecked",
-        );
+        let broken_release = valid_release_workflow_text()
+            .replace("cargo package --locked --no-verify", "echo size unchecked");
         let issues = workflow_policy_issues(&broken_release);
         assert!(
             issues

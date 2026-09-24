@@ -1,14 +1,14 @@
 # Release Process
 
-`codebaseGraph` releases are managed by release-please. Main-branch CI builds and smoke-tests the complete native
-archives. The Release workflow starts only after that entire CI workflow completes. A successful current-tip `main`
-push lets release-please create or update its release pull request; merging that pull request creates a strict `vX.Y.Z`
-tag, validates and promotes the triggering CI run's retained artifacts, and publishes `codebase-graph` to crates.io.
-Failed, cancelled, pull-request, and non-main completions perform no release mutation. A completion that is already stale
-is skipped before release-please; if `main` advances while release-please is running, a post-action guard stops all asset
-and crate publication. Successful CI for an ordinary main commit may create or update the release proposal, but it runs
-release-please with tag creation disabled. Tag and GitHub Release publication is enabled only when the successful CI SHA
-is the merge commit of a release-please pull request.
+Release-please manages version pull requests and changelogs. Publication is bound to the successful `main` CI run
+for the exact release-PR merge commit. Subsequent merges do not invalidate that release while its commit remains
+on `main`. The workflow validates all four retained native artifacts before creating its tag and GitHub Release,
+then publishes the crate from the same source SHA. Release-please itself always runs with tag creation disabled.
+
+Failed CI, ordinary commits, ambiguous release PRs, and commits removed from main history cannot authorize publication.
+After native assets and the crate succeed, the specific release PR is marked tagged and proposal maintenance resumes.
+An outstanding merged pending-release PR is reported as a blocked workflow with its recovery instruction, not a silent
+successful no-op. All automatic and manual runs serialize in `release-main`, with cancellation disabled and `queue: max`.
 
 ## One-Time Setup
 
@@ -22,6 +22,12 @@ Set these `cargo` environment variables to `true` only after the corresponding o
 - `CODEBASE_GRAPH_REQUIRE_CONDA`, only when conda-forge publication is part of the release
 
 Add a `CARGO_REGISTRY_TOKEN` secret with permission to publish the `codebase-graph` crate.
+
+The publisher uses `GITHUB_TOKEN` unless `RELEASE_PUBLISH_TOKEN` is configured in the `cargo` environment.
+Historical tags whose workflow files differ from current main may require a repository-scoped token with Contents and
+Workflows write permissions. The workflow fails clearly if GitHub refuses the exact tag; it never substitutes a newer
+commit. An owner can instead create the exact verified tag/release after a successful recovery dry-run, then resume
+asset and crate publication. Never copy a local CLI login token into repository secrets as part of recovery.
 
 ## CI
 
@@ -43,22 +49,17 @@ Pull requests targeting `main` and pushes to `main` run:
 
 ## Release Flow
 
-1. Merge normal pull requests into `main` with Conventional Commit-style titles or squash commit messages.
-2. After the complete `CI` push workflow succeeds, `Release` verifies that its triggering run is the current `main` tip
-   and requires exactly one associated merged pull request from the repository-owned release-please branch with its
-   pending-release label before enabling publication. Ordinary commits allow release-please to manage release proposals
-   with tag creation disabled.
-3. Release-please opens or updates a release pull request that changes `CHANGELOG.md`, `.release-please-manifest.json`,
-   root `Cargo.toml`, and `crates/k-wiki/Cargo.toml` together.
-4. Review and merge the release pull request when ready to publish. Its `main` CI must complete successfully like any
-   other merge.
-5. The successful CI run for the release pull request merge enables tag creation. The resulting Release run creates the
-   `vX.Y.Z` tag, proves that the tag resolves to the triggering CI SHA, validates all four
-   archives/checksums/provenance records from that exact run, and uploads the public assets from one publisher.
-6. `cargo publish --dry-run --locked` runs at the immutable tag, then the crate publishes automatically after native
-   assets succeed. The upload uses bounded backoff and checks the exact immutable version before and after failures, so
-   a transient registry error or a lost success response can be retried safely. Manual recovery never publishes the
-   crate.
+1. Merge ordinary PRs into `main`. Once current-main CI succeeds, release-please creates or updates the release PR.
+2. Review and merge that release PR. Its merge commit must pass the entire `CI` push workflow.
+3. Release verifies the run's repository, workflow path, event, branch, status, SHA, and exact trusted release PR identity.
+   The merge SHA must still be in main history; it need not be the latest main commit.
+4. Immutable metadata must agree across the root package, wiki package/dependency, release manifest, and changelog.
+   Production checks and all four native artifacts are validated before any tag or release is created.
+5. The single publisher creates only `vX.Y.Z` at that SHA, uploads the validated archives, and publishes the crate.
+   Existing matching tags/releases can be resumed. Conflicting tags fail without being moved. Delayed older versions
+   do not replace newer versions as GitHub's latest release.
+6. After both publishers succeed, mark that PR `autorelease: tagged`, remove `autorelease: pending`, and run proposal
+   maintenance if current main has successful CI. Ordinary runs never tag an outstanding release as a side effect.
 
 Cargo's package verification compiles the extracted source package with the `dev` profile by default. That compile is
 not a distributed binary. The native GitHub Release archives are built separately with `cargo build --release`, and
@@ -76,7 +77,7 @@ and provenance contract.
 
 Before publishing a production release, confirm:
 
-- The exact tagged commit is the current `main` tip and matches the completed successful `ci.yml` push run that triggered
+- The exact tagged commit remains in `main` history and matches the completed successful `ci.yml` push run that triggered
   Release, including Rust tests, formatting, linting, native package builds, advisory scanning, package dry-run, and
   artifact smoke.
 - Native Rust CLI and MCP entrypoints are required in production artifacts.
@@ -123,16 +124,24 @@ commit SHA, version, and target. `provenance.json` is validation metadata and is
 
 ## Manual validation and recovery
 
-Run the `Release` workflow manually with an existing strict tag:
+Dispatch `Release` on `main` with exactly one target:
 
-- `artifact-source: promote` requires all four exact-SHA CI artifacts to remain available.
-- `artifact-source: rebuild-if-missing` rebuilds **all four** targets through the same native workflow when any retained
-  artifact is missing or expired. It never mixes promoted and rebuilt targets.
-- `dry-run: true` performs exact-SHA gating, promotion or recovery, archive/checksum/provenance validation, extraction,
-  and smoke checks without modifying a GitHub Release or publishing Cargo.
+- `resume-ci-run`: the successful main-push CI run of a trusted release PR merge. This can create a missing tag/release
+  and resumes both native assets and crates.io. It reuses the exact CI run and requires `artifact-source: promote`.
+- `publish-existing-tag`: an existing strict `vX.Y.Z` tag. This legacy mode publishes native assets only and searches
+  for successful main-push CI at its exact SHA. It never publishes a crate or changes release PR labels.
 
-Every manual mode still searches for and requires successful CI for the exact tag commit. Automatic mode never searches
-for a substitute run: it validates and consumes the triggering run directly. Use dry-run first when exercising recovery.
+`dry-run` defaults to `true`. It resolves identity, runs the production gate, acquires artifacts, and validates the full
+archive/checksum/provenance set without creating tags, releases, labels, proposals, or publishing crates. After checking
+the successful dry-run, dispatch the same target with `dry-run: false` to publish.
+
+For existing-tag recovery, `artifact-source: rebuild-if-missing` rebuilds **all four** targets with the shared native
+workflow if any retained artifact is unavailable. It never mixes promoted and rebuilt artifacts. Automatic and CI-run
+recovery never substitute a run or rebuild missing artifacts.
+
+To recover a blocked release, locate its merge SHA and successful `CI` run, dispatch a `resume-ci-run` dry-run, then
+publish that exact target. Do not clear the pending label to bypass the block. Once finalization succeeds, later merged
+changes can enter the next release PR. Repeating the same target is safe after a partial upload or lost response.
 
 The packaged installer validates both binaries against `checksums.txt`, runs
 `codebase-graph --help` plus `k-wiki --version`, and only then atomically

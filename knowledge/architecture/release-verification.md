@@ -1,5 +1,5 @@
 ---
-description: Build-once promotion, CI-completion release orchestration, exact-run gating, and manual recovery.
+description: Exact-commit publication, retained CI artifact promotion, proposal maintenance, and verified recovery.
 resource: repository-architecture
 tags:
 - architecture
@@ -7,7 +7,7 @@ tags:
 - ci
 - provenance
 - release
-timestamp: 2026-08-24
+timestamp: 2026-09-24
 title: Native Release Verification
 type: architecture
 ---
@@ -40,15 +40,19 @@ Pull requests validate artifacts without retaining them. Main pushes retain all 
 
 ## Automatic release orchestration
 
-The Release workflow is triggered by completion of the `CI` workflow on `main`, not independently by a branch push. Release-please runs only when the triggering workflow was a completed successful `push` run on `main` and its `head_sha` is still the current `main` tip. Before invoking release-please, the workflow classifies whether that SHA belongs to exactly one merged pull request targeting `main` from the repository-owned release-please branch with the pending-release label; ambiguous or untrusted identities fail closed. Ordinary successful commits run release-please with GitHub Release and tag creation disabled, allowing proposal maintenance without publishing a stale pending release. Only a successful release-merge commit enables tag creation. Failed, cancelled, pull-request, and non-main completions may create a skipped Release workflow record but cannot mutate release state. A completion that is already stale is rejected before release-please. Because GitHub does not provide an atomic branch-tip check plus action invocation, the workflow rechecks the current tip, release classification, and release SHA immediately after release-please; if `main` advanced during the action, all artifact and crate publication stops.
+The Release workflow starts after successful main-push CI completes. It binds publication to the triggering run ID and SHA and revalidates the repository, workflow path, event, branch, status, and conclusion through GitHub. Exactly one repository-owned release-please PR must have that exact merge SHA, target main, and carry the pending or tagged release label. The commit must remain in main history; subsequent ordinary merges do not invalidate its release. Failed, unrelated, ambiguous, or removed commits cannot authorize publication.
 
-Automatic mode binds release identity directly to `github.event.workflow_run.id` and `github.event.workflow_run.head_sha`. It revalidates that run's workflow path, event, branch, status, conclusion, and SHA, and it requires any release-please tag to resolve to that same SHA. If a release-merge commit fails CI, a later ordinary commit cannot publish its pending tag; the corrected release must be represented by a new release pull request whose merge commit passes CI. Automatic mode never uses `github.sha`, polls for a substitute CI run, or rebuilds missing artifacts. Automatic runs serialize in the `release-main` concurrency group without cancellation, so only a successful current-tip completion owns orchestration.
+Release-please only maintains version proposals and always has tag creation disabled. The targeted publisher handles one verified release, after production and complete-artifact validation. It derives version and release notes from the immutable checkout; the root package, wiki package and dependency, release manifest, and changelog must agree. Existing matching tags/releases can be retried, conflicting tags fail without being moved, and delayed older versions cannot replace newer versions as latest.
+
+Only after native assets and the crate succeed does finalization mark the selected PR tagged. Proposal maintenance requires successful current-main CI and explicitly fails with recovery instructions when merged pending release PRs still block the sequence. It never silently tags those other releases. Automatic and manual runs share the non-cancelling release-main concurrency group with queue: max, avoiding replacement of pending release work.
+
+The workflow implementation checkout uses github.workflow_sha; source identity always comes from verified CI or an existing tag. CI-run recovery can therefore validate old source commits using the current metadata helper. Artifact building and source package checks still use the immutable release source.
 
 ## Release promotion
 
 Automatic publication downloads all four retained internal artifacts from the exact CI run that triggered Release. A single validation job verifies target completeness, provenance, versions, digests, extraction, installers, and packaged behavior. Missing or expired artifacts stop automatic publication.
 
-Only the single asset publisher receives `contents: write`; it uploads the already validated complete set. Crate publication is automatic-release-only, remains protected by the `cargo` environment, and starts after native asset publication succeeds. The environment restricts deployments to `main` but has no required reviewers, so publication remains unattended.
+The single asset publisher creates the exact tag and GitHub Release and uploads the validated complete set. Crate publication is allowed for automatic releases and explicit CI-run recovery, remains protected by the `cargo` environment, and starts after native asset publication succeeds. Existing-tag manual recovery remains native-assets-only. The environment restricts deployments to `main` but has no required reviewers, so publication remains unattended.
 
 Crate upload is bounded and registry-aware. The publisher checks whether the exact immutable version already exists before uploading, retries transient failures with backoff, and checks again after every failed response so an accepted upload with a lost response is treated as success. Cargo's package verification may compile the extracted source package with the `dev` profile; that is not a distributed binary. Native release archives remain separate `--release` builds produced and smoked by the artifact contract.
 
@@ -56,14 +60,14 @@ The compressed crates.io source package must not exceed 10 MiB. CI and Release v
 
 ## Recovery and dry-run
 
-Manual dispatch always requires an existing tag and exact-SHA successful CI. Unlike automatic mode, manual recovery may search for the successful CI run for that tag SHA and wait for a concurrently running match for a bounded period:
+Manual dispatch on main requires exactly one target:
 
-- `promote` fails if any retained artifact is unavailable.
-- `rebuild-if-missing` is manual-only and rebuilds all four targets through the same reusable workflow. Promoted and rebuilt targets are never mixed.
-- `dry-run` performs resolution, gating, artifact acquisition, validation, extraction, and smoke checks without modifying a GitHub release or publishing crates.
-- Manual execution never publishes a crate.
+- resume-ci-run selects the release merge's own successful CI run, requires promotion of its retained artifacts, and can resume both native assets and crates.io, including creating a missing tag/release.
+- publish-existing-tag selects an existing strict tag, locates exact-SHA successful main-push CI, and republishes native assets only. It retains manual-only rebuild-if-missing, which rebuilds all four targets without mixing artifact sources.
 
-Manual release concurrency is scoped to the tag with cancellation disabled so duplicate attempts cannot race publication.
+Dry-run defaults to true and executes identity, production, and artifact checks without creating tags, releases, labels, proposals, or publishing crates. Dispatch the same target with dry-run false only after validation. Automatic and CI-run recovery never substitute a run or rebuild missing artifacts. Complete recovery finalizes the release PR before the next proposal is maintained; do not remove a pending label merely to suppress release-please's outstanding-release warning.
+
+The asset publisher prefers the cargo environment's optional RELEASE_PUBLISH_TOKEN, falling back to GITHUB_TOKEN. Historical targets that differ from current main's workflow files may require a repository-scoped token with Contents and Workflows write permissions. If no such token is configured, an owner can create the exact tag/release after a successful dry-run and then resume the same target. Never copy a local CLI login credential into Actions secrets as a recovery shortcut.
 
 ## Change discipline
 
