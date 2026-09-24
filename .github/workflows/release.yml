@@ -2,35 +2,35 @@ name: Release
 
 on:
   workflow_run:
-    workflows:
-      - CI
-    types:
-      - completed
-    branches:
-      - main
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       publish-existing-tag:
-        description: Existing vX.Y.Z tag to validate or re-publish.
-        required: true
+        description: Existing vX.Y.Z tag for native-assets-only recovery (exclusive with resume-ci-run).
+        required: false
+        type: string
+      resume-ci-run:
+        description: Successful main CI run for a release merge; resumes native assets and crates.io.
+        required: false
         type: string
       artifact-source:
-        description: Promote retained CI artifacts or rebuild all targets when any are missing.
+        description: Existing-tag recovery only; CI-run recovery always promotes the exact run.
         required: true
         type: choice
         default: promote
-        options:
-          - promote
-          - rebuild-if-missing
+        options: [promote, rebuild-if-missing]
       dry-run:
-        description: Validate the full release without publishing GitHub or Cargo assets.
+        description: Validate without creating tags, releases, labels, PRs, or publishing packages.
         required: true
         type: boolean
-        default: false
+        default: true
 
 concurrency:
-  group: release-${{ github.event_name == 'workflow_run' && 'main' || inputs.publish-existing-tag }}
+  group: release-main
   cancel-in-progress: false
+  queue: max
 
 permissions:
   contents: read
@@ -40,115 +40,57 @@ env:
   CARGO_NET_RETRY: "10"
 
 jobs:
-  release-please:
-    name: release please
-    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      release-created: ${{ steps.release.outputs.release_created }}
-      tag-name: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.release.outputs.version }}
-      ci-run-id: ${{ steps.trigger.outputs.ci-run-id }}
-      ci-head-sha: ${{ steps.trigger.outputs.ci-head-sha }}
-    steps:
-      - name: Verify successful CI is for the current main tip
-        id: trigger
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CI_RUN_ID: ${{ github.event.workflow_run.id }}
-          CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          set -euo pipefail
-          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          if [[ "$main_sha" != "$CI_HEAD_SHA" ]]; then
-            echo "Skipping stale CI completion for $CI_HEAD_SHA; current main is $main_sha."
-            echo 'current-tip=false' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          associated_pulls="$(gh api \
-            -H 'Accept: application/vnd.github+json' \
-            "repos/$GITHUB_REPOSITORY/commits/$CI_HEAD_SHA/pulls")"
-          release_merge_count="$(jq -r \
-            --arg repository "$GITHUB_REPOSITORY" \
-            '[.[]
-              | select(.merged_at != null)
-              | select(.base.ref == "main")
-              | select(.head.repo.full_name == $repository)
-              | select(.head.ref == "release-please--branches--main--components--codebase-graph")
-              | select([.labels[].name] | index("autorelease: pending") != null)]
-             | length' <<<"$associated_pulls")"
-          [[ "$release_merge_count" -le 1 ]] || {
-            echo "Expected at most one release-please pull request for $CI_HEAD_SHA; found $release_merge_count." >&2
-            exit 1
-          }
-          if [[ "$release_merge_count" == '1' ]]; then
-            release_merge=true
-          else
-            release_merge=false
-          fi
-          {
-            echo 'current-tip=true'
-            echo "ci-run-id=$CI_RUN_ID"
-            echo "ci-head-sha=$CI_HEAD_SHA"
-            echo "release-merge=$release_merge"
-          } >> "$GITHUB_OUTPUT"
-      - name: Create release pull request or GitHub release
-        id: release
-        if: steps.trigger.outputs.current-tip == 'true'
-        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
-        with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-          skip-github-release: ${{ steps.trigger.outputs.release-merge != 'true' }}
-      - name: Recheck current main tip after release-please
-        if: steps.trigger.outputs.current-tip == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CI_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          RELEASE_MERGE: ${{ steps.trigger.outputs.release-merge }}
-          RELEASE_CREATED: ${{ steps.release.outputs.release_created }}
-          RELEASE_SHA: ${{ steps.release.outputs.sha }}
-        run: |
-          set -euo pipefail
-          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          [[ "$main_sha" == "$CI_HEAD_SHA" ]] || {
-            echo "Main advanced to $main_sha while release-please was running; stopping publication for $CI_HEAD_SHA." >&2
-            exit 1
-          }
-          if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_MERGE" != 'true' ]]; then
-            echo "Release-please created a release outside a verified release merge." >&2
-            exit 1
-          fi
-          if [[ "$RELEASE_CREATED" == 'true' && "$RELEASE_SHA" != "$CI_HEAD_SHA" ]]; then
-            echo "Release-please created a release for $RELEASE_SHA, not triggering CI SHA $CI_HEAD_SHA." >&2
-            exit 1
-          fi
-
   release-target:
-    name: resolve release target
-    needs: release-please
-    if: ${{ always() && (github.event_name == 'workflow_dispatch' || needs.release-please.result == 'success') }}
+    name: resolve verified release target
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      actions: read
       contents: read
+      pull-requests: read
     outputs:
       should-publish: ${{ steps.resolve.outputs.should-publish }}
       automatic: ${{ steps.resolve.outputs.automatic }}
       tag-name: ${{ steps.resolve.outputs.tag-name }}
       version: ${{ steps.resolve.outputs.version }}
       source-sha: ${{ steps.resolve.outputs.source-sha }}
+      release-pr: ${{ steps.verified.outputs.release-pr }}
       publish_assets: ${{ steps.resolve.outputs.publish_assets }}
       artifact-source: ${{ steps.resolve.outputs.artifact-source }}
       ci-run-id: ${{ steps.resolve.outputs.ci-run-id }}
+      dry-run: ${{ steps.resolve.outputs.dry-run }}
     steps:
+      - name: Check out workflow implementation
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.workflow_sha }}
+      - name: Validate recovery inputs
+        shell: bash
+        env:
+          MANUAL_TAG: ${{ inputs.publish-existing-tag }}
+          RESUME_CI_RUN: ${{ inputs.resume-ci-run }}
+          MANUAL_SOURCE: ${{ inputs.artifact-source }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+            [[ -n "$MANUAL_TAG" && -z "$RESUME_CI_RUN" || -z "$MANUAL_TAG" && -n "$RESUME_CI_RUN" ]] || {
+              echo 'Choose exactly one of publish-existing-tag and resume-ci-run.' >&2; exit 1;
+            }
+            [[ -z "$RESUME_CI_RUN" || "$MANUAL_SOURCE" == 'promote' ]] || {
+              echo 'CI-run recovery must promote the verified artifacts.' >&2; exit 1;
+            }
+          fi
+      - name: Verify exact CI and release merge
+        id: verified
+        if: github.event_name == 'workflow_run' || inputs.resume-ci-run != ''
+        uses: ./.github/actions/verified-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          ci-run-id: ${{ github.event.workflow_run.id || inputs.resume-ci-run }}
+          expected-sha: ${{ github.event.workflow_run.head_sha }}
+          require-release: ${{ github.event_name == 'workflow_dispatch' }}
       - name: Resolve tag and source SHA
         id: resolve
         shell: bash
@@ -157,57 +99,41 @@ jobs:
           MANUAL_TAG: ${{ inputs.publish-existing-tag }}
           MANUAL_SOURCE: ${{ inputs.artifact-source }}
           MANUAL_DRY_RUN: ${{ inputs.dry-run }}
-          RELEASE_CREATED: ${{ needs.release-please.outputs.release-created }}
-          RELEASE_TAG: ${{ needs.release-please.outputs.tag-name }}
-          RELEASE_CI_RUN_ID: ${{ needs.release-please.outputs.ci-run-id }}
-          RELEASE_CI_HEAD_SHA: ${{ needs.release-please.outputs.ci-head-sha }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id || inputs.resume-ci-run }}
+          VERIFIED_SHA: ${{ steps.verified.outputs.source-sha }}
+          RELEASE_PR: ${{ steps.verified.outputs.release-pr }}
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' ]]; then
+          tag=''
+          source_sha="$VERIFIED_SHA"
+          ci_run_id="$CI_RUN_ID"
+          should_publish=false
+          automatic=false
+          artifact_source=promote
+          dry_run=false
+          [[ "$GITHUB_EVENT_NAME" != 'workflow_dispatch' ]] || dry_run="$MANUAL_DRY_RUN"
+          if [[ -n "$MANUAL_TAG" ]]; then
             tag="$MANUAL_TAG"
-            [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag: $tag" >&2; exit 1; }
-            source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
-            object_type="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.type')"
-            if [[ "$object_type" == 'tag' ]]; then
+            [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid release tag.' >&2; exit 1; }
+            ref="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag")"
+            source_sha="$(jq -r .object.sha <<<"$ref")"
+            if [[ "$(jq -r .object.type <<<"$ref")" == 'tag' ]]; then
               source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$source_sha" --jq '.object.sha')"
             fi
-            automatic=false
-            should_publish=true
-            dry_run="$MANUAL_DRY_RUN"
-            if [[ "$dry_run" == 'true' ]]; then
-              publish_assets=false
-            else
-              publish_assets=true
-            fi
-            artifact_source="$MANUAL_SOURCE"
             ci_run_id=''
-          elif [[ "$RELEASE_CREATED" == 'true' ]]; then
-            tag="$RELEASE_TAG"
-            source_sha="$RELEASE_CI_HEAD_SHA"
-            ci_run_id="$RELEASE_CI_RUN_ID"
-            [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid triggering CI SHA: $source_sha" >&2; exit 1; }
-            [[ "$ci_run_id" =~ ^[0-9]+$ ]] || { echo "Invalid triggering CI run ID: $ci_run_id" >&2; exit 1; }
-            tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
-            object_type="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.type')"
-            if [[ "$object_type" == 'tag' ]]; then
-              tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" --jq '.object.sha')"
-            fi
-            [[ "$tag_sha" == "$source_sha" ]] || { echo "Release tag $tag resolves to $tag_sha, not triggering CI SHA $source_sha." >&2; exit 1; }
+            should_publish=true
+            artifact_source="$MANUAL_SOURCE"
+          elif [[ -n "$RELEASE_PR" ]]; then
+            manifest="$(gh api "repos/$GITHUB_REPOSITORY/contents/.release-please-manifest.json?ref=$source_sha" --jq .content | base64 --decode)"
+            version="$(jq -er '.["."]' <<<"$manifest")"
+            tag="v$version"
+            [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid release manifest version.' >&2; exit 1; }
             automatic=true
             should_publish=true
-            dry_run=false
-            publish_assets=true
-            artifact_source=promote
-          else
-            tag=''
-            source_sha=''
-            automatic=false
-            should_publish=false
-            dry_run=true
-            publish_assets=false
-            artifact_source=promote
-            ci_run_id=''
           fi
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid source SHA.' >&2; exit 1; }
+          publish_assets=false
+          [[ "$should_publish" != 'true' || "$dry_run" == 'true' ]] || publish_assets=true
           {
             echo "should-publish=$should_publish"
             echo "automatic=$automatic"
@@ -217,7 +143,33 @@ jobs:
             echo "publish_assets=$publish_assets"
             echo "artifact-source=$artifact_source"
             echo "ci-run-id=$ci_run_id"
+            echo "dry-run=$dry_run"
           } >> "$GITHUB_OUTPUT"
+          echo "Source: $source_sha; CI: $ci_run_id; release PR: ${RELEASE_PR:-none}; tag: ${tag:-none}; dry run: $dry_run" >> "$GITHUB_STEP_SUMMARY"
+      - name: Check out immutable metadata source
+        if: steps.resolve.outputs.automatic == 'true'
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ steps.resolve.outputs.source-sha }}
+          path: release-source
+      - name: Prepare immutable release metadata
+        if: steps.resolve.outputs.automatic == 'true'
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.resolve.outputs.source-sha }}
+          RELEASE_TAG: ${{ steps.resolve.outputs.tag-name }}
+        run: |
+          set -euo pipefail
+          cargo run -p xtask --locked -- release-metadata --source-sha "$SOURCE_SHA" --source-dir release-source > release-metadata.json
+          jq -e --arg sha "$SOURCE_SHA" --arg tag "$RELEASE_TAG" '.source_sha == $sha and .tag_name == $tag' release-metadata.json >/dev/null
+      - name: Retain immutable release metadata
+        if: steps.resolve.outputs.automatic == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-metadata
+          path: release-metadata.json
+          if-no-files-found: error
+          retention-days: 7
 
   ci-gate:
     name: exact-SHA CI gate
@@ -257,11 +209,6 @@ jobs:
                 echo "Triggering workflow run does not satisfy the exact-SHA main CI contract." >&2
                 exit 1
               }
-            main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-            [[ "$main_sha" == "$SOURCE_SHA" ]] || {
-              echo "Refusing to release stale CI SHA $SOURCE_SHA; current main is $main_sha." >&2
-              exit 1
-            }
             artifact_count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_CI_RUN_ID/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("native-")))] | length')"
             {
               echo "ci-run-id=$REQUESTED_CI_RUN_ID"
@@ -276,8 +223,8 @@ jobs:
 
           deadline=$((SECONDS + 1800))
           while (( SECONDS < deadline )); do
-            runs="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$SOURCE_SHA&per_page=100")"
-            run_id="$(jq -r --arg sha "$SOURCE_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push" and .status == "completed" and .conclusion == "success")] | sort_by(.run_number) | last | .id // empty' <<<"$runs")"
+            runs="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$SOURCE_SHA&per_page=100")"
+            run_id="$(jq -r --arg sha "$SOURCE_SHA" '[.[].workflow_runs[] | select(.head_sha == $sha and .head_branch == "main" and .path == ".github/workflows/ci.yml" and .event == "push" and .status == "completed" and .conclusion == "success")] | sort_by(.run_number) | last | .id // empty' <<<"$runs")"
             if [[ -n "$run_id" ]]; then
               artifact_count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("native-")))] | length')"
               {
@@ -290,7 +237,7 @@ jobs:
               } >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            failed="$(jq -r --arg sha "$SOURCE_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "push" and .status == "completed" and .conclusion != "success")] | length' <<<"$runs")"
+            failed="$(jq -r --arg sha "$SOURCE_SHA" '[.[].workflow_runs[] | select(.head_sha == $sha and .head_branch == "main" and .path == ".github/workflows/ci.yml" and .event == "push" and .status == "completed" and .conclusion != "success")] | length' <<<"$runs")"
             if [[ "$failed" != '0' ]]; then
               echo "Exact-SHA CI completed without success for $SOURCE_SHA." >&2
               exit 1
@@ -460,12 +407,85 @@ jobs:
     permissions:
       actions: read
       contents: write
+      pull-requests: read
     steps:
+      - name: Check out workflow implementation
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.workflow_sha }}
+      - name: Revalidate exact release before publication
+        id: verified
+        if: needs.release-target.outputs.automatic == 'true'
+        uses: ./.github/actions/verified-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          ci-run-id: ${{ needs.release-target.outputs.ci-run-id }}
+          expected-sha: ${{ needs.release-target.outputs.source-sha }}
+          require-release: 'true'
+      - name: Download immutable release metadata
+        if: needs.release-target.outputs.automatic == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-metadata
+          path: dist/metadata
       - name: Download validated release set
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: validated-release-assets
           path: dist/release-assets
+      - name: Create only the verified release
+        if: needs.release-target.outputs.automatic == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PUBLISH_TOKEN || github.token }}
+          SOURCE_SHA: ${{ needs.release-target.outputs.source-sha }}
+          RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
+          RELEASE_PR: ${{ needs.release-target.outputs.release-pr }}
+          VERIFIED_PR: ${{ steps.verified.outputs.release-pr }}
+        run: |
+          set -euo pipefail
+          [[ "$VERIFIED_PR" == "$RELEASE_PR" ]] || { echo 'Release PR identity changed.' >&2; exit 1; }
+          jq -e --arg sha "$SOURCE_SHA" --arg tag "$RELEASE_TAG" '.source_sha == $sha and .tag_name == $tag' dist/metadata/release-metadata.json >/dev/null
+          optional_get() {
+            local response
+            if response="$(gh api "$1" 2>"$RUNNER_TEMP/release-api-error")"; then
+              printf '%s' "$response"
+            elif jq -e '.status == "404"' <<<"$response" >/dev/null 2>&1; then
+              printf 'null'
+            else
+              cat "$RUNNER_TEMP/release-api-error" >&2
+              return 1
+            fi
+          }
+          ref="$(optional_get "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG")"
+          if [[ "$ref" == 'null' ]]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$RELEASE_TAG" -f "sha=$SOURCE_SHA" >/dev/null || {
+              echo 'Cannot create the exact tag. Historical workflow changes may require RELEASE_PUBLISH_TOKEN with Contents and Workflows write permissions.' >&2; exit 1;
+            }
+            ref="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG")"
+          fi
+          tag_sha="$(jq -r .object.sha <<<"$ref")"
+          if [[ "$(jq -r .object.type <<<"$ref")" == 'tag' ]]; then
+            tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" --jq '.object.sha')"
+          fi
+          [[ "$tag_sha" == "$SOURCE_SHA" ]] || { echo 'Existing release tag points to a different commit.' >&2; exit 1; }
+          release="$(optional_get "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG")"
+          if [[ "$release" == 'null' ]]; then
+            releases="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100")"
+            latest="$(jq -r --arg tag "$RELEASE_TAG" \
+              '($tag | ltrimstr("v") | split(".") | map(tonumber)) as $version |
+               [.[][] | select(.draft == false and .prerelease == false)
+                | .tag_name | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))
+                | ltrimstr("v") | split(".") | map(tonumber)] | all(. < $version)' <<<"$releases")"
+            jq --arg latest "$latest" \
+              '{tag_name, target_commitish: .source_sha, name: .tag_name, body: .notes,
+                draft: false, prerelease: false, make_latest: $latest}' \
+              dist/metadata/release-metadata.json > "$RUNNER_TEMP/release-request.json"
+            gh api --method POST "repos/$GITHUB_REPOSITORY/releases" --input "$RUNNER_TEMP/release-request.json" >/dev/null
+          else
+            jq -e --arg tag "$RELEASE_TAG" '.tag_name == $tag and .draft == false and .prerelease == false' <<<"$release" >/dev/null
+          fi
       - name: Upload complete native asset set
         shell: bash
         env:
@@ -475,7 +495,6 @@ jobs:
   publish-crate:
     name: publish crates.io package
     needs:
-      - release-please
       - release-target
       - publish-release-assets
     # Keep the explicit status override through the final job so the intentionally
@@ -483,10 +502,9 @@ jobs:
     if: >-
       ${{
         always()
-        && needs.release-please.result == 'success'
         && needs.release-target.result == 'success'
         && needs.publish-release-assets.result == 'success'
-        && needs.release-please.outputs.release-created == 'true'
+        && needs.release-target.outputs.automatic == 'true'
         && needs.release-target.outputs.publish_assets == 'true'
       }}
     runs-on: ubuntu-latest
@@ -557,3 +575,65 @@ jobs:
             echo "Publish failed; retrying in $sleep_seconds seconds."
             sleep "$sleep_seconds"
           done
+
+  finalize-release:
+    name: finalize verified release PR
+    needs: [release-target, publish-release-assets, publish-crate]
+    if: ${{ always() && needs.release-target.result == 'success' && needs.publish-release-assets.result == 'success' && needs.publish-crate.result == 'success' && needs.release-target.outputs.automatic == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Mark only the completed release PR tagged
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PR: ${{ needs.release-target.outputs.release-pr }}
+        run: |
+          set -euo pipefail
+          gh pr edit "$RELEASE_PR" --repo "$GITHUB_REPOSITORY" --add-label 'autorelease: tagged' --remove-label 'autorelease: pending'
+
+  release-please:
+    name: maintain release proposal
+    needs: [release-target, finalize-release]
+    if: ${{ always() && needs.release-target.result == 'success' && needs.release-target.outputs.dry-run == 'false' && (github.event_name == 'workflow_run' || inputs.resume-ci-run != '') && (needs.release-target.outputs.should-publish == 'false' || needs.finalize-release.result == 'success') }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Verify current main CI and detect blocked proposals
+        id: proposal
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          runs="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$main_sha&per_page=100")"
+          if ! jq -e --arg sha "$main_sha" 'any(.[].workflow_runs[]; .head_sha == $sha and .path == ".github/workflows/ci.yml" and .head_branch == "main" and .event == "push" and .status == "completed" and .conclusion == "success")' <<<"$runs" >/dev/null; then
+            echo 'Waiting for successful CI of current main before maintaining the next release proposal.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          pulls="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls?state=closed&base=main&per_page=100")"
+          pending="$(jq -r --arg repository "$GITHUB_REPOSITORY"             '[.[][] | select(.merged_at != null and .head.repo.full_name == $repository)
+              | select(.head.ref == "release-please--branches--main--components--codebase-graph")
+              | select(any(.labels[]; .name == "autorelease: pending")) | .number] | join(", ")' <<<"$pulls")"
+          if [[ -n "$pending" ]]; then
+            echo "::error::Merged release PRs $pending remain unpublished. Resume each release merge's successful CI using resume-ci-run."
+            echo "Blocked by unpublished release PRs: $pending" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          current="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          [[ "$current" != "$main_sha" ]] || echo 'ready=true' >> "$GITHUB_OUTPUT"
+      - name: Create or update release PR only
+        id: release
+        if: steps.proposal.outputs.ready == 'true'
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          skip-github-release: true

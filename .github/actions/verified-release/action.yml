@@ -1,0 +1,60 @@
+name: Verify release identity
+description: Bind a successful main CI run to its exact trusted release merge.
+inputs:
+  ci-run-id:
+    required: true
+    description: Exact CI run to authorize.
+  expected-sha:
+    required: false
+    default: ''
+    description: Expected source SHA, when supplied by the event or previous gate.
+  require-release:
+    required: false
+    default: 'false'
+    description: Reject ordinary commits when authorizing publication or recovery.
+outputs:
+  source-sha:
+    value: ${{ steps.verify.outputs.source-sha }}
+    description: Verified CI source SHA.
+  release-pr:
+    value: ${{ steps.verify.outputs.release-pr }}
+    description: Trusted release PR, or empty for an ordinary commit.
+runs:
+  using: composite
+  steps:
+    - id: verify
+      shell: bash
+      env:
+        CI_RUN_ID: ${{ inputs.ci-run-id }}
+        EXPECTED_SHA: ${{ inputs.expected-sha }}
+        REQUIRE_RELEASE: ${{ inputs.require-release }}
+      run: |
+        set -euo pipefail
+        [[ "$CI_RUN_ID" =~ ^[0-9]+$ ]] || { echo 'Invalid CI run ID.' >&2; exit 1; }
+        run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CI_RUN_ID")"
+        jq -e --arg repository "$GITHUB_REPOSITORY" --arg id "$CI_RUN_ID" \
+          '.id == ($id | tonumber) and .repository.full_name == $repository
+           and .path == ".github/workflows/ci.yml" and .event == "push"
+           and .head_branch == "main" and .status == "completed" and .conclusion == "success"' \
+          <<<"$run" >/dev/null || { echo 'Expected successful main push CI from this repository.' >&2; exit 1; }
+        source_sha="$(jq -r .head_sha <<<"$run")"
+        [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+        [[ -z "$EXPECTED_SHA" || "$source_sha" == "$EXPECTED_SHA" ]] || { echo 'CI SHA mismatch.' >&2; exit 1; }
+        main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+        comparison="$(gh api "repos/$GITHUB_REPOSITORY/compare/$source_sha...$main_sha" --jq .status)"
+        [[ "$comparison" == 'identical' || "$comparison" == 'ahead' ]] || { echo 'CI commit is no longer on main.' >&2; exit 1; }
+        pulls="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$source_sha/pulls?per_page=100")"
+        matches="$(jq --arg repository "$GITHUB_REPOSITORY" --arg sha "$source_sha" \
+          '[.[][] | select(.merged_at != null and .merge_commit_sha == $sha)
+            | select(.base.ref == "main" and .base.repo.full_name == $repository)
+            | select(.head.repo.full_name == $repository)
+            | select(.head.ref == "release-please--branches--main--components--codebase-graph")
+            | select(any(.labels[]; .name == "autorelease: pending" or .name == "autorelease: tagged"))]
+           | unique_by(.number)' <<<"$pulls")"
+        count="$(jq length <<<"$matches")"
+        [[ "$count" -le 1 ]] || { echo 'Ambiguous release merge.' >&2; exit 1; }
+        [[ "$REQUIRE_RELEASE" != 'true' || "$count" == 1 ]] || { echo 'CI is not for a trusted release merge.' >&2; exit 1; }
+        {
+          echo "source-sha=$source_sha"
+          echo "release-pr=$(jq -r '.[0].number // empty' <<<"$matches")"
+        } >> "$GITHUB_OUTPUT"
