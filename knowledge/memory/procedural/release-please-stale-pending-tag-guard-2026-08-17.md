@@ -3,14 +3,14 @@ agent_memory:
   version: 1
   kind: procedural
   scope: repository
-  status: active
+  status: superseded
   owner: codex
   created_at: 2026-08-17T10:08:37+09:30
   last_verified_at: 2026-08-17T10:08:37+09:30
   verified_by: codex
   review_after: null
   supersedes: []
-  superseded_by: null
+  superseded_by: exact-commit-release-publication-and-recovery-2026-09-24
   sources:
   - kind: ci-log
     reference: GitHub Actions release run 31980750823 job 95246933454
@@ -30,6 +30,11 @@ agent_memory:
     actor: codex
     at: 2026-08-17T10:08:37+09:30
     reason: Verified against failed run 31980750823, the v1.4.1 tag target, associated PR metadata for release and ordinary commits, and the pinned action's documented skip-github-release input.
+  - from: active
+    to: superseded
+    actor: codex
+    at: 2026-09-24T05:13:02Z
+    reason: The merged exact-commit publisher replaces current-tip-dependent release-please publication and adds verified full CI-run recovery. Historical incident and policy evidence remains available for audit.
 description: A later green main commit can cause release-please to tag an older merged release PR whose own CI failed unless ordinary runs disable GitHub Release creation.
 tags:
 - ci

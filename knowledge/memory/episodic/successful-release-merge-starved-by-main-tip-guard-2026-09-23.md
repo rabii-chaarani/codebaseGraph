@@ -3,14 +3,14 @@ agent_memory:
   version: 1
   kind: episodic
   scope: repository
-  status: active
+  status: superseded
   owner: codex
   created_at: 2026-09-23T06:00:00Z
   last_verified_at: 2026-09-23T06:00:00Z
   verified_by: codex
   review_after: null
   supersedes: []
-  superseded_by: null
+  superseded_by: exact-commit-release-publication-and-recovery-2026-09-24
   sources:
   - kind: ci-log
     reference: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/35820576114/job/107057232758
@@ -30,6 +30,11 @@ agent_memory:
     actor: codex
     at: 2026-09-23T06:00:00Z
     reason: Reviewed against both GitHub Actions runs, the release job's exact skip log, release PR and descendant commit metadata, and the workflow at 8c3bcf3. Local workflow Git blob hash matches the immutable remote revision; all three tip guards and manual crate exclusion verified.
+  - from: active
+    to: superseded
+    actor: codex
+    at: 2026-09-24T05:13:02Z
+    reason: The merged exact-commit publisher replaces current-tip-dependent release-please publication and adds verified full CI-run recovery. Historical incident and policy evidence remains available for audit.
 description: The current-tip publication policy can skip an otherwise verified release permanently; later ordinary CI and existing-tag recovery do not complete it.
 tags:
 - ci

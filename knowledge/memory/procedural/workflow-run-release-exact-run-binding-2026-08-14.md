@@ -3,14 +3,14 @@ agent_memory:
   version: 1
   kind: procedural
   scope: repository
-  status: active
+  status: superseded
   owner: codex
   created_at: 2026-08-14T10:45:00+09:30
   last_verified_at: 2026-08-14T10:46:00+09:30
   verified_by: codex
   review_after: null
   supersedes: []
-  superseded_by: null
+  superseded_by: exact-commit-release-publication-and-recovery-2026-09-24
   sources:
   - kind: commit
     reference: a8d54d536cee9a5ed7d322939156df8e17733da7
@@ -33,6 +33,11 @@ agent_memory:
     actor: codex
     at: 2026-08-14T10:46:00+09:30
     reason: Verified against commit a8d54d536cee9a5ed7d322939156df8e17733da7 and the updated release workflow, xtask policy checks, and release documentation.
+  - from: active
+    to: superseded
+    actor: codex
+    at: 2026-09-24T05:13:02Z
+    reason: The merged exact-commit publisher replaces current-tip-dependent release-please publication and adds verified full CI-run recovery. Historical incident and policy evidence remains available for audit.
 description: Automatic workflow_run releases need exact triggering-run identity plus a post-release-please freshness guard to keep artifact promotion and crate publication aligned with current-tip CI.
 tags:
 - ci
