@@ -712,12 +712,10 @@ mod tests {
     fn slow_reader_does_not_block_other_responses_and_is_released() {
         let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let address = listener.local_addr().unwrap();
-        let (ready_tx, ready_rx) = mpsc::channel();
         let (done_tx, done_rx) = mpsc::channel();
         let server = thread::spawn(move || {
             let result = serve_http_dispatcher(listener, &test_options(), Some(2), |request, _| {
                 let payload = if request.path == "/large" {
-                    ready_tx.send(()).unwrap();
                     json!({"padding": "x".repeat(16 * 1024 * 1024)})
                 } else {
                     json!({"ok":true})
@@ -731,7 +729,10 @@ mod tests {
         });
         let mut slow = TcpStream::connect(address).unwrap();
         slow.write_all(b"GET /large HTTP/1.1\r\n\r\n").unwrap();
-        ready_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        slow.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        let mut first_response_byte = [0; 1];
+        slow.read_exact(&mut first_response_byte).unwrap();
+        assert_eq!(first_response_byte[0], b'H');
         let mut fast = TcpStream::connect(address).unwrap();
         fast.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
         fast.write_all(b"GET /ping HTTP/1.1\r\n\r\n").unwrap();
