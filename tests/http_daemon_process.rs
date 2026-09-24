@@ -30,6 +30,22 @@ fn temp_repo() -> PathBuf {
     ))
 }
 
+struct TempRepo(PathBuf);
+
+impl TempRepo {
+    fn new() -> Self {
+        let path = temp_repo();
+        fs::create_dir_all(&path).unwrap();
+        Self(path)
+    }
+}
+
+impl Drop for TempRepo {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
 struct ChildGuard(Child);
 
 impl Drop for ChildGuard {
@@ -334,6 +350,401 @@ fn wait_for_file(path: &Path) {
         thread::sleep(Duration::from_millis(50));
     }
     panic!("timed out waiting for {}", path.display());
+}
+
+fn endpoint_port(endpoint: &str) -> u16 {
+    endpoint
+        .strip_prefix("http://127.0.0.1:")
+        .unwrap()
+        .split('/')
+        .next()
+        .unwrap()
+        .parse()
+        .unwrap()
+}
+
+fn start_daemon(
+    root: &Path,
+    config_path: &Path,
+    endpoint: &str,
+    previous_pid: Option<u64>,
+) -> (ChildGuard, serde_json::Value) {
+    let mut daemon = ChildGuard(
+        Command::new(binary())
+            .args([
+                "mcp",
+                "daemon",
+                "serve",
+                "--config",
+                config_path.to_str().unwrap(),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap(),
+    );
+    let state_path = root.join(".codebaseGraph/mcp-daemon.json");
+    let started = Instant::now();
+    let deadline = started + Duration::from_secs(20);
+    loop {
+        if let Some(status) = daemon.0.try_wait().unwrap() {
+            panic!("HTTP daemon exited before publishing state: {status}");
+        }
+        if let Ok(contents) = fs::read_to_string(&state_path) {
+            if let Ok(state) = serde_json::from_str::<serde_json::Value>(&contents) {
+                let pid = state["pid"].as_u64();
+                if pid == Some(u64::from(daemon.0.id()))
+                    && pid != previous_pid
+                    && state["endpoint"] == endpoint
+                {
+                    return (daemon, state);
+                }
+            }
+        }
+        assert!(
+            Instant::now() < deadline,
+            "daemon did not publish new state for endpoint {endpoint}; state={:?}",
+            fs::read_to_string(&state_path).ok()
+        );
+        thread::sleep(Duration::from_millis(25));
+    }
+}
+
+fn initialize(port: u16, id: u64, session: Option<&str>) -> HttpResponse {
+    let mut headers = vec![("mcp-protocol-version", MCP_PROTOCOL_VERSION)];
+    if let Some(session) = session {
+        headers.push(("mcp-session-id", session));
+    }
+    request(
+        port,
+        "POST",
+        "/mcp",
+        &headers,
+        Some(&json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "method": "initialize",
+            "params": {"protocolVersion": MCP_PROTOCOL_VERSION}
+        })),
+    )
+}
+
+fn assert_session_id(response: &HttpResponse) -> &str {
+    assert_eq!(response.status, 200, "initialize response: {response:?}");
+    assert!(response.body["result"].is_object(), "{response:?}");
+    assert!(response.body["error"].is_null(), "{response:?}");
+    let session = response.headers.get("mcp-session-id").unwrap();
+    let random_part = session.strip_prefix("native-http-session-").unwrap();
+    assert_eq!(random_part.len(), 64, "session ID: {session}");
+    assert!(
+        random_part.bytes().all(|byte| byte.is_ascii_hexdigit()),
+        "session ID is not hexadecimal: {session}"
+    );
+    session
+}
+
+fn assert_unknown_session(response: &HttpResponse, id: Option<u64>) {
+    assert_eq!(
+        response.status, 404,
+        "unknown session response: {response:?}"
+    );
+    assert_eq!(response.body["error"]["code"], -32002);
+    assert!(
+        !response.headers.contains_key("mcp-session-id"),
+        "unknown session response replaced the client's session ID"
+    );
+    if let Some(id) = id {
+        assert_eq!(response.body["id"], id, "request ID was not preserved");
+    } else {
+        assert!(
+            response.body["id"].is_null(),
+            "notification error should have a null request ID: {response:?}"
+        );
+    }
+}
+
+fn initialized_notification(port: u16, session: &str) -> HttpResponse {
+    request(
+        port,
+        "POST",
+        "/mcp",
+        &[
+            ("mcp-session-id", session),
+            ("mcp-protocol-version", MCP_PROTOCOL_VERSION),
+        ],
+        Some(&json!({"jsonrpc": "2.0", "method": "notifications/initialized"})),
+    )
+}
+
+fn stop_daemon_cleanly(daemon: &mut ChildGuard, port: u16, control_token: &str, state_path: &Path) {
+    let response = request(
+        port,
+        "POST",
+        "/_codebasegraph/shutdown",
+        &[("x-codebasegraph-control-token", control_token)],
+        Some(&json!({})),
+    );
+    assert_eq!(response.status, 200, "shutdown response: {response:?}");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let status = loop {
+        if let Some(status) = daemon.0.try_wait().unwrap() {
+            break status;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "daemon did not exit after authenticated shutdown"
+        );
+        thread::sleep(Duration::from_millis(25));
+    };
+    assert!(status.success(), "clean daemon shutdown failed: {status}");
+    assert!(
+        !state_path.exists(),
+        "daemon state should be removed after clean shutdown"
+    );
+}
+
+fn kill_daemon(daemon: &mut ChildGuard) {
+    assert!(
+        daemon.0.try_wait().unwrap().is_none(),
+        "daemon exited before forced termination"
+    );
+    daemon.0.kill().unwrap();
+    assert!(
+        !daemon.0.wait().unwrap().success(),
+        "forced termination unexpectedly reported success"
+    );
+}
+
+#[test]
+fn http_daemon_restart_recovers_sessions_without_reusing_old_ids() {
+    let root = TempRepo::new();
+    fs::write(
+        root.0.join("service.py"),
+        "def restart_fixture():\n    return 1\n",
+    )
+    .unwrap();
+    let install = Command::new(binary())
+        .args([
+            "install",
+            "--repo-root",
+            root.0.to_str().unwrap(),
+            "--mode",
+            "full",
+            "--mcp-client",
+            "none",
+            "--instructions-target",
+            "skip",
+            "--no-fts",
+            "--json",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        install.status.success(),
+        "install failed: {}",
+        String::from_utf8_lossy(&install.stderr)
+    );
+
+    let config_path = root.0.join(".codebaseGraph/config.json");
+    let mut config: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+    config["refresh"]["policy"] = json!("off");
+    fs::write(&config_path, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+    let endpoint = config["mcp"]["http"]["url"].as_str().unwrap();
+    let port = endpoint_port(endpoint);
+    let state_path = root.0.join(".codebaseGraph/mcp-daemon.json");
+
+    let (mut first_daemon, first_state) = start_daemon(&root.0, &config_path, endpoint, None);
+    let original = assert_session_id(&initialize(port, 1, None)).to_string();
+    let original_peer = assert_session_id(&initialize(port, 2, None)).to_string();
+    assert_ne!(original, original_peer);
+    assert_eq!(
+        wait_for_graph_health(port, &original, 3).body["result"]["isError"],
+        false,
+        "initial client could not call graph_health"
+    );
+    assert_eq!(
+        wait_for_graph_health(port, &original_peer, 4).body["result"]["isError"],
+        false,
+        "initial peer could not call graph_health"
+    );
+
+    stop_daemon_cleanly(
+        &mut first_daemon,
+        port,
+        first_state["control_token"].as_str().unwrap(),
+        &state_path,
+    );
+    let (mut clean_restart, clean_state) =
+        start_daemon(&root.0, &config_path, endpoint, first_state["pid"].as_u64());
+    assert_eq!(clean_state["endpoint"], endpoint);
+
+    // Create fresh clients before sending any retired session ID. A counter
+    // that restarts at one would let one of these requests alias an old ID.
+    let after_clean = assert_session_id(&initialize(port, 10, None)).to_string();
+    let after_clean_peer = assert_session_id(&initialize(port, 11, None)).to_string();
+    let original_sessions = [&original, &original_peer];
+    assert!(original_sessions.iter().all(|old| old != &&after_clean));
+    assert!(original_sessions
+        .iter()
+        .all(|old| old != &&after_clean_peer));
+
+    let missing_session = request(
+        port,
+        "POST",
+        "/mcp",
+        &[("mcp-protocol-version", MCP_PROTOCOL_VERSION)],
+        Some(&json!({
+            "jsonrpc": "2.0",
+            "id": 20,
+            "method": "tools/call",
+            "params": {"name": "graph_health", "arguments": {}}
+        })),
+    );
+    assert_eq!(missing_session.status, 400, "{missing_session:?}");
+    assert!(
+        !missing_session.headers.contains_key("mcp-session-id"),
+        "missing-session response unexpectedly created a session"
+    );
+
+    let stale_initialize = initialize(port, 21, Some(&original));
+    assert_unknown_session(&stale_initialize, Some(21));
+    assert!(
+        !stale_initialize.headers.contains_key("mcp-session-id"),
+        "stale initialize unexpectedly created a fresh session"
+    );
+    let stale_notification = initialized_notification(port, &original_peer);
+    assert_unknown_session(&stale_notification, None);
+    assert_unknown_session(
+        &mcp_call(
+            port,
+            &original,
+            23,
+            "graph_health",
+            json!({"include_structured_content": true}),
+        ),
+        Some(23),
+    );
+
+    let after_clean_recovered = assert_session_id(&initialize(port, 24, None)).to_string();
+    assert!(original_sessions
+        .iter()
+        .all(|old| old != &&after_clean_recovered));
+    assert_ne!(after_clean, after_clean_recovered);
+    assert_ne!(after_clean_peer, after_clean_recovered);
+    assert_eq!(initialized_notification(port, &after_clean).status, 202);
+    assert_eq!(
+        initialized_notification(port, &after_clean_peer).status,
+        202
+    );
+    assert_eq!(
+        initialized_notification(port, &after_clean_recovered).status,
+        202
+    );
+    assert_eq!(
+        wait_for_graph_health(port, &after_clean_recovered, 25).body["result"]["isError"],
+        false,
+        "reinitialized client failed after a stale request"
+    );
+    assert_eq!(
+        wait_for_graph_health(port, &after_clean, 26).body["result"]["isError"],
+        false,
+        "competing fresh client failed after stale requests"
+    );
+    assert_eq!(
+        wait_for_graph_health(port, &after_clean_peer, 27).body["result"]["isError"],
+        false,
+        "competing fresh peer failed after stale requests"
+    );
+    assert_unknown_session(
+        &mcp_call(
+            port,
+            &original,
+            28,
+            "graph_health",
+            json!({"include_structured_content": true}),
+        ),
+        Some(28),
+    );
+
+    kill_daemon(&mut clean_restart);
+    let (mut forced_restart, forced_state) =
+        start_daemon(&root.0, &config_path, endpoint, clean_state["pid"].as_u64());
+    assert_eq!(forced_state["endpoint"], endpoint);
+
+    let after_kill = assert_session_id(&initialize(port, 30, None)).to_string();
+    let after_kill_peer = assert_session_id(&initialize(port, 31, None)).to_string();
+    let retired_sessions = [
+        &original,
+        &original_peer,
+        &after_clean,
+        &after_clean_peer,
+        &after_clean_recovered,
+    ];
+    assert!(retired_sessions.iter().all(|old| old != &&after_kill));
+    assert!(retired_sessions.iter().all(|old| old != &&after_kill_peer));
+    assert_ne!(after_kill, after_kill_peer);
+
+    assert_unknown_session(
+        &initialize(port, 32, Some(&after_clean_recovered)),
+        Some(32),
+    );
+    assert_unknown_session(&initialized_notification(port, &after_clean_peer), None);
+    assert_unknown_session(
+        &mcp_call(
+            port,
+            &original,
+            33,
+            "graph_health",
+            json!({"include_structured_content": true}),
+        ),
+        Some(33),
+    );
+    let after_kill_recovered = assert_session_id(&initialize(port, 34, None)).to_string();
+    assert!(retired_sessions
+        .iter()
+        .all(|old| old != &&after_kill_recovered));
+    assert_ne!(after_kill, after_kill_recovered);
+    assert_ne!(after_kill_peer, after_kill_recovered);
+    assert_eq!(initialized_notification(port, &after_kill).status, 202);
+    assert_eq!(initialized_notification(port, &after_kill_peer).status, 202);
+    assert_eq!(
+        initialized_notification(port, &after_kill_recovered).status,
+        202
+    );
+    assert_eq!(
+        wait_for_graph_health(port, &after_kill_recovered, 35).body["result"]["isError"],
+        false,
+        "reinitialized client could not recover after forced termination"
+    );
+    assert_eq!(
+        wait_for_graph_health(port, &after_kill, 36).body["result"]["isError"],
+        false,
+        "competing client could not recover after forced termination"
+    );
+    assert_eq!(
+        wait_for_graph_health(port, &after_kill_peer, 37).body["result"]["isError"],
+        false,
+        "competing peer could not recover after forced termination"
+    );
+    assert_unknown_session(
+        &mcp_call(
+            port,
+            &after_clean,
+            38,
+            "graph_health",
+            json!({"include_structured_content": true}),
+        ),
+        Some(38),
+    );
+
+    stop_daemon_cleanly(
+        &mut forced_restart,
+        port,
+        forced_state["control_token"].as_str().unwrap(),
+        &state_path,
+    );
 }
 
 #[test]
@@ -668,8 +1079,7 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
         "graph_health",
         json!({"include_structured_content": true}),
     );
-    assert_eq!(unknown.status, 400);
-    assert_eq!(unknown.body["error"]["code"], -32002);
+    assert_unknown_session(&unknown, Some(13));
 
     let unauthorized = request(
         port,
@@ -711,6 +1121,14 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
         );
         thread::sleep(Duration::from_millis(10));
     }
+    let unknown_while_busy = mcp_call(
+        port,
+        "unknown-session",
+        103,
+        "graph_health",
+        json!({"include_structured_content": true}),
+    );
+    assert_unknown_session(&unknown_while_busy, Some(103));
     let started = Instant::now();
     let busy = mcp_call(
         port,

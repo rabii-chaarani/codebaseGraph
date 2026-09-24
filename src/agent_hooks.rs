@@ -8,6 +8,7 @@ use crate::api::context::{read_install_config, GraphInstallConfig};
 use crate::api::MAX_HOOK_TIMEOUT;
 use crate::mcp_client::McpLoopbackSession;
 use crate::storage::atomic::{write_bytes_atomically, write_json_atomically};
+use fs2::FileExt;
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 use std::env;
@@ -23,6 +24,7 @@ const MAX_PROMPT_BYTES: usize = 4096;
 const MAX_CONTEXT_CHARS: usize = 6000;
 const CACHE_MAX_AGE: Duration = Duration::from_secs(24 * 60 * 60);
 const HOOK_DEADLINE: Duration = Duration::from_secs(3);
+const CACHE_CLAIM_LOCK_NAME: &str = ".claim.lock";
 static CACHE_CLAIM_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -867,6 +869,18 @@ fn cache_dir(repo_root: &Path) -> PathBuf {
     repo_root.join(".codebaseGraph/agent-hooks/sessions")
 }
 
+fn try_lock_cache_claim(repo_root: &Path) -> Option<fs::File> {
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(cache_dir(repo_root).join(CACHE_CLAIM_LOCK_NAME))
+        .ok()?;
+    lock.try_lock_exclusive().ok()?;
+    Some(lock)
+}
+
 fn purge_cache(repo_root: &Path) {
     let Ok(entries) = fs::read_dir(cache_dir(repo_root)) else {
         return;
@@ -874,6 +888,9 @@ fn purge_cache(repo_root: &Path) {
     let cutoff = now_unix_ms().saturating_sub(CACHE_MAX_AGE.as_millis() as u64);
     for entry in entries.flatten() {
         let path = entry.path();
+        if path.file_name() == Some(std::ffi::OsStr::new(CACHE_CLAIM_LOCK_NAME)) {
+            continue;
+        }
         let Ok(value) = fs::read_to_string(&path).and_then(|text| {
             serde_json::from_str::<Value>(&text)
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))
@@ -902,6 +919,8 @@ fn write_cache(repo_root: &Path, session_id: &str, prompt: &str, context: &str) 
 }
 
 fn take_cached_context(repo_root: &Path, session_id: &str) -> Option<String> {
+    // Keep the stable lock file open until this cache entry is fully processed.
+    let _claim_lock = try_lock_cache_claim(repo_root)?;
     let path = cache_dir(repo_root).join(format!("{}.json", hash_id(session_id)));
     let claim = cache_dir(repo_root).join(format!(
         "{}.claimed.{}.{}.json",
@@ -1297,6 +1316,26 @@ mod tests {
         std::env::temp_dir().join(format!("codebase-graph-{label}-{nonce}"))
     }
 
+    struct TempRootGuard(PathBuf);
+
+    impl TempRootGuard {
+        fn new(label: &str) -> Self {
+            let path = temp_root(label);
+            fs::create_dir_all(&path).unwrap();
+            Self(path)
+        }
+
+        fn path(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl Drop for TempRootGuard {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
     #[test]
     fn auto_selection_maps_supported_clients_and_ignores_other_mcp_targets() {
         assert_eq!(
@@ -1405,6 +1444,87 @@ mod tests {
             .count();
         assert_eq!(delivered, 1);
         fs::remove_dir_all(root.as_ref()).unwrap();
+    }
+
+    #[test]
+    fn copilot_cache_claim_skips_a_busy_lock_without_consuming_the_cache() {
+        let root = TempRootGuard::new("hook-cache-busy-lock");
+        write_cache(root.path(), "session", "prompt", "graph context");
+
+        let lock = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(cache_dir(root.path()).join(CACHE_CLAIM_LOCK_NAME))
+            .unwrap();
+        lock.try_lock_exclusive().unwrap();
+
+        let cache_path = cache_dir(root.path()).join(format!("{}.json", hash_id("session")));
+        let worker_root = root.path().to_path_buf();
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            let result = take_cached_context(&worker_root, "session");
+            let _ = sender.send(());
+            result
+        });
+        let completed_while_locked = receiver.recv_timeout(HOOK_DEADLINE).is_ok();
+        drop(lock);
+        let result = worker.join();
+        let cache_remains = cache_path.exists();
+
+        assert!(
+            completed_while_locked,
+            "busy lock acquisition should not wait"
+        );
+        assert!(result.is_ok(), "cache consumer thread should complete");
+        assert!(result.unwrap().is_none());
+        assert!(cache_remains, "busy lock must leave the cache entry intact");
+        assert_eq!(
+            take_cached_context(root.path(), "session").as_deref(),
+            Some("[codebaseGraph advisory]\ngraph context")
+        );
+        assert!(take_cached_context(root.path(), "session").is_none());
+    }
+
+    #[test]
+    fn copilot_cache_claim_lock_is_stable_and_survives_purge() {
+        let root = TempRootGuard::new("hook-cache-lock-lifetime");
+        for (session, context) in [("first", "first context"), ("second", "second context")] {
+            write_cache(root.path(), session, "prompt", context);
+            assert!(take_cached_context(root.path(), session).is_some());
+        }
+
+        let lock_path = cache_dir(root.path()).join(CACHE_CLAIM_LOCK_NAME);
+        assert!(lock_path.is_file());
+        let lock_count = fs::read_dir(cache_dir(root.path()))
+            .unwrap()
+            .flatten()
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".lock"))
+            .count();
+        assert_eq!(lock_count, 1);
+
+        let sentinel = br#"{"timestamp":0,"sentinel":"keep lock bytes"}"#;
+        fs::write(&lock_path, sentinel).unwrap();
+        purge_cache(root.path());
+        assert_eq!(fs::read(&lock_path).unwrap(), sentinel);
+
+        write_cache(root.path(), "third", "prompt", "third context");
+        assert!(take_cached_context(root.path(), "third").is_some());
+        assert_eq!(fs::read(&lock_path).unwrap(), sentinel);
+        assert!(lock_path.is_file());
+    }
+
+    #[test]
+    fn copilot_cache_claim_fails_open_when_lock_cannot_be_opened() {
+        let root = TempRootGuard::new("hook-cache-invalid-lock");
+        write_cache(root.path(), "session", "prompt", "graph context");
+        let lock_path = cache_dir(root.path()).join(CACHE_CLAIM_LOCK_NAME);
+        fs::create_dir(&lock_path).unwrap();
+
+        let cache_path = cache_dir(root.path()).join(format!("{}.json", hash_id("session")));
+        assert!(take_cached_context(root.path(), "session").is_none());
+        assert!(cache_path.exists());
     }
 
     #[test]
