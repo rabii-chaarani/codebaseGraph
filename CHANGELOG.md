@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v2.0.0...v3.0.0) (2026-09-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove semantic_enrichment and semantic_provider_mode Rust fields and the retired CLI flags. Existing JSON/config keys remain readable through unknown-field handling; graph and storage compatibility is unchanged.
+
+### Bug Fixes
+
+* isolate MCP clients and bound abandoned hook work ([#123](https://github.com/rabii-chaarani/codebaseGraph/issues/123)) ([8c3bcf3](https://github.com/rabii-chaarani/codebaseGraph/commit/8c3bcf317d2bc8e5d803ee59b8f86678c1a55a1c))
+* recover MCP sessions and serialize hook cache delivery ([#125](https://github.com/rabii-chaarani/codebaseGraph/issues/125)) ([3fc635f](https://github.com/rabii-chaarani/codebaseGraph/commit/3fc635fbbac46e5674a94dbce50c10d0db8036d2))
+* **release:** publish verified merge commits and resume blocked releases ([#127](https://github.com/rabii-chaarani/codebaseGraph/issues/127)) ([4594f38](https://github.com/rabii-chaarani/codebaseGraph/commit/4594f384488e4764c18ca41ac69be146b328c18c))
+
 ## [2.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v1.8.1...v2.0.0) (2026-09-23)
 
 
