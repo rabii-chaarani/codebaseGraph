@@ -4,15 +4,18 @@
 //! Installation/rendering is configuration-only, while the runner is expected
 //! to fail open when the managed loopback daemon is not available.
 
+use fs2::FileExt;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::fs;
+use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output, Stdio};
+use std::process::{Child, ChildStdin, Command, Output, Stdio};
+use std::sync::{Arc, Barrier};
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 const MANAGED_ID: &str = "codebase-graph-v1";
 
@@ -32,10 +35,8 @@ impl TempRepo {
             .duration_since(UNIX_EPOCH)
             .expect("system clock before Unix epoch")
             .as_nanos();
-        let path = std::env::temp_dir().join(format!(
-            "codebase-graph-agent-hooks-{label}-{}-{unique}",
-            std::process::id()
-        ));
+        let path =
+            std::env::temp_dir().join(format!("cgh-{label}-{}-{unique}", std::process::id()));
         fs::create_dir_all(path.join(".codebaseGraph")).expect("create temporary repository");
         fs::write(
             path.join(".codebaseGraph/config.json"),
@@ -87,6 +88,233 @@ fn run_with_stdin(repo: &TempRepo, args: &[&str], input: &[u8]) -> Output {
         std::io::Write::write_all(stdin, input).expect("write runner input");
     }
     child.wait_with_output().expect("wait for codebase-graph")
+}
+
+struct HookChild(Option<Child>);
+
+impl HookChild {
+    fn wait_with_timeout(mut self, timeout: Duration) -> Output {
+        let started = Instant::now();
+        loop {
+            let child = self.0.as_mut().expect("hook child is present");
+            if child.try_wait().expect("poll hook child").is_some() {
+                return self
+                    .0
+                    .take()
+                    .unwrap()
+                    .wait_with_output()
+                    .expect("collect hook output");
+            }
+            if started.elapsed() >= timeout {
+                let mut child = self.0.take().unwrap();
+                let _ = child.kill();
+                let output = child
+                    .wait_with_output()
+                    .expect("collect timed-out hook output");
+                panic!(
+                    "hook process exceeded {timeout:?}: status={}, stdout={}, stderr={}",
+                    output.status,
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+}
+
+impl Drop for HookChild {
+    fn drop(&mut self) {
+        if let Some(child) = self.0.as_mut() {
+            if child.try_wait().ok().flatten().is_none() {
+                let _ = child.kill();
+            }
+            let _ = child.wait();
+        }
+    }
+}
+
+fn spawn_copilot_hook(repo: &TempRepo) -> (HookChild, ChildStdin) {
+    let mut child = Command::new(binary())
+        .args([
+            "agent-hooks",
+            "run",
+            "--client",
+            "github-copilot",
+            "--config",
+            repo.config().to_str().unwrap(),
+            "--managed-id",
+            MANAGED_ID,
+        ])
+        .current_dir(&repo.path)
+        .env_remove("COPILOT_AGENT_PROMPT")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn Copilot hook process");
+    let stdin = child.stdin.take().expect("Copilot hook stdin");
+    (HookChild(Some(child)), stdin)
+}
+
+fn hook_payload(session_id: &str) -> Vec<u8> {
+    serde_json::to_vec(&json!({
+        "sessionId": session_id,
+        "toolName": "view",
+        "toolResult": {}
+    }))
+    .unwrap()
+}
+
+fn run_copilot_hook(repo: &TempRepo, session_id: &str, timeout: Duration) -> (Output, Duration) {
+    let (child, mut stdin) = spawn_copilot_hook(repo);
+    let started = Instant::now();
+    stdin
+        .write_all(&hook_payload(session_id))
+        .expect("write native Copilot hook payload");
+    drop(stdin);
+    let output = child.wait_with_timeout(timeout);
+    (output, started.elapsed())
+}
+
+fn run_simultaneous_copilot_hooks(
+    repo: &TempRepo,
+    session_id: &str,
+    count: usize,
+    timeout: Duration,
+) -> Vec<Output> {
+    let gate = Arc::new(Barrier::new(count + 1));
+    let mut children = Vec::with_capacity(count);
+    let mut inputs = Vec::with_capacity(count);
+    for _ in 0..count {
+        let (child, stdin) = spawn_copilot_hook(repo);
+        children.push(child);
+        inputs.push(stdin);
+    }
+
+    let payload = hook_payload(session_id);
+    let writers = inputs
+        .into_iter()
+        .map(|mut stdin| {
+            let gate = Arc::clone(&gate);
+            let payload = payload.clone();
+            thread::spawn(move || {
+                gate.wait();
+                stdin
+                    .write_all(&payload)
+                    .expect("release simultaneous native hook input");
+            })
+        })
+        .collect::<Vec<_>>();
+    gate.wait();
+    for writer in writers {
+        writer.join().expect("hook stdin writer");
+    }
+    children
+        .into_iter()
+        .map(|child| child.wait_with_timeout(timeout))
+        .collect()
+}
+
+fn cache_hash(value: &str) -> String {
+    Sha256::digest(value.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn seed_cached_context(repo: &TempRepo, session_id: &str, marker: &str) -> (PathBuf, Value) {
+    let path = repo
+        .hook(".codebaseGraph/agent-hooks/sessions")
+        .join(format!("{}.json", cache_hash(session_id)));
+    fs::create_dir_all(path.parent().unwrap()).expect("create cache directory");
+    let value = json!({
+        "prompt_hash": cache_hash("seeded prompt"),
+        "bounded_graph_result": format!("[codebaseGraph advisory]\n{marker}"),
+        "delivered": false,
+        "timestamp": SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock before Unix epoch")
+            .as_millis() as u64,
+    });
+    fs::write(&path, serde_json::to_vec_pretty(&value).unwrap()).expect("seed cache entry");
+    (path, value)
+}
+
+#[test]
+fn copilot_cached_context_claim_lock_is_process_safe() {
+    const PROCESS_TIMEOUT: Duration = Duration::from_secs(10);
+
+    let repo = TempRepo::new("claim");
+    let session = "cross-process-claim-session";
+    let marker = "single-process-claim-context";
+    let (cache_path, original_cache) = seed_cached_context(&repo, session, marker);
+    let claim_lock_path = repo.hook(".codebaseGraph/agent-hooks/sessions/.claim.lock");
+    let claim_lock = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&claim_lock_path)
+        .expect("open stable cache claim lock");
+    claim_lock
+        .lock_exclusive()
+        .expect("hold cache claim lock in parent");
+
+    let (blocked_output, blocked_elapsed) = run_copilot_hook(&repo, session, PROCESS_TIMEOUT);
+    assert!(blocked_elapsed < Duration::from_secs(3));
+    assert_eq!(json_stdout(&blocked_output), json!({}));
+    assert_eq!(
+        serde_json::from_slice::<Value>(&fs::read(&cache_path).unwrap()).unwrap(),
+        original_cache,
+        "a contending process must leave the cache entry unclaimed"
+    );
+    drop(claim_lock);
+
+    let (first_delivery, delivery_elapsed) = run_copilot_hook(&repo, session, PROCESS_TIMEOUT);
+    assert!(delivery_elapsed < Duration::from_secs(3));
+    let first_delivery = json_stdout(&first_delivery);
+    assert_eq!(first_delivery["advisory"], true);
+    assert!(first_delivery["additionalContext"]
+        .as_str()
+        .unwrap()
+        .contains(marker));
+    assert!(claim_lock_path.exists(), "claim lock file was removed");
+
+    let (second_delivery, _) = run_copilot_hook(&repo, session, PROCESS_TIMEOUT);
+    assert_eq!(json_stdout(&second_delivery), json!({}));
+
+    let parallel_session = "parallel-cross-process-claim-session";
+    let parallel_marker = "exactly-one-parallel-delivery";
+    let _ = seed_cached_context(&repo, parallel_session, parallel_marker);
+    const CHILDREN: usize = 6;
+    let outputs =
+        run_simultaneous_copilot_hooks(&repo, parallel_session, CHILDREN, PROCESS_TIMEOUT)
+            .iter()
+            .map(json_stdout)
+            .collect::<Vec<_>>();
+    let deliveries = outputs
+        .iter()
+        .filter(|output| {
+            output["additionalContext"]
+                .as_str()
+                .is_some_and(|context| context.contains(parallel_marker))
+        })
+        .count();
+    assert_eq!(deliveries, 1, "parallel hook outputs: {outputs:?}");
+    for output in &outputs {
+        let delivered = output["additionalContext"]
+            .as_str()
+            .is_some_and(|context| context.contains(parallel_marker));
+        assert!(
+            delivered || output == &json!({}),
+            "unexpected hook output: {output}"
+        );
+    }
+    assert!(claim_lock_path.exists(), "claim lock file was removed");
+
+    let (after_race, _) = run_copilot_hook(&repo, parallel_session, PROCESS_TIMEOUT);
+    assert_eq!(json_stdout(&after_race), json!({}));
 }
 
 fn json_stdout(output: &Output) -> Value {
