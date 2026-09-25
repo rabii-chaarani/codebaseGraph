@@ -767,27 +767,26 @@ impl ManagedStore {
         if let Some(lease) = try_open_locked(generation.lease_path(), LockMode::Exclusive)? {
             drop(lease);
             ensure_directory_without_symlinks(generation.root())?;
-            if let Err(error) = remove_path_without_symlinks(generation.root()) {
-                // Windows can deny deletion while a reader still has a database
-                // file open after releasing its generation lease. Keep the
-                // retired generation and retry collection on the next cleanup.
-                #[cfg(windows)]
-                if matches!(&error, NativeError::Io(io) if io.kind() == std::io::ErrorKind::PermissionDenied)
-                {
-                    // The recursive delete may already have removed the
-                    // retirement marker. Restore it so a later cleanup will
-                    // retry even if the ready marker survived.
-                    write_json_atomically(
-                        &generation.retired_path(),
-                        &GenerationRetirement {
-                            schema_version: MANAGED_SCHEMA_VERSION,
-                            retired_at_ms: unix_time_ms(),
-                        },
-                    )?;
-                    return Ok(());
-                }
-                return Err(error);
+            let removal = remove_path_without_symlinks(generation.root());
+            // Windows can deny deletion while a reader still has a database
+            // file open after releasing its generation lease. Keep the
+            // retired generation and retry collection on the next cleanup.
+            #[cfg(windows)]
+            if matches!(&removal, Err(NativeError::Io(io)) if io.kind() == std::io::ErrorKind::PermissionDenied)
+            {
+                // The recursive delete may already have removed the
+                // retirement marker. Restore it so a later cleanup will
+                // retry even if the ready marker survived.
+                write_json_atomically(
+                    &generation.retired_path(),
+                    &GenerationRetirement {
+                        schema_version: MANAGED_SCHEMA_VERSION,
+                        retired_at_ms: unix_time_ms(),
+                    },
+                )?;
+                return Ok(());
             }
+            removal?;
         }
         Ok(())
     }
