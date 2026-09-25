@@ -7,6 +7,8 @@ use serde_json::json;
 use std::fs::{self, File, OpenOptions};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(windows)]
+use std::os::windows::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -49,6 +51,57 @@ fn managed_materialization_activates_generations_atomically() {
     );
     assert_eq!(active_manifest.schema_version, 5);
     assert!(active_manifest.graph_build_digest.is_some());
+}
+
+#[cfg(windows)]
+#[test]
+fn managed_reads_survive_deferred_retired_generation_deletion() {
+    let repo = temp_repo("gc_busy");
+    write_managed_config(&repo);
+    write_source(&repo, "pub fn old_symbol() {}\n");
+    materialize_ok(&repo, None, None);
+
+    let storage_root = repo.join(".codebaseGraph").join("storage");
+    let old_root = generation_root(&storage_root, &active_generation_id(&storage_root));
+    // Allow reads and writes, but deny deletion of this database file.
+    let held_file = OpenOptions::new()
+        .read(true)
+        .share_mode(0x0000_0001 | 0x0000_0002)
+        .open(old_root.join("graph.ldb"))
+        .expect("old database should open without delete sharing");
+
+    write_source(&repo, "pub fn new_symbol() {}\n");
+    let published = materialize_ok(&repo, None, None);
+    assert_eq!(published["cleanup_pending"], true);
+    assert!(
+        old_root.exists(),
+        "busy retired generation must be preserved"
+    );
+
+    let result = CodebaseGraphApi::new()
+        .execute_operation(&OperationRequest::Search(SearchRequest {
+            repo: RepoSelector {
+                repo_root: Some(repo.clone()),
+                ..RepoSelector::default()
+            },
+            query: "new_symbol".to_string(),
+            layer: "semantic".to_string(),
+            profile: "brief".to_string(),
+            limit: 3,
+            budget: 0,
+            context_limit: 0,
+            max_depth: None,
+            detail: "slim".to_string(),
+            output_format: OutputFormat::Typed,
+        }))
+        .expect("new generation must remain queryable during deferred cleanup");
+    assert!(!result.payload["results"].as_array().unwrap().is_empty());
+
+    drop(held_file);
+    write_source(&repo, "pub fn final_symbol() {}\n");
+    let published = materialize_ok(&repo, None, None);
+    assert_eq!(published["cleanup_pending"], false);
+    assert!(!old_root.exists(), "retired generation should be collected");
 }
 
 #[cfg(unix)]
