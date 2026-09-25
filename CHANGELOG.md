@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.0.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.0...v3.0.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **storage:** keep graph reads available during Windows cleanup contention ([#134](https://github.com/rabii-chaarani/codebaseGraph/issues/134)) ([fd7362f](https://github.com/rabii-chaarani/codebaseGraph/commit/fd7362fc3d2b3a44837d151ed514cca69964c996))
+* **storage:** make direct publication recovery idempotent ([#126](https://github.com/rabii-chaarani/codebaseGraph/issues/126)) ([f674ece](https://github.com/rabii-chaarani/codebaseGraph/commit/f674ece9558dc903825f2266bd704d68cba20897))
+
 ## [3.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v2.0.0...v3.0.0) (2026-09-24)
 
 
