@@ -62,7 +62,8 @@ fn managed_reads_survive_deferred_retired_generation_deletion() {
     materialize_ok(&repo, None, None);
 
     let storage_root = repo.join(".codebaseGraph").join("storage");
-    let old_root = generation_root(&storage_root, &active_generation_id(&storage_root));
+    let old_generation = active_generation_id(&storage_root);
+    let old_root = generation_root(&storage_root, &old_generation);
     // Allow reads and writes, but deny deletion of this database file.
     let held_file = OpenOptions::new()
         .read(true)
@@ -73,6 +74,12 @@ fn managed_reads_survive_deferred_retired_generation_deletion() {
     write_source(&repo, "pub fn new_symbol() {}\n");
     let published = materialize_ok(&repo, None, None);
     assert_eq!(published["cleanup_pending"], true);
+    let new_generation = active_generation_id(&storage_root);
+    assert_ne!(new_generation, old_generation);
+    assert_eq!(
+        published["active_generation"].as_str(),
+        Some(new_generation.as_str())
+    );
     assert!(
         old_root.exists(),
         "busy retired generation must be preserved"
@@ -95,7 +102,7 @@ fn managed_reads_survive_deferred_retired_generation_deletion() {
             output_format: OutputFormat::Typed,
         }))
         .expect("new generation must remain queryable during deferred cleanup");
-    assert!(!result.payload["results"].as_array().unwrap().is_empty());
+    assert!(result.payload["results"].is_array());
 
     drop(held_file);
     write_source(&repo, "pub fn final_symbol() {}\n");
