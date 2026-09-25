@@ -768,11 +768,11 @@ impl ManagedStore {
             drop(lease);
             ensure_directory_without_symlinks(generation.root())?;
             let removal = remove_path_without_symlinks(generation.root());
-            // Windows can deny deletion while a reader still has a database
-            // file open after releasing its generation lease. Keep the
-            // retired generation and retry collection on the next cleanup.
+            // Windows can report ACCESS_DENIED (5) or SHARING_VIOLATION (32)
+            // while a reader still has a database file open after releasing
+            // its generation lease. Retry collection on the next cleanup.
             #[cfg(windows)]
-            if matches!(&removal, Err(NativeError::Io(io)) if io.kind() == std::io::ErrorKind::PermissionDenied)
+            if matches!(&removal, Err(NativeError::Io(io)) if matches!(io.raw_os_error(), Some(5 | 32)))
             {
                 // The recursive delete may already have removed the
                 // retirement marker. Restore it so a later cleanup will
