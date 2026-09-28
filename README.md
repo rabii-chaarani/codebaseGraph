@@ -2,23 +2,30 @@
 
 > Give coding agents a map before they touch the code.
 
+![A highlighted route through a repository graph, with branches connecting related nodes.](docs/assets/codebasegraph-map.png)
+
 [![crates.io](https://img.shields.io/crates/v/codebase-graph.svg)](https://crates.io/crates/codebase-graph)
 [![CI](https://github.com/rabii-chaarani/codebaseGraph/actions/workflows/ci.yml/badge.svg)](https://github.com/rabii-chaarani/codebaseGraph/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-`codebaseGraph` builds a local, automatically refreshed graph of your repository
-and exposes it through a native CLI and MCP, giving developers and AI coding
-agents focused answers about unfamiliar code.
+**A local code graph for developers and AI coding agents.**
 
-Use it to:
+codebaseGraph turns your repository into a searchable map of symbols and their
+relationships. Find where behavior lives, trace what connects to it, and inspect
+likely change impact through a native CLI or MCP tools. The managed service
+refreshes the graph as your code changes.
 
-- find definitions, symbols, and architectural entry points;
-- trace dependencies, callers, and runtime paths;
-- inspect likely change impact before editing; and
-- retrieve compact context, schemas, and bounded read-only query results.
+**Find the starting point.** Locate definitions, symbols, and architectural
+entry points in unfamiliar code.
 
-[Install](#quick-start) · [See a query](#a-first-query) ·
-[Connect MCP](#connect-an-mcp-client) · [Understand the flow](#how-it-works)
+**Follow the connections.** Explore dependencies, callers, and runtime paths
+around the code you are working on.
+
+**Bring back focused context.** Retrieve compact graph results to guide further
+inspection before making a change.
+
+[Get started](#quick-start) · [See a query](#a-first-query) ·
+[Connect your agent](#connect-an-mcp-client)
 
 ## A first query
 
