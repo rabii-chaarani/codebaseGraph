@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.0.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.1...v3.0.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **wiki:** preserve UTF-8 boundaries in recall snippets ([5bc3883](https://github.com/rabii-chaarani/codebaseGraph/commit/5bc38834db8b6686c75911d517f61fd99b81c4d4))
+* **wiki:** prevent Unicode memory recall from closing MCP transport ([366dd54](https://github.com/rabii-chaarani/codebaseGraph/commit/366dd543356a84c9b48ba882eaf9c46de4a0021c))
+
 ## [3.0.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.0...v3.0.1) (2026-09-25)
 
 
