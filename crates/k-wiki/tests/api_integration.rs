@@ -1647,6 +1647,102 @@ fn mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema() {
     }));
 }
 
+#[test]
+fn mcp_stdio_memory_recall_with_unicode_keeps_the_transport_open() {
+    let temp = TestDir::new("k-wiki-mcp-unicode-memory");
+    let bundle = temp.path().join("docs");
+    fs::create_dir_all(&bundle).expect("create bundle");
+    fs::write(
+        bundle.join("index.md"),
+        "---\nokf_version: '0.1'\ntitle: Docs\n---\n# Docs\n",
+    )
+    .expect("write bundle index");
+    let body = format!("🦀{}needle{}é", "x".repeat(47), "x".repeat(47));
+    let messages = [
+        json!({
+            "jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "params": {"protocolVersion": "2025-11-25"}
+        }),
+        json!({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+        json!({
+            "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+            "params": {"name": "wiki_memory_record", "arguments": {
+                "bundle_id": "docs", "memory_id": "unicode-note", "kind": "episodic",
+                "title": "Unicode note", "body_markdown": body,
+                "owner": "repository-agent", "created_at": "2026-09-30T00:00:00Z",
+                "sources": [{"kind": "test", "reference": "unicode fixture"}]
+            }}
+        }),
+        json!({
+            "jsonrpc": "2.0", "id": 3, "method": "tools/call",
+            "params": {"name": "wiki_memory_transition", "arguments": {
+                "bundle_id": "docs", "memory_id": "unicode-note", "to_status": "active",
+                "actor": "reviewer", "transitioned_at": "2026-09-30T01:00:00Z",
+                "reason": "verified fixture"
+            }}
+        }),
+        json!({
+            "jsonrpc": "2.0", "id": 4, "method": "tools/call",
+            "params": {"name": "wiki_memory_recall", "arguments": {
+                "bundle_id": "docs", "text": "needle"
+            }}
+        }),
+        json!({
+            "jsonrpc": "2.0", "id": 5, "method": "tools/call",
+            "params": {"name": "wiki_memory_recall", "arguments": {
+                "bundle_id": "docs", "text": "needle", "include_structured_content": true
+            }}
+        }),
+        json!({"jsonrpc": "2.0", "id": 6, "method": "ping"}),
+    ];
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_k-wiki"))
+        .arg("mcp")
+        .arg(&bundle)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start MCP binary");
+    {
+        let mut stdin = child.stdin.take().expect("MCP stdin");
+        for message in messages {
+            writeln!(stdin, "{message}").expect("write MCP request");
+        }
+    }
+    let output = child.wait_with_output().expect("wait for MCP binary");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let responses = String::from_utf8(output.stdout)
+        .expect("UTF-8 MCP output")
+        .lines()
+        .map(|line| serde_json::from_str::<Value>(line).expect("JSON-RPC response"))
+        .collect::<Vec<_>>();
+    assert_eq!(responses.len(), 6);
+    for (index, response) in responses.iter().enumerate() {
+        assert_eq!(response["id"], index + 1);
+        assert!(response.get("error").is_none(), "{response}");
+    }
+    let recalled: Value = serde_json::from_str(
+        responses[3]["result"]["content"][0]["text"]
+            .as_str()
+            .expect("text recall result"),
+    )
+    .expect("recall payload");
+    assert_eq!(recalled["kind"], "memory_recalled");
+    assert_eq!(recalled["result"].as_array().unwrap().len(), 1);
+    assert_eq!(recalled["result"][0]["memory_id"], "unicode-note");
+    assert_eq!(
+        recalled["result"][0]["snippet"],
+        format!("🦀{}<mark>needle</mark>{}é", "x".repeat(47), "x".repeat(47))
+    );
+    assert_eq!(responses[4]["result"]["structuredContent"], recalled);
+    assert_eq!(responses[5]["result"], json!({}));
+}
+
 #[tokio::test]
 async fn preview_http_dispatches_health_and_serves_static_content_with_security_headers() {
     let temp = TestDir::new("k-wiki-http");
