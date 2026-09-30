@@ -328,8 +328,15 @@ fn highlight_match(value: &str, normalized_query: &str, tokens: &[String]) -> Op
     }
 
     let (position, length) = matches.into_iter().min_by_key(|(position, _)| *position)?;
-    let start = position.saturating_sub(SNIPPET_RADIUS);
-    let end = value.len().min(position + length + SNIPPET_RADIUS);
+    let mut start = position.saturating_sub(SNIPPET_RADIUS);
+    let mut end = value.len().min(position + length + SNIPPET_RADIUS);
+    // Byte-based context windows can land inside a multibyte character.
+    while !value.is_char_boundary(start) {
+        start -= 1;
+    }
+    while !value.is_char_boundary(end) {
+        end += 1;
+    }
 
     let prefix = escape_html(&value[start..position]);
     let matched = escape_html(&value[position..position + length]);

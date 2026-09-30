@@ -59,6 +59,41 @@ fn snippets_are_html_escaped_bounded_and_deterministic() {
 }
 
 #[test]
+fn snippet_windows_preserve_utf8_boundaries() {
+    for character in ['é', '中', '🦀'] {
+        for offset in 1..character.len_utf8() {
+            let padding = "x".repeat(48 - offset);
+            for term in ["needle", "mémoire", "知识"] {
+                for (body, expected) in [
+                    (
+                        format!("{character}{padding}{term}"),
+                        format!("{character}{padding}<mark>{term}</mark>"),
+                    ),
+                    (
+                        format!("{term}{padding}{character}"),
+                        format!("<mark>{term}</mark>{padding}{character}"),
+                    ),
+                ] {
+                    let mut projection = sample_projection();
+                    let concept = &mut projection.bundles[0].concepts[0];
+                    concept.title = Some("Unicode note".into());
+                    concept.description = None;
+                    concept.headings.clear();
+                    concept.citations.clear();
+                    concept.extensions.clear();
+                    concept.body_markdown = body;
+
+                    let index = SearchIndex::build(&projection);
+                    let results = index.search(&SearchQuery::new(term));
+                    assert_eq!(results.len(), 1);
+                    assert_eq!(results[0].snippet.as_deref(), Some(expected.as_str()));
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn serialized_index_round_trips_deterministically() {
     let index = SearchIndex::build(&sample_projection());
     let first = index.to_bytes().expect("serialize search index");
