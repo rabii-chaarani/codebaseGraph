@@ -142,6 +142,8 @@ fn terminate(pid: u32) {
 }
 
 fn control(descriptor: &Value, command: &str, nonce: &str) -> String {
+    let mut payload = serde_json::to_vec(&json!({"nonce":nonce,"command":command})).unwrap();
+    payload.push(b'\n');
     let address = descriptor["endpoint"].as_str().unwrap();
     let mut stream = TcpStream::connect(address).unwrap();
     stream
@@ -150,31 +152,21 @@ fn control(descriptor: &Value, command: &str, nonce: &str) -> String {
     stream
         .set_write_timeout(Some(Duration::from_secs(2)))
         .unwrap();
-    serde_json::to_writer(&mut stream, &json!({"nonce":nonce,"command":command})).unwrap();
-    stream.write_all(b"\n").unwrap();
+    stream.write_all(&payload).unwrap();
     let mut reply = String::new();
     stream.read_to_string(&mut reply).unwrap();
     reply
 }
 
-fn control_after_connect_delay(descriptor: &Value) {
-    let mut stream = TcpStream::connect(descriptor["endpoint"].as_str().unwrap()).unwrap();
-    stream
-        .set_read_timeout(Some(Duration::from_secs(2)))
-        .unwrap();
-    thread::sleep(Duration::from_millis(50));
-    serde_json::to_writer(
-        &mut stream,
-        &json!({"nonce": descriptor["nonce"], "command":"PING"}),
-    )
-    .unwrap();
-    stream.write_all(b"\n").unwrap();
-    let mut reply = String::new();
-    stream.read_to_string(&mut reply).unwrap();
+fn verify_bounded_control_channel(descriptor: &Value) {
+    // The socket unit test covers delayed writes with an explicitly
+    // nonblocking accepted stream. Here use the production client's complete
+    // frame write so CI scheduling cannot consume half the frame deadline.
+    let reply = control(descriptor, "PING", descriptor["nonce"].as_str().unwrap());
     assert_eq!(
         reply.trim(),
         "OK",
-        "delayed authenticated control frame was rejected"
+        "authenticated control frame was rejected"
     );
 
     let mut slow = TcpStream::connect(descriptor["endpoint"].as_str().unwrap()).unwrap();
@@ -700,7 +692,7 @@ fn paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers(
 fn authenticated_cancellation_cleans_loader_and_retries_pending_edit() {
     let mut fixture = Fixture::new(false);
     fixture.pause(fixture.phase_pid);
-    control_after_connect_delay(&fixture.descriptor);
+    verify_bounded_control_channel(&fixture.descriptor);
     let rejected = control(&fixture.descriptor, "CANCEL test", "incorrect-capability");
     assert_eq!(rejected.trim(), "ERR");
     assert!(alive(fixture.phase_pid));
