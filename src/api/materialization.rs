@@ -308,10 +308,13 @@ pub(crate) fn execute_materialization_request(
     }
     let started = Instant::now();
     let final_request = request;
-    let mut response = match crate::execute_materialization_pipeline(&final_request) {
-        Ok(response) => response,
-        Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
-    };
+    let mut response =
+        match crate::db_writer::with_phase_workspace_root(execution.phase_workspace_root(), || {
+            crate::execute_materialization_pipeline(&final_request)
+        }) {
+            Ok(response) => response,
+            Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
+        };
     response.phase_timings.insert(
         "native_cli_seconds".to_string(),
         started.elapsed().as_secs_f64(),
@@ -400,6 +403,13 @@ enum StorageExecution {
 }
 
 impl StorageExecution {
+    fn phase_workspace_root(&self) -> PathBuf {
+        match self {
+            Self::Direct { session, .. } => session.phase_workspace_root(),
+            Self::Managed { session, .. } => session.phase_workspace_root(),
+        }
+    }
+
     fn storage_format(&self) -> &'static str {
         match self {
             Self::Direct { .. } => "direct",
@@ -878,13 +888,16 @@ fn prepare_storage_execution(options: &MaterializeOptions) -> Result<StorageExec
             } else {
                 None
             };
-            let workspace = RunWorkspace::create(
+            let mut workspace = RunWorkspace::create(
                 RepositoryLayout::new(&runtime.state_dir)
                     .state_root()
                     .join("direct-runs"),
                 None,
             )
             .map_err(|error| format!("failed to create direct run workspace: {error}"))?;
+            workspace
+                .set_cleanup_barrier(session.phase_workspace_root())
+                .map_err(|error| format!("failed to protect direct run workspace: {error}"))?;
             workspace
                 .mark_phase(RunPhase::Staged, None, None)
                 .map_err(|error| format!("failed to stage direct run workspace: {error}"))?;
@@ -1050,7 +1063,7 @@ fn finalize_materialization(
                 &published_manifest,
                 response,
             )?;
-            let cleanup = store
+            let cleanup = session
                 .recover_and_gc()
                 .map_err(|error| format!("failed to reconcile managed storage cleanup: {error}"))?;
             if cleanup.run_recovery.skipped_locked == 0 {
@@ -1189,6 +1202,7 @@ fn garbage_collect_artifacts(
 }
 
 fn cleanup_direct_candidate(session: &DirectWriteSession) -> Result<(), String> {
+    crate::storage::containment::ensure_registry_empty(&session.phase_workspace_root())?;
     let mut cleanup_errors = Vec::new();
     for path in [
         session.db_candidate_path(),
@@ -1438,6 +1452,49 @@ mod tests {
         assert!(retained_dir.exists());
         assert!(!stale_dir.exists());
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn direct_abort_retains_candidate_staging_and_phase_evidence_while_lease_is_held() {
+        let root = unique_temp_dir("codebase-graph-protected-direct-abort");
+        let layout = DirectLayout::new(root.join("graph.ldb"), root.join("manifest.json"));
+        let store = DirectStore::new(layout.clone()).unwrap();
+        let session = store.begin_write().unwrap();
+        let db_candidate = session.db_candidate_path();
+        fs::write(&db_candidate, "partial-db").unwrap();
+        let phase_root = session.phase_workspace_root();
+        let phase_workspace = phase_root.join("phase-test");
+        let lifecycle = phase_workspace.join(".lifecycle-test");
+        fs::create_dir_all(&lifecycle).unwrap();
+        let request_path = phase_workspace.join("request.json");
+        fs::write(&request_path, "retained request").unwrap();
+        let lease = fs::OpenOptions::new()
+            .create_new(true)
+            .read(true)
+            .write(true)
+            .open(lifecycle.join("lease"))
+            .unwrap();
+        fs2::FileExt::lock_exclusive(&lease).unwrap();
+        let mut workspace = RunWorkspace::create(root.join("direct-runs"), None).unwrap();
+        workspace.set_cleanup_barrier(phase_root).unwrap();
+        let staging_file = workspace.staging_root().join("partial.json");
+        fs::write(&staging_file, "[]").unwrap();
+        let error = StorageExecution::Direct {
+            db_path: layout.db_path().to_path_buf(),
+            manifest_path: layout.manifest_path().to_path_buf(),
+            artifact_root: layout.artifact_root_path(),
+            session,
+            workspace,
+            previous_manifest: None,
+        }
+        .abort_with_cleanup("guardian unavailable".into());
+        assert!(error.contains("containment_unknown"), "{error}");
+        assert!(db_candidate.exists());
+        assert!(staging_file.exists());
+        assert!(request_path.exists());
+        assert!(lifecycle.join("lease").exists());
+        drop(lease);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

@@ -34,15 +34,20 @@ struct SpillMetricsInner {
 
 impl SpillMetrics {
     fn add_live(&self, bytes: usize) {
-        let previous = self
-            .inner
-            .current_bytes
-            .fetch_update(
+        // Keep the saturating update compatible with the Rust 1.82 MSRV;
+        // newer toolchains deprecate fetch_update in favor of try_update.
+        let mut previous = self.inner.current_bytes.load(AtomicOrdering::Relaxed);
+        loop {
+            match self.inner.current_bytes.compare_exchange_weak(
+                previous,
+                previous.saturating_add(bytes),
                 AtomicOrdering::Relaxed,
                 AtomicOrdering::Relaxed,
-                |current| Some(current.saturating_add(bytes)),
-            )
-            .unwrap_or_else(|current| current);
+            ) {
+                Ok(_) => break,
+                Err(current) => previous = current,
+            }
+        }
         self.inner
             .high_water_bytes
             .fetch_max(previous.saturating_add(bytes), AtomicOrdering::Relaxed);
@@ -57,19 +62,27 @@ impl SpillMetrics {
     }
 
     fn release_live(&self, bytes: usize) {
-        let _ = self.inner.current_bytes.fetch_update(
+        let mut current = self.inner.current_bytes.load(AtomicOrdering::Relaxed);
+        while let Err(observed) = self.inner.current_bytes.compare_exchange_weak(
+            current,
+            current.saturating_sub(bytes),
             AtomicOrdering::Relaxed,
             AtomicOrdering::Relaxed,
-            |current| Some(current.saturating_sub(bytes)),
-        );
+        ) {
+            current = observed;
+        }
     }
 
     fn add_written(&self, bytes: u64) {
-        let _ = self.inner.bytes_written.fetch_update(
+        let mut current = self.inner.bytes_written.load(AtomicOrdering::Relaxed);
+        while let Err(observed) = self.inner.bytes_written.compare_exchange_weak(
+            current,
+            current.saturating_add(bytes),
             AtomicOrdering::Relaxed,
             AtomicOrdering::Relaxed,
-            |current| Some(current.saturating_add(bytes)),
-        );
+        ) {
+            current = observed;
+        }
     }
 
     pub(super) fn snapshot(&self) -> (u64, usize) {
@@ -795,6 +808,54 @@ mod tests {
         fn key_bytes(_key: &Self::Key) -> usize {
             std::mem::size_of::<u32>()
         }
+    }
+
+    #[test]
+    fn metrics_saturate_without_overflow_or_underflow() {
+        let metrics = SpillMetrics::default();
+        metrics.add_live(usize::MAX);
+        metrics.add_live(1);
+        assert_eq!(metrics.current_bytes(), usize::MAX);
+        assert_eq!(metrics.snapshot().1, usize::MAX);
+        metrics.release_live(usize::MAX);
+        metrics.release_live(1);
+        assert_eq!(metrics.current_bytes(), 0);
+        metrics.add_written(u64::MAX);
+        metrics.add_written(1);
+        assert_eq!(metrics.snapshot().0, u64::MAX);
+    }
+
+    #[test]
+    fn metrics_preserve_concurrent_charges_and_written_totals() {
+        let metrics = SpillMetrics::default();
+        let ready = Arc::new(std::sync::Barrier::new(5));
+        let release = Arc::new(std::sync::Barrier::new(5));
+        let threads = (0..4)
+            .map(|_| {
+                let metrics = metrics.clone();
+                let ready = ready.clone();
+                let release = release.clone();
+                std::thread::spawn(move || {
+                    let charge = metrics.charge(7);
+                    ready.wait();
+                    release.wait();
+                    drop(charge);
+                    for _ in 0..1_000 {
+                        let _charge = metrics.charge(7);
+                        metrics.add_written(3);
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+        ready.wait();
+        let charged = metrics.current_bytes();
+        release.wait();
+        for thread in threads {
+            thread.join().unwrap();
+        }
+        assert_eq!(charged, 28);
+        assert_eq!(metrics.current_bytes(), 0);
+        assert_eq!(metrics.snapshot(), (12_000, 28));
     }
 
     #[test]

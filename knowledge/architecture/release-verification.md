@@ -7,7 +7,7 @@ tags:
 - ci
 - provenance
 - release
-timestamp: 2026-09-24
+timestamp: 2026-10-15
 title: Native Release Verification
 type: architecture
 ---
@@ -24,7 +24,7 @@ The public target identifiers are:
 - `macos-x86_64`
 - `windows-x86_64`
 
-Unsupported host and target combinations fail before Cargo is invoked. Windows is the only target that selects release-mode tests and the `bundled-windows-extensions` feature. The `k-wiki` feature forwards to the Graph Runtime feature so every binary in a Windows archive has the same native extension contract.
+Unsupported host and target combinations fail before Cargo is invoked. Windows is the only target that selects optimized release-mode tests and the `bundled-windows-extensions` feature. The native test command selects the private `native-tests` Cargo profile, which inherits release optimization and enables debug assertions so the deterministic lifecycle fault fixtures and barriers are compiled and exercised. Its binaries stay in `target/native-tests`. Artifact builds retain ordinary release settings in `target/release` and exclude those barriers. The `k-wiki` feature forwards to the Graph Runtime feature so every binary in a Windows archive has the same native extension contract.
 
 ## Artifact contract
 
@@ -35,6 +35,8 @@ Every internal artifact also contains `provenance.json` with the schema version,
 ## CI contract
 
 CI runs only for pull requests targeting `main` and pushes to `main`. Formatting, Clippy, audit, package dry-run, and the four native targets remain independent jobs. The native matrix calls the reusable workflow in `.github/workflows/native.yml`, which checks out the requested SHA, prepares native dependencies, optionally runs the typed platform tests, and always builds and smokes the typed artifact.
+
+The reusable native job has a bounded 90-minute budget for platform tests followed by packaged artifact smoke checks.
 
 Pull requests validate artifacts without retaining them. Main pushes retain all four release-ready artifacts for 90 days. A final job named `required` depends on every mandatory job and is the sole stable repository-ruleset context.
 

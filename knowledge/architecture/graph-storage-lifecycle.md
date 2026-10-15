@@ -7,7 +7,7 @@ tags:
 - graph-storage
 - recovery
 - runbook
-timestamp: 2026-09-24
+timestamp: 2026-10-15
 title: Graph Storage Lifecycle and Recovery
 type: architecture
 ---
@@ -43,7 +43,18 @@ storage_root/
       request.json
       result.json
       stderr.log
-      START
+      .lifecycle-<id>/
+        lease
+        launch.json
+        ready.json
+        proof.json
+        writers.fifo (Unix)
+        receipt.json
+  phases/
+    phase-<id>/
+      request.json
+      request.stderr
+      .lifecycle-<id>/
   coordinator.lock
   coordinator.json
   refresh.lock
@@ -66,15 +77,31 @@ storage_root/
 7. **Paths are confined.** Cleanup accepts only expected descendants of the managed root, rejects symlinks and traversal, and never follows links into user data.
 8. **Direct paths remain transactional.** Explicit `--db` and `--manifest` targets use adjacent shadow files plus a checksummed recovery journal so the pair cannot remain half-published after a crash.
 9. **MCP database ownership is singular.** One `coordinator.lock` holder owns the API core and Ladybug access; follower MCP processes route over authenticated loopback and never open graph databases.
-10. **Worker ownership survives crashes.** One `worker.lock` holder records the child build ID and PID before releasing its start gate. A worker cannot continue after its coordinator pipe closes, and a successor reaps the recorded PID before cleanup or new work.
+10. **Worker ownership survives crashes.** The `worker.lock` holder persists version-2 containment state before releasing `START`. An independent guardian owns the full build tree and its lifetime lease. PIDs are diagnostic; persisted PIDs never authorize signalling. Cleanup and new writers require a terminal teardown receipt or verified empty containment.
 
-These rules replace the stale-file write-intent heuristic and all in-place partition deletion or replacement. The compatibility `atomic_rebuild` request field remains accepted but does not re-enable in-place mutation.\n\n## Refresh ownership\n\n`refresh.lock` is independent from `writer.lock` and `state.lock`. Its nonblocking exclusive holder is the only process allowed to create a repository watcher. Followers do not materialize and retry election every second with up to 250 ms of deterministic jitter; operating-system lock release enables takeover without a persisted leader record. On acquisition, the new leader reconciles the active manifest before it begins watching.\n\nManaged storage places the lock under `storage_root`. Direct storage derives a destination-scoped lock from the explicit database and manifest pair. Lock files reject symlinks. Refresh candidates still acquire the ordinary writer lock for the complete mutation, and an unchanged refresh may close its write session without publishing after comparing against the latest active manifest.
+These rules replace the stale-file write-intent heuristic and all in-place partition deletion or replacement. The compatibility `atomic_rebuild` request field remains accepted but does not re-enable in-place mutation.
+
+## Refresh ownership
+
+`refresh.lock` is independent from `writer.lock` and `state.lock`. Its nonblocking exclusive holder is the only process allowed to create a repository watcher. Followers do not materialize and retry election every second with up to 250 ms of deterministic jitter; operating-system lock release enables takeover without a persisted leader record. On acquisition, the new leader reconciles the active manifest before it begins watching.
+
+Managed storage places the lock under `storage_root`. Direct storage derives a destination-scoped lock from the explicit database and manifest pair. Lock files reject symlinks. Refresh candidates still acquire the ordinary writer lock for the complete mutation, and an unchanged refresh may close its write session without publishing after comparing against the latest active manifest.
 
 ## Coordinator and worker recovery
 
 `coordinator.lock` is scoped exactly like the repository runtime: beneath managed `storage_root`, or derived deterministically from a Direct database/manifest pair. The owner publishes a loopback-only endpoint, random capability token, protocol version, and PID in `coordinator.json`; Unix permissions are restricted to mode 0600. A successor removes the state file only when its token still matches, so stale shutdown cannot erase a newer owner.
 
-`worker.lock` is independent from coordinator, refresh, writer, and state locks. Its holder writes `worker.json` atomically with protocol version, build ID, and child PID, then creates the workspace `START` gate. The child's inherited control pipe is the primary parent-death signal. After leader death, the next holder waits at most five seconds for the recorded child to exit, removes only matching state, cleans only real `worker-*` directories, and then enters ordinary run-journal recovery.
+`worker.lock` is independent from coordinator, refresh, writer, and state locks. A small guardian establishes containment and owner-death monitoring before acknowledging readiness. The coordinator atomically persists the version-2 descriptor, then sends authenticated `START`. A random per-build capability protects the loopback control endpoint; capability-bearing files are private at creation (Unix mode 0600, Windows owner-only ACLs). A separate lifetime lease protects startup workspaces even before `worker.json` exists.
+
+Cancellation, memory failure, owner disconnect, startup failure, and unexpected worker exit use the same teardown path. Each attempt is bounded to five seconds. Verified abandoned guardians receive authenticated cancellation. Unknown containment preserves metadata, candidate files, and pending refresh work, and reports retryable `containment_unknown` instead of admitting another writer. Legacy PID-only records are retired automatically under exclusive worker ownership without signalling or waiting on their PIDs.
+
+On Unix, the guardian occupies its own session and retains the worker group leader unreaped with `waitid(WNOWAIT)` through teardown. Every native worker, loader, and timing wrapper inherits a writer to a private FIFO. The guardian kills the anchored group until FIFO EOF proves all writers have exited, then reaps the leader. Recovery opens the existing FIFO without recreating it and verifies device/inode identity; missing or mismatched proof, access failure, and `EAGAIN` remain unknown.
+
+On Windows, a private stable-Rust `CreateProcessW` adapter assigns the process to an unpredictable owner-protected job at creation through `JOB_LIST`. Restricted handle inheritance excludes the job handle; breakaway is disabled and `KILL_ON_JOB_CLOSE` covers guardian loss. The process stays suspended until `START`. Teardown requires `ActiveProcesses == 0` before resources can be retired.
+
+Standalone isolated database phases use the same guardian. Their requests and containment evidence live in a stable per-storage or per-Direct-destination `phases` registry outside disposable candidates and runs. Nested phases inherit their build's containment. Writer admission, publication replay, promotion, abort, and orphan cleanup consult the registry. Unknown containment blocks writes and destructive cleanup; managed readers keep the previous active generation. Direct readers may retain the prior bundle when there is no interrupted-publication journal; ambiguous replay remains blocked. Run workspaces persist their cleanup-barrier path so crash recovery respects the same constraint.
+
+The public CLI/MCP contracts, graph formats, and memory settings are unchanged. Version-1 internal helper roles fail before database work with an actionable daemon-restart error. New guarantees require the updated daemon and helpers together.
 
 If a worker publishes successfully but dies before writing its result, the supervisor compares the publication marker and active validated manifest, then synthesizes the completed response. A killed or failed worker never causes an incomplete candidate to become active.
 
@@ -129,8 +156,8 @@ A healthy idle managed store reports format v2, one active generation, zero run 
 
 1. Confirm the reported coordinator PID, refresh role `leader`, and worker PID. Quiesce the repository watcher and long-lived readers before reinstalling or investigating retirement; do not delete coordinator or worker state while their locks are held.
 2. Run health and record the storage format, active generation, pending runs, cleanup status, and physical/logical sizes.
-3. If a coordinator or worker died, allow a follower to acquire the released control locks. It will reap the recorded worker before entering the runtime. If a v2 run or publication was interrupted, health or another repository operation lets the janitor acquire unlocked run journals and recover them before normal work continues.
-4. If `cleanup_pending` remains true, confirm no process holds the run or retired-generation lease, then enter the runtime again. Do not manually delete a locked workspace or generation.
+3. If a coordinator or worker died, allow a follower to acquire the released control locks. It authenticates an abandoned guardian and terminates its containment, or proves the leftover containment empty, before retiring worker evidence. PID-only legacy records are retired without signalling their recorded PID. If a v2 run or publication was interrupted, health or another repository operation lets the janitor acquire unlocked run journals and recover them before normal work continues.
+4. If `cleanup_pending` or `containment_unknown` remains, preserve worker, phase, and run evidence. A later automatic retry can retire verified empty containment. Missing authority with surviving or unverifiable processes fails closed; do not delete its proof or signal a PID copied from metadata. Run and retired-generation leases still govern ordinary cleanup.
 5. For a schema-v1 repository, use explicit reinstall. Verify the new active generation and graph queries before restarting the watcher; successful reinstall deletes the renamed legacy state immediately.
 6. Confirm the idle store contains exactly one generation and no run directories. On Unix, also confirm no deleted legacy database file remains open.
 7. Restart the MCP watcher against the v2 configuration and repeat health plus search/context/query smoke tests.
@@ -138,6 +165,8 @@ A healthy idle managed store reports format v2, one active generation, zero run 
 If cleanup rejects a path or symlink, preserve the reported path and investigate the managed root rather than bypassing confinement. This design intentionally does not depend on a Ladybug fork, truncate patch, or dependency upgrade.
 
 ## Verification expectations
+
+Native lifecycle regressions cover legacy metadata naming an unrelated live PID, writer-lock contention, authenticated orphan recovery, paused loaders and workers, owner termination around readiness and `START`, macOS timing wrappers, measured RSS failure, private capability files, and bounded control input. Lost guardian authority preserves candidates and blocks writers until emptiness is proven. Interrupted work keeps the active generation unchanged and a later automatic retry succeeds without another source edit.
 
 Lifecycle regressions cover failure at parsing, staging, search construction, isolated database loading, database validation, and publication; abandoned-run recovery; symlink rejection; lease-delayed retirement; stale-base rejection; schema-v1 write rejection; reinstall restoration and immediate legacy deletion; direct-mode paired recovery; artifact invalidation and corruption; deterministic clean-rebuild equivalence; and artifact garbage collection.
 

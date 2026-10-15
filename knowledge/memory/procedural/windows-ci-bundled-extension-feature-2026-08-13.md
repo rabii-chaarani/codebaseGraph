@@ -3,14 +3,14 @@ agent_memory:
   version: 1
   kind: procedural
   scope: repository
-  status: active
+  status: superseded
   owner: codex
   created_at: 2026-08-13T00:00:00+09:30
   last_verified_at: 2026-08-13T00:00:00+09:30
   verified_by: codex
   review_after: null
   supersedes: []
-  superseded_by: null
+  superseded_by: windows-native-lifecycle-test-profile-2026-10-15
   sources:
   - kind: commit
     reference: '6eb6a88 fix(ci): bundle Windows Ladybug extensions'
@@ -30,6 +30,11 @@ agent_memory:
     actor: codex
     at: 2026-08-13T00:00:00+09:30
     reason: Verified against the CI fixes in commits 6eb6a88 and c637df0 and the successful Windows package and workspace-test jobs in GitHub Actions run 31667751952.
+  - from: active
+    to: superseded
+    actor: codex
+    at: 2026-10-15T02:12:20Z
+    reason: The bundled-extension requirement remains valid, but the old release-only test recipe omits debug-gated lifecycle regressions. The replacement preserves that invariant and records the isolated native-tests profile.
 description: Windows package and test jobs need the bundled extension Cargo feature when they execute codebase-graph.
 tags:
 - cargo

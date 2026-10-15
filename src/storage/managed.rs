@@ -1,5 +1,6 @@
 use crate::error::NativeError;
 use crate::storage::atomic::{create_new_file, sync_dir, write_json_atomically};
+use crate::storage::containment::{collect_registry, ensure_registry_empty, probe_registry};
 use crate::storage::layout::{
     direct_bundle_paths, managed_generation_id, validate_generation_id, CandidateGenerationLayout,
     GenerationPaths, ManagedLayout,
@@ -151,6 +152,9 @@ pub(crate) struct ManagedWriteSession {
 }
 
 impl ManagedWriteSession {
+    pub(crate) fn phase_workspace_root(&self) -> PathBuf {
+        self.store.layout.phase_workspace_root()
+    }
     pub(crate) fn staging_root(&self) -> Option<PathBuf> {
         self.workspace.as_ref().map(RunWorkspace::staging_root)
     }
@@ -242,9 +246,21 @@ impl ManagedWriteSession {
         }
     }
 
+    pub(crate) fn recover_and_gc(&self) -> Result<ManagedCleanupReport, NativeError> {
+        if self.writer_lease.is_none() {
+            return Err(NativeError::InvalidInput(
+                "managed cleanup requires this session's writer lease".into(),
+            ));
+        }
+        self.store.cleanup_with_owned_writer()
+    }
+
     pub(crate) fn finish(mut self) {
         self.finished = true;
         drop(self.writer_lease.take());
+        // A final old-generation reader may have released its lease while this
+        // writer still held publication ownership. Retry once after releasing it.
+        let _ = self.store.cleanup();
     }
 
     fn abort_after_error(&mut self, error: NativeError) -> NativeError {
@@ -341,14 +357,18 @@ impl ManagedStore {
     pub(crate) fn begin_write(&self) -> Result<ManagedWriteSession, NativeError> {
         self.ensure_layout()?;
         let writer_lease = self.open_writer_lock()?;
+        ensure_registry_empty(&self.layout.phase_workspace_root())
+            .map_err(NativeError::InvalidInput)?;
+        collect_registry(&self.layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
         let base_generation = self.read_active_with_shared_lock()?;
-        let workspace = RunWorkspace::create(
+        let mut workspace = RunWorkspace::create(
             self.layout.runs_root(),
             base_generation
                 .as_ref()
                 .map(|value| value.generation_id.clone()),
         )?;
 
+        workspace.set_cleanup_barrier(self.layout.phase_workspace_root())?;
         let generation_id = managed_generation_id();
         let candidate_layout =
             CandidateGenerationLayout::new(workspace.candidate_root(), generation_id.clone());
@@ -403,12 +423,25 @@ impl ManagedStore {
         }))
     }
 
-    pub(crate) fn recover_and_gc(&self) -> Result<ManagedCleanupReport, NativeError> {
-        self.cleanup()
-    }
-
     pub(crate) fn cleanup(&self) -> Result<ManagedCleanupReport, NativeError> {
         self.ensure_layout()?;
+        // Cleanup is opportunistic for readers. Never replay or collect while
+        // a writer or an unproven native phase still owns candidate files.
+        let Some(_writer_lease) =
+            try_open_locked(self.layout.writer_lock_path(), LockMode::Exclusive)?
+        else {
+            return self.pending_cleanup_report();
+        };
+        self.cleanup_with_owned_writer()
+    }
+
+    fn cleanup_with_owned_writer(&self) -> Result<ManagedCleanupReport, NativeError> {
+        if !matches!(
+            probe_registry(&self.layout.phase_workspace_root()),
+            Ok(true)
+        ) {
+            return self.pending_cleanup_report();
+        }
         let _state_lease = self.open_state_lock(LockMode::Exclusive)?;
         let mut report = ManagedCleanupReport::default();
         let mut active = self.read_active_generation()?;
@@ -418,6 +451,37 @@ impl ManagedStore {
             &mut report,
         )?;
         report.retired_generations_deleted = report.retired_deleted;
+        report.retired_generations_pending = report.retired_pending;
+        Ok(report)
+    }
+
+    fn pending_cleanup_report(&self) -> Result<ManagedCleanupReport, NativeError> {
+        // This report is observational: never acquire another writer's locks,
+        // replay journals, or remove retained work merely to report pending GC.
+        let mut report = ManagedCleanupReport::default();
+        report.run_recovery.skipped_locked =
+            existing_directories_with_prefix(&self.layout.runs_root(), "run-")?.len();
+        let active = match self.read_active_generation() {
+            Ok(active) => active,
+            Err(e) if is_not_found_error(&e) => None,
+            Err(e) => return Err(e),
+        };
+        for generation in existing_directories_with_prefix(&self.layout.generations_root(), "gen-")?
+        {
+            if active.as_ref().is_some_and(|a| {
+                generation
+                    .file_name()
+                    .is_some_and(|n| n == format!("gen-{}", a.generation_id).as_str())
+            }) {
+                continue;
+            }
+            match fs::symlink_metadata(generation.join("retired.json")) {
+                Ok(metadata) if metadata.is_file() => report.retired_pending += 1,
+                Ok(_) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => return Err(e.into()),
+            }
+        }
         report.retired_generations_pending = report.retired_pending;
         Ok(report)
     }
@@ -445,6 +509,8 @@ impl ManagedStore {
         candidate: &ManagedCandidate,
         graph_summary: &S,
     ) -> Result<(), NativeError> {
+        ensure_registry_empty(&self.layout.phase_workspace_root())
+            .map_err(NativeError::InvalidInput)?;
         validate_candidate_generation(&candidate.paths)?;
         write_generation_metadata_with_stats(
             &candidate.paths,
@@ -464,6 +530,8 @@ impl ManagedStore {
         workspace: &RunWorkspace,
         candidate: &ManagedCandidate,
     ) -> Result<String, NativeError> {
+        ensure_registry_empty(&self.layout.phase_workspace_root())
+            .map_err(NativeError::InvalidInput)?;
         let _state_lease = self.open_state_lock(LockMode::Exclusive)?;
         let mut active = self.read_active_generation()?;
         self.finish_run_locked(workspace.root(), &workspace.journal()?, &mut active, false)?;
@@ -550,6 +618,8 @@ impl ManagedStore {
         active: &mut Option<ActiveGeneration>,
         cleanup_run_root: bool,
     ) -> Result<(), NativeError> {
+        ensure_registry_empty(&self.layout.phase_workspace_root())
+            .map_err(NativeError::InvalidInput)?;
         let Some(candidate_id) = journal.candidate_generation_id.as_ref() else {
             if cleanup_run_root {
                 remove_run_root_confined(run_root, &self.layout.runs_root())?;
@@ -792,6 +862,17 @@ impl ManagedStore {
     }
 
     fn best_effort_cleanup_generation(&self, generation_id: &str) {
+        let Ok(Some(_writer_lease)) =
+            try_open_locked(self.layout.writer_lock_path(), LockMode::Exclusive)
+        else {
+            return;
+        };
+        if !matches!(
+            probe_registry(&self.layout.phase_workspace_root()),
+            Ok(true)
+        ) {
+            return;
+        }
         let Ok(Some(_state_lock)) =
             try_open_locked(self.layout.state_lock_path(), LockMode::Exclusive)
         else {
@@ -967,12 +1048,11 @@ fn generation_sizes(paths: &GenerationPaths) -> Result<FileSizeSummary, NativeEr
             physical += allocated_size(&metadata);
         }
     }
-    for path in [paths.manifest_path()] {
-        if path.exists() {
-            let metadata = fs::metadata(&path)?;
-            logical += metadata.len();
-            physical += allocated_size(&metadata);
-        }
+    let manifest = paths.manifest_path();
+    if manifest.exists() {
+        let metadata = fs::metadata(&manifest)?;
+        logical += metadata.len();
+        physical += allocated_size(&metadata);
     }
     Ok(FileSizeSummary {
         logical_size_bytes: logical,
@@ -1042,6 +1122,39 @@ fn remove_path_without_symlinks(path: &Path) -> Result<(), NativeError> {
         fs::remove_file(path)?;
     }
     Ok(())
+}
+
+fn existing_directories_with_prefix(
+    root: &Path,
+    prefix: &str,
+) -> Result<Vec<PathBuf>, NativeError> {
+    let entries = match fs::read_dir(root) {
+        Ok(entries) => entries,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(e.into()),
+    };
+    let mut paths = Vec::new();
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => return Err(e.into()),
+        };
+        if !entry
+            .file_name()
+            .to_str()
+            .is_some_and(|name| name.starts_with(prefix))
+        {
+            continue;
+        }
+        match entry.file_type() {
+            Ok(kind) if kind.is_dir() => paths.push(entry.path()),
+            Ok(_) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e.into()),
+        }
+    }
+    Ok(paths)
 }
 
 fn read_run_journal_or_default(path: &Path, name: &str) -> Result<RunJournal, NativeError> {

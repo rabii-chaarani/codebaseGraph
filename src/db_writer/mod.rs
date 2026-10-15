@@ -12,7 +12,9 @@ pub use access::{
     WRITE_RETRY_POLICY,
 };
 pub use extensions::preseed_ladybug_extensions;
-pub(crate) use phase::{execute_phase_file, register_phase_worker_executable};
+pub(crate) use phase::{
+    execute_phase_file, register_phase_worker_executable, with_phase_workspace_root,
+};
 pub use request::{LadybugWriteMetrics, LadybugWriteRequest};
 pub(crate) use rss::sample_process_rss;
 pub use write::{write_database, write_database_with_metrics};

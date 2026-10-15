@@ -46,8 +46,13 @@ pub(crate) fn run_process_args(args: Vec<String>) -> Result<(), String> {
 }
 
 fn run_internal_command(args: &[String]) -> Result<(), String> {
+    if let Some(()) = crate::process_lifecycle::run_internal(args)? {
+        return Ok(());
+    }
     match args.first().map(String::as_str) {
-        Some("ladybug-write-phase-v1") => {
+        Some("ladybug-write-phase-v1" | "materialization-worker-v1") => Err("internal protocol v1 is unsupported; restart the codebaseGraph daemon and helpers together".into()),
+        Some("ladybug-write-phase-v2") => {
+            crate::process_lifecycle::validate_inherited_containment()?;
             let request_path = args
                 .get(1)
                 .ok_or_else(|| "Ladybug write phase requires a request path".to_string())?;
@@ -56,7 +61,8 @@ fn run_internal_command(args: &[String]) -> Result<(), String> {
             }
             crate::db_writer::execute_phase_file(Path::new(request_path))
         }
-        Some("materialization-worker-v1") => {
+        Some("materialization-worker-v2") => {
+            crate::process_lifecycle::validate_inherited_containment()?;
             let request_path = args.get(1).ok_or_else(|| {
                 "materialization worker requires request and result paths".to_string()
             })?;
@@ -91,7 +97,7 @@ mod tests {
         .unwrap_err();
         assert_eq!(
             error,
-            "materialization worker requires request and result paths"
+            "internal protocol v1 is unsupported; restart the codebaseGraph daemon and helpers together"
         );
     }
 }

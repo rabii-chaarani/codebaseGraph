@@ -1,5 +1,6 @@
 use crate::error::NativeError;
 use crate::storage::atomic::{sync_dir, write_json_atomically};
+use crate::storage::containment::{collect_registry, ensure_registry_empty, probe_registry};
 use crate::storage::layout::{direct_bundle_paths, DirectLayout, DIRECT_DB_SIDECAR_SUFFIXES};
 use crate::storage::locks::{open_locked, LockMode, WriterLease};
 use serde::{Deserialize, Serialize};
@@ -44,6 +45,9 @@ pub(crate) struct DirectWriteSession {
 }
 
 impl DirectWriteSession {
+    pub(crate) fn phase_workspace_root(&self) -> PathBuf {
+        self.layout.phase_workspace_root()
+    }
     pub(crate) fn db_candidate_path(&self) -> PathBuf {
         self.layout.db_candidate_path()
     }
@@ -95,6 +99,7 @@ impl DirectStore {
     pub(crate) fn begin_write(&self) -> Result<DirectWriteSession, NativeError> {
         self.ensure_parents()?;
         let writer_lease = self.open_writer_lock()?;
+        collect_registry(&self.layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
         self.recover_with_lock()?;
         cleanup_candidate_set(&self.layout)?;
         Ok(DirectWriteSession {
@@ -106,6 +111,17 @@ impl DirectStore {
 
     pub(crate) fn begin_read(&self) -> Result<WriterLease, NativeError> {
         let writer_lease = self.open_writer_lock()?;
+        if !matches!(
+            probe_registry(&self.layout.phase_workspace_root()),
+            Ok(true)
+        ) {
+            if self.layout.journal_path().exists() {
+                return Err(NativeError::InvalidInput(
+                    "containment_unknown: direct publish replay blocked by protected phase".into(),
+                ));
+            }
+            return writer_lease.relock_shared();
+        }
         self.recover_with_lock()?;
         cleanup_candidate_set(&self.layout)?;
         writer_lease.relock_shared()
@@ -139,6 +155,8 @@ impl DirectStore {
     }
 
     fn recover_with_lock(&self) -> Result<(), NativeError> {
+        ensure_registry_empty(&self.layout.phase_workspace_root())
+            .map_err(NativeError::InvalidInput)?;
         let journal_path = self.layout.journal_path();
         if !journal_path.exists() {
             return Ok(());
@@ -153,6 +171,8 @@ impl DirectStore {
     }
 
     fn resume_publish(&self, mut journal: DirectPublishJournal) -> Result<(), NativeError> {
+        ensure_registry_empty(&self.layout.phase_workspace_root())
+            .map_err(NativeError::InvalidInput)?;
         if journal.phase == DirectPublishPhase::Prepared {
             promote_database_bundle(&journal)?;
             validate_checksum(&journal.db_path, &journal.db_sha256, "database")?;
@@ -270,6 +290,8 @@ impl DirectStore {
     }
 
     fn remove_journal_and_shadows(&self) -> Result<(), NativeError> {
+        ensure_registry_empty(&self.layout.phase_workspace_root())
+            .map_err(NativeError::InvalidInput)?;
         let journal_path = self.layout.journal_path();
         if journal_path.exists() {
             fs::remove_file(&journal_path)?;
@@ -340,6 +362,7 @@ fn replace_with_shadow(from: &Path, to: &Path) -> Result<(), NativeError> {
 }
 
 fn cleanup_candidate_set(layout: &DirectLayout) -> Result<(), NativeError> {
+    ensure_registry_empty(&layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
     for path in direct_bundle_paths(&layout.db_candidate_path()) {
         remove_if_safe_if_present(&path)?;
     }

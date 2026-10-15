@@ -1155,3 +1155,441 @@ fn sha256_hex(bytes: &[u8]) -> String {
         .map(|byte| format!("{byte:02x}"))
         .collect()
 }
+
+fn unknown_phase_registry(root: &std::path::Path) -> PathBuf {
+    use storage::containment::{BuildDescriptorV2, ContainmentProof};
+    let lifecycle = root.join("phase-test/.lifecycle-test");
+    fs::create_dir_all(&lifecycle).unwrap();
+    fs::write(lifecycle.join("lease"), b"").unwrap();
+    let descriptor = BuildDescriptorV2 {
+        version: 2,
+        build_id: "a".repeat(64),
+        lifecycle_dir: lifecycle.clone(),
+        endpoint: String::new(),
+        nonce: "b".repeat(64),
+        worker_pid: std::process::id(),
+        guardian_pid: 0,
+        proof: ContainmentProof::Pending,
+    };
+    write_json_atomically(&lifecycle.join("proof.json"), &descriptor).unwrap();
+    lifecycle
+}
+fn prove_phase_empty(lifecycle: &std::path::Path) {
+    use storage::containment::ExitOutcome;
+    write_json_atomically(
+        &lifecycle.join("receipt.json"),
+        &ExitOutcome {
+            success: false,
+            code: None,
+            signal: None,
+            high_water_bytes: 0,
+            budget_reason: None,
+            cancelled: true,
+            containment_empty: true,
+            supervision_error: None,
+        },
+    )
+    .unwrap();
+}
+#[test]
+fn phase_registry_probe_never_recreates_missing_roots_or_locks() {
+    let root = temp_dir("phase_probe");
+    let missing = root.join("missing");
+    assert!(storage::containment::probe_registry(&missing).unwrap());
+    assert!(!missing.exists());
+    let lifecycle = root.join("phase/.lifecycle-incomplete");
+    fs::create_dir_all(&lifecycle).unwrap();
+    fs::write(lifecycle.join("proof.json"), b"{}").unwrap();
+    assert!(!storage::containment::probe_registry(&root).unwrap());
+    assert!(!lifecycle.join("lease").exists());
+}
+#[test]
+fn managed_phase_unknown_preserves_candidate_and_active_read_until_empty() {
+    let root = temp_dir("managed_phase_barrier");
+    let store = open_managed_store(root.join("s"));
+    let base = publish_managed_generation(&store, b"base", json!({}));
+    let (run, candidate) = orphan_publishing_run(
+        &store,
+        Some(base.clone()),
+        b"candidate",
+        json!({}),
+        OrphanPublishStage::BeforeRename,
+    );
+    let lifecycle = unknown_phase_registry(&store.layout().phase_workspace_root());
+    assert!(store
+        .begin_write()
+        .unwrap_err()
+        .to_string()
+        .contains("containment_unknown"));
+    let blocked = store.cleanup().unwrap();
+    assert_eq!(blocked.run_recovery.publishing_recovered, 0);
+    assert_eq!(blocked.run_recovery.skipped_locked, 1);
+    assert!(run.exists());
+    assert_eq!(store.open_read().unwrap().generation_id, base);
+    assert!(lifecycle.join("proof.json").exists());
+    prove_phase_empty(&lifecycle);
+    assert_eq!(
+        store.cleanup().unwrap().run_recovery.publishing_recovered,
+        1
+    );
+    assert_eq!(store.open_read().unwrap().generation_id, candidate);
+    assert!(!run.exists());
+    drop(store.begin_write().unwrap());
+}
+#[test]
+fn managed_abort_and_drop_retain_runs_while_phase_unknown() {
+    let root = temp_dir("managed_abort_barrier");
+    let store = open_managed_store(root.join("s"));
+    let base = publish_managed_generation(&store, b"base", json!({}));
+    let session = store.begin_write().unwrap();
+    let candidate = session.candidate.paths.root().to_path_buf();
+    let lifecycle = unknown_phase_registry(&session.phase_workspace_root());
+    assert!(session
+        .abort(Some("failure".into()))
+        .unwrap_err()
+        .to_string()
+        .contains("containment_unknown"));
+    assert!(candidate.exists());
+    let pending = store.cleanup().unwrap();
+    assert_eq!(pending.run_recovery.deleted, 0);
+    assert_eq!(pending.run_recovery.skipped_locked, 1);
+    assert_eq!(store.open_read().unwrap().generation_id, base);
+    assert!(candidate.exists());
+    prove_phase_empty(&lifecycle);
+    let cleaned = store.cleanup().unwrap();
+    assert_eq!(cleaned.run_recovery.deleted, 1);
+    assert_eq!(cleaned.run_recovery.skipped_locked, 0);
+    assert!(!candidate.exists());
+    let session = store.begin_write().unwrap();
+    let candidate = session.candidate.paths.root().to_path_buf();
+    fs::remove_dir_all(store.layout().phase_workspace_root()).unwrap();
+    let lifecycle = unknown_phase_registry(&session.phase_workspace_root());
+    drop(session);
+    assert!(candidate.exists());
+    prove_phase_empty(&lifecycle);
+    store.cleanup().unwrap();
+    assert!(!candidate.exists());
+}
+#[test]
+fn direct_phase_unknown_preserves_base_and_blocks_publish_replay_and_cleanup() {
+    let root = temp_dir("direct_phase_barrier");
+    let layout = DirectLayout::new(root.join("graph.ldb"), root.join("manifest.json"));
+    let store = DirectStore::new(layout.clone()).unwrap();
+    fs::write(layout.db_path(), b"base").unwrap();
+    fs::write(layout.manifest_path(), b"{}").unwrap();
+    let mut session = store.begin_write().unwrap();
+    fs::write(session.db_candidate_path(), b"candidate").unwrap();
+    fs::write(session.manifest_candidate_path(), b"{}").unwrap();
+    let lifecycle = unknown_phase_registry(&session.phase_workspace_root());
+    assert!(session
+        .publish()
+        .unwrap_err()
+        .to_string()
+        .contains("containment_unknown"));
+    drop(session);
+    assert!(layout.db_candidate_path().exists());
+    drop(store.begin_read().unwrap());
+    assert_eq!(fs::read(layout.db_path()).unwrap(), b"base");
+    assert!(store
+        .begin_write()
+        .unwrap_err()
+        .to_string()
+        .contains("containment_unknown"));
+    write_json_atomically(
+        &layout.journal_path(),
+        &DirectPublishJournal {
+            phase: DirectPublishPhase::Prepared,
+            db_path: layout.db_path().into(),
+            db_candidate_path: layout.db_candidate_path(),
+            manifest_path: layout.manifest_path().into(),
+            manifest_candidate_path: layout.manifest_candidate_path(),
+            db_sha256: sha256_hex(b"candidate"),
+            manifest_sha256: sha256_hex(b"{}"),
+            sidecar_sha256: BTreeMap::new(),
+        },
+    )
+    .unwrap();
+    assert!(store
+        .begin_read()
+        .unwrap_err()
+        .to_string()
+        .contains("containment_unknown"));
+    assert!(layout.db_candidate_path().exists());
+    prove_phase_empty(&lifecycle);
+    drop(store.begin_read().unwrap());
+    assert_eq!(fs::read(layout.db_path()).unwrap(), b"candidate");
+    assert!(!layout.db_candidate_path().exists());
+}
+
+#[test]
+fn persisted_run_barrier_survives_drop_and_blocks_generic_orphan_collection() {
+    let root = temp_dir("run_phase_barrier");
+    let runs = root.join("runs");
+    let registry = root.join("phases");
+    let mut run = RunWorkspace::create(&runs, None).unwrap();
+    run.set_cleanup_barrier(registry.clone()).unwrap();
+    let run_root = run.root().to_path_buf();
+    fs::write(run.candidate_root().join("owned"), b"candidate").unwrap();
+    let lifecycle = unknown_phase_registry(&registry);
+    drop(run);
+    assert!(run_root.join("candidate/owned").exists());
+    assert_eq!(
+        RunWorkspace::cleanup_orphans(&runs).unwrap().skipped_locked,
+        1
+    );
+    assert!(run_root.exists());
+    prove_phase_empty(&lifecycle);
+    assert_eq!(RunWorkspace::cleanup_orphans(&runs).unwrap().deleted, 1);
+    assert!(!run_root.exists());
+}
+
+#[test]
+fn empty_prelease_startup_is_retired_and_does_not_block_next_writer() {
+    let root = temp_dir("prelease_retire");
+    let store = open_managed_store(root.join("s"));
+    let phase = store.layout().phase_workspace_root().join("phase-orphan");
+    let lifecycle = phase.join(".lifecycle-empty");
+    fs::create_dir_all(&lifecycle).unwrap();
+    assert!(storage::containment::probe_registry(&store.layout().phase_workspace_root()).unwrap());
+    assert!(lifecycle.join("retired").is_file());
+    assert!(
+        fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(lifecycle.join("lease"))
+            .is_err(),
+        "late preparer must fail before it can publish launch metadata"
+    );
+    drop(store.begin_write().unwrap());
+    assert!(
+        !phase.exists(),
+        "later writer collects the safely retired orphan"
+    );
+}
+#[test]
+fn missing_lease_with_any_launch_evidence_remains_unknown() {
+    let root = temp_dir("prelease_unknown");
+    for name in ["launch.json", "proof.json", "ready.json", "receipt.json"] {
+        let lifecycle = root.join(format!("phase-{name}/.lifecycle-proof"));
+        fs::create_dir_all(&lifecycle).unwrap();
+        fs::write(lifecycle.join(name), b"{}").unwrap();
+        assert!(!storage::containment::probe_lifecycle(&lifecycle).unwrap());
+        assert!(!lifecycle.join("lease").exists());
+        assert!(!lifecycle.join("retired").exists());
+    }
+}
+#[test]
+fn phase_registry_collection_retains_unknown_siblings_then_reclaims_empty_orphans() {
+    let root = temp_dir("registry_collect");
+    let registry = root.join("phases");
+    let known_parent = registry.join("phase-known");
+    let known = unknown_phase_registry(&known_parent);
+    prove_phase_empty(&known);
+    fs::write(known_parent.join("request.json"), b"{}").unwrap();
+    fs::write(known_parent.join("stderr"), b"diagnostics").unwrap();
+    let unknown_parent = registry.join("phase-unknown");
+    let unknown = unknown_phase_registry(&unknown_parent);
+    assert!(storage::containment::collect_registry(&registry)
+        .unwrap_err()
+        .contains("containment_unknown"));
+    assert!(known_parent.exists());
+    assert!(unknown_parent.exists());
+    prove_phase_empty(&unknown);
+    storage::containment::collect_registry(&registry).unwrap();
+    assert!(!known_parent.exists());
+    assert!(!unknown_parent.exists());
+}
+
+#[test]
+fn relative_registry_probe_matches_absolute_private_descriptor() {
+    let relative = PathBuf::from("target").join(format!("registry-{}", managed_generation_id()));
+    let absolute = std::env::current_dir().unwrap().join(&relative);
+    let lifecycle = unknown_phase_registry(&absolute);
+    prove_phase_empty(&lifecycle);
+    assert!(storage::containment::probe_registry(&relative).unwrap());
+    assert!(lifecycle.join("retired").exists());
+    fs::remove_dir_all(absolute).unwrap();
+}
+
+#[test]
+fn owned_writer_cleanup_reports_readers_and_collects_after_their_release() {
+    let root = temp_dir("owned_writer_gc");
+    let store = open_managed_store(root.join("s"));
+    let base = publish_managed_generation(&store, b"base", json!({}));
+    let reader = store.open_read().unwrap();
+    let mut session = store.begin_write().unwrap();
+    write_candidate_generation(&session.candidate.paths, b"next", json!({}), false);
+    session
+        .publish_with_stats(&GraphSummary::default())
+        .unwrap();
+    let observed = store.cleanup().unwrap();
+    assert_eq!(
+        observed.retired_generations_pending, 1,
+        "contended cleanup still reports the retained retirement marker"
+    );
+    assert_eq!(
+        session
+            .recover_and_gc()
+            .unwrap()
+            .retired_generations_pending,
+        1
+    );
+    assert!(store.layout().generation(&base).unwrap().root().exists());
+    drop(reader);
+    assert_eq!(
+        session
+            .recover_and_gc()
+            .unwrap()
+            .retired_generations_pending,
+        0
+    );
+    assert!(!store.layout().generation(&base).unwrap().root().exists());
+    session.finish();
+    assert_eq!(
+        fs::read_dir(store.layout().generations_root())
+            .unwrap()
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn persisted_relative_barrier_survives_cleanup_from_a_different_process_cwd() {
+    use fs2::FileExt;
+    let root = temp_dir("cwd_barrier");
+    let other = root.join("other");
+    fs::create_dir(&other).unwrap();
+    let runs = root.join("runs");
+    let lifecycle = root.join("phases/phase-owned/.lifecycle-unready");
+    fs::create_dir_all(&lifecycle).unwrap();
+    let lease = fs::OpenOptions::new()
+        .create_new(true)
+        .read(true)
+        .write(true)
+        .open(lifecycle.join("lease"))
+        .unwrap();
+    lease.lock_exclusive().unwrap();
+    run_relative_barrier_fixture(&root, &runs, "create", true);
+    let run_root = fs::read_dir(&runs).unwrap().next().unwrap().unwrap().path();
+    assert!(run_root.join("candidate/owned").is_file());
+    assert!(!other.join("phases").exists());
+    run_relative_barrier_fixture(&other, &runs, "cleanup", true);
+    assert!(run_root.exists());
+    drop(lease);
+    run_relative_barrier_fixture(&other, &runs, "cleanup", false);
+    assert!(!run_root.exists());
+    assert!(!other.join("phases").exists());
+}
+fn run_relative_barrier_fixture(
+    cwd: &std::path::Path,
+    runs: &std::path::Path,
+    mode: &str,
+    retained: bool,
+) {
+    use std::{
+        process::{Command, Stdio},
+        thread,
+        time::{Duration, Instant},
+    };
+    let mut child = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--ignored",
+            "--exact",
+            "relative_barrier_subprocess_fixture",
+            "--nocapture",
+        ])
+        .current_dir(cwd)
+        .env("CBG_BARRIER_FIXTURE_RUNS", runs)
+        .env("CBG_BARRIER_FIXTURE_MODE", mode)
+        .env(
+            "CBG_BARRIER_FIXTURE_RETAINED",
+            if retained { "yes" } else { "no" },
+        )
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        if child.try_wait().unwrap().is_some() {
+            let output = child.wait_with_output().unwrap();
+            assert!(
+                output.status.success(),
+                "barrier fixture {mode} failed: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return;
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let output = child.wait_with_output().unwrap();
+            panic!(
+                "barrier fixture {mode} timed out: {}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+#[test]
+#[ignore = "subprocess fixture for cwd-independent run cleanup"]
+fn relative_barrier_subprocess_fixture() {
+    let Some(runs) = std::env::var_os("CBG_BARRIER_FIXTURE_RUNS") else {
+        return;
+    };
+    let runs = PathBuf::from(runs);
+    match std::env::var("CBG_BARRIER_FIXTURE_MODE").unwrap().as_str() {
+        "create" => {
+            let mut run = RunWorkspace::create(&runs, None).unwrap();
+            run.set_cleanup_barrier(PathBuf::from("phases")).unwrap();
+            let root = run.root().to_path_buf();
+            fs::write(run.candidate_root().join("owned"), b"candidate").unwrap();
+            drop(run);
+            assert!(root.join("candidate/owned").is_file());
+        }
+        "cleanup" => {
+            let retained = std::env::var("CBG_BARRIER_FIXTURE_RETAINED").unwrap() == "yes";
+            let report = RunWorkspace::cleanup_orphans(&runs).unwrap();
+            assert_eq!(report.skipped_locked, usize::from(retained));
+            assert_eq!(report.deleted, usize::from(!retained));
+        }
+        mode => panic!("unknown barrier fixture mode: {mode}"),
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn private_lifecycle_receipt_accepts_ancestor_alias_but_rejects_foreign_or_symlink_roots() {
+    use std::os::unix::fs::symlink;
+    use storage::containment::{probe_lifecycle, BuildDescriptorV2};
+    let root = temp_dir("lifecycle_alias");
+    let physical = root.join("physical");
+    let lifecycle = unknown_phase_registry(&physical);
+    prove_phase_empty(&lifecycle);
+    let alias = root.join("alias");
+    symlink(&physical, &alias).unwrap();
+    let alias_lifecycle = alias.join("phase-test/.lifecycle-test");
+    assert!(!fs::symlink_metadata(&alias_lifecycle)
+        .unwrap()
+        .file_type()
+        .is_symlink());
+    assert!(probe_lifecycle(&alias_lifecycle).unwrap());
+    assert!(lifecycle.join("retired").is_file());
+    let foreign = unknown_phase_registry(&root.join("foreign"));
+    prove_phase_empty(&foreign);
+    let mut descriptor: BuildDescriptorV2 =
+        serde_json::from_slice(&fs::read(lifecycle.join("proof.json")).unwrap()).unwrap();
+    write_json_atomically(&foreign.join("proof.json"), &descriptor).unwrap();
+    assert!(!probe_lifecycle(&foreign).unwrap());
+    let leaf_alias = root.join(".lifecycle-symlink");
+    symlink(&lifecycle, &leaf_alias).unwrap();
+    assert!(!probe_lifecycle(&leaf_alias).unwrap());
+    descriptor.lifecycle_dir = leaf_alias;
+    write_json_atomically(&lifecycle.join("proof.json"), &descriptor).unwrap();
+    assert!(!probe_lifecycle(&lifecycle).unwrap());
+    descriptor.lifecycle_dir = root.join("missing");
+    write_json_atomically(&lifecycle.join("proof.json"), &descriptor).unwrap();
+    assert!(!probe_lifecycle(&lifecycle).unwrap());
+}

@@ -172,8 +172,10 @@ fn native_test(args: Vec<String>) -> Result<(), String> {
 fn native_test_command(target: NativeTarget) -> Vec<&'static str> {
     let mut args = vec!["test", "--workspace", "--locked"];
     if target.uses_windows_extensions() {
+        // Keep optimized fault-test binaries separate from shipped artifacts.
         args.extend([
-            "--release",
+            "--profile",
+            "native-tests",
             "--features",
             "codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions",
         ]);
@@ -2257,14 +2259,24 @@ mod tests {
     #[test]
     fn windows_native_tests_forward_bundled_extensions() {
         let windows = native_test_command(NativeTarget::WindowsX86_64);
-        assert!(windows.contains(&"--release"));
+        assert!(windows
+            .windows(2)
+            .any(|pair| pair == ["--profile", "native-tests"]));
+        assert!(!windows.contains(&"--release"));
         assert!(windows.contains(
             &"codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions"
         ));
 
-        let linux = native_test_command(NativeTarget::LinuxX86_64);
-        assert!(!linux.contains(&"--features"));
-        assert!(!linux.contains(&"--release"));
+        for target in [
+            NativeTarget::LinuxX86_64,
+            NativeTarget::MacosArm64,
+            NativeTarget::MacosX86_64,
+        ] {
+            let unix = native_test_command(target);
+            assert!(!unix.contains(&"--features"));
+            assert!(!unix.contains(&"--release"));
+            assert!(!unix.contains(&"--profile"));
+        }
     }
 
     #[test]

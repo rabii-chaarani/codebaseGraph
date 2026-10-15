@@ -91,6 +91,10 @@ impl ManagedLayout {
         self.storage_root.join("generations")
     }
 
+    pub(crate) fn phase_workspace_root(&self) -> PathBuf {
+        self.storage_root.join("phases")
+    }
+
     pub(crate) fn runs_root(&self) -> PathBuf {
         self.storage_root.join("runs")
     }
@@ -258,6 +262,10 @@ impl DirectLayout {
     pub(crate) fn worker_workspace_root_path(&self) -> PathBuf {
         let parent = self.db_path.parent().unwrap_or_else(|| Path::new("."));
         parent.join(format!(".direct-workers-{}", self.destination_key()))
+    }
+
+    pub(crate) fn phase_workspace_root(&self) -> PathBuf {
+        self.worker_workspace_root_path().join("phases")
     }
 
     pub(crate) fn worker_state_path(&self) -> PathBuf {
