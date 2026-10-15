@@ -1,4 +1,5 @@
 pub(crate) mod atomic;
+pub(crate) mod containment;
 pub(crate) mod direct;
 pub(crate) mod layout;
 pub(crate) mod locks;

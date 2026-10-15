@@ -6,7 +6,7 @@ tags:
 - graph-runtime
 - recovery
 - refresh
-timestamp: 2026-09-08
+timestamp: 2026-10-15
 title: Graph Freshness and Recovery
 type: architecture
 ---
@@ -32,7 +32,11 @@ Pending changes survive failed attempts. Dirty epochs are recorded before releva
 
 Refresh failures remain observable and recover through supervision. Transient storage, source-change, and worker-exit errors retry with bounded delays. Persistent errors retain unsatisfied work and use paced retries, including increasing blocked backoff. Scheduling and `next_retry_unix_ms` share the same deadline. Corrected configuration is loaded before another attempt, so a failing build does not keep retrying with obsolete limits.
 
-Dropping the last coordinator owner stops the refresh task. Registered MCP materialization workers support cancellation while waiting for ownership and while running: the child is killed and reaped, progress is drained, and worker state, workspace, and ownership are released. The embedded fallback without a registered executable remains synchronous and only checks cancellation before dispatch.
+Dropping the last coordinator owner stops the refresh task. Registered MCP materialization workers establish an independent guardian before native execution. After readiness, the coordinator persists a private version-2 containment descriptor and releases authenticated `START`. Cancellation while waiting for ownership remains interruptible. During execution, cancellation, memory failure, owner loss, and unexpected exit terminate the whole contained build, including native database loaders and optional timing wrappers. Progress is drained and transient state is retired only after teardown is proven complete. The embedded fallback without a registered executable remains synchronous and only checks cancellation before dispatch.
+
+Recovery treats persisted PIDs as diagnostic information. An exclusive successor automatically retires legacy PID-only metadata without signalling its PID. Version-2 recovery authenticates a live guardian or verifies empty containment from its terminal receipt or platform proof. Each teardown attempt is bounded to five seconds. Missing authority or unverifiable survivors report retryable `containment_unknown`, preserve evidence, and retain the dirty epoch; a later retry can continue without another source edit. Guardian lifetime leases also protect workspaces when startup stops before `worker.json` is published.
+
+Standalone isolated database phases keep requests and containment evidence in a stable registry outside disposable run/candidate directories. Storage writer admission, publication replay, and cleanup respect this barrier. Managed reads keep the previous active graph while cleanup remains blocked. Old internal helper protocols fail before database work with a daemon-restart error; the new guarantees require the updated daemon and helpers together. Public CLI/MCP interfaces, graph formats, and configured memory limits remain unchanged.
 
 ## Source selection and configuration
 
@@ -71,7 +75,7 @@ The default block output includes refresh state, liveness, effective root, pendi
 
 ## Verification and operational recovery
 
-Regression coverage includes unrelated-cwd config-only daemon startup with persistent MCP create/rename/delete queries; direct recovery journal compatibility; native-request source provenance; excluded unreadable directories; changes during source snapshots; pathless rescan and configuration fingerprints; failed work and retry deadlines; worker cancellation and lock waits; and real HTTP budget failure followed by config repair without another source edit. Process tests also exercise live exclusions and command-line override precedence.
+Regression coverage includes unrelated-cwd config-only daemon startup with persistent MCP create/rename/delete queries; direct recovery journal compatibility; native-request source provenance; excluded unreadable directories; changes during source snapshots; pathless rescan and configuration fingerprints; failed work and retry deadlines; worker cancellation and lock waits; and real HTTP budget failure followed by config repair without another source edit. Process tests also exercise live exclusions and command-line override precedence. Native containment tests cover stale metadata referencing an unrelated live PID, lock contention, authenticated orphan recovery, paused loaders/workers, startup owner loss, real RSS failure, macOS timing wrappers, and lost-authority retention. Interrupted work preserves the active generation; automatic retry must publish the pending change without another edit.
 
 Use the rebuilt runtime for operational recovery, retain the current managed graph, restart the affected daemon, and verify effective root, successful reconciliation, visible source changes, and no pending failures. Reinstalling or deleting the graph is not the repair. A manual rebuild alone cannot correct an old daemon's source-root or refresh-lifecycle behavior.
 

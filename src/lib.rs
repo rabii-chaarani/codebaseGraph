@@ -17,6 +17,7 @@ pub(crate) mod mcp_client;
 mod normalize;
 mod parser;
 mod partition_builder;
+mod process_lifecycle;
 mod profiles;
 pub mod protocol;
 mod scan;

@@ -3,9 +3,10 @@ use crate::api::{
     execute_candidate_materialization, execute_materialization, read_manifest, MaterializeOptions,
     RepoSelector,
 };
-use crate::db_writer::sample_process_rss;
-use crate::error::{MemoryBudgetExceeded, NativeError};
 use crate::hash::sha256_file;
+use crate::process_lifecycle::{
+    self, BuildDescriptorV2, ExitOutcome, OutputMode, PreparedChild, RecoveryOutcome, SpawnSpec,
+};
 use crate::protocol::{
     GraphSummary, ManifestDiff, NativeSyntaxMaterializationResponse, ProgressEvent,
 };
@@ -15,21 +16,18 @@ use crate::storage::locks::{try_open_locked, LockMode, WorkerLease};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, ExitStatus, Stdio};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, OnceLock};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
 
-const WORKER_PROTOCOL_VERSION: u64 = 1;
-const RSS_SAMPLE_INTERVAL: Duration = Duration::from_millis(25);
-const MEMORY_HEADROOM_BYTES: u64 = 16 * 1024 * 1024;
+const WORKER_PROTOCOL_VERSION: u64 = 2;
+const WORKER_STATE_VERSION: u64 = 2;
 const MAX_PROGRESS_FRAME_BYTES: usize = 64 * 1024;
 const MAX_CHILD_ERROR_BYTES: usize = 64 * 1024;
 const SUPERVISOR_CHECK_INTERVAL: Duration = Duration::from_millis(50);
-const ORPHAN_EXIT_TIMEOUT: Duration = Duration::from_secs(5);
 const MIB: u64 = 1024 * 1024;
 const MATERIALIZATION_CANCELLED_ERROR: &str = r#"{"error":"materialization_cancelled"}"#;
 static WORKER_EXECUTABLE: OnceLock<PathBuf> = OnceLock::new();
@@ -41,7 +39,6 @@ struct MaterializationWorkerRequest {
     build_id: String,
     options: MaterializeOptions,
     candidate_paths: Option<Vec<String>>,
-    supervisor_pid: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -66,16 +63,6 @@ struct WorkerState {
     version: u64,
     build_id: String,
     worker_pid: u32,
-}
-
-struct SupervisorWatchdog {
-    finished: Arc<AtomicBool>,
-}
-
-impl Drop for SupervisorWatchdog {
-    fn drop(&mut self) {
-        self.finished.store(true, Ordering::Release);
-    }
 }
 
 pub(crate) fn register_worker_executable(path: PathBuf) {
@@ -146,7 +133,6 @@ fn execute_worker(
     let request_path = workspace.join("request.json");
     let result_path = workspace.join("result.json");
     let stderr_path = workspace.join("stderr.log");
-    let start_path = workspace.join("START");
     let state_path = worker_state_path(options)?;
     let before_publication = publication_marker(options)?;
     if let Err(error) = write_worker_request(
@@ -156,133 +142,125 @@ fn execute_worker(
             build_id: build_id.clone(),
             options: options.clone(),
             candidate_paths,
-            supervisor_pid: std::process::id(),
         },
     ) {
         cleanup_worker_workspace(&workspace);
         return Err(error);
     }
 
-    let stderr = match OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&stderr_path)
-    {
-        Ok(stderr) => stderr,
-        Err(error) => {
-            cleanup_worker_workspace(&workspace);
-            return Err(format!(
-                "failed to create materialization worker stderr: {error}"
-            ));
-        }
-    };
-    let mut command = Command::new(executable);
-    command
-        .arg("__codebase_graph_internal")
-        .arg("materialization-worker-v1")
-        .arg(&request_path)
-        .arg(&result_path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::from(stderr));
-    if should_cancel() {
-        cleanup_worker_workspace(&workspace);
-        return Err(materialization_cancelled_error());
-    }
-    let mut child = match command.spawn() {
-        Ok(child) => child,
-        Err(error) => {
-            cleanup_worker_workspace(&workspace);
-            return Err(format!("failed to start materialization worker: {error}"));
-        }
-    };
-    let pid = child.id();
-    if should_cancel() {
-        let _ = kill_and_reap_child(&mut child);
-        cleanup_worker_workspace(&workspace);
-        return Err(materialization_cancelled_error());
-    }
-    if let Err(error) = write_json_atomically(
-        &state_path,
-        &WorkerState {
-            version: WORKER_PROTOCOL_VERSION,
-            build_id: build_id.clone(),
-            worker_pid: pid,
-        },
-    ) {
-        let _ = kill_and_reap_child(&mut child);
-        remove_worker_state(&state_path, &build_id);
-        cleanup_worker_workspace(&workspace);
-        return Err(format!(
-            "failed to record materialization worker state: {error}"
-        ));
-    }
-    if should_cancel() {
-        let _ = kill_and_reap_child(&mut child);
-        remove_worker_state(&state_path, &build_id);
-        cleanup_worker_workspace(&workspace);
-        return Err(materialization_cancelled_error());
-    }
-    if let Err(error) = fs::write(&start_path, b"ready\n") {
-        let _ = kill_and_reap_child(&mut child);
-        remove_worker_state(&state_path, &build_id);
-        cleanup_worker_workspace(&workspace);
-        return Err(format!("failed to release materialization worker: {error}"));
-    }
-    if should_cancel() {
-        let _ = kill_and_reap_child(&mut child);
-        remove_worker_state(&state_path, &build_id);
-        cleanup_worker_workspace(&workspace);
-        return Err(materialization_cancelled_error());
-    }
-    worker_pid(Some(pid));
-    let mut progress = child
-        .stdout
-        .take()
-        .map(|stdout| thread::spawn(move || drain_progress(stdout)));
-    let memory_limit = match options
+    let memory_limit = options
         .worker_memory_mib
         .unwrap_or(DEFAULT_WORKER_MEMORY_MIB)
         .checked_mul(MIB)
-    {
-        Some(memory_limit) => memory_limit,
-        None => {
-            let _ = kill_and_reap_child(&mut child);
-            join_progress(progress.take());
-            clear_worker_execution_state(&state_path, &build_id, &workspace, &mut worker_pid);
-            return Err("materialization worker memory limit overflowed".to_string());
-        }
-    };
-    let supervision = supervise_worker_process(&mut child, pid, memory_limit, &should_cancel);
-    let supervision = match supervision {
-        Ok(supervision) => supervision,
+        .ok_or_else(|| {
+            cleanup_worker_workspace(&workspace);
+            "materialization worker memory limit overflowed".to_string()
+        })?;
+    let mut child = match PreparedChild::prepare(SpawnSpec {
+        program: executable.clone(),
+        guardian_executable: Some(executable.clone()),
+        args: vec![
+            "__codebase_graph_internal".into(),
+            "materialization-worker-v2".into(),
+            request_path.into_os_string(),
+            result_path.clone().into_os_string(),
+        ],
+        workspace: workspace.clone(),
+        stderr_path: stderr_path.clone(),
+        stdout: OutputMode::Pipe,
+        memory_limit_bytes: Some(memory_limit),
+        memory_phase: Some("materialization_worker".into()),
+        parent_rss_pid: None,
+    }) {
+        Ok(child) => child,
         Err(error) => {
-            join_progress(progress);
-            clear_worker_execution_state(&state_path, &build_id, &workspace, &mut worker_pid);
-            return Err(format!(
-                "failed to supervise materialization worker: {error}"
-            ));
+            // A failed READY may still have a guardian or contained descendants.
+            if process_lifecycle::cleanup_if_inactive(&workspace).unwrap_or(false) {
+                cleanup_worker_workspace(&workspace);
+                return Err(error);
+            }
+            return Err(containment_unknown_error(error));
         }
     };
+    let descriptor = child.descriptor().clone();
+    let pid = child.id();
+    let mut progress = child.take_stdout().map(|stdout| {
+        let progress_build_id = build_id.clone();
+        thread::spawn(move || drain_progress(stdout, &progress_build_id))
+    });
+    // Persist the capability and native proof before allowing any build work.
+    if let Err(error) = process_lifecycle::write_private_json(&state_path, &descriptor) {
+        match child.terminate("state persistence failed") {
+            Ok(outcome) if outcome.containment_empty => {
+                join_progress(progress.take());
+                cleanup_worker_workspace(&workspace);
+                return Err(format!("failed to record materialization worker state: {error}"));
+            }
+            _ => return Err(containment_unknown_error(format!(
+                "failed to record materialization worker state and could not prove teardown: {error}"
+            ))),
+        }
+    }
+    let started = debug_worker_start_barrier(&should_cancel).and_then(|()| {
+        if should_cancel() {
+            child.terminate("cancel")
+        } else {
+            child.start().and_then(|()| {
+                worker_pid(Some(pid));
+                supervise_worker_process(&mut child, &should_cancel)
+            })
+        }
+    });
+    let supervision = match started {
+        Ok(outcome) => outcome,
+        Err(error) => {
+            // A failed control exchange is ambiguous: retain evidence unless a
+            // subsequent authenticated teardown proves the containment empty.
+            match child.terminate("supervision failed") {
+                Ok(outcome) if outcome.containment_empty => {
+                    join_progress(progress.take());
+                    clear_worker_execution_state(
+                        &state_path,
+                        &descriptor.build_id,
+                        &workspace,
+                        &mut worker_pid,
+                    );
+                    return Err(format!(
+                        "failed to supervise materialization worker: {error}"
+                    ));
+                }
+                _ => {
+                    worker_pid(None);
+                    return Err(containment_unknown_error(error));
+                }
+            }
+        }
+    };
+    worker_pid(None);
+    if !supervision.containment_empty {
+        return Err(containment_unknown_error(supervision.to_string()));
+    }
+    join_progress(progress);
     if supervision.cancelled {
-        join_progress(progress);
-        clear_worker_execution_state(&state_path, &build_id, &workspace, &mut worker_pid);
+        clear_worker_execution_state(
+            &state_path,
+            &descriptor.build_id,
+            &workspace,
+            &mut worker_pid,
+        );
         return Err(materialization_cancelled_error());
     }
-    worker_pid(None);
-    join_progress(progress);
-
     let outcome = if result_path.exists() {
         read_worker_result(&result_path, &build_id).and_then(|result| result.outcome)
-    } else if let Some(error) = supervision.budget_failure {
-        reconcile_completed_publication(options, before_publication, &build_id).or(Err(error))
-    } else if supervision.status.success() {
+    } else if let Some(error) = &supervision.budget_reason {
+        reconcile_completed_publication(options, before_publication, &build_id)
+            .or(Err(error.clone()))
+    } else if supervision.success {
         reconcile_completed_publication(options, before_publication, &build_id)
     } else {
         let error = bounded_child_error(&fs::read(&stderr_path).unwrap_or_default());
         Err(format!(
-            "materialization worker exited with {}: {error}",
-            supervision.status
+            "materialization worker exited with {supervision}: {error}"
         ))
     };
     let outcome = outcome.map(|mut response| {
@@ -292,86 +270,60 @@ fn execute_worker(
         );
         response
     });
-    remove_worker_state(&state_path, &build_id);
+    remove_worker_state(&state_path, &descriptor.build_id);
     cleanup_worker_workspace(&workspace);
     outcome
+}
+
+/// Deterministic fault boundary after durable recovery state and before START.
+/// The release binary deliberately ignores all test barrier configuration.
+fn debug_worker_start_barrier(should_cancel: &impl Fn() -> bool) -> Result<(), String> {
+    #[cfg(debug_assertions)]
+    if let Some(directory) = std::env::var_os("CODEBASE_GRAPH_TEST_WORKER_START_BARRIER_DIR") {
+        let directory = PathBuf::from(directory);
+        fs::create_dir_all(&directory)
+            .map_err(|error| format!("failed to create worker START barrier: {error}"))?;
+        write_json_atomically(
+            &directory.join("state-persisted.json"),
+            &serde_json::json!({"owner_pid": std::process::id()}),
+        )
+        .map_err(|error| format!("failed to publish worker START barrier: {error}"))?;
+        let deadline = std::time::Instant::now() + Duration::from_secs(30);
+        loop {
+            if should_cancel() || directory.join("CONTINUE").is_file() {
+                return Ok(());
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err("materialization worker START barrier timed out".into());
+            }
+            thread::sleep(SUPERVISOR_CHECK_INTERVAL);
+        }
+    }
+    let _ = should_cancel;
+    Ok(())
 }
 
 fn materialization_cancelled_error() -> String {
     MATERIALIZATION_CANCELLED_ERROR.to_string()
 }
 
-#[derive(Debug)]
-struct WorkerProcessSupervision {
-    status: ExitStatus,
-    high_water_bytes: u64,
-    budget_failure: Option<String>,
-    cancelled: bool,
+fn containment_unknown_error(reason: impl ToString) -> String {
+    serde_json::json!({"error": "containment_unknown", "message": reason.to_string()}).to_string()
 }
 
 fn supervise_worker_process(
-    child: &mut Child,
-    pid: u32,
-    memory_limit: u64,
+    child: &mut PreparedChild,
     should_cancel: &impl Fn() -> bool,
-) -> Result<WorkerProcessSupervision, String> {
-    let kill_threshold = memory_limit.saturating_sub(MEMORY_HEADROOM_BYTES);
-    let mut high_water_bytes = 0_u64;
+) -> Result<ExitOutcome, String> {
     loop {
         if should_cancel() {
-            let status = kill_and_reap_child(child)?;
-            return Ok(WorkerProcessSupervision {
-                status,
-                high_water_bytes,
-                budget_failure: None,
-                cancelled: true,
-            });
+            return child.terminate("cancel");
         }
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                return Ok(WorkerProcessSupervision {
-                    status,
-                    high_water_bytes,
-                    budget_failure: None,
-                    cancelled: false,
-                })
-            }
-            Ok(None) => {}
-            Err(error) => {
-                let _ = kill_and_reap_child(child);
-                return Err(error.to_string());
-            }
+        if let Some(outcome) = child.try_wait()? {
+            return Ok(outcome);
         }
-        if let Ok(rss) = sample_process_rss(pid) {
-            high_water_bytes = high_water_bytes.max(rss);
-            if rss > kill_threshold {
-                let budget_failure = NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-                    "materialization_worker",
-                    memory_limit,
-                    rss,
-                    rss,
-                ))
-                .to_string();
-                let status = kill_and_reap_child(child).map_err(|error| {
-                    format!("failed to reap materialization worker after budget kill: {error}")
-                })?;
-                return Ok(WorkerProcessSupervision {
-                    status,
-                    high_water_bytes,
-                    budget_failure: Some(budget_failure),
-                    cancelled: false,
-                });
-            }
-        }
-        thread::sleep(RSS_SAMPLE_INTERVAL);
+        thread::sleep(SUPERVISOR_CHECK_INTERVAL);
     }
-}
-
-fn kill_and_reap_child(child: &mut Child) -> Result<ExitStatus, String> {
-    let _ = child.kill();
-    child
-        .wait()
-        .map_err(|error| format!("failed to reap materialization worker: {error}"))
 }
 
 fn join_progress(progress: Option<thread::JoinHandle<ProgressDrainStats>>) {
@@ -403,8 +355,7 @@ pub(crate) fn execute_worker_file(request_path: &Path, result_path: &Path) -> Re
             request.version
         ));
     }
-    let _watchdog = start_supervisor_watchdog(request.supervisor_pid);
-    wait_for_start_gate(request_path)?;
+    process_lifecycle::validate_inherited_containment()?;
     emit_progress(&WorkerProgressFrame {
         version: WORKER_PROTOCOL_VERSION,
         build_id: request.build_id.clone(),
@@ -516,28 +467,40 @@ fn recover_orphan_worker(
                 state_path.display()
             ));
         }
-        let state: WorkerState = serde_json::from_reader(BufReader::new(
-            File::open(&state_path)
-                .map_err(|error| format!("failed to open materialization worker state: {error}"))?,
+        let value: serde_json::Value = serde_json::from_reader(BufReader::new(
+            File::open(&state_path).map_err(containment_unknown_error)?,
         ))
-        .map_err(|error| format!("failed to parse materialization worker state: {error}"))?;
-        if state.version != WORKER_PROTOCOL_VERSION {
-            return Err("materialization worker state version is unsupported".to_string());
-        }
-        let deadline = std::time::Instant::now() + ORPHAN_EXIT_TIMEOUT;
-        while process_is_alive(state.worker_pid) && std::time::Instant::now() < deadline {
-            if should_cancel() {
-                return Err(materialization_cancelled_error());
+        .map_err(containment_unknown_error)?;
+        match value.get("version").and_then(serde_json::Value::as_u64) {
+            Some(1) => {
+                // Legacy PIDs have no incarnation proof and convey no authority.
+                let state: WorkerState =
+                    serde_json::from_value(value).map_err(containment_unknown_error)?;
+                remove_worker_state(&state_path, &state.build_id);
             }
-            thread::sleep(SUPERVISOR_CHECK_INTERVAL);
+            Some(WORKER_STATE_VERSION) => {
+                let descriptor: BuildDescriptorV2 =
+                    serde_json::from_value(value).map_err(containment_unknown_error)?;
+                match process_lifecycle::recover_descriptor(&descriptor)
+                    .map_err(containment_unknown_error)?
+                {
+                    RecoveryOutcome::Empty => {}
+                    RecoveryOutcome::Terminated(outcome) if outcome.containment_empty => {}
+                    RecoveryOutcome::Terminated(outcome) => {
+                        return Err(containment_unknown_error(outcome))
+                    }
+                    RecoveryOutcome::ContainmentUnknown(reason) => {
+                        return Err(containment_unknown_error(reason))
+                    }
+                }
+                remove_worker_state(&state_path, &descriptor.build_id);
+            }
+            _ => {
+                return Err(containment_unknown_error(
+                    "unsupported or missing worker state version",
+                ))
+            }
         }
-        if process_is_alive(state.worker_pid) {
-            return Err(format!(
-                "orphaned materialization worker {} did not exit",
-                state.worker_pid
-            ));
-        }
-        remove_worker_state(&state_path, &state.build_id);
     }
     if should_cancel() {
         return Err(materialization_cancelled_error());
@@ -596,84 +559,46 @@ fn cleanup_abandoned_workspaces(options: &MaterializeOptions) -> Result<(), Stri
             ))
         }
     };
-    for entry in entries.flatten() {
+    let mut unknown = None;
+    for entry in entries {
+        let entry = entry.map_err(containment_unknown_error)?;
         let path = entry.path();
-        if path
+        if !path
             .file_name()
             .and_then(|name| name.to_str())
             .is_some_and(|name| name.starts_with("worker-"))
         {
-            cleanup_worker_workspace(&path);
+            continue;
         }
-    }
-    Ok(())
-}
-
-fn wait_for_start_gate(request_path: &Path) -> Result<(), String> {
-    let start_path = request_path
-        .parent()
-        .ok_or_else(|| "materialization worker request has no workspace".to_string())?
-        .join("START");
-    let deadline = std::time::Instant::now() + ORPHAN_EXIT_TIMEOUT;
-    while std::time::Instant::now() < deadline {
-        if start_path.is_file() {
-            return Ok(());
+        let metadata = fs::symlink_metadata(&path).map_err(containment_unknown_error)?;
+        if metadata.file_type().is_symlink() || !metadata.is_dir() {
+            unknown.get_or_insert_with(|| {
+                format!(
+                    "worker workspace must be a real directory: {}",
+                    path.display()
+                )
+            });
+            continue;
         }
-        thread::sleep(SUPERVISOR_CHECK_INTERVAL);
-    }
-    Err("materialization worker start gate timed out".to_string())
-}
-
-fn start_supervisor_watchdog(supervisor_pid: u32) -> SupervisorWatchdog {
-    let finished = Arc::new(AtomicBool::new(false));
-    let pipe_finished = Arc::clone(&finished);
-    thread::spawn(move || {
-        let mut byte = [0_u8; 1];
-        let read = std::io::stdin().read(&mut byte);
-        if !pipe_finished.load(Ordering::Acquire) && !matches!(read, Ok(1)) {
-            std::process::exit(125);
-        }
-    });
-    let thread_finished = Arc::clone(&finished);
-    thread::spawn(move || {
-        while !thread_finished.load(Ordering::Acquire) {
-            if !process_is_alive(supervisor_pid) {
-                std::process::exit(125);
+        match process_lifecycle::cleanup_if_inactive(&path) {
+            Ok(true) => cleanup_worker_workspace(&path),
+            Ok(false) => {
+                unknown.get_or_insert_with(|| {
+                    format!(
+                        "abandoned worker containment is still active or unproven: {}",
+                        path.display()
+                    )
+                });
             }
-            thread::sleep(SUPERVISOR_CHECK_INTERVAL);
+            Err(error) => {
+                unknown.get_or_insert(error);
+            }
         }
-    });
-    SupervisorWatchdog { finished }
-}
-
-#[cfg(unix)]
-fn process_is_alive(pid: u32) -> bool {
-    let Ok(pid) = i32::try_from(pid) else {
-        return false;
-    };
-    // SAFETY: signal 0 performs existence and permission checking without
-    // delivering a signal to the target process.
-    let status = unsafe { libc::kill(pid, 0) };
-    status == 0 || std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
-}
-
-#[cfg(windows)]
-fn process_is_alive(pid: u32) -> bool {
-    use windows_sys::Win32::Foundation::CloseHandle;
-    use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
-    // SAFETY: the returned handle is checked and closed before returning.
-    let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
-    if handle.is_null() {
-        return false;
     }
-    // SAFETY: `handle` is valid and has not been closed yet.
-    unsafe { CloseHandle(handle) };
-    true
-}
-
-#[cfg(not(any(unix, windows)))]
-fn process_is_alive(_pid: u32) -> bool {
-    true
+    match unknown {
+        Some(reason) => Err(containment_unknown_error(reason)),
+        None => Ok(()),
+    }
 }
 
 fn write_worker_request(path: &Path, request: &MaterializationWorkerRequest) -> Result<(), String> {
@@ -718,7 +643,7 @@ struct ProgressDrainStats {
     oversized_frames: usize,
 }
 
-fn drain_progress(stdout: impl std::io::Read) -> ProgressDrainStats {
+fn drain_progress(stdout: impl std::io::Read, build_id: &str) -> ProgressDrainStats {
     let mut reader = BufReader::with_capacity(8 * 1024, stdout);
     let mut frame = Vec::new();
     let _ = frame.try_reserve(4 * 1024);
@@ -749,7 +674,9 @@ fn drain_progress(stdout: impl std::io::Read) -> ProgressDrainStats {
         if newline.is_some() {
             if oversized {
                 stats.oversized_frames += 1;
-            } else if serde_json::from_slice::<WorkerProgressFrame>(&frame).is_ok() {
+            } else if serde_json::from_slice::<WorkerProgressFrame>(&frame).is_ok_and(|frame| {
+                frame.version == WORKER_PROTOCOL_VERSION && frame.build_id == build_id
+            }) {
                 stats.valid_frames += 1;
             }
             frame.clear();
@@ -900,6 +827,7 @@ fn cleanup_worker_workspace(path: &Path) {
         && fs::symlink_metadata(path)
             .ok()
             .is_some_and(|metadata| metadata.is_dir() && !metadata.file_type().is_symlink())
+        && process_lifecycle::cleanup_if_inactive(path).unwrap_or(false)
     {
         let _ = fs::remove_dir_all(path);
     }
@@ -908,6 +836,7 @@ fn cleanup_worker_workspace(path: &Path) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::{MemoryBudgetExceeded, NativeError};
 
     #[test]
     fn worker_request_ignores_retired_semantic_keys() {
@@ -916,7 +845,6 @@ mod tests {
             build_id: "build-1".to_string(),
             options: MaterializeOptions::default(),
             candidate_paths: Some(vec!["src/lib.rs".to_string()]),
-            supervisor_pid: std::process::id(),
         };
         let mut encoded = serde_json::to_value(&request).unwrap();
         let options = encoded["options"].as_object_mut().unwrap();
@@ -944,11 +872,14 @@ mod tests {
             build_id: "build-explicit".to_string(),
             options: MaterializeOptions::default(),
             candidate_paths: None,
-            supervisor_pid: std::process::id(),
         };
         let encoded = serde_json::to_vec(&request).unwrap();
         let decoded: MaterializationWorkerRequest = serde_json::from_slice(&encoded).unwrap();
         assert!(decoded.candidate_paths.is_none());
+        assert!(serde_json::to_value(&decoded)
+            .unwrap()
+            .get("supervisor_pid")
+            .is_none());
     }
 
     #[test]
@@ -1026,7 +957,7 @@ mod tests {
         input.extend(valid);
         input.push(b'\n');
         assert_eq!(
-            drain_progress(std::io::Cursor::new(input)),
+            drain_progress(std::io::Cursor::new(input), "build-progress"),
             ProgressDrainStats {
                 valid_frames: 1,
                 oversized_frames: 1,
@@ -1034,57 +965,126 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
     #[test]
-    fn cancellation_kills_reaps_and_cleans_worker_state() {
-        let mut child = Command::new("tail")
-            .args(["-f", "/dev/null"])
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-            .expect("tail should be available for the supervision regression");
-        let pid = child.id();
-        let polls = AtomicU64::new(0);
-        let should_cancel = || polls.fetch_add(1, Ordering::SeqCst) >= 1;
-        let supervision = supervise_worker_process(&mut child, pid, u64::MAX, &should_cancel)
-            .expect("cancellation should reap the child");
-
-        assert!(supervision.cancelled);
-        assert!(child
-            .try_wait()
-            .expect("reaped child status should be readable")
-            .is_some());
-        assert!(!process_is_alive(pid));
-
+    fn legacy_pid_state_is_retired_without_waiting_for_process() {
         let root = std::env::temp_dir().join(format!(
-            "codebase-graph-worker-cancel-cleanup-{}-{}",
+            "codebase-graph-legacy-{}-{}",
             std::process::id(),
             WORKER_SEQUENCE.fetch_add(1, Ordering::Relaxed)
         ));
-        let workspace = root.join("worker-build");
-        let state_path = root.join("worker.json");
-        fs::create_dir_all(&workspace).unwrap();
-        fs::write(
+        fs::create_dir_all(&root).unwrap();
+        let options = MaterializeOptions {
+            storage_root: Some(root.clone()),
+            ..MaterializeOptions::default()
+        };
+        let state_path = worker_state_path(&options).unwrap();
+        fs::create_dir_all(state_path.parent().unwrap()).unwrap();
+        write_json_atomically(
             &state_path,
-            serde_json::to_vec(&WorkerState {
-                version: WORKER_PROTOCOL_VERSION,
-                build_id: "build-cancelled".to_string(),
-                worker_pid: pid,
-            })
-            .unwrap(),
+            &WorkerState {
+                version: 1,
+                build_id: "legacy".into(),
+                worker_pid: std::process::id(),
+            },
         )
         .unwrap();
-        let mut pids = Vec::new();
-        clear_worker_execution_state(
-            &state_path,
-            "build-cancelled",
-            &workspace,
-            &mut |worker_pid| pids.push(worker_pid),
-        );
-        assert_eq!(pids, vec![None]);
+        recover_orphan_worker(&options, &|| false).unwrap();
         assert!(!state_path.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn abandoned_workspace_without_global_state_retains_held_lifecycle() {
+        use fs2::FileExt;
+        let root = std::env::temp_dir().join(format!(
+            "codebase-graph-held-lifecycle-{}-{}",
+            std::process::id(),
+            WORKER_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        let options = MaterializeOptions {
+            storage_root: Some(root.clone()),
+            ..MaterializeOptions::default()
+        };
+        let workspace = worker_workspace_root(&options)
+            .unwrap()
+            .join("worker-pre-ready");
+        let lifecycle = workspace.join(".lifecycle-pre-ready");
+        fs::create_dir_all(&lifecycle).unwrap();
+        let lease = OpenOptions::new()
+            .create_new(true)
+            .read(true)
+            .write(true)
+            .open(lifecycle.join("lease"))
+            .unwrap();
+        lease.lock_exclusive().unwrap();
+        let error = recover_orphan_worker(&options, &|| false).unwrap_err();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&error).unwrap()["error"],
+            "containment_unknown"
+        );
+        assert!(workspace.exists());
+        drop(lease);
+        recover_orphan_worker(&options, &|| false).unwrap();
         assert!(!workspace.exists());
-        let _ = fs::remove_dir_all(root);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn v2_retirement_matches_descriptor_build_identity() {
+        let root = std::env::temp_dir().join(format!(
+            "codebase-graph-descriptor-state-{}-{}",
+            std::process::id(),
+            WORKER_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let state_path = root.join("worker.json");
+        let descriptor = BuildDescriptorV2 {
+            version: 2,
+            build_id: "guardian-identity".into(),
+            lifecycle_dir: root.join(".lifecycle-test"),
+            endpoint: "127.0.0.1:1".into(),
+            nonce: "test-only".into(),
+            worker_pid: 123,
+            guardian_pid: 124,
+            proof: process_lifecycle::ContainmentProof::Pending,
+        };
+        write_json_atomically(&state_path, &descriptor).unwrap();
+        remove_worker_state(&state_path, "caller-result-identity");
+        assert!(state_path.exists());
+        remove_worker_state(&state_path, &descriptor.build_id);
+        assert!(!state_path.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn malformed_v2_state_is_preserved_as_unknown() {
+        let root = std::env::temp_dir().join(format!(
+            "codebase-graph-unknown-{}-{}",
+            std::process::id(),
+            WORKER_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let options = MaterializeOptions {
+            storage_root: Some(root.clone()),
+            ..MaterializeOptions::default()
+        };
+        let state_path = worker_state_path(&options).unwrap();
+        fs::create_dir_all(state_path.parent().unwrap()).unwrap();
+        write_json_atomically(
+            &state_path,
+            &WorkerState {
+                version: 2,
+                build_id: "unknown".into(),
+                worker_pid: std::process::id(),
+            },
+        )
+        .unwrap();
+        let error = recover_orphan_worker(&options, &|| false).unwrap_err();
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&error).unwrap()["error"],
+            "containment_unknown"
+        );
+        assert!(state_path.exists());
+        fs::remove_dir_all(root).unwrap();
     }
 }

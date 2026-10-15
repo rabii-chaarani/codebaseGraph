@@ -1,7 +1,7 @@
 use crate::error::NativeError;
 use crate::storage::atomic::write_json_atomically;
 use crate::storage::layout::managed_generation_id;
-use crate::storage::locks::{open_locked, try_open_locked, LockMode, RunLease};
+use crate::storage::locks::{open_locked, try_open_locked_in_existing_parent, LockMode, RunLease};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -45,6 +45,7 @@ pub(crate) struct RunWorkspace {
     run_id: String,
     lease: Option<RunLease>,
     finished: bool,
+    cleanup_barrier: Option<PathBuf>,
 }
 
 impl RunWorkspace {
@@ -63,6 +64,7 @@ impl RunWorkspace {
             run_id,
             lease: Some(lease),
             finished: false,
+            cleanup_barrier: None,
         };
         this.write_journal(RunJournal {
             run_id: this.run_id.clone(),
@@ -75,6 +77,31 @@ impl RunWorkspace {
         fs::create_dir_all(this.staging_root())?;
         fs::create_dir_all(this.candidate_root())?;
         Ok(this)
+    }
+
+    pub(crate) fn set_cleanup_barrier(&mut self, root: PathBuf) -> Result<(), NativeError> {
+        // Keep the in-memory guard even if persistence fails: Drop must retain
+        // this run while its unknown phase can still own candidate files.
+        self.cleanup_barrier = Some(root.clone());
+        // Direct destinations retain their spelling for journal/lock keys.
+        // Anchor only this derived private path so later janitors do not
+        // reinterpret it relative to a different process working directory.
+        let root = if root.is_absolute() {
+            root
+        } else {
+            std::env::current_dir()?.join(root)
+        };
+        self.cleanup_barrier = Some(root.clone());
+        write_json_atomically(&self.root.join("cleanup-barrier.json"), &root)
+    }
+
+    fn ensure_cleanup_allowed(&self) -> Result<(), NativeError> {
+        if let Some(root) = &self.cleanup_barrier {
+            crate::storage::containment::ensure_registry_empty(root)
+                .map_err(NativeError::InvalidInput)?;
+        }
+        ensure_persisted_cleanup_allowed(&self.root)?;
+        Ok(())
     }
 
     pub(crate) fn root(&self) -> &Path {
@@ -164,13 +191,19 @@ impl RunWorkspace {
             }
 
             let lease_path = path.join("lease.lock");
-            let lease = match try_open_locked(&lease_path, LockMode::Exclusive)? {
-                Some(lease) => lease,
-                None => {
+            let lease = match try_open_locked_in_existing_parent(&lease_path, LockMode::Exclusive) {
+                Ok(Some(lease)) => lease,
+                Err(NativeError::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => return Err(e),
+                Ok(None) => {
                     report.skipped_locked += 1;
                     continue;
                 }
             };
+            if ensure_persisted_cleanup_allowed(&path).is_err() {
+                report.skipped_locked += 1;
+                continue;
+            }
             let journal = read_orphan_journal(&path, name)?;
             if journal.phase == RunPhase::Publishing {
                 report.publishing_recovered += 1;
@@ -183,6 +216,12 @@ impl RunWorkspace {
     }
 
     fn finish_inner(&mut self, primary_error: Option<String>) -> Result<(), NativeError> {
+        if let Err(error) = self.ensure_cleanup_allowed() {
+            self.finished = true;
+            let _ = self.mark_cleanup_pending(primary_error, &error);
+            drop(self.lease.take());
+            return Err(error);
+        }
         if let Some(error) = primary_error.clone() {
             self.mark_phase(RunPhase::Failed, None, Some(error))?;
         }
@@ -223,8 +262,29 @@ impl Drop for RunWorkspace {
             Some("workspace dropped without finish or abort".to_string()),
         );
         drop(self.lease.take());
-        let _ = remove_run_tree(&self.root);
+        if self.ensure_cleanup_allowed().is_ok() {
+            let _ = remove_run_tree(&self.root);
+        }
     }
+}
+
+fn ensure_persisted_cleanup_allowed(root: &Path) -> Result<(), NativeError> {
+    let bytes = match fs::read(root.join("cleanup-barrier.json")) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(e.into()),
+    };
+    let barrier: PathBuf = serde_json::from_slice(&bytes).map_err(|e| {
+        NativeError::InvalidInput(format!(
+            "containment_unknown: invalid run cleanup barrier: {e}"
+        ))
+    })?;
+    if !barrier.is_absolute() {
+        return Err(NativeError::InvalidInput(
+            "containment_unknown: run cleanup barrier has no absolute origin".to_string(),
+        ));
+    }
+    crate::storage::containment::ensure_registry_empty(&barrier).map_err(NativeError::InvalidInput)
 }
 
 fn read_orphan_journal(path: &Path, name: &str) -> Result<RunJournal, NativeError> {
@@ -367,6 +427,46 @@ fn remove_file_if_present(path: &Path) -> Result<(), NativeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cleanup_barrier_records_its_absolute_origin() {
+        let root = std::env::temp_dir().join(format!("run-origin-{}", managed_generation_id()));
+        let mut workspace = RunWorkspace::create(root.join("runs"), None).unwrap();
+        let relative = PathBuf::from("private-relative-phase-registry");
+        workspace.set_cleanup_barrier(relative.clone()).unwrap();
+        let stored: PathBuf = serde_json::from_slice(
+            &fs::read(workspace.root().join("cleanup-barrier.json")).unwrap(),
+        )
+        .unwrap();
+        assert!(stored.is_absolute());
+        assert_eq!(stored, std::env::current_dir().unwrap().join(relative));
+        workspace.finish().unwrap();
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn unanchored_persisted_barrier_cannot_authorize_orphan_cleanup() {
+        let root = std::env::temp_dir().join(format!("run-unbound-{}", managed_generation_id()));
+        let runs = root.join("runs");
+        let workspace = RunWorkspace::create(&runs, None).unwrap();
+        let candidate = workspace.candidate_root().join("partial.db");
+        fs::write(
+            &candidate,
+            b"candidate still belongs to an unverified phase",
+        )
+        .unwrap();
+        write_json_atomically(
+            &workspace.root().join("cleanup-barrier.json"),
+            &PathBuf::from("unbound-phase-registry"),
+        )
+        .unwrap();
+        drop(workspace);
+        let recovery = RunWorkspace::cleanup_orphans(&runs).unwrap();
+        assert_eq!(recovery.deleted, 0);
+        assert_eq!(recovery.skipped_locked, 1);
+        assert!(candidate.is_file());
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn confined_run_cleanup_is_idempotent() {

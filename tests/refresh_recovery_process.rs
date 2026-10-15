@@ -11,6 +11,10 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 const MCP_PROTOCOL_VERSION: &str = "2025-11-25";
 static TEST_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
+#[cfg(debug_assertions)]
+#[path = "support/lifecycle_faults.rs"]
+mod lifecycle_faults;
+
 fn binary() -> PathBuf {
     std::env::var_os("CARGO_BIN_EXE_codebase-graph")
         .map(PathBuf::from)
@@ -23,10 +27,7 @@ fn temp_repo() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("system clock should be after the Unix epoch")
         .as_nanos();
-    let path = std::env::temp_dir().join(format!(
-        "codebase-graph-refresh-recovery-{}-{sequence}-{now}",
-        std::process::id()
-    ));
+    let path = std::env::temp_dir().join(format!("cgr-{}-{sequence}-{now}", std::process::id()));
     fs::create_dir_all(&path).unwrap();
     path
 }
@@ -345,6 +346,15 @@ fn free_port() -> u16 {
 }
 
 fn start_http_server(config: &Path, current_dir: &Path, overrides: &[&str]) -> (ChildGuard, u16) {
+    start_http_server_with_env(config, current_dir, overrides, &[])
+}
+
+fn start_http_server_with_env(
+    config: &Path,
+    current_dir: &Path,
+    overrides: &[&str],
+    environment: &[(&str, &Path)],
+) -> (ChildGuard, u16) {
     let port = free_port();
     let mut args = vec![
         "mcp".to_string(),
@@ -357,16 +367,17 @@ fn start_http_server(config: &Path, current_dir: &Path, overrides: &[&str]) -> (
         port.to_string(),
     ];
     args.extend(overrides.iter().map(|value| (*value).to_string()));
-    let mut daemon = ChildGuard(
-        Command::new(binary())
-            .current_dir(current_dir)
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::piped())
-            .spawn()
-            .unwrap(),
-    );
+    let mut command = Command::new(binary());
+    command
+        .current_dir(current_dir)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped());
+    for (key, value) in environment {
+        command.env(key, value);
+    }
+    let mut daemon = ChildGuard(command.spawn().unwrap());
     let deadline = Instant::now() + Duration::from_secs(20);
     while Instant::now() < deadline {
         if try_request(
@@ -406,6 +417,188 @@ fn now_unix_ms() -> u64 {
 
 fn memory_limits(health: &Value) -> &Value {
     &health["refresh"]["memory_limits"]
+}
+
+fn wait_for_current_symbol(session: &mut McpSession, symbol: &str, path: &str) -> Value {
+    let deadline = Instant::now() + Duration::from_secs(60);
+    let mut last = Value::Null;
+    while Instant::now() < deadline {
+        last = session.health();
+        if last["freshness"] == "current"
+            && last["refresh"]["pending"] == false
+            && session
+                .search_paths(symbol)
+                .iter()
+                .any(|entry| entry == path)
+        {
+            return last;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    panic!("automatic refresh did not publish {symbol}: {last}");
+}
+
+// Run in a separate test process so a mistaken stale-PID signal is observable
+// without terminating the process which reports this regression's assertions.
+#[test]
+#[ignore = "subprocess fixture for legacy worker recovery"]
+fn unrelated_worker_pid_fixture() {
+    let Some(ready) = std::env::var_os("CODEBASE_GRAPH_UNRELATED_READY") else {
+        return;
+    };
+    fs::write(ready, std::process::id().to_string()).unwrap();
+    let mut bytes = Vec::new();
+    std::io::stdin().read_to_end(&mut bytes).unwrap();
+}
+
+#[test]
+fn legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership() {
+    use fs2::FileExt;
+
+    let root = temp_repo();
+    fs::write(
+        root.join("initial.py"),
+        "def initial_symbol():\n    return 1\n",
+    )
+    .unwrap();
+    let config = install(&root);
+    set_config(
+        &config,
+        ConfigSettings {
+            policy: "leader",
+            backend: "poll",
+            interval_ms: 100,
+            worker_memory_mib: 768,
+            rust_memory_mib: 384,
+            spill_chunk_mib: 32,
+            max_parallelism: 1,
+            exclude: &[],
+        },
+    );
+    let ready = root.join("unrelated.ready");
+    let mut unrelated = ChildGuard(
+        Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "unrelated_worker_pid_fixture",
+                "--ignored",
+                "--nocapture",
+            ])
+            .env("CODEBASE_GRAPH_UNRELATED_READY", &ready)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap(),
+    );
+    wait_for_file(&ready);
+    let storage = root.join(".codebaseGraph/storage");
+    let state_path = storage.join("worker.json");
+    fs::write(
+        &state_path,
+        serde_json::to_vec(&json!({
+            "version": 1,
+            "build_id": "abandoned-worker",
+            "worker_pid": unrelated.0.id()
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    fs::write(
+        root.join("latest.py"),
+        "def latest_symbol():\n    return 2\n",
+    )
+    .unwrap();
+    let previous: Value =
+        serde_json::from_slice(&fs::read(storage.join("active.json")).unwrap()).unwrap();
+    let writer = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(storage.join("writer.lock"))
+        .unwrap();
+    writer.lock_exclusive().unwrap();
+    let (daemon, port, _) = start_daemon(&root, &config, &root, &[]);
+    let mut session = McpSession::start(port);
+
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let mut passed_legacy_recovery = false;
+    while Instant::now() < deadline {
+        let state: Value = fs::read(&state_path)
+            .ok()
+            .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+            .unwrap_or(Value::Null);
+        if state["version"] == 2 {
+            passed_legacy_recovery = true;
+            break;
+        }
+        assert!(
+            unrelated.0.try_wait().unwrap().is_none(),
+            "recovery signalled the unrelated process"
+        );
+        thread::sleep(Duration::from_millis(50));
+    }
+    assert!(
+        passed_legacy_recovery,
+        "a live unrelated PID blocked legacy metadata recovery"
+    );
+    let held: Value =
+        serde_json::from_slice(&fs::read(storage.join("active.json")).unwrap()).unwrap();
+    assert_eq!(
+        held["generation_id"], previous["generation_id"],
+        "refresh bypassed writer ownership"
+    );
+    assert!(unrelated.0.try_wait().unwrap().is_none());
+    FileExt::unlock(&writer).unwrap();
+    drop(writer);
+
+    let recovered = wait_for_current_symbol(&mut session, "latest_symbol", "latest.py");
+    assert_ne!(recovered["active_generation"], previous["generation_id"]);
+    assert!(unrelated.0.try_wait().unwrap().is_none());
+    fs::write(
+        root.join("follow_up.py"),
+        "def follow_up_symbol():\n    return 3\n",
+    )
+    .unwrap();
+    wait_for_current_symbol(&mut session, "follow_up_symbol", "follow_up.py");
+    assert!(
+        unrelated.0.try_wait().unwrap().is_none(),
+        "a later refresh signalled the unrelated process"
+    );
+
+    drop(session);
+    drop(daemon);
+    drop(unrelated);
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn retired_internal_roles_require_restart_before_reading_requests() {
+    let root = temp_repo();
+    let nonexistent_request = root.join("must-not-read.json");
+    let nonexistent_result = root.join("must-not-write.json");
+    for role in ["materialization-worker-v1", "ladybug-write-phase-v1"] {
+        let mut command = Command::new(binary());
+        command
+            .current_dir(&root)
+            .args(["__codebase_graph_internal", role])
+            .arg(&nonexistent_request);
+        if role == "materialization-worker-v1" {
+            command.arg(&nonexistent_result);
+        }
+        let output = command.output().unwrap();
+        assert!(
+            !output.status.success(),
+            "retired role {role} unexpectedly ran"
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.to_ascii_lowercase().contains("restart"),
+            "{role} did not report the restart requirement: {stderr}"
+        );
+        assert!(!nonexistent_request.exists());
+        assert!(!nonexistent_result.exists());
+    }
+    let _ = fs::remove_dir_all(root);
 }
 
 #[test]
@@ -505,10 +698,15 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
             exclude: &[],
         },
     );
-    let deadline = Instant::now() + Duration::from_secs(40);
+    // Native process suites run concurrently in CI. Keep the recovery bound
+    // independent of the short retry cadence and allow the large source to
+    // finish loading while other fixtures are building.
+    let deadline = Instant::now() + Duration::from_secs(90);
     let mut recovered = None;
+    let mut last_health = Value::Null;
     while Instant::now() < deadline {
         let health = session.health();
+        last_health = health.clone();
         let refresh = &health["refresh"];
         let latest_paths = session.search_paths("latest_symbol");
         let limits = memory_limits(&health);
@@ -528,8 +726,9 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
         }
         thread::sleep(Duration::from_millis(100));
     }
-    let (recovered, latest_paths) =
-        recovered.expect("refresh should recover without another source edit");
+    let (recovered, latest_paths) = recovered.unwrap_or_else(|| {
+        panic!("refresh should recover without another source edit: {last_health}")
+    });
     assert_eq!(recovered["refresh"]["reconcile_interval_ms"], 100);
     assert!(latest_paths.iter().any(|path| path == "latest.py"));
 
