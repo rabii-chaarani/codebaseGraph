@@ -536,8 +536,14 @@ fn control(d: &BuildDescriptorV2, command: &str) -> Result<(), String> {
     }
 }
 fn read_control_frame(stream: &mut TcpStream) -> Result<Vec<u8>, String> {
+    read_control_frame_with_timeout(stream, Duration::from_millis(100))
+}
+fn read_control_frame_with_timeout(
+    stream: &mut TcpStream,
+    timeout: Duration,
+) -> Result<Vec<u8>, String> {
     stream.set_nonblocking(false).map_err(err)?;
-    read_socket_frame(stream, Instant::now() + Duration::from_millis(100))
+    read_socket_frame(stream, Instant::now() + timeout)
 }
 fn read_socket_frame(stream: &mut TcpStream, deadline: Instant) -> Result<Vec<u8>, String> {
     let mut frame = Vec::new();
@@ -632,18 +638,30 @@ pub(crate) fn write_private_json(path: &Path, value: &impl Serialize) -> Result<
 mod tests {
     use super::*;
     #[test]
-    fn accepted_nonblocking_socket_allows_a_delayed_complete_frame() {
+    fn accepted_nonblocking_socket_is_normalized_for_control_frames() {
+        #[cfg(unix)]
+        fn is_nonblocking(socket: &TcpStream) -> bool {
+            use std::os::fd::AsRawFd;
+            let flags = unsafe { libc::fcntl(socket.as_raw_fd(), libc::F_GETFL) };
+            assert_ne!(flags, -1);
+            flags & libc::O_NONBLOCK != 0
+        }
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let address = listener.local_addr().unwrap();
-        let client = thread::spawn(move || {
-            let mut socket = TcpStream::connect(address).unwrap();
-            thread::sleep(Duration::from_millis(20));
-            socket.write_all(b"ready\n").unwrap();
-        });
+        let mut client = TcpStream::connect(address).unwrap();
+        client.write_all(b"ready\n").unwrap();
         let (mut socket, _) = listener.accept().unwrap();
         socket.set_nonblocking(true).unwrap();
-        assert_eq!(read_control_frame(&mut socket).unwrap(), b"ready");
-        client.join().unwrap();
+        #[cfg(unix)]
+        assert!(is_nonblocking(&socket));
+        // Inspect the actual mode conversion instead of racing a delayed writer
+        // against the production deadline. Negative tests retain that deadline.
+        assert_eq!(
+            read_control_frame_with_timeout(&mut socket, Duration::from_secs(2)).unwrap(),
+            b"ready"
+        );
+        #[cfg(unix)]
+        assert!(!is_nonblocking(&socket));
     }
     #[test]
     fn slow_trickle_cannot_extend_control_frame_deadline() {
