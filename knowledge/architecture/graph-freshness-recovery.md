@@ -36,6 +36,8 @@ Dropping the last coordinator owner stops the refresh task. Registered MCP mater
 
 Recovery treats persisted PIDs as diagnostic information. An exclusive successor automatically retires legacy PID-only metadata without signalling its PID. Version-2 recovery authenticates a live guardian or verifies empty containment from its terminal receipt or platform proof. Each teardown attempt is bounded to five seconds. Missing authority or unverifiable survivors report retryable `containment_unknown`, preserve evidence, and retain the dirty epoch; a later retry can continue without another source edit. Guardian lifetime leases also protect workspaces when startup stops before `worker.json` is published.
 
+Containment emptiness probes remain read-only. On Windows, recovery opens an existing job with `JOB_OBJECT_QUERY` and promptly closes the temporary handle; this probe never terminates a nonempty job. Nonempty containment proceeds through authenticated guardian cancellation, and unavailable control retains recovery evidence.
+
 Standalone isolated database phases keep requests and containment evidence in a stable registry outside disposable run/candidate directories. Storage writer admission, publication replay, and cleanup respect this barrier. Managed reads keep the previous active graph while cleanup remains blocked. Old internal helper protocols fail before database work with a daemon-restart error; the new guarantees require the updated daemon and helpers together. Public CLI/MCP interfaces, graph formats, and configured memory limits remain unchanged.
 
 ## Source selection and configuration
