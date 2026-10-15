@@ -1048,12 +1048,11 @@ fn generation_sizes(paths: &GenerationPaths) -> Result<FileSizeSummary, NativeEr
             physical += allocated_size(&metadata);
         }
     }
-    for path in [paths.manifest_path()] {
-        if path.exists() {
-            let metadata = fs::metadata(&path)?;
-            logical += metadata.len();
-            physical += allocated_size(&metadata);
-        }
+    let manifest = paths.manifest_path();
+    if manifest.exists() {
+        let metadata = fs::metadata(&manifest)?;
+        logical += metadata.len();
+        physical += allocated_size(&metadata);
     }
     Ok(FileSizeSummary {
         logical_size_bytes: logical,
