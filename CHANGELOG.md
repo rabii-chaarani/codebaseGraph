@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.2...v3.0.3) (2026-10-15)
+
+
+### Bug Fixes
+
+* **ci:** exercise native lifecycle faults on Windows ([d98143e](https://github.com/rabii-chaarani/codebaseGraph/commit/d98143e2c7be72403587ecfcc15f2f7e533dc2a0))
+* **ci:** preserve compiler compatibility and patch sanitizer ([b7acfc4](https://github.com/rabii-chaarani/codebaseGraph/commit/b7acfc456663f98961c2e26529330b7a6ae12127))
+* **runtime:** keep Windows recovery probes read-only ([7c368f8](https://github.com/rabii-chaarani/codebaseGraph/commit/7c368f87ca110724da304dea65fd9a29e04c1e41))
+* **runtime:** recover stale workers and clean up database loaders ([809e64b](https://github.com/rabii-chaarani/codebaseGraph/commit/809e64b6b05b19c0700954f8496f491f1a126fc3))
+* **runtime:** recover stale workers and contain database loaders ([fdf73d0](https://github.com/rabii-chaarani/codebaseGraph/commit/fdf73d0e273c77a8b09c6d6b5a120958a56fff37))
+
 ## [3.0.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.1...v3.0.2) (2026-09-30)
 
 
