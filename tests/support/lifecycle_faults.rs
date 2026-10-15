@@ -214,6 +214,70 @@ fn find_json(root: &Path, name: &str) -> Option<(PathBuf, Value)> {
     None
 }
 
+fn remove_quiescent_repo(root: &Path) {
+    fn directory_not_empty(error: &std::io::Error) -> bool {
+        #[cfg(unix)]
+        let code = libc::ENOTEMPTY;
+        #[cfg(windows)]
+        let code = windows_sys::Win32::Foundation::ERROR_DIR_NOT_EMPTY as i32;
+        error.raw_os_error() == Some(code)
+    }
+
+    fn hold_finished_leases(root: &Path, leases: &mut Vec<fs::File>) -> std::io::Result<bool> {
+        use fs2::FileExt;
+
+        for entry in fs::read_dir(root)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_dir() {
+                continue;
+            }
+            let path = entry.path();
+            if entry
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".lifecycle-")
+            {
+                let lease = fs::OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(path.join("lease"))?;
+                if lease.try_lock_exclusive().is_err()
+                    || !read_json_when_present(&path.join("receipt.json"))
+                        .is_some_and(|receipt| receipt["containment_empty"] == true)
+                {
+                    return Ok(false);
+                }
+                leases.push(lease);
+            } else if !hold_finished_leases(&path, leases)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    // Killing the owner is synchronous, but its independent guardian still
+    // has to finish teardown and write the receipt. Keep its proof intact
+    // until the lease is released, then hold that lease through deletion.
+    wait_until(
+        "fixture guardians did not finish before repository cleanup",
+        || {
+            let mut leases = Vec::new();
+            match hold_finished_leases(root, &mut leases) {
+                Ok(false) => return false,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => return false,
+                Err(error) => panic!("cannot check fixture containment: {error}"),
+                Ok(true) => {}
+            }
+            match fs::remove_dir_all(root) {
+                Ok(()) => true,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => true,
+                Err(error) if directory_not_empty(&error) => false,
+                Err(error) => panic!("cannot remove quiescent fixture repository: {error}"),
+            }
+        },
+    );
+}
+
 fn configured_repo() -> (PathBuf, PathBuf, Value) {
     let root = temp_repo();
     fs::write(
@@ -339,7 +403,7 @@ fn verified_abandoned_guardian_is_terminated_before_automatic_refresh() {
     .unwrap();
     wait_for_current_symbol(&mut session, "following_symbol", "follow_up.py");
     drop(daemon);
-    fs::remove_dir_all(root).unwrap();
+    remove_quiescent_repo(&root);
 }
 
 fn owner_exit_at_start_boundary(environment: &str, marker_name: &str, has_state: bool) {
@@ -391,7 +455,7 @@ fn owner_exit_at_start_boundary(environment: &str, marker_name: &str, has_state:
     let mut session = McpSession::start(port);
     wait_for_current_symbol(&mut session, "pending_symbol", "pending.py");
     drop(daemon);
-    fs::remove_dir_all(root).unwrap();
+    remove_quiescent_repo(&root);
 }
 
 #[test]
@@ -526,7 +590,7 @@ fn standalone_owner_loss_preserves_candidate_while_guardian_is_unavailable() {
     );
     wait_for_current_symbol(&mut session, "pending_symbol", "pending.py");
     drop(daemon);
-    fs::remove_dir_all(root).unwrap();
+    remove_quiescent_repo(&root);
 }
 
 struct Fixture {
