@@ -26,6 +26,10 @@ include = [
 members = [".", "crates/k-wiki", "crates/xtask"]
 resolver = "2"
 
+[profile.native-tests]
+inherits = "release"
+debug-assertions = true
+
 [lib]
 name = "codebase_graph"
 
