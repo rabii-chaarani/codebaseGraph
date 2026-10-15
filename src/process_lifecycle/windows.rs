@@ -19,7 +19,7 @@ use windows_sys::Win32::{
     System::{JobObjects::*, Threading::*},
 };
 
-use windows_sys::Win32::System::SystemServices::{JOB_OBJECT_QUERY, JOB_OBJECT_TERMINATE};
+use windows_sys::Win32::System::SystemServices::JOB_OBJECT_QUERY;
 
 const CONTEXT: &str = "CODEBASE_GRAPH_WINDOWS_JOB_V2";
 struct Handle(HANDLE);
@@ -450,7 +450,7 @@ pub(super) fn recover_empty(descriptor: &BuildDescriptorV2) -> Result<bool, Stri
         _ => return Err("containment_unknown: Windows job proof mismatch".into()),
     }
     let name = wide(OsStr::new(&expected))?;
-    let raw = unsafe { OpenJobObjectW(JOB_OBJECT_QUERY | JOB_OBJECT_TERMINATE, 0, name.as_ptr()) };
+    let raw = unsafe { OpenJobObjectW(JOB_OBJECT_QUERY, 0, name.as_ptr()) };
     if raw.is_null() {
         let code = unsafe { GetLastError() };
         return if code == ERROR_FILE_NOT_FOUND {
@@ -462,15 +462,10 @@ pub(super) fn recover_empty(descriptor: &BuildDescriptorV2) -> Result<bool, Stri
         };
     }
     let job = Handle(raw);
-    if active(job.0)? == 0 {
-        return Ok(true);
-    }
-    // This temporary handle must never keep an abandoned job alive.
-    if unsafe { TerminateJobObject(job.0, 1) } == 0 {
-        return Err(last("containment_unknown: recover Windows job"));
-    }
-    await_empty(job.0, Instant::now() + DEADLINE)?;
-    Ok(true)
+    // This is evidence collection only. Nonempty jobs must reach the guardian's
+    // authenticated CANCEL path; unknown authority preserves their metadata.
+    // Drop the temporary query handle promptly so it cannot extend job lifetime.
+    active(job.0).map(|count| count == 0)
 }
 pub(super) fn validate_inherited() -> Result<bool, String> {
     let Some(name) = std::env::var_os(CONTEXT) else {
@@ -532,6 +527,63 @@ pub(super) fn run_exec(_path: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn recovery_probe_does_not_terminate_a_nonempty_job() {
+        struct Fixture {
+            child: Option<Contained>,
+            directory: PathBuf,
+        }
+        impl Drop for Fixture {
+            fn drop(&mut self) {
+                // Contained's bounded teardown also runs during assertion unwinding.
+                self.child.take();
+                let _ = std::fs::remove_dir_all(&self.directory);
+            }
+        }
+        let mut identity = [0_u8; 32];
+        getrandom::fill(&mut identity).unwrap();
+        let build_id: String = identity.iter().map(|byte| format!("{byte:02x}")).collect();
+        let directory = std::env::temp_dir().join(format!("cbg-readonly-probe-{build_id}"));
+        create_private_dir(&directory).unwrap();
+        let mut fixture = Fixture {
+            child: None,
+            directory: directory.clone(),
+        };
+        let mut descriptor = BuildDescriptorV2 {
+            version: 2,
+            build_id,
+            lifecycle_dir: directory.clone(),
+            endpoint: String::new(),
+            nonce: "b".repeat(64),
+            worker_pid: 0,
+            guardian_pid: std::process::id(),
+            proof: ContainmentProof::Pending,
+        };
+        let spec = SpawnSpec {
+            program: std::env::current_exe().unwrap(),
+            guardian_executable: None,
+            args: Vec::new(),
+            workspace: directory.clone(),
+            stderr_path: directory.join("stderr.log"),
+            stdout: OutputMode::Null,
+            memory_limit_bytes: None,
+            memory_phase: None,
+            parent_rss_pid: None,
+        };
+        // Creation establishes real kernel membership while the START gate keeps
+        // the test executable from running. No subprocess timing or shell needed.
+        fixture.child = Some(Contained::spawn(&spec, &mut descriptor).unwrap());
+        let child = fixture.child.as_mut().unwrap();
+        assert_eq!(active(child.job.0).unwrap(), 1);
+        assert!(!recover_empty(&descriptor).unwrap());
+        assert!(
+            !child.exited().unwrap(),
+            "read-only recovery probe terminated its worker"
+        );
+        assert_eq!(active(child.job.0).unwrap(), 1);
+        child.teardown(Instant::now() + DEADLINE).unwrap();
+        assert!(recover_empty(&descriptor).unwrap());
+    }
     #[test]
     fn private_file_is_exclusive_noninherited_and_has_protected_dacl() {
         use windows_sys::Win32::Security::{
