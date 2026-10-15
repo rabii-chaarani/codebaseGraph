@@ -1,4 +1,5 @@
 use super::*;
+use std::io::{BufRead, BufReader};
 
 fn wait_until(message: &str, mut predicate: impl FnMut() -> bool) {
     let deadline = Instant::now() + Duration::from_secs(15);
@@ -44,19 +45,21 @@ fn pause(pid: u32) {
     );
     // SIGSTOP delivery is asynchronous. Observe the stopped state before
     // fault injection so a still-running watchdog cannot win that race.
-    wait_until(
-        "owned process did not reach the stopped-state barrier",
-        || {
-            Command::new("ps")
-                .args(["-o", "stat=", "-p", &pid.to_string()])
-                .output()
-                .is_ok_and(|output| {
-                    output.status.success()
-                        && String::from_utf8_lossy(&output.stdout)
-                            .trim_start()
-                            .starts_with('T')
-                })
-        },
+    let deadline = Instant::now() + Duration::from_secs(15);
+    let mut last_state = String::new();
+    while Instant::now() < deadline {
+        let output = Command::new("ps")
+            .args(["-o", "stat=", "-p", &pid.to_string()])
+            .output()
+            .unwrap();
+        last_state = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+        if output.status.success() && last_state.starts_with('T') {
+            return;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+    panic!(
+        "owned process {pid} did not reach the stopped-state barrier; last state: {last_state:?}"
     );
 }
 
@@ -153,9 +156,34 @@ fn control(descriptor: &Value, command: &str, nonce: &str) -> String {
         .set_write_timeout(Some(Duration::from_secs(2)))
         .unwrap();
     stream.write_all(&payload).unwrap();
+    read_control_reply(stream)
+}
+
+fn read_control_reply(stream: TcpStream) -> String {
     let mut reply = String::new();
-    stream.read_to_string(&mut reply).unwrap();
+    BufReader::new(stream).read_line(&mut reply).unwrap();
+    assert!(reply.ends_with('\n'), "incomplete control reply: {reply:?}");
     reply
+}
+
+#[test]
+fn control_reply_does_not_wait_for_connection_eof() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let (read, received) = std::sync::mpsc::channel();
+    let server = thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        stream.write_all(b"ERR\n").unwrap();
+        // The connection stays open until the complete reply is consumed.
+        received.recv_timeout(Duration::from_secs(3)).unwrap();
+    });
+    let stream = TcpStream::connect(address).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(2)))
+        .unwrap();
+    assert_eq!(read_control_reply(stream), "ERR\n");
+    read.send(()).unwrap();
+    server.join().unwrap();
 }
 
 fn verify_bounded_control_channel(descriptor: &Value) {
@@ -182,8 +210,7 @@ fn verify_bounded_control_channel(descriptor: &Value) {
         }
     });
     let started = Instant::now();
-    let mut reply = String::new();
-    slow.read_to_string(&mut reply).unwrap();
+    let reply = read_control_reply(slow);
     assert_eq!(reply.trim(), "ERR");
     assert!(
         started.elapsed() < Duration::from_millis(500),
@@ -631,11 +658,6 @@ impl Fixture {
             &fs::read(root.join(".codebaseGraph/storage/active.json")).unwrap(),
         )
         .unwrap();
-        fs::write(
-            root.join("pending.py"),
-            "def pending_symbol():\n    return 2\n",
-        )
-        .unwrap();
         let barrier = root.join("phase-barrier");
         fs::create_dir(&barrier).unwrap();
         let timing_dir = root.join("phase-timing");
@@ -645,6 +667,13 @@ impl Fixture {
         }
         let (daemon, port) = start_http_server_with_env(&config, &root, &[], &environment);
         let session = McpSession::start(port);
+        // Start the faulted build only after client setup is complete, so its
+        // bounded native barrier cannot expire while MCP is initializing.
+        fs::write(
+            root.join("pending.py"),
+            "def pending_symbol():\n    return 2\n",
+        )
+        .unwrap();
         let mut phase_pid = 0;
         wait_until(
             "native database phase did not reach its ready barrier",
@@ -733,7 +762,9 @@ impl Drop for Fixture {
         while alive(self.phase_pid) && Instant::now() < deadline {
             thread::sleep(Duration::from_millis(25));
         }
-        if !alive(self.phase_pid) {
+        if thread::panicking() {
+            eprintln!("retained failed lifecycle fixture: {}", self.root.display());
+        } else if !alive(self.phase_pid) {
             let _ = fs::remove_dir_all(&self.root);
         }
     }
