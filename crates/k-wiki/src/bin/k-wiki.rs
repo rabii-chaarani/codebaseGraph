@@ -152,9 +152,7 @@ fn dispatch_cli(request: CliRequest) -> Result<TransportPayload, TransportError>
             ))
         }
         CliRequest::Validate {
-            bundle,
-            profile,
-            json,
+            bundle, profile, ..
         } => {
             let api = api_for_bundle(&bundle)?;
             let response = execute(
@@ -164,26 +162,43 @@ fn dispatch_cli(request: CliRequest) -> Result<TransportPayload, TransportError>
                     profile: validation_profile(profile),
                 }),
             )?;
-            if json {
-                response_payload("validation complete", response)
-            } else if let WikiOperationResponse::Validation(result) = response {
+            if let WikiOperationResponse::Validation(result) = response {
                 let errors = result
                     .diagnostics
                     .iter()
                     .filter(|diagnostic| diagnostic.severity == DiagnosticSeverity::Error)
                     .count();
+                let exit_code = if result.accepted { 0 } else { 1 };
+                let mut text = format!(
+                    "{} ({} diagnostics, {errors} errors)",
+                    if result.accepted {
+                        "bundle accepted"
+                    } else {
+                        "bundle rejected"
+                    },
+                    result.diagnostics.len()
+                );
+                for diagnostic in &result.diagnostics {
+                    let severity = match diagnostic.severity {
+                        DiagnosticSeverity::Error => "error",
+                        DiagnosticSeverity::Warning => "warning",
+                        DiagnosticSeverity::Info => "info",
+                    };
+                    let location = match diagnostic.line {
+                        Some(line) => format!("{}:{line}", diagnostic.source_path),
+                        None => diagnostic.source_path.clone(),
+                    };
+                    text.push_str(&format!(
+                        "\n{severity} {} ({location}): {}",
+                        diagnostic.code, diagnostic.message
+                    ));
+                }
                 Ok(TransportPayload::structured(
-                    format!(
-                        "{} ({} diagnostics, {errors} errors)",
-                        if result.accepted {
-                            "bundle accepted"
-                        } else {
-                            "bundle rejected"
-                        },
-                        result.diagnostics.len()
-                    ),
-                    serde_json::to_value(&result).map_err(serialization_error)?,
-                ))
+                    text,
+                    serde_json::to_value(WikiOperationResponse::Validation(result))
+                        .map_err(serialization_error)?,
+                )
+                .with_exit_code(exit_code))
             } else {
                 Err(unexpected_response())
             }
