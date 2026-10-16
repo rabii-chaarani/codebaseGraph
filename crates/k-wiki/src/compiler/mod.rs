@@ -665,33 +665,54 @@ enum ResolvePathError {
     },
 }
 
-fn parse_markdown(body: &str) -> ParsedMarkdown {
+/// Canonical source headings keyed by their Markdown start byte offsets.
+/// Offsets preserve association when normalized metadata is sorted or the
+/// renderer enables additional Markdown extensions.
+pub(crate) fn source_headings(body: &str) -> Vec<(usize, Heading)> {
     let mut headings = Vec::new();
-    let mut heading_counts = BTreeMap::<String, usize>::new();
-    let mut fragments = BTreeSet::<String>::new();
+    let mut counts = BTreeMap::new();
+    let mut current = None::<(usize, u8, String)>;
+    for (event, range) in Parser::new(body).into_offset_iter() {
+        match event {
+            Event::Start(Tag::Heading { level, .. }) => {
+                current = Some((range.start, heading_level(level), String::new()));
+            }
+            Event::End(TagEnd::Heading(_)) => {
+                if let Some((offset, level, text)) = current.take() {
+                    let text = text.trim().to_string();
+                    if !text.is_empty() {
+                        let id = unique_slug(&text, &mut counts);
+                        headings.push((offset, Heading { level, id, text }));
+                    }
+                }
+            }
+            Event::Text(text) | Event::Code(text) => {
+                if let Some((_, _, text_buffer)) = current.as_mut() {
+                    text_buffer.push_str(text.as_ref());
+                }
+            }
+            Event::SoftBreak | Event::HardBreak => {
+                if let Some((_, _, text)) = current.as_mut() {
+                    text.push(' ');
+                }
+            }
+            _ => {}
+        }
+    }
+    headings
+}
+
+fn parse_markdown(body: &str) -> ParsedMarkdown {
+    let headings = source_headings(body)
+        .into_iter()
+        .map(|(_, heading)| heading)
+        .collect::<Vec<_>>();
+    let fragments = headings.iter().map(|heading| heading.id.clone()).collect();
     let mut links = Vec::<ParsedLink>::new();
-    let mut current_heading = Option::<(u8, String)>::None;
     let mut current_link = Option::<LinkCapture>::None;
 
     for (event, range) in Parser::new(body).into_offset_iter() {
         match event {
-            Event::Start(Tag::Heading { level, .. }) => {
-                current_heading = Some((heading_level(level), String::new()));
-            }
-            Event::End(TagEnd::Heading(_)) => {
-                if let Some((level, text)) = current_heading.take() {
-                    let text = text.trim().to_string();
-                    if !text.is_empty() {
-                        let slug = unique_slug(&text, &mut heading_counts);
-                        fragments.insert(slug.clone());
-                        headings.push(Heading {
-                            level,
-                            id: slug,
-                            text,
-                        });
-                    }
-                }
-            }
             Event::Start(Tag::Link { dest_url, .. }) => {
                 current_link = Some(LinkCapture {
                     raw_href: dest_url.to_string(),
@@ -715,17 +736,11 @@ fn parse_markdown(body: &str) -> ParsedMarkdown {
                 }
             }
             Event::Text(text) | Event::Code(text) => {
-                if let Some((_, current)) = current_heading.as_mut() {
-                    current.push_str(text.as_ref());
-                }
                 if let Some(current) = current_link.as_mut() {
                     current.context.push_str(text.as_ref());
                 }
             }
             Event::SoftBreak | Event::HardBreak => {
-                if let Some((_, current)) = current_heading.as_mut() {
-                    current.push(' ');
-                }
                 if let Some(current) = current_link.as_mut() {
                     current.context.push(' ');
                 }
