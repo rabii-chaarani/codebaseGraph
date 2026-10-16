@@ -11,6 +11,8 @@ use std::{
 use sha2::{Digest, Sha256};
 use yaml_serde::Value as YamlValue;
 
+use crate::bundle::{io_error_category, split_frontmatter, yaml_error_message};
+
 static TEMP_FILE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 pub trait AuthoringValidator {
@@ -156,9 +158,17 @@ impl AuthoringError {
     }
 
     pub fn io(action: &str, path: &str, error: io::Error) -> Self {
+        let destination = if Path::new(path).is_absolute() {
+            "destination".to_owned()
+        } else {
+            format!("`{path}`")
+        };
         Self::new(
             "invalid_request",
-            format!("{action} failed for `{path}`: {error}"),
+            format!(
+                "{action} failed for {destination}: {}",
+                io_error_category(&error)
+            ),
         )
     }
 }
@@ -178,61 +188,34 @@ pub struct ParsedDocument {
 }
 
 pub fn parse_document(content: &str) -> Result<ParsedDocument, AuthoringError> {
-    let opening_delimiter_len = if content.starts_with("---\r\n") {
-        5
-    } else if content.starts_with("---\n") {
-        4
-    } else {
-        0
-    };
-
-    if opening_delimiter_len == 0 {
+    let split = split_frontmatter(content);
+    if split.missing_closing_delimiter {
+        return Err(AuthoringError::invalid_frontmatter(
+            "frontmatter is missing a closing delimiter",
+        ));
+    }
+    let Some(yaml) = split.frontmatter else {
         return Ok(ParsedDocument {
             frontmatter: BTreeMap::new(),
             body_markdown: content.to_string(),
         });
-    }
-
-    let bytes = content.as_bytes();
-    let mut cursor = opening_delimiter_len;
-    let mut closing = None;
-    while cursor < bytes.len() {
-        let line_end = content[cursor..]
-            .find('\n')
-            .map(|offset| cursor + offset)
-            .unwrap_or(bytes.len());
-        let line = content[cursor..line_end].trim_end_matches('\r');
-        if line == "---" {
-            closing = Some((cursor, line_end));
-            break;
-        }
-        cursor = line_end.saturating_add(1);
-    }
-
-    let Some((frontmatter_end, closing_line_end)) = closing else {
-        return Err(AuthoringError::invalid_frontmatter(
-            "frontmatter is missing a closing delimiter",
-        ));
     };
 
-    let yaml = &content[opening_delimiter_len..frontmatter_end];
     let frontmatter = if yaml.trim().is_empty() {
         BTreeMap::new()
     } else {
         yaml_serde::from_str::<BTreeMap<String, YamlValue>>(yaml).map_err(|error| {
-            AuthoringError::invalid_frontmatter(format!("frontmatter is invalid: {error}"))
+            AuthoringError::invalid_frontmatter(yaml_error_message(
+                &error,
+                "frontmatter must be a valid YAML mapping",
+                split.frontmatter_start_line,
+            ))
         })?
-    };
-
-    let body_start = if closing_line_end < bytes.len() {
-        closing_line_end + 1
-    } else {
-        closing_line_end
     };
 
     Ok(ParsedDocument {
         frontmatter,
-        body_markdown: content[body_start..].to_string(),
+        body_markdown: split.body.to_string(),
     })
 }
 
@@ -262,8 +245,9 @@ pub fn render_document(
         return Ok(body_markdown.to_string());
     }
 
-    let yaml = yaml_serde::to_string(frontmatter)
-        .map_err(|error| AuthoringError::invalid_frontmatter(error.to_string()))?;
+    let yaml = yaml_serde::to_string(frontmatter).map_err(|_| {
+        AuthoringError::invalid_frontmatter("frontmatter YAML serialization failed")
+    })?;
 
     Ok(format!("---\n{yaml}---\n{body_markdown}"))
 }
