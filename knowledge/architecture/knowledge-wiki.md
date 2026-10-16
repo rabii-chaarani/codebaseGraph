@@ -69,6 +69,20 @@ The wiki queries graph health, search, and context through the Graph Runtime's p
 
 A successful compilation publishes a complete versioned projection atomically. An unchanged source is a cache hit. Generation tokens prevent older concurrent work from replacing newer state. Compilation or rendering failure leaves the previous valid projection readable and surfaces diagnostics.
 
+## Diagnostic contracts
+
+Validation, link checks, diagnostic queries, and projection builds assemble loader, conformance, and compiler findings from the same loaded source. Findings are deterministically ordered and deduplicated. Compiler locations are translated to full source-file lines before merging findings whose coordinates already include frontmatter.
+
+The severity policy is shared across validation entry points: `consume` accepts readable content while reporting findings; `conformant` rejects errors; `recommended` rejects warnings and errors. Builds preserve consume-mode publication and include conformance and link findings in the projection. CLI validation exits with status 0 for acceptance and 1 for rejection in both text and JSON modes.
+
+MCP retains its numeric RPC error classification and message. Its `error.data` additionally preserves the wiki domain `code`, `details`, and `retryable` flag. Parser and filesystem failures use safe categories and source-relative locations; raw dependency messages and source values are not public diagnostic text.
+
+## Read freshness and acquisition failure
+
+Before a cached read, the local service loads the configured sources again and reuses the compiled projection only when the loaded content is unchanged. Loading, comparison, and cache publication are serialized within the service. A completed edit, quarantine transition, or deletion made by another process is visible to the next read. This deliberately adds source-reading work per request instead of introducing a background watcher. External multi-file edits are not transactional.
+
+An incomplete source scan, including I/O or UTF-8 acquisition failure, returns `source_unavailable` for ordinary reads and preserves the prior complete cache. Health reports `ok: false`; `projection_available` still records whether a previous snapshot is retained. Unhealthy HTTP health responses use status 503. Diagnostic queries and explicit builds remain able to return partial content and its findings, but a partial build cannot replace the configured runtime cache. Builds for other source roots also leave that cache unchanged.
+
 ## Source evidence
 
 | Boundary | Current implementation evidence |
