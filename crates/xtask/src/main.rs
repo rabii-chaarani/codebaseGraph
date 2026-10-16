@@ -1608,7 +1608,7 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
     .map_err(|error| error.to_string())?;
     fs::write(
         concepts.join("welcome.md"),
-        "---\ntype: guide\ntitle: Welcome\ntags: [smoke]\n---\n# Welcome\n\nPackaged wiki smoke.\n",
+        "---\ntype: guide\ntitle: Welcome\ndescription: Packaged wiki smoke fixture.\ntags: [smoke]\n---\n# Welcome\n\nPackaged wiki smoke.\n",
     )
     .map_err(|error| error.to_string())?;
     let repo_root = temp.join("repo");
