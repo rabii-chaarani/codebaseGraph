@@ -334,6 +334,32 @@ fn failed_acquisition_cannot_replace_cache_even_via_permissive_build() {
 }
 
 #[test]
+fn configured_root_failure_preserves_cache_and_recovers() {
+    let fixture = Fixture::new();
+    fixture.write("page.md", document("# Original\n"));
+    let api = fixture.api();
+    let before = api.execute_operation(&concept_request()).unwrap();
+    let parked = fixture.root.join("temporarily-unmounted");
+    fs::rename(&fixture.bundle, &parked).unwrap();
+
+    let error = api.execute_operation(&concept_request()).unwrap_err();
+    assert_eq!(error.code, "source_unavailable");
+    assert!(!error.message.contains(fixture.root.to_str().unwrap()));
+    let Response::Health(health) = api
+        .execute_operation(&Request::Health(HealthRequest {}))
+        .unwrap()
+    else {
+        panic!("expected health")
+    };
+    assert!(!health.ok);
+    assert!(health.projection_available);
+
+    fs::rename(&parked, &fixture.bundle).unwrap();
+    assert!(build(&api, vec![], "runtime").cache_hit);
+    assert_eq!(api.execute_operation(&concept_request()).unwrap(), before);
+}
+
+#[test]
 fn external_edits_and_deletions_are_visible_on_the_next_read() {
     let fixture = Fixture::new();
     fixture.write("page.md", document("# Original\n"));
@@ -421,6 +447,57 @@ impl Drop for HttpServer {
     fn drop(&mut self) {
         self.0.abort();
     }
+}
+
+#[tokio::test]
+async fn unavailable_roots_use_503_while_unknown_bundles_remain_404() {
+    let fixture = Fixture::new();
+    fixture.write("page.md", document("# Original\n"));
+    let api = fixture.api();
+    api.execute_operation(&concept_request()).unwrap();
+    let server = HttpServer::new(fixture.api(), fixture.root.join("site")).await;
+    assert_eq!(server.request(Some(&concept_request())).await.0, 200);
+    let parked = fixture.root.join("temporarily-unmounted");
+    fs::rename(&fixture.bundle, &parked).unwrap();
+
+    let wire = mcp_call(
+        &api,
+        "wiki_get_concept",
+        json!({"bundle_id":"docs", "concept_id":"page"}),
+    );
+    assert_eq!(wire["error"]["data"]["code"], "source_unavailable");
+    let (status, response) = server.request(Some(&concept_request())).await;
+    assert_eq!(status, 503);
+    assert_eq!(response["error"]["code"], "source_unavailable");
+    let diagnostic_request = Request::GetDiagnostics(GetDiagnosticsRequest {
+        bundle_id: "docs".into(),
+        profile: ValidationProfile::Conformant,
+    });
+    assert_eq!(
+        api.execute_operation(&diagnostic_request).unwrap_err().code,
+        "source_unavailable"
+    );
+    let (status, response) = server.request(Some(&diagnostic_request)).await;
+    assert_eq!(status, 503);
+    assert_eq!(response["error"]["code"], "source_unavailable");
+    let (status, response) = server.request(None).await;
+    assert_eq!(status, 503);
+    assert_eq!(response["result"]["ok"], false);
+    assert_eq!(response["result"]["projection_available"], true);
+
+    fs::rename(&parked, &fixture.bundle).unwrap();
+    assert_eq!(server.request(Some(&concept_request())).await.0, 200);
+    let unknown = Request::GetDiagnostics(GetDiagnosticsRequest {
+        bundle_id: "unknown".into(),
+        profile: ValidationProfile::Conformant,
+    });
+    assert_eq!(
+        api.execute_operation(&unknown).unwrap_err().code,
+        "bundle_not_found"
+    );
+    let (status, response) = server.request(Some(&unknown)).await;
+    assert_eq!(status, 404);
+    assert_eq!(response["error"]["code"], "bundle_not_found");
 }
 
 #[tokio::test]

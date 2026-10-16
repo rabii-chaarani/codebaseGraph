@@ -117,6 +117,17 @@ impl LocalWikiService {
             .map_err(|_| WikiApiError::new("bundle_not_found", "bundle could not be loaded"))
     }
 
+    fn load_configured(&self) -> Result<Vec<LoadedBundle>, WikiApiError> {
+        // Losing access to a configured root is an acquisition failure,
+        // rather than a caller requesting an unknown bundle.
+        discover_bundles(&self.bundle_roots).map_err(|_| {
+            WikiApiError::new(
+                "source_unavailable",
+                "configured wiki source could not be loaded",
+            )
+        })
+    }
+
     fn compile_loaded(
         loaded: &[LoadedBundle],
         generated_at: &str,
@@ -194,7 +205,7 @@ impl LocalWikiService {
             .map_err(|_| WikiApiError::new("build_in_progress", "wiki state is unavailable"))?;
         // Loading under the publication lock prevents an older request from
         // replacing a newer snapshot. Compare content, not filesystem clocks.
-        let loaded = Self::load(&self.bundle_roots)?;
+        let loaded = self.load_configured()?;
         Self::ensure_acquired(&loaded)?;
         if let Some(cached) = guard.as_ref() {
             if cached.sources == loaded {
@@ -575,10 +586,8 @@ impl WikiOperationExecutor for LocalWikiService {
                 }))
             }
             WikiOperationRequest::GetDiagnostics(request) => {
-                let loaded = discover_bundles(&self.bundle_roots)
-                    .map_err(|_| {
-                        WikiApiError::new("bundle_not_found", "bundle could not be loaded")
-                    })?
+                let loaded = self
+                    .load_configured()?
                     .into_iter()
                     .find(|bundle| bundle.id == request.bundle_id)
                     .ok_or_else(|| WikiApiError::new("bundle_not_found", "bundle was not found"))?;
