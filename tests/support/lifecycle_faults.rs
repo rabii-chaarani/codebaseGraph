@@ -241,6 +241,44 @@ fn find_json(root: &Path, name: &str) -> Option<(PathBuf, Value)> {
     None
 }
 
+fn hold_finished_leases(root: &Path, leases: &mut Vec<fs::File>) -> std::io::Result<bool> {
+    use fs2::FileExt;
+
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let path = entry.path();
+        if entry
+            .file_name()
+            .to_string_lossy()
+            .starts_with(".lifecycle-")
+        {
+            let lease = fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(path.join("lease"))?;
+            if lease.try_lock_exclusive().is_err() {
+                return Ok(false);
+            }
+            // Recovery can retire a gated startup before any guardian writes
+            // a terminal receipt. Inspect either proof while holding its lease.
+            let empty_receipt = read_json_when_present(&path.join("receipt.json"))
+                .is_some_and(|receipt| receipt["containment_empty"] == true);
+            let retired =
+                fs::read(path.join("retired")).is_ok_and(|marker| marker == b"retired-v2\n");
+            if !empty_receipt && !retired {
+                return Ok(false);
+            }
+            leases.push(lease);
+        } else if !hold_finished_leases(&path, leases)? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 fn remove_quiescent_repo(root: &Path) {
     fn directory_not_empty(error: &std::io::Error) -> bool {
         #[cfg(unix)]
@@ -248,38 +286,6 @@ fn remove_quiescent_repo(root: &Path) {
         #[cfg(windows)]
         let code = windows_sys::Win32::Foundation::ERROR_DIR_NOT_EMPTY as i32;
         error.raw_os_error() == Some(code)
-    }
-
-    fn hold_finished_leases(root: &Path, leases: &mut Vec<fs::File>) -> std::io::Result<bool> {
-        use fs2::FileExt;
-
-        for entry in fs::read_dir(root)? {
-            let entry = entry?;
-            if !entry.file_type()?.is_dir() {
-                continue;
-            }
-            let path = entry.path();
-            if entry
-                .file_name()
-                .to_string_lossy()
-                .starts_with(".lifecycle-")
-            {
-                let lease = fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .open(path.join("lease"))?;
-                if lease.try_lock_exclusive().is_err()
-                    || !read_json_when_present(&path.join("receipt.json"))
-                        .is_some_and(|receipt| receipt["containment_empty"] == true)
-                {
-                    return Ok(false);
-                }
-                leases.push(lease);
-            } else if !hold_finished_leases(&path, leases)? {
-                return Ok(false);
-            }
-        }
-        Ok(true)
     }
 
     // Killing the owner is synchronous, but its independent guardian still
@@ -303,6 +309,47 @@ fn remove_quiescent_repo(root: &Path) {
             }
         },
     );
+}
+
+#[test]
+fn fixture_cleanup_accepts_retired_startup_without_terminal_receipt() {
+    let root = temp_repo();
+    let lifecycle = root.join(".lifecycle-retired-startup");
+    fs::create_dir(&lifecycle).unwrap();
+    fs::write(lifecycle.join("lease"), b"").unwrap();
+    fs::write(lifecycle.join("retired"), b"retired-v2\n").unwrap();
+    let mut leases = Vec::new();
+    assert!(
+        hold_finished_leases(&root, &mut leases).unwrap(),
+        "retired startup has proven empty containment without a guardian receipt"
+    );
+    drop(leases);
+    remove_quiescent_repo(&root);
+}
+
+#[test]
+fn fixture_cleanup_keeps_unproven_or_locked_containment() {
+    use fs2::FileExt;
+    let root = temp_repo();
+    let lifecycle = root.join(".lifecycle-unproven");
+    fs::create_dir(&lifecycle).unwrap();
+    fs::write(lifecycle.join("lease"), b"").unwrap();
+    assert!(!hold_finished_leases(&root, &mut Vec::new()).unwrap());
+    fs::write(lifecycle.join("retired"), b"invalid").unwrap();
+    assert!(!hold_finished_leases(&root, &mut Vec::new()).unwrap());
+    fs::write(lifecycle.join("retired"), b"retired-v2\n").unwrap();
+    let live = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(lifecycle.join("lease"))
+        .unwrap();
+    live.lock_exclusive().unwrap();
+    assert!(!hold_finished_leases(&root, &mut Vec::new()).unwrap());
+    drop(live);
+    let mut leases = Vec::new();
+    assert!(hold_finished_leases(&root, &mut leases).unwrap());
+    drop(leases);
+    remove_quiescent_repo(&root);
 }
 
 fn configured_repo() -> (PathBuf, PathBuf, Value) {
@@ -757,7 +804,17 @@ impl Drop for Fixture {
         for pid in self.paused.drain(..) {
             resume(pid);
         }
-        self.daemon.take();
+        if let Some(mut daemon) = self.daemon.take() {
+            if thread::panicking() {
+                let _ = daemon.0.kill();
+                let _ = daemon.0.wait();
+                if let Some(stderr) = daemon.0.stderr.take() {
+                    let mut diagnostics = String::new();
+                    let _ = stderr.take(64 * 1024).read_to_string(&mut diagnostics);
+                    eprintln!("failed lifecycle fixture HTTP stderr:\n{diagnostics}");
+                }
+            }
+        }
         let deadline = Instant::now() + Duration::from_secs(6);
         while alive(self.phase_pid) && Instant::now() < deadline {
             thread::sleep(Duration::from_millis(25));
@@ -811,7 +868,9 @@ fn real_loader_memory_failure_cleans_containment_and_retries_pending_edit() {
     // The native loader owns the allocation. Its ordinary RSS sampler must
     // detect this while the loader remains inside its ready barrier.
     fs::write(
-        fixture.barrier.join("ALLOCATE_BYTES"),
+        fixture
+            .barrier
+            .join(format!("ALLOCATE_BYTES-{}", fixture.phase_pid)),
         (512_u64 * 1024 * 1024).to_string(),
     )
     .unwrap();
@@ -830,7 +889,12 @@ fn real_loader_memory_failure_cleans_containment_and_retries_pending_edit() {
         !alive(fixture.phase_pid)
     });
     fixture.unchanged();
-    fs::remove_file(fixture.barrier.join("ALLOCATE_BYTES")).unwrap();
+    fs::remove_file(
+        fixture
+            .barrier
+            .join(format!("ALLOCATE_BYTES-{}", fixture.phase_pid)),
+    )
+    .unwrap();
     fixture.verify_recovery();
 }
 
