@@ -1,6 +1,10 @@
 use super::*;
 use std::io::{BufRead, BufReader};
 
+// Polling still detects edits promptly. Leave enough time between periodic
+// reconciliations to observe a completed refresh on slower native runners.
+const RECONCILE_INTERVAL_MS: u64 = 5_000;
+
 fn wait_until(message: &str, mut predicate: impl FnMut() -> bool) {
     let deadline = Instant::now() + Duration::from_secs(15);
     while Instant::now() < deadline {
@@ -318,7 +322,7 @@ fn configured_repo() -> (PathBuf, PathBuf, Value) {
         ConfigSettings {
             policy: "leader",
             backend: "poll",
-            interval_ms: 100,
+            interval_ms: RECONCILE_INTERVAL_MS,
             worker_memory_mib: 512,
             rust_memory_mib: 384,
             spill_chunk_mib: 32,
@@ -646,7 +650,7 @@ impl Fixture {
             ConfigSettings {
                 policy: "leader",
                 backend: "poll",
-                interval_ms: 100,
+                interval_ms: RECONCILE_INTERVAL_MS,
                 worker_memory_mib: 512,
                 rust_memory_mib: 384,
                 spill_chunk_mib: 32,

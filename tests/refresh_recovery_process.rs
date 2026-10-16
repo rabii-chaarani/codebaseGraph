@@ -50,6 +50,27 @@ struct HttpResponse {
     body: Value,
 }
 
+fn read_observation_response(
+    name: &str,
+    deadline: Instant,
+    mut request: impl FnMut() -> HttpResponse,
+) -> HttpResponse {
+    loop {
+        let response = request();
+        // Fault injection can interrupt the coordinator connection. These
+        // observations are safe to repeat even when dispatch is ambiguous.
+        let interrupted_observation = matches!(name, "graph_health" | "graph_search")
+            && response.status == 200
+            && response.body["result"]["isError"] == true
+            && response.body["result"]["structuredContent"]["error"]["code"]
+                == "coordinator_transport_error";
+        if !interrupted_observation || Instant::now() >= deadline {
+            return response;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+}
+
 fn try_request(
     port: u16,
     method: &str,
@@ -151,23 +172,26 @@ impl McpSession {
     }
 
     fn call(&mut self, name: &str, arguments: Value) -> Value {
-        let id = self.next_id;
-        self.next_id += 1;
-        let response = request(
-            self.port,
-            "POST",
-            "/mcp",
-            &[
-                ("mcp-session-id", self.session_id.as_str()),
-                ("mcp-protocol-version", MCP_PROTOCOL_VERSION),
-            ],
-            Some(&json!({
-                "jsonrpc": "2.0",
-                "id": id,
-                "method": "tools/call",
-                "params": {"name": name, "arguments": arguments}
-            })),
-        );
+        let response =
+            read_observation_response(name, Instant::now() + Duration::from_secs(2), || {
+                let id = self.next_id;
+                self.next_id += 1;
+                request(
+                    self.port,
+                    "POST",
+                    "/mcp",
+                    &[
+                        ("mcp-session-id", self.session_id.as_str()),
+                        ("mcp-protocol-version", MCP_PROTOCOL_VERSION),
+                    ],
+                    Some(&json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "method": "tools/call",
+                        "params": {"name": name, "arguments": arguments}
+                    })),
+                )
+            });
         assert_eq!(response.status, 200, "{name} HTTP response: {response:?}");
         assert_eq!(
             response.body["result"]["isError"], false,
@@ -197,6 +221,64 @@ impl McpSession {
             .iter()
             .filter_map(|result| result["path"].as_str().map(str::to_string))
             .collect()
+    }
+}
+
+#[test]
+fn read_observations_recover_from_an_interrupted_coordinator_connection() {
+    for name in ["graph_health", "graph_search"] {
+        let mut attempts = 0;
+        let response =
+            read_observation_response(name, Instant::now() + Duration::from_secs(2), || {
+                attempts += 1;
+                HttpResponse {
+                    status: 200,
+                    headers: Default::default(),
+                    body: if attempts == 1 {
+                        json!({"result": {"isError": true, "structuredContent": {
+                            "error": {"code": "coordinator_transport_error", "retryable": false}
+                        }}})
+                    } else {
+                        json!({"result": {"isError": false, "structuredContent": {"ok": true}}})
+                    },
+                }
+            });
+        assert_eq!(attempts, 2, "{name}");
+        assert_eq!(response.body["result"]["structuredContent"]["ok"], true);
+    }
+}
+
+#[test]
+fn observation_retries_preserve_other_failures_and_stop_at_the_deadline() {
+    for (name, status, code, expired) in [
+        ("graph_health", 200, "coordinator_transport_error", true),
+        ("graph_build", 200, "coordinator_transport_error", false),
+        ("graph_health", 200, "invalid_arguments", false),
+        ("graph_health", 503, "coordinator_transport_error", false),
+    ] {
+        let mut attempts = 0;
+        let deadline = Instant::now()
+            + if expired {
+                Duration::ZERO
+            } else {
+                Duration::from_secs(2)
+            };
+        let response = read_observation_response(name, deadline, || {
+            attempts += 1;
+            assert_eq!(attempts, 1, "unexpected replay: {name} {status} {code}");
+            HttpResponse {
+                status,
+                headers: Default::default(),
+                body: json!({"result": {"isError": true, "structuredContent": {
+                    "error": {"code": code}
+                }}}),
+            }
+        });
+        assert_eq!(response.status, status);
+        assert_eq!(
+            response.body["result"]["structuredContent"]["error"]["code"],
+            code
+        );
     }
 }
 
