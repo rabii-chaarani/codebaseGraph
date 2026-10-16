@@ -22,7 +22,8 @@ use crate::{
     compiler::{
         compile_projection, CompileRequest, SourceBundle, SourceDocument, SourceDocumentKind,
     },
-    conformance::{validate_bundle, ConformanceProfile},
+    conformance::{accepts_diagnostics, validate_bundle, ConformanceProfile},
+    diagnostic::DiagnosticSeverity,
     memory::{
         apply_transition, memory_page_path, metadata_for_record, metadata_from_concept,
         metadata_to_yaml, record_from_concept, record_from_metadata, record_from_request,
@@ -74,8 +75,13 @@ where
 
 pub struct LocalWikiService {
     bundle_roots: Vec<PathBuf>,
-    projection: Mutex<Option<WikiProjection>>,
+    projection: Mutex<Option<CachedProjection>>,
     authoring: Option<Box<dyn AuthoringOperations>>,
+}
+
+struct CachedProjection {
+    sources: Vec<LoadedBundle>,
+    projection: WikiProjection,
 }
 
 impl LocalWikiService {
@@ -102,25 +108,83 @@ impl LocalWikiService {
         generated_at: &str,
         source_revision: Option<String>,
     ) -> Result<WikiProjection, WikiApiError> {
-        let loaded = discover_bundles(roots)
-            .map_err(|_| WikiApiError::new("bundle_not_found", "bundle could not be loaded"))?;
+        let loaded = Self::load(roots)?;
+        Ok(Self::compile_loaded(&loaded, generated_at, source_revision))
+    }
+
+    fn load(roots: &[PathBuf]) -> Result<Vec<LoadedBundle>, WikiApiError> {
+        discover_bundles(roots)
+            .map_err(|_| WikiApiError::new("bundle_not_found", "bundle could not be loaded"))
+    }
+
+    fn compile_loaded(
+        loaded: &[LoadedBundle],
+        generated_at: &str,
+        source_revision: Option<String>,
+    ) -> WikiProjection {
         let mut diagnostics = loaded
             .iter()
-            .map(|bundle| (bundle.id.clone(), bundle.diagnostics.clone()))
+            .map(|bundle| {
+                (
+                    bundle.id.clone(),
+                    validate_bundle(bundle, ConformanceProfile::Consume).diagnostics,
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let origins = loaded
+            .iter()
+            .flat_map(|bundle| {
+                bundle.entries.iter().map(|entry| {
+                    (
+                        (bundle.id.clone(), entry.source_path.clone()),
+                        entry.document.body_start_line.saturating_sub(1),
+                    )
+                })
+            })
             .collect::<BTreeMap<_, _>>();
         let request = CompileRequest {
             generated_at: generated_at.to_string(),
             source_revision,
-            bundles: loaded.into_iter().map(source_bundle).collect(),
+            bundles: loaded.iter().cloned().map(source_bundle).collect(),
         };
         let mut projection = compile_projection(request);
         for bundle in &mut projection.bundles {
+            // Only compiler locations are body-relative. Reader and conformance
+            // diagnostics already refer to complete source documents.
+            for diagnostic in &mut bundle.diagnostics {
+                if let (Some(line), Some(offset)) = (
+                    &mut diagnostic.line,
+                    origins.get(&(bundle.id.clone(), diagnostic.source_path.clone())),
+                ) {
+                    *line = line.saturating_add(*offset);
+                }
+            }
             bundle
                 .diagnostics
                 .extend(diagnostics.remove(&bundle.id).unwrap_or_default());
             bundle.normalize();
+            bundle.diagnostics.dedup();
         }
-        Ok(projection)
+        projection
+    }
+
+    fn ensure_acquired(loaded: &[LoadedBundle]) -> Result<(), WikiApiError> {
+        let diagnostics = loaded
+            .iter()
+            .flat_map(|bundle| &bundle.diagnostics)
+            .filter(|diagnostic| {
+                matches!(diagnostic.code.as_str(), "io_read_failed" | "invalid_utf8")
+            })
+            .collect::<Vec<_>>();
+        if diagnostics.is_empty() {
+            Ok(())
+        } else {
+            Err(WikiApiError::new(
+                "source_unavailable",
+                "wiki source could not be read completely",
+            )
+            .details(serde_json::json!({"diagnostics": diagnostics})))
+        }
     }
 
     fn projection(&self) -> Result<WikiProjection, WikiApiError> {
@@ -128,18 +192,21 @@ impl LocalWikiService {
             .projection
             .lock()
             .map_err(|_| WikiApiError::new("build_in_progress", "wiki state is unavailable"))?;
-        if let Some(projection) = guard.as_ref() {
-            return Ok(projection.clone());
+        // Loading under the publication lock prevents an older request from
+        // replacing a newer snapshot. Compare content, not filesystem clocks.
+        let loaded = Self::load(&self.bundle_roots)?;
+        Self::ensure_acquired(&loaded)?;
+        if let Some(cached) = guard.as_ref() {
+            if cached.sources == loaded {
+                return Ok(cached.projection.clone());
+            }
         }
-        let projection = self.compile(&self.bundle_roots, "runtime", None)?;
-        *guard = Some(projection.clone());
+        let projection = Self::compile_loaded(&loaded, "runtime", None);
+        *guard = Some(CachedProjection {
+            sources: loaded,
+            projection: projection.clone(),
+        });
         Ok(projection)
-    }
-
-    fn invalidate_projection(&self) {
-        if let Ok(mut projection) = self.projection.lock() {
-            *projection = None;
-        }
     }
 
     fn authoring(&self) -> Result<&dyn AuthoringOperations, WikiApiError> {
@@ -154,7 +221,7 @@ impl LocalWikiService {
     fn record_memory(&self, request: &RecordMemoryRequest) -> Result<MemoryRecord, WikiApiError> {
         validate_record_request(request)
             .map_err(|message| memory_error("invalid_memory_request", message))?;
-        let projection = self.compile(&self.bundle_roots, "runtime", None)?;
+        let projection = self.projection()?;
         let bundle = projection
             .bundles
             .iter()
@@ -192,7 +259,6 @@ impl LocalWikiService {
                 body_markdown: Some(request.body_markdown.clone()),
             })
             .map_err(authoring_error)?;
-        self.invalidate_projection();
         Ok(record_from_request(request, result.source_path))
     }
 
@@ -258,7 +324,7 @@ impl LocalWikiService {
     ) -> Result<MemoryRecord, WikiApiError> {
         validate_memory_id(&request.memory_id)
             .map_err(|message| memory_error("invalid_memory_request", message))?;
-        let projection = self.compile(&self.bundle_roots, "runtime", None)?;
+        let projection = self.projection()?;
         let concept = find_memory_concept(&projection, &request.bundle_id, &request.memory_id)?;
         let mut metadata = metadata_from_concept(concept)
             .map_err(|message| memory_error("invalid_memory_metadata", message))?;
@@ -325,7 +391,6 @@ impl LocalWikiService {
             .map_err(authoring_error)?;
         let record = record_from_metadata(concept, metadata)
             .map_err(|message| memory_error("invalid_memory_metadata", message))?;
-        self.invalidate_projection();
         Ok(record)
     }
 }
@@ -337,42 +402,48 @@ impl WikiOperationExecutor for LocalWikiService {
     ) -> Result<WikiOperationResponse, WikiApiError> {
         match request {
             WikiOperationRequest::Health(_) => {
+                let current = self.projection();
                 let projection_available = self
                     .projection
                     .lock()
                     .map(|projection| projection.is_some())
                     .unwrap_or(false);
                 Ok(WikiOperationResponse::Health(HealthResponse {
-                    ok: true,
+                    ok: current.as_ref().is_ok_and(|projection| {
+                        projection
+                            .bundles
+                            .iter()
+                            .flat_map(|bundle| &bundle.diagnostics)
+                            .all(|diagnostic| diagnostic.severity != DiagnosticSeverity::Error)
+                    }),
                     schema_version: WIKI_SCHEMA_VERSION,
                     projection_available,
                 }))
             }
             WikiOperationRequest::ValidateBundle(request) => {
                 let bundle_root = self.configured_bundle_root(&request.bundle_root)?;
-                let loaded = crate::bundle::load_bundle(&bundle_root).map_err(|_| {
-                    WikiApiError::new("bundle_not_found", "bundle could not be loaded")
-                })?;
-                let report = validate_bundle(&loaded, validation_profile(request.profile));
+                let mut projection = self.compile(&[bundle_root], "runtime", None)?;
+                let diagnostics = projection.bundles.remove(0).diagnostics;
                 Ok(WikiOperationResponse::Validation(ValidationResponse {
-                    accepted: report.accepted,
-                    diagnostics: report.diagnostics,
+                    accepted: accepts_diagnostics(
+                        validation_profile(request.profile),
+                        &diagnostics,
+                    ),
+                    diagnostics,
                 }))
             }
             WikiOperationRequest::CheckLinks(request) => {
                 let bundle_root = self.configured_bundle_root(&request.bundle_root)?;
-                let loaded = crate::bundle::load_bundle(&bundle_root).map_err(|_| {
-                    WikiApiError::new("bundle_not_found", "bundle could not be loaded")
-                })?;
-                let report = validate_bundle(&loaded, ConformanceProfile::Conformant);
-                Ok(WikiOperationResponse::Diagnostics(report.diagnostics))
+                let mut projection = self.compile(&[bundle_root], "runtime", None)?;
+                Ok(WikiOperationResponse::Diagnostics(
+                    projection.bundles.remove(0).diagnostics,
+                ))
             }
             WikiOperationRequest::CreateBundle(request) => {
                 let result = self
                     .authoring()?
                     .create_bundle(request.clone())
                     .map_err(authoring_error)?;
-                self.invalidate_projection();
                 Ok(WikiOperationResponse::BundleCreated(result))
             }
             WikiOperationRequest::CreatePage(request) => {
@@ -380,7 +451,6 @@ impl WikiOperationExecutor for LocalWikiService {
                     .authoring()?
                     .create_page(request.clone())
                     .map_err(authoring_error)?;
-                self.invalidate_projection();
                 Ok(WikiOperationResponse::PageCreated(result))
             }
             WikiOperationRequest::PopulatePage(request) => {
@@ -388,7 +458,6 @@ impl WikiOperationExecutor for LocalWikiService {
                     .authoring()?
                     .populate_page(request.clone())
                     .map_err(authoring_error)?;
-                self.invalidate_projection();
                 Ok(WikiOperationResponse::PagePopulated(result))
             }
             WikiOperationRequest::RecordMemory(request) => Ok(
@@ -406,19 +475,38 @@ impl WikiOperationExecutor for LocalWikiService {
                 } else {
                     &request.bundle_roots
                 };
-                let projection = self.compile(
-                    roots,
+                let mut current = self.projection.lock().map_err(|_| {
+                    WikiApiError::new("build_in_progress", "wiki state is unavailable")
+                })?;
+                let loaded = Self::load(roots)?;
+                let projection = Self::compile_loaded(
+                    &loaded,
                     &request.generated_at,
                     request.source_revision.clone(),
-                )?;
-                let cache_hit = self
-                    .projection
-                    .lock()
-                    .map(|current| current.as_ref() == Some(&projection))
-                    .unwrap_or(false);
-                *self.projection.lock().map_err(|_| {
-                    WikiApiError::new("build_in_progress", "wiki state is unavailable")
-                })? = Some(projection.clone());
+                );
+                let cache_hit = current.as_ref().is_some_and(|cached| {
+                    cached.sources == loaded && cached.projection == projection
+                });
+                let mut configured_roots = self
+                    .bundle_roots
+                    .iter()
+                    .map(|root| root.canonicalize())
+                    .collect::<Result<Vec<_>, _>>()
+                    .unwrap_or_default();
+                configured_roots.sort();
+                let mut loaded_roots = loaded
+                    .iter()
+                    .map(|bundle| bundle.root_path.clone())
+                    .collect::<Vec<_>>();
+                loaded_roots.sort();
+                // Permissive builds may expose partial content and diagnostics,
+                // but must not replace the configured service's last good cache.
+                if configured_roots == loaded_roots && Self::ensure_acquired(&loaded).is_ok() {
+                    *current = Some(CachedProjection {
+                        sources: loaded,
+                        projection: projection.clone(),
+                    });
+                }
                 Ok(WikiOperationResponse::ProjectionBuilt(
                     ProjectionBuiltResponse {
                         projection,
@@ -494,8 +582,10 @@ impl WikiOperationExecutor for LocalWikiService {
                     .into_iter()
                     .find(|bundle| bundle.id == request.bundle_id)
                     .ok_or_else(|| WikiApiError::new("bundle_not_found", "bundle was not found"))?;
-                let report = validate_bundle(&loaded, validation_profile(request.profile));
-                Ok(WikiOperationResponse::Diagnostics(report.diagnostics))
+                let mut projection = Self::compile_loaded(&[loaded], "runtime", None);
+                Ok(WikiOperationResponse::Diagnostics(
+                    projection.bundles.remove(0).diagnostics,
+                ))
             }
             WikiOperationRequest::GetRecentChanges(request) => {
                 let projection = self.projection()?;

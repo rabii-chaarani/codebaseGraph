@@ -21,7 +21,9 @@ use std::{
     sync::Arc,
 };
 
-use crate::api::{HealthRequest, OkfWikiApi, WikiOperationExecutor, WikiOperationRequest};
+use crate::api::{
+    HealthRequest, OkfWikiApi, WikiOperationExecutor, WikiOperationRequest, WikiOperationResponse,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HttpServeOptions {
@@ -145,7 +147,9 @@ pub fn status_for_error_code(code: &str) -> StatusCode {
         "bundle_exists" | "concept_exists" | "write_conflict" | "build_in_progress" => {
             StatusCode::CONFLICT
         }
-        "projection_unavailable" | "graph_context_unavailable" => StatusCode::SERVICE_UNAVAILABLE,
+        "projection_unavailable" | "graph_context_unavailable" | "source_unavailable" => {
+            StatusCode::SERVICE_UNAVAILABLE
+        }
         "render_failed" => StatusCode::INTERNAL_SERVER_ERROR,
         _ => StatusCode::INTERNAL_SERVER_ERROR,
     }
@@ -190,7 +194,15 @@ where
     E: WikiOperationExecutor,
 {
     match api.execute_operation(&request) {
-        Ok(response) => Json(response).into_response(),
+        Ok(response) => {
+            let status = if matches!(&response, WikiOperationResponse::Health(health) if !health.ok)
+            {
+                StatusCode::SERVICE_UNAVAILABLE
+            } else {
+                StatusCode::OK
+            };
+            (status, Json(response)).into_response()
+        }
         Err(error) => {
             let transport_error = TransportError {
                 code: error.code,
