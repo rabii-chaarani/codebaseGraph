@@ -419,13 +419,48 @@ fn memory_limits(health: &Value) -> &Value {
     &health["refresh"]["memory_limits"]
 }
 
+fn reconciliation_is_ready(health: &Value) -> bool {
+    // An expensive native query can outlast this fixture's 100 ms interval.
+    // Overdue describes reconciliation age; publication is checked by search.
+    matches!(health["freshness"].as_str(), Some("current" | "overdue"))
+        && health["graph_readable"] == true
+        && health["refresh_readiness"] == "ready"
+        && health["refresh"]["pending"] == false
+}
+
+#[test]
+fn recovery_wait_requires_ready_reconciliation_not_a_clock_window() {
+    let ready = json!({
+        "freshness": "overdue", "graph_readable": true,
+        "refresh_readiness": "ready", "refresh": {"pending": false}
+    });
+    assert!(reconciliation_is_ready(&ready));
+    let mut current = ready.clone();
+    current["freshness"] = json!("current");
+    assert!(reconciliation_is_ready(&current));
+    for status in ["pending", "unknown"] {
+        let mut blocked = ready.clone();
+        blocked["freshness"] = json!(status);
+        assert!(!reconciliation_is_ready(&blocked));
+    }
+    let mut pending = ready.clone();
+    pending["refresh"]["pending"] = json!(true);
+    assert!(!reconciliation_is_ready(&pending));
+    let mut blocked = ready.clone();
+    blocked["refresh_readiness"] = json!("blocked");
+    assert!(!reconciliation_is_ready(&blocked));
+    let mut unreadable = ready;
+    unreadable["graph_readable"] = json!(false);
+    assert!(!reconciliation_is_ready(&unreadable));
+    assert!(!reconciliation_is_ready(&Value::Null));
+}
+
 fn wait_for_current_symbol(session: &mut McpSession, symbol: &str, path: &str) -> Value {
     let deadline = Instant::now() + Duration::from_secs(60);
     let mut last = Value::Null;
     while Instant::now() < deadline {
         last = session.health();
-        if last["freshness"] == "current"
-            && last["refresh"]["pending"] == false
+        if reconciliation_is_ready(&last)
             && session
                 .search_paths(symbol)
                 .iter()

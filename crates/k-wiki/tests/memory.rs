@@ -103,6 +103,44 @@ fn invalid_transition_rejects_without_changing_source() {
 }
 
 #[test]
+fn independent_reader_observes_quarantine_activation_and_deletion() {
+    let fixture = MemoryFixture::new("independent-reader");
+    fixture.record(record_request("prior-contract", MemoryKind::Semantic));
+    fixture.transition("prior-contract", MemoryStatus::Active, None);
+    let reader = LocalWikiService::new(vec![fixture.bundle.clone()]).into_api();
+    let recall = || {
+        let response = reader
+            .execute_operation(&WikiOperationRequest::RecallMemory(RecallMemoryRequest {
+                bundle_id: "docs".into(),
+                text: "release checks".into(),
+                kinds: vec![],
+                limit: 20,
+            }))
+            .unwrap();
+        match response {
+            WikiOperationResponse::MemoryRecalled(records) => records,
+            other => panic!("expected recall, received {other:?}"),
+        }
+    };
+    assert_eq!(recall()[0].memory_id, "prior-contract");
+    fixture.transition("prior-contract", MemoryStatus::Quarantined, None);
+    assert!(
+        recall().is_empty(),
+        "reader must not serve quarantined memory from its cache"
+    );
+    fixture.record(record_request("replacement-contract", MemoryKind::Semantic));
+    fixture.transition("replacement-contract", MemoryStatus::Active, None);
+    assert_eq!(recall()[0].memory_id, "replacement-contract");
+    fs::remove_file(
+        fixture
+            .bundle
+            .join("memory/semantic/replacement-contract.md"),
+    )
+    .unwrap();
+    assert!(recall().is_empty());
+}
+
+#[test]
 fn default_recall_excludes_malformed_and_quarantined_memory() {
     let fixture = MemoryFixture::new("recall-safety");
     fixture.record(record_request("unsafe", MemoryKind::Procedural));

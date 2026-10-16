@@ -9,6 +9,8 @@ use serde_json::Value;
 pub struct TransportPayload {
     pub text: String,
     pub structured: Value,
+    /// Process status for a completed command whose output remains valid.
+    pub exit_code: i32,
 }
 
 impl TransportPayload {
@@ -16,6 +18,7 @@ impl TransportPayload {
         Self {
             text: text.into(),
             structured: Value::Null,
+            exit_code: 0,
         }
     }
 
@@ -23,7 +26,13 @@ impl TransportPayload {
         Self {
             text: text.into(),
             structured,
+            exit_code: 0,
         }
+    }
+
+    pub fn with_exit_code(mut self, exit_code: i32) -> Self {
+        self.exit_code = exit_code;
+        self
     }
 }
 

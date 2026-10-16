@@ -109,14 +109,19 @@ where
 
 pub fn load_bundle(root: impl AsRef<Path>) -> io::Result<LoadedBundle> {
     let root = root.as_ref();
-    let canonical_root = fs::canonicalize(root)?;
+    let canonical_root = fs::canonicalize(root).map_err(|error| {
+        io::Error::new(
+            error.kind(),
+            format!(
+                "could not resolve bundle root: {}",
+                io_error_category(&error)
+            ),
+        )
+    })?;
     if !canonical_root.is_dir() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            format!(
-                "bundle root is not a directory: {}",
-                canonical_root.display()
-            ),
+            "bundle root is not a directory",
         ));
     }
 
@@ -149,7 +154,13 @@ pub fn load_bundle(root: impl AsRef<Path>) -> io::Result<LoadedBundle> {
                     "io_read_failed",
                     path,
                     None,
-                    error.to_string(),
+                    format!(
+                        "could not read bundle directory: {}",
+                        error
+                            .io_error()
+                            .map(io_error_category)
+                            .unwrap_or("directory traversal error")
+                    ),
                 ));
                 continue;
             }
@@ -185,7 +196,7 @@ pub fn load_bundle(root: impl AsRef<Path>) -> io::Result<LoadedBundle> {
                         "io_read_failed",
                         source_path,
                         None,
-                        error.to_string(),
+                        format!("could not resolve symlink: {}", io_error_category(&error)),
                     ));
                     continue;
                 }
@@ -203,7 +214,10 @@ pub fn load_bundle(root: impl AsRef<Path>) -> io::Result<LoadedBundle> {
                     "io_read_failed",
                     source_path,
                     None,
-                    error.to_string(),
+                    format!(
+                        "could not resolve markdown file: {}",
+                        io_error_category(&error)
+                    ),
                 ));
                 continue;
             }
@@ -225,7 +239,10 @@ pub fn load_bundle(root: impl AsRef<Path>) -> io::Result<LoadedBundle> {
                     "io_read_failed",
                     source_path,
                     None,
-                    error.to_string(),
+                    format!(
+                        "could not read markdown file: {}",
+                        io_error_category(&error)
+                    ),
                 ));
                 continue;
             }
@@ -278,7 +295,15 @@ fn parse_markdown_entry(
         body_start_line: split.body_start_line,
     };
 
-    if let Some(frontmatter_source) = split.frontmatter {
+    if split.missing_closing_delimiter {
+        diagnostics.push(Diagnostic::error(
+            "invalid_frontmatter",
+            source_path,
+            Some(1),
+            "frontmatter is missing a closing delimiter",
+        ));
+        document.frontmatter_state = FrontmatterState::Invalid;
+    } else if let Some(frontmatter_source) = split.frontmatter {
         let key_lines = frontmatter_key_lines(frontmatter_source, split.frontmatter_start_line);
         match yaml_serde::from_str::<YamlValue>(frontmatter_source) {
             Ok(YamlValue::Mapping(mapping)) => {
@@ -305,7 +330,11 @@ fn parse_markdown_entry(
                             .min(frontmatter_source.lines().count().max(1));
                         split.frontmatter_start_line + relative_line - 1
                     }),
-                    error.to_string(),
+                    yaml_error_message(
+                        &error,
+                        "frontmatter contains invalid YAML",
+                        split.frontmatter_start_line,
+                    ),
                 ));
                 document.frontmatter_state = FrontmatterState::Invalid;
             }
@@ -593,22 +622,20 @@ fn diagnostic_order(left: &Diagnostic, right: &Diagnostic) -> std::cmp::Ordering
         ))
 }
 
-struct SplitFrontmatter<'a> {
-    frontmatter: Option<&'a str>,
-    frontmatter_start_line: usize,
-    body: &'a str,
-    body_start_line: usize,
+pub(crate) struct SplitFrontmatter<'a> {
+    pub(crate) frontmatter: Option<&'a str>,
+    pub(crate) frontmatter_start_line: usize,
+    pub(crate) body: &'a str,
+    pub(crate) body_start_line: usize,
+    pub(crate) missing_closing_delimiter: bool,
 }
 
-fn split_frontmatter(content: &str) -> SplitFrontmatter<'_> {
-    let Some(first_line_end) = content.find('\n').map(|index| index + 1) else {
-        return SplitFrontmatter {
-            frontmatter: None,
-            frontmatter_start_line: 1,
-            body: content,
-            body_start_line: 1,
-        };
-    };
+/// Recognize the same exact delimiter lines for bundle reading and authoring.
+pub(crate) fn split_frontmatter(content: &str) -> SplitFrontmatter<'_> {
+    let first_line_end = content
+        .find('\n')
+        .map(|index| index + 1)
+        .unwrap_or(content.len());
     if content[..first_line_end]
         .trim_end_matches('\n')
         .trim_end_matches('\r')
@@ -619,6 +646,7 @@ fn split_frontmatter(content: &str) -> SplitFrontmatter<'_> {
             frontmatter_start_line: 1,
             body: content,
             body_start_line: 1,
+            missing_closing_delimiter: false,
         };
     }
 
@@ -638,6 +666,7 @@ fn split_frontmatter(content: &str) -> SplitFrontmatter<'_> {
                 frontmatter_start_line: 2,
                 body: &content[next_break..],
                 body_start_line: line_number + 1,
+                missing_closing_delimiter: false,
             };
         }
         cursor = next_break;
@@ -649,5 +678,38 @@ fn split_frontmatter(content: &str) -> SplitFrontmatter<'_> {
         frontmatter_start_line: 2,
         body: "",
         body_start_line: line_number,
+        missing_closing_delimiter: true,
+    }
+}
+
+/// Derive public context from typed errors, never their dependency display text.
+pub(crate) fn io_error_category(error: &io::Error) -> &'static str {
+    match error.kind() {
+        io::ErrorKind::NotFound => "not found",
+        io::ErrorKind::PermissionDenied => "permission denied",
+        io::ErrorKind::AlreadyExists => "already exists",
+        io::ErrorKind::InvalidInput => "invalid input",
+        io::ErrorKind::InvalidData => "invalid data",
+        io::ErrorKind::Interrupted => "interrupted",
+        io::ErrorKind::TimedOut => "timed out",
+        io::ErrorKind::UnexpectedEof => "unexpected end of file",
+        io::ErrorKind::WriteZero => "unable to write data",
+        io::ErrorKind::WouldBlock => "temporarily unavailable",
+        _ => "I/O error",
+    }
+}
+
+pub(crate) fn yaml_error_message(
+    error: &yaml_serde::Error,
+    category: &str,
+    start_line: usize,
+) -> String {
+    match error.location() {
+        Some(location) => format!(
+            "{category} at line {}, column {}",
+            start_line + location.line().saturating_sub(1),
+            location.column()
+        ),
+        None => format!("{category} at line {start_line}"),
     }
 }

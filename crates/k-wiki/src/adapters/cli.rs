@@ -212,7 +212,7 @@ where
                     } else {
                         writeln!(stdout, "{}", payload.text).map_err(|error| error.to_string())?;
                     }
-                    Ok(0)
+                    Ok(payload.exit_code)
                 }
                 Err(error) => {
                     if machine_readable {

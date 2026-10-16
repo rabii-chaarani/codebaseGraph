@@ -182,3 +182,157 @@ fn resp_172_rejects_markdown_entries_that_escape_the_bundle_root() {
         fs::remove_dir_all(temp_root).expect("remove temp fixture");
     }
 }
+
+#[test]
+fn unterminated_frontmatter_is_invalid_even_when_yaml_is_valid() {
+    let root = make_temp_dir("unterminated_frontmatter");
+    for (name, content) in [
+        ("valid-yaml.md", "---\ntype: note\ntitle: Unclosed\n"),
+        ("opening-only.md", "---"),
+        ("opening-lf.md", "---\n"),
+        ("opening-crlf.md", "---\r\n"),
+    ] {
+        fs::write(root.join(name), content).expect("write unterminated document");
+    }
+    let bundle = load_bundle(&root).expect("consume malformed documents");
+    for entry in &bundle.entries {
+        assert!(entry.document.has_frontmatter);
+        assert_eq!(
+            entry.document.frontmatter_state,
+            k_wiki::bundle::FrontmatterState::Invalid
+        );
+        assert!(
+            bundle.diagnostics.iter().any(|diagnostic| {
+                diagnostic.code == "invalid_frontmatter"
+                    && diagnostic.source_path == entry.source_path
+                    && diagnostic.line == Some(1)
+                    && diagnostic.message.contains("closing delimiter")
+            }),
+            "missing delimiter diagnostic for {}",
+            entry.source_path
+        );
+    }
+    assert_eq!(bundle.entries.len(), 4);
+    fs::remove_dir_all(root).expect("remove fixture");
+}
+
+#[test]
+fn closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof() {
+    let root = make_temp_dir("closed_frontmatter");
+    for (name, content, body, line) in [
+        ("lf.md", "---\ntype: note\n---\nBody\n", "Body\n", 4),
+        (
+            "crlf.md",
+            "---\r\ntype: note\r\n---\r\nBody\r\n",
+            "Body\r\n",
+            4,
+        ),
+        ("eof.md", "---\ntype: note\n---", "", 4),
+    ] {
+        fs::write(root.join(name), content).expect("write closed document");
+        let bundle = load_bundle(&root).expect("load closed documents");
+        let entry = bundle_entry(&bundle, name);
+        assert_eq!(
+            entry.frontmatter().unwrap().fields.type_name.as_deref(),
+            Some("note")
+        );
+        assert_eq!(entry.document.body_markdown, body);
+        assert_eq!(entry.document.body_start_line, line);
+        assert!(bundle.diagnostics.is_empty(), "{:?}", bundle.diagnostics);
+    }
+    fs::remove_dir_all(root).expect("remove fixture");
+}
+
+#[test]
+fn parser_diagnostics_exclude_source_values_and_keep_relative_locations() {
+    let root = make_temp_dir("safe_parser_diagnostics");
+    fs::write(
+        root.join("page.md"),
+        "---\ntype: note\nPRIVATE_SOURCE_MARKER: 1\nPRIVATE_SOURCE_MARKER: 2\n---\n",
+    )
+    .expect("write invalid YAML");
+    fs::write(
+        root.join("tagged.md"),
+        "---\ntype: note\ncustom: !PRIVATE_SOURCE_MARKER hidden\n---\n",
+    )
+    .expect("write tagged extension");
+    fs::write(root.join("bytes.md"), [0xff, 0xfe]).expect("write invalid UTF-8");
+    let bundle = load_bundle(&root).expect("load malformed documents");
+    assert_eq!(bundle.diagnostics.len(), 3);
+    for diagnostic in &bundle.diagnostics {
+        assert!(
+            !diagnostic.message.contains("PRIVATE_SOURCE_MARKER"),
+            "{:?}",
+            diagnostic
+        );
+        assert!(!diagnostic.message.contains(root.to_str().unwrap()));
+        assert!(!Path::new(&diagnostic.source_path).is_absolute());
+        if diagnostic.source_path == "bytes.md" {
+            assert_eq!(diagnostic.code, "invalid_utf8");
+        } else {
+            assert_eq!(diagnostic.code, "invalid_frontmatter");
+            assert!(diagnostic.line.is_some());
+            assert!(diagnostic.message.contains("YAML"));
+        }
+    }
+    fs::remove_dir_all(root).expect("remove fixture");
+}
+
+#[cfg(unix)]
+#[test]
+fn walk_errors_keep_relative_location_and_safe_io_category() {
+    use std::os::unix::fs::PermissionsExt;
+
+    struct RestorePermissions(PathBuf, fs::Permissions);
+    impl Drop for RestorePermissions {
+        fn drop(&mut self) {
+            fs::set_permissions(&self.0, self.1.clone()).expect("restore directory permissions");
+        }
+    }
+
+    let root = make_temp_dir("safe_walk_diagnostics");
+    let blocked = root.join("blocked");
+    fs::create_dir(&blocked).expect("create inaccessible directory");
+    let restore = RestorePermissions(
+        blocked.clone(),
+        fs::metadata(&blocked).unwrap().permissions(),
+    );
+    fs::set_permissions(&blocked, fs::Permissions::from_mode(0o000))
+        .expect("deny directory access");
+    // Elevated test processes can bypass Unix mode bits, so exercise the boundary only
+    // when the platform actually denies this isolated fixture's directory read.
+    if fs::read_dir(&blocked).is_err() {
+        let bundle = load_bundle(&root).expect("load readable bundle root");
+        let diagnostic = bundle
+            .diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.code == "io_read_failed")
+            .expect("walk error diagnostic");
+        assert_eq!(diagnostic.source_path, "blocked");
+        assert!(
+            diagnostic.message.contains("permission denied"),
+            "{:?}",
+            diagnostic
+        );
+        assert!(
+            !diagnostic.message.contains(root.to_str().unwrap()),
+            "{:?}",
+            diagnostic
+        );
+        assert!(!diagnostic.message.contains("os error"));
+    }
+    drop(restore);
+    fs::remove_dir_all(root).expect("remove fixture");
+}
+
+#[test]
+fn invalid_bundle_root_error_omits_absolute_host_path() {
+    let root = make_temp_dir("PRIVATE_HOST_MARKER");
+    let file = root.join("file.md");
+    fs::write(&file, "body").expect("write non-directory root");
+    let error = load_bundle(&file).expect_err("bundle root must be a directory");
+    assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
+    assert!(error.to_string().contains("not a directory"));
+    assert!(!error.to_string().contains("PRIVATE_HOST_MARKER"));
+    fs::remove_dir_all(root).expect("remove fixture");
+}

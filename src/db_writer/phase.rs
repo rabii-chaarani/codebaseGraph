@@ -392,11 +392,23 @@ fn wait_for_test_phase_barrier(request_path: &Path) -> Result<(), String> {
 
 #[cfg(debug_assertions)]
 fn allocate_test_phase_memory(directory: &Path, pid: u32) -> Result<Option<Vec<u8>>, String> {
-    let text = match fs::read_to_string(directory.join("ALLOCATE_BYTES")) {
-        Ok(text) => text,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(format!("failed to read test phase memory trigger: {error}")),
-    };
+    let mut trigger = None;
+    // A fixture can target the PID from its ready handshake without faulting
+    // a replacement loader that starts before the trigger is removed.
+    for path in [
+        directory.join(format!("ALLOCATE_BYTES-{pid}")),
+        directory.join("ALLOCATE_BYTES"),
+    ] {
+        match fs::read_to_string(path) {
+            Ok(text) => {
+                trigger = Some(text);
+                break;
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(format!("failed to read test phase memory trigger: {error}")),
+        }
+    }
+    let Some(text) = trigger else { return Ok(None) };
     let bytes: usize = text
         .trim()
         .parse()
@@ -662,6 +674,27 @@ mod tests {
         let stored: LadybugWritePhaseRequest =
             serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
         assert_eq!(stored.db_path, request.db_path);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn phase_test_allocation_is_scoped_to_the_ready_loader() {
+        let root = std::env::temp_dir().join(format!(
+            "phase-scoped-memory-test-{}-{}",
+            std::process::id(),
+            PHASE_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir(&root).unwrap();
+        fs::write(root.join("ALLOCATE_BYTES-7"), "4096").unwrap();
+        assert!(
+            allocate_test_phase_memory(&root, 8).unwrap().is_none(),
+            "a replacement loader must not inherit another loader's fault"
+        );
+        assert_eq!(
+            allocate_test_phase_memory(&root, 7).unwrap().unwrap().len(),
+            4096
+        );
         fs::remove_dir_all(root).unwrap();
     }
 
