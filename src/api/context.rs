@@ -535,6 +535,10 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
         let direct_read = resolve_direct_read(&db_path, &manifest_path)?;
         let direct_cleanup = RunWorkspace::cleanup_orphans(paths.state_dir.join("direct-runs"))
             .map_err(|error| format!("failed to clean direct run workspaces: {error}"))?;
+        let candidate_cleanup_pending =
+            DirectStore::new(DirectLayout::new(&db_path, &manifest_path))
+                .map(|store| store.candidate_cleanup_pending())
+                .unwrap_or(true);
         return Ok(RepoRuntime {
             repo_root: repo_root.clone(),
             state_dir: paths.state_dir.clone(),
@@ -545,7 +549,7 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
             storage_root: None,
             active_generation: None,
             writable: true,
-            cleanup_pending: direct_cleanup.skipped_locked > 0,
+            cleanup_pending: direct_cleanup.skipped_locked > 0 || candidate_cleanup_pending,
             pending_runs: direct_cleanup.skipped_locked,
             active_read: None,
             direct_read,
@@ -597,6 +601,10 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
             let direct_read = resolve_direct_read(&db_path, &manifest_path)?;
             let direct_cleanup = RunWorkspace::cleanup_orphans(paths.state_dir.join("direct-runs"))
                 .map_err(|error| format!("failed to clean direct run workspaces: {error}"))?;
+            let candidate_cleanup_pending =
+                DirectStore::new(DirectLayout::new(&db_path, &manifest_path))
+                    .map(|store| store.candidate_cleanup_pending())
+                    .unwrap_or(true);
             Ok(RepoRuntime {
                 repo_root: repo_root.clone(),
                 state_dir: paths.state_dir.clone(),
@@ -607,7 +615,7 @@ pub(crate) fn resolve_runtime(selector: &RepoSelector) -> Result<RepoRuntime, St
                 storage_root: None,
                 active_generation: None,
                 writable: true,
-                cleanup_pending: direct_cleanup.skipped_locked > 0,
+                cleanup_pending: direct_cleanup.skipped_locked > 0 || candidate_cleanup_pending,
                 pending_runs: direct_cleanup.skipped_locked,
                 active_read: None,
                 direct_read,
@@ -1209,6 +1217,145 @@ mod tests {
         assert_eq!(runtime.manifest_path, manifest_path);
         assert_eq!(runtime.storage_format(), "direct");
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn dc_epoch_optional_managed_cleanup_keeps_runtime_readable_and_pending() {
+        use crate::storage::layout::ManagedLayout;
+        use crate::storage::locks::path_identity;
+        use crate::storage::maintenance_ownership::{
+            tests::{break_epoch_control, EpochControlFault},
+            ReferenceDomain,
+        };
+        use crate::storage::managed::ManagedStore;
+        for fault in [
+            EpochControlFault::Corrupt,
+            EpochControlFault::Unwritable,
+            EpochControlFault::Exhausted,
+        ] {
+            let root = unique_temp_dir("epoch-managed-runtime");
+            fs::create_dir_all(root.join(".codebaseGraph")).unwrap();
+            let root = fs::canonicalize(root).unwrap();
+            let layout = ManagedLayout::new(root.join("storage"));
+            let store = ManagedStore::new(layout.clone());
+            let publish = |bytes: &[u8]| {
+                let mut session = store.begin_write().unwrap();
+                fs::write(session.candidate_db_path(), bytes).unwrap();
+                fs::write(session.candidate_manifest_path(), b"{}").unwrap();
+                let id = session
+                    .publish_with_stats(&crate::protocol::GraphSummary {
+                        node_count: 0,
+                        edge_count: 0,
+                    })
+                    .unwrap();
+                session.finish();
+                id
+            };
+            let old = publish(b"old committed graph");
+            let retained = store.open_read().unwrap();
+            let active = publish(b"current committed graph");
+            let old_path = layout.generation(&old).unwrap().db_path();
+            let old_identity = path_identity(&old_path).unwrap();
+            write_json_atomically(
+                &root.join(".codebaseGraph/config.json"),
+                &json!({
+                    "schema_version": 2, "repo_root": root, "storage_root": layout.storage_root()
+                }),
+            )
+            .unwrap();
+            let domain = ReferenceDomain::managed(&layout).unwrap();
+            let epoch = domain.artifact_root().join(".reference-epoch");
+            let permissions = fs::metadata(&epoch).unwrap().permissions();
+            break_epoch_control(&domain, fault);
+            let runtime = resolve_runtime(&RepoSelector {
+                repo_root: Some(root.clone()),
+                ..Default::default()
+            })
+            .unwrap();
+            assert_eq!(
+                runtime.active_generation.as_deref(),
+                Some(active.as_str()),
+                "{fault:?}"
+            );
+            assert_eq!(
+                fs::read(&runtime.db_path).unwrap(),
+                b"current committed graph"
+            );
+            assert!(runtime.cleanup_pending, "{fault:?}");
+            assert_eq!(runtime.pending_runs, 0);
+            assert_eq!(path_identity(&old_path).unwrap(), old_identity);
+            drop(runtime);
+            drop(retained);
+            assert_eq!(path_identity(&old_path).unwrap(), old_identity);
+            fs::set_permissions(epoch, permissions).unwrap();
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn dc_epoch_optional_direct_cleanup_keeps_both_runtime_selectors_readable_and_pending() {
+        use crate::storage::direct::DirectStore;
+        use crate::storage::locks::path_identity;
+        use crate::storage::maintenance_ownership::{
+            tests::{break_epoch_control, EpochControlFault},
+            ReferenceDomain,
+        };
+        for configured in [false, true] {
+            for fault in [
+                EpochControlFault::Corrupt,
+                EpochControlFault::Unwritable,
+                EpochControlFault::Exhausted,
+            ] {
+                let root = unique_temp_dir("epoch-direct-runtime");
+                fs::create_dir_all(root.join(".codebaseGraph")).unwrap();
+                let root = fs::canonicalize(root).unwrap();
+                let layout = DirectLayout::new(
+                    root.join("direct/graph.ldb"),
+                    root.join("direct/manifest.json"),
+                );
+                let store = DirectStore::new(layout.clone()).unwrap();
+                let mut writer = store.begin_write().unwrap();
+                fs::write(writer.db_candidate_path(), b"committed graph").unwrap();
+                fs::write(writer.manifest_candidate_path(), b"{}").unwrap();
+                writer.publish().unwrap();
+                writer.finish();
+                fs::write(layout.db_candidate_path(), b"unpublished residue").unwrap();
+                let residue = path_identity(&layout.db_candidate_path()).unwrap();
+                let selector = if configured {
+                    write_json_atomically(&root.join(".codebaseGraph/config.json"), &json!({
+                        "repo_root": root,
+                        "database_path": layout.db_path(), "manifest_path": layout.manifest_path()
+                    })).unwrap();
+                    RepoSelector {
+                        repo_root: Some(root.clone()),
+                        ..Default::default()
+                    }
+                } else {
+                    RepoSelector {
+                        repo_root: Some(root.clone()),
+                        db_path: Some(layout.db_path().to_owned()),
+                        manifest_path: Some(layout.manifest_path().to_owned()),
+                        ..Default::default()
+                    }
+                };
+                let domain = ReferenceDomain::direct(&layout).unwrap();
+                let epoch = domain.artifact_root().join(".reference-epoch");
+                let permissions = fs::metadata(&epoch).unwrap().permissions();
+                break_epoch_control(&domain, fault);
+                let runtime = resolve_runtime(&selector).unwrap();
+                assert!(runtime.direct_read.is_some());
+                assert_eq!(fs::read(&runtime.db_path).unwrap(), b"committed graph");
+                assert!(
+                    runtime.cleanup_pending,
+                    "configured={configured}, fault={fault:?}"
+                );
+                assert_eq!(runtime.pending_runs, 0, "candidate residue is not a run");
+                assert_eq!(path_identity(&layout.db_candidate_path()).unwrap(), residue);
+                drop(runtime);
+                fs::set_permissions(epoch, permissions).unwrap();
+                fs::remove_dir_all(root).unwrap();
+            }
+        }
     }
 
     #[test]

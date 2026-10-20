@@ -103,6 +103,12 @@ impl DirectStore {
     }
 
     pub(crate) fn begin_write(&self) -> Result<DirectWriteSession, NativeError> {
+        let parent = self
+            .layout
+            .db_path()
+            .parent()
+            .ok_or_else(|| NativeError::InvalidInput("direct parent missing".into()))?;
+        let fresh = super::layout::create_fresh_reference_root(parent)?;
         self.ensure_parents()?;
         let mut writer_lease = self.open_writer_lock()?;
         super::maintenance_ownership::register_direct_pair(&self.layout)?;
@@ -112,11 +118,29 @@ impl DirectStore {
                     .into_lock()?,
             );
         }
+        super::maintenance_ownership::ArtifactUseLease::ensure_root(
+            &self.layout.artifact_root_path(),
+        )?;
+        let domain = super::maintenance_ownership::ReferenceDomain::direct(&self.layout)?;
+        if let Some(fresh) = &fresh {
+            // A fresh DB parent cannot bless an existing external manifest.
+            if self
+                .layout
+                .manifest_path()
+                .parent()
+                .is_some_and(|manifest_parent| {
+                    super::inventory::same_physical_path(parent, manifest_parent)
+                })
+            {
+                super::maintenance_ownership::initialize_fresh_reference_domain(
+                    &domain,
+                    fresh,
+                    &writer_lease,
+                )?;
+            }
+        }
         writer_lease.retain(
-            super::maintenance_ownership::ArtifactUseLease::acquire_shared(
-                &self.layout.artifact_root_path(),
-            )?
-            .into_lock(),
+            super::maintenance_ownership::ArtifactUseLease::acquire_in_domain(&domain)?.into_lock(),
         );
         collect_registry(&self.layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
         self.recover_with_lock()?;
@@ -148,9 +172,21 @@ impl DirectStore {
             }
             return writer_lease.relock_shared();
         }
+        // Journal replay is required to identify the committed pair and must
+        // still fail closed. Removing unrelated unpublished residue is optional.
         self.recover_with_lock()?;
-        cleanup_candidate_set(&self.layout)?;
+        cleanup_candidate_set_with_policy(&self.layout, true)?;
         writer_lease.relock_shared()
+    }
+
+    /// Noncreating residue diagnostic; uncertainty keeps optional cleanup pending.
+    pub(crate) fn candidate_cleanup_pending(&self) -> bool {
+        let mut paths = direct_bundle_paths(&self.layout.db_candidate_path());
+        paths.push(self.layout.manifest_candidate_path());
+        paths.iter().any(|path| match fs::symlink_metadata(path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            _ => true,
+        })
     }
 
     fn publish_candidate_with_lock(
@@ -187,6 +223,8 @@ impl DirectStore {
         if !journal_path.exists() {
             return Ok(());
         }
+        let domain = super::maintenance_ownership::ReferenceDomain::direct(&self.layout)?;
+        let _mutation = super::maintenance_ownership::ReferenceMutation::begin_in_domain(&domain)?;
         let journal = self.read_journal()?;
         self.validate_journal_destinations(&journal)?;
         self.validate_journal_sources(&journal)?;
@@ -388,6 +426,35 @@ fn replace_with_shadow(from: &Path, to: &Path) -> Result<(), NativeError> {
 }
 
 fn cleanup_candidate_set(layout: &DirectLayout) -> Result<(), NativeError> {
+    cleanup_candidate_set_with_policy(layout, false)
+}
+
+fn cleanup_candidate_set_with_policy(
+    layout: &DirectLayout,
+    optional: bool,
+) -> Result<(), NativeError> {
+    let mut candidates = direct_bundle_paths(&layout.db_candidate_path());
+    candidates.push(layout.manifest_candidate_path());
+    if !candidates
+        .iter()
+        .any(|path| fs::symlink_metadata(path).is_ok())
+    {
+        return Ok(());
+    }
+    let admission =
+        super::maintenance_ownership::ReferenceDomain::direct(layout).and_then(|domain| {
+            if optional {
+                super::maintenance_ownership::ReferenceMutation::try_begin_in_domain(&domain)
+            } else {
+                super::maintenance_ownership::ReferenceMutation::begin_in_domain(&domain).map(Some)
+            }
+        });
+    let _mutation = match admission {
+        Ok(Some(mutation)) => mutation,
+        Ok(None) => return Ok(()),
+        Err(_) if optional => return Ok(()),
+        Err(error) => return Err(error),
+    };
     ensure_registry_empty(&layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
     for path in direct_bundle_paths(&layout.db_candidate_path()) {
         remove_if_safe_if_present(&path)?;

@@ -18,6 +18,44 @@ pub(crate) const DIRECT_DB_SIDECAR_SUFFIXES: &[&str] = &[
     "search.document_offsets.bin",
 ];
 
+/// Producer-only evidence that the complete reference namespace was created
+/// by this operation. An existing cache or lock can never construct this token.
+#[derive(Debug)]
+pub(crate) struct FreshReferenceRoot {
+    path: PathBuf,
+    identity: super::locks::FileIdentity,
+}
+impl FreshReferenceRoot {
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+    pub(crate) fn identity(&self) -> super::locks::FileIdentity {
+        self.identity
+    }
+}
+pub(crate) fn create_fresh_reference_root(
+    path: &Path,
+) -> Result<Option<FreshReferenceRoot>, NativeError> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    match fs::create_dir(path) {
+        Ok(()) => Ok(Some(FreshReferenceRoot {
+            path: path.to_owned(),
+            identity: super::locks::path_identity(path)?,
+        })),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            if !fs::symlink_metadata(path)?.is_dir() {
+                return Err(NativeError::InvalidInput(
+                    "reference_root_not_directory".into(),
+                ));
+            }
+            Ok(None)
+        }
+        Err(error) => Err(error.into()),
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct RepositoryLayout {
     state_root: PathBuf,

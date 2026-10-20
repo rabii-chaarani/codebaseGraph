@@ -15,9 +15,560 @@ use crate::error::NativeError;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
+// This record is invalidation evidence, never deletion authority. Every read
+// and write has a fixed byte bound; no JSON manifest/configuration is read here.
+const REFERENCE_EPOCH_SIZE: usize = 2048;
+const REFERENCE_EPOCH_MAGIC: &[u8; 8] = b"CGRFE001";
+const REFERENCE_EPOCH_FILE: &str = ".reference-epoch";
+const REFERENCE_ACTIVITY_FILE: &str = ".reference-activity.lock";
+const REFERENCE_SERIAL_FILE: &str = ".reference-epoch.lock";
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+struct ReferenceScopeRecord {
+    kind: u8,
+    destination: FileIdentity,
+    writer: FileIdentity,
+    address: [u8; 32],
+    reference_roots: [Option<FileIdentity>; 2],
+}
+
+/// Observational scope, not authority or a coverage-creation permit.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct ReferenceDomain {
+    artifact_root: PathBuf,
+    artifact_identity: Option<FileIdentity>,
+    use_identity: Option<FileIdentity>,
+    destination_root: PathBuf,
+    writer_path: PathBuf,
+    raw_address: Option<[PathBuf; 2]>,
+    reference_roots: [Option<PathBuf>; 2],
+    scope: ReferenceScopeRecord,
+}
+impl ReferenceDomain {
+    pub(crate) fn managed(layout: &ManagedLayout) -> Result<Self, NativeError> {
+        Self::observe(
+            layout.artifacts_root(),
+            layout.storage_root().to_owned(),
+            layout.writer_lock_path(),
+            [Some(layout.generations_root()), Some(layout.runs_root())],
+            1,
+        )
+    }
+    pub(crate) fn direct(layout: &DirectLayout) -> Result<Self, NativeError> {
+        let mut domain = Self::observe(
+            layout.artifact_root_path(),
+            layout
+                .db_path()
+                .parent()
+                .ok_or_else(|| invalid("reference_destination_parent_missing"))?
+                .to_owned(),
+            layout.writer_lock_path(),
+            [None, None],
+            2,
+        )?;
+        let addresses = [
+            layout.db_path().to_owned(),
+            layout.manifest_path().to_owned(),
+        ];
+        let mut hash = Sha256::new();
+        hash.update(addresses[0].as_os_str().as_encoded_bytes());
+        hash.update([0]);
+        hash.update(addresses[1].as_os_str().as_encoded_bytes());
+        domain.scope.address = hash.finalize().into();
+        domain.raw_address = Some(addresses);
+        Ok(domain)
+    }
+    fn observe(
+        artifact_root: PathBuf,
+        destination_root: PathBuf,
+        writer_path: PathBuf,
+        reference_roots: [Option<PathBuf>; 2],
+        kind: u8,
+    ) -> Result<Self, NativeError> {
+        let artifact_root = absolute(&artifact_root)?;
+        let destination_root = absolute(&destination_root)?;
+        let writer_path = absolute(&writer_path)?;
+        let reference_roots = [
+            reference_roots[0].as_deref().map(absolute).transpose()?,
+            reference_roots[1].as_deref().map(absolute).transpose()?,
+        ];
+        let scope = ReferenceScopeRecord {
+            kind,
+            destination: directory_identity(&destination_root)?,
+            writer: path_identity(&writer_path)?,
+            address: Sha256::digest(writer_path.as_os_str().as_encoded_bytes()).into(),
+            reference_roots: [
+                reference_roots[0]
+                    .as_deref()
+                    .map(directory_identity)
+                    .transpose()?,
+                reference_roots[1]
+                    .as_deref()
+                    .map(directory_identity)
+                    .transpose()?,
+            ],
+        };
+        let artifact_identity = match fs::symlink_metadata(&artifact_root) {
+            Ok(_) => Some(directory_identity(&artifact_root)?),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        let use_identity = optional_resource_identity(&artifact_root.join(".use.lock"))?;
+        Ok(Self {
+            artifact_root,
+            artifact_identity,
+            use_identity,
+            destination_root,
+            writer_path,
+            raw_address: None,
+            reference_roots,
+            scope,
+        })
+    }
+    pub(crate) fn revalidate(&self) -> Result<bool, NativeError> {
+        let current_root = match fs::symlink_metadata(&self.artifact_root) {
+            Ok(_) => Some(directory_identity(&self.artifact_root)?),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        let address = if let Some(paths) = &self.raw_address {
+            let mut hash = Sha256::new();
+            hash.update(paths[0].as_os_str().as_encoded_bytes());
+            hash.update([0]);
+            hash.update(paths[1].as_os_str().as_encoded_bytes());
+            <[u8; 32]>::from(hash.finalize())
+        } else {
+            Sha256::digest(self.writer_path.as_os_str().as_encoded_bytes()).into()
+        };
+        Ok(address == self.scope.address
+            && current_root == self.artifact_identity
+            && optional_resource_identity(&self.artifact_root.join(".use.lock"))?
+                == self.use_identity
+            && directory_identity(&self.destination_root)? == self.scope.destination
+            && path_identity(&self.writer_path)? == self.scope.writer
+            && self.reference_roots[0]
+                .as_deref()
+                .map(directory_identity)
+                .transpose()?
+                == self.scope.reference_roots[0]
+            && self.reference_roots[1]
+                .as_deref()
+                .map(directory_identity)
+                .transpose()?
+                == self.scope.reference_roots[1])
+    }
+    pub(crate) fn allows_runs_root(&self, runs_root: &Path) -> Result<bool, NativeError> {
+        Ok(self.scope.kind != 1
+            || self.scope.reference_roots[1] == Some(directory_identity(runs_root)?))
+    }
+    pub(crate) fn same_scope(&self, other: &Self) -> bool {
+        self.scope == other.scope
+            && self.artifact_identity == other.artifact_identity
+            && self.use_identity == other.use_identity
+    }
+    pub(crate) fn artifact_root(&self) -> &Path {
+        &self.artifact_root
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+struct ReferenceEpochRecord {
+    version: u32,
+    root: FileIdentity,
+    use_lock: FileIdentity,
+    cohort: FileIdentity,
+    scope: ReferenceScopeRecord,
+    incarnation: [u8; 32],
+    activity: FileIdentity,
+    serial: FileIdentity,
+    counter: u64,
+    covered: bool,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ReferenceEpoch {
+    file: FileIdentity,
+    record: ReferenceEpochRecord,
+}
+impl ReferenceEpoch {
+    pub(crate) fn counter(&self) -> u64 {
+        self.record.counter
+    }
+}
+#[derive(Debug)]
+pub(crate) enum EpochObservation {
+    Verified(ReferenceEpoch),
+    Pending(String),
+}
+
+fn encode_reference_epoch(
+    record: &ReferenceEpochRecord,
+) -> Result<[u8; REFERENCE_EPOCH_SIZE], NativeError> {
+    let payload = serde_json::to_vec(record)?;
+    if payload.len() > REFERENCE_EPOCH_SIZE - 44 {
+        return Err(invalid("reference_epoch_record_oversized"));
+    }
+    let mut bytes = [0; REFERENCE_EPOCH_SIZE];
+    bytes[..8].copy_from_slice(REFERENCE_EPOCH_MAGIC);
+    bytes[8..12].copy_from_slice(&(payload.len() as u32).to_le_bytes());
+    bytes[12..12 + payload.len()].copy_from_slice(&payload);
+    let checksum = Sha256::digest(&bytes[..REFERENCE_EPOCH_SIZE - 32]);
+    bytes[REFERENCE_EPOCH_SIZE - 32..].copy_from_slice(&checksum);
+    Ok(bytes)
+}
+fn read_reference_epoch(root: &Path) -> Result<ReferenceEpoch, NativeError> {
+    let path = root.join(REFERENCE_EPOCH_FILE);
+    reject_file_alias(&path)?;
+    let identity = path_identity(&path)?;
+    let mut file = fs::File::open(&path)?;
+    if file.metadata()?.len() != REFERENCE_EPOCH_SIZE as u64
+        || super::locks::file_identity(&file)? != identity
+    {
+        return Err(invalid("reference_epoch_record_invalid"));
+    }
+    let mut bytes = [0; REFERENCE_EPOCH_SIZE];
+    file.read_exact(&mut bytes)?;
+    let len = u32::from_le_bytes(
+        bytes[8..12]
+            .try_into()
+            .map_err(|_| invalid("reference_epoch_length_invalid"))?,
+    ) as usize;
+    if &bytes[..8] != REFERENCE_EPOCH_MAGIC
+        || len > REFERENCE_EPOCH_SIZE - 44
+        || Sha256::digest(&bytes[..REFERENCE_EPOCH_SIZE - 32]).as_slice()
+            != &bytes[REFERENCE_EPOCH_SIZE - 32..]
+        || path_identity(&path)? != identity
+    {
+        return Err(invalid("reference_epoch_record_invalid"));
+    }
+    let record: ReferenceEpochRecord = serde_json::from_slice(&bytes[12..12 + len])?;
+    if record.version != 1 {
+        return Err(invalid("reference_epoch_version_unknown"));
+    }
+    Ok(ReferenceEpoch {
+        file: identity,
+        record,
+    })
+}
+fn epoch_root_matches(root: &Path, record: &ReferenceEpochRecord) -> Result<bool, NativeError> {
+    for name in [
+        ".use.lock",
+        ".use-cohort.json",
+        REFERENCE_ACTIVITY_FILE,
+        REFERENCE_SERIAL_FILE,
+    ] {
+        reject_file_alias(&root.join(name))?;
+    }
+    let cohort_path = root.join(".use-cohort.json");
+    reject_file_alias(&cohort_path)?;
+    let mut cohort_file = fs::File::open(&cohort_path)?;
+    let len = cohort_file.metadata()?.len();
+    if len > 1024 || super::locks::file_identity(&cohort_file)? != record.cohort {
+        return Ok(false);
+    }
+    let mut bytes = [0; 1024];
+    cohort_file.read_exact(&mut bytes[..len as usize])?;
+    let cohort: ArtifactCohortRecord = serde_json::from_slice(&bytes[..len as usize])?;
+    if cohort.version != 1
+        || cohort.root != record.root
+        || cohort.coordination != record.use_lock
+        || path_identity(&cohort_path)? != record.cohort
+    {
+        return Ok(false);
+    }
+    Ok(record.root == directory_identity(root)?
+        && record.use_lock == path_identity(&root.join(".use.lock"))?
+        && record.activity == path_identity(&root.join(REFERENCE_ACTIVITY_FILE))?
+        && record.serial == path_identity(&root.join(REFERENCE_SERIAL_FILE))?)
+}
+
+/// Seed only from a complete, newly-created reference domain and its actual
+/// exclusive writer. Ordinary observation/admission and old-domain producers
+/// have no creation API. A fresh cache beside an old domain is insufficient.
+pub(crate) fn initialize_fresh_reference_domain(
+    domain: &ReferenceDomain,
+    fresh: &super::layout::FreshReferenceRoot,
+    writer: &WriterLease,
+) -> Result<bool, NativeError> {
+    if fresh.identity() != domain.scope.destination
+        || path_identity(fresh.path())? != fresh.identity()
+        || !domain.revalidate()?
+        || !writer.verifies(&domain.writer_path, LockMode::Exclusive)?
+    {
+        return Err(invalid("reference_domain_creation_unverified"));
+    }
+    let Some(root_use) = ArtifactUseLease::try_exclusive(&domain.artifact_root)? else {
+        return Ok(false);
+    };
+    if fs::symlink_metadata(domain.artifact_root.join(REFERENCE_EPOCH_FILE)).is_ok() {
+        return Ok(false);
+    }
+    let activity = open_locked(
+        domain.artifact_root.join(REFERENCE_ACTIVITY_FILE),
+        LockMode::Exclusive,
+    )?;
+    let serial = open_locked(
+        domain.artifact_root.join(REFERENCE_SERIAL_FILE),
+        LockMode::Exclusive,
+    )?;
+    let record = ReferenceEpochRecord {
+        version: 1,
+        root: root_use.identity,
+        use_lock: root_use.lock.identity()?,
+        cohort: path_identity(&domain.artifact_root.join(".use-cohort.json"))?,
+        scope: domain.scope.clone(),
+        incarnation: Sha256::digest(super::layout::managed_generation_id().as_bytes()).into(),
+        activity: activity.identity()?,
+        serial: serial.identity()?,
+        counter: 0,
+        covered: true,
+    };
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(domain.artifact_root.join(REFERENCE_EPOCH_FILE))?;
+    file.write_all(&encode_reference_epoch(&record)?)?;
+    file.sync_all()?;
+    super::atomic::sync_dir(&domain.artifact_root)?;
+    Ok(true)
+}
+
+/// Noncreating fixed-record observation. No authority survives this call and
+/// no epoch is captured in the middle of a supported producer's activity.
+pub(crate) fn observe_reference_epoch(
+    domain: &ReferenceDomain,
+) -> Result<EpochObservation, NativeError> {
+    let root = &domain.artifact_root;
+    let activity =
+        match try_open_existing_locked(&root.join(REFERENCE_ACTIVITY_FILE), LockMode::Exclusive) {
+            Ok(Some(guard)) => guard,
+            Ok(None) => {
+                return Ok(EpochObservation::Pending(
+                    "reference_activity_in_use".into(),
+                ))
+            }
+            Err(_) => {
+                return Ok(EpochObservation::Pending(
+                    "reference_epoch_missing_or_unverifiable".into(),
+                ))
+            }
+        };
+    let epoch = match read_reference_epoch(root) {
+        Ok(epoch) => epoch,
+        Err(_) => {
+            return Ok(EpochObservation::Pending(
+                "reference_epoch_missing_or_unverifiable".into(),
+            ))
+        }
+    };
+    let verified = (|| -> Result<bool, NativeError> {
+        Ok(activity.is_current()?
+            && domain.revalidate()?
+            && epoch_root_matches(root, &epoch.record)?
+            && epoch.record.scope == domain.scope
+            && epoch.record.covered)
+    })();
+    if !matches!(verified, Ok(true)) {
+        return Ok(EpochObservation::Pending(
+            "reference_domain_unverified".into(),
+        ));
+    }
+    Ok(EpochObservation::Verified(epoch))
+}
+
+#[derive(Debug)]
+struct ReferenceActivity {
+    guard: Option<LockedFile>,
+    reason: Option<String>,
+}
+impl ReferenceActivity {
+    fn untracked(reason: &str) -> Self {
+        Self {
+            guard: None,
+            reason: Some(reason.into()),
+        }
+    }
+    fn begin(
+        root: &Path,
+        expected: Option<&ReferenceDomain>,
+        nonblocking: bool,
+    ) -> Result<Option<Self>, NativeError> {
+        // Never create missing epoch/control proof or silently revive coverage.
+        match fs::symlink_metadata(root.join(REFERENCE_EPOCH_FILE)) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(Some(Self::untracked("reference_epoch_missing")))
+            }
+            Err(error) => return Err(error.into()),
+            Ok(_) => (),
+        }
+        let activity = if nonblocking {
+            match try_open_existing_locked(&root.join(REFERENCE_ACTIVITY_FILE), LockMode::Shared) {
+                Ok(Some(guard)) => guard,
+                Ok(None) => return Ok(None),
+                Err(error) => return Err(error),
+            }
+        } else {
+            // Existing-only shared handle; no lock creation can repair proof.
+            match super::locks::open_existing_shared_coordination(
+                &root.join(REFERENCE_ACTIVITY_FILE),
+            ) {
+                Ok(guard) => guard,
+                Err(error) => return Err(error),
+            }
+        };
+        let serial = if nonblocking {
+            match try_open_existing_locked(&root.join(REFERENCE_SERIAL_FILE), LockMode::Exclusive) {
+                Ok(Some(guard)) => guard,
+                Ok(None) => return Ok(None),
+                Err(error) => return Err(error),
+            }
+        } else {
+            super::locks::open_existing_exclusive(&root.join(REFERENCE_SERIAL_FILE))?
+        };
+        let mut epoch = read_reference_epoch(root)?;
+        if !activity.is_current()?
+            || !serial.is_current()?
+            || !epoch_root_matches(root, &epoch.record)?
+        {
+            return Err(invalid("reference_epoch_incarnation_changed"));
+        }
+        let mismatch = match expected {
+            Some(domain) => !domain.revalidate()? || epoch.record.scope != domain.scope,
+            None => false,
+        };
+        if !epoch.record.covered {
+            return Ok(Some(Self {
+                guard: Some(activity),
+                reason: Some("reference_coverage_unverified".into()),
+            }));
+        }
+        epoch.record.counter = epoch
+            .record
+            .counter
+            .checked_add(1)
+            .ok_or_else(|| invalid("reference_epoch_exhausted"))?;
+        if mismatch {
+            epoch.record.covered = false;
+        }
+        let path = root.join(REFERENCE_EPOCH_FILE);
+        let mut file = OpenOptions::new().read(true).write(true).open(&path)?;
+        if super::locks::file_identity(&file)? != epoch.file {
+            return Err(invalid("reference_epoch_identity_changed"));
+        }
+        file.seek(SeekFrom::Start(0))?;
+        file.write_all(&encode_reference_epoch(&epoch.record)?)?;
+        file.sync_all()?;
+        if path_identity(&path)? != epoch.file || !activity.is_current()? || !serial.is_current()? {
+            return Err(invalid("reference_epoch_identity_changed"));
+        }
+        Ok(Some(Self {
+            guard: Some(activity),
+            reason: mismatch.then(|| "reference_domain_mismatch".into()),
+        }))
+    }
+}
+
+/// Scope-bound producer activity. Missing old coverage permits ordinary work
+/// only as untracked; it can never authorize canonical artifact collection.
+#[derive(Debug)]
+pub(crate) struct ReferenceMutation<'a> {
+    _root_use: Option<LockedFile>,
+    activity: ReferenceActivity,
+    _borrowed: std::marker::PhantomData<&'a LockedFile>,
+}
+impl ReferenceMutation<'static> {
+    /// Producing paths may create a previously absent artifact root. Acquire
+    /// and retain its real use guard BEFORE any data effect, so a concurrent
+    /// domain initializer cannot bless an in-flight untracked producer.
+    pub(crate) fn begin_producing(root: &Path) -> Result<Self, NativeError> {
+        let producer = ArtifactUseLease::acquire_shared(root)?;
+        Ok(Self {
+            _root_use: Some(producer.lock),
+            activity: producer
+                .reference_activity
+                .unwrap_or_else(|| ReferenceActivity::untracked("reference_epoch_missing")),
+            _borrowed: std::marker::PhantomData,
+        })
+    }
+
+    pub(crate) fn begin_existing(root: &Path) -> Result<Self, NativeError> {
+        Self::begin(root, None, false)?.ok_or_else(|| invalid("reference_activity_in_use"))
+    }
+    pub(crate) fn begin_in_domain(domain: &ReferenceDomain) -> Result<Self, NativeError> {
+        Self::begin(&domain.artifact_root, Some(domain), false)?
+            .ok_or_else(|| invalid("reference_activity_in_use"))
+    }
+    pub(crate) fn try_begin_in_domain(
+        domain: &ReferenceDomain,
+    ) -> Result<Option<Self>, NativeError> {
+        Self::begin(&domain.artifact_root, Some(domain), true)
+    }
+    fn begin(
+        root: &Path,
+        expected: Option<&ReferenceDomain>,
+        nonblocking: bool,
+    ) -> Result<Option<Self>, NativeError> {
+        let root = absolute(root)?;
+        let root_use = if nonblocking {
+            match try_open_existing_locked(&root.join(".use.lock"), LockMode::Shared) {
+                Ok(Some(guard)) => guard,
+                Ok(None) => return Ok(None),
+                Err(error) => {
+                    if !matches!(fs::symlink_metadata(root.join(REFERENCE_EPOCH_FILE)), Err(ref probe) if probe.kind() == std::io::ErrorKind::NotFound)
+                    {
+                        return Err(error);
+                    }
+                    return Ok(Some(Self {
+                        _root_use: None,
+                        activity: ReferenceActivity::untracked("reference_root_unverifiable"),
+                        _borrowed: std::marker::PhantomData,
+                    }));
+                }
+            }
+        } else {
+            match super::locks::open_existing_shared_coordination(&root.join(".use.lock")) {
+                Ok(guard) => guard,
+                Err(error) => {
+                    if !matches!(fs::symlink_metadata(root.join(REFERENCE_EPOCH_FILE)), Err(ref probe) if probe.kind() == std::io::ErrorKind::NotFound)
+                    {
+                        return Err(error);
+                    }
+                    return Ok(Some(Self {
+                        _root_use: None,
+                        activity: ReferenceActivity::untracked("reference_root_unverifiable"),
+                        _borrowed: std::marker::PhantomData,
+                    }));
+                }
+            }
+        };
+        let Some(activity) = ReferenceActivity::begin(&root, expected, nonblocking)? else {
+            return Ok(None);
+        };
+        Ok(Some(Self {
+            _root_use: Some(root_use),
+            activity,
+            _borrowed: std::marker::PhantomData,
+        }))
+    }
+}
+impl Drop for ReferenceMutation<'_> {
+    fn drop(&mut self) {
+        drop(self.activity.guard.take());
+        drop(self._root_use.take());
+    }
+}
+
+impl ReferenceMutation<'_> {
+    pub(crate) fn tracked(&self) -> bool {
+        self.activity.reason.is_none()
+    }
+    pub(crate) fn pending_reason(&self) -> Option<&str> {
+        self.activity.reason.as_deref()
+    }
+}
 
 #[derive(Debug)]
 pub(crate) enum MaintenanceAdmission<'a> {
@@ -57,6 +608,19 @@ pub(crate) struct MaintenanceLease<'a> {
     binding: ObservedBinding,
 }
 impl MaintenanceLease<'_> {
+    /// Invalidation only. A future prepared transition must validate its old
+    /// epoch under this authority BEFORE calling; this is not a deletion seal.
+    pub(crate) fn begin_reference_mutation(&self) -> Result<ReferenceMutation<'_>, NativeError> {
+        self.artifact.revalidate()?;
+        let activity = ReferenceActivity::begin(&self.artifact.root, None, false)?
+            .ok_or_else(|| invalid("reference_activity_in_use"))?;
+        Ok(ReferenceMutation {
+            _root_use: None,
+            activity,
+            _borrowed: std::marker::PhantomData,
+        })
+    }
+
     pub(crate) fn target(&self) -> &MaintenanceTarget {
         &self.target
     }
@@ -361,6 +925,7 @@ pub(crate) struct ArtifactUseLease {
     root: PathBuf,
     identity: FileIdentity,
     lock: LockedFile,
+    reference_activity: Option<ReferenceActivity>,
 }
 impl ArtifactUseLease {
     pub(crate) fn ensure_root(root: &Path) -> Result<(), NativeError> {
@@ -379,6 +944,7 @@ impl ArtifactUseLease {
                         root,
                         identity,
                         lock,
+                        reference_activity: None,
                     };
                     lease.write_guarded_creation_record()?;
                 }
@@ -414,11 +980,17 @@ impl ArtifactUseLease {
             Err(e) => return Err(e.into()),
         };
         let identity = directory_identity(&root)?;
+        if fs::symlink_metadata(root.join(REFERENCE_EPOCH_FILE)).is_ok()
+            && fs::symlink_metadata(root.join(".use.lock")).is_err()
+        {
+            return Err(invalid("reference_use_lock_missing"));
+        }
         let lock = open_locked(root.join(".use.lock"), LockMode::Shared)?;
-        let lease = Self {
+        let mut lease = Self {
             root,
             identity,
             lock,
+            reference_activity: None,
         };
         lease.revalidate()?;
         // Only the process that created this incarnation can establish guarded
@@ -427,6 +999,24 @@ impl ArtifactUseLease {
         if created {
             lease.write_guarded_creation_record()?;
         }
+        lease.reference_activity = ReferenceActivity::begin(&lease.root, None, false)?;
+        Ok(lease)
+    }
+
+    pub(crate) fn bind_reference_domain(
+        &mut self,
+        domain: &ReferenceDomain,
+    ) -> Result<(), NativeError> {
+        self.revalidate()?;
+        if domain.artifact_identity != Some(self.identity) {
+            return Err(invalid("reference_artifact_domain_mismatch"));
+        }
+        self.reference_activity = ReferenceActivity::begin(&self.root, Some(domain), false)?;
+        Ok(())
+    }
+    pub(crate) fn acquire_in_domain(domain: &ReferenceDomain) -> Result<Self, NativeError> {
+        let mut lease = Self::acquire_shared(&domain.artifact_root)?;
+        lease.bind_reference_domain(domain)?;
         Ok(lease)
     }
 
@@ -442,6 +1032,7 @@ impl ArtifactUseLease {
             root,
             identity,
             lock,
+            reference_activity: None,
         };
         lease.revalidate()?;
         Ok(Some(lease))
@@ -491,7 +1082,13 @@ impl ArtifactUseLease {
             && record.coordination == self.lock.identity()?)
     }
     pub(crate) fn into_lock(self) -> LockedFile {
-        self.lock
+        let mut lock = self.lock;
+        if let Some(activity) = self.reference_activity {
+            if let Some(guard) = activity.guard {
+                lock.retain(guard);
+            }
+        }
+        lock
     }
 }
 
@@ -719,6 +1316,7 @@ pub(crate) fn observe_artifact_cohort(
         root,
         identity,
         lock,
+        reference_activity: None,
     };
     if lease.cohort_verified()? {
         Ok(Some(lease))
@@ -1068,7 +1666,7 @@ fn resources_overlap(a: &Path, b: &Path) -> bool {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::storage::direct::DirectStore;
     use crate::storage::managed::ManagedStore;
@@ -1129,6 +1727,617 @@ mod tests {
             MaintenanceAdmission::Acquired(lease) => lease,
             other => panic!("expected acquired: {other:?}"),
         }
+    }
+
+    fn tracked_domain(fixture: &Fixture, name: &str) -> (ManagedLayout, ReferenceDomain) {
+        let layout = ManagedLayout::new(fixture.root.join(name));
+        let fresh = super::super::layout::create_fresh_reference_root(layout.storage_root())
+            .unwrap()
+            .unwrap();
+        layout.ensure_roots().unwrap();
+        let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap();
+        let domain = ReferenceDomain::managed(&layout).unwrap();
+        assert!(initialize_fresh_reference_domain(&domain, &fresh, &writer).unwrap());
+        drop(writer);
+        (layout, domain)
+    }
+    fn observed(domain: &ReferenceDomain) -> ReferenceEpoch {
+        match observe_reference_epoch(domain).unwrap() {
+            EpochObservation::Verified(epoch) => epoch,
+            other => panic!("expected verified epoch: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn dc_epoch_initial_creator_excludes_fresh_coverage_until_effects_finish() {
+        let fixture = Fixture::new();
+        let layout = ManagedLayout::new(fixture.root.join("creator-domain"));
+        let fresh = super::super::layout::create_fresh_reference_root(layout.storage_root())
+            .unwrap()
+            .unwrap();
+        let producer = ReferenceMutation::begin_producing(&layout.artifacts_root()).unwrap();
+        assert!(!producer.tracked());
+        layout.ensure_roots().unwrap();
+        let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap();
+        let domain = ReferenceDomain::managed(&layout).unwrap();
+        assert!(!initialize_fresh_reference_domain(&domain, &fresh, &writer).unwrap());
+        assert!(!domain.artifact_root().join(REFERENCE_EPOCH_FILE).exists());
+        fs::write(
+            domain.artifact_root().join("creator-effect"),
+            b"before coverage",
+        )
+        .unwrap();
+        drop(producer);
+        assert!(initialize_fresh_reference_domain(&domain, &fresh, &writer).unwrap());
+        drop(writer);
+        assert_eq!(observed(&domain).counter(), 0);
+    }
+
+    #[test]
+    fn dc_epoch_new_cache_cannot_initialize_old_reference_domain() {
+        let fixture = Fixture::new();
+        assert!(
+            super::super::layout::create_fresh_reference_root(fixture.layout.storage_root())
+                .unwrap()
+                .is_none()
+        );
+        let mutation =
+            ReferenceMutation::begin_producing(&fixture.layout.artifacts_root()).unwrap();
+        assert!(!mutation.tracked());
+        drop(mutation);
+        let domain = ReferenceDomain::managed(&fixture.layout).unwrap();
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+        assert!(!domain.artifact_root().join(REFERENCE_EPOCH_FILE).exists());
+    }
+
+    #[test]
+    fn dc_epoch_direct_recovery_invalidates_and_idle_read_does_not() {
+        use crate::storage::direct::{DirectPublishJournal, DirectPublishPhase};
+        let fixture = Fixture::new();
+        let parent = fixture.root.join("fresh-direct-domain");
+        let layout = DirectLayout::new(parent.join("graph.ldb"), parent.join("manifest.json"));
+        let store = DirectStore::new(layout.clone()).unwrap();
+        drop(store.begin_write().unwrap());
+        let domain = ReferenceDomain::direct(&layout).unwrap();
+        let old = observed(&domain);
+        let mutation = ReferenceMutation::begin_in_domain(&domain).unwrap();
+        fs::write(layout.db_candidate_path(), b"recovered database").unwrap();
+        fs::write(layout.manifest_candidate_path(), b"{}").unwrap();
+        let journal = DirectPublishJournal {
+            phase: DirectPublishPhase::Prepared,
+            db_path: layout.db_path().to_owned(),
+            db_candidate_path: layout.db_candidate_path(),
+            manifest_path: layout.manifest_path().to_owned(),
+            manifest_candidate_path: layout.manifest_candidate_path(),
+            db_sha256: format!("{:x}", Sha256::digest(b"recovered database")),
+            manifest_sha256: format!("{:x}", Sha256::digest(b"{}")),
+            sidecar_sha256: std::collections::BTreeMap::new(),
+        };
+        write_json_atomically(&layout.journal_path(), &journal).unwrap();
+        drop(mutation);
+        let before_recovery = observed(&domain);
+        drop(store.begin_read().unwrap());
+        assert_eq!(fs::read(layout.db_path()).unwrap(), b"recovered database");
+        assert!(!layout.journal_path().exists());
+        let after = observed(&domain);
+        assert!(after.counter() > before_recovery.counter());
+        assert_ne!(old, after);
+        drop(store.begin_read().unwrap());
+        assert_eq!(after, observed(&domain));
+    }
+
+    fn publish_tracked_generation(store: &ManagedStore, bytes: &[u8]) -> String {
+        let mut session = store.begin_write().unwrap();
+        fs::write(session.candidate_db_path(), bytes).unwrap();
+        fs::write(session.candidate_manifest_path(), b"{}").unwrap();
+        let id = session
+            .publish_with_stats(&crate::protocol::GraphSummary {
+                node_count: 0,
+                edge_count: 0,
+            })
+            .unwrap();
+        session.finish();
+        id
+    }
+
+    #[test]
+    fn dc_epoch_managed_publication_reader_drop_and_generation_removal() {
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "managed-publication-domain");
+        let store = ManagedStore::new(layout.clone());
+        let old = observed(&domain);
+        let first = publish_tracked_generation(&store, b"first");
+        let first_epoch = observed(&domain);
+        assert!(first_epoch.counter() > old.counter());
+        let reader = store.open_read().unwrap();
+        assert_eq!(reader.generation_id, first);
+        drop(reader);
+        assert_eq!(
+            first_epoch,
+            observed(&domain),
+            "active reader release is not a reference mutation"
+        );
+        let retained = store.open_read().unwrap();
+        let second = publish_tracked_generation(&store, b"second");
+        assert_ne!(first, second);
+        assert!(layout.generation(&first).unwrap().root().exists());
+        let before_removal = observed(&domain);
+        drop(retained);
+        assert!(!layout.generation(&first).unwrap().root().exists());
+        assert!(observed(&domain).counter() > before_removal.counter());
+    }
+
+    #[test]
+    fn dc_epoch_managed_recovery_promotion_invalidates_before_references_change() {
+        use crate::storage::run_workspace::{RunPhase, RunWorkspace};
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "managed-recovery-domain");
+        let store = ManagedStore::new(layout.clone());
+        let base = publish_tracked_generation(&store, b"base");
+        let run = RunWorkspace::create_scoped(layout.runs_root(), &domain, Some(base)).unwrap();
+        let id = super::super::layout::managed_generation_id();
+        let generation = super::super::layout::GenerationPaths::new(
+            run.candidate_root().join(format!("gen-{id}")),
+            &id,
+        );
+        generation.ensure_root().unwrap();
+        fs::write(generation.db_path(), b"recovered").unwrap();
+        fs::write(generation.manifest_path(), b"{}").unwrap();
+        fs::write(generation.ready_path(), b"ready").unwrap();
+        write_json_atomically(
+            &generation.metadata_path(),
+            &serde_json::json!({"schema_version":2,"generation_id":id}),
+        )
+        .unwrap();
+        run.register_candidate(id.clone()).unwrap();
+        run.mark_phase(RunPhase::Publishing, None, None).unwrap();
+        let run_root = run.abandon_for_test();
+        let before = observed(&domain);
+        assert_eq!(
+            store.cleanup().unwrap().run_recovery.publishing_recovered,
+            1
+        );
+        assert_eq!(store.open_read().unwrap().generation_id, id);
+        assert!(!run_root.exists());
+        assert!(observed(&domain).counter() > before.counter());
+    }
+
+    #[test]
+    fn dc_epoch_retained_observation_does_not_block_current_writer_or_reader() {
+        use std::sync::mpsc;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "parked-observation-domain");
+        let store = ManagedStore::new(layout);
+        let active = publish_tracked_generation(&store, b"readable");
+        let (ready_tx, ready_rx) = mpsc::channel();
+        let (resume_tx, resume_rx) = mpsc::channel();
+        let background_domain = domain.clone();
+        let background = std::thread::spawn(move || {
+            let epoch = observed(&background_domain);
+            ready_tx.send(()).unwrap();
+            resume_rx.recv_timeout(Duration::from_secs(10)).unwrap();
+            epoch
+        });
+        ready_rx.recv_timeout(Duration::from_secs(10)).unwrap();
+        assert_eq!(store.open_read().unwrap().generation_id, active);
+        let writer = store.begin_write().unwrap();
+        writer.abort(None).unwrap();
+        resume_tx.send(()).unwrap();
+        assert_ne!(background.join().unwrap(), observed(&domain));
+    }
+
+    #[test]
+    fn dc_epoch_unassociated_old_orphan_is_preserved_without_repair() {
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "legacy-orphan-domain");
+        let orphan = layout.runs_root().join("run-legacy");
+        fs::create_dir(&orphan).unwrap();
+        fs::write(orphan.join("lease.lock"), b"").unwrap();
+        fs::write(
+            orphan.join("journal.json"),
+            br#"{"run_id":"legacy","phase":"created"}"#,
+        )
+        .unwrap();
+        let before = observed(&domain);
+        let report =
+            crate::storage::run_workspace::RunWorkspace::cleanup_orphans(layout.runs_root())
+                .unwrap();
+        assert_eq!(report.deleted, 0);
+        assert_eq!(report.skipped_locked, 1);
+        assert!(orphan.join("journal.json").is_file());
+        assert!(!orphan.join(".reference-scope.json").exists());
+        assert_eq!(before, observed(&domain));
+    }
+
+    #[test]
+    fn dc_epoch_observer_is_noncreating_and_does_not_advance() {
+        let fixture = Fixture::new();
+        let untracked = ReferenceDomain::managed(&fixture.layout).unwrap();
+        let before = fs::read_dir(fixture.layout.artifacts_root())
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect::<Vec<_>>();
+        assert!(matches!(
+            observe_reference_epoch(&untracked).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+        let after = fs::read_dir(fixture.layout.artifacts_root())
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect::<Vec<_>>();
+        assert_eq!(before, after);
+        let (_, domain) = tracked_domain(&fixture, "observed-domain");
+        let before = observed(&domain);
+        assert_eq!(before.counter(), 0);
+        assert_eq!(before, observed(&domain));
+        assert_eq!(
+            fs::metadata(domain.artifact_root().join(REFERENCE_EPOCH_FILE))
+                .unwrap()
+                .len(),
+            REFERENCE_EPOCH_SIZE as u64
+        );
+    }
+
+    #[test]
+    fn dc_epoch_activity_excludes_snapshots_until_all_producers_finish() {
+        let fixture = Fixture::new();
+        let (_, domain) = tracked_domain(&fixture, "active-domain");
+        let old = observed(&domain);
+        let first = ReferenceMutation::begin_in_domain(&domain).unwrap();
+        assert!(first.tracked());
+        let second = ArtifactUseLease::acquire_shared(domain.artifact_root())
+            .unwrap()
+            .into_lock();
+        assert!(
+            matches!(observe_reference_epoch(&domain).unwrap(), EpochObservation::Pending(reason) if reason == "reference_activity_in_use")
+        );
+        drop(first);
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+        drop(second);
+        let new = observed(&domain);
+        assert_eq!(new.counter(), old.counter() + 2);
+        assert_ne!(old, new);
+    }
+
+    #[test]
+    fn dc_epoch_crash_before_effect_invalidates_prior_snapshot() {
+        const CHILD_ROOT: &str = "CODEBASE_GRAPH_EPOCH_CRASH_ROOT";
+        if let Some(root) = std::env::var_os(CHILD_ROOT) {
+            let _mutation = ReferenceMutation::begin_existing(Path::new(&root)).unwrap();
+            assert!(_mutation.tracked());
+            fs::write(
+                Path::new(&root).join("child-entered"),
+                b"durably invalidated",
+            )
+            .unwrap();
+            // Deliberately skip Rust destructors to reproduce producer death.
+            std::process::exit(0);
+        }
+        let fixture = Fixture::new();
+        let (_, domain) = tracked_domain(&fixture, "crash-domain");
+        let old = observed(&domain);
+        let module = module_path!().split_once("::").unwrap().1;
+        let test_name =
+            format!("{module}::dc_epoch_crash_before_effect_invalidates_prior_snapshot");
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &test_name, "--nocapture"])
+            .env(CHILD_ROOT, domain.artifact_root())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            domain.artifact_root().join("child-entered").is_file(),
+            "child branch must actually execute"
+        );
+        assert!(!domain
+            .artifact_root()
+            .join("actual-artifact-effect")
+            .exists());
+        assert_eq!(observed(&domain).counter(), old.counter() + 1);
+    }
+
+    #[test]
+    fn dc_epoch_mismatched_producer_disables_existing_coverage_before_effects() {
+        let fixture = Fixture::new();
+        let (_, domain) = tracked_domain(&fixture, "mismatched-domain");
+        let old = observed(&domain);
+        let mut other = domain.clone();
+        other.scope.address = [42; 32];
+        let mutation = ReferenceMutation::begin_in_domain(&other).unwrap();
+        assert!(!mutation.tracked());
+        assert_eq!(mutation.pending_reason(), Some("reference_domain_mismatch"));
+        fs::write(
+            domain.artifact_root().join("uncovered-effect"),
+            b"preserved",
+        )
+        .unwrap();
+        drop(mutation);
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+        assert_ne!(read_reference_epoch(domain.artifact_root()).unwrap(), old);
+    }
+
+    #[test]
+    fn dc_epoch_missing_or_unwritable_control_never_repairs_recognized_proof() {
+        let fixture = Fixture::new();
+        let (_, domain) = tracked_domain(&fixture, "missing-control-domain");
+        let control = domain.artifact_root().join(".use.lock");
+        fs::rename(&control, control.with_extension("old-use")).unwrap();
+        assert!(ReferenceMutation::begin_in_domain(&domain).is_err());
+        assert!(ArtifactUseLease::acquire_shared(domain.artifact_root()).is_err());
+        assert!(!control.exists());
+        assert!(!matches!(
+            observe_reference_epoch(&domain),
+            Ok(EpochObservation::Verified(_))
+        ));
+    }
+
+    #[test]
+    fn dc_epoch_exhaustion_rejects_before_effects_and_releases_activity() {
+        let fixture = Fixture::new();
+        let (_, domain) = tracked_domain(&fixture, "exhausted-domain");
+        let mut epoch = observed(&domain);
+        epoch.record.counter = u64::MAX;
+        let mut file = OpenOptions::new()
+            .write(true)
+            .open(domain.artifact_root().join(REFERENCE_EPOCH_FILE))
+            .unwrap();
+        file.write_all(&encode_reference_epoch(&epoch.record).unwrap())
+            .unwrap();
+        file.sync_all().unwrap();
+        drop(file);
+        let before = observed(&domain);
+        let effect = domain.artifact_root().join("must-not-exist");
+        let result = (|| -> Result<(), NativeError> {
+            let _mutation = ReferenceMutation::begin_producing(domain.artifact_root())?;
+            fs::write(&effect, b"effect")?;
+            Ok(())
+        })();
+        assert!(result.is_err());
+        assert!(!effect.exists());
+        assert_eq!(observed(&domain), before);
+    }
+
+    #[test]
+    fn dc_epoch_scope_writer_replacement_stays_unknown() {
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "writer-replaced-domain");
+        let writer = layout.writer_lock_path();
+        fs::rename(&writer, writer.with_extension("old-writer")).unwrap();
+        drop(open_locked(&writer, LockMode::Exclusive).unwrap());
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+        let current = ReferenceDomain::managed(&layout).unwrap();
+        let mutation = ReferenceMutation::begin_in_domain(&current).unwrap();
+        assert!(!mutation.tracked());
+        drop(mutation);
+        assert!(matches!(
+            observe_reference_epoch(&current).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+    }
+
+    #[test]
+    fn dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate() {
+        use crate::storage::run_workspace::RunWorkspace;
+        const CHILD_ROOT: &str = "CODEBASE_GRAPH_EPOCH_ORPHAN_ROOT";
+        if let Some(root) = std::env::var_os(CHILD_ROOT) {
+            let layout = ManagedLayout::new(PathBuf::from(root));
+            let domain = ReferenceDomain::managed(&layout).unwrap();
+            let run = RunWorkspace::create_scoped(layout.runs_root(), &domain, None).unwrap();
+            write_json_atomically(&layout.storage_root().join("created-run.json"), &run.root())
+                .unwrap();
+            std::process::exit(0);
+        }
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "run-domain");
+        let old = observed(&domain);
+        let run = RunWorkspace::create_scoped(layout.runs_root(), &domain, None).unwrap();
+        let path = run.root().to_owned();
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+        run.finish().unwrap();
+        assert!(!path.exists());
+        assert!(observed(&domain).counter() > old.counter());
+        let module = module_path!().split_once("::").unwrap().1;
+        let test_name =
+            format!("{module}::dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate");
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &test_name, "--nocapture"])
+            .env(CHILD_ROOT, layout.storage_root())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let orphan: PathBuf = serde_json::from_slice(
+            &fs::read(layout.storage_root().join("created-run.json")).unwrap(),
+        )
+        .unwrap();
+        assert!(orphan.is_dir());
+        let before_removal = observed(&domain);
+        assert_eq!(
+            RunWorkspace::cleanup_orphans(layout.runs_root())
+                .unwrap()
+                .deleted,
+            1
+        );
+        assert!(!orphan.exists());
+        assert!(observed(&domain).counter() > before_removal.counter());
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    pub(crate) enum EpochControlFault {
+        Corrupt,
+        Unwritable,
+        Exhausted,
+    }
+
+    pub(crate) fn break_epoch_control(domain: &ReferenceDomain, fault: EpochControlFault) {
+        let path = domain.artifact_root().join(REFERENCE_EPOCH_FILE);
+        match fault {
+            EpochControlFault::Corrupt => fs::write(path, b"interrupted epoch write").unwrap(),
+            EpochControlFault::Unwritable => {
+                let mut permissions = fs::metadata(&path).unwrap().permissions();
+                permissions.set_readonly(true);
+                fs::set_permissions(path, permissions).unwrap();
+            }
+            EpochControlFault::Exhausted => {
+                let mut epoch = read_reference_epoch(domain.artifact_root()).unwrap();
+                epoch.record.counter = u64::MAX;
+                let mut file = OpenOptions::new().write(true).open(path).unwrap();
+                file.write_all(&encode_reference_epoch(&epoch.record).unwrap())
+                    .unwrap();
+                file.sync_all().unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue() {
+        for fault in [
+            EpochControlFault::Corrupt,
+            EpochControlFault::Unwritable,
+            EpochControlFault::Exhausted,
+        ] {
+            let fixture = Fixture::new();
+            let (layout, domain) = tracked_domain(&fixture, "optional-managed-domain");
+            let store = ManagedStore::new(layout.clone());
+            let old = publish_tracked_generation(&store, b"old committed graph");
+            let retained = store.open_read().unwrap();
+            let active = publish_tracked_generation(&store, b"current committed graph");
+            let old_path = layout.generation(&old).unwrap().db_path();
+            let old_identity = path_identity(&old_path).unwrap();
+            let epoch_path = domain.artifact_root().join(REFERENCE_EPOCH_FILE);
+            let permissions = fs::metadata(&epoch_path).unwrap().permissions();
+            break_epoch_control(&domain, fault);
+            let epoch_bytes = fs::read(&epoch_path).unwrap();
+            let report = store.cleanup().unwrap();
+            assert_eq!(report.retired_generations_pending, 1, "{fault:?}");
+            assert_eq!(report.retired_generations_deleted, 0, "{fault:?}");
+            assert_eq!(
+                store.open_read().unwrap().generation_id,
+                active,
+                "{fault:?}"
+            );
+            assert_eq!(fs::read(&old_path).unwrap(), b"old committed graph");
+            assert_eq!(path_identity(&old_path).unwrap(), old_identity);
+            assert!(
+                ReferenceMutation::begin_in_domain(&domain).is_err(),
+                "producer must reject {fault:?}"
+            );
+            assert_eq!(fs::read(&epoch_path).unwrap(), epoch_bytes);
+            drop(retained);
+            assert_eq!(path_identity(&old_path).unwrap(), old_identity);
+            fs::set_permissions(epoch_path, permissions).unwrap();
+        }
+    }
+
+    #[test]
+    fn dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay() {
+        use crate::storage::direct::{DirectPublishJournal, DirectPublishPhase};
+        for fault in [
+            EpochControlFault::Corrupt,
+            EpochControlFault::Unwritable,
+            EpochControlFault::Exhausted,
+        ] {
+            let fixture = Fixture::new();
+            let parent = fixture.root.join("optional-direct-domain");
+            let layout = DirectLayout::new(parent.join("graph.ldb"), parent.join("manifest.json"));
+            let store = DirectStore::new(layout.clone()).unwrap();
+            let mut writer = store.begin_write().unwrap();
+            fs::write(writer.db_candidate_path(), b"committed graph").unwrap();
+            fs::write(writer.manifest_candidate_path(), b"{}").unwrap();
+            writer.publish().unwrap();
+            writer.finish();
+            let domain = ReferenceDomain::direct(&layout).unwrap();
+            let mutation = ReferenceMutation::begin_in_domain(&domain).unwrap();
+            fs::write(layout.db_candidate_path(), b"unpublished residue").unwrap();
+            fs::write(layout.manifest_candidate_path(), b"{}").unwrap();
+            drop(mutation);
+            let candidate_identity = path_identity(&layout.db_candidate_path()).unwrap();
+            let database_identity = path_identity(layout.db_path()).unwrap();
+            let epoch_path = domain.artifact_root().join(REFERENCE_EPOCH_FILE);
+            let permissions = fs::metadata(&epoch_path).unwrap().permissions();
+            break_epoch_control(&domain, fault);
+            let epoch_bytes = fs::read(&epoch_path).unwrap();
+            assert!(!layout.journal_path().exists());
+            drop(store.begin_read().unwrap());
+            assert!(store.candidate_cleanup_pending(), "{fault:?}");
+            assert_eq!(
+                path_identity(&layout.db_candidate_path()).unwrap(),
+                candidate_identity
+            );
+            assert_eq!(
+                fs::read(layout.db_candidate_path()).unwrap(),
+                b"unpublished residue"
+            );
+            assert_eq!(path_identity(layout.db_path()).unwrap(), database_identity);
+            assert_eq!(fs::read(layout.db_path()).unwrap(), b"committed graph");
+            assert!(
+                store.begin_write().is_err(),
+                "producer must reject {fault:?}"
+            );
+            let journal = DirectPublishJournal {
+                phase: DirectPublishPhase::Prepared,
+                db_path: layout.db_path().to_owned(),
+                db_candidate_path: layout.db_candidate_path(),
+                manifest_path: layout.manifest_path().to_owned(),
+                manifest_candidate_path: layout.manifest_candidate_path(),
+                db_sha256: format!("{:x}", Sha256::digest(b"unpublished residue")),
+                manifest_sha256: format!("{:x}", Sha256::digest(b"{}")),
+                sidecar_sha256: std::collections::BTreeMap::new(),
+            };
+            write_json_atomically(&layout.journal_path(), &journal).unwrap();
+            let journal_identity = path_identity(&layout.journal_path()).unwrap();
+            assert!(
+                store.begin_read().is_err(),
+                "mandatory replay must reject {fault:?}"
+            );
+            assert_eq!(
+                path_identity(&layout.journal_path()).unwrap(),
+                journal_identity
+            );
+            assert_eq!(
+                path_identity(&layout.db_candidate_path()).unwrap(),
+                candidate_identity
+            );
+            assert_eq!(path_identity(layout.db_path()).unwrap(), database_identity);
+            assert_eq!(
+                fs::read(domain.artifact_root().join(REFERENCE_EPOCH_FILE)).unwrap(),
+                epoch_bytes
+            );
+            fs::set_permissions(epoch_path, permissions).unwrap();
+        }
+    }
+
+    #[test]
+    fn dc_epoch_collector_composes_owned_exclusive_root_without_reacquisition() {
+        let fixture = Fixture::new();
+        let lease = acquired(claim_maintenance(&fixture.target).unwrap());
+        let mutation = lease.begin_reference_mutation().unwrap();
+        assert!(!mutation.tracked());
+        assert_eq!(mutation.pending_reason(), Some("reference_epoch_missing"));
+        drop(mutation);
+        drop(lease);
     }
 
     #[test]
@@ -1883,17 +3092,19 @@ mod tests {
     }
 
     #[test]
-    fn dc_s2_managed_borrowed_session_can_admit_without_reacquiring_writer() {
+    fn dc_s2_managed_borrowed_session_defers_active_reference_use_without_deadlock() {
         let fixture = Fixture::new();
         let session = ManagedStore::new(fixture.layout.clone())
             .begin_write()
             .unwrap();
-        let lease = acquired(
-            claim_maintenance_with_owned(&fixture.target, session.writer_lease().unwrap()).unwrap(),
+        let started = Instant::now();
+        assert!(
+            matches!(claim_maintenance_with_owned(&fixture.target, session.writer_lease().unwrap()).unwrap(), MaintenanceAdmission::Deferred(reason) if reason == "artifact_root_in_use")
         );
-        assert!(lease.artifact_cohort_verified().unwrap());
-        drop(lease);
+        assert!(started.elapsed() < Duration::from_secs(1));
         drop(session);
+        let lease = acquired(claim_maintenance(&fixture.target).unwrap());
+        assert!(lease.artifact_cohort_verified().unwrap());
     }
 
     #[test]

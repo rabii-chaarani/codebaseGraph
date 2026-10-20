@@ -134,6 +134,11 @@ impl ArtifactStore {
         partition: &GraphPartition,
     ) -> Result<ArtifactWriteOutcome, NativeError> {
         validate_artifact_key(artifact_key)?;
+        // Keep root/use and reference activity alive across root creation,
+        // every rename, and failure cleanup. Producer initialization never
+        // establishes reference-domain coverage for an unverified root.
+        let _reference_mutation =
+            crate::storage::maintenance_ownership::ReferenceMutation::begin_producing(&self.root)?;
         ensure_artifact_root(&self.root)?;
         partition
             .validate_raw_rows()
@@ -320,18 +325,9 @@ impl ArtifactStore {
         if validate_artifact_key(artifact_key).is_err() {
             return Ok(false);
         }
-        let artifact_dir = self.artifact_dir(artifact_key)?;
-        if !artifact_dir.exists() {
-            return Ok(false);
-        }
-        ensure_artifact_root(&self.root)?;
-        remove_tree_confined(&self.root, &artifact_dir)?;
-        sync_dir(
-            artifact_dir
-                .parent()
-                .expect("artifact directory parent should exist"),
-        )?;
-        Ok(true)
+        Err(NativeError::InvalidInput(
+            "artifact_collection_requires_current_maintenance_authority".into(),
+        ))
     }
 
     fn artifact_dir(&self, artifact_key: &str) -> Result<PathBuf, NativeError> {
@@ -1039,8 +1035,12 @@ mod tests {
                 .count(),
             0
         );
-        assert!(store.delete_key(&key).unwrap());
-        assert!(store.list_keys().unwrap().is_empty());
+        assert!(store
+            .delete_key(&key)
+            .unwrap_err()
+            .to_string()
+            .contains("requires_current_maintenance_authority"));
+        assert_eq!(store.list_keys().unwrap(), vec![key.clone()]);
 
         let _ = fs::remove_dir_all(root);
     }
@@ -1109,11 +1109,97 @@ mod tests {
         symlink(&outside, prefix.join(&key)).unwrap();
 
         let error = store.delete_key(&key).unwrap_err();
-        assert!(error.to_string().contains("symlinked artifact path"));
+        assert!(error
+            .to_string()
+            .contains("requires_current_maintenance_authority"));
         assert_eq!(
             fs::read_to_string(outside.join("keep.txt")).unwrap(),
             "keep"
         );
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn dc_s3_artifact_producing_guard_covers_write_reuse_replace_and_failure() {
+        use crate::storage::layout::{create_fresh_reference_root, ManagedLayout};
+        use crate::storage::locks::{open_locked, LockMode};
+        use crate::storage::maintenance_ownership::{
+            initialize_fresh_reference_domain, observe_reference_epoch, EpochObservation,
+            ReferenceDomain,
+        };
+        let root = unique_temp_dir("cleanup-s3-real-artifact-epoch");
+        fs::create_dir_all(&root).unwrap();
+        let layout = ManagedLayout::new(root.join("storage"));
+        let fresh = create_fresh_reference_root(layout.storage_root())
+            .unwrap()
+            .unwrap();
+        layout.ensure_roots().unwrap();
+        let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap();
+        let domain = ReferenceDomain::managed(&layout).unwrap();
+        assert!(initialize_fresh_reference_domain(&domain, &fresh, &writer).unwrap());
+        let observe = || match observe_reference_epoch(&domain).unwrap() {
+            EpochObservation::Verified(epoch) => epoch,
+            other => panic!("producer did not release reference activity: {other:?}"),
+        };
+        let store = ArtifactStore::new(layout.artifacts_root());
+        let key = "a".repeat(64);
+        let partition = sample_partition_for_key(&key);
+        let before = observe();
+        assert_eq!(
+            store.store_partition(&key, &partition).unwrap(),
+            ArtifactWriteOutcome::Written
+        );
+        let written = observe();
+        assert!(written.counter() > before.counter());
+        assert_eq!(
+            store.store_partition(&key, &partition).unwrap(),
+            ArtifactWriteOutcome::Reused
+        );
+        let reused = observe();
+        assert!(reused.counter() > written.counter());
+        let payload = layout
+            .artifacts_root()
+            .join("aa")
+            .join(&key)
+            .join(ENVELOPE_FILE_NAME);
+        fs::write(&payload, b"corrupt old payload").unwrap();
+        assert_eq!(
+            store.store_partition(&key, &partition).unwrap(),
+            ArtifactWriteOutcome::Written
+        );
+        let replaced = observe();
+        assert!(replaced.counter() > reused.counter());
+        assert!(store
+            .load_partition(
+                &key,
+                &ArtifactExpectations {
+                    path: "src/lib.rs",
+                    content_hash: "content-hash",
+                    language: "rust",
+                }
+            )
+            .unwrap()
+            .is_some());
+        let blocked_key = "b".repeat(64);
+        let blocked_prefix = layout.artifacts_root().join("bb");
+        fs::write(&blocked_prefix, b"foreign prefix sentinel").unwrap();
+        assert!(store
+            .store_partition(&blocked_key, &sample_partition_for_key(&blocked_key))
+            .is_err());
+        let failed = observe();
+        assert!(failed.counter() > replaced.counter());
+        assert_eq!(
+            fs::read(blocked_prefix).unwrap(),
+            b"foreign prefix sentinel"
+        );
+        // Key validation precedes even a creating producer guard.
+        let absent = root.join("invalid-key-must-not-create");
+        assert!(ArtifactStore::new(&absent)
+            .store_partition("invalid", &partition)
+            .is_err());
+        assert!(!absent.exists());
+        assert_eq!(observe(), failed);
+        drop(writer);
+        fs::remove_dir_all(root).unwrap();
     }
 }

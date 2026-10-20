@@ -2,6 +2,7 @@ use crate::error::NativeError;
 use crate::storage::atomic::write_json_atomically;
 use crate::storage::layout::managed_generation_id;
 use crate::storage::locks::{open_locked, try_open_locked_in_existing_parent, LockMode, RunLease};
+use crate::storage::maintenance_ownership::{ReferenceDomain, ReferenceMutation};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -46,14 +47,39 @@ pub(crate) struct RunWorkspace {
     lease: Option<RunLease>,
     finished: bool,
     cleanup_barrier: Option<PathBuf>,
+    _reference_mutation: Option<ReferenceMutation<'static>>,
 }
 
 impl RunWorkspace {
+    // Only legacy/test fixtures may create a workspace without an association;
+    // production callers must supply their actual reference domain.
+    #[cfg(test)]
     pub(crate) fn create(
         runs_root: impl AsRef<Path>,
         base_generation_id: Option<String>,
     ) -> Result<Self, NativeError> {
-        let runs_root = runs_root.as_ref();
+        Self::create_inner(runs_root.as_ref(), None, base_generation_id)
+    }
+
+    pub(crate) fn create_scoped(
+        runs_root: impl AsRef<Path>,
+        domain: &ReferenceDomain,
+        base_generation_id: Option<String>,
+    ) -> Result<Self, NativeError> {
+        if !domain.allows_runs_root(runs_root.as_ref())? {
+            return Err(NativeError::InvalidInput(
+                "reference_run_root_mismatch".into(),
+            ));
+        }
+        Self::create_inner(runs_root.as_ref(), Some(domain), base_generation_id)
+    }
+
+    fn create_inner(
+        runs_root: &Path,
+        domain: Option<&ReferenceDomain>,
+        base_generation_id: Option<String>,
+    ) -> Result<Self, NativeError> {
+        let mutation = domain.map(ReferenceMutation::begin_in_domain).transpose()?;
         fs::create_dir_all(runs_root)?;
         let run_id = managed_generation_id();
         let root = runs_root.join(format!("run-{run_id}"));
@@ -65,7 +91,18 @@ impl RunWorkspace {
             lease: Some(lease),
             finished: false,
             cleanup_barrier: None,
+            _reference_mutation: mutation,
         };
+        if let Some(domain) = domain {
+            write_json_atomically(
+                &this.root.join(".reference-scope.json"),
+                &RunReferenceScope {
+                    version: 1,
+                    run: crate::storage::locks::path_identity(&this.root)?,
+                    domain: domain.clone(),
+                },
+            )?;
+        }
         this.write_journal(RunJournal {
             run_id: this.run_id.clone(),
             phase: RunPhase::Created,
@@ -77,6 +114,13 @@ impl RunWorkspace {
         fs::create_dir_all(this.staging_root())?;
         fs::create_dir_all(this.candidate_root())?;
         Ok(this)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn abandon_for_test(mut self) -> PathBuf {
+        self.finished = true;
+        drop(self.lease.take());
+        self.root.clone()
     }
 
     pub(crate) fn set_cleanup_barrier(&mut self, root: PathBuf) -> Result<(), NativeError> {
@@ -93,6 +137,10 @@ impl RunWorkspace {
         };
         self.cleanup_barrier = Some(root.clone());
         write_json_atomically(&self.root.join("cleanup-barrier.json"), &root)
+    }
+
+    pub(crate) fn reference_domain(root: &Path) -> Result<Option<ReferenceDomain>, NativeError> {
+        read_reference_scope(root)
     }
 
     fn ensure_cleanup_allowed(&self) -> Result<(), NativeError> {
@@ -204,6 +252,20 @@ impl RunWorkspace {
                 report.skipped_locked += 1;
                 continue;
             }
+            let domain = match read_reference_scope(&path) {
+                Ok(Some(domain)) => domain,
+                _ => {
+                    report.skipped_locked += 1;
+                    continue;
+                }
+            };
+            let _mutation = match ReferenceMutation::begin_in_domain(&domain) {
+                Ok(mutation) => mutation,
+                Err(_) => {
+                    report.skipped_locked += 1;
+                    continue;
+                }
+            };
             let journal = read_orphan_journal(&path, name)?;
             if journal.phase == RunPhase::Publishing {
                 report.publishing_recovered += 1;
@@ -266,6 +328,45 @@ impl Drop for RunWorkspace {
             let _ = remove_run_tree(&self.root);
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct RunReferenceScope {
+    version: u32,
+    run: crate::storage::locks::FileIdentity,
+    domain: ReferenceDomain,
+}
+fn read_reference_scope(root: &Path) -> Result<Option<ReferenceDomain>, NativeError> {
+    let path = root.join(".reference-scope.json");
+    let metadata = match fs::symlink_metadata(&path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error.into()),
+    };
+    if !metadata.is_file() || metadata.file_type().is_symlink() || metadata.len() > 16384 {
+        return Ok(None);
+    }
+    let file = fs::File::open(&path)?;
+    if crate::storage::locks::file_link_count(&file)? != 1 {
+        return Ok(None);
+    }
+    let identity = crate::storage::locks::path_identity(&path)?;
+    if identity != crate::storage::locks::file_identity(&file)? {
+        return Ok(None);
+    }
+    let scope: RunReferenceScope = serde_json::from_reader(file)?;
+    if scope.version != 1
+        || scope.run != crate::storage::locks::path_identity(root)?
+        || !scope.domain.revalidate()?
+        || !scope.domain.allows_runs_root(
+            root.parent()
+                .ok_or_else(|| NativeError::InvalidInput("run parent missing".into()))?,
+        )?
+        || identity != crate::storage::locks::path_identity(&path)?
+    {
+        return Ok(None);
+    }
+    Ok(Some(scope.domain))
 }
 
 fn ensure_persisted_cleanup_allowed(root: &Path) -> Result<(), NativeError> {

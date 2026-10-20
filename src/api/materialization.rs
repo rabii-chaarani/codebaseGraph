@@ -7,7 +7,7 @@ use crate::api::{
 };
 use crate::artifact_store::ArtifactStore;
 use crate::protocol::{
-    ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
+    MaintenanceSummary, ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
     NativeSyntaxMaterializationResponse, MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
 };
 use crate::storage::direct::{DirectStore, DirectWriteSession};
@@ -813,6 +813,11 @@ pub(crate) fn write_manifest(
     graph_build_digest: Option<String>,
     search_backend: Option<crate::protocol::SearchBackendMetadata>,
 ) -> Result<NativeManifest, String> {
+    let _reference_mutation =
+        crate::storage::maintenance_ownership::ReferenceMutation::begin_producing(
+            &request.resolved_artifact_root(),
+        )
+        .map_err(|error| error.to_string())?;
     let files = materialized_entries
         .iter()
         .map(|(path, entry)| (path.clone(), entry.clone().compact()))
@@ -888,10 +893,14 @@ fn prepare_storage_execution(options: &MaterializeOptions) -> Result<StorageExec
             } else {
                 None
             };
-            let mut workspace = RunWorkspace::create(
+            let reference_domain =
+                crate::storage::maintenance_ownership::ReferenceDomain::direct(&layout)
+                    .map_err(|error| error.to_string())?;
+            let mut workspace = RunWorkspace::create_scoped(
                 RepositoryLayout::new(&runtime.state_dir)
                     .state_root()
                     .join("direct-runs"),
+                &reference_domain,
                 None,
             )
             .map_err(|error| format!("failed to create direct run workspace: {error}"))?;
@@ -919,6 +928,13 @@ fn finalize_materialization(
     response: &mut NativeSyntaxMaterializationResponse,
     identity: Option<&RepositoryIdentity>,
 ) -> Result<(), String> {
+    // Finalization occurs after the public pipeline's guard is released.
+    // The execution/session and scoped run remain active through all effects.
+    let _reference_mutation =
+        crate::storage::maintenance_ownership::ReferenceMutation::begin_existing(
+            execution.artifact_root(),
+        )
+        .map_err(|error| error.to_string())?;
     let request_db_path = execution.request_db_path();
     let request_manifest_path = execution.request_manifest_path();
     let artifact_root = execution.artifact_root().to_path_buf();
@@ -1013,15 +1029,7 @@ fn finalize_materialization(
                         .map(|cleanup| cleanup.to_string()),
                 ));
             }
-            if let Err(error) = garbage_collect_artifacts(&artifact_root, &published_manifest) {
-                return Err(append_cleanup_error(
-                    error.clone(),
-                    workspace
-                        .abort(Some(error))
-                        .err()
-                        .map(|cleanup| cleanup.to_string()),
-                ));
-            }
+            defer_artifact_maintenance(response);
             response.storage_format = "direct".to_string();
             response.active_generation = None;
             response.cleanup_pending = false;
@@ -1032,9 +1040,23 @@ fn finalize_materialization(
                     manifest_path.display()
                 ));
             }
-            workspace
-                .finish()
-                .map_err(|error| format!("failed to clean direct run workspace: {error}"))?;
+            // Publication, its journal transition and required readback have
+            // succeeded. Failure to dispose the published run is independent.
+            #[cfg(test)]
+            POST_DIRECT_CLEANUP_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(workspace.root());
+                }
+            });
+            if let Err(error) = workspace.finish() {
+                response.cleanup_pending = true;
+                response.pending_runs = 1;
+                record_postpublication_cleanup_error(
+                    response,
+                    "direct_run_cleanup_pending",
+                    format!("failed to clean direct run workspace: {error}"),
+                );
+            }
             session.finish();
         }
         StorageExecution::Managed {
@@ -1066,9 +1088,7 @@ fn finalize_materialization(
             let cleanup = session
                 .recover_and_gc()
                 .map_err(|error| format!("failed to reconcile managed storage cleanup: {error}"))?;
-            if cleanup.run_recovery.skipped_locked == 0 {
-                garbage_collect_artifacts(&artifact_root, &published_manifest)?;
-            }
+            defer_artifact_maintenance(response);
             response.storage_format = "managed_v2".to_string();
             response.active_generation = Some(published_generation);
             response.cleanup_pending =
@@ -1175,30 +1195,40 @@ fn validate_candidate_bundle(
     Ok(())
 }
 
-fn garbage_collect_artifacts(
-    artifact_root: &Path,
-    active_manifest: &NativeManifest,
-) -> Result<(), String> {
-    let retained = active_manifest
-        .files
-        .values()
-        .filter_map(|entry| entry.artifact_key.clone())
-        .collect::<BTreeSet<_>>();
-    let store = ArtifactStore::new(artifact_root);
-    for key in store.list_keys().map_err(|error| {
-        format!(
-            "failed to list artifacts in {}: {error}",
-            artifact_root.display()
-        )
-    })? {
-        if retained.contains(&key) {
-            continue;
-        }
-        store
-            .delete_key(&key)
-            .map_err(|error| format!("failed to delete artifact {key}: {error}"))?;
+/// The former manifest-only deletion loop had no destination/use ownership
+/// proof and could scan without a budget. Leave the owned collector's work
+/// pending rather than exercising authorityless ArtifactStore::delete_key.
+fn defer_artifact_maintenance(response: &mut NativeSyntaxMaterializationResponse) {
+    let summary = response
+        .maintenance
+        .get_or_insert_with(MaintenanceSummary::default);
+    summary.pending = true;
+    let reason = "artifact_collection_requires_owned_maintenance";
+    if !summary.reasons.iter().any(|value| value == reason) {
+        summary.reasons.push(reason.into());
     }
-    Ok(())
+}
+
+fn record_postpublication_cleanup_error(
+    response: &mut NativeSyntaxMaterializationResponse,
+    reason: &str,
+    error: String,
+) {
+    let summary = response
+        .maintenance
+        .get_or_insert_with(MaintenanceSummary::default);
+    summary.pending = true;
+    summary.reasons.push(reason.into());
+    summary.errors.push(error.clone());
+    response
+        .diagnostics
+        .push(format!("cleanup pending: {error}"));
+}
+
+#[cfg(test)]
+thread_local! {
+    // Inject a real workspace cleanup failure only after commit/readback.
+    static POST_DIRECT_CLEANUP_HOOK: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
 }
 
 fn cleanup_direct_candidate(session: &DirectWriteSession) -> Result<(), String> {
@@ -1291,6 +1321,50 @@ mod tests {
                 .expect("clock should be after epoch")
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn dc_epoch_manifest_finalization_advances_tracked_reference_domain() {
+        use crate::storage::layout::{create_fresh_reference_root, ManagedLayout};
+        use crate::storage::locks::{open_locked, LockMode};
+        use crate::storage::maintenance_ownership::{
+            initialize_fresh_reference_domain, observe_reference_epoch, EpochObservation,
+            ReferenceDomain,
+        };
+        let root = unique_temp_dir("epoch-finalization-manifest");
+        fs::create_dir_all(&root).unwrap();
+        let storage = root.join("storage");
+        let fresh = create_fresh_reference_root(&storage).unwrap().unwrap();
+        let layout = ManagedLayout::new(&storage);
+        layout.ensure_roots().unwrap();
+        let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap();
+        let domain = ReferenceDomain::managed(&layout).unwrap();
+        assert!(initialize_fresh_reference_domain(&domain, &fresh, &writer).unwrap());
+        drop(writer);
+        let before = match observe_reference_epoch(&domain).unwrap() {
+            EpochObservation::Verified(epoch) => epoch,
+            other => panic!("{other:?}"),
+        };
+        let path = layout
+            .generations_root()
+            .join("gen-finalization/manifest.json");
+        let mut request = build_request(&MaterializeOptions {
+            source_root: Some(root.clone()),
+            db: Some(storage.join("candidate.ldb")),
+            manifest: Some(path.clone()),
+            ..MaterializeOptions::default()
+        })
+        .unwrap();
+        request.artifact_root = layout.artifacts_root().to_string_lossy().into_owned();
+        let manifest = write_manifest(&path, &request, &BTreeMap::new(), None, None).unwrap();
+        assert!(manifest.files.is_empty());
+        assert!(path.is_file());
+        let after = match observe_reference_epoch(&domain).unwrap() {
+            EpochObservation::Verified(epoch) => epoch,
+            other => panic!("{other:?}"),
+        };
+        assert!(after.counter() > before.counter());
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1412,8 +1486,8 @@ mod tests {
     }
 
     #[test]
-    fn artifact_gc_retains_active_manifest_keys_and_removes_stale_keys() {
-        let root = unique_temp_dir("codebase-graph-artifact-gc");
+    fn deferred_artifact_collection_preserves_unregistered_foreign_state() {
+        let root = unique_temp_dir("unregistered-artifacts");
         let retained_key = "a".repeat(64);
         let stale_key = "b".repeat(64);
         let retained_dir = root.join("aa").join(&retained_key);
@@ -1422,36 +1496,173 @@ mod tests {
         fs::create_dir_all(&stale_dir).unwrap();
         fs::write(retained_dir.join("partition.json"), "retained").unwrap();
         fs::write(stale_dir.join("partition.json"), "stale").unwrap();
-        let manifest = NativeManifest {
-            schema_version: 2,
-            ontology: "code_ontology_v1".to_string(),
-            parser_version: "native".to_string(),
-            graph_build_digest: Some("digest".to_string()),
-            search_backend: None,
-            files: BTreeMap::from([(
-                "src/lib.rs".to_string(),
-                ManifestEntry {
-                    path: "src/lib.rs".to_string(),
-                    content_hash: "hash".to_string(),
-                    language: "rust".to_string(),
-                    partition_id: "partition".to_string(),
-                    artifact_key: Some(retained_key.clone()),
-                    node_ids: Vec::new(),
-                    edge_ids: Vec::new(),
-                    node_types: BTreeMap::new(),
-                    edge_types: BTreeMap::new(),
-                    node_count: 0,
-                    edge_count: 0,
-                    materialized_at: "unix:0".to_string(),
-                },
-            )]),
+        let mut response = empty_test_response();
+        defer_artifact_maintenance(&mut response);
+        let summary = response.maintenance.unwrap();
+        assert!(summary.pending);
+        assert!(summary.inventory_status.is_none());
+        assert!(summary.bytes.unknown.allocated_bytes.is_none());
+        assert!(summary
+            .reasons
+            .iter()
+            .any(|reason| reason == "artifact_collection_requires_owned_maintenance"));
+        let authority_error = ArtifactStore::new(&root)
+            .delete_key(&stale_key)
+            .unwrap_err();
+        assert!(authority_error
+            .to_string()
+            .contains("requires_current_maintenance_authority"));
+        assert!(!summary.requested);
+        assert!(!summary.running);
+        assert_eq!(
+            fs::read(retained_dir.join("partition.json")).unwrap(),
+            b"retained"
+        );
+        assert_eq!(
+            fs::read(stale_dir.join("partition.json")).unwrap(),
+            b"stale"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    fn empty_test_response() -> NativeSyntaxMaterializationResponse {
+        NativeSyntaxMaterializationResponse::skipped(
+            BTreeMap::new(),
+            crate::protocol::ManifestDiff {
+                added: Vec::new(),
+                modified: Vec::new(),
+                unchanged: Vec::new(),
+                deleted: Vec::new(),
+                force_rebuild: false,
+            },
+            Vec::new(),
+            Vec::new(),
+            BTreeMap::new(),
+        )
+    }
+
+    fn committed_artifact_fixture(managed: bool) -> (PathBuf, MaterializeOptions, PathBuf) {
+        let root = unique_temp_dir(if managed { "postgc-m" } else { "postgc-d" });
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/lib.rs"), "pub fn first_version() {}\n").unwrap();
+        let options = MaterializeOptions {
+            source_root: Some(root.clone()),
+            mode: "full".into(),
+            parallel: false,
+            storage_root: managed.then(|| root.join(".codebaseGraph/storage")),
+            db: (!managed).then(|| root.join("output/graph.ldb")),
+            manifest: (!managed).then(|| root.join("output/manifest.json")),
+            ..MaterializeOptions::default()
         };
+        let (request, _) = execute_materialization(&options).unwrap();
+        let artifact_root = PathBuf::from(request.artifact_root);
+        (root, options, artifact_root)
+    }
 
-        garbage_collect_artifacts(&root, &manifest).unwrap();
+    fn assert_published_graph_readable(
+        options: &MaterializeOptions,
+        response: &NativeSyntaxMaterializationResponse,
+    ) {
+        let database = if let Some(storage_root) = &options.storage_root {
+            GraphStorage::managed(storage_root)
+                .layout()
+                .generation(response.active_generation.as_ref().unwrap())
+                .unwrap()
+                .db_path()
+        } else {
+            options.db.clone().unwrap()
+        };
+        assert!(crate::api::graph_read::count_graph_nodes(&database).unwrap() > 0);
+    }
 
-        assert!(retained_dir.exists());
-        assert!(!stale_dir.exists());
-        let _ = fs::remove_dir_all(root);
+    fn verify_committed_artifact_deferral(managed: bool) {
+        let (root, options, artifact_root) = committed_artifact_fixture(managed);
+        // This residue was introduced outside the producing protocol and must
+        // survive. It reproduced the old authorityless postcommit GC failure.
+        let stale_key = "b".repeat(64);
+        let foreign_payload = artifact_root
+            .join("bb")
+            .join(stale_key)
+            .join("partition.json");
+        fs::create_dir_all(foreign_payload.parent().unwrap()).unwrap();
+        fs::write(&foreign_payload, "foreign unvalidated payload").unwrap();
+        fs::write(root.join("src/lib.rs"), "pub fn second_version() {}\n").unwrap();
+        let (_, response) = execute_materialization(&options)
+            .expect("committed publication must survive deferred artifact GC");
+        assert!(response.database_written);
+        assert_eq!(
+            response.storage_format,
+            if managed { "managed_v2" } else { "direct" }
+        );
+        let summary = response.maintenance.as_ref().unwrap();
+        assert!(summary.pending);
+        assert!(summary
+            .reasons
+            .iter()
+            .any(|reason| reason == "artifact_collection_requires_owned_maintenance"));
+        assert!(summary.last_attempt.is_none());
+        assert!(summary.bytes.total.allocated_bytes.is_none());
+        assert_eq!(
+            fs::read_to_string(&foreign_payload).unwrap(),
+            "foreign unvalidated payload"
+        );
+        assert_published_graph_readable(&options, &response);
+        // The new optional field must decode old worker/native responses.
+        let mut old_payload = serde_json::to_value(&response).unwrap();
+        old_payload.as_object_mut().unwrap().remove("maintenance");
+        assert!(
+            serde_json::from_value::<NativeSyntaxMaterializationResponse>(old_payload)
+                .unwrap()
+                .maintenance
+                .is_none()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn committed_direct_graph_survives_deferred_artifact_collection() {
+        verify_committed_artifact_deferral(false);
+    }
+
+    #[test]
+    fn committed_managed_graph_survives_deferred_artifact_collection() {
+        verify_committed_artifact_deferral(true);
+    }
+
+    #[test]
+    fn committed_direct_graph_survives_real_workspace_cleanup_failure() {
+        let (root, options, _) = committed_artifact_fixture(false);
+        POST_DIRECT_CLEANUP_HOOK.with(|hook| {
+            hook.set(Some(|run_root| {
+                fs::write(
+                    run_root.join("cleanup-barrier.json"),
+                    "invalid barrier fixture",
+                )
+                .unwrap();
+            }))
+        });
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn after_cleanup_failure() {}\n",
+        )
+        .unwrap();
+        let (_, response) = execute_materialization(&options)
+            .expect("cleanup failure must not undo committed result");
+        assert!(response.database_written);
+        assert!(response.cleanup_pending);
+        assert_eq!(response.pending_runs, 1);
+        let summary = response.maintenance.as_ref().unwrap();
+        assert!(summary.pending);
+        assert!(summary
+            .errors
+            .iter()
+            .any(|error| error.contains("invalid run cleanup barrier")));
+        assert!(response
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.starts_with("cleanup pending:")));
+        assert_published_graph_readable(&options, &response);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

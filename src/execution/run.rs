@@ -318,7 +318,33 @@ mod tests {
         let state = root.join("state");
         fs::create_dir_all(&source).unwrap();
         fs::write(source.join("lib.rs"), "pub fn guarded() {}\n").unwrap();
-        let request = request(&source, &state, None, Vec::new());
+        let fresh = crate::storage::layout::create_fresh_reference_root(&state)
+            .unwrap()
+            .unwrap();
+        let layout = crate::storage::layout::ManagedLayout::new(&state);
+        layout.ensure_roots().unwrap();
+        let writer = crate::storage::locks::open_locked(
+            layout.writer_lock_path(),
+            crate::storage::locks::LockMode::Exclusive,
+        )
+        .unwrap();
+        let domain =
+            crate::storage::maintenance_ownership::ReferenceDomain::managed(&layout).unwrap();
+        assert!(
+            crate::storage::maintenance_ownership::initialize_fresh_reference_domain(
+                &domain, &fresh, &writer
+            )
+            .unwrap()
+        );
+        drop(writer);
+        let before = match crate::storage::maintenance_ownership::observe_reference_epoch(&domain)
+            .unwrap()
+        {
+            crate::storage::maintenance_ownership::EpochObservation::Verified(epoch) => epoch,
+            other => panic!("{other:?}"),
+        };
+        let mut request = request(&source, &state, None, Vec::new());
+        request.artifact_root = layout.artifacts_root().to_string_lossy().into_owned();
         let artifact = request.resolved_artifact_root();
         let database = PathBuf::from(&request.db_path);
         let (ready_tx, ready_rx) = mpsc::channel();
@@ -334,6 +360,10 @@ mod tests {
         });
         ready_rx.recv_timeout(Duration::from_secs(60)).unwrap();
         assert!(artifact.is_dir());
+        assert!(matches!(
+            crate::storage::maintenance_ownership::observe_reference_epoch(&domain).unwrap(),
+            crate::storage::maintenance_ownership::EpochObservation::Pending(_)
+        ));
         assert!(ArtifactUseLease::try_exclusive(&artifact)
             .unwrap()
             .is_none());
@@ -348,6 +378,13 @@ mod tests {
         assert!(DatabaseUseLease::try_exclusive(&database)
             .unwrap()
             .is_some());
+        let after = match crate::storage::maintenance_ownership::observe_reference_epoch(&domain)
+            .unwrap()
+        {
+            crate::storage::maintenance_ownership::EpochObservation::Verified(epoch) => epoch,
+            other => panic!("{other:?}"),
+        };
+        assert!(after.counter() > before.counter());
         fs::remove_dir_all(root).unwrap();
     }
 

@@ -110,6 +110,13 @@ pub(crate) fn try_open_existing_locked(
     try_open_locked_inner(path, mode, false, false)
 }
 
+pub(crate) fn open_existing_shared_coordination(path: &Path) -> Result<LockedFile, NativeError> {
+    open_locked_inner(path, LockMode::Shared, false, false, false, true)
+}
+pub(crate) fn open_existing_exclusive(path: &Path) -> Result<LockedFile, NativeError> {
+    open_locked_inner(path, LockMode::Exclusive, false, false, false, false)
+}
+
 /// Existing readable shared coordination requires no write permission. Create
 /// normally only when absent, never recreate a detached parent. A competing
 /// creator may publish a read-only file before our create/open; retry that

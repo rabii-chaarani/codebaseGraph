@@ -507,6 +507,8 @@ pub struct NativeSyntaxMaterializationResponse {
     #[serde(default)]
     pub cleanup_pending: bool,
     #[serde(default)]
+    pub maintenance: Option<MaintenanceSummary>,
+    #[serde(default)]
     pub pending_runs: usize,
     #[serde(default)]
     pub artifacts_reused: usize,
@@ -565,6 +567,7 @@ impl NativeSyntaxMaterializationResponse {
             storage_format: String::new(),
             active_generation: None,
             cleanup_pending: false,
+            maintenance: None,
             pending_runs: 0,
             artifacts_reused: 0,
             artifacts_rebuilt: 0,
@@ -610,6 +613,7 @@ impl NativeSyntaxMaterializationResponse {
             storage_format: String::new(),
             active_generation: None,
             cleanup_pending: false,
+            maintenance: None,
             pending_runs: 0,
             artifacts_reused: 0,
             artifacts_rebuilt: 0,

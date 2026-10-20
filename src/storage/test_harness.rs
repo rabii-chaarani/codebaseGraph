@@ -1,9 +1,30 @@
 #[path = "../error.rs"]
 #[allow(dead_code)]
 mod error;
-#[path = "mod.rs"]
+// This deliberately small protocol-only crate exercises storage foundations.
+// Higher-layer maintenance tests run in the full library with ArtifactStore.
+#[path = "."]
 #[allow(dead_code, unused_imports)]
-mod storage;
+mod storage {
+    #[path = "atomic.rs"]
+    pub(crate) mod atomic;
+    #[path = "containment.rs"]
+    pub(crate) mod containment;
+    #[path = "direct.rs"]
+    pub(crate) mod direct;
+    #[path = "inventory.rs"]
+    pub(crate) mod inventory;
+    #[path = "layout.rs"]
+    pub(crate) mod layout;
+    #[path = "locks.rs"]
+    pub(crate) mod locks;
+    #[path = "maintenance_ownership.rs"]
+    pub(crate) mod maintenance_ownership;
+    #[path = "managed.rs"]
+    pub(crate) mod managed;
+    #[path = "run_workspace.rs"]
+    pub(crate) mod run_workspace;
+}
 
 mod protocol {
     #[derive(Debug, Clone, Default)]
@@ -30,6 +51,23 @@ use storage::locks::{
 };
 use storage::managed::{ActiveGeneration, ManagedStore, ManagedWriteSession};
 use storage::run_workspace::{RunJournal, RunPhase, RunWorkspace};
+
+fn scoped_run_fixture(
+    runs_root: impl AsRef<std::path::Path>,
+    base: Option<String>,
+) -> RunWorkspace {
+    let runs_root = runs_root.as_ref();
+    let runs_root = if runs_root.is_absolute() {
+        runs_root.to_owned()
+    } else {
+        std::env::current_dir().unwrap().join(runs_root)
+    };
+    let layout = ManagedLayout::new(runs_root.parent().unwrap());
+    layout.ensure_roots().unwrap();
+    drop(storage::locks::open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap());
+    let domain = storage::maintenance_ownership::ReferenceDomain::managed(&layout).unwrap();
+    RunWorkspace::create_scoped(runs_root, &domain, base).unwrap()
+}
 
 static TEST_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
@@ -928,7 +966,7 @@ fn managed_publish_reconciles_an_error_after_active_pointer_commit() {
 fn managed_cleanup_reports_and_later_removes_locked_runs() {
     let root = temp_dir("managed-cleanup-reports-and-later-removes-locked-runs");
     let store = open_managed_store(root.join("storage"));
-    let workspace = RunWorkspace::create(store.layout().runs_root(), None).unwrap();
+    let workspace = scoped_run_fixture(store.layout().runs_root(), None);
 
     let cleanup = store.cleanup().unwrap();
     assert_eq!(cleanup.run_recovery.skipped_locked, 1);
@@ -950,7 +988,7 @@ fn run_workspace_cleanup_rejects_symlink_content() {
         use std::os::unix::fs::symlink;
 
         let root = temp_dir("run_workspace_cleanup_rejects_symlink_content");
-        let workspace = RunWorkspace::create(root.join("runs"), None).unwrap();
+        let workspace = scoped_run_fixture(root.join("runs"), None);
         let outside = root.join("outside.txt");
         fs::write(&outside, "outside").unwrap();
         symlink(&outside, workspace.root().join("bad-link")).unwrap();
@@ -991,9 +1029,10 @@ fn orphan_publishing_run(
     manifest: serde_json::Value,
     stage: OrphanPublishStage,
 ) -> (PathBuf, String) {
-    let run_id = managed_generation_id();
+    let workspace = scoped_run_fixture(store.layout().runs_root(), base_generation_id.clone());
+    let run_root = workspace.root().to_owned();
+    let run_id = name_from_run_root(&run_root);
     let candidate_id = managed_generation_id();
-    let run_root = store.layout().runs_root().join(format!("run-{run_id}"));
     let candidate_root = run_root
         .join("candidate")
         .join(format!("gen-{candidate_id}"));
@@ -1013,8 +1052,6 @@ fn orphan_publishing_run(
         },
     )
     .unwrap();
-    fs::write(run_root.join("lease.lock"), b"").unwrap();
-
     match stage {
         OrphanPublishStage::BeforeRename => {}
         OrphanPublishStage::AfterRename
@@ -1057,6 +1094,7 @@ fn orphan_publishing_run(
         }
     }
 
+    assert_eq!(workspace.abandon_for_test(), run_root);
     (run_root, candidate_id)
 }
 
@@ -1326,7 +1364,7 @@ fn persisted_run_barrier_survives_drop_and_blocks_generic_orphan_collection() {
     let root = temp_dir("run_phase_barrier");
     let runs = root.join("runs");
     let registry = root.join("phases");
-    let mut run = RunWorkspace::create(&runs, None).unwrap();
+    let mut run = scoped_run_fixture(&runs, None);
     run.set_cleanup_barrier(registry.clone()).unwrap();
     let run_root = run.root().to_path_buf();
     fs::write(run.candidate_root().join("owned"), b"candidate").unwrap();
@@ -1542,7 +1580,7 @@ fn relative_barrier_subprocess_fixture() {
     let runs = PathBuf::from(runs);
     match std::env::var("CBG_BARRIER_FIXTURE_MODE").unwrap().as_str() {
         "create" => {
-            let mut run = RunWorkspace::create(&runs, None).unwrap();
+            let mut run = scoped_run_fixture(&runs, None);
             run.set_cleanup_barrier(PathBuf::from("phases")).unwrap();
             let root = run.root().to_path_buf();
             fs::write(run.candidate_root().join("owned"), b"candidate").unwrap();

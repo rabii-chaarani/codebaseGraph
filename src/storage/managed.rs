@@ -361,14 +361,35 @@ impl ManagedStore {
     }
 
     pub(crate) fn begin_write(&self) -> Result<ManagedWriteSession, NativeError> {
+        let fresh = super::layout::create_fresh_reference_root(self.layout.storage_root())?;
         self.ensure_layout()?;
-        let writer_lease = self.open_writer_lock()?;
+        let mut writer_lease = self.open_writer_lock()?;
+        let reference_domain =
+            super::maintenance_ownership::ReferenceDomain::managed(&self.layout)?;
+        if let Some(fresh) = &fresh {
+            super::maintenance_ownership::initialize_fresh_reference_domain(
+                &reference_domain,
+                fresh,
+                &writer_lease,
+            )?;
+        }
+        // Legacy roots may acquire their first ordinary use lock here. Observe
+        // the real scope again after that producer-only coordination step, so
+        // upgraded run associations never retain a stale missing-lock stamp.
+        let mut artifact_use = super::maintenance_ownership::ArtifactUseLease::acquire_shared(
+            &self.layout.artifacts_root(),
+        )?;
+        let reference_domain =
+            super::maintenance_ownership::ReferenceDomain::managed(&self.layout)?;
+        artifact_use.bind_reference_domain(&reference_domain)?;
+        writer_lease.retain(artifact_use.into_lock());
         ensure_registry_empty(&self.layout.phase_workspace_root())
             .map_err(NativeError::InvalidInput)?;
         collect_registry(&self.layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
         let base_generation = self.read_active_with_shared_lock()?;
-        let mut workspace = RunWorkspace::create(
+        let mut workspace = RunWorkspace::create_scoped(
             self.layout.runs_root(),
+            &reference_domain,
             base_generation
                 .as_ref()
                 .map(|value| value.generation_id.clone()),
@@ -448,6 +469,20 @@ impl ManagedStore {
         ) {
             return self.pending_cleanup_report();
         }
+        if !self.has_reference_cleanup_work()? {
+            return self.pending_cleanup_report();
+        }
+        // This maintenance is optional for an already committed reader. An
+        // unverifiable invalidation control preserves residue, not an outage.
+        let domain = match super::maintenance_ownership::ReferenceDomain::managed(&self.layout) {
+            Ok(domain) => domain,
+            Err(_) => return self.pending_cleanup_report(),
+        };
+        let _mutation =
+            match super::maintenance_ownership::ReferenceMutation::try_begin_in_domain(&domain) {
+                Ok(Some(mutation)) => mutation,
+                Ok(None) | Err(_) => return self.pending_cleanup_report(),
+            };
         let _state_lease = self.open_state_lock(LockMode::Exclusive)?;
         let mut report = ManagedCleanupReport::default();
         let mut active = self.read_active_generation()?;
@@ -459,6 +494,31 @@ impl ManagedStore {
         report.retired_generations_deleted = report.retired_deleted;
         report.retired_generations_pending = report.retired_pending;
         Ok(report)
+    }
+
+    fn has_reference_cleanup_work(&self) -> Result<bool, NativeError> {
+        for entry in fs::read_dir(self.layout.runs_root())? {
+            let entry = entry?;
+            if entry.file_type()?.is_dir()
+                && entry.file_name().to_string_lossy().starts_with("run-")
+                && matches!(RunWorkspace::reference_domain(&entry.path()), Ok(Some(_)))
+            {
+                return Ok(true);
+            }
+        }
+        let active = self
+            .read_active_generation()?
+            .map(|active| format!("gen-{}", active.generation_id));
+        for entry in fs::read_dir(self.layout.generations_root())? {
+            let entry = entry?;
+            if !entry.file_type()?.is_dir() || active.as_deref() == entry.file_name().to_str() {
+                continue;
+            }
+            if entry.path().join("retired.json").exists() || !entry.path().join("READY").exists() {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     fn pending_cleanup_report(&self) -> Result<ManagedCleanupReport, NativeError> {
@@ -592,6 +652,13 @@ impl ManagedStore {
                 Err(error) if is_not_found_error(&error) => continue,
                 Err(error) => return Err(error),
             };
+            let expected_domain =
+                super::maintenance_ownership::ReferenceDomain::managed(&self.layout)?;
+            if !matches!(RunWorkspace::reference_domain(&path), Ok(Some(domain)) if domain.same_scope(&expected_domain))
+            {
+                report.skipped_locked += 1;
+                continue;
+            }
             let journal = match read_run_journal_or_default(&path, name) {
                 Ok(journal) => journal,
                 Err(error) if is_not_found_error(&error) => {
@@ -879,6 +946,24 @@ impl ManagedStore {
         ) {
             return;
         }
+        if self
+            .read_active_generation()
+            .ok()
+            .flatten()
+            .as_ref()
+            .is_some_and(|active| active.generation_id == generation_id)
+        {
+            return;
+        }
+        let Ok(domain) = super::maintenance_ownership::ReferenceDomain::managed(&self.layout)
+        else {
+            return;
+        };
+        let Ok(Some(_mutation)) =
+            super::maintenance_ownership::ReferenceMutation::try_begin_in_domain(&domain)
+        else {
+            return;
+        };
         let Ok(Some(_state_lock)) =
             try_open_locked(self.layout.state_lock_path(), LockMode::Exclusive)
         else {
