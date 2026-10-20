@@ -248,5 +248,120 @@
     "junit_path": "/private/tmp/codebase-graph-recovery-spec-evidence/main-recovery-junit.xml",
     "store_success_output": true,
     "store_failure_output": true
+  },
+  "original_record_scope": "Original recovery-specification preparation. Its observations are preserved; the PR152 review follow-up below identifies the hardened source and separate evidence.",
+  "review_followup": {
+    "work_id": "PR145-PID-A2",
+    "scryer_change": "chg-f5c3jk",
+    "comment": "https://github.com/rabii-chaarani/codebaseGraph/pull/152#discussion_r4320594256",
+    "base_revision": "6d603f0caafdb49c017189eb9a0024d81ecc6068",
+    "scope": "Test precondition hardening and evidence/specification clarification; no production runtime changes.",
+    "final_test_source_sha256": "158e6795af9b9dd0b812f9ae7df579694c15238b4a0de5c36cca6a603fc63b5c",
+    "hardening": [
+      "Reuse the same serialized version-1 metadata before and after manual publication.",
+      "Restore that record after the successful manual build.",
+      "Assert the complete record remains present immediately before starting the daemon under the held storage writer lease.",
+      "Retain unrelated-process survival, generation/readability, pending-edit and independent follow-up assertions."
+    ],
+    "caller_premise": {
+      "review_claim_reproduced": false,
+      "standalone_path": [
+        "src/adapters/cli/materialization/command.rs::run_materialize",
+        "src/api/facade.rs::CodebaseGraphApi::new",
+        "src/api/core.rs::ApiCore::new (derived default isolate_materialization=false)",
+        "src/api/core.rs::handle_materialize",
+        "src/api/core.rs::execute_materialization",
+        "src/api/materialization.rs::execute_materialization_request"
+      ],
+      "isolated_path": "ApiCore::for_coordinator sets isolate_materialization=true; only that branch selects execute_isolated_materialization and execute_explicit_worker.",
+      "interpretation": "The current standalone CLI does not consume the legacy worker record through execute_explicit_worker. The original-vacuity hypothesis was not reproduced; the new assertion makes the boundary explicit if that path changes."
+    },
+    "focused_positive": {
+      "passed": 2,
+      "failed": 0,
+      "duration_seconds": 133.422,
+      "tests": [
+        "legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership",
+        "manual_publication_does_not_prevent_later_legacy_pid_recovery"
+      ],
+      "junit": "/private/tmp/codebase-graph-pr152-review.IVJlzg/corrected-focused-junit.xml",
+      "junit_sha256": "fde53ada3cb8ee5d4f86c7354f75dc5109b0d686d71bef88c675a70c0ca773e8",
+      "source_sha256": "a30be0ea2900ad95339d5875a9caf43f4b5ff713f42e18c7fa7b6520bb5ab5e4",
+      "source_qualification": "Only the explanatory comment was subsequently clarified; the delivered fixture logic is identical. Final-source full-file execution and native CI remain separate qualification."
+    },
+    "automatic_only_control": {
+      "method": "Validation-only binary disables automatic v1 recovery while preserving explicit/manual recovery.",
+      "mutation_location": "src/materialization_worker.rs::execute_worker, after worker lease acquisition and before recover_orphan_worker; return a marker error only for wait_for_lock=true and existing v1 metadata.",
+      "original_runtime_sha256": "c04f4d2db9bb4913ddccaad5dc82206a745d1df1d01c7581207f8903e78c4496",
+      "mutated_runtime_sha256": "d5c1570377211eea4a9e1dbdf7af860346c1e3c35dc7be205082dbd73807a0df",
+      "mutant_binary_sha256": "59fa8535ecdc337adcb2460f821d226f9dd0647505c0f2ffee9730c945c6cad3",
+      "original_test_sha256": "3c12f10d6b8b292f686d44d6eddf8a91efbdc49b19100ed340c3998b045b4e7a",
+      "corrected_control_test_sha256": "a30be0ea2900ad95339d5875a9caf43f4b5ff713f42e18c7fa7b6520bb5ab5e4",
+      "trials": [
+        {
+          "fixture": "original",
+          "command": [
+            "/private/tmp/codebase-graph-pr152-review.IVJlzg/original-test",
+            "--exact",
+            "manual_publication_does_not_prevent_later_legacy_pid_recovery",
+            "--nocapture"
+          ],
+          "runtime_override": "/private/tmp/codebase-graph-pr152-review.IVJlzg/daemon-recovery-disabled-codebase-graph",
+          "exit_code": 101,
+          "elapsed_seconds": 83.561,
+          "observed_legacy_failure": true,
+          "observed_disabled_recovery": true,
+          "retained_v1_observed": true
+        },
+        {
+          "fixture": "corrected",
+          "command": [
+            "/private/tmp/codebase-graph-pr152-review.IVJlzg/corrected-test",
+            "--exact",
+            "manual_publication_does_not_prevent_later_legacy_pid_recovery",
+            "--nocapture"
+          ],
+          "runtime_override": "/private/tmp/codebase-graph-pr152-review.IVJlzg/daemon-recovery-disabled-codebase-graph",
+          "exit_code": 101,
+          "elapsed_seconds": 82.116,
+          "observed_legacy_failure": true,
+          "observed_disabled_recovery": true,
+          "retained_v1_observed": true
+        }
+      ],
+      "expected_corrected_rejection_observed": true,
+      "initial_driver_exit_code": 1,
+      "initial_driver_qualification": "The initial driver expected the original fixture to pass. Both actual trials exited 101 at the legacy-recovery assertion after successful manual publication, with retained v1 state and the automatic-only marker. The driver failed its original-pass hypothesis assertion, not the corrected-test detection criterion. This falsified hypothesis and its raw results are retained.",
+      "runtime_source_restored": true,
+      "logs": {
+        "original-daemon-disabled.log": {
+          "path": "/private/tmp/codebase-graph-pr152-review.IVJlzg/original-daemon-disabled.log",
+          "sha256": "4dd73efbee1a54864d72038fa4111f0f7173f11b6f7b49ee32eccf2fcd8cc7c0"
+        },
+        "corrected-daemon-disabled.log": {
+          "path": "/private/tmp/codebase-graph-pr152-review.IVJlzg/corrected-daemon-disabled.log",
+          "sha256": "0c75e14baf84f825df1a25052ef7cdd645a4869fa93f6aa9aeb3e58ff73e4cbc"
+        }
+      }
+    },
+    "full_file_qualification": {
+      "method": [
+        "cargo",
+        "nextest",
+        "run",
+        "--locked",
+        "--offline",
+        "--test",
+        "refresh_recovery_process",
+        "--config-file",
+        "/private/tmp/codebase-graph-pr152-review.IVJlzg/nextest.toml",
+        "--profile",
+        "review"
+      ],
+      "test_threads": 1,
+      "junit": "/private/tmp/codebase-graph-pr152-review.IVJlzg/recovery-junit.xml",
+      "record_boundary": "The final-source full-file run was started separately from this pre-push evidence record. Final execution and latest-head hosted native qualification are reported with the PR handoff; attached/configured checks alone are not passing execution."
+    },
+    "artifact_qualification": "Raw control binaries, logs and JUnit reports are local temporary artifacts. Source hashes, methods, observed trial results and their limits are retained here; temporary paths are not portable qualification artifacts."
   }
 }

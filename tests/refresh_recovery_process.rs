@@ -626,16 +626,13 @@ fn legacy_worker_pid_recovery(manual_publication: bool) {
     wait_for_file(&ready);
     let storage = root.join(".codebaseGraph/storage");
     let state_path = storage.join("worker.json");
-    fs::write(
-        &state_path,
-        serde_json::to_vec(&json!({
-            "version": 1,
-            "build_id": "abandoned-worker",
-            "worker_pid": unrelated.0.id()
-        }))
-        .unwrap(),
-    )
+    let legacy_state = serde_json::to_vec(&json!({
+        "version": 1,
+        "build_id": "abandoned-worker",
+        "worker_pid": unrelated.0.id()
+    }))
     .unwrap();
+    fs::write(&state_path, &legacy_state).unwrap();
     fs::write(
         root.join("latest.py"),
         "def latest_symbol():\n    return 2\n",
@@ -649,6 +646,9 @@ fn legacy_worker_pid_recovery(manual_publication: bool) {
             serde_json::from_slice(&fs::read(storage.join("active.json")).unwrap()).unwrap();
         assert_ne!(published["generation_id"], before["generation_id"]);
         assert!(unrelated.0.try_wait().unwrap().is_none());
+        // Reinstate the fault after publication so daemon recovery starts with
+        // legacy state even if a manual build has already retired the record.
+        fs::write(&state_path, &legacy_state).unwrap();
         // This edit precedes monitoring. Recovery must publish it without a
         // second edit or manual deletion of ownership metadata.
         fs::write(
@@ -668,6 +668,10 @@ fn legacy_worker_pid_recovery(manual_publication: bool) {
         .open(storage.join("writer.lock"))
         .unwrap();
     writer.lock_exclusive().unwrap();
+    assert!(
+        fs::read(&state_path).unwrap() == legacy_state,
+        "legacy PID-only state must remain present before daemon startup"
+    );
     let (daemon, port, _) = start_daemon(&root, &config, &root, &[]);
     let mut session = McpSession::start(port);
 

@@ -1,10 +1,10 @@
 ---
 description: PR145 recovery requirements, stable Scryer traceability, manual-publication regressions and baseline qualification.
 tags:
-- recovery
 - contract
-- testing
 - graph-runtime
+- recovery
+- testing
 timestamp: 2026-10-20
 title: Worker recovery contracts and regression gates
 type: contract
@@ -59,12 +59,14 @@ Private capability material remains private; regression evidence must not copy i
 | Criterion | Given / When / Then | Regression or evidence |
 | --- | --- | --- |
 | PR145-PID-A1 | Given legacy metadata naming a live unrelated fixture process and an exclusive writer lease, when refresh starts, then metadata retirement proceeds without signalling that process and no publication bypasses the lease. | Existing `legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership` |
-| PR145-PID-A2 | Given successful manual publication while stale metadata exists, and a pending edit before monitoring starts, when automatic recovery runs, then the pending symbol is searchable, refresh is ready with no pending epoch, and a later independent edit also publishes while the unrelated process survives. | New `manual_publication_does_not_prevent_later_legacy_pid_recovery` |
+| PR145-PID-A2 | Given successful manual publication followed by legacy PID-only metadata naming the live unrelated fixture process, and a pending edit before monitoring starts, when automatic recovery runs, then the pending symbol is searchable, refresh is ready with no pending epoch, and a later independent edit also publishes while the unrelated process survives. | New `manual_publication_does_not_prevent_later_legacy_pid_recovery` |
 | PR145-TREE-A1 | Given an owned native phase at a positive readiness barrier, when its outer worker fails and a manual writer is queued, then every observed active-generation change follows the original phase's exit; manual build succeeds and automatic pending/follow-up edits converge. | New `manual_publication_waits_for_failed_phase_tree_to_exit` |
 | PR145-TREE-A2 | Given contained native processes, when cancellation, owner loss or measured RSS failure occurs, then those processes exit and automatic retry remains possible. | Existing cancellation, paused-worker/phase, owner-exit and measured-memory lifecycle cases |
 | PR145-TREE-A3 | Given unavailable guardian authority and unverified survivors, when recovery or manual admission runs, then evidence/candidates remain, writes stay blocked, and the prior graph is readable; proven emptiness subsequently permits retry. | Existing unavailable-guardian and standalone-owner-loss cases |
 | PR145-TREE-A4 | Given the macOS timing wrapper or native Windows process job, when teardown/probing runs, then wrapper descendants remain contained and observational probes do not terminate unauthenticated jobs. | Existing timing-wrapper and Windows observational-probe cases |
 | PR145-COMPAT-A1 | Given retired helper protocol names, when invoked, then they fail with restart guidance before reading requests or doing database work. | Existing retired-role and phase-protocol tests |
+
+The PR145-PID-A2 fixture restores the original version-1 `worker.json` after manual publication and asserts the complete record is present immediately before daemon startup. This makes the failure precondition explicit even if a future manual-build path retires the metadata. Unrelated-process survival, held-writer exclusion, pending content and an independent later edit remain required. An automatic-recovery-only negative control verifies that successful manual publication cannot satisfy the daemon-recovery assertions.
 
 Tests assert observable graph content separately from health readiness. Readiness includes readable storage, ready refresh, no pending work, equal dirty/reconciled epochs, and a cleared error. Reconciliation age may be `overdue` after an expensive query; that alone does not invalidate successful content verification.
 
@@ -98,7 +100,9 @@ The exact PID regression uses the old binary through the test harness's runtime 
 
 The configured wiki connector remains bound to the original checkout of this same repository and rejects the isolated main worktree as unregistered. Contract and memory pages were authored and validated through that connector, then transferred byte-for-byte into this change. No generated projections were edited manually.
 
-Fresh independent proposal and source reviews used GPT-6.1 Sol at Max effort. The integrated source review found no confirmed P0–P3 defects. The final evidence/documentation check is recorded with the delivery snapshot.
+Fresh independent proposal and source reviews used GPT-6.1 Sol at Max effort. The integrated source review initially found no confirmed P0–P3 defects. A later [PR #152 comment](https://github.com/rabii-chaarani/codebaseGraph/pull/152#discussion_r4320594256) requested an explicit post-publication legacy-state precondition.
+
+The comment's caller premise was not reproduced at `6d603f0`: standalone CLI `run_materialize` constructs `CodebaseGraphApi::new()` and the default `ApiCore` does not isolate materialization. The coordinator-owned API selects the isolated explicit worker. A validation-only binary that rejects automatic v1 recovery, while preserving manual execution, made both the original fixture and the hardened fixture fail after successful manual publication with the v1 record retained. The initial control driver had expected the original fixture to pass; that hypothesis was falsified and its failed expectation is retained with the trial results. The hardening therefore makes the boundary explicit without claiming that the original test was proven vacuous. Follow-up source hashes, executed controls and qualification are recorded in `docs/testing/worker-recovery-evidence-2026-10-20.json`.
 
 The existing architecture model was reused from the merged PR #145 work with unchanged identities. This task adds test attachments to `resp-xqsh3f`, `resp-265` and `resp-89p7rb`; no runtime claims were newly folded. Missing historical verdicts elsewhere in that imported model remain outside this scoped qualification.
 
