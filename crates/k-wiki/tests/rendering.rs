@@ -68,6 +68,100 @@ fn concept_pages_sanitize_active_content_and_route_broken_links_to_diagnostics()
     assert!(!concept_page.html.contains("<svg"));
 }
 
+// Exercise the dependency's opt-in CSS policy separately from the renderer,
+// which never enables inline styles. Quoted URL functions must obey the same
+// scheme allowlist regardless of ASCII case or escaped identifier spelling.
+#[test]
+fn sanitizer_css_url_policy_is_case_insensitive() {
+    let mut sanitizer = ammonia::Builder::default();
+    sanitizer
+        .add_generic_attributes(&["style"])
+        .filter_style_properties(std::collections::HashSet::from(["background-image"]))
+        .url_schemes(std::collections::HashSet::from(["cid"]));
+    for function in ["url", "URL", "Url", "uRl", r"\75rl", r"u\72l", r"\55RL"] {
+        let allowed =
+            format!(r#"<div style='background-image:{function}("cid:logo")'>safe text</div>"#);
+        let cleaned = sanitizer.clean(&allowed).to_string();
+        assert!(
+            cleaned.contains("cid:logo"),
+            "allowed URL removed for {function}: {cleaned}"
+        );
+        assert!(cleaned.contains("safe text"));
+
+        let disallowed = format!(
+            r#"<div style='background-image:{function}("https://tracker.invalid/pixel")'>safe text</div>"#
+        );
+        let cleaned = sanitizer.clean(&disallowed).to_string();
+        assert!(
+            !cleaned.contains("tracker.invalid"),
+            "URL policy bypass for {function}: {cleaned}"
+        );
+        assert!(cleaned.contains("safe text"));
+    }
+}
+
+#[test]
+fn renderer_rejects_css_urls_in_concepts_and_directories_and_preserves_safe_markup() {
+    let mut projection = sample_projection();
+    let body = r#"<p style='background-image:URL("https://tracker.invalid/pixel")'>Visible paragraph</p>
+<p style='background-image:u\72l("https://tracker.invalid/escaped")'>Escaped paragraph</p>
+<style>p { background-image:Url("https://tracker.invalid/stylesheet"); }</style>
+
+**Preserved emphasis** and [ordinary link](https://example.invalid/guide).
+"#;
+    projection.bundles[0]
+        .concepts
+        .iter_mut()
+        .find(|concept| concept.id == "architecture/renderer")
+        .unwrap()
+        .body_markdown = body.into();
+    projection.bundles[0]
+        .directories
+        .iter_mut()
+        .find(|directory| directory.path == "architecture")
+        .unwrap()
+        .body_markdown = body.into();
+    let site = Renderer::new(RenderOptions::default())
+        .unwrap()
+        .render_site(&projection, &RenderContext::default())
+        .unwrap();
+    let pages: Vec<_> = site
+        .pages
+        .iter()
+        .filter(|page| {
+            (page.kind == RouteKind::Concept && page.route.contains("/architecture/renderer/"))
+                || (page.kind == RouteKind::Directory && page.route.contains("/d/architecture/"))
+        })
+        .collect();
+    assert_eq!(
+        pages.len(),
+        2,
+        "both public rendering entry points must be exercised"
+    );
+    for page in pages {
+        assert!(
+            !page.html.contains("tracker.invalid"),
+            "inline CSS leaked through {}",
+            page.route
+        );
+        assert!(
+            page.html.contains("<p>Visible paragraph</p>"),
+            "paragraph lost in {}",
+            page.route
+        );
+        assert!(
+            page.html.contains("<strong>Preserved emphasis</strong>"),
+            "formatting lost in {}",
+            page.route
+        );
+        assert!(
+            page.html.contains("href=\"https://example.invalid/guide\""),
+            "safe link lost in {}",
+            page.route
+        );
+    }
+}
+
 #[test]
 fn rendered_site_writes_manifest_assets_and_enforces_output_root_containment() {
     let renderer = Renderer::new(RenderOptions::default()).expect("create renderer");

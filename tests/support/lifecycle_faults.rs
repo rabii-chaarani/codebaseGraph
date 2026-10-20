@@ -787,13 +787,16 @@ impl Fixture {
     }
     fn verify_recovery(&mut self) {
         self.release();
-        wait_for_current_symbol(&mut self.session, "pending_symbol", "pending.py");
+        let recovered = wait_for_current_symbol(&mut self.session, "pending_symbol", "pending.py");
+        assert_recovered_refresh(&recovered);
         fs::write(
             self.root.join("follow_up.py"),
             "def following_symbol():\n    return 3\n",
         )
         .unwrap();
-        wait_for_current_symbol(&mut self.session, "following_symbol", "follow_up.py");
+        let followed =
+            wait_for_current_symbol(&mut self.session, "following_symbol", "follow_up.py");
+        assert_recovered_refresh(&followed);
     }
 }
 
@@ -837,6 +840,62 @@ fn paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers(
     });
     fixture.paused.clear();
     fixture.unchanged();
+    fixture.verify_recovery();
+}
+
+#[test]
+fn manual_publication_waits_for_failed_phase_tree_to_exit() {
+    let mut fixture = Fixture::new(false);
+    fixture.pause(fixture.phase_pid);
+    fixture.unchanged();
+    assert!(fixture
+        .session
+        .search_paths("initial_symbol")
+        .iter()
+        .any(|path| path == "initial.py"));
+    let worker = fixture.worker();
+    let mut manual = ManualBuild::start(&fixture.root);
+    terminate(worker);
+
+    let deadline = Instant::now() + Duration::from_secs(90);
+    let mut released = false;
+    let mut published = false;
+    let mut manual_finished = false;
+    let mut last_active = Value::Null;
+    while Instant::now() < deadline {
+        if !released && !alive(fixture.phase_pid) {
+            fixture.paused.clear();
+            // A competing automatic retry may own the writer next. Once the
+            // original phase has exited, let that retry pass its own barrier.
+            fixture.release();
+            released = true;
+        }
+        if let Some(active) =
+            read_json_when_present(&fixture.root.join(".codebaseGraph/storage/active.json"))
+        {
+            last_active = active;
+            if last_active["generation_id"] != fixture.previous_generation["generation_id"] {
+                assert!(!alive(fixture.phase_pid),
+                    "publication preceded failed phase exit; phase_pid={}, active={last_active}, {}",
+                    fixture.phase_pid, manual.diagnostics());
+                published = true;
+            }
+        }
+        if !manual_finished {
+            if let Some(status) = manual.poll() {
+                manual.assert_success(status);
+                manual_finished = true;
+            }
+        }
+        if released && published && manual_finished {
+            break;
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+    assert!(released && published && manual_finished,
+        "manual publication recovery timed out; phase_pid={}, worker_pid={worker}, phase_exited={released}, published={published}, manual_finished={manual_finished}, active={last_active}, {}",
+        fixture.phase_pid, manual.diagnostics());
+    assert!(!alive(worker), "failed worker survived manual publication");
     fixture.verify_recovery();
 }
 
