@@ -1,0 +1,167 @@
+{
+  "kind": "independent_focused_fix_verification",
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "fresh_original_integrated_reviewer": true
+  },
+  "finding": "P2 advisory Direct registration failures block committed reads",
+  "disposition": "resolved",
+  "new_confirmed_code_findings": [],
+  "snapshot": {
+    "path": "/private/tmp/codebasegraph-cleanup-fix-review-e968",
+    "git_base": "e96893e025eda512b13f2a9ba754adbac45f4a49",
+    "coordinator_documentation_head_at_freeze": "16081af63122eea06af3acafedf67f168695c366",
+    "owned_overlay": {
+      "src/storage/direct.rs": "c40e99468c2ab0a465b7a5b5ee2a8e755c872d450da5e88cd212d91365691e25",
+      "src/storage/test_harness.rs": "3d94ecbe47000f8dcc77f0f2dff3a7ec3c0bdc5087b0ab3e01b3d78d1b5cdf58"
+    },
+    "patch_sha256": "c24809e5c8dde1749b717b83347ca81afc6feac1cd6ae487d9324929f62561b6",
+    "all_rust_source_count": 137,
+    "canonical_relative_string_order_identity": "b987bc054651cb0cb4fbfd56cff0e33f5c27d92bc27cb4680d79dbcdccb1d2f4",
+    "equivalent_path_component_order_identity": "5a16444a8d3bee62a40508f8b9a5d118fbbe2c28c8b55c89df2900005b4405a0",
+    "all_per_file_hashes_match_worker_before_and_after": true,
+    "reviewer_source_before_after_equal": true
+  },
+  "assessment": {
+    "ordinary_read": "begin_read no longer creates/decodes/repairs registration. It retains existing writer and both shared resource/physical-parent-family guards through returned lease lifetime.",
+    "strict_mutation": "begin_write still requires registration. recover_with_lock requires it after proving a journal exists and before ReferenceMutation, journal decode or replay effects.",
+    "retention": "Missing/corrupt registration survives ordinary read unchanged. Four shipping regressions assert bytes/inodes, use exclusion and no manufactured destination cohort; existing overlap validation remains unchanged.",
+    "source_anchors": [
+      {
+        "line": 114,
+        "text": "super::maintenance_ownership::register_direct_pair(&self.layout)?;"
+      },
+      {
+        "line": 155,
+        "text": "pub(crate) fn begin_read(&self) -> Result<WriterLease, NativeError> {"
+      },
+      {
+        "line": 221,
+        "text": "fn recover_with_lock(&self) -> Result<(), NativeError> {"
+      },
+      {
+        "line": 230,
+        "text": "super::maintenance_ownership::register_direct_pair(&self.layout)?;"
+      }
+    ]
+  },
+  "reviewer_executions": {
+    "fixed-focused": {
+      "snapshot": "/private/tmp/codebasegraph-cleanup-fix-review-e968",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--test",
+        "direct_read_metadata",
+        "integrated_probe_direct_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "environment": {
+        "REVIEW_SNAPSHOT": "/private/tmp/codebasegraph-cleanup-fix-review-e968",
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      },
+      "returncode": 0,
+      "source_hashes_unchanged": true,
+      "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/direct_read_metadata-4bce9bdfddc3e313",
+      "binary_sha256": "c24dcd1fe0b516731e5ecff8f617515be03829026bedc9ac8ff9d1b3df4a017d"
+    },
+    "fixed-shipping-regressions": {
+      "snapshot": "/private/tmp/codebasegraph-cleanup-fix-review-e968",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--test",
+        "direct_read_metadata",
+        "direct_committed_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "environment": {
+        "REVIEW_SNAPSHOT": "/private/tmp/codebasegraph-cleanup-fix-review-e968",
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      },
+      "returncode": 0,
+      "source_hashes_unchanged": true,
+      "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/direct_read_metadata-4bce9bdfddc3e313",
+      "binary_sha256": "c24dcd1fe0b516731e5ecff8f617515be03829026bedc9ac8ff9d1b3df4a017d"
+    },
+    "fixed-valid-replay-negative": {
+      "snapshot": "/private/tmp/codebasegraph-cleanup-fix-review-e968",
+      "command": [
+        "cargo",
+        "test",
+        "--offline",
+        "--locked",
+        "--test",
+        "strict_replay",
+        "integrated_probe_strict_",
+        "--",
+        "--nocapture",
+        "--test-threads=1"
+      ],
+      "environment": {
+        "REVIEW_SNAPSHOT": "/private/tmp/codebasegraph-cleanup-fix-review-e968",
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      },
+      "returncode": 0,
+      "source_hashes_unchanged": true,
+      "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/strict_replay-5b1f384ce48045da",
+      "binary_sha256": "1a6cea0e4b4e328e172585b1045f279d316f0b705142eca27b403f7ef89db769"
+    }
+  },
+  "focused_case_counts": {
+    "original_reproduction_cases": {
+      "passed": 3,
+      "failed": 0
+    },
+    "shipping_regression_cases": {
+      "passed": 4,
+      "failed": 0
+    },
+    "independent_valid_prepared_journal_case": {
+      "passed": 1,
+      "failed": 0
+    },
+    "note": "Separate focused execution groups; do not add to overlapping coordinator172pass or earlier foundation295pass as independent acceptance coverage."
+  },
+  "strict_valid_journal_probe": {
+    "source": "/private/tmp/codebasegraph-integrated-availability-probe/fix-strict/strict_replay.rs",
+    "source_sha256": "eea13f75119a319a75615df3eded0d676bf65492fffe62e739337ec47cb24d39",
+    "method": "Actually publishes a synthetic Direct storage pair; constructs and successfully decodes a valid Prepared journal and matching candidate checksums. Corrupt registration rejects producer/read replay before all six watched file byte/inode changes. Fixture-only registration restoration permits the same untouched valid journal to replay and commit successfully.",
+    "result": "passed"
+  },
+  "metadata_correction": {
+    "classification": "documentation-only algorithm clarification; not a source or executed-result replacement",
+    "detail": "Original5a164 identity uses pathlib path-component ordering. Canonical relative-string ordering producesb987. Same137per-file hashes in both cases. Handoff/manifest correction preserves raw source maps, logs, JUnit and results.",
+    "artifacts": {
+      "HANDOFF.md": "4cd1c340759f5be662ad7999d6ce18e275de18bc09d5e0c6fe29b7a64198d2d0",
+      "manifest.json": "d53b88460899c5309b19e8a3212e8bd9275bff772106d2b27209ef268ccab683",
+      "identity-correction.json": "45cb5c6b00ab306ceedf3a6873805787d095bf904cfe95e9b5e3ce54e0506fc2"
+    }
+  },
+  "additional_check": {
+    "git_diff_check": "passed"
+  },
+  "environment": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
+  },
+  "limitations": [
+    "Storage fixtures use synthetic database bytes; no new native Ladybug query semantics or Linux/Windows qualification is claimed.",
+    "Independent probes use isolated storage-only Cargo packages whose direct dependencies match baseline versions; no root package rebuild/check was performed by this reviewer. Coordinator reported172/172 root check results remain separately attributed.",
+    "Configured code graph indexes the older original checkout. Current source identity is established by complete hash matching and the exact frozen patch, not by graph freshness.",
+    "Original public raw-native-handle decision, latency amendment, future collector/scheduler, migration and aggregate qualification remain pending.75existing library warnings remain the coordinator-reported full-scope limitation."
+  ],
+  "historical_finding_artifact": "/private/tmp/codebasegraph-integrated-availability-probe/integrated-review.json",
+  "memory_checkpoint": "Reusable lesson verified: committed reads require lifetime exclusion, while producer overlap registration remains strict for mutation/replay and cannot substitute for quiescence. Read-only reviewer leaves memory/wiki recording to coordinator.",
+  "shared_cargo": "released"
+}

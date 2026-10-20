@@ -147,7 +147,7 @@
     "src/syntax_materializer/tests.rs": "9c177764e8ffa131578baa140befdf33ae7e6ce5056ef63144421f1be9f89e4d"
   },
   "excluded": "Unqualified S3 validator/cursor/job and scheduler prototypes are excluded from shipping source; exact recovery patch is in the nonshipping source archive.",
-  "status": "295 affected tests passed, workspace/all-target check and formatting passed; full specification and warnings remain pending",
+  "status": "Historical295test checkpoint retained; current source superseded by final_verified_snapshot with299passing affected executions. Full specifications and warnings remain pending.",
   "checks": {
     "workspace_all_targets_exit": 0,
     "format_exit": 0,
@@ -277,6 +277,42 @@
       "encoding": "gzip/tar",
       "status": "nonshipping recovery archive; no runtime files",
       "member_count": 7
+    },
+    "integrated-foundation-review.json": {
+      "sha256": "f3286fa16726d54717d3fa90d79ed817e86878af3a6bab13f416462d9ffe9549",
+      "original_sha256": "f3286fa16726d54717d3fa90d79ed817e86878af3a6bab13f416462d9ffe9549",
+      "encoding": "identity",
+      "source": "/private/tmp/codebasegraph-integrated-availability-probe/integrated-review.json"
+    },
+    "direct-read-admission-reproduction.tar.gz": {
+      "sha256": "0c8f21fb29f1137b5f509aa0a904d2ae441729bb935a1e02aaed8d5c8d80a5b9",
+      "encoding": "gzip/tar",
+      "status": "historical confirmed-defect reproduction; excludes binaries",
+      "member_count": 15
+    },
+    "integrated-fix-verification.json": {
+      "sha256": "5fd30a710e42520ee3732b73470870687f8511830cca98ce2e218062abd3279e",
+      "original_sha256": "5fd30a710e42520ee3732b73470870687f8511830cca98ce2e218062abd3279e",
+      "encoding": "identity",
+      "source": "/private/tmp/codebasegraph-integrated-availability-probe/integrated-fix-verification.json"
+    },
+    "direct-read-registration-fix-verification.tar.gz": {
+      "sha256": "9141fd2c55d0a8b074f6e0b324c4984c5ba0e429c6dda15a7160af01aef1b722",
+      "encoding": "gzip/tar",
+      "status": "reviewed frozen fix worker and independent verification; excludes binaries",
+      "member_count": 33
+    },
+    "final-foundation-verification.tar.gz": {
+      "sha256": "3703829e77e3f4d2f47b64b40e187bbda7b3e66b7628b1e73f5f7ab0757b2a74",
+      "encoding": "gzip/tar",
+      "status": "final source/checks/binary identities, passing JUnit and preserved sandbox failure; no binaries",
+      "member_count": 14
+    },
+    "final-foundation-junit.xml": {
+      "sha256": "698d41772c871f1398e5cf926c415a93af41ef65bd73b298220323266a7e761f",
+      "original_sha256": "698d41772c871f1398e5cf926c415a93af41ef65bd73b298220323266a7e761f",
+      "encoding": "identity",
+      "source": "/private/tmp/codebasegraph-disk-cleanup-7t9af0a6/final-foundation-verification/junit.xml"
     }
   },
   "toolchain": {
@@ -295,7 +331,7 @@
     "mixed Managed recovery/cleanup classification",
     "whole-state churn/control, graph equivalence and cache reuse",
     "warning-free clippy/checks and native platforms/MSRV",
-    "fresh final integrated review and aggregate closure"
+    "fresh full-runtime integrated review and aggregate closure"
   ],
   "aggregate_closed": false,
   "scryer_local_status": {
@@ -305,14 +341,18 @@
     "responsibility": "resp-ejzb4s",
     "attached_executed_tests": 20,
     "responsibilities_with_actual_verdicts": 41,
-    "unrelated_missing_verdicts_retained": true
+    "unrelated_missing_verdicts_retained": true,
+    "latest_ingested_run": "bda126c4-1f9e-4980-9545-acf34ec6de22"
   },
   "integrated_review": {
-    "status": "fresh read-only review in progress",
+    "status": "P2 Direct read-registration defect resolved; no new confirmedP0-P3 on exact final source. Full collector/scheduler and aggregate acceptance pending.",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "max",
     "reviewed_commit": "e96893e025eda512b13f2a9ba754adbac45f4a49",
-    "baseline": "018df35e72447fc3e014e950d1d3c6648bbd4820"
+    "baseline": "018df35e72447fc3e014e950d1d3c6648bbd4820",
+    "report": "graph-disk-cleanup-foundation-evidence/integrated-foundation-review.json",
+    "focused_verification": "graph-disk-cleanup-foundation-evidence/integrated-fix-verification.json",
+    "final_code_commit": "077a8d8e1e75dbca553a4d9b0f65412ca9c5def1"
   },
   "prototype_recovery_check": {
     "base_commit": "e96893e025eda512b13f2a9ba754adbac45f4a49",
@@ -335,5 +375,29 @@
     "isolated_checkout_validation": "unavailable: cloned bundle root is not configured with the registered MCP server",
     "mechanical_relative_path_checks": 15,
     "mechanical_check_is_not_wiki_qualification": true
+  },
+  "final_verified_snapshot": {
+    "code_commit": "077a8d8e1e75dbca553a4d9b0f65412ca9c5def1",
+    "base_code_commit": "e96893e025eda512b13f2a9ba754adbac45f4a49",
+    "source_delta": {
+      "src/storage/direct.rs": "c40e99468c2ab0a465b7a5b5ee2a8e755c872d450da5e88cd212d91365691e25",
+      "src/storage/test_harness.rs": "3d94ecbe47000f8dcc77f0f2dff3a7ec3c0bdc5087b0ab3e01b3d78d1b5cdf58"
+    },
+    "src_rust_count": 137,
+    "canonical_source_identity": "b987bc054651cb0cb4fbfd56cff0e33f5c27d92bc27cb4680d79dbcdccb1d2f4",
+    "tracked_rust_and_manifests": 196,
+    "source_before_after_identical": true,
+    "binary_identities_before_after_identical": 12,
+    "passing_affected_testcases": 299,
+    "filtered_or_not_run": 407,
+    "run_id": "bda126c4-1f9e-4980-9545-acf34ec6de22",
+    "junit_sha256": "698d41772c871f1398e5cf926c415a93af41ef65bd73b298220323266a7e761f",
+    "workspace_all_targets_exit": 0,
+    "format_exit": 0,
+    "warnings": [
+      "warning: `codebase-graph` (lib) generated 75 warnings"
+    ],
+    "scope": "Reviewed foundations only, no automatic collector/scheduler/migration closure.",
+    "sandbox_failure_preserved": true
   }
 }
