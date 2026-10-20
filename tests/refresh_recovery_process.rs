@@ -43,6 +43,83 @@ impl Drop for ChildGuard {
     }
 }
 
+struct ManualBuild {
+    child: ChildGuard,
+    stdout: PathBuf,
+    stderr: PathBuf,
+}
+
+impl ManualBuild {
+    fn start(root: &Path) -> Self {
+        let stdout = root.join("manual-build.stdout");
+        let stderr = root.join("manual-build.stderr");
+        let child = ChildGuard(
+            Command::new(binary())
+                .current_dir(root)
+                .args([
+                    "build",
+                    "--repo-root",
+                    root.to_str().unwrap(),
+                    "--mode",
+                    "full",
+                    "--json",
+                ])
+                .stdin(Stdio::null())
+                .stdout(Stdio::from(fs::File::create(&stdout).unwrap()))
+                .stderr(Stdio::from(fs::File::create(&stderr).unwrap()))
+                .spawn()
+                .unwrap(),
+        );
+        Self {
+            child,
+            stdout,
+            stderr,
+        }
+    }
+
+    fn poll(&mut self) -> Option<std::process::ExitStatus> {
+        self.child.0.try_wait().unwrap()
+    }
+
+    fn diagnostics(&self) -> String {
+        fn bounded_log(path: &Path) -> String {
+            let mut text = String::new();
+            if let Ok(file) = fs::File::open(path) {
+                let _ = file.take(64 * 1024).read_to_string(&mut text);
+            }
+            text
+        }
+        format!(
+            "stdout:\n{}\nstderr:\n{}",
+            bounded_log(&self.stdout),
+            bounded_log(&self.stderr)
+        )
+    }
+
+    fn assert_success(&self, status: std::process::ExitStatus) {
+        assert!(
+            status.success(),
+            "manual build failed ({status}): {}",
+            self.diagnostics()
+        );
+    }
+
+    fn wait_for_success(&mut self) {
+        let deadline = Instant::now() + Duration::from_secs(90);
+        while Instant::now() < deadline {
+            if let Some(status) = self.poll() {
+                self.assert_success(status);
+                return;
+            }
+            thread::sleep(Duration::from_millis(25));
+        }
+        panic!(
+            "manual build did not finish within 90 seconds: {}",
+            self.diagnostics()
+        );
+    }
+}
+
 #[derive(Debug)]
 struct HttpResponse {
     status: u16,
@@ -473,6 +550,17 @@ fn wait_for_current_symbol(session: &mut McpSession, symbol: &str, path: &str) -
     panic!("automatic refresh did not publish {symbol}: {last}");
 }
 
+fn assert_recovered_refresh(health: &Value) {
+    assert_eq!(health["refresh"]["state"], "running", "{health}");
+    assert_eq!(health["refresh"]["task_alive"], true, "{health}");
+    assert_eq!(health["refresh"]["pending"], false, "{health}");
+    assert_eq!(health["refresh"]["last_error"], Value::Null, "{health}");
+    assert_eq!(
+        health["refresh"]["dirty_epoch"], health["refresh"]["reconciled_epoch"],
+        "{health}"
+    );
+}
+
 // Run in a separate test process so a mistaken stale-PID signal is observable
 // without terminating the process which reports this regression's assertions.
 #[test]
@@ -488,6 +576,15 @@ fn unrelated_worker_pid_fixture() {
 
 #[test]
 fn legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership() {
+    legacy_worker_pid_recovery(false);
+}
+
+#[test]
+fn manual_publication_does_not_prevent_later_legacy_pid_recovery() {
+    legacy_worker_pid_recovery(true);
+}
+
+fn legacy_worker_pid_recovery(manual_publication: bool) {
     use fs2::FileExt;
 
     let root = temp_repo();
@@ -544,6 +641,25 @@ fn legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership()
         "def latest_symbol():\n    return 2\n",
     )
     .unwrap();
+    let (pending_symbol, pending_path) = if manual_publication {
+        let before: Value =
+            serde_json::from_slice(&fs::read(storage.join("active.json")).unwrap()).unwrap();
+        ManualBuild::start(&root).wait_for_success();
+        let published: Value =
+            serde_json::from_slice(&fs::read(storage.join("active.json")).unwrap()).unwrap();
+        assert_ne!(published["generation_id"], before["generation_id"]);
+        assert!(unrelated.0.try_wait().unwrap().is_none());
+        // This edit precedes monitoring. Recovery must publish it without a
+        // second edit or manual deletion of ownership metadata.
+        fs::write(
+            root.join("after_manual.py"),
+            "def after_manual_symbol():\n    return 4\n",
+        )
+        .unwrap();
+        ("after_manual_symbol", "after_manual.py")
+    } else {
+        ("latest_symbol", "latest.py")
+    };
     let previous: Value =
         serde_json::from_slice(&fs::read(storage.join("active.json")).unwrap()).unwrap();
     let writer = fs::OpenOptions::new()
@@ -557,11 +673,20 @@ fn legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership()
 
     let deadline = Instant::now() + Duration::from_secs(30);
     let mut passed_legacy_recovery = false;
+    let mut last_ownership = Value::Null;
+    let mut last_recovery_error = None;
+    let mut next_health_poll = Instant::now();
     while Instant::now() < deadline {
         let state: Value = fs::read(&state_path)
             .ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok())
             .unwrap_or(Value::Null);
+        // Ownership diagnostics deliberately exclude private v2 capabilities.
+        last_ownership = json!({
+            "version": state["version"],
+            "build_id": state["build_id"],
+            "worker_pid": state["worker_pid"]
+        });
         if state["version"] == 2 {
             passed_legacy_recovery = true;
             break;
@@ -570,12 +695,18 @@ fn legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership()
             unrelated.0.try_wait().unwrap().is_none(),
             "recovery signalled the unrelated process"
         );
+        if Instant::now() >= next_health_poll {
+            if let Some(error) = session.health()["refresh"]["last_error"].as_str() {
+                last_recovery_error = Some(error.to_owned());
+            }
+            next_health_poll = Instant::now() + Duration::from_millis(250);
+        }
         thread::sleep(Duration::from_millis(50));
     }
-    assert!(
-        passed_legacy_recovery,
-        "a live unrelated PID blocked legacy metadata recovery"
-    );
+    if !passed_legacy_recovery {
+        let health = session.health();
+        panic!("a live unrelated PID blocked legacy metadata recovery; ownership={last_ownership}; last_recovery_error={last_recovery_error:?}; health={health}");
+    }
     let held: Value =
         serde_json::from_slice(&fs::read(storage.join("active.json")).unwrap()).unwrap();
     assert_eq!(
@@ -583,10 +714,21 @@ fn legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership()
         "refresh bypassed writer ownership"
     );
     assert!(unrelated.0.try_wait().unwrap().is_none());
+    assert!(session
+        .search_paths("initial_symbol")
+        .iter()
+        .any(|path| path == "initial.py"));
+    if manual_publication {
+        assert!(session
+            .search_paths("latest_symbol")
+            .iter()
+            .any(|path| path == "latest.py"));
+    }
     FileExt::unlock(&writer).unwrap();
     drop(writer);
 
-    let recovered = wait_for_current_symbol(&mut session, "latest_symbol", "latest.py");
+    let recovered = wait_for_current_symbol(&mut session, pending_symbol, pending_path);
+    assert_recovered_refresh(&recovered);
     assert_ne!(recovered["active_generation"], previous["generation_id"]);
     assert!(unrelated.0.try_wait().unwrap().is_none());
     fs::write(
@@ -594,7 +736,8 @@ fn legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership()
         "def follow_up_symbol():\n    return 3\n",
     )
     .unwrap();
-    wait_for_current_symbol(&mut session, "follow_up_symbol", "follow_up.py");
+    let followed = wait_for_current_symbol(&mut session, "follow_up_symbol", "follow_up.py");
+    assert_recovered_refresh(&followed);
     assert!(
         unrelated.0.try_wait().unwrap().is_none(),
         "a later refresh signalled the unrelated process"

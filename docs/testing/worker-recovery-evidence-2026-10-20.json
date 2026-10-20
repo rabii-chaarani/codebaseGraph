@@ -1,0 +1,252 @@
+{
+  "base_revision": "512b5dc197adf5590afa5d2f7b44550dfa32d8a2",
+  "failure_revision": "6aa5ba8bd99c3071e106a8bfc7a408652a8e4bb5",
+  "scope": "Specifications and regression tests only; existing PR145 runtime implementation reused unchanged.",
+  "runtime_source_diff": [],
+  "environment": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "machine": "arm64",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+  },
+  "test_source_sha256": {
+    "tests/refresh_recovery_process.rs": "3c12f10d6b8b292f686d44d6eddf8a91efbdc49b19100ed340c3998b045b4e7a",
+    "tests/support/lifecycle_faults.rs": "c075bf1d9f247920d5052d607de2a42b2c2f76fc0cbdc120f846b42b8cf581f8"
+  },
+  "new_regressions": [
+    "lifecycle_faults::manual_publication_waits_for_failed_phase_tree_to_exit",
+    "manual_publication_does_not_prevent_later_legacy_pid_recovery"
+  ],
+  "main_execution": {
+    "focused_serial": {
+      "passed": 2,
+      "failed": 0,
+      "source_qualification": "This initial run preceded the diagnostic-only edit retaining retry errors. The complete affected run and its serial rerun use the final test-source hashes recorded above."
+    },
+    "complete_affected_parallel": {
+      "passed": 19,
+      "failed": 2,
+      "workers": 2,
+      "duration_seconds": 411.097
+    },
+    "failed_setup_serial_rerun": {
+      "passed": 2,
+      "failed": 0,
+      "workers": 1,
+      "duration_seconds": 103.637
+    },
+    "unique_cases_with_a_passing_observation": 21,
+    "combined_observations_are_not_a_single_all_green_run": true,
+    "existing_ignored_subprocess_fixture": "unrelated_worker_pid_fixture",
+    "final_case_observations": {
+      "config_hot_reload_applies_excludes_while_cli_policy_and_backend_overrides_persist": "passed",
+      "blocked_refresh_recovers_after_memory_budget_restore_without_source_edit": "passed",
+      "legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership": "passed",
+      "lifecycle_faults::control_reply_does_not_wait_for_connection_eof": "passed",
+      "lifecycle_faults::fixture_cleanup_accepts_retired_startup_without_terminal_receipt": "passed",
+      "lifecycle_faults::fixture_cleanup_keeps_unproven_or_locked_containment": "passed",
+      "lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit": "passed",
+      "lifecycle_faults::manual_publication_waits_for_failed_phase_tree_to_exit": "passed",
+      "lifecycle_faults::missing_guardian_closes_the_build_tree_and_automatic_refresh_retries": "passed",
+      "lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree": "passed",
+      "lifecycle_faults::owner_exit_before_guardian_readiness_cleans_gated_tree": "passed",
+      "lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery": "passed",
+      "lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers": "passed",
+      "lifecycle_faults::standalone_owner_loss_preserves_candidate_while_guardian_is_unavailable": "passed",
+      "lifecycle_faults::real_loader_memory_failure_cleans_containment_and_retries_pending_edit": "passed",
+      "lifecycle_faults::timing_wrapper_keeps_loader_in_build_containment": "passed",
+      "lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven": "passed",
+      "lifecycle_faults::verified_abandoned_guardian_is_terminated_before_automatic_refresh": "passed",
+      "recovery_wait_requires_ready_reconciliation_not_a_clock_window": "passed",
+      "retired_internal_roles_require_restart_before_reading_requests": "passed",
+      "manual_publication_does_not_prevent_later_legacy_pid_recovery": "passed"
+    }
+  },
+  "old_pid": {
+    "exit_code": 101,
+    "retained_v1_record_observed": true,
+    "orphan_recovery_error_observed": true,
+    "exact_new_test_with_binary_override": true,
+    "manual_build_completed_before_recovery_failure": true
+  },
+  "old_tree": {
+    "unmodified_binary": true,
+    "native_phase_positively_stopped": true,
+    "orphan_parent_pid": 1,
+    "manual_exit_code": 0,
+    "publication_while_original_phase_alive": true,
+    "all_owned_executions_exited": true,
+    "direct_children_reaped": true
+  },
+  "checks": {
+    "format": "passed",
+    "strict_workspace_clippy_all_targets_all_features": "passed",
+    "junit": "Both main reports ingested into scoped Scryer project; failed claim cleared by executed serial rerun.",
+    "wiki": "Configured k_wiki knowledge bundle validation and links passed; site rebuilt. Authored source pages transferred unchanged to main worktree."
+  },
+  "reviews": {
+    "proposal": {
+      "model": "gpt-6.1-sol",
+      "effort": "max",
+      "result": "Proceed with accepted revisions"
+    },
+    "final": {
+      "model": "gpt-6.1-sol",
+      "effort": "max",
+      "source_review": "No confirmed P0-P3 defects; final evidence/document review recorded in contract."
+    }
+  },
+  "local_artifacts": "/private/tmp/codebase-graph-recovery-spec-evidence",
+  "artifact_sha256": {
+    "main-initial-focused-junit.xml": "98146e8041e84676c54768d894675de1d20b3e288558f01fe92cb88eb49d1bc4",
+    "main-parallel-junit.xml": "d067870c5277b1dd7476e361285eacda35e1c62d73e88a1a549e29ab789a11a8",
+    "main-serial-rerun-junit.xml": "aa79286bd17181435cd87ce7109f49b3fe2573d7f6663c9a86211b637bf29b91",
+    "baseline-pid-result.json": "dde3fd36db66ef76cc182082ffe4791059f697c0fcb2874bbd45b4ef140a76ea",
+    "baseline-tree-result.json": "118315c1ad7d2374b3622887bd3e08f821a188126a3898e5e0332964f32272ea",
+    "run_baseline_pid.py": "3a70986af064535aae143c03f1f38a2915cf2085d1229f747f13fc05966df038",
+    "run_baseline_tree.py": "cdd2c69a706d1067fa983a9b7ff531f64593a696d98d7862752d122c1ce56aaf",
+    "nextest.toml": "7e697589bc8842acad3e842a9f08895aea98bbc9003a8af22c2754913f35b85c"
+  },
+  "limitations": [
+    "Native execution was local macOS arm64; Linux and Windows native qualification is not established by these local runs.",
+    "Two existing fault fixtures failed before their intended injection in a two-worker run; both passed unchanged in the serial rerun. The first-execution exit cause remains unproven.",
+    "The phase readiness barrier precedes database opening. The new case verifies process lifetime and sampled publication ordering, not in-flight COPY resource release or every shorter race.",
+    "The old TREE driver differs because the old binary has no current debug barrier; the demonstrated failure is an owned stopped orphan surviving through successful publication.",
+    "The configured wiki connector rejects the isolated worktree as unregistered; validation/build used its configured same-repository bundle and byte-identical transferred pages.",
+    "The Scryer baseline import preserves approved identities and mappings; unrelated missing historical verdicts are outside this tests-only qualification.",
+    "No installation or running-daemon restart was performed."
+  ],
+  "commands": [
+    {
+      "id": "main-focused",
+      "cwd": "/Users/rabii/.codex/worktrees/worker-recovery-spec-tests/codebaseGraph",
+      "argv": [
+        "cargo",
+        "nextest",
+        "run",
+        "--locked",
+        "--offline",
+        "--test",
+        "refresh_recovery_process",
+        "--config-file",
+        "/private/tmp/codebase-graph-recovery-spec-evidence/nextest.toml",
+        "--profile",
+        "recovery",
+        "-E",
+        "test(manual_publication)"
+      ],
+      "environment": {
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      }
+    },
+    {
+      "id": "main-complete-affected-parallel",
+      "cwd": "/Users/rabii/.codex/worktrees/worker-recovery-spec-tests/codebaseGraph",
+      "argv": [
+        "cargo",
+        "nextest",
+        "run",
+        "--locked",
+        "--offline",
+        "--test",
+        "refresh_recovery_process",
+        "--config-file",
+        "/private/tmp/codebase-graph-recovery-spec-evidence/nextest.toml",
+        "--profile",
+        "recovery",
+        "--test-threads",
+        "2"
+      ],
+      "environment": {
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      }
+    },
+    {
+      "id": "main-failed-setup-serial-rerun",
+      "cwd": "/Users/rabii/.codex/worktrees/worker-recovery-spec-tests/codebaseGraph",
+      "argv": [
+        "cargo",
+        "nextest",
+        "run",
+        "--locked",
+        "--offline",
+        "--test",
+        "refresh_recovery_process",
+        "--config-file",
+        "/private/tmp/codebase-graph-recovery-spec-evidence/nextest.toml",
+        "--profile",
+        "recovery",
+        "-E",
+        "test(missing_guardian_closes_the_build_tree_and_automatic_refresh_retries) | test(standalone_owner_loss_preserves_candidate_while_guardian_is_unavailable)"
+      ],
+      "environment": {
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      }
+    },
+    {
+      "id": "format",
+      "cwd": "/Users/rabii/.codex/worktrees/worker-recovery-spec-tests/codebaseGraph",
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "environment": {
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      }
+    },
+    {
+      "id": "strict-clippy",
+      "cwd": "/Users/rabii/.codex/worktrees/worker-recovery-spec-tests/codebaseGraph",
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "environment": {
+        "CARGO_TARGET_DIR": "/Users/rabii/Projects/Repositories/codebaseGraph/target"
+      }
+    },
+    {
+      "id": "old-pid-driver",
+      "argv": [
+        "python3",
+        "/private/tmp/codebase-graph-recovery-spec-evidence/run_baseline_pid.py"
+      ],
+      "test_argv": [
+        "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/refresh_recovery_process-a831b40dcd3acc3b",
+        "--exact",
+        "manual_publication_does_not_prevent_later_legacy_pid_recovery",
+        "--nocapture"
+      ],
+      "test_environment": {
+        "CARGO_BIN_EXE_codebase-graph": "/private/tmp/codebase-graph-recovery-spec-evidence/baseline-codebase-graph",
+        "RUST_TEST_THREADS": "1"
+      },
+      "method": "Run the exact new stale-PID regression against the preserved unmodified old runtime binary."
+    },
+    {
+      "id": "old-tree-driver",
+      "argv": [
+        "python3",
+        "/private/tmp/codebase-graph-recovery-spec-evidence/run_baseline_tree.py"
+      ],
+      "method": "Use the preserved unmodified old binary in a unique temporary repository; passively identify a fixture-owned native phase, positively observe SIGSTOP, terminate its owned outer worker, and observe publication while that phase remains alive. Exit and reap owned executions in finally cleanup."
+    }
+  ],
+  "nextest_profile": {
+    "name": "recovery",
+    "test_threads": 1,
+    "fail_fast": false,
+    "junit_path": "/private/tmp/codebase-graph-recovery-spec-evidence/main-recovery-junit.xml",
+    "store_success_output": true,
+    "store_failure_output": true
+  }
+}
