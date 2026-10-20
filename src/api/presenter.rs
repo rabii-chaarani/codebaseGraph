@@ -128,3 +128,43 @@ mod tests {
         assert_eq!(response.payload["structured"], payload);
     }
 }
+
+#[cfg(test)]
+mod maintenance_tests {
+    use super::*;
+    use crate::protocol::{MaintenanceAttempt, MaintenanceInventoryStatus, MaintenanceSummary};
+
+    #[test]
+    fn maintenance_block_preserves_nulls_and_complete_structured_summary() {
+        let mut summary = MaintenanceSummary::default();
+        summary.inventory_status = Some(MaintenanceInventoryStatus::Busy);
+        summary.reasons = vec!["writer_in_use".into()];
+        summary.errors = vec!["fixture permission failure".into()];
+        summary.running = true;
+        summary.last_attempt = Some(MaintenanceAttempt {
+            started_at_unix_ms: 42,
+            finished_at_unix_ms: None,
+            status: None,
+            attempted_entries: None,
+            deleted_entries: None,
+            reclaimed_allocated_bytes: None,
+            continuation_phase: None,
+        });
+        let payload =
+            serde_json::json!({"ok": true, "cleanup_pending": false, "maintenance": summary});
+        let block = present_operation_response(
+            OperationResponse::from_payload("health", OutputFormat::Typed, payload.clone()),
+            OutputFormat::Block,
+        );
+        assert_eq!(block.payload["structured"], payload);
+        let text = block.payload["text"].as_str().unwrap();
+        assert!(text.contains("maintenance.bytes.total logical_bytes=null allocated_bytes=null"));
+        assert!(text.contains(
+            "maintenance.bytes.by_category.active_cache logical_bytes=null allocated_bytes=null"
+        ));
+        assert!(text.contains("status=null attempted_entries=null deleted_entries=null reclaimed_allocated_bytes=null"));
+        assert!(text.contains("writer_in_use"));
+        assert!(text.contains("fixture permission failure"));
+        assert!(text.contains("cleanup_pending=false"));
+    }
+}

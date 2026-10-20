@@ -106,6 +106,8 @@ pub enum OutputFormat {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HealthRequest {
     pub repo: RepoSelector,
+    #[serde(default)]
+    pub confirm_legacy_quiescence: bool,
     pub refresh_status: Option<serde_json::Value>,
     pub output_format: OutputFormat,
 }
@@ -439,10 +441,21 @@ mod tests {
     }
 
     #[test]
+    fn older_health_requests_decode_with_confirmation_disabled() {
+        let request: HealthRequest = serde_json::from_value(
+            json!({"repo": repository(), "refresh_status": null, "output_format": "Typed"}),
+        )
+        .unwrap();
+        assert!(!request.confirm_legacy_quiescence);
+        assert!(serde_json::from_value::<HealthRequest>(json!({"repo": repository(), "refresh_status": null, "output_format": "Typed", "confirm_legacy_quiescence": "true"})).is_err());
+    }
+
+    #[test]
     fn public_operation_contracts_round_trip_without_transport_types() {
         let requests = vec![
             OperationRequest::Health(HealthRequest {
                 repo: repository(),
+                confirm_legacy_quiescence: false,
                 refresh_status: Some(json!({"running": true})),
                 output_format: OutputFormat::Block,
             }),

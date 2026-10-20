@@ -89,7 +89,7 @@ impl ApiCore {
             OperationDescriptor {
                 id: "health",
                 summary: "Check codebase graph and manifest availability",
-                request_schema: empty_request_schema,
+                request_schema: health_request_schema,
                 surfaces: &["api", "cli", "mcp"],
                 supported_outputs: &[OutputFormat::Typed, OutputFormat::Block],
                 mcp_tool_name: Some("graph_health"),
@@ -343,6 +343,16 @@ fn build_registry(descriptors: impl IntoIterator<Item = OperationDescriptor>) ->
         }
     }
     OperationRegistry { operations: by_id }
+}
+
+fn health_request_schema() -> serde_json::Value {
+    json!({
+        "confirm_legacy_quiescence": {
+            "type": "boolean",
+            "default": false,
+            "description": "Confirm all old daemons/helpers have been stopped and upgraded before this maintenance request. This operator precondition does not replace destination ownership checks."
+        }
+    })
 }
 
 fn empty_request_schema() -> serde_json::Value {
@@ -662,12 +672,18 @@ fn execute_health(
         "freshness": refresh_health["freshness"].clone(),
         "refresh_readiness": refresh_health["readiness"].clone(),
         "refresh_health": refresh_health,
+        "maintenance": maintenance_health_payload(&crate::protocol::MaintenanceSummary::default()),
     });
     Ok(OperationResponse::from_payload(
         "health",
         output_format,
         payload,
     ))
+}
+
+// Only compact cached summaries belong on this path; never scan an inventory.
+fn maintenance_health_payload(summary: &crate::protocol::MaintenanceSummary) -> serde_json::Value {
+    serde_json::to_value(summary).expect("maintenance summary contains only serializable values")
 }
 
 fn unix_time_millis() -> u128 {
@@ -1235,6 +1251,29 @@ mod tests {
         assert_eq!(
             response.payload["grammar_version"],
             "tree_sitter_python@0.25.0"
+        );
+    }
+
+    #[test]
+    fn health_schema_documents_explicit_default_false_quiescence() {
+        let descriptor = ApiCore::new()
+            .operations()
+            .into_iter()
+            .find(|descriptor| descriptor.id == "health")
+            .unwrap();
+        let schema = (descriptor.request_schema)();
+        assert_eq!(schema["confirm_legacy_quiescence"]["type"], "boolean");
+        assert_eq!(schema["confirm_legacy_quiescence"]["default"], false);
+        assert!(schema["confirm_legacy_quiescence"]["description"]
+            .as_str()
+            .unwrap()
+            .contains("stopped and upgraded"));
+        let payload =
+            super::maintenance_health_payload(&crate::protocol::MaintenanceSummary::default());
+        assert!(payload["bytes"]["total"]["allocated_bytes"].is_null());
+        assert_eq!(
+            payload["reasons"],
+            serde_json::json!(["maintenance_not_observed"])
         );
     }
 

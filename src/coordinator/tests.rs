@@ -585,3 +585,108 @@ fn temp_dir(label: &str) -> PathBuf {
     fs::create_dir_all(&path).unwrap();
     path
 }
+
+fn maintenance_test_job() -> ExecutionJob {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let stream = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (_server, _) = listener.accept().unwrap();
+    let registry = Arc::new(ConnectionRegistry::default());
+    let connection = registry.register(&stream).unwrap();
+    ExecutionJob {
+        operation_id: "health".into(),
+        invocation: test_invocation(),
+        context: ExecutionContext::with_timeout(Instant::now(), Duration::from_secs(60)),
+        stream,
+        _connection: connection,
+    }
+}
+
+#[test]
+fn maintenance_permit_blocks_real_execution_until_actual_drop() {
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    let permit = dispatcher.try_acquire_maintenance().unwrap();
+    assert!(dispatcher.active());
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    let rejected = dispatcher.try_submit(maintenance_test_job()).unwrap_err();
+    assert!(dispatcher.active());
+    drop(permit);
+    assert!(!dispatcher.active());
+    dispatcher.try_submit(*rejected).unwrap();
+    // Taking the queued job does not release actual operation ownership.
+    let job = dispatcher.take().unwrap();
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    drop(job);
+    dispatcher.finish_one();
+    assert!(dispatcher.try_acquire_maintenance().is_some());
+}
+
+#[test]
+fn maintenance_cannot_bypass_queued_or_active_real_execution() {
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    dispatcher.try_submit(maintenance_test_job()).unwrap();
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    let job = dispatcher.take().unwrap();
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    drop(job);
+    dispatcher.finish_one();
+    let permit = dispatcher.try_acquire_maintenance().unwrap();
+    dispatcher.stop_admission();
+    assert!(dispatcher.active());
+    drop(permit);
+    assert!(!dispatcher.active());
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    assert!(dispatcher.try_submit(maintenance_test_job()).is_err());
+}
+
+#[test]
+fn maintenance_permit_is_exclusive_during_simultaneous_grant_requests() {
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    let start = Arc::new(std::sync::Barrier::new(9));
+    let acquired = Arc::new(std::sync::Barrier::new(9));
+    let release = Arc::new(std::sync::Barrier::new(9));
+    let mut workers = Vec::new();
+    for _ in 0..8 {
+        let dispatcher = Arc::clone(&dispatcher);
+        let start = Arc::clone(&start);
+        let acquired = Arc::clone(&acquired);
+        let release = Arc::clone(&release);
+        workers.push(thread::spawn(move || {
+            start.wait();
+            let permit = dispatcher.try_acquire_maintenance();
+            let won = permit.is_some();
+            acquired.wait();
+            release.wait();
+            drop(permit);
+            won
+        }));
+    }
+    start.wait();
+    acquired.wait();
+    assert!(dispatcher.active());
+    release.wait();
+    assert_eq!(
+        workers
+            .into_iter()
+            .map(|worker| worker.join().unwrap())
+            .filter(|won| *won)
+            .count(),
+        1
+    );
+    assert!(!dispatcher.active());
+}
+
+#[test]
+fn maintenance_panic_releases_slot_without_resurrecting_stopped_admission() {
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    let result = std::panic::catch_unwind({
+        let dispatcher = Arc::clone(&dispatcher);
+        move || {
+            let _permit = dispatcher.try_acquire_maintenance().unwrap();
+            dispatcher.stop_admission();
+            panic!("fixture maintenance panic");
+        }
+    });
+    assert!(result.is_err());
+    assert!(!dispatcher.active());
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+}

@@ -171,7 +171,33 @@ struct ExecutionDispatcher {
     active_snapshot: AtomicBool,
 }
 
+/// Noncloneable ownership of the dispatcher's real execution slot. It has no
+/// caller deadline: only completion/drop of the actual maintenance work releases
+/// admission, including when its initiating caller has gone away.
+#[derive(Debug)]
+struct MaintenanceExecutionPermit {
+    dispatcher: Arc<ExecutionDispatcher>,
+}
+
+impl Drop for MaintenanceExecutionPermit {
+    fn drop(&mut self) {
+        self.dispatcher.finish_one();
+    }
+}
+
 impl ExecutionDispatcher {
+    fn try_acquire_maintenance(self: &Arc<Self>) -> Option<MaintenanceExecutionPermit> {
+        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        if state.stopping || state.active || state.job.is_some() {
+            return None;
+        }
+        state.active = true;
+        self.active_snapshot.store(true, Ordering::Release);
+        Some(MaintenanceExecutionPermit {
+            dispatcher: Arc::clone(self),
+        })
+    }
+
     fn try_submit(&self, job: ExecutionJob) -> Result<(), Box<ExecutionJob>> {
         let mut state = self
             .state
