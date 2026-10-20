@@ -22,7 +22,7 @@ bundled-windows-extensions = ["codebase-graph/bundled-windows-extensions"]
 
 [dependencies]
 # The patched 4.1 backport preserves the workspace's Rust 1.82 MSRV.
-ammonia = "~4.1.7"
+ammonia = "~4.1.8"
 axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
 codebase-graph = { version = "3.0.4", path = "../.." }
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
