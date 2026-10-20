@@ -5,6 +5,7 @@ This checks evidence integrity, not implementation correctness or platform gates
 """
 
 import hashlib
+import gzip
 import json
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -77,6 +78,11 @@ def audit(root=None):
     reviews = json.loads((root / "review-outcomes.json").read_text())
     for artifact in reviews["s3_expanded_partial"]["executed_failure_artifacts"]:
         assert sha256(root / artifact["path"]) == artifact["sha256"]
+        if artifact.get("encoding") == "gzip":
+            decoded = gzip.decompress((root / artifact["path"]).read_bytes())
+            assert hashlib.sha256(decoded).hexdigest() == artifact["decoded_sha256"]
+        else:
+            assert artifact.get("encoding") is None, "unsupported evidence encoding"
     scheduler = reviews["s4_scheduler_primitive"]["actual_junit"]
     assert sha256(root / scheduler["path"]) == scheduler["sha256"]
     external = json.loads((root.parent / index["s5_external_execution"]).read_text())

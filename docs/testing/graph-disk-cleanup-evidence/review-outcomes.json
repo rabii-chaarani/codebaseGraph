@@ -13,8 +13,14 @@
         "sha256": "ffd58ad5367a31890d30ae14515523e74e76c810742d011f028c46a4729ae6ed"
       },
       {
-        "path": "s3-expanded-zero-budget-probe-output.txt",
-        "sha256": "c84d342763d48ca6fee1d2d644bb05cf49b4cd4b2f9f9cc26c21a9e4e2f2fc6c"
+        "path": "s3-expanded-zero-budget-probe-output.txt.gz",
+        "sha256": "9deb649f914ef65bc0ad3dc7632409c2b4d4615091c8ee74781b4e390abf806a",
+        "encoding": "gzip",
+        "decoded_sha256": "c84d342763d48ca6fee1d2d644bb05cf49b4cd4b2f9f9cc26c21a9e4e2f2fc6c",
+        "original_source_path": "/private/tmp/codebasegraph-s3-expanded-review-axcpl_ww/zero-budget-probe-output.txt",
+        "historical_repository_path": "docs/testing/graph-disk-cleanup-evidence/s3-expanded-zero-budget-probe-output.txt",
+        "historical_commit": "9eaa8dedf4f626ebf0974f327f81d0a3c0315e57",
+        "archive_method": "gzip.GzipFile(filename=\"\",mtime=0); exact originalbytes, no trimming or newline normalization"
       }
     ],
     "reviewer": {

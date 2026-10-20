@@ -5,16 +5,18 @@
     "docs/testing/graph-disk-cleanup-evidence/test_audit.py",
     "-v"
   ],
-  "executed_utc": "2026-10-20T17:55:36.307466+00:00",
+  "executed_utc": "2026-10-20T18:02:15.736094+00:00",
   "actual_exit_code": 0,
-  "actual_result": "8 unittest cases passed, including original-report control and7isolated evidence mutations",
+  "actual_result": "10 unittestcases passed: originalreportcontrol,7semanticmutations,losslessgziphistorycheck,validgzipdecodedtamperrejection",
   "stdout": "audit-regressions.stdout",
   "stderr": "audit-regressions.stderr",
   "sha256": {
-    "audit.py": "03cb5168970c16f3691018510a1ad0c4b61f0bd2800ed4267d1869cb8fc57efe",
-    "test_audit.py": "a18988b8ed73c090b3b05337cf6f2150b619b403be2e3cd9cc7387971a02e9c9",
+    "audit.py": "316630c38e1638370b8c1873174d4311cc32ae4d0d9bcbbf0045e1083ccfb518",
+    "test_audit.py": "b317ac2a5f4ab7ec3c52e98169e37090d65c9a7a92d397bd898962516f6f545c",
     "audit-regressions.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "audit-regressions.stderr": "e4ed00080d9030eba59f6c9af6ac3d6b784e69ad1e9dcb2ce9107c19fb07be0d"
+    "audit-regressions.stderr": "37deacba5b2b624d0962949aa5cb60ce368a873c072cfff764cf836bb098a66b"
   },
-  "limitations": "These are audit correctness regressions, not productioncollectorqualification and notJUnit."
+  "historical_eight_regression_execution": "historical-eight-audit-regression-execution.json",
+  "historical_eight_source_commit": "9eaa8dedf4f626ebf0974f327f81d0a3c0315e57",
+  "limitations": "Auditcorrectnessregressions, not productioncollectorqualification andnotJUnit."
 }

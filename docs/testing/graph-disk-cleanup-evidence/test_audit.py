@@ -2,6 +2,7 @@
 
 import contextlib
 import hashlib
+import gzip
 import importlib.util
 import io
 import json
@@ -50,6 +51,25 @@ class EvidenceMutationTests(unittest.TestCase):
     def test_original_actual_reports_pass(self):
         with contextlib.redirect_stdout(io.StringIO()):
             AUDIT.audit(self.root)
+
+    def test_compressed_artifact_matches_historical_decoded_bytes(self):
+        data = self.read("review-outcomes.json")
+        artifact = next(a for a in data["s3_expanded_partial"]["executed_failure_artifacts"] if a.get("encoding") == "gzip")
+        decoded = gzip.decompress((self.root / artifact["path"]).read_bytes())
+        historical = self.read("s5-narrow-initial-checkpoint.json")
+        historical_hash = historical["owned_files_sha256"][artifact["historical_repository_path"]]
+        self.assertEqual(hashlib.sha256(decoded).hexdigest(), historical_hash)
+        self.assertEqual(artifact["decoded_sha256"], historical_hash)
+        self.assertEqual(artifact["historical_commit"], "9eaa8dedf4f626ebf0974f327f81d0a3c0315e57")
+
+    def test_compressed_payload_tamper_rejected_even_with_matching_encoded_hash(self):
+        data = self.read("review-outcomes.json")
+        artifact = next(a for a in data["s3_expanded_partial"]["executed_failure_artifacts"] if a.get("encoding") == "gzip")
+        encoded = gzip.compress(b"changed observation output\n", mtime=0)
+        (self.root / artifact["path"]).write_bytes(encoded)
+        artifact["sha256"] = hashlib.sha256(encoded).hexdigest()
+        self.write("review-outcomes.json", data)
+        self.rejected()
 
     def test_named_foundation_skip_rejected_even_with_matching_hash_and_counts(self):
         data = self.read("foundation-reports.json")
