@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="6" failures="0" errors="0" uuid="80fc793e-7da4-425f-a25e-23a7aeec1197" timestamp="2026-10-21T04:01:06.534+09:30" time="3.167">
+    <testsuite name="codebase-graph" tests="6" disabled="0" errors="0" failures="0">
+        <testcase name="api::context::tests::dc_epoch_optional_direct_cleanup_keeps_both_runtime_selectors_readable_and_pending" classname="codebase-graph" timestamp="2026-10-21T04:01:06.534+09:30" time="0.612">
+        </testcase>
+        <testcase name="api::context::tests::dc_epoch_optional_managed_cleanup_keeps_runtime_readable_and_pending" classname="codebase-graph" timestamp="2026-10-21T04:01:07.147+09:30" time="0.923">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay" classname="codebase-graph" timestamp="2026-10-21T04:01:08.070+09:30" time="0.336">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue" classname="codebase-graph" timestamp="2026-10-21T04:01:08.406+09:30" time="0.869">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::review_epoch_corrupt_control_blocks_direct_read_with_unpublished_candidate" classname="codebase-graph" timestamp="2026-10-21T04:01:09.276+09:30" time="0.110">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::review_epoch_corrupt_control_blocks_managed_runtime_with_retained_generation" classname="codebase-graph" timestamp="2026-10-21T04:01:09.386+09:30" time="0.315">
+        </testcase>
+    </testsuite>
+</testsuites>
