@@ -120,7 +120,6 @@ impl ManagedLayout {
             self.storage_root().to_path_buf(),
             self.generations_root(),
             self.runs_root(),
-            self.artifacts_root(),
         ] {
             fs::create_dir_all(&root)?;
             let metadata = fs::symlink_metadata(&root)?;
@@ -131,6 +130,7 @@ impl ManagedLayout {
                 )));
             }
         }
+        super::maintenance_ownership::ArtifactUseLease::ensure_root(&self.artifacts_root())?;
         Ok(())
     }
 }
@@ -283,6 +283,16 @@ impl DirectLayout {
             ".direct-coordinator-{}.json",
             self.destination_key()
         ))
+    }
+
+    pub(crate) fn registration_path(&self) -> PathBuf {
+        self.db_path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join(format!(
+                ".direct-registration-{}.json",
+                self.destination_key()
+            ))
     }
 
     pub(crate) fn artifact_root_path(&self) -> PathBuf {

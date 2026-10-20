@@ -45,6 +45,12 @@ pub(crate) struct DirectWriteSession {
 }
 
 impl DirectWriteSession {
+    pub(crate) fn writer_lease(&self) -> Result<&WriterLease, NativeError> {
+        self.writer_lease
+            .as_ref()
+            .ok_or_else(|| NativeError::InvalidInput("write session is finished".into()))
+    }
+
     pub(crate) fn phase_workspace_root(&self) -> PathBuf {
         self.layout.phase_workspace_root()
     }
@@ -98,7 +104,20 @@ impl DirectStore {
 
     pub(crate) fn begin_write(&self) -> Result<DirectWriteSession, NativeError> {
         self.ensure_parents()?;
-        let writer_lease = self.open_writer_lock()?;
+        let mut writer_lease = self.open_writer_lock()?;
+        super::maintenance_ownership::register_direct_pair(&self.layout)?;
+        for resource in [self.layout.db_path(), self.layout.manifest_path()] {
+            writer_lease.retain(
+                super::maintenance_ownership::DatabaseUseLease::acquire_shared(resource)?
+                    .into_lock()?,
+            );
+        }
+        writer_lease.retain(
+            super::maintenance_ownership::ArtifactUseLease::acquire_shared(
+                &self.layout.artifact_root_path(),
+            )?
+            .into_lock(),
+        );
         collect_registry(&self.layout.phase_workspace_root()).map_err(NativeError::InvalidInput)?;
         self.recover_with_lock()?;
         cleanup_candidate_set(&self.layout)?;
@@ -110,7 +129,14 @@ impl DirectStore {
     }
 
     pub(crate) fn begin_read(&self) -> Result<WriterLease, NativeError> {
-        let writer_lease = self.open_writer_lock()?;
+        let mut writer_lease = self.open_writer_lock()?;
+        super::maintenance_ownership::register_direct_pair(&self.layout)?;
+        for resource in [self.layout.db_path(), self.layout.manifest_path()] {
+            writer_lease.retain(
+                super::maintenance_ownership::DatabaseUseLease::acquire_shared(resource)?
+                    .into_lock()?,
+            );
+        }
         if !matches!(
             probe_registry(&self.layout.phase_workspace_root()),
             Ok(true)

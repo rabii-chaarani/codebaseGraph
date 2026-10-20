@@ -17,14 +17,34 @@ use std::time::Instant;
 // files, so production currently loads one complete table document at a time.
 const COPY_FILE_CHUNK_BYTES: usize = usize::MAX;
 
+#[cfg(test)]
+thread_local! {
+    static OPERATION_FINISHED_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
+}
+
 pub fn execute_materialization_pipeline(
     request: &NativeSyntaxMaterializationRequest,
 ) -> Result<NativeSyntaxMaterializationResponse, NativeError> {
+    // Keep use ownership over scan, artifact persistence, sidecar construction,
+    // native helper lifetimes and final result assembly.
+    let _artifact_use = crate::storage::maintenance_ownership::ArtifactUseLease::acquire_shared(
+        &request.resolved_artifact_root(),
+    )?;
+    let _database_use = crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(
+        Path::new(&request.db_path),
+    )?;
     let mut phase_timings = BTreeMap::new();
     let scan_started = Instant::now();
     let scan = scan::scan_sources(request)?;
     phase_timings.insert("scan_seconds".to_string(), elapsed_seconds(scan_started));
-    execute_scanned_materialization(scan, phase_timings)
+    let result = execute_scanned_materialization(scan, phase_timings);
+    #[cfg(test)]
+    OPERATION_FINISHED_HOOK.with(|hook| {
+        if let Some(hook) = hook.borrow_mut().take() {
+            hook();
+        }
+    });
+    result
 }
 
 fn execute_scanned_materialization(
@@ -287,6 +307,71 @@ mod tests {
     use crate::protocol::{ManifestEntry, NativeManifest, OntologySchema};
     use std::path::{Path, PathBuf};
     use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn dc_s2_public_pipeline_keeps_use_guards_through_final_result_assembly() {
+        use crate::storage::maintenance_ownership::{ArtifactUseLease, DatabaseUseLease};
+        use std::sync::mpsc;
+        use std::time::Duration;
+        let root = unique_temp_dir("codebase-graph-s2-public-operation");
+        let source = root.join("repo");
+        let state = root.join("state");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("lib.rs"), "pub fn guarded() {}\n").unwrap();
+        let request = request(&source, &state, None, Vec::new());
+        let artifact = request.resolved_artifact_root();
+        let database = PathBuf::from(&request.db_path);
+        let (ready_tx, ready_rx) = mpsc::channel();
+        let (resume_tx, resume_rx) = mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            OPERATION_FINISHED_HOOK.with(|hook| {
+                *hook.borrow_mut() = Some(Box::new(move || {
+                    ready_tx.send(()).unwrap();
+                    resume_rx.recv_timeout(Duration::from_secs(30)).unwrap();
+                }))
+            });
+            execute_materialization_pipeline(&request)
+        });
+        ready_rx.recv_timeout(Duration::from_secs(60)).unwrap();
+        assert!(artifact.is_dir());
+        assert!(ArtifactUseLease::try_exclusive(&artifact)
+            .unwrap()
+            .is_none());
+        assert!(DatabaseUseLease::try_exclusive(&database)
+            .unwrap()
+            .is_none());
+        resume_tx.send(()).unwrap();
+        assert!(worker.join().unwrap().unwrap().database_written);
+        assert!(ArtifactUseLease::try_exclusive(&artifact)
+            .unwrap()
+            .is_some());
+        assert!(DatabaseUseLease::try_exclusive(&database)
+            .unwrap()
+            .is_some());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn dc_s2_pure_planning_does_not_create_use_coordination_files() {
+        let root = unique_temp_dir("codebase-graph-s2-pure-plan");
+        let source = root.join("repo");
+        let state = root.join("state");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("lib.rs"), "pub fn planned() {}\n").unwrap();
+        let request = request(&source, &state, None, Vec::new());
+        crate::execution::plan_materialization(&request).unwrap();
+        assert!(!request.resolved_artifact_root().exists());
+        // Scan keeps its established snapshot/staging behavior; pure planning
+        // adds neither artifact-use nor database-use coordination files.
+        if state.exists() {
+            assert!(!fs::read_dir(&state).unwrap().any(|entry| entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".database-use-")));
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn scanned_payload_completes_materialization_after_source_removal() {

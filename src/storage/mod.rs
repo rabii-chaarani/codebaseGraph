@@ -4,5 +4,6 @@ pub(crate) mod direct;
 pub(crate) mod inventory;
 pub(crate) mod layout;
 pub(crate) mod locks;
+pub(crate) mod maintenance_ownership;
 pub(crate) mod managed;
 pub(crate) mod run_workspace;

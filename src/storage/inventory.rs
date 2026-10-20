@@ -140,7 +140,7 @@ fn allocation(_: &Metadata) -> Option<u64> {
 }
 
 // Check every existing component: leaf checks alone allow symlinked ancestors.
-fn real_path(path: &Path) -> bool {
+pub(crate) fn real_path(path: &Path) -> bool {
     if !path.is_absolute() {
         return false;
     }
@@ -207,12 +207,12 @@ fn read_manifest_keys(path: &Path) -> Option<BTreeSet<String>> {
     Some(keys)
 }
 #[derive(Debug, PartialEq)]
-struct ObservedBinding {
-    storage: PathBuf,
-    current_direct: Option<DirectPair>,
+pub(crate) struct ObservedBinding {
+    pub(crate) storage: PathBuf,
+    pub(crate) current_direct: Option<DirectPair>,
     config: Option<serde_json::Value>,
 }
-fn default_direct(target: &MaintenanceTarget) -> DirectPair {
+pub(crate) fn default_direct(target: &MaintenanceTarget) -> DirectPair {
     DirectPair {
         database: target.state_root.join(format!(
             "{}_graph.ldb",
@@ -221,7 +221,7 @@ fn default_direct(target: &MaintenanceTarget) -> DirectPair {
         manifest: target.state_root.join("manifest.json"),
     }
 }
-fn same_physical_path(a: &Path, b: &Path) -> bool {
+pub(crate) fn same_physical_path(a: &Path, b: &Path) -> bool {
     match (fs::symlink_metadata(a), fs::symlink_metadata(b)) {
         (Ok(a), Ok(b)) if identity(&a).is_some() => identity(&a) == identity(&b),
         _ => match (fs::canonicalize(a), fs::canonicalize(b)) {
@@ -261,6 +261,18 @@ fn managed_direct_roles_overlap(
         .chain(std::iter::once(artifacts))
         .filter(|path| real_path(path))
         .any(|path| physically_within(path, storage) || physically_within(storage, path))
+}
+pub(crate) fn bound_roles_overlap(target: &MaintenanceTarget, binding: &ObservedBinding) -> bool {
+    let default = default_direct(target);
+    let direct = binding.current_direct.as_ref().unwrap_or(&default);
+    let mut paths = direct_bundle_paths(&direct.database);
+    paths.push(direct.manifest.clone());
+    real_path(&binding.storage)
+        && managed_direct_roles_overlap(
+            &binding.storage,
+            &paths,
+            &DirectLayout::new(&direct.database, &direct.manifest).artifact_root_path(),
+        )
 }
 fn observed_relative(path: &Path, root: &Path) -> Option<PathBuf> {
     if let Ok(relative) = path.strip_prefix(root) {
@@ -316,7 +328,7 @@ fn config_value_path(
 /// deserialization as proof of association. Conventional state has one exact
 /// location; a configured root must be named by a currently repository-bound
 /// config. Explicit Direct selectors preserve their raw lock/journal spelling.
-fn observe_binding(target: &MaintenanceTarget) -> Result<ObservedBinding, String> {
+pub(crate) fn observe_binding(target: &MaintenanceTarget) -> Result<ObservedBinding, String> {
     let conventional = target.repository_root.join(".codebaseGraph");
     if !target.repository_root.is_absolute()
         || !real_path(&target.repository_root)
@@ -644,7 +656,7 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
             }
         }
     }
-    if valid_storage && managed_direct_roles_overlap(&storage, &direct_paths, &direct_artifacts) {
+    if bound_roles_overlap(target, &binding) {
         result.status = InventoryStatus::Invalid;
         result
             .issues
@@ -663,7 +675,13 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
         for name in ["writer.lock", "state.lock"] {
             let path = storage.join(name);
             match existing_shared_lock(&path) {
-                Ok(file) => locks.push(file),
+                Ok(file) => {
+                    // Reader state sections remain short. Scans below recheck
+                    // the pointer/tree and hold only non-reader-facing guards.
+                    if name == "writer.lock" {
+                        locks.push(file);
+                    }
+                }
                 Err(e) => {
                     busy |= e.kind() == std::io::ErrorKind::WouldBlock;
                     result.issues.push(format!(
@@ -674,9 +692,18 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
             }
         }
     }
-    // The current cohort predates whole-operation artifact guards. Even two
-    // matching scans cannot prove an idle producer; do not claim completeness.
-    result.issues.push("artifact_root_cohort_unverified".into());
+    let artifact_roots = if binding.current_direct.is_some() {
+        vec![direct_artifacts.clone()]
+    } else {
+        vec![storage.join("artifacts")]
+    };
+    let mut artifact_observations = Vec::new();
+    for root in artifact_roots {
+        match super::maintenance_ownership::observe_artifact_cohort(&root) {
+            Ok(Some(guard)) => artifact_observations.push(guard),
+            _ => result.issues.push("artifact_root_cohort_unverified".into()),
+        }
+    }
     let pointer = if valid_storage {
         read_json(&storage.join("active.json"))
     } else {
@@ -847,6 +874,11 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
         && totals.allocated_bytes.is_some()
         && identity_supported()
         && result.issues.is_empty();
+    // Artifact exclusion alone cannot establish coherence of native helpers,
+    // startup ownership and recovery state. Keep this distinction explicit.
+    result
+        .issues
+        .push("worker_and_recovery_coherence_unverified".into());
     totals.observation_complete = false;
     result.totals = totals;
     result.status = if busy {

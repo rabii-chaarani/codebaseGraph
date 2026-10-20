@@ -98,6 +98,8 @@ pub(super) fn phase_worker_available() -> bool {
 }
 
 pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u64, NativeError> {
+    let _database_use =
+        crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(&request.db_path)?;
     let executable = PHASE_WORKER_EXECUTABLE.get().ok_or_else(|| {
         NativeError::InvalidInput("Ladybug phase worker executable is not registered".to_string())
     })?;
@@ -341,6 +343,9 @@ pub(crate) fn execute_phase_file(path: &Path) -> Result<(), String> {
     let request: LadybugWritePhaseRequest = serde_json::from_reader(BufReader::new(file))
         .map_err(|error| format!("failed to parse Ladybug phase request: {error}"))?;
     validate_phase_protocol(request.version)?;
+    let _database_use =
+        crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(&request.db_path)
+            .map_err(|error| error.to_string())?;
     #[cfg(debug_assertions)]
     wait_for_test_phase_barrier(path)?;
     execute_phase(&request).map_err(|error| error.to_string())

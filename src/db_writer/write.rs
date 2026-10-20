@@ -25,6 +25,9 @@ pub fn write_database(request: LadybugWriteRequest) -> Result<(), NativeError> {
 pub fn write_database_with_metrics(
     request: LadybugWriteRequest,
 ) -> Result<LadybugWriteMetrics, NativeError> {
+    let _database_use = crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(
+        Path::new(&request.db_path),
+    )?;
     if phase_worker_available() {
         write_database_isolated(&request)
     } else {

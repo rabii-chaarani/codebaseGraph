@@ -152,6 +152,12 @@ pub(crate) struct ManagedWriteSession {
 }
 
 impl ManagedWriteSession {
+    pub(crate) fn writer_lease(&self) -> Result<&WriterLease, NativeError> {
+        self.writer_lease
+            .as_ref()
+            .ok_or_else(|| NativeError::InvalidInput("write session is finished".into()))
+    }
+
     pub(crate) fn phase_workspace_root(&self) -> PathBuf {
         self.store.layout.phase_workspace_root()
     }

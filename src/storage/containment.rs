@@ -173,6 +173,62 @@ pub(crate) fn probe_lifecycle(path: &Path) -> Result<bool, String> {
     retire_lifecycle(path)?;
     Ok(true)
 }
+/// Nonmutating proof check for maintenance holding the exact lifecycle lease.
+/// Reuse the guardian's v2 receipt/FIFO/job policy; never authorize persisted PIDs.
+pub(crate) fn lifecycle_empty_with_owned(
+    path: &Path,
+    lease: &super::locks::LockedFile,
+) -> Result<bool, String> {
+    if !lease
+        .verifies(&path.join("lease"), super::locks::LockMode::Exclusive)
+        .map_err(|e| e.to_string())?
+        || !real_directory(path)
+    {
+        return Ok(false);
+    }
+    for name in ["ready.json", "proof.json", "receipt.json"] {
+        match fs::symlink_metadata(path.join(name)) {
+            Ok(metadata) => {
+                if metadata.file_type().is_symlink() || !metadata.is_file() {
+                    return Ok(false);
+                }
+                let file = fs::File::open(path.join(name)).map_err(|error| error.to_string())?;
+                if super::locks::file_link_count(&file).map_err(|error| error.to_string())? != 1 {
+                    return Ok(false);
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+            Err(e) => return Err(e.to_string()),
+        }
+    }
+    let bytes = match fs::read(path.join("ready.json")) {
+        Ok(bytes) => Some(bytes),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            match fs::read(path.join("proof.json")) {
+                Ok(bytes) => Some(bytes),
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+                Err(e) => return Err(e.to_string()),
+            }
+        }
+        Err(e) => return Err(e.to_string()),
+    };
+    let Some(bytes) = bytes else {
+        return Ok(prelease_directory_is_empty(path, true));
+    };
+    let descriptor: BuildDescriptorV2 = match serde_json::from_slice(&bytes) {
+        Ok(value) => value,
+        Err(_) => return Ok(false),
+    };
+    if descriptor.version != 2 || !same_private_directory(&descriptor.lifecycle_dir, path) {
+        return Ok(false);
+    }
+    let receipt = fs::read(path.join("receipt.json"))
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<ExitOutcome>(&bytes).ok())
+        .is_some_and(|outcome| outcome.containment_empty);
+    Ok(receipt || probe_descriptor(&descriptor)?)
+}
+
 fn real_directory(path: &Path) -> bool {
     fs::symlink_metadata(path)
         .is_ok_and(|metadata| metadata.is_dir() && !metadata.file_type().is_symlink())
