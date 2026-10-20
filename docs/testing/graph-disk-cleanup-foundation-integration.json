@@ -399,5 +399,11 @@
     ],
     "scope": "Reviewed foundations only, no automatic collector/scheduler/migration closure.",
     "sandbox_failure_preserved": true
+  },
+  "pull_request": {
+    "url": "https://github.com/rabii-chaarani/codebaseGraph/pull/153",
+    "draft": true,
+    "code_commit": "077a8d8e1e75dbca553a4d9b0f65412ca9c5def1",
+    "full_scope_closed": false
   }
 }
