@@ -1,0 +1,50 @@
+{
+  "scope": "S5 narrow external production health/request contract only; collector,convergence and platform gates remainpending",
+  "head": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+  "source_sha256": {
+    "tests/storage_maintenance.rs": "c7f5de722a579ea665cacc04ccaf5b05680986f68f5252f62d9ca3d71c1fe693",
+    "tests/support/storage_maintenance/mod.rs": "bf79e22e33cd260953e4eaa1c7ab323772c62f3ebe6ade166f870b6250304d09",
+    "Cargo.toml": "f267cf8583c7eb20a70d381b461ad0e20ecf52d7e1432ba204ae3664add86a1f",
+    "Cargo.lock": "17e5add36d90045704049e45154977fd4d569d5968989e1d7047dea3e965a4a6",
+    "src/api/contracts.rs": "f1a6ae3c42040f4f691feec254cd076c2f701c2a906789e6de88b49762080223",
+    "src/api/core.rs": "b60db09be603ec16ab1ee03354c3c1e41607784032cf986fedbb46ee0ceeb462",
+    "src/api/facade.rs": "51230173cd6ea2767f1ec95306f3d3d2c42a8b07b20e56ec3c7661cbb4b96775",
+    "src/protocol.rs": "0fe724e549ca6276d205be724f8dd41ab746397c81e4043aae64d1e41baf6202",
+    "src/coordinator.rs": "a3a8491d82dac4be321b0f9ae1561ad6af6f1c16b6e8461b881c2f760185d18e",
+    "src/storage/maintenance.rs": "b237227071c56e84b4f7a281c1c6fbcb6003b3954a2cd4d4f9c0ecda114b5fa8",
+    "src/storage/maintenance_scheduler.rs": "fcec504f2f55a227b441d5e103ce18e4caa69c4fd9610070a9f0eaec45e9a90f",
+    "src/artifact_store.rs": "7e0fbf42a98a3ab64a97624db9cf782f8ead0db4a82abde2f40b4ee26028e7da"
+  },
+  "junit": "s5-external-health-junit.xml",
+  "junit_sha256": "8baac7efb57e9919f20d5ae9c019fa688fbf8a9ffb1b566053bfb02e90abe6c6",
+  "run_id": "9c9f4e71-b6aa-425a-8ed1-910eb25df0e2",
+  "command": "CARGO_TARGET_DIR=/Users/rabii/Projects/Repositories/codebaseGraph/target cargo nextest run --offline --locked --test storage_maintenance --config-file /private/tmp/codebasegraph-disk-cleanup-7t9af0a6/nextest.toml --profile cleanup-s5 --test-threads 1",
+  "config_sha256": "3afd345f1beb9e57214beaa23413621c58308c1d6f80bbb993b834f48f6880d2",
+  "environment": {
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: aarch64-apple-darwin\nrelease: 1.96.0\nLLVM version: 22.1.2\n",
+    "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)\n"
+  },
+  "actual_result": {
+    "passed": 2,
+    "failed": 0,
+    "skipped": 0
+  },
+  "limitations": [
+    "Library build emitted136 dead-code warnings for unfinished production integration; warning-free completion gate remains pending.",
+    "No graph materialization or maintenance collector execution.",
+    "No fullsuite/MSRV/Linux/Windowsqualification.",
+    "Tests compile/run against current partial working source, not an accepted finalintegrated snapshot.",
+    "Original selected-source manifest omitted src/api/normalization.rs; this historical report alone does not establish complete relevant source identity. A fresh captured run will supersede it for fix verification."
+  ],
+  "expected_test_cases": [
+    {
+      "name": "health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown",
+      "classname": "codebase-graph::storage_maintenance"
+    },
+    {
+      "name": "nonboolean_quiescence_confirmation_is_rejected_before_repository_effects",
+      "classname": "codebase-graph::storage_maintenance"
+    }
+  ],
+  "audit_identity_provenance": "Expected case identities added retrospectively from unchanged archived original actualJUnit during audit fix; no execution or source hash is backdated."
+}

@@ -1,0 +1,1501 @@
+{
+  "schema_version": 1,
+  "work_id": "DC-S5",
+  "specification": "knowledge/architecture/graph-disk-cleanup-contract.md",
+  "architecture_change": "chg-6vx5tj",
+  "architecture_authority": "Scryer",
+  "checkpoint": "readiness-only; not aggregate acceptance",
+  "implementation_baseline": "018df35e72447fc3e014e950d1d3c6648bbd4820",
+  "observed_head": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+  "status": {
+    "scope_approval": "DC-S1\u2013DC-S5 revision0.1 approved2026-10-21",
+    "local_implementation": "S1 reviewed; S2 reviewed foundation; S3/S4 partial primitives; integration pending",
+    "executed_evidence": "Historical selectedfoundationexecutions plus fresh2-testexternalhealth/requestexecution and8auditregressions; wholeS5pending",
+    "native_platform_qualification": {
+      "macos_arm64": "foundation observations only",
+      "linux": "pending",
+      "windows": "pending",
+      "rust_1_82": "blocked by preexisting pinned dependencies"
+    },
+    "aggregate_closed": false,
+    "rollout": "not performed; separately authorized operational task"
+  },
+  "limitations": [
+    "Acceptance rows below remain pending until integrated production behavior is executed and independently reviewed.",
+    "JUnit counts count executions, not unique scenarios: library and storage_foundation suites duplicate some test bodies.",
+    "No database/generation/run/legacy/Direct retirement qualification while public raw-handle policy is unresolved.",
+    "No live repository graph rebuild, daemon operation, installation upgrade or data cleanup performed.",
+    "Evidence source snapshots are individually identified; passing an earlier snapshot does not qualify later changes.",
+    "S3 expanded partial review found confirmed regressions; passing31 foundation executions do not establish review acceptance. See separate review-outcomes evidence."
+  ],
+  "traceability": [
+    {
+      "id": "DC-S1-R1",
+      "type": "requirement",
+      "specification": "Observe only the current repository's configured managed root and recognized repository-local historical/Direct state whose association can be established. Do not scan other repositories or arbitrary siblings.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ],
+      "supporting_foundation_reports": [
+        "s1-post-main"
+      ]
+    },
+    {
+      "id": "DC-S1-R2",
+      "type": "requirement",
+      "specification": "Inventory performs no materialization, publication replay, repair, deletion, configuration update or metadata creation. A missing installation is reported without creating directories or lock files.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ],
+      "supporting_foundation_reports": [
+        "s1-post-main"
+      ]
+    },
+    {
+      "id": "DC-S1-R3",
+      "type": "requirement",
+      "specification": "Categorize entries as active graph, active parsing cache, leased generation, live build, recovery evidence, artifact temporary/replacement state, historical staging, retired-Direct candidate, coordination metadata or unknown. Each physical file is accounted for once in totals.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ],
+      "supporting_foundation_reports": [
+        "s1-post-main"
+      ]
+    },
+    {
+      "id": "DC-S1-R4",
+      "type": "requirement",
+      "specification": "Give each entry a disposition: retain, potential reclamation candidate, deferred, or unknown, with a concrete reason. Active-manifest non-reference alone cannot override a live run, lease or recovery reference.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ],
+      "supporting_foundation_reports": [
+        "s1-post-main"
+      ]
+    },
+    {
+      "id": "DC-S1-R5",
+      "type": "requirement",
+      "specification": "Retain the active graph bundle, active parsing cache and stable locks. Treat recognized old repository-local Direct destinations as retirement candidates under the already selected policy, subject to their own ownership checks.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ],
+      "supporting_foundation_reports": [
+        "s1-post-main"
+      ]
+    },
+    {
+      "id": "DC-S1-R6",
+      "type": "requirement",
+      "specification": "Report logical bytes, filesystem-reported allocated bytes where available, file/directory counts, measurement time, scope identity, active-generation identity and scan completeness. Unknown size remains unknown rather than being reported as zero. Allocated-byte estimates do not promise an equal increase in free disk space.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ],
+      "supporting_foundation_reports": [
+        "s1-post-main"
+      ]
+    },
+    {
+      "id": "DC-S1-R7",
+      "type": "requirement",
+      "specification": "If state changes during scanning, report a moving/partial observation or bounded retry; never label inconsistent totals as a coherent exact snapshot. A collector cannot delete using a stale inventory.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ],
+      "supporting_foundation_reports": [
+        "s1-post-main"
+      ]
+    },
+    {
+      "id": "DC-S1-R8",
+      "type": "requirement",
+      "specification": "Do not follow symlinks. Preserve unrecognized entries. Invalid roots, unreadable metadata, missing/corrupt active pointers, ambiguous Direct mappings and permissions failures produce explicit incomplete/blocked reasons; they do not make all files reclaimable.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ],
+      "supporting_foundation_reports": [
+        "s1-post-main"
+      ]
+    },
+    {
+      "id": "DC-S1-A1",
+      "type": "acceptance",
+      "specification": "Given active artifacts, old staging and a live run, when inventory runs, then every item is attributed once and active/live state is retained or deferred.",
+      "applicable_existing_claims": "Graph Store resp-109, resp-232, resp-233, resp-234; additive inventory claim to be planned if needed",
+      "planned_method": "Isolated fixture and independent size/count oracle; planned",
+      "integrated_status": "local foundation supported; integrated/platform qualification pending",
+      "implementation_anchors": [],
+      "executed_evidence": [
+        {
+          "report_id": "s1-post-main",
+          "tests": [
+            "storage::inventory::tests::dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy"
+          ],
+          "result": "passed",
+          "scope": "local foundation; does not close integrated or native-platform gates"
+        }
+      ],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ]
+    },
+    {
+      "id": "DC-S1-A2",
+      "type": "acceptance",
+      "specification": "Given a missing root or a valid installation, when inventory runs or is interrupted, then the file tree, configuration and active pointer remain unchanged.",
+      "applicable_existing_claims": "Existing coordination/confinement contracts; no invented runtime claim",
+      "planned_method": "Before/after tree and metadata comparison; planned",
+      "integrated_status": "local foundation supported; integrated/platform qualification pending",
+      "implementation_anchors": [],
+      "executed_evidence": [
+        {
+          "report_id": "s1-post-main",
+          "tests": [
+            "storage::inventory::tests::dc_s1_a2_missing_and_dropped_observations_do_not_create_or_repair"
+          ],
+          "result": "passed",
+          "scope": "local foundation; does not close integrated or native-platform gates"
+        }
+      ],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ]
+    },
+    {
+      "id": "DC-S1-A3",
+      "type": "acceptance",
+      "specification": "Given a pointer change, inaccessible subtree, symlink or ambiguous Direct pair, when inventory runs, then it exposes incomplete/unknown state without traversing or authorizing removal.",
+      "applicable_existing_claims": "Graph Store resp-109; Runtime Resolver resp-144",
+      "planned_method": "Deterministic mutation/error fixtures; planned",
+      "integrated_status": "local foundation supported; integrated/platform qualification pending",
+      "implementation_anchors": [],
+      "executed_evidence": [
+        {
+          "report_id": "s1-post-main",
+          "tests": [
+            "storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations",
+            "storage::inventory::tests::dc_s1_a3_invalid_pointer_and_foreign_direct_are_retained",
+            "storage::inventory::tests::dc_s1_a3_symlinks_are_not_followed_and_sizes_are_unknown"
+          ],
+          "result": "passed",
+          "scope": "local foundation; does not close integrated or native-platform gates"
+        }
+      ],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ]
+    },
+    {
+      "id": "DC-S1-A4",
+      "type": "acceptance",
+      "specification": "Given two unchanged observations with the same options, when inventory runs twice, then categories, reasons and totals agree apart from observation metadata.",
+      "applicable_existing_claims": "Existing identity and deterministic behavior contracts",
+      "planned_method": "Repeat-fixture comparison; planned",
+      "integrated_status": "local foundation supported; integrated/platform qualification pending",
+      "implementation_anchors": [],
+      "executed_evidence": [
+        {
+          "report_id": "s1-post-main",
+          "tests": [
+            "storage::inventory::tests::dc_s1_a4_repeat_observation_is_deterministic"
+          ],
+          "result": "passed",
+          "scope": "local foundation; does not close integrated or native-platform gates"
+        }
+      ],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/inventory.rs",
+          "symbol": "inspect_storage",
+          "commit": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+          "scope": "read-only inventory foundation"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2yhnem/resp-a133nw",
+        "node-2yhnem/resp-hd92fb"
+      ]
+    },
+    {
+      "id": "DC-S2-R1",
+      "type": "requirement",
+      "specification": "Reuse the approved process-containment and worker-recovery contracts from PR #145 and their qualification work; verify their presence on the exact selected implementation baseline. Do not duplicate the older repair or treat wiki claims as proof of deployed code.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-R2",
+      "type": "requirement",
+      "specification": "Require the destination's exclusive writer ownership before deciding destructive eligibility. Direct retirement uses that exact Direct destination's ownership protocol; managed ownership alone is insufficient.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-R3",
+      "type": "requirement",
+      "specification": "Respect generation reader leases, live run leases, worker/phase containment and interrupted-publication journals. Missing or unverifiable evidence beside possible execution state remains unknown.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-R4",
+      "type": "requirement",
+      "specification": "Recover or resolve interrupted publication through its established protocol before computing authoritative references. Preserve the last committed graph while recovery cannot safely proceed.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-R5",
+      "type": "requirement",
+      "specification": "Keep a consistent writer-to-state acquisition order. A caller that already owns the writer lease uses that ownership without reacquiring it. Contention defers maintenance instead of bypassing ownership.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-R6",
+      "type": "requirement",
+      "specification": "Preserve stable lock files/inodes and evidence while authority is unknown. Never kill a process or authorize deletion solely from a numeric PID or elapsed age.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-R7",
+      "type": "requirement",
+      "specification": "Return explicit proven-idle, in-use or unknown outcomes with destination-specific reasons. Recheck the relevant authority immediately before detaching/deleting state.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-R8",
+      "type": "requirement",
+      "specification": "Historical helpers that predate current ownership protocols require a verified quiescent migration procedure. Current-lock acquisition by itself cannot authorize deletion against those helpers. If proof is unavailable, preserve state and report what is required.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-A1",
+      "type": "acceptance",
+      "specification": "Given a paused owned loader, when its outer worker dies and cleanup/writing is requested, then evidence remains until teardown is verified and no conflicting publication occurs.",
+      "applicable_existing_claims": "Worker node-208, approved Guardian claims from PR #145, Graph Store resp-109/232",
+      "planned_method": "Reuse/extend native recovery regressions on the selected baseline; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-A2",
+      "type": "acceptance",
+      "specification": "Given an active managed reader or Direct reader/writer, when maintenance tries retirement, then protected files survive and the attempt is deferred.",
+      "applicable_existing_claims": "Graph Store resp-109, resp-233",
+      "planned_method": "Separate-process lease fixture; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-A3",
+      "type": "acceptance",
+      "specification": "Given unverifiable evidence or a reused unrelated PID, when maintenance runs, then it preserves unknown state and never signals the unrelated process.",
+      "applicable_existing_claims": "Existing approved worker/Guardian legacy and unknown-containment contracts",
+      "planned_method": "Existing native cases plus collector integration; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S2-A4",
+      "type": "acceptance",
+      "specification": "Given a caller already holding writer ownership or a historical helper using old state, when collection is requested, then there is no self-deadlock or unsafe legacy deletion.",
+      "applicable_existing_claims": "Graph Store resp-109",
+      "planned_method": "Ownership-order and legacy-consumer fixtures; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_ownership.rs",
+          "symbol": "claim_maintenance",
+          "commit": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+          "scope": "owned use-guard foundation; public native raw-handle policy unresolved"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-2xwzve/resp-b9ty5n",
+        "node-2xwzve/resp-vc8v6p"
+      ],
+      "supporting_foundation_reports": [
+        "s2-family-focused",
+        "s2-family-regression"
+      ]
+    },
+    {
+      "id": "DC-S3-R1",
+      "type": "requirement",
+      "specification": "Collect unreferenced valid artifact keys only after recomputing current references under DC-S2 authority. Preserve active/live-run/recovery references and any unknown necessary state.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-R2",
+      "type": "requirement",
+      "specification": "Recover or remove abandoned artifact temporaries and replacement backups. A valid backup of a missing referenced artifact must be reconciled before it can be classified disposable. Invalid/ambiguous backup evidence is preserved with a reason.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-R3",
+      "type": "requirement",
+      "specification": "Recover abandoned modern workspaces through their established journals and collect them only after the associated execution is proven empty. Continue lease-aware retirement of superseded generations.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-R4",
+      "type": "requirement",
+      "specification": "Run an idempotent migration for recognized old native-staging files and snapshots once legacy quiescence is proven. Unrecognized content is retained and reported. No age-based grace period is introduced for proven unnecessary state.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-R5",
+      "type": "requirement",
+      "specification": "Retire approved former repository-local Direct destinations as coherent database/manifest/sidecar/cache bundles. Keep stable ownership files. A later explicit request must receive a clear rebuild-required outcome; explicit rebuilding may create a fresh destination through the normal writer protocol. Exact public wording/schema is validated with DC-S4.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-R6",
+      "type": "requirement",
+      "specification": "Persist recoverable retirement state before destructive work. An interrupted collection resumes idempotently; it cannot make a partial Direct bundle appear committed or revive partially deleted state as a valid graph.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-R7",
+      "type": "requirement",
+      "specification": "Keep reader-facing state-lock sections short. Detach only proven-unreferenced state, then perform bounded deletion outside the reader-facing critical section. Before detachment fails, preserve the original state; after durable detachment, retry the recorded deletion.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-R8",
+      "type": "requirement",
+      "specification": "A filesystem failure records remaining work and preserves the primary operation's result/error. Preserve active graph readability, caller-owned outputs and foreign data. Do not evict referenced active artifacts to satisfy a disk quota.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-A1",
+      "type": "acceptance",
+      "specification": "Given obsolete keys and synthetic temporary/replacement residue, when ownership is idle and maintenance completes twice, then unnecessary bytes disappear and active cache reuse survives.",
+      "applicable_existing_claims": "Graph Store resp-232, resp-234; additional collection claims if needed",
+      "planned_method": "Artifact interruption/recovery fixtures; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-A2",
+      "type": "acceptance",
+      "specification": "Given a missing active artifact with a usable replacement backup, when recovery runs, then usable required state is restored/preserved before backup removal.",
+      "applicable_existing_claims": "Graph Store resp-234",
+      "planned_method": "Replacement-boundary fixtures; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-A3",
+      "type": "acceptance",
+      "specification": "Given historical staging and an approved old Direct destination, when migration completes, then both are retired coherently and current managed query results remain unchanged.",
+      "applicable_existing_claims": "Graph Store resp-108/109/232/233; lifecycle node-136; proposed retirement policy needs Scryer mapping",
+      "planned_method": "Legacy/Direct fixtures and current graph comparison; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-A4",
+      "type": "acceptance",
+      "specification": "Given process death at each retirement boundary or a permissions failure, when maintenance restarts, then it converges without double publication, unsafe deletion or loss of the active graph.",
+      "applicable_existing_claims": "Graph Store resp-108, resp-109, resp-232",
+      "planned_method": "Journal-boundary process fixtures; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S3-A5",
+      "type": "acceptance",
+      "specification": "Given many eligible files and a concurrent graph reader, when recursive deletion runs, then readers can proceed and external sentinels remain unchanged.",
+      "applicable_existing_claims": "Graph Store resp-109 and confinement contract",
+      "planned_method": "Deterministic paused-collector/concurrent-reader fixture; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance.rs",
+          "symbol": "maintain_storage",
+          "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+          "scope": "partial guarded primitives; canonical collection gated"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-eje4rb/resp-dnnxna",
+        "node-eje4rb/resp-4mkaxr"
+      ],
+      "supporting_foundation_reports": [
+        "s3-expanded"
+      ]
+    },
+    {
+      "id": "DC-S4-R1",
+      "type": "requirement",
+      "specification": "Schedule maintenance at coordinator startup, after build success/failure/cancellation, after unchanged refresh, and periodically while the coordinator runs. With no long-lived coordinator, ordinary runtime entries request bounded maintenance through the same protocol.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ]
+    },
+    {
+      "id": "DC-S4-R2",
+      "type": "requirement",
+      "specification": "At most one collector acts on a destination at a time. Coalesce duplicate triggers; do not compete with an active writer or create a graph rebuild because cleanup changed internal files.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ]
+    },
+    {
+      "id": "DC-S4-R3",
+      "type": "requirement",
+      "specification": "Proposed schedule: a 60-second background maintenance interval; event triggers request an immediate eligible attempt. Proposed deletion batch: up to 100 entries or a 100 ms cooperative work budget, then yield. A single filesystem operation may overrun that soft budget; this is not a hard syscall or completion deadline. Exact defaults require DC-S4 validation.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ]
+    },
+    {
+      "id": "DC-S4-R4",
+      "type": "requirement",
+      "specification": "Retry deferred work on later triggers/intervals without requiring source edits. Track and resume progress so repeated bounded attempts eventually visit every eligible entry. Do not busy-loop on blocked or failing paths.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ]
+    },
+    {
+      "id": "DC-S4-R5",
+      "type": "requirement",
+      "specification": "Proposed reporting surface: additive storage-maintenance fields on existing health/materialization reporting, available through existing CLI/MCP operation paths. No new GUI or standalone command is assumed. Existing response fields and error meanings remain compatible unless a specific change is separately approved.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ],
+      "supporting_external_contract_evidence": {
+        "manifest": "graph-disk-cleanup-evidence/s5-external-health-fixverify-source-manifest.json",
+        "tests": [
+          "health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown",
+          "nonboolean_quiescence_confirmation_is_rejected_before_repository_effects"
+        ],
+        "result": "2passed; narrowpresentationandinputcontractonly; fullcriterionpending"
+      }
+    },
+    {
+      "id": "DC-S4-R6",
+      "type": "requirement",
+      "specification": "Expose observation time/completeness, logical/allocated bytes by category, potential reclaimable bytes, deferred/unknown bytes, last attempt/outcome, reclaimed allocation estimates, and concrete blocked reasons. Do not report a live build as confirmed garbage or report unknown space as zero.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ],
+      "supporting_external_contract_evidence": {
+        "manifest": "graph-disk-cleanup-evidence/s5-external-health-fixverify-source-manifest.json",
+        "tests": [
+          "health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown",
+          "nonboolean_quiescence_confirmation_is_rejected_before_repository_effects"
+        ],
+        "result": "2passed; narrowpresentationandinputcontractonly; fullcriterionpending"
+      }
+    },
+    {
+      "id": "DC-S4-R7",
+      "type": "requirement",
+      "specification": "A cleanup failure must not mislabel an already committed generation as unpublished. Preserve the primary build failure and report cleanup pending separately. Do not silently erase cleanup failures.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ]
+    },
+    {
+      "id": "DC-S4-R8",
+      "type": "requirement",
+      "specification": "New maintenance configuration/response contracts, defaults and compatibility behavior require Scryer planning and explicit DC-S4 validation before implementation. Do not log control capabilities or file contents as disk diagnostics.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ],
+      "supporting_external_contract_evidence": {
+        "manifest": "graph-disk-cleanup-evidence/s5-external-health-fixverify-source-manifest.json",
+        "tests": [
+          "health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown",
+          "nonboolean_quiescence_confirmation_is_rejected_before_repository_effects"
+        ],
+        "result": "2passed; narrowpresentationandinputcontractonly; fullcriterionpending"
+      }
+    },
+    {
+      "id": "DC-S4-A1",
+      "type": "acceptance",
+      "specification": "Given only failed builds followed by no-op refreshes, when maintenance opportunities occur, then eligible artifacts converge without a successful publication or source edit.",
+      "applicable_existing_claims": "Materialization resp-231/270; Refresh resp-147/268; proposed maintenance trigger claims required",
+      "planned_method": "Controlled-clock lifecycle/integration tests; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ]
+    },
+    {
+      "id": "DC-S4-A2",
+      "type": "acceptance",
+      "specification": "Given repeated simultaneous triggers and an active writer, when the scheduler runs, then attempts coalesce, yield and later resume with no overlapping collector/writer or rebuild loop.",
+      "applicable_existing_claims": "Refresh resp-266/267/268; Graph Store resp-109",
+      "planned_method": "Scheduler and process interleavings; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ]
+    },
+    {
+      "id": "DC-S4-A3",
+      "type": "acceptance",
+      "specification": "Given a permission failure, unknown containment or live lease, when health is read, then pending work and reason are distinguishable from retained active space; recovery later clears the specific reason.",
+      "applicable_existing_claims": "Refresh resp-269; public-contract node-96; new storage reporting claims required",
+      "planned_method": "CLI/MCP contract fixtures; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ],
+      "supporting_external_contract_evidence": {
+        "manifest": "graph-disk-cleanup-evidence/s5-external-health-fixverify-source-manifest.json",
+        "tests": [
+          "health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown",
+          "nonboolean_quiescence_confirmation_is_rejected_before_repository_effects"
+        ],
+        "result": "2passed; narrowpresentationandinputcontractonly; fullcriterionpending"
+      }
+    },
+    {
+      "id": "DC-S4-A4",
+      "type": "acceptance",
+      "specification": "Given a committed generation and a later cleanup failure, when the operation responds, then its committed publication remains truthful and cleanup is separately pending.",
+      "applicable_existing_claims": "Graph Store resp-108; Materialization resp-238",
+      "planned_method": "Fault injection after commit; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [
+        {
+          "path": "src/storage/maintenance_scheduler.rs",
+          "symbol": "MaintenanceScheduler",
+          "source_sha256": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf",
+          "scope": "scheduler primitives only; production trigger/report wiring pending"
+        }
+      ],
+      "applicable_planned_claims": [
+        "node-hxxbg1/resp-76md43"
+      ],
+      "supporting_foundation_reports": [
+        "s4-scheduler-primitive"
+      ]
+    },
+    {
+      "id": "DC-S5-R1",
+      "type": "requirement",
+      "specification": "Trace every accepted requirement and criterion to applicable Scryer claims, real implementation anchors, a verification method and executed evidence. Do not invent claims or label configured/attached tests as passing executions.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-R2",
+      "type": "requirement",
+      "specification": "Extend whole-state convergence coverage beyond database size: valid keys, temporary/replacement state, runs, retired generations, tombstones, legacy staging and Direct retirement. Use an isolated clean-control fixture with the same final source state.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-R3",
+      "type": "requirement",
+      "specification": "Proposed churn qualification: 20 supported source updates plus failures, unchanged refreshes and repeated maintenance. At verified idle, retain one active generation, current cache and necessary coordination files, with no known collectible residue. Blocked foreign/unknown state must be reported and excluded from a successful clean-state claim.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-R4",
+      "type": "requirement",
+      "specification": "Prove graph/search/context equivalence and preservation of unchanged artifact reuse. Compare expected reachable content, not only counts or empty directories.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-R5",
+      "type": "requirement",
+      "specification": "Exercise process death at temporary-write, replacement, publication, detachment and deletion boundaries; reader/writer contention; cancellation; permissions failures; stale inventory; missing/corrupt authority; symlink/foreign paths; historical helper ownership; and retries without new edits. Faults control only fixture-owned processes.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-R6",
+      "type": "requirement",
+      "specification": "Use existing native CI platform gates and lifecycle profiles. Local macOS observations, extracted-function checks, default compilation, native Windows qualification and aggregate closure remain separate evidence. New required regressions run normally, without ignore or expected-failure treatment.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-R7",
+      "type": "requirement",
+      "specification": "Before any implementation, obtain the repository-required fresh GPT-6.1 Sol Max proposal review and resolve decision-blocking findings. Before completion, obtain the required fresh final integrated review, fix every confirmed P0\u2013P3 defect, and reverify affected paths. This specification turn does not claim either implementation gate is complete.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-R8",
+      "type": "requirement",
+      "specification": "Record exact source revision, binary/environment identity, commands, JUnit evidence, outcomes and limitations. Complete required formatting/build/static/test checks without unresolved compiler warnings, then reconcile Scryer and wiki outcomes.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-R9",
+      "type": "requirement",
+      "specification": "Rollout requires a compatible verified binary/helper set and truthful inventory before collection. Selection of installation/restart/live migration actions is validated separately with the actual operational context. Specification preparation neither updates an old daemon nor deletes this installation's data.",
+      "applicable_existing_claims": null,
+      "planned_method": null,
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-A1",
+      "type": "acceptance",
+      "specification": "Given the same final source workload, when churn and clean-control builds reach verified idle, then the collector leaves only allowed state and equivalent graph behavior.",
+      "applicable_existing_claims": "Existing Graph Store/Materialization contracts and accepted DC-S1\u2013S4",
+      "planned_method": "Whole-state/native integration reports; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-A2",
+      "type": "acceptance",
+      "specification": "Given every listed interruption/ownership case, when recovery and repeated maintenance run, then required data and external sentinels survive and eligible work eventually clears.",
+      "applicable_existing_claims": "Approved recovery contracts and accepted DC-S2/S3",
+      "planned_method": "Native lifecycle JUnit reports; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-A3",
+      "type": "acceptance",
+      "specification": "Given a claimed completed implementation, when its evidence is audited, then each requirement has a real anchor, executed passing evidence, reviewed snapshot and honest platform limits.",
+      "applicable_existing_claims": "Scryer closure rules; AGENTS review/CI/Git workflow",
+      "planned_method": "Traceability/evidence audit and independent reviewer verification; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    },
+    {
+      "id": "DC-S5-A4",
+      "type": "acceptance",
+      "specification": "Given a candidate rollout against this repository, when inventory and binary identity are checked, then live migration uses the approved policy and the proven ownership protocol.",
+      "applicable_existing_claims": "Accepted DC-S1\u2013S4 plus actual deployment context",
+      "planned_method": "Deployment inventory, identity, before/after query and disk evidence; planned",
+      "integrated_status": "pending",
+      "implementation_anchors": [],
+      "executed_evidence": [],
+      "supporting_foundation_anchors": [],
+      "applicable_planned_claims": [],
+      "supporting_foundation_reports": []
+    }
+  ],
+  "foundation_evidence": "graph-disk-cleanup-evidence/foundation-reports.json",
+  "msrv_diagnosis": "graph-disk-cleanup-evidence/msrv-readiness.json",
+  "pending_verification": [
+    "20 supported source updates plus failures/no-ops against clean control with same final source",
+    "Whole owned-state convergence including more than one bounded batch and blocked-first fairness",
+    "Native graph/search/context equivalence and unchanged artifact reuse",
+    "Process-death boundaries; paused reader/writer validation races; alias/overlap; permission recovery",
+    "Fresh Direct ACTIVE incarnation while old detached deletion pending",
+    "Integrated format/check/clippy/full applicable suites without warnings",
+    "Fresh different GPT-6.1 Sol Max integrated review and fix verification",
+    "Required native platform and MSRV gates"
+  ],
+  "review_outcomes": "graph-disk-cleanup-evidence/review-outcomes.json",
+  "s5_external_execution": "graph-disk-cleanup-evidence/s5-external-health-fixverify-source-manifest.json",
+  "historical_s5_external_execution": "graph-disk-cleanup-evidence/s5-external-health-source-manifest.json",
+  "audit_regression_execution": "graph-disk-cleanup-evidence/audit-regression-execution.json"
+}

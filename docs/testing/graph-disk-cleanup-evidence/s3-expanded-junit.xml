@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="31" failures="0" errors="0" uuid="fc78ee6c-cec6-42bb-9bda-544e10913b47" timestamp="2026-10-21T02:36:27.487+09:30" time="1.185">
+    <testsuite name="codebase-graph" tests="31" disabled="0" errors="0" failures="0">
+        <testcase name="artifact_store::tests::artifact_cleanup_rejects_symlinked_entries" classname="codebase-graph" timestamp="2026-10-21T02:36:27.487+09:30" time="0.020">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_key_changes_when_inputs_change" classname="codebase-graph" timestamp="2026-10-21T02:36:27.507+09:30" time="0.019">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_commits_only_durable_artifact_directories" classname="codebase-graph" timestamp="2026-10-21T02:36:27.527+09:30" time="0.034">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_rejects_prior_format_envelopes" classname="codebase-graph" timestamp="2026-10-21T02:36:27.561+09:30" time="0.030">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_rejects_wrong_expected_content" classname="codebase-graph" timestamp="2026-10-21T02:36:27.592+09:30" time="0.031">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_roundtrips_raw_partition_and_reuses_existing_payload" classname="codebase-graph" timestamp="2026-10-21T02:36:27.623+09:30" time="0.039">
+        </testcase>
+        <testcase name="artifact_store::tests::artifact_store_treats_corrupt_or_mismatched_payloads_as_cache_miss" classname="codebase-graph" timestamp="2026-10-21T02:36:27.662+09:30" time="0.020">
+        </testcase>
+        <testcase name="artifact_store::tests::corrupt_existing_artifact_is_replaced_atomically_on_rebuild" classname="codebase-graph" timestamp="2026-10-21T02:36:27.682+09:30" time="0.047">
+        </testcase>
+        <testcase name="artifact_store::tests::dc_s3_cooperative_envelope_preserves_checksum_and_rejects_invalid_metadata" classname="codebase-graph" timestamp="2026-10-21T02:36:27.729+09:30" time="0.030">
+        </testcase>
+        <testcase name="artifact_store::tests::dc_s3_cooperative_rows_match_existing_oracle_across_metadata_boundaries" classname="codebase-graph" timestamp="2026-10-21T02:36:27.759+09:30" time="0.049">
+        </testcase>
+        <testcase name="artifact_store::tests::malformed_artifact_keys_are_treated_as_cache_miss_and_safe_delete_noops" classname="codebase-graph" timestamp="2026-10-21T02:36:27.808+09:30" time="0.017">
+        </testcase>
+        <testcase name="artifact_store::tests::oversized_artifact_is_rejected_before_deserialization" classname="codebase-graph" timestamp="2026-10-21T02:36:27.825+09:30" time="0.017">
+        </testcase>
+        <testcase name="artifact_store::tests::reference_sized_artifact_fits_the_default_per_worker_budget" classname="codebase-graph" timestamp="2026-10-21T02:36:27.842+09:30" time="0.016">
+        </testcase>
+        <testcase name="artifact_store::tests::streaming_partition_checksum_matches_the_legacy_canonical_payload" classname="codebase-graph" timestamp="2026-10-21T02:36:27.859+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_buffered_parser_parks_without_storage_locks_and_resumes_stack" classname="codebase-graph" timestamp="2026-10-21T02:36:27.875+09:30" time="0.147">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_cancel_wakes_parser_without_another_grant" classname="codebase-graph" timestamp="2026-10-21T02:36:28.022+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_cursor_spans_grants_and_does_not_starve_later_entries" classname="codebase-graph" timestamp="2026-10-21T02:36:28.042+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_detachment_defers_for_reader_but_private_deletion_does_not" classname="codebase-graph" timestamp="2026-10-21T02:36:28.070+09:30" time="0.065">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_owned_validation_job_releases_lease_before_wait_and_cancels" classname="codebase-graph" timestamp="2026-10-21T02:36:28.135+09:30" time="0.037">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_parser_and_foreground_share_single_entry_allowance" classname="codebase-graph" timestamp="2026-10-21T02:36:28.173+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_payload_symlink_and_hardlink_never_enter_retirement" classname="codebase-graph" timestamp="2026-10-21T02:36:28.189+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_prepare_then_foreign_child_rejects_public_detach" classname="codebase-graph" timestamp="2026-10-21T02:36:28.212+09:30" time="0.032">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_prepared_record_replay_preserves_original" classname="codebase-graph" timestamp="2026-10-21T02:36:28.244+09:30" time="0.039">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_private_identity_replacement_is_preserved" classname="codebase-graph" timestamp="2026-10-21T02:36:28.283+09:30" time="0.044">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_public_pending_surface_does_not_create_missing_installation" classname="codebase-graph" timestamp="2026-10-21T02:36:28.327+09:30" time="0.024">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_replay_preserves_new_payload_after_durable_unlink" classname="codebase-graph" timestamp="2026-10-21T02:36:28.351+09:30" time="0.052">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_replay_rejects_unrelated_or_replaced_journal" classname="codebase-graph" timestamp="2026-10-21T02:36:28.403+09:30" time="0.045">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_retirement_one_entry_budget_resumes_private_work" classname="codebase-graph" timestamp="2026-10-21T02:36:28.448+09:30" time="0.080">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_retirement_rechecks_reference_before_detachment" classname="codebase-graph" timestamp="2026-10-21T02:36:28.528+09:30" time="0.034">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_retirement_replay_never_deletes_reused_public_name" classname="codebase-graph" timestamp="2026-10-21T02:36:28.562+09:30" time="0.064">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_s3_retirement_retains_foreign_contents" classname="codebase-graph" timestamp="2026-10-21T02:36:28.626+09:30" time="0.046">
+        </testcase>
+    </testsuite>
+</testsuites>

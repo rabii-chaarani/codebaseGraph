@@ -1,0 +1,81 @@
+{
+  "s3_expanded_partial": {
+    "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+    "status": "review findings awaiting fixes and verification; partial foundation is not accepted integrated behavior",
+    "provenance": "Actual independent fresh-session Max review report archived with exact source snapshot; see artifacts.",
+    "executed_failure_artifacts": [
+      {
+        "path": "s3-expanded-review-expanded-report.json",
+        "sha256": "65d9f8a5c1124a215f66e63f5819f60aef52382559cb627d807ce7a7d5bab718"
+      },
+      {
+        "path": "s3-expanded-reviewer-probe-notes.txt",
+        "sha256": "ffd58ad5367a31890d30ae14515523e74e76c810742d011f028c46a4729ae6ed"
+      },
+      {
+        "path": "s3-expanded-zero-budget-probe-output.txt",
+        "sha256": "c84d342763d48ca6fee1d2d644bb05cf49b4cd4b2f9f9cc26c21a9e4e2f2fc6c"
+      }
+    ],
+    "reviewer": {
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "max",
+      "fresh_independent_session": true,
+      "role": "continued original S3 reviewer, no implementation"
+    },
+    "findings": [
+      {
+        "id": "S3-EXP-R1",
+        "priority": "P1",
+        "title": "Authority-required GC error becomes a post-publication build failure"
+      },
+      {
+        "id": "S3-EXP-R2",
+        "priority": "P2",
+        "title": "A torn progress marker blocks replay permanently"
+      },
+      {
+        "id": "S3-EXP-R3",
+        "priority": "P2",
+        "title": "The new validation memory limit does not bound retained decoded state"
+      },
+      {
+        "id": "S3-EXP-R4",
+        "priority": "P3",
+        "title": "Marker housekeeping bypasses the work allowance"
+      }
+    ],
+    "executions": {
+      "observation_probes": {
+        "passed": 4,
+        "meaning": "Successful probes reproduce defects; they do not establish acceptance."
+      },
+      "existing_artifact_gc_regression": {
+        "failed": 1,
+        "test": "api::materialization::tests::artifact_gc_retains_active_manifest_keys_and_removes_stale_keys",
+        "provenance": "Reviewer actual execution recorded in archived review report; no separate raw failed-test log supplied."
+      }
+    }
+  },
+  "s4_scheduler_primitive": {
+    "status": "Coordinator reports primitive review accepted; full S4 pending",
+    "reviewer_settings": {
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "max"
+    },
+    "actual_junit": {
+      "path": "s4-independent-source-junit.xml",
+      "sha256": "8fa9207d515e7be607d98f1f9e799edc0970899e21bace664d9e971a270bd414",
+      "cases": 10,
+      "scope": "10 existing source tests; these are executions already represented in primitive coverage, not10new independent scenarios"
+    },
+    "boundary_harness": {
+      "source": "/private/tmp/codebasegraph-s4-independent-review-kffyyuw2/scheduler_boundary_probes.rs",
+      "source_sha256": "bd5af237e0569c2ca0af546e0d444db7a13c9df7390d130562c781389db555e9",
+      "coordinator_reported_passes": 17,
+      "composition": "10 existing source tests plus7new boundary probes",
+      "actual_junit_for_boundary_harness": null,
+      "qualification": "17 is not17 independent/new cases; outcome reported by coordinator, no boundary execution log archived here."
+    }
+  }
+}

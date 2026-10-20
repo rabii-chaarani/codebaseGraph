@@ -1,0 +1,996 @@
+   Compiling codebase-graph v3.0.4 (/private/tmp/codebasegraph-disk-cleanup-7t9af0a6/repo)
+warning: struct `ValidatedArtifact` is never constructed
+   --> src/artifact_store.rs:354:19
+    |
+354 | pub(crate) struct ValidatedArtifact {
+    |                   ^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `validate_artifact_for_maintenance` is never used
+   --> src/artifact_store.rs:360:15
+    |
+360 | pub(crate) fn validate_artifact_for_maintenance(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `MaintenanceRow` is never constructed
+   --> src/artifact_store.rs:413:8
+    |
+413 | struct MaintenanceRow<'a> {
+    |        ^^^^^^^^^^^^^^
+
+warning: type alias `MaintenanceRows` is never used
+   --> src/artifact_store.rs:418:6
+    |
+418 | type MaintenanceRows<'a> = std::collections::BTreeMap<[u8; 32], Vec<MaintenanceRow<'a>>>;
+    |      ^^^^^^^^^^^^^^^
+
+warning: function `maintenance_string_digest` is never used
+   --> src/artifact_store.rs:419:4
+    |
+419 | fn maintenance_string_digest(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `maintenance_compare` is never used
+   --> src/artifact_store.rs:430:4
+    |
+430 | fn maintenance_compare(
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: function `maintenance_row_mut` is never used
+   --> src/artifact_store.rs:448:4
+    |
+448 | fn maintenance_row_mut<'a, 'b>(
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: function `maintenance_insert_row` is never used
+   --> src/artifact_store.rs:463:4
+    |
+463 | fn maintenance_insert_row<'a>(
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `maintenance_validate_index` is never used
+   --> src/artifact_store.rs:482:4
+    |
+482 | fn maintenance_validate_index(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `validate_raw_rows_cooperatively` is never used
+   --> src/artifact_store.rs:533:4
+    |
+533 | fn validate_raw_rows_cooperatively(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `maintenance_partition_id` is never used
+   --> src/artifact_store.rs:571:4
+    |
+571 | fn maintenance_partition_id(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `MaintenanceExecutionPermit` is never constructed
+   --> src/coordinator.rs:178:8
+    |
+178 | struct MaintenanceExecutionPermit {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `try_acquire_maintenance` is never used
+   --> src/coordinator.rs:189:8
+    |
+188 | impl ExecutionDispatcher {
+    | ------------------------ method in this implementation
+189 |     fn try_acquire_maintenance(self: &Arc<Self>) -> Option<MaintenanceExecutionPermit> {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `lifecycle_empty_with_owned` is never used
+   --> src/storage/containment.rs:178:15
+    |
+178 | pub(crate) fn lifecycle_empty_with_owned(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `writer_lease` is never used
+  --> src/storage/direct.rs:48:19
+   |
+47 | impl DirectWriteSession {
+   | ----------------------- method in this implementation
+48 |     pub(crate) fn writer_lease(&self) -> Result<&WriterLease, NativeError> {
+   |                   ^^^^^^^^^^^^
+
+warning: struct `MaintenanceTarget` is never constructed
+  --> src/storage/inventory.rs:11:19
+   |
+11 | pub(crate) struct MaintenanceTarget {
+   |                   ^^^^^^^^^^^^^^^^^
+
+warning: struct `DirectPair` is never constructed
+  --> src/storage/inventory.rs:20:19
+   |
+20 | pub(crate) struct DirectPair {
+   |                   ^^^^^^^^^^
+
+warning: enum `InventoryStatus` is never used
+  --> src/storage/inventory.rs:26:17
+   |
+26 | pub(crate) enum InventoryStatus {
+   |                 ^^^^^^^^^^^^^^^
+
+warning: enum `InventoryCategory` is never used
+  --> src/storage/inventory.rs:35:17
+   |
+35 | pub(crate) enum InventoryCategory {
+   |                 ^^^^^^^^^^^^^^^^^
+
+warning: enum `Disposition` is never used
+  --> src/storage/inventory.rs:49:17
+   |
+49 | pub(crate) enum Disposition {
+   |                 ^^^^^^^^^^^
+
+warning: struct `InventoryEntry` is never constructed
+  --> src/storage/inventory.rs:56:19
+   |
+56 | pub(crate) struct InventoryEntry {
+   |                   ^^^^^^^^^^^^^^
+
+warning: struct `InventoryTotals` is never constructed
+  --> src/storage/inventory.rs:69:19
+   |
+69 | pub(crate) struct InventoryTotals {
+   |                   ^^^^^^^^^^^^^^^
+
+warning: struct `StorageInventory` is never constructed
+  --> src/storage/inventory.rs:81:19
+   |
+81 | pub(crate) struct StorageInventory {
+   |                   ^^^^^^^^^^^^^^^^
+
+warning: struct `Stamp` is never constructed
+  --> src/storage/inventory.rs:92:8
+   |
+92 | struct Stamp {
+   |        ^^^^^
+
+warning: function `stamp` is never used
+  --> src/storage/inventory.rs:99:4
+   |
+99 | fn stamp(m: &Metadata) -> Stamp {
+   |    ^^^^^
+
+warning: function `changed` is never used
+   --> src/storage/inventory.rs:115:4
+    |
+115 | fn changed(m: &Metadata) -> Option<(i64, i64)> {
+    |    ^^^^^^^
+
+warning: function `allocation` is never used
+   --> src/storage/inventory.rs:133:4
+    |
+133 | fn allocation(m: &Metadata) -> Option<u64> {
+    |    ^^^^^^^^^^
+
+warning: function `real_path` is never used
+   --> src/storage/inventory.rs:143:15
+    |
+143 | pub(crate) fn real_path(path: &Path) -> bool {
+    |               ^^^^^^^^^
+
+warning: function `read_observed` is never used
+   --> src/storage/inventory.rs:165:4
+    |
+165 | fn read_observed<T: serde::de::DeserializeOwned>(path: &Path) -> Option<T> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `read_json` is never used
+   --> src/storage/inventory.rs:184:4
+    |
+184 | fn read_json(path: &Path) -> Option<serde_json::Value> {
+    |    ^^^^^^^^^
+
+warning: struct `ManifestKeyView` is never constructed
+   --> src/storage/inventory.rs:188:8
+    |
+188 | struct ManifestKeyView {
+    |        ^^^^^^^^^^^^^^^
+
+warning: struct `ArtifactKeyView` is never constructed
+   --> src/storage/inventory.rs:192:8
+    |
+192 | struct ArtifactKeyView {
+    |        ^^^^^^^^^^^^^^^
+
+warning: function `read_manifest_keys` is never used
+   --> src/storage/inventory.rs:196:4
+    |
+196 | fn read_manifest_keys(path: &Path) -> Option<BTreeSet<String>> {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: struct `ObservedBinding` is never constructed
+   --> src/storage/inventory.rs:210:19
+    |
+210 | pub(crate) struct ObservedBinding {
+    |                   ^^^^^^^^^^^^^^^
+
+warning: function `default_direct` is never used
+   --> src/storage/inventory.rs:215:15
+    |
+215 | pub(crate) fn default_direct(target: &MaintenanceTarget) -> DirectPair {
+    |               ^^^^^^^^^^^^^^
+
+warning: function `physically_within` is never used
+   --> src/storage/inventory.rs:233:4
+    |
+233 | fn physically_within(path: &Path, root: &Path) -> bool {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `reconcile_observation_roots` is never used
+   --> src/storage/inventory.rs:237:4
+    |
+237 | fn reconcile_observation_roots(mut roots: Vec<PathBuf>) -> Vec<PathBuf> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `managed_direct_roles_overlap` is never used
+   --> src/storage/inventory.rs:253:4
+    |
+253 | fn managed_direct_roles_overlap(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `bound_roles_overlap` is never used
+   --> src/storage/inventory.rs:265:15
+    |
+265 | pub(crate) fn bound_roles_overlap(target: &MaintenanceTarget, binding: &ObservedBinding) -> bool {
+    |               ^^^^^^^^^^^^^^^^^^^
+
+warning: function `observed_relative` is never used
+   --> src/storage/inventory.rs:277:4
+    |
+277 | fn observed_relative(path: &Path, root: &Path) -> Option<PathBuf> {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `config_raw_path` is never used
+   --> src/storage/inventory.rs:286:4
+    |
+286 | fn config_raw_path(
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `config_value_path` is never used
+   --> src/storage/inventory.rs:311:4
+    |
+311 | fn config_value_path(
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `observe_binding` is never used
+   --> src/storage/inventory.rs:331:15
+    |
+331 | pub(crate) fn observe_binding(target: &MaintenanceTarget) -> Result<ObservedBinding, String> {
+    |               ^^^^^^^^^^^^^^^
+
+warning: function `classify_artifact` is never used
+   --> src/storage/inventory.rs:422:4
+    |
+422 | fn classify_artifact(
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: struct `Scan` is never constructed
+   --> src/storage/inventory.rs:465:8
+    |
+465 | struct Scan {
+    |        ^^^^
+
+warning: associated items `new` and `walk` are never used
+   --> src/storage/inventory.rs:473:8
+    |
+472 | impl Scan {
+    | --------- associated items in this implementation
+473 |     fn new() -> Self {
+    |        ^^^
+...
+482 |     fn walk(&mut self, path: &Path) {
+    |        ^^^^
+
+warning: function `unknown` is never used
+   --> src/storage/inventory.rs:552:4
+    |
+552 | fn unknown(path: &Path, reason: &str) -> InventoryEntry {
+    |    ^^^^^^^
+
+warning: function `inspect_storage` is never used
+   --> src/storage/inventory.rs:567:15
+    |
+567 | pub(crate) fn inspect_storage(target: &MaintenanceTarget) -> StorageInventory {
+    |               ^^^^^^^^^^^^^^^
+
+warning: function `inspect_with_hook` is never used
+   --> src/storage/inventory.rs:570:4
+    |
+570 | fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -> StorageInventory {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `identity_supported` is never used
+   --> src/storage/inventory.rs:894:4
+    |
+894 | fn identity_supported() -> bool {
+    |    ^^^^^^^^^^^^^^^^^^
+
+warning: enum `LeaseObservation` is never used
+   --> src/storage/inventory.rs:897:6
+    |
+897 | enum LeaseObservation {
+    |      ^^^^^^^^^^^^^^^^
+
+warning: function `lease_observation` is never used
+   --> src/storage/inventory.rs:902:4
+    |
+902 | fn lease_observation(path: &Path) -> LeaseObservation {
+    |    ^^^^^^^^^^^^^^^^^
+
+warning: function `existing_shared_lock` is never used
+   --> src/storage/inventory.rs:937:4
+    |
+937 | fn existing_shared_lock(path: &Path) -> std::io::Result<File> {
+    |    ^^^^^^^^^^^^^^^^^^^^
+
+warning: function `ambiguous_file_identity` is never used
+   --> src/storage/inventory.rs:965:4
+    |
+965 | fn ambiguous_file_identity(metadata: &Metadata) -> bool {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `repository_name` is never used
+   --> src/storage/inventory.rs:973:4
+    |
+973 | fn repository_name(root: &Path) -> String {
+    |    ^^^^^^^^^^^^^^^
+
+warning: function `valid_key` is never used
+   --> src/storage/inventory.rs:994:4
+    |
+994 | fn valid_key(key: &str) -> bool {
+    |    ^^^^^^^^^
+
+warning: function `classify` is never used
+    --> src/storage/inventory.rs:1000:4
+     |
+1000 | fn classify<'a>(
+     |    ^^^^^^^^
+
+warning: method `path` is never used
+  --> src/storage/locks.rs:34:19
+   |
+20 | impl LockedFile {
+   | --------------- method in this implementation
+...
+34 |     pub(crate) fn path(&self) -> &Path {
+   |                   ^^^^
+
+warning: struct `MaintenanceOptions` is never constructed
+  --> src/storage/maintenance.rs:16:19
+   |
+16 | pub(crate) struct MaintenanceOptions {
+   |                   ^^^^^^^^^^^^^^^^^^
+
+warning: enum `MaintenanceStatus` is never used
+  --> src/storage/maintenance.rs:33:17
+   |
+33 | pub(crate) enum MaintenanceStatus {
+   |                 ^^^^^^^^^^^^^^^^^
+
+warning: struct `MaintenanceContinuation` is never constructed
+  --> src/storage/maintenance.rs:42:19
+   |
+42 | pub(crate) struct MaintenanceContinuation {
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `MaintenanceReport` is never constructed
+  --> src/storage/maintenance.rs:48:19
+   |
+48 | pub(crate) struct MaintenanceReport {
+   |                   ^^^^^^^^^^^^^^^^^
+
+warning: function `maintain_storage` is never used
+  --> src/storage/maintenance.rs:63:15
+   |
+63 | pub(crate) fn maintain_storage(
+   |               ^^^^^^^^^^^^^^^^
+
+warning: function `maintain_storage_with_lease` is never used
+  --> src/storage/maintenance.rs:97:15
+   |
+97 | pub(crate) fn maintain_storage_with_lease(
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `deferred_reference_report` is never used
+   --> src/storage/maintenance.rs:105:4
+    |
+105 | fn deferred_reference_report(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `WorkBudget` is never constructed
+   --> src/storage/maintenance.rs:125:8
+    |
+125 | struct WorkBudget {
+    |        ^^^^^^^^^^
+
+warning: struct `AttemptBudget` is never constructed
+   --> src/storage/maintenance.rs:128:8
+    |
+128 | struct AttemptBudget {
+    |        ^^^^^^^^^^^^^
+
+warning: associated items `new`, `take`, and `available` are never used
+   --> src/storage/maintenance.rs:134:8
+    |
+133 | impl WorkBudget {
+    | --------------- associated items in this implementation
+134 |     fn new(options: &MaintenanceOptions) -> Self {
+    |        ^^^
+...
+143 |     fn take(&mut self) -> bool {
+    |        ^^^^
+...
+146 |     fn available(&self) -> bool {
+    |        ^^^^^^^^^
+
+warning: methods `alive` and `take` are never used
+   --> src/storage/maintenance.rs:153:8
+    |
+152 | impl AttemptBudget {
+    | ------------------ methods in this implementation
+153 |     fn alive(&self) -> bool {
+    |        ^^^^^
+...
+156 |     fn take(&mut self) -> bool {
+    |        ^^^^
+
+warning: struct `ValidationGate` is never constructed
+   --> src/storage/maintenance.rs:169:19
+    |
+169 | pub(crate) struct ValidationGate {
+    |                   ^^^^^^^^^^^^^^
+
+warning: struct `GrantState` is never constructed
+   --> src/storage/maintenance.rs:173:8
+    |
+173 | struct GrantState {
+    |        ^^^^^^^^^^
+
+warning: methods `grant`, `cancel`, `wait`, `checkpoint`, and `time_checkpoint` are never used
+   --> src/storage/maintenance.rs:180:8
+    |
+179 | impl ValidationGate {
+    | ------------------- methods in this implementation
+180 |     fn grant(&self, budget: &WorkBudget) {
+    |        ^^^^^
+...
+200 |     pub(crate) fn cancel(&self) {
+    |                   ^^^^^^
+...
+208 |     fn wait(&self, charge: bool) -> std::io::Result<u64> {
+    |        ^^^^
+...
+237 |     pub(crate) fn checkpoint(&self) -> std::io::Result<()> {
+    |                   ^^^^^^^^^^
+...
+240 |     fn time_checkpoint(&self) -> std::io::Result<u64> {
+    |        ^^^^^^^^^^^^^^^
+
+warning: constant `VALIDATION_CHUNK_BYTES` is never used
+   --> src/storage/maintenance.rs:245:7
+    |
+245 | const VALIDATION_CHUNK_BYTES: usize = 8 * 1024;
+    |       ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `GatedReader` is never constructed
+   --> src/storage/maintenance.rs:249:19
+    |
+249 | pub(crate) struct GatedReader<R> {
+    |                   ^^^^^^^^^^^
+
+warning: associated function `new` is never used
+   --> src/storage/maintenance.rs:256:19
+    |
+255 | impl<R> GatedReader<R> {
+    | ---------------------- associated function in this implementation
+256 |     pub(crate) fn new(inner: R, gate: ValidationGate) -> Self {
+    |                   ^^^
+
+warning: struct `GatedWriter` is never constructed
+   --> src/storage/maintenance.rs:285:19
+    |
+285 | pub(crate) struct GatedWriter<W> {
+    |                   ^^^^^^^^^^^
+
+warning: associated items `new` and `into_inner` are never used
+   --> src/storage/maintenance.rs:292:19
+    |
+291 | impl<W> GatedWriter<W> {
+    | ---------------------- associated items in this implementation
+292 |     pub(crate) fn new(inner: W, gate: ValidationGate) -> Self {
+    |                   ^^^
+...
+300 |     pub(crate) fn into_inner(self) -> W {
+    |                   ^^^^^^^^^^
+
+warning: struct `ArtifactCursor` is never constructed
+   --> src/storage/maintenance.rs:329:8
+    |
+329 | struct ArtifactCursor {
+    |        ^^^^^^^^^^^^^^
+
+warning: enum `CursorStep` is never used
+   --> src/storage/maintenance.rs:336:6
+    |
+336 | enum CursorStep {
+    |      ^^^^^^^^^^
+
+warning: associated items `open` and `next` are never used
+   --> src/storage/maintenance.rs:342:8
+    |
+341 | impl ArtifactCursor {
+    | ------------------- associated items in this implementation
+342 |     fn open(root: &Path) -> Result<Self, NativeError> {
+    |        ^^^^
+...
+354 |     fn next(&mut self, budget: &mut WorkBudget) -> Result<CursorStep, NativeError> {
+    |        ^^^^
+
+warning: struct `PendingValidation` is never constructed
+   --> src/storage/maintenance.rs:399:8
+    |
+399 | struct PendingValidation {
+    |        ^^^^^^^^^^^^^^^^^
+
+warning: static `VALIDATION_WORKERS` is never used
+   --> src/storage/maintenance.rs:406:8
+    |
+406 | static VALIDATION_WORKERS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    |        ^^^^^^^^^^^^^^^^^^
+
+warning: struct `ValidationSlot` is never constructed
+   --> src/storage/maintenance.rs:407:8
+    |
+407 | struct ValidationSlot;
+    |        ^^^^^^^^^^^^^^
+
+warning: associated function `acquire` is never used
+   --> src/storage/maintenance.rs:409:8
+    |
+408 | impl ValidationSlot {
+    | ------------------- associated function in this implementation
+409 |     fn acquire() -> Option<Self> {
+    |        ^^^^^^^
+
+warning: struct `AdvisoryArtifactJob` is never constructed
+   --> src/storage/maintenance.rs:427:8
+    |
+427 | struct AdvisoryArtifactJob {
+    |        ^^^^^^^^^^^^^^^^^^^
+
+warning: associated items `start_owned`, `grant`, and `current_under` are never used
+   --> src/storage/maintenance.rs:438:8
+    |
+437 | impl AdvisoryArtifactJob {
+    | ------------------------ associated items in this implementation
+438 |     fn start_owned(
+    |        ^^^^^^^^^^^
+...
+540 |     fn grant(&self, budget: &WorkBudget) {
+    |        ^^^^^
+...
+543 |     fn current_under(
+    |        ^^^^^^^^^^^^^
+
+warning: struct `Retirement` is never constructed
+   --> src/storage/maintenance.rs:574:8
+    |
+574 | struct Retirement {
+    |        ^^^^^^^^^^
+
+warning: multiple associated items are never used
+   --> src/storage/maintenance.rs:587:8
+    |
+586 | impl Retirement {
+    | --------------- associated items in this implementation
+587 |     fn prepare(root: &Path, original: &Path) -> Result<(Self, PathBuf), NativeError> {
+    |        ^^^^^^^
+...
+637 |     fn validate(&self, root: &Path) -> Result<(), NativeError> {
+    |        ^^^^^^^^
+...
+662 |     fn journal_path(&self, root: &Path) -> PathBuf {
+    |        ^^^^^^^^^^^^
+...
+665 |     fn stage_path(&self, root: &Path) -> PathBuf {
+    |        ^^^^^^^^^^
+...
+669 |     fn stage_temp_path(&self, root: &Path) -> PathBuf {
+    |        ^^^^^^^^^^^^^^^
+...
+673 |     fn verify_journal(&self, root: &Path, supplied: &Path) -> Result<(), NativeError> {
+    |        ^^^^^^^^^^^^^^
+...
+708 |     fn detach(
+    |        ^^^^^^
+
+warning: struct `ObjectStamp` is never constructed
+   --> src/storage/maintenance.rs:751:8
+    |
+751 | struct ObjectStamp {
+    |        ^^^^^^^^^^^
+
+warning: associated function `capture` is never used
+   --> src/storage/maintenance.rs:758:8
+    |
+757 | impl ObjectStamp {
+    | ---------------- associated function in this implementation
+758 |     fn capture(path: &Path) -> Result<Self, NativeError> {
+    |        ^^^^^^^
+
+warning: function `optional_stamp` is never used
+   --> src/storage/maintenance.rs:782:4
+    |
+782 | fn optional_stamp(path: &Path) -> Result<Option<ObjectStamp>, NativeError> {
+    |    ^^^^^^^^^^^^^^
+
+warning: function `safe_relative` is never used
+   --> src/storage/maintenance.rs:790:4
+    |
+790 | fn safe_relative(path: &Path) -> Result<(), NativeError> {
+    |    ^^^^^^^^^^^^^
+
+warning: function `invalid` is never used
+   --> src/storage/maintenance.rs:800:4
+    |
+800 | fn invalid(reason: &str) -> NativeError {
+    |    ^^^^^^^
+
+warning: function `artifact_directory_shape` is never used
+   --> src/storage/maintenance.rs:806:4
+    |
+806 | fn artifact_directory_shape(path: &Path) -> Result<(), NativeError> {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `delete_retirement_step` is never used
+   --> src/storage/maintenance.rs:831:4
+    |
+831 | fn delete_retirement_step(
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `read_unlinked_stage` is never used
+   --> src/storage/maintenance.rs:911:4
+    |
+911 | fn read_unlinked_stage(
+    |    ^^^^^^^^^^^^^^^^^^^
+
+warning: enum `StageFault` is never used
+   --> src/storage/maintenance.rs:941:6
+    |
+941 | enum StageFault {
+    |      ^^^^^^^^^^
+
+warning: function `stage_fault` is never used
+   --> src/storage/maintenance.rs:950:4
+    |
+950 | fn stage_fault(actual: StageFault, expected: StageFault) -> Result<(), NativeError> {
+    |    ^^^^^^^^^^^
+
+warning: function `publish_unlinked_stage` is never used
+   --> src/storage/maintenance.rs:961:4
+    |
+961 | fn publish_unlinked_stage(
+    |    ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `remove_retirement_journal` is never used
+    --> src/storage/maintenance.rs:1020:4
+     |
+1020 | fn remove_retirement_journal(
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `allocated_bytes` is never used
+    --> src/storage/maintenance.rs:1091:4
+     |
+1091 | fn allocated_bytes(metadata: &fs::Metadata) -> Option<u64> {
+     |    ^^^^^^^^^^^^^^^
+
+warning: function `empty_report` is never used
+    --> src/storage/maintenance.rs:1100:4
+     |
+1100 | fn empty_report() -> MaintenanceReport {
+     |    ^^^^^^^^^^^^
+
+warning: method `artifact_root` is never used
+   --> src/storage/maintenance_ownership.rs:169:19
+    |
+ 51 | impl ReferenceDomain {
+    | -------------------- method in this implementation
+...
+169 |     pub(crate) fn artifact_root(&self) -> &Path {
+    |                   ^^^^^^^^^^^^^
+
+warning: method `counter` is never used
+   --> src/storage/maintenance_ownership.rs:193:19
+    |
+192 | impl ReferenceEpoch {
+    | ------------------- method in this implementation
+193 |     pub(crate) fn counter(&self) -> u64 {
+    |                   ^^^^^^^
+
+warning: enum `EpochObservation` is never used
+   --> src/storage/maintenance_ownership.rs:198:17
+    |
+198 | pub(crate) enum EpochObservation {
+    |                 ^^^^^^^^^^^^^^^^
+
+warning: function `observe_reference_epoch` is never used
+   --> src/storage/maintenance_ownership.rs:337:15
+    |
+337 | pub(crate) fn observe_reference_epoch(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: field `reason` is never read
+   --> src/storage/maintenance_ownership.rs:379:5
+    |
+377 | struct ReferenceActivity {
+    |        ----------------- field in this struct
+378 |     guard: Option<LockedFile>,
+379 |     reason: Option<String>,
+    |     ^^^^^^
+    |
+    = note: `ReferenceActivity` has a derived impl for the trait `Debug`, but this is intentionally ignored during dead code analysis
+
+warning: methods `tracked` and `pending_reason` are never used
+   --> src/storage/maintenance_ownership.rs:557:19
+    |
+556 | impl ReferenceMutation<'_> {
+    | -------------------------- methods in this implementation
+557 |     pub(crate) fn tracked(&self) -> bool {
+    |                   ^^^^^^^
+...
+560 |     pub(crate) fn pending_reason(&self) -> Option<&str> {
+    |                   ^^^^^^^^^^^^^^
+
+warning: enum `MaintenanceAdmission` is never used
+   --> src/storage/maintenance_ownership.rs:566:17
+    |
+566 | pub(crate) enum MaintenanceAdmission<'a> {
+    |                 ^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `DestinationWriter` is never used
+   --> src/storage/maintenance_ownership.rs:573:6
+    |
+573 | enum DestinationWriter<'a> {
+    |      ^^^^^^^^^^^^^^^^^
+
+warning: method `lease` is never used
+   --> src/storage/maintenance_ownership.rs:578:8
+    |
+577 | impl DestinationWriter<'_> {
+    | -------------------------- method in this implementation
+578 |     fn lease(&self) -> &WriterLease {
+    |        ^^^^^
+
+warning: struct `MaintenanceLease` is never constructed
+   --> src/storage/maintenance_ownership.rs:591:19
+    |
+591 | pub(crate) struct MaintenanceLease<'a> {
+    |                   ^^^^^^^^^^^^^^^^
+
+warning: multiple methods are never used
+   --> src/storage/maintenance_ownership.rs:603:19
+    |
+602 | impl MaintenanceLease<'_> {
+    | ------------------------- methods in this implementation
+603 |     pub(crate) fn begin_reference_mutation(&self) -> Result<ReferenceMutation<'_>, NativeError> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+614 |     pub(crate) fn target(&self) -> &MaintenanceTarget {
+    |                   ^^^^^^
+...
+618 |     pub(crate) fn revalidate(&self) -> Result<(), NativeError> {
+    |                   ^^^^^^^^^^
+...
+644 |     pub(crate) fn artifact_cohort_verified(&self) -> Result<bool, NativeError> {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^
+...
+649 |     pub(crate) fn cohort_verified(&self) -> Result<bool, NativeError> {
+    |                   ^^^^^^^^^^^^^^^
+...
+671 |     pub(crate) fn with_state_lock<T>(
+    |                   ^^^^^^^^^^^^^^^
+...
+689 |     pub(crate) fn cohort_record(&self) -> Result<DestinationCohortRecord, NativeError> {
+    |                   ^^^^^^^^^^^^^
+...
+730 |     pub(crate) fn publication_cohort_record(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+796 |     pub(crate) fn direct_publication_cohort_record(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+810 |     pub(crate) fn publication_cohort_verified(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+819 |     pub(crate) fn direct_publication_cohort_verified(
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+826 |     pub(crate) fn cohort_record_path(&self) -> PathBuf {
+    |                   ^^^^^^^^^^^^^^^^^^
+
+warning: struct `PublicationCohortRecord` is never constructed
+   --> src/storage/maintenance_ownership.rs:832:19
+    |
+832 | pub(crate) struct PublicationCohortRecord {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `PublicationCohortOrigin` is never used
+   --> src/storage/maintenance_ownership.rs:846:6
+    |
+846 | enum PublicationCohortOrigin {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `PublicationScope` is never used
+   --> src/storage/maintenance_ownership.rs:851:6
+    |
+851 | enum PublicationScope {
+    |      ^^^^^^^^^^^^^^^^
+
+warning: struct `DestinationCohortRecord` is never constructed
+   --> src/storage/maintenance_ownership.rs:864:19
+    |
+864 | pub(crate) struct DestinationCohortRecord {
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: enum `DestinationCohortOrigin` is never used
+   --> src/storage/maintenance_ownership.rs:880:6
+    |
+880 | enum DestinationCohortOrigin {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `cohort_verified` is never used
+    --> src/storage/maintenance_ownership.rs:1042:8
+     |
+ 920 | impl ArtifactUseLease {
+     | --------------------- method in this implementation
+...
+1042 |     fn cohort_verified(&self) -> Result<bool, NativeError> {
+     |        ^^^^^^^^^^^^^^^
+
+warning: associated items `try_exclusive`, `try_exclusive_many`, and `exclusive_proof` are never used
+    --> src/storage/maintenance_ownership.rs:1105:19
+     |
+1086 | impl DatabaseUseLease {
+     | --------------------- associated items in this implementation
+...
+1105 |     pub(crate) fn try_exclusive(database: &Path) -> Result<Option<Self>, NativeError> {
+     |                   ^^^^^^^^^^^^^
+...
+1112 |     pub(crate) fn try_exclusive_many(
+     |                   ^^^^^^^^^^^^^^^^^^
+...
+1187 |     pub(crate) fn exclusive_proof(&self) -> Result<DatabaseUseProof, NativeError> {
+     |                   ^^^^^^^^^^^^^^^
+
+warning: struct `DatabaseUseProof` is never constructed
+    --> src/storage/maintenance_ownership.rs:1216:19
+     |
+1216 | pub(crate) struct DatabaseUseProof {
+     |                   ^^^^^^^^^^^^^^^^
+
+warning: function `observe_artifact_cohort` is never used
+    --> src/storage/maintenance_ownership.rs:1286:15
+     |
+1286 | pub(crate) fn observe_artifact_cohort(
+     |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `claim_maintenance` is never used
+    --> src/storage/maintenance_ownership.rs:1307:15
+     |
+1307 | pub(crate) fn claim_maintenance(
+     |               ^^^^^^^^^^^^^^^^^
+
+warning: function `claim_maintenance_with_owned` is never used
+    --> src/storage/maintenance_ownership.rs:1312:15
+     |
+1312 | pub(crate) fn claim_maintenance_with_owned<'a>(
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `claim` is never used
+    --> src/storage/maintenance_ownership.rs:1319:4
+     |
+1319 | fn claim<'a>(
+     |    ^^^^^
+
+warning: function `guard_registry` is never used
+    --> src/storage/maintenance_ownership.rs:1504:4
+     |
+1504 | fn guard_registry(root: &Path, guards: &mut Vec<LockedFile>) -> Result<(), String> {
+     |    ^^^^^^^^^^^^^^
+
+warning: function `overlapping_pairs` is never used
+    --> src/storage/maintenance_ownership.rs:1588:4
+     |
+1588 | fn overlapping_pairs(
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: function `resources_overlap` is never used
+    --> src/storage/maintenance_ownership.rs:1633:4
+     |
+1633 | fn resources_overlap(a: &Path, b: &Path) -> bool {
+     |    ^^^^^^^^^^^^^^^^^
+
+warning: constant `IDLE_INTERVAL` is never used
+  --> src/storage/maintenance_scheduler.rs:12:7
+   |
+12 | const IDLE_INTERVAL: Duration = Duration::from_secs(60);
+   |       ^^^^^^^^^^^^^
+
+warning: trait `MaintenanceClock` is never used
+  --> src/storage/maintenance_scheduler.rs:14:18
+   |
+14 | pub(crate) trait MaintenanceClock {
+   |                  ^^^^^^^^^^^^^^^^
+
+warning: struct `SystemMaintenanceClock` is never constructed
+  --> src/storage/maintenance_scheduler.rs:19:19
+   |
+19 | pub(crate) struct SystemMaintenanceClock;
+   |                   ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `MaintenanceSnapshot` is never constructed
+  --> src/storage/maintenance_scheduler.rs:35:19
+   |
+35 | pub(crate) struct MaintenanceSnapshot {
+   |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: enum `MaintenanceDispatch` is never used
+  --> src/storage/maintenance_scheduler.rs:48:17
+   |
+48 | pub(crate) enum MaintenanceDispatch {
+   |                 ^^^^^^^^^^^^^^^^^^^
+
+warning: struct `ScheduleState` is never constructed
+  --> src/storage/maintenance_scheduler.rs:56:8
+   |
+56 | struct ScheduleState {
+   |        ^^^^^^^^^^^^^
+
+warning: struct `MaintenanceScheduler` is never constructed
+  --> src/storage/maintenance_scheduler.rs:71:19
+   |
+71 | pub(crate) struct MaintenanceScheduler {
+   |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: associated items `new`, `request`, `shutdown`, `snapshot`, and `run_if_due` are never used
+   --> src/storage/maintenance_scheduler.rs:76:12
+    |
+ 75 | impl MaintenanceScheduler {
+    | ------------------------- associated items in this implementation
+ 76 |     pub fn new(now: Instant) -> Self {
+    |            ^^^
+...
+ 93 |     pub fn request(&self) {
+    |            ^^^^^^^
+...
+102 |     pub fn shutdown(&self) {
+    |            ^^^^^^^^
+...
+108 |     pub fn snapshot(&self, clock: &impl MaintenanceClock) -> MaintenanceSnapshot {
+    |            ^^^^^^^^
+...
+133 |     pub fn run_if_due<C, P, A, F>(
+    |            ^^^^^^^^^^
+
+warning: function `failed_report` is never used
+   --> src/storage/maintenance_scheduler.rs:209:4
+    |
+209 | fn failed_report(observed_at_unix_ms: u64, error: String) -> MaintenanceReport {
+    |    ^^^^^^^^^^^^^
+
+warning: method `writer_lease` is never used
+   --> src/storage/managed.rs:155:19
+    |
+154 | impl ManagedWriteSession {
+    | ------------------------ method in this implementation
+155 |     pub(crate) fn writer_lease(&self) -> Result<&WriterLease, NativeError> {
+    |                   ^^^^^^^^^^^^
+
+warning: `codebase-graph` (lib) generated 138 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.58s

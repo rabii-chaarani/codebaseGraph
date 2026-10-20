@@ -1,0 +1,20 @@
+   Compiling codebase-graph v3.0.4 (/private/tmp/codebasegraph-s3-expanded-review-axcpl_ww)
+warning: struct `SystemMaintenanceClock` is never constructed
+  --> src/storage/maintenance_scheduler.rs:19:19
+   |
+19 | pub(crate) struct SystemMaintenanceClock;
+   |                   ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `codebase-graph` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.27s
+     Running unittests src/lib.rs (/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/codebase_graph-ffa80bf96221ee79)
+
+running 1 test
+test storage::maintenance::tests::reviewer_expanded_zero_budget_still_creates_unlinked_stage ... stage_created_with_max_entries=0 max_duration=100ms
+stage_created_with_max_entries=100 max_duration=0ns
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 521 filtered out; finished in 0.07s
+

@@ -1,0 +1,33 @@
+{
+  "scope": "DC-S3 expanded partial: journal review fixes, gated validation/cursor/job foundations; public canonical GC remains deferred",
+  "head": "c0741ce137e09dac309ac72f5a2c2243a92ef070",
+  "files": {
+    "src/storage/maintenance.rs": "2548f04eb3a911d43910eac63fc3eb5651cab17a63d648aebc5a6d71f45e3b1d",
+    "src/artifact_store.rs": "7e0fbf42a98a3ab64a97624db9cf782f8ead0db4a82abde2f40b4ee26028e7da",
+    "src/storage/mod.rs": "68db9239927733a14f0853d5b7330ba19c9114fe8c3cac3d56d67ed2cf3ff981"
+  },
+  "snapshot_sha256": "ac4f8016de83c8a3cd156d24cd7b2b3d24f2d816fb64b3b45318f207b2464cf8",
+  "compile_dependencies": {
+    "src/storage/maintenance_scheduler.rs": "480df68088b7ab2e01936c9e07733a8a70b1380eda38a65c929bfebc297ac9bf"
+  },
+  "nextest_run_id": "fc78ee6c-cec6-42bb-9bda-544e10913b47",
+  "profile": "cleanup-s3",
+  "tests": {
+    "passed": 31,
+    "failed": 0
+  },
+  "command": "CARGO_TARGET_DIR=/Users/rabii/Projects/Repositories/codebaseGraph/target cargo nextest run --offline --locked --lib --config-file /private/tmp/codebasegraph-disk-cleanup-7t9af0a6/nextest.toml --profile cleanup-s3 -E 'test(storage::maintenance::) | test(artifact_store::)' --test-threads 1",
+  "config_sha256": "3afd345f1beb9e57214beaa23413621c58308c1d6f80bbb993b834f48f6880d2",
+  "junit": "/private/tmp/codebasegraph-disk-cleanup-7t9af0a6/s3-expanded-junit.xml",
+  "junit_sha256": "e00f773cf313ef6575f4fdcf79486dc865dd19ee634888b5b4cf3e1d427e0627",
+  "limitations": [
+    "Canonical key collection/backup restore pending producer-wide reference seal; APIs return reference_seal_unavailable",
+    "Fast final ownership/epoch seal and paused full-validation/changed-seal tests pending S2 API",
+    "No database/generation/run/legacy-staging/Direct retirement",
+    "Job descriptor persisted but restart controller/reconciliation not yet wired",
+    "Resource ceiling supplied by internal caller; configured value selection pending",
+    "Individual serde BTreeMap insertion and cancellation/error disposal CPU atoms require reviewed resource/overshoot treatment",
+    "Paused parser test proves state-lock and writer admission accessibility, not native graph query execution",
+    "One S4 SystemMaintenanceClock unused warning; production integration pending"
+  ]
+}
