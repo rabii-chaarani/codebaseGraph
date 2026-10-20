@@ -154,7 +154,9 @@ impl DirectStore {
 
     pub(crate) fn begin_read(&self) -> Result<WriterLease, NativeError> {
         let mut writer_lease = self.open_writer_lock()?;
-        super::maintenance_ownership::register_direct_pair(&self.layout)?;
+        // A committed reader only needs its lifetime guards. Registration is
+        // producer overlap evidence; creating or repairing it is not required
+        // to serve an existing pair and cannot establish cleanup eligibility.
         for resource in [self.layout.db_path(), self.layout.manifest_path()] {
             writer_lease.retain(
                 super::maintenance_ownership::DatabaseUseLease::acquire_shared(resource)?
@@ -223,6 +225,9 @@ impl DirectStore {
         if !journal_path.exists() {
             return Ok(());
         }
+        // Unlike an ordinary committed read, replay mutates the destination.
+        // Preserve strict producer registration before any recovery effects.
+        super::maintenance_ownership::register_direct_pair(&self.layout)?;
         let domain = super::maintenance_ownership::ReferenceDomain::direct(&self.layout)?;
         let _mutation = super::maintenance_ownership::ReferenceMutation::begin_in_domain(&domain)?;
         let journal = self.read_journal()?;

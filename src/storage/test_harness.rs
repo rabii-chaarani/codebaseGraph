@@ -490,6 +490,177 @@ fn managed_metadata_sizes_include_db_sidecars_and_allocated_bytes() {
     session.abort(Some("done".to_string())).unwrap();
 }
 
+fn committed_direct_read_registration_case(corrupt: bool, read_only_parent: bool) {
+    use storage::inventory::{default_direct, MaintenanceTarget};
+    use storage::locks::{open_locked, path_identity};
+    use storage::maintenance_ownership::{
+        claim_maintenance, ArtifactUseLease, DatabaseUseLease, MaintenanceAdmission,
+    };
+    let root = fs::canonicalize(temp_dir("direct-read-registration")).unwrap();
+    let state = root.join(".codebaseGraph");
+    fs::create_dir(&state).unwrap();
+    fs::write(state.join("config.json"), br#"{"schema_version":2}"#).unwrap();
+    let mut target = MaintenanceTarget {
+        repository_root: root.clone(),
+        state_root: state.clone(),
+        storage_root: None,
+        direct_pair: None,
+        config_path: None,
+    };
+    let pair = default_direct(&target);
+    let layout = DirectLayout::new(&pair.database, &pair.manifest);
+    target.direct_pair = Some(pair);
+    fs::write(layout.db_path(), b"committed graph").unwrap();
+    fs::write(layout.manifest_path(), b"{}").unwrap();
+    drop(open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap());
+    for resource in [layout.db_path(), layout.manifest_path()] {
+        drop(DatabaseUseLease::acquire_shared(resource).unwrap());
+    }
+    // A modern artifact root alone still cannot prove destination-wide
+    // migration. Reading must not create that missing proof or registration.
+    drop(ArtifactUseLease::acquire_shared(&layout.artifact_root_path()).unwrap());
+    let registration = layout.registration_path();
+    let expected_registration = if corrupt {
+        fs::write(&registration, b"interrupted registration").unwrap();
+        Some((
+            path_identity(&registration).unwrap(),
+            fs::read(&registration).unwrap(),
+        ))
+    } else {
+        None
+    };
+    let database_identity = path_identity(layout.db_path()).unwrap();
+    let manifest_identity = path_identity(layout.manifest_path()).unwrap();
+    let permissions = fs::metadata(&state).unwrap().permissions();
+    #[cfg(unix)]
+    if read_only_parent {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&state, fs::Permissions::from_mode(0o555)).unwrap();
+    }
+    #[cfg(not(unix))]
+    assert!(!read_only_parent, "Unix directory permission fixture only");
+    let store = DirectStore::new(layout.clone()).unwrap();
+    let reader = store.begin_read();
+    // Restore fixture permissions even if admission unexpectedly fails.
+    fs::set_permissions(&state, permissions).unwrap();
+    let reader = reader.expect("committed read must not produce/decode registration");
+    assert!(
+        try_open_locked(layout.writer_lock_path(), LockMode::Exclusive)
+            .unwrap()
+            .is_none()
+    );
+    for resource in [layout.db_path(), layout.manifest_path()] {
+        assert!(DatabaseUseLease::try_exclusive(resource).unwrap().is_none());
+    }
+    drop(reader);
+    assert_eq!(path_identity(layout.db_path()).unwrap(), database_identity);
+    assert_eq!(
+        path_identity(layout.manifest_path()).unwrap(),
+        manifest_identity
+    );
+    assert_eq!(fs::read(layout.db_path()).unwrap(), b"committed graph");
+    assert_eq!(fs::read(layout.manifest_path()).unwrap(), b"{}");
+    if let Some((identity, bytes)) = &expected_registration {
+        assert_eq!(path_identity(&registration).unwrap(), *identity);
+        assert_eq!(fs::read(&registration).unwrap(), *bytes);
+        assert!(
+            store.begin_write().is_err(),
+            "producer registration remains strict"
+        );
+        fs::write(layout.journal_path(), b"required replay remains strict").unwrap();
+        let journal_identity = path_identity(&layout.journal_path()).unwrap();
+        assert!(store.begin_read().is_err());
+        assert_eq!(
+            path_identity(&layout.journal_path()).unwrap(),
+            journal_identity
+        );
+        assert_eq!(fs::read(&registration).unwrap(), *bytes);
+        fs::remove_file(layout.journal_path()).unwrap();
+    } else {
+        assert!(
+            !registration.exists(),
+            "read must leave missing evidence missing"
+        );
+    }
+    match claim_maintenance(&target) {
+        Ok(MaintenanceAdmission::Acquired(lease)) => {
+            assert!(
+                !lease.cohort_verified().unwrap(),
+                "read cannot certify legacy quiescence"
+            );
+        }
+        Ok(MaintenanceAdmission::Unknown(_)) | Ok(MaintenanceAdmission::Deferred(_)) => (),
+        Err(error) => panic!("unexpected maintenance observation error: {error}"),
+    }
+    assert_eq!(path_identity(layout.db_path()).unwrap(), database_identity);
+    assert_eq!(
+        path_identity(layout.manifest_path()).unwrap(),
+        manifest_identity
+    );
+    if let Some((identity, bytes)) = expected_registration {
+        assert_eq!(path_identity(&registration).unwrap(), identity);
+        assert_eq!(fs::read(&registration).unwrap(), bytes);
+    } else {
+        assert!(!registration.exists());
+    }
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn direct_committed_read_preserves_missing_registration() {
+    committed_direct_read_registration_case(false, false);
+}
+
+#[test]
+fn direct_committed_read_preserves_corrupt_registration() {
+    committed_direct_read_registration_case(true, false);
+}
+
+#[test]
+#[cfg(unix)]
+fn direct_committed_read_accepts_readonly_parent_with_existing_guards() {
+    committed_direct_read_registration_case(false, true);
+}
+
+#[test]
+fn direct_committed_registered_pair_reads_after_publication() {
+    use storage::locks::path_identity;
+    let root = temp_dir("direct-registered-read");
+    let layout = DirectLayout::new(root.join("graph.ldb"), root.join("manifest.json"));
+    let store = DirectStore::new(layout.clone()).unwrap();
+    let mut session = store.begin_write().unwrap();
+    fs::write(session.db_candidate_path(), b"published storage bundle").unwrap();
+    fs::write(session.manifest_candidate_path(), b"{}").unwrap();
+    session.publish().unwrap();
+    session.finish();
+    assert!(!layout.journal_path().exists());
+    let registration = layout.registration_path();
+    let registration_identity = path_identity(&registration).unwrap();
+    let registration_bytes = fs::read(&registration).unwrap();
+    let database_identity = path_identity(layout.db_path()).unwrap();
+    let manifest_identity = path_identity(layout.manifest_path()).unwrap();
+    let reader = store.begin_read().unwrap();
+    assert_eq!(
+        fs::read(layout.db_path()).unwrap(),
+        b"published storage bundle"
+    );
+    assert_eq!(fs::read(layout.manifest_path()).unwrap(), b"{}");
+    assert_eq!(path_identity(layout.db_path()).unwrap(), database_identity);
+    assert_eq!(
+        path_identity(layout.manifest_path()).unwrap(),
+        manifest_identity
+    );
+    assert_eq!(path_identity(&registration).unwrap(), registration_identity);
+    assert_eq!(fs::read(&registration).unwrap(), registration_bytes);
+    assert!(
+        try_open_locked(layout.writer_lock_path(), LockMode::Exclusive)
+            .unwrap()
+            .is_none()
+    );
+    drop(reader);
+    fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn direct_write_session_holds_writer_lock_and_drop_cleans_unpublished_candidates() {
     let root =
