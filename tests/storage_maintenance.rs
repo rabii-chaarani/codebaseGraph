@@ -106,3 +106,66 @@ fn assert_unknown_bucket(bucket: &Value) {
     assert!(bucket["logical_bytes"].is_null());
     assert!(bucket["allocated_bytes"].is_null());
 }
+
+#[test]
+fn repeated_health_entries_preserve_source_and_foreign_sentinels() {
+    let root = fixture::FixtureRoot::new("health-confinement").unwrap();
+    root.write_revision(20).unwrap();
+    // These independent sentinels are outside registered program-owned state.
+    // Exact observations include bytes, modes and modification timestamps.
+    let protected = ["src", "target", "knowledge", "caller-staging", "foreign"];
+    for directory in &protected[1..] {
+        let path = root.path().join(directory);
+        std::fs::create_dir(&path).unwrap();
+        std::fs::write(
+            path.join("sentinel.bin"),
+            b"must survive ordinary runtime entries\0\xff",
+        )
+        .unwrap();
+    }
+    #[cfg(unix)]
+    let external = fixture::FixtureRoot::new("health-external-sentinel").unwrap();
+    #[cfg(unix)]
+    let external_before = {
+        std::fs::write(
+            external.path().join("sentinel.bin"),
+            b"external bytes must survive",
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(external.path(), root.path().join("foreign/external-link"))
+            .unwrap();
+        fixture::observe_small_tree(external.path()).unwrap()
+    };
+    let before: Vec<_> = protected
+        .iter()
+        .map(|directory| fixture::observe_small_tree(&root.path().join(directory)).unwrap())
+        .collect();
+    for _ in 0..3 {
+        let response = CodebaseGraphApi::new()
+            .execute_operation(&OperationRequest::Health(HealthRequest {
+                repo: RepoSelector {
+                    repo_root: Some(root.path().to_path_buf()),
+                    ..RepoSelector::default()
+                },
+                confirm_legacy_quiescence: false,
+                refresh_status: None,
+                output_format: OutputFormat::Typed,
+            }))
+            .expect("ordinary health entry reports missing graph without touching foreign state");
+        assert_eq!(response.payload["database_exists"], false);
+        assert_eq!(response.payload["graph_readable"], false);
+        #[cfg(unix)]
+        assert_eq!(
+            fixture::observe_small_tree(external.path()).unwrap(),
+            external_before,
+            "external symlink target changed across an unchanged runtime entry"
+        );
+        for (directory, observation) in protected.iter().zip(&before) {
+            assert_eq!(
+                &fixture::observe_small_tree(&root.path().join(directory)).unwrap(),
+                observation,
+                "protected tree {directory} changed across an unchanged runtime entry"
+            );
+        }
+    }
+}
