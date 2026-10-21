@@ -1,11 +1,16 @@
 # Changelog
 
-## [3.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.3...v3.0.4) (2026-10-16)
+## [3.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.3...v3.0.4) (2026-10-21)
 
 
 ### Bug Fixes
 
+* **deps:** update ammonia to the patched 4.1.8 release ([#152](https://github.com/rabii-chaarani/codebaseGraph/pull/152))
 * **k-wiki:** close diagnostic gaps and add regression coverage ([#149](https://github.com/rabii-chaarani/codebaseGraph/issues/149)) ([98ff47a](https://github.com/rabii-chaarani/codebaseGraph/commit/98ff47aee385366f5884193f70f050da79169e71))
+
+### Tests
+
+* Verify stale-worker recovery and native-phase teardown across manual graph publication ([#152](https://github.com/rabii-chaarani/codebaseGraph/pull/152)).
 
 ## [3.0.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.2...v3.0.3) (2026-10-15)
 
