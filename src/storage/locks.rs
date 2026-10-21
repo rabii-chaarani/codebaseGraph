@@ -66,6 +66,141 @@ impl LockedFile {
     }
 }
 
+// Fixed creation-generation header for persisted root cohort bindings. Native
+// (device,inode) pairs can be recycled once all descriptors to a removed empty
+// lock close; those numeric pairs alone do not identify a file's creation.
+pub(crate) const COORDINATION_HEADER_BYTES: usize = 72;
+const COORDINATION_HEADER_MAGIC: &[u8; 8] = b"CGCOOR02";
+pub(crate) fn encode_coordination_incarnation(
+    incarnation: [u8; 32],
+) -> [u8; COORDINATION_HEADER_BYTES] {
+    use sha2::{Digest, Sha256};
+    let mut bytes = [0; COORDINATION_HEADER_BYTES];
+    bytes[..8].copy_from_slice(COORDINATION_HEADER_MAGIC);
+    bytes[8..40].copy_from_slice(&incarnation);
+    let checksum = Sha256::digest(&bytes[..40]);
+    bytes[40..].copy_from_slice(&checksum);
+    bytes
+}
+fn decode_coordination_incarnation(bytes: &[u8]) -> Option<[u8; 32]> {
+    use sha2::{Digest, Sha256};
+    if bytes.len() != COORDINATION_HEADER_BYTES
+        || &bytes[..8] != COORDINATION_HEADER_MAGIC
+        || Sha256::digest(&bytes[..40]).as_slice() != &bytes[40..]
+    {
+        return None;
+    }
+    bytes[8..40].try_into().ok()
+}
+impl LockedFile {
+    /// Called only by the genuine fresh-root creator, or a future explicit
+    /// controlled-migration operation, while owning actual EXCLUSIVE exclusion.
+    /// Mere file emptiness, ordinary use and observational checks never call it.
+    pub(crate) fn initialize_creation_incarnation(
+        &self,
+        incarnation: [u8; 32],
+    ) -> Result<(), NativeError> {
+        use std::io::{Seek, SeekFrom, Write};
+        if self.mode != LockMode::Exclusive || !self.is_current()? {
+            return Err(NativeError::InvalidInput(
+                "coordination_creation_not_exclusive".into(),
+            ));
+        }
+        let mut file = self
+            .file
+            .as_ref()
+            .ok_or_else(|| NativeError::InvalidInput("released lock".into()))?;
+        if file.metadata()?.len() != 0 {
+            return Err(NativeError::InvalidInput(
+                "coordination_creation_not_empty".into(),
+            ));
+        }
+        let bytes = encode_coordination_incarnation(incarnation);
+        file.seek(SeekFrom::Start(0))?;
+        file.write_all(&bytes)?;
+        file.sync_all()?;
+        if !self.is_current()? {
+            return Err(NativeError::InvalidInput(
+                "coordination_creation_changed".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    /// Read actual held bytes without creating, repairing or using a shared
+    /// cursor. Empty/recreated/torn/unknown headers are unverified, not modern.
+    pub(crate) fn coordination_incarnation(&self) -> Result<Option<[u8; 32]>, NativeError> {
+        let file = self
+            .file
+            .as_ref()
+            .ok_or_else(|| NativeError::InvalidInput("released lock".into()))?;
+        read_coordination_incarnation(file)
+    }
+
+    /// Windows LockFileEx layers locks rather than atomically converting them.
+    /// Fresh creation is durable before this gap and no producer effect has
+    /// started; reacquire Shared and revalidate the current stable inode.
+    pub(crate) fn share_after_creation(mut self) -> Result<Self, NativeError> {
+        if self.mode != LockMode::Exclusive || !self.companions.is_empty() {
+            return Err(NativeError::InvalidInput(
+                "coordination_creation_mode_mismatch".into(),
+            ));
+        }
+        let file = self
+            .file
+            .as_ref()
+            .ok_or_else(|| NativeError::InvalidInput("released lock".into()))?;
+        #[cfg(windows)]
+        FileExt::unlock(file)?;
+        FileExt::lock_shared(file)?;
+        self.mode = LockMode::Shared;
+        if !self.is_current()? {
+            return Err(NativeError::InvalidInput(
+                "coordination_creation_changed".into(),
+            ));
+        }
+        Ok(self)
+    }
+}
+fn read_coordination_header(
+    file: &File,
+    bytes: &mut [u8; COORDINATION_HEADER_BYTES],
+) -> Result<bool, std::io::Error> {
+    if file.metadata()?.len() != COORDINATION_HEADER_BYTES as u64 {
+        return Ok(false);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::FileExt;
+        file.read_exact_at(bytes, 0)?;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::FileExt;
+        let mut read = 0;
+        while read < bytes.len() {
+            let count = file.seek_read(&mut bytes[read..], read as u64)?;
+            if count == 0 {
+                return Ok(false);
+            }
+            read += count;
+        }
+    }
+    #[cfg(not(any(unix, windows)))]
+    return Ok(false);
+    Ok(file.metadata()?.len() == COORDINATION_HEADER_BYTES as u64)
+}
+pub(crate) fn read_coordination_incarnation(file: &File) -> Result<Option<[u8; 32]>, NativeError> {
+    if file_link_count(file)? != 1 {
+        return Ok(None);
+    }
+    let mut bytes = [0; COORDINATION_HEADER_BYTES];
+    if !read_coordination_header(file, &mut bytes)? {
+        return Ok(None);
+    }
+    Ok(decode_coordination_incarnation(&bytes))
+}
+
 impl Drop for LockedFile {
     fn drop(&mut self) {
         if let Some(file) = self.file.take() {
@@ -573,22 +708,22 @@ pub(crate) fn open_fixed_control(
         // SAFETY: successful open returned a new uniquely owned descriptor;
         // File now closes it on every success/error/unwind path.
         let file = unsafe { File::from_raw_fd(fd) };
-        let stamp = FixedFileStamp::capture(&file, kind)?;
+        let mut opened: libc::stat = unsafe { std::mem::zeroed() };
+        if unsafe { libc::fstat(fd, &mut opened) } != 0 {
+            return Err(std::io::Error::last_os_error().into());
+        }
         let mut after: libc::stat = unsafe { std::mem::zeroed() };
         if unsafe { libc::lstat(pointer, &mut after) } != 0 {
             return Err(std::io::Error::last_os_error().into());
         }
-        if (kind == FixedControlKind::File && after.st_nlink != 1)
-            || stamp.identity
-                != (FileIdentity {
-                    volume: before.st_dev as u64,
-                    index: before.st_ino as u64,
-                })
-            || stamp.identity
-                != (FileIdentity {
-                    volume: after.st_dev as u64,
-                    index: after.st_ino as u64,
-                })
+        if kind == FixedControlKind::File && (opened.st_nlink != 1 || after.st_nlink != 1) {
+            return Err(FixedControlError::Invalid(FixedControlProblem::Aliased));
+        }
+        if opened.st_dev != before.st_dev
+            || opened.st_ino != before.st_ino
+            || opened.st_dev != after.st_dev
+            || opened.st_ino != after.st_ino
+            || opened.st_mode & libc::S_IFMT != expected_type
             || after.st_mode & libc::S_IFMT != expected_type
         {
             return Err(FixedControlError::Invalid(FixedControlProblem::Changed));
@@ -710,6 +845,25 @@ impl Drop for FixedLockedFile {
     }
 }
 impl LockedFile {
+    /// Read through the ACTUAL lock-owning handle. Windows byte-range locks
+    /// would reject reading the same file via a second handle while Exclusive.
+    /// Expected bytes were encoded outside authority; no hashing occurs here.
+    pub(crate) fn matches_fixed_header(
+        &self,
+        expected: &[u8; COORDINATION_HEADER_BYTES],
+    ) -> Result<bool, FixedControlError> {
+        let Some(file) = self.file.as_ref() else {
+            return Ok(false);
+        };
+        let stamp = FixedFileStamp::capture(file, FixedControlKind::File)?;
+        let mut bytes = [0; COORDINATION_HEADER_BYTES];
+        if !read_coordination_header(file, &mut bytes)? {
+            return Ok(false);
+        }
+        stamp.recheck(file)?;
+        Ok(bytes == *expected)
+    }
+
     pub(crate) fn matches_fixed_current(
         &self,
         current: &FixedFileStamp,
@@ -762,6 +916,30 @@ mod fixed_control_tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.root);
         }
+    }
+
+    #[test]
+    fn dc_coordination_nonce_initializes_only_exclusive_empty_creation_and_is_immutable() {
+        let f = Fixture::new();
+        let path = f.root.join("nonce-lock");
+        let shared = open_locked(&path, LockMode::Shared).unwrap();
+        assert!(shared.initialize_creation_incarnation([1; 32]).is_err());
+        assert!(fs::read(&path).unwrap().is_empty());
+        drop(shared);
+        let exclusive = open_locked(&path, LockMode::Exclusive).unwrap();
+        exclusive.initialize_creation_incarnation([1; 32]).unwrap();
+        let mut before = [0; COORDINATION_HEADER_BYTES];
+        assert!(read_coordination_header(exclusive.file.as_ref().unwrap(), &mut before).unwrap());
+        assert_eq!(exclusive.coordination_incarnation().unwrap(), Some([1; 32]));
+        assert!(exclusive.initialize_creation_incarnation([2; 32]).is_err());
+        let mut after = [0; COORDINATION_HEADER_BYTES];
+        assert!(read_coordination_header(exclusive.file.as_ref().unwrap(), &mut after).unwrap());
+        assert_eq!(after, before);
+        let shared = exclusive.share_after_creation().unwrap();
+        assert!(try_open_existing_locked(&path, LockMode::Shared)
+            .unwrap()
+            .is_some());
+        assert_eq!(shared.coordination_incarnation().unwrap(), Some([1; 32]));
     }
 
     #[test]

@@ -180,6 +180,7 @@ struct ReferenceEpochRecord {
     version: u32,
     root: FileIdentity,
     use_lock: FileIdentity,
+    use_incarnation: [u8; 32],
     cohort: FileIdentity,
     scope: ReferenceScopeRecord,
     incarnation: [u8; 32],
@@ -245,7 +246,7 @@ fn read_reference_epoch(root: &Path) -> Result<ReferenceEpoch, NativeError> {
         return Err(invalid("reference_epoch_record_invalid"));
     }
     let record: ReferenceEpochRecord = serde_json::from_slice(&bytes[12..12 + len])?;
-    if record.version != 1 {
+    if record.version != 2 {
         return Err(invalid("reference_epoch_version_unknown"));
     }
     Ok(ReferenceEpoch {
@@ -253,7 +254,11 @@ fn read_reference_epoch(root: &Path) -> Result<ReferenceEpoch, NativeError> {
         record,
     })
 }
-fn epoch_root_matches(root: &Path, record: &ReferenceEpochRecord) -> Result<bool, NativeError> {
+fn epoch_root_matches(
+    root: &Path,
+    record: &ReferenceEpochRecord,
+    held_root_use: Option<&LockedFile>,
+) -> Result<bool, NativeError> {
     for name in [
         ".use.lock",
         ".use-cohort.json",
@@ -272,9 +277,19 @@ fn epoch_root_matches(root: &Path, record: &ReferenceEpochRecord) -> Result<bool
     let mut bytes = [0; 1024];
     cohort_file.read_exact(&mut bytes[..len as usize])?;
     let cohort: ArtifactCohortRecord = serde_json::from_slice(&bytes[..len as usize])?;
-    if cohort.version != 1
+    let actual_incarnation = if let Some(held) = held_root_use {
+        if held.identity()? != record.use_lock || !held.is_current()? {
+            return Ok(false);
+        }
+        held.coordination_incarnation()?
+    } else {
+        super::locks::read_coordination_incarnation(&fs::File::open(root.join(".use.lock"))?)?
+    };
+    if cohort.version != 2
         || cohort.root != record.root
         || cohort.coordination != record.use_lock
+        || cohort.coordination_incarnation != record.use_incarnation
+        || actual_incarnation != Some(record.use_incarnation)
         || path_identity(&cohort_path)? != record.cohort
     {
         return Ok(false);
@@ -306,6 +321,12 @@ pub(crate) fn initialize_fresh_reference_domain(
     if fs::symlink_metadata(domain.artifact_root.join(REFERENCE_EPOCH_FILE)).is_ok() {
         return Ok(false);
     }
+    let Some(use_incarnation) = root_use.lock.coordination_incarnation()? else {
+        return Ok(false);
+    };
+    let mut incarnation = [0; 32];
+    getrandom::fill(&mut incarnation)
+        .map_err(|_| invalid("reference_epoch_entropy_unavailable"))?;
     let activity = open_locked(
         domain.artifact_root.join(REFERENCE_ACTIVITY_FILE),
         LockMode::Exclusive,
@@ -315,12 +336,13 @@ pub(crate) fn initialize_fresh_reference_domain(
         LockMode::Exclusive,
     )?;
     let record = ReferenceEpochRecord {
-        version: 1,
+        version: 2,
         root: root_use.identity,
         use_lock: root_use.lock.identity()?,
+        use_incarnation,
         cohort: path_identity(&domain.artifact_root.join(".use-cohort.json"))?,
         scope: domain.scope.clone(),
-        incarnation: Sha256::digest(super::layout::managed_generation_id().as_bytes()).into(),
+        incarnation,
         activity: activity.identity()?,
         serial: serial.identity()?,
         counter: 0,
@@ -367,7 +389,7 @@ pub(crate) fn observe_reference_epoch(
     let verified = (|| -> Result<bool, NativeError> {
         Ok(activity.is_current()?
             && domain.revalidate()?
-            && epoch_root_matches(root, &epoch.record)?
+            && epoch_root_matches(root, &epoch.record, None)?
             && epoch.record.scope == domain.scope
             && epoch.record.covered)
     })();
@@ -398,6 +420,7 @@ struct CanonicalEpochFrame<'a> {
     expected: &'a ReferenceEpoch,
     bytes: &'a [u8],
     cohort: super::locks::FixedFileStamp,
+    coordination_header: [u8; super::locks::COORDINATION_HEADER_BYTES],
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CanonicalEpochAdvance {
@@ -441,7 +464,7 @@ fn prepare_canonical_epoch_frame<'a>(
         open_fixed_control, read_fixed_control, FixedControlError as Error,
         FixedControlKind as Kind, FixedControlProblem as Problem, FixedFileStamp,
     };
-    if !expected.record.covered || expected.record.version != 1 {
+    if !expected.record.covered || expected.record.version != 2 {
         return Err(Error::Invalid(Problem::InvalidRecord));
     }
     let next = expected
@@ -469,9 +492,10 @@ fn prepare_canonical_epoch_frame<'a>(
         CohortOrigin::ControlledMigration,
     ] {
         let record = ArtifactCohortRecord {
-            version: 1,
+            version: 2,
             root: expected.record.root,
             coordination: expected.record.use_lock,
+            coordination_incarnation: expected.record.use_incarnation,
             origin,
         };
         let mut cursor = std::io::Cursor::new(&mut prepared.as_mut_slice()[..REFERENCE_EPOCH_SIZE]);
@@ -503,6 +527,9 @@ fn prepare_canonical_epoch_frame<'a>(
         expected,
         bytes: &prepared.as_slice()[..2 * REFERENCE_EPOCH_SIZE],
         cohort,
+        coordination_header: super::locks::encode_coordination_incarnation(
+            expected.record.use_incarnation,
+        ),
     })
 }
 
@@ -561,6 +588,12 @@ fn with_canonical_epoch_advance(
         || root_use.reference_activity.is_some()
     {
         return Err(Error::Invalid(Problem::GuardMismatch));
+    }
+    if !root_use
+        .lock
+        .matches_fixed_header(&frame.coordination_header)?
+    {
+        return Err(Error::Invalid(Problem::Changed));
     }
     let activity_file = fixed_epoch_open(frame.paths.activity, Kind::File, true, scratch, grant)?;
     let activity = FixedLockedFile::try_lock(activity_file, LockMode::Exclusive)?
@@ -687,6 +720,7 @@ impl ReferenceActivity {
         root: &Path,
         expected: Option<&ReferenceDomain>,
         nonblocking: bool,
+        held_root_use: &LockedFile,
     ) -> Result<Option<Self>, NativeError> {
         // Never create missing epoch/control proof or silently revive coverage.
         match fs::symlink_metadata(root.join(REFERENCE_EPOCH_FILE)) {
@@ -704,12 +738,7 @@ impl ReferenceActivity {
             }
         } else {
             // Existing-only shared handle; no lock creation can repair proof.
-            match super::locks::open_existing_shared_coordination(
-                &root.join(REFERENCE_ACTIVITY_FILE),
-            ) {
-                Ok(guard) => guard,
-                Err(error) => return Err(error),
-            }
+            super::locks::open_existing_shared_coordination(&root.join(REFERENCE_ACTIVITY_FILE))?
         };
         let serial = if nonblocking {
             match try_open_existing_locked(&root.join(REFERENCE_SERIAL_FILE), LockMode::Exclusive) {
@@ -723,7 +752,7 @@ impl ReferenceActivity {
         let mut epoch = read_reference_epoch(root)?;
         if !activity.is_current()?
             || !serial.is_current()?
-            || !epoch_root_matches(root, &epoch.record)?
+            || !epoch_root_matches(root, &epoch.record, Some(held_root_use))?
         {
             return Err(invalid("reference_epoch_incarnation_changed"));
         }
@@ -836,7 +865,8 @@ impl ReferenceMutation<'static> {
                 }
             }
         };
-        let Some(activity) = ReferenceActivity::begin(&root, expected, nonblocking)? else {
+        let Some(activity) = ReferenceActivity::begin(&root, expected, nonblocking, &root_use)?
+        else {
             return Ok(None);
         };
         Ok(Some(Self {
@@ -904,8 +934,9 @@ impl MaintenanceLease<'_> {
     /// epoch under this authority BEFORE calling; this is not a deletion seal.
     pub(crate) fn begin_reference_mutation(&self) -> Result<ReferenceMutation<'_>, NativeError> {
         self.artifact.revalidate()?;
-        let activity = ReferenceActivity::begin(&self.artifact.root, None, false)?
-            .ok_or_else(|| invalid("reference_activity_in_use"))?;
+        let activity =
+            ReferenceActivity::begin(&self.artifact.root, None, false, &self.artifact.lock)?
+                .ok_or_else(|| invalid("reference_activity_in_use"))?;
         Ok(ReferenceMutation {
             _root_use: None,
             activity,
@@ -950,6 +981,9 @@ impl MaintenanceLease<'_> {
 
     pub(crate) fn cohort_verified(&self) -> Result<bool, NativeError> {
         self.revalidate()?;
+        if self.artifact.lock.coordination_incarnation()?.is_none() {
+            return Ok(false);
+        }
         let expected = self.cohort_record()?;
         let path = self.cohort_record_path();
         if !real_path(&path) {
@@ -1003,7 +1037,7 @@ impl MaintenanceLease<'_> {
             None => (None, None),
         };
         Ok(DestinationCohortRecord {
-            version: 1,
+            version: 2,
             writer_path: self.writer_path.clone(),
             repository: path_identity(&self.target.repository_root)?,
             destination_root: directory_identity(
@@ -1014,6 +1048,11 @@ impl MaintenanceLease<'_> {
             writer: self.writer.lease().identity()?,
             artifact_root: self.artifact.identity,
             artifact_coordination: self.artifact.lock.identity()?,
+            artifact_incarnation: self
+                .artifact
+                .lock
+                .coordination_incarnation()?
+                .ok_or_else(|| invalid("artifact_coordination_incarnation_unknown"))?,
             direct_pair: pair,
             database,
             manifest,
@@ -1082,13 +1121,14 @@ impl MaintenanceLease<'_> {
             }
         };
         Ok(PublicationCohortRecord {
-            version: 1,
+            version: 2,
             origin: PublicationCohortOrigin::GuardedPublication,
             repository: path_identity(&self.target.repository_root)?,
             writer_path: self.writer_path.clone(),
             writer: self.writer.lease().identity()?,
             artifact_root: self.artifact.identity,
             artifact_coordination: self.artifact.lock.identity()?,
+            artifact_incarnation: self.artifact.lock.coordination_incarnation()?,
             scope,
             database,
             manifest,
@@ -1115,19 +1155,60 @@ impl MaintenanceLease<'_> {
         database: &DatabaseUseLease,
         manifest: &DatabaseUseLease,
     ) -> Result<bool, NativeError> {
-        Ok(*record == self.publication_cohort_record(database, manifest)?)
+        Ok(self
+            .verified_publication_cohort(record, database, manifest)?
+            .is_some())
+    }
+
+    /// Informational records remain available for untracked roots. Cleanup
+    /// origin/admission must instead receive this typed, actually nonce-bound
+    /// capability; neither v1 nor None==None equality establishes ownership.
+    pub(crate) fn verified_publication_cohort<'a>(
+        &'a self,
+        record: &'a PublicationCohortRecord,
+        database: &DatabaseUseLease,
+        manifest: &DatabaseUseLease,
+    ) -> Result<Option<VerifiedPublicationCohort<'a>>, NativeError> {
+        if record.version != 2
+            || record.artifact_incarnation.is_none()
+            || !self.artifact.cohort_verified()?
+        {
+            return Ok(None);
+        }
+        let current = self.publication_cohort_record(database, manifest)?;
+        if current.artifact_incarnation.is_none() || *record != current {
+            return Ok(None);
+        }
+        Ok(Some(VerifiedPublicationCohort {
+            _record: record,
+            _artifact: &self.artifact,
+        }))
     }
 
     pub(crate) fn direct_publication_cohort_verified(
         &self,
         record: &PublicationCohortRecord,
     ) -> Result<bool, NativeError> {
-        Ok(*record == self.direct_publication_cohort_record()?)
+        let database = self
+            ._database
+            .first()
+            .ok_or_else(|| invalid("not_a_direct_destination"))?;
+        let manifest = self
+            ._database
+            .get(1)
+            .ok_or_else(|| invalid("not_a_direct_destination"))?;
+        self.publication_cohort_verified(record, database, manifest)
     }
 
     pub(crate) fn cohort_record_path(&self) -> PathBuf {
         self.writer_path.with_extension("maintenance-cohort.json")
     }
+}
+
+#[derive(Debug)]
+pub(crate) struct VerifiedPublicationCohort<'a> {
+    _record: &'a PublicationCohortRecord,
+    _artifact: &'a ArtifactUseLease,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -1139,6 +1220,8 @@ pub(crate) struct PublicationCohortRecord {
     writer: FileIdentity,
     artifact_root: FileIdentity,
     artifact_coordination: FileIdentity,
+    #[serde(default)]
+    artifact_incarnation: Option<[u8; 32]>,
     scope: PublicationScope,
     database: DatabaseUseProof,
     manifest: DatabaseUseProof,
@@ -1171,6 +1254,7 @@ pub(crate) struct DestinationCohortRecord {
     writer: FileIdentity,
     artifact_root: FileIdentity,
     artifact_coordination: FileIdentity,
+    artifact_incarnation: [u8; 32],
     direct_pair: Option<DirectPair>,
     database: Option<FileIdentity>,
     manifest: Option<FileIdentity>,
@@ -1209,6 +1293,7 @@ pub(crate) struct ArtifactCohortRecord {
     version: u32,
     root: FileIdentity,
     coordination: FileIdentity,
+    coordination_incarnation: [u8; 32],
     origin: CohortOrigin,
 }
 
@@ -1230,7 +1315,7 @@ impl ArtifactUseLease {
             Ok(()) => {
                 let identity = directory_identity(&root)?;
                 if let Some(lock) =
-                    try_open_locked_in_existing_parent(root.join(".use.lock"), LockMode::Shared)?
+                    try_open_locked_in_existing_parent(root.join(".use.lock"), LockMode::Exclusive)?
                 {
                     let lease = Self {
                         root,
@@ -1250,6 +1335,10 @@ impl ArtifactUseLease {
     }
 
     fn write_guarded_creation_record(&self) -> Result<(), NativeError> {
+        let mut incarnation = [0; 32];
+        getrandom::fill(&mut incarnation)
+            .map_err(|_| invalid("artifact_coordination_entropy_unavailable"))?;
+        self.lock.initialize_creation_incarnation(incarnation)?;
         let record = self.record(CohortOrigin::GuardedCreation)?;
         let mut file = OpenOptions::new()
             .write(true)
@@ -1257,6 +1346,7 @@ impl ArtifactUseLease {
             .open(self.root.join(".use-cohort.json"))?;
         file.write_all(&serde_json::to_vec(&record)?)?;
         file.sync_all()?;
+        super::atomic::sync_dir(&self.root)?;
         Ok(())
     }
 
@@ -1277,7 +1367,14 @@ impl ArtifactUseLease {
         {
             return Err(invalid("reference_use_lock_missing"));
         }
-        let lock = open_locked(root.join(".use.lock"), LockMode::Shared)?;
+        let lock = open_locked(
+            root.join(".use.lock"),
+            if created {
+                LockMode::Exclusive
+            } else {
+                LockMode::Shared
+            },
+        )?;
         let mut lease = Self {
             root,
             identity,
@@ -1290,8 +1387,18 @@ impl ArtifactUseLease {
         // confirmation. A create_new write cannot replace an existing proof.
         if created {
             lease.write_guarded_creation_record()?;
+            let incarnation = lease
+                .lock
+                .coordination_incarnation()?
+                .ok_or_else(|| invalid("artifact_coordination_incarnation_unknown"))?;
+            lease.lock = lease.lock.share_after_creation()?;
+            lease.revalidate()?;
+            // Check the actual held header after any Windows downgrade gap.
+            if lease.lock.coordination_incarnation()? != Some(incarnation) {
+                return Err(invalid("artifact_coordination_incarnation_changed"));
+            }
         }
-        lease.reference_activity = ReferenceActivity::begin(&lease.root, None, false)?;
+        lease.reference_activity = ReferenceActivity::begin(&lease.root, None, false, &lease.lock)?;
         Ok(lease)
     }
 
@@ -1303,7 +1410,8 @@ impl ArtifactUseLease {
         if domain.artifact_identity != Some(self.identity) {
             return Err(invalid("reference_artifact_domain_mismatch"));
         }
-        self.reference_activity = ReferenceActivity::begin(&self.root, Some(domain), false)?;
+        self.reference_activity =
+            ReferenceActivity::begin(&self.root, Some(domain), false, &self.lock)?;
         Ok(())
     }
     pub(crate) fn acquire_in_domain(domain: &ReferenceDomain) -> Result<Self, NativeError> {
@@ -1346,9 +1454,13 @@ impl ArtifactUseLease {
     fn record(&self, origin: CohortOrigin) -> Result<ArtifactCohortRecord, NativeError> {
         self.revalidate()?;
         Ok(ArtifactCohortRecord {
-            version: 1,
+            version: 2,
             root: self.identity,
             coordination: self.lock.identity()?,
+            coordination_incarnation: self
+                .lock
+                .coordination_incarnation()?
+                .ok_or_else(|| invalid("artifact_coordination_incarnation_unknown"))?,
             origin,
         })
     }
@@ -1369,9 +1481,10 @@ impl ArtifactUseLease {
             Err(_) => return Ok(false),
         };
         Ok(path_identity(&path)? == identity
-            && record.version == 1
+            && record.version == 2
             && record.root == self.identity
-            && record.coordination == self.lock.identity()?)
+            && record.coordination == self.lock.identity()?
+            && self.lock.coordination_incarnation()? == Some(record.coordination_incarnation))
     }
     pub(crate) fn into_lock(self) -> LockedFile {
         let mut lock = self.lock;
@@ -2921,7 +3034,7 @@ pub(crate) mod tests {
         let fixture = Fixture::new();
         let state = fixture.layout.worker_state_path();
         fs::write(&state, b"unreadable or invalid containment evidence").unwrap();
-        fs::set_permissions(&state, fs::Permissions::from_mode(0)).unwrap();
+        fs::set_permissions(&state, fs::Permissions::from_mode(0o0)).unwrap();
         let observed = claim_maintenance(&fixture.target).unwrap();
         fs::set_permissions(&state, fs::Permissions::from_mode(0o600)).unwrap();
         assert!(
@@ -3033,6 +3146,66 @@ pub(crate) mod tests {
             .unwrap());
         write_json_atomically(&direct.cohort_record_path(), &publication).unwrap();
         assert!(!direct.cohort_verified().unwrap());
+    }
+
+    #[test]
+    fn dc_s2_publication_nonce_proof_is_optional_but_never_numeric_only() {
+        for mode in ["untracked", "corrupt", "recycled", "tracked"] {
+            let fixture = Fixture::new();
+            let (target, layout) = fixture.direct();
+            let lease = acquired(claim_maintenance(&target).unwrap());
+            let record = lease.direct_publication_cohort_record().unwrap();
+            assert!(lease.direct_publication_cohort_verified(&record).unwrap());
+            let mut legacy = record.clone();
+            legacy.version = 1;
+            assert!(!lease.direct_publication_cohort_verified(&legacy).unwrap());
+            let mut missing = record.clone();
+            missing.artifact_incarnation = None;
+            assert!(!lease.direct_publication_cohort_verified(&missing).unwrap());
+            let root = lease.artifact.root.clone();
+            drop(lease);
+            let path = root.join(".use.lock");
+            let bytes = match mode {
+                "untracked" => Vec::new(),
+                "corrupt" => {
+                    let mut bytes = fs::read(&path).unwrap();
+                    bytes[9] ^= 1;
+                    bytes
+                }
+                "recycled" => {
+                    let mut nonce = record.artifact_incarnation.unwrap();
+                    nonce[0] ^= 1;
+                    super::super::locks::encode_coordination_incarnation(nonce).to_vec()
+                }
+                _ => fs::read(&path).unwrap(),
+            };
+            fs::write(&path, &bytes).unwrap();
+            // Same numeric inode and primary files remain usable: an optional
+            // cleanup proof cannot introduce a mandatory publication failure.
+            assert_eq!(path_identity(&path).unwrap(), record.artifact_coordination);
+            let lease = acquired(claim_maintenance(&target).unwrap());
+            let informational = lease.direct_publication_cohort_record().unwrap();
+            assert_eq!(
+                lease.direct_publication_cohort_verified(&record).unwrap(),
+                mode == "tracked"
+            );
+            assert_eq!(
+                lease
+                    .direct_publication_cohort_verified(&informational)
+                    .unwrap(),
+                mode == "tracked"
+            );
+            if matches!(mode, "untracked" | "corrupt") {
+                assert!(informational.artifact_incarnation.is_none());
+                assert!(!lease
+                    .direct_publication_cohort_verified(&informational)
+                    .unwrap());
+            }
+            drop(lease);
+            assert_eq!(fs::read(&path).unwrap(), bytes);
+            assert!(layout.db_path().is_file());
+            assert!(layout.manifest_path().is_file());
+        }
     }
 
     #[cfg(target_os = "linux")]
@@ -3479,6 +3652,134 @@ pub(crate) mod tests {
 
     #[cfg(unix)]
     #[test]
+    fn dc_s2_cohort_recycled_numeric_lock_identity_does_not_restore_creation() {
+        let fixture = Fixture::new();
+        let root = fixture.layout.artifacts_root();
+        let path = root.join(".use.lock");
+        let mut record: ArtifactCohortRecord =
+            serde_json::from_slice(&fs::read(root.join(".use-cohort.json")).unwrap()).unwrap();
+        assert!(observe_artifact_cohort(&root).unwrap().is_some());
+        fs::remove_file(&path).unwrap();
+        drop(open_locked(&path, LockMode::Shared).unwrap());
+        // Deterministically model inode ABA even on an allocator that did not
+        // recycle this time: the stale tuple now equals the replacement tuple.
+        // The creation nonce remains the old one; no old FD is retained.
+        record.coordination = path_identity(&path).unwrap();
+        write_json_atomically(&root.join(".use-cohort.json"), &record).unwrap();
+        let before_record = fs::read(root.join(".use-cohort.json")).unwrap();
+        let before_lock = fs::read(&path).unwrap();
+        assert!(before_lock.is_empty());
+        assert!(observe_artifact_cohort(&root).unwrap().is_none());
+        assert_eq!(fs::read(&path).unwrap(), before_lock);
+        assert_eq!(
+            fs::read(root.join(".use-cohort.json")).unwrap(),
+            before_record
+        );
+    }
+
+    #[test]
+    fn dc_s2_cohort_unknown_or_corrupt_creation_header_never_repairs_on_use_or_observation() {
+        for corrupt in [false, true] {
+            let fixture = Fixture::new();
+            let root = fixture.layout.artifacts_root();
+            let path = root.join(".use.lock");
+            let bytes = if corrupt {
+                let mut bytes = fs::read(&path).unwrap();
+                bytes[9] ^= 1;
+                bytes
+            } else {
+                Vec::new()
+            };
+            fs::write(&path, &bytes).unwrap();
+            let before = fs::read(root.join(".use-cohort.json")).unwrap();
+            assert!(observe_artifact_cohort(&root).unwrap().is_none());
+            let reader = ArtifactUseLease::acquire_shared(&root).unwrap();
+            assert!(!reader.cohort_verified().unwrap());
+            drop(reader);
+            assert_eq!(fs::read(&path).unwrap(), bytes);
+            assert_eq!(fs::read(root.join(".use-cohort.json")).unwrap(), before);
+        }
+    }
+
+    #[test]
+    fn dc_s2_fresh_creation_header_is_bound_and_really_downgraded_to_shared() {
+        let fixture = Fixture::new();
+        let root = fixture.root.join("fresh-nonce-root");
+        let first = ArtifactUseLease::acquire_shared(&root).unwrap();
+        let record: ArtifactCohortRecord =
+            serde_json::from_slice(&fs::read(root.join(".use-cohort.json")).unwrap()).unwrap();
+        assert_eq!(record.version, 2);
+        assert_eq!(
+            first.lock.coordination_incarnation().unwrap(),
+            Some(record.coordination_incarnation)
+        );
+        let second = try_open_existing_locked(&root.join(".use.lock"), LockMode::Shared)
+            .unwrap()
+            .expect("actual second shared handle must be admitted");
+        assert!(
+            try_open_existing_locked(&root.join(".use.lock"), LockMode::Exclusive)
+                .unwrap()
+                .is_none()
+        );
+        drop(first);
+        drop(second);
+        assert!(observe_artifact_cohort(&root).unwrap().is_some());
+    }
+
+    #[test]
+    fn dc_epoch_root_creation_nonce_is_bound_beyond_recycled_numeric_metadata() {
+        let fixture = Fixture::new();
+        let (_layout, domain) = tracked_domain(&fixture, "nonce-bound-epoch");
+        let before = observed(&domain);
+        let root = domain.artifact_root();
+        let mut nonce = before.record.use_incarnation;
+        nonce[0] ^= 1;
+        fs::write(
+            root.join(".use.lock"),
+            super::super::locks::encode_coordination_incarnation(nonce),
+        )
+        .unwrap();
+        let cohort_path = root.join(".use-cohort.json");
+        let mut cohort: ArtifactCohortRecord =
+            serde_json::from_slice(&fs::read(&cohort_path).unwrap()).unwrap();
+        cohort.coordination_incarnation = nonce;
+        // Keep the same cohort and lock inode IDs while changing their bound
+        // creation generation; the old reference epoch must not become valid.
+        fs::write(&cohort_path, serde_json::to_vec(&cohort).unwrap()).unwrap();
+        assert_eq!(path_identity(&cohort_path).unwrap(), before.record.cohort);
+        assert_eq!(
+            path_identity(&root.join(".use.lock")).unwrap(),
+            before.record.use_lock
+        );
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+        assert!(ReferenceMutation::begin_in_domain(&domain).is_err());
+        assert_eq!(read_reference_epoch(root).unwrap(), before);
+    }
+
+    #[test]
+    fn dc_s2_legacy_cohort_v1_is_not_upgraded_by_read_or_guard_acquisition() {
+        let fixture = Fixture::new();
+        let root = fixture.layout.artifacts_root();
+        let record_path = root.join(".use-cohort.json");
+        let mut record: serde_json::Value =
+            serde_json::from_slice(&fs::read(&record_path).unwrap()).unwrap();
+        record["version"] = 1.into();
+        record
+            .as_object_mut()
+            .unwrap()
+            .remove("coordination_incarnation");
+        fs::write(&record_path, serde_json::to_vec(&record).unwrap()).unwrap();
+        let before = fs::read(&record_path).unwrap();
+        assert!(observe_artifact_cohort(&root).unwrap().is_none());
+        drop(ArtifactUseLease::acquire_shared(&root).unwrap());
+        assert_eq!(fs::read(&record_path).unwrap(), before);
+    }
+
+    #[cfg(unix)]
+    #[test]
     fn dc_s2_hardlinks_symlinks_and_case_aliases_cannot_bypass_resource_guard() {
         use std::os::unix::fs::symlink;
         let fixture = Fixture::new();
@@ -3642,12 +3943,13 @@ pub(crate) mod tests {
         )
         .unwrap();
         assert!(called);
-        assert_eq!(observed(&domain).counter(), advance.after);
         fixed_epoch_controls_released(&paths);
         assert!(writer
             .verifies(&layout.writer_lock_path(), LockMode::Exclusive)
             .unwrap());
         root.revalidate().unwrap();
+        drop(root);
+        assert_eq!(observed(&domain).counter(), advance.after);
         assert!(buffers.memory.used() <= buffers.memory.limit());
     }
 
@@ -3934,6 +4236,7 @@ pub(crate) mod tests {
                 .verifies(&layout.writer_lock_path(), LockMode::Exclusive)
                 .unwrap());
             root.revalidate().unwrap();
+            drop(root);
             assert_eq!(observed(&domain).counter(), expected.counter() + 1);
             assert_eq!(buffers.memory.used(), memory_before);
         }
@@ -4009,6 +4312,8 @@ pub(crate) mod tests {
         .unwrap();
         assert!(called);
         assert_eq!(grant.remaining_entries(), 0);
+        root.revalidate().unwrap();
+        drop(root);
         assert_eq!(observed(&domain).counter(), expected.counter() + 1);
     }
 
@@ -4082,6 +4387,8 @@ pub(crate) mod tests {
             &mut |_| Ok(()),
         )
         .unwrap();
+        root.revalidate().unwrap();
+        drop(root);
         assert_eq!(observed(&domain).counter(), expected.counter() + 1);
     }
 

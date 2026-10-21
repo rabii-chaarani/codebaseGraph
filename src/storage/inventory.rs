@@ -1424,14 +1424,11 @@ mod tests {
         );
         fixture.put("manifest.json", b"{}");
         let inventory = inspect_storage(&fixture.target);
-        assert_eq!(
-            inventory
-                .entries
-                .iter()
-                .any(|e| e.category == InventoryCategory::RetiredDirect
-                    && e.path.extension().is_some_and(|e| e == "ldb")),
-            true
-        );
+        assert!(inventory
+            .entries
+            .iter()
+            .any(|e| e.category == InventoryCategory::RetiredDirect
+                && e.path.extension().is_some_and(|e| e == "ldb")));
     }
     #[test]
     fn configured_ancestor_root_is_rejected_without_scanning_sources() {
