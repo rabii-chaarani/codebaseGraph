@@ -345,7 +345,7 @@ mod tests {
 
     #[test]
     fn dc_grant_zero_entry101_deadline_and_atomic_transition() {
-        let mut zero = MutationGrant::with_limits(0, Duration::from_secs(1));
+        let mut zero = MutationGrant::for_test(0, Duration::from_secs(1));
         let mut effects = 0;
         if zero.take_entry().is_ok() {
             effects += 1;

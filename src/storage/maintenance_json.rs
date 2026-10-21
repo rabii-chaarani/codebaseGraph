@@ -416,6 +416,10 @@ impl<R: Read> MaintenanceJsonReader<R> {
         }
         result
     }
+    /// Logical consumed offset, excluding buffered read-ahead. Facts only.
+    pub(crate) fn position(&self) -> u64 {
+        self.offset
+    }
     /// Available only after complete EOF validation. Compact means whitespace
     /// removal, NOT schema-specific or Serde canonicalization.
     pub(crate) fn finish(mut self) -> Result<([u8; 32], [u8; 32]), JsonFailure> {
