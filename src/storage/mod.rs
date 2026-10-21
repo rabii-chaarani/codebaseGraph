@@ -6,6 +6,7 @@ pub(crate) mod layout;
 pub(crate) mod locks;
 pub(crate) mod maintenance;
 pub(crate) mod maintenance_budget;
+pub(crate) mod maintenance_controls;
 pub(crate) mod maintenance_journal;
 pub(crate) mod maintenance_json;
 pub(crate) mod maintenance_ownership;

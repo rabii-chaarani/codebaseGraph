@@ -20,6 +20,8 @@ mod storage {
     pub(crate) mod locks;
     #[path = "maintenance_budget.rs"]
     pub(crate) mod maintenance_budget;
+    #[path = "maintenance_controls.rs"]
+    pub(crate) mod maintenance_controls;
     #[path = "maintenance_ownership.rs"]
     pub(crate) mod maintenance_ownership;
     #[path = "managed.rs"]

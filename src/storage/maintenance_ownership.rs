@@ -708,12 +708,22 @@ fn with_canonical_epoch_advance(
 struct ReferenceActivity {
     guard: Option<LockedFile>,
     reason: Option<String>,
+    producer_binding: Option<ArtifactRootProducerBinding>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ArtifactRootProducerBinding {
+    root: FileIdentity,
+    coordination: FileIdentity,
+    incarnation: [u8; 32],
+    cohort: FileIdentity,
 }
 impl ReferenceActivity {
     fn untracked(reason: &str) -> Self {
         Self {
             guard: None,
             reason: Some(reason.into()),
+            producer_binding: None,
         }
     }
     fn begin(
@@ -764,6 +774,7 @@ impl ReferenceActivity {
             return Ok(Some(Self {
                 guard: Some(activity),
                 reason: Some("reference_coverage_unverified".into()),
+                producer_binding: None,
             }));
         }
         epoch.record.counter = epoch
@@ -788,6 +799,12 @@ impl ReferenceActivity {
         Ok(Some(Self {
             guard: Some(activity),
             reason: mismatch.then(|| "reference_domain_mismatch".into()),
+            producer_binding: (!mismatch).then_some(ArtifactRootProducerBinding {
+                root: epoch.record.root,
+                coordination: epoch.record.use_lock,
+                incarnation: epoch.record.use_incarnation,
+                cohort: epoch.record.cohort,
+            }),
         }))
     }
 }
@@ -798,7 +815,7 @@ impl ReferenceActivity {
 pub(crate) struct ReferenceMutation<'a> {
     _root_use: Option<LockedFile>,
     activity: ReferenceActivity,
-    _borrowed: std::marker::PhantomData<&'a LockedFile>,
+    borrowed_root_use: Option<&'a ArtifactUseLease>,
 }
 impl ReferenceMutation<'static> {
     /// Producing paths may create a previously absent artifact root. Acquire
@@ -811,7 +828,7 @@ impl ReferenceMutation<'static> {
             activity: producer
                 .reference_activity
                 .unwrap_or_else(|| ReferenceActivity::untracked("reference_epoch_missing")),
-            _borrowed: std::marker::PhantomData,
+            borrowed_root_use: None,
         })
     }
 
@@ -845,7 +862,7 @@ impl ReferenceMutation<'static> {
                     return Ok(Some(Self {
                         _root_use: None,
                         activity: ReferenceActivity::untracked("reference_root_unverifiable"),
-                        _borrowed: std::marker::PhantomData,
+                        borrowed_root_use: None,
                     }));
                 }
             }
@@ -860,7 +877,7 @@ impl ReferenceMutation<'static> {
                     return Ok(Some(Self {
                         _root_use: None,
                         activity: ReferenceActivity::untracked("reference_root_unverifiable"),
-                        _borrowed: std::marker::PhantomData,
+                        borrowed_root_use: None,
                     }));
                 }
             }
@@ -872,7 +889,7 @@ impl ReferenceMutation<'static> {
         Ok(Some(Self {
             _root_use: Some(root_use),
             activity,
-            _borrowed: std::marker::PhantomData,
+            borrowed_root_use: None,
         }))
     }
 }
@@ -883,7 +900,117 @@ impl Drop for ReferenceMutation<'_> {
     }
 }
 
+/// Same-root producer provenance, never cleanup/destination authority. Fields
+/// cannot be reconstructed from a bool, path, serialized record or root name.
+/// Both real guards are borrowed from the live mutation; no ownership escapes.
+#[derive(Debug)]
+pub(crate) struct ArtifactRootProducerCapability<'a> {
+    root: &'a Path,
+    root_use: &'a LockedFile,
+    activity: &'a LockedFile,
+    binding: ArtifactRootProducerBinding,
+    _not_send_sync: std::marker::PhantomData<std::rc::Rc<()>>,
+}
+impl ArtifactRootProducerCapability<'_> {
+    pub(crate) fn root(&self) -> &Path {
+        self.root
+    }
+    pub(crate) fn root_identity(&self) -> FileIdentity {
+        self.binding.root
+    }
+    pub(crate) fn coordination_identity(&self) -> FileIdentity {
+        self.binding.coordination
+    }
+    pub(crate) fn incarnation(&self) -> [u8; 32] {
+        self.binding.incarnation
+    }
+
+    /// Existing-only checks. A failed optional attestation must not be promoted
+    /// into a mandatory primary publication/read error by its consumer.
+    pub(crate) fn revalidate(&self) -> Result<bool, NativeError> {
+        if directory_identity(self.root)? != self.binding.root
+            || !self
+                .root_use
+                .verifies(&self.root.join(".use.lock"), self.root_use.mode())?
+            || self.root_use.identity()? != self.binding.coordination
+            || self.root_use.coordination_incarnation()? != Some(self.binding.incarnation)
+            || !self
+                .activity
+                .verifies(&self.root.join(REFERENCE_ACTIVITY_FILE), LockMode::Shared)?
+        {
+            return Ok(false);
+        }
+        let path = self.root.join(".use-cohort.json");
+        if !real_path(&path) {
+            return Ok(false);
+        }
+        reject_file_alias(&path)?;
+        let file = fs::File::open(&path)?;
+        if super::locks::file_identity(&file)? != self.binding.cohort
+            || path_identity(&path)? != self.binding.cohort
+        {
+            return Ok(false);
+        }
+        let stamp =
+            super::locks::FixedFileStamp::capture(&file, super::locks::FixedControlKind::File)
+                .map_err(|_| invalid("artifact_producer_cohort_changed"))?;
+        let len = file.metadata()?.len();
+        if len > 1024 {
+            return Ok(false);
+        }
+        let mut bytes = [0; 1024];
+        (&file).read_exact(&mut bytes[..len as usize])?;
+        let Ok(record) = serde_json::from_slice::<ArtifactCohortRecord>(&bytes[..len as usize])
+        else {
+            return Ok(false);
+        };
+        stamp
+            .recheck(&file)
+            .map_err(|_| invalid("artifact_producer_cohort_changed"))?;
+        Ok(record.version == 2
+            && record.root == self.binding.root
+            && record.coordination == self.binding.coordination
+            && record.coordination_incarnation == self.binding.incarnation
+            && file.metadata()?.len() == len
+            && path_identity(&path)? == self.binding.cohort
+            && self.root_use.is_current()?
+            && self.activity.is_current()?)
+    }
+}
+
 impl ReferenceMutation<'_> {
+    pub(crate) fn artifact_root_producer_capability(
+        &self,
+    ) -> Result<Option<ArtifactRootProducerCapability<'_>>, NativeError> {
+        let Some(binding) = self.activity.producer_binding else {
+            return Ok(None);
+        };
+        let Some(activity) = self.activity.guard.as_ref() else {
+            return Ok(None);
+        };
+        let root_use = self
+            ._root_use
+            .as_ref()
+            .or_else(|| self.borrowed_root_use.map(|lease| &lease.lock));
+        let Some(root_use) = root_use else {
+            return Ok(None);
+        };
+        let Some(root) = root_use.path().parent() else {
+            return Ok(None);
+        };
+        let capability = ArtifactRootProducerCapability {
+            root,
+            root_use,
+            activity,
+            binding,
+            _not_send_sync: std::marker::PhantomData,
+        };
+        if !capability.revalidate()? {
+            return Ok(None);
+        }
+        Ok(Some(capability))
+    }
+
     pub(crate) fn tracked(&self) -> bool {
         self.activity.reason.is_none()
     }
@@ -940,7 +1067,7 @@ impl MaintenanceLease<'_> {
         Ok(ReferenceMutation {
             _root_use: None,
             activity,
-            _borrowed: std::marker::PhantomData,
+            borrowed_root_use: Some(&self.artifact),
         })
     }
 
@@ -2151,6 +2278,156 @@ pub(crate) mod tests {
             EpochObservation::Verified(epoch) => epoch,
             other => panic!("expected verified epoch: {other:?}"),
         }
+    }
+
+    #[test]
+    fn dc_s2_producer_capability_borrows_live_tracked_root_and_activity() {
+        let fixture = Fixture::new();
+        let (_layout, domain) = tracked_domain(&fixture, "producer-capability");
+        let mutation = ReferenceMutation::begin_in_domain(&domain).unwrap();
+        let capability = mutation
+            .artifact_root_producer_capability()
+            .unwrap()
+            .unwrap();
+        assert_eq!(capability.root(), domain.artifact_root());
+        assert_eq!(
+            capability.root_identity(),
+            directory_identity(domain.artifact_root()).unwrap()
+        );
+        assert_eq!(
+            capability.coordination_identity(),
+            path_identity(&domain.artifact_root().join(".use.lock")).unwrap()
+        );
+        assert_eq!(
+            capability.incarnation(),
+            mutation.activity.producer_binding.unwrap().incarnation
+        );
+        assert!(capability.revalidate().unwrap());
+        assert!(try_open_existing_locked(
+            &domain.artifact_root().join(".use.lock"),
+            LockMode::Exclusive
+        )
+        .unwrap()
+        .is_none());
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Pending(_)
+        ));
+        trait AmbiguousIfSend<A> {
+            fn check() {}
+        }
+        impl<T: ?Sized> AmbiguousIfSend<()> for T {}
+        impl<T: ?Sized + Send> AmbiguousIfSend<u8> for T {}
+        let _ = <ArtifactRootProducerCapability<'_> as AmbiguousIfSend<_>>::check;
+        trait AmbiguousIfSync<A> {
+            fn check() {}
+        }
+        impl<T: ?Sized> AmbiguousIfSync<()> for T {}
+        impl<T: ?Sized + Sync> AmbiguousIfSync<u8> for T {}
+        let _ = <ArtifactRootProducerCapability<'_> as AmbiguousIfSync<_>>::check;
+        trait AmbiguousIfClone<A> {
+            fn check() {}
+        }
+        impl<T: ?Sized> AmbiguousIfClone<()> for T {}
+        impl<T: ?Sized + Clone> AmbiguousIfClone<u8> for T {}
+        let _ = <ArtifactRootProducerCapability<'_> as AmbiguousIfClone<_>>::check;
+        drop(capability);
+        // Capability drop cannot release its lender's actual ownership.
+        assert!(try_open_existing_locked(
+            &domain.artifact_root().join(".use.lock"),
+            LockMode::Exclusive
+        )
+        .unwrap()
+        .is_none());
+        drop(mutation);
+        assert!(try_open_existing_locked(
+            &domain.artifact_root().join(".use.lock"),
+            LockMode::Exclusive
+        )
+        .unwrap()
+        .is_some());
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Verified(_)
+        ));
+    }
+
+    #[test]
+    fn dc_s2_optional_producer_capability_never_repairs_untracked_or_corrupt_proof() {
+        let fixture = Fixture::new();
+        let untracked =
+            ReferenceMutation::begin_producing(&fixture.layout.artifacts_root()).unwrap();
+        assert!(untracked
+            .artifact_root_producer_capability()
+            .unwrap()
+            .is_none());
+        fs::write(
+            fixture.layout.artifacts_root().join("primary-data"),
+            b"primary work remains allowed",
+        )
+        .unwrap();
+        drop(untracked);
+        let (_layout, domain) = tracked_domain(&fixture, "corrupt-producer-capability");
+        let mutation = ReferenceMutation::begin_in_domain(&domain).unwrap();
+        let path = domain.artifact_root().join(".use-cohort.json");
+        let capability = mutation
+            .artifact_root_producer_capability()
+            .unwrap()
+            .unwrap();
+        let original = fs::read(&path).unwrap();
+        for bytes in [b"invalid".to_vec(), vec![b' '; 1025]] {
+            fs::write(&path, &bytes).unwrap();
+            assert!(!capability.revalidate().unwrap());
+            assert!(mutation
+                .artifact_root_producer_capability()
+                .unwrap()
+                .is_none());
+            fs::write(
+                domain.artifact_root().join("primary-data"),
+                b"optional attestation is absent",
+            )
+            .unwrap();
+            assert_eq!(fs::read(&path).unwrap(), bytes);
+        }
+        fs::write(&path, original).unwrap();
+        assert!(capability.revalidate().unwrap());
+    }
+
+    #[test]
+    fn dc_s2_producer_capability_uses_actual_borrowed_exclusive_root() {
+        let fixture = Fixture::new();
+        let (layout, _domain) = tracked_domain(&fixture, "borrowed-producer-capability");
+        write_json_atomically(&fixture.target.state_root.join("config.json"), &serde_json::json!({
+            "schema_version": 2, "repo_root": fixture.root, "storage_root": layout.storage_root()
+        })).unwrap();
+        let mut target = fixture.target.clone();
+        target.storage_root = Some(layout.storage_root().to_owned());
+        let lease = acquired(claim_maintenance(&target).unwrap());
+        let mutation = lease.begin_reference_mutation().unwrap();
+        assert!(mutation._root_use.is_none());
+        let capability = mutation
+            .artifact_root_producer_capability()
+            .unwrap()
+            .unwrap();
+        assert_eq!(capability.root_use.mode(), LockMode::Exclusive);
+        assert!(capability.revalidate().unwrap());
+        drop(capability);
+        drop(mutation);
+        // Borrowed mutation/capability never releases caller-owned root guard.
+        assert!(try_open_existing_locked(
+            &layout.artifacts_root().join(".use.lock"),
+            LockMode::Shared
+        )
+        .unwrap()
+        .is_none());
+        lease.artifact.revalidate().unwrap();
+        drop(lease);
+        assert!(try_open_existing_locked(
+            &layout.artifacts_root().join(".use.lock"),
+            LockMode::Shared
+        )
+        .unwrap()
+        .is_some());
     }
 
     #[test]
