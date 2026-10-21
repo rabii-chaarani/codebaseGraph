@@ -1,0 +1,30 @@
+{
+  "baseline": "88a369f5820c7c21e05a4336f061887cc5f5d52f",
+  "source": "/private/tmp/dc-s3-facts-final-lm75n3xh/repo",
+  "source_inputs": 427,
+  "inputs_unchanged": true,
+  "host": "aarch64-apple-darwin",
+  "rustc": "1.96.0",
+  "cargo_root_override": "profile.test.package.codebase-graph.codegen-units=146",
+  "build": "visible root rebuild,26.80s,no compiler warnings",
+  "selection": "test(storage::maintenance)",
+  "selected": 66,
+  "new_facts_tests": 14,
+  "existing_ownership_tests": 52,
+  "result": "66 passed,0 failed,474 skipped,retries0",
+  "fmt": "cargo fmt --all --check passed",
+  "negative_traits": "rustc expected exit1; exactly two E0277 errors for MutationGrant Send and Sync",
+  "limitations": [
+    "Facts-only; no current references/origin/schema/backup-usability/deletion/retirement authority.",
+    "Memory account covers requested owned layouts and explicit stack floor, not allocator slack/RSS/OS buffers. Caller must account hidden allocations of generic Read inputs and other controller values.",
+    "Unsafe intrusive account requires independent alloc/refcount/Send/Sync/drop audit; no Miri/sanitizer or native Windows/Linux qualification.",
+    "Json lexical range intentionally differs from typed numeric loader; duplicate-key/default/schema meaning is not certified.",
+    "Pure cursor is bounded stack facts only; caller must charge controller floor and budget durable persistence.",
+    "Production uses no new foundation APIs yet; independent baseline excludes concurrent S2 wrapper, integration remains coordinator-owned."
+  ],
+  "prior_attempts": [
+    "Initial archive extraction Python3.9 filter argument failed before extracting; successful initial freeze preserved.",
+    "Initial standalone rustc budget tests:5 pass,one unused limit warning in initial frozen version.",
+    "Initial JUnit copy assumed shared target/nextest; actual nextest store is frozen source target/nextest, subsequently copied unchanged."
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "independent_from_implementer": true,
+    "skill": "/Users/rabii/.codex/skills/adversarial-review-engineer/SKILL.md"
+  },
+  "scope": "Focused verification of canonical Windows-prefix P1 correction, native path code-page identity, and affected wrapper paths. Read-only reviewed source; isolated source reconstruction and evidence only.",
+  "snapshot": {
+    "baseline": "88a369f5820c7c21e05a4336f061887cc5f5d52f",
+    "repo": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/repo",
+    "patch_sha256": "c0d22b8bcbbdd6b838dac8506e29cf1dd698b87f924a22b1152df622a806211b",
+    "source": {
+      "Cargo.toml": "308ca32ea3d86311d11700d9c435030abf145d3d9e9a73f658f41a97c146beaa",
+      "src/db_writer/access.rs": "104d9ed3ecc6b3b3c3ecef64a16b462464465d6f7aa0cbbaa2dc3d9dbc8b2a1d",
+      "src/db_writer/mod.rs": "519f8c9c5f0482d0ca4d9cea6430fe831ea753b3a13b7ba5af06499f91a0f81e",
+      "src/db_writer/tests.rs": "fb00bc867d9aaeeb903c62bae36c6d08bf20726c61efd41b726c053e0f3ff1f2",
+      "src/api/graph_read.rs": "759863fd6b8d19b4701fa5357f48404251d9fb3b603a62d3bc0be8b9333c778b"
+    },
+    "limitations": [
+      "Darwin verification requested; no Windows compile/runtime available in this session",
+      "UNC syntax checks are not native UNC execution"
+    ],
+    "root": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl",
+    "patch": "/private/tmp/cleanup-s2-wrapper-windowsfix-09wodcy6/wrapper-and-feature.patch"
+  },
+  "dispositions": {
+    "WRAPPER-PATH-1": {
+      "status": "Previously corrected tilde/path interpretation finding remains corrected in source and passing current Darwin regressions.",
+      "historical_report": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/review-report.json"
+    },
+    "WRAPPER-WINDOWS-1": {
+      "status": "CONFIRMED SOURCE DEFECT CORRECTED STATICALLY; native Windows qualification remains pending.",
+      "historical_report": "/private/tmp/cleanup-s2-pathfix-review-wt1kmbw3/windows-prefix-followup.json",
+      "correction": "access.rs204-210 now accepts Disk, UNC, VerbatimDisk and VerbatimUNC. normalized_windows_native_path248-290 preserves valid canonical extended namespace spelling without prefix stripping, rejecting slash/repeated separator/dot/dot-dot tails that native lexical normalization could reinterpret. Therefore ordinary canonicalizer-produced paths are no longer blanket-rejected by the validator.",
+      "unchanged_flow": "One captured absolute owned path still feeds both DatabaseUseLease and Database::new at access.rs146-150. Raw persisted Direct address-derived keys and graph caller SystemConfig flags are unchanged."
+    }
+  },
+  "codepage_assessment": {
+    "pinned_native_boundary": "lbug0.19.0 src/database.rs passes Path display text (UTF-8 after helper validation); packaged native LocalFileSystem::openFile uses CreateFileA, and StorageUtils::expandPath uses std::filesystem conversion/lexical normalization.",
+    "guard": "The helper validates the entire absolute path. Pure policy allows ASCII at any checked code page, or non-ASCII only when effective FileAPI code page equals65001. Before coordination it calls ensure_windows_native_encoding; the constructor repeats the check immediately before native open.",
+    "mode": "windows_effective_file_api_code_page301-315 reads AreFileApisANSI and selects GetACP or GetOEMCP accordingly. No process-global setters are introduced. Console code page is not used as proof.",
+    "feature_and_bindings": "Cargo.toml adds windows-sys Win32_Globalization. Inspected installed windows-sys0.61.2 exports GetACP/GetOEMCP under that feature and AreFileApisANSI under already enabled Storage_FileSystem. This is signature/source inspection, not Windows compilation.",
+    "primary_evidence": "Microsoft documents AreFileApisANSI as selecting process ANSI/OEM filename decoding and GetACP/GetOEMCP as retrieving the corresponding code pages. Current Microsoft STL source __std_fs_code_page gives UTF-8 locale priority, otherwise selects ANSI/OEM FileAPI mode. The allowed UTF-8 subset is consistent with that source, but the actual Windows compiler/CRT binary used by the eventual build was not qualified here.",
+    "limitations": "Read-only rechecks observe but do not freeze external process-global FileAPI mode. End-to-end Windows CRT/SDK behavior, mode variants, and any external mode mutation during native use remain unexecuted; no supported native-platform guarantee is inferred from this static assessment."
+  },
+  "new_confirmed_findings": [],
+  "independent_checks": {
+    "platform": "aarch64-apple-darwin",
+    "root_test_override": "profile.test.package.codebase-graph.codegen-units=149",
+    "compilation_path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/repo",
+    "nextest": {
+      "passed": 29,
+      "failures": 0,
+      "errors": 0,
+      "leak_annotations": 0,
+      "unselected": 508,
+      "execution": "serial, test-threads1",
+      "run_id": "853e45ac-213f-49b3-ae26-3fa6d245940b",
+      "junit_sha256": "b539f8fa4d2cc86f107177ed8951a5858797c34e70bb17e43dcf260c1b4a6fee",
+      "binary": {
+        "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/codebase_graph-5cc476c357a26360",
+        "sha256": "99e91c39f8ddc1eb49e36b346be65653d8cbf977e5ddb468c346a2e5db8bc78e",
+        "package": "path+file:///private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/repo#codebase-graph@3.0.4",
+        "cwd": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/repo",
+        "test_count": 537,
+        "encoding_test_listed": true
+      }
+    },
+    "doctests": {
+      "passed": 3,
+      "failures": 0,
+      "coverage": "One positive no-run compile and two compile-fail lifetime/raw-extraction cases."
+    },
+    "formatting": "cargo fmt --all --check exited0; empty fmt.log",
+    "stability": "All424 frozen inputs, including Cargo feature plus four wrapper files, and test binary hash identical before/after.",
+    "coverage_note": "The platform-independent encoding policy test runs on Darwin; cfg(windows) path normalization, Win32 calls and native Windows tests do not compile or execute on Darwin."
+  },
+  "author_evidence": {
+    "qualification": "/private/tmp/cleanup-s2-wrapper-windowsfix-09wodcy6/qualification.json",
+    "qualification_sha256": "4d9d466f31c02de409fa03c915e3246f9c7dfd08ad53c2a0f697b7324f7fa401",
+    "workspace_all_targets": "Author reports passing Darwin workspace/all-targets check with75 preexisting warnings; not independently rerun by this reviewer.",
+    "parallel_leak": "Author parallel29 run had3 LEAK statuses, including a no-native-open fixture; raw run.log/junit-parallel.xml retained. Author serial29 and independent serial29 are clean. Cause remains unknown; no new source defect is inferred and no parallel qualification is asserted."
+  },
+  "remaining_qualification": [
+    "Actual Windows compilation and execution of canonicalized disk paths, with native query plus physical-family exclusion.",
+    "Native Windows UNC where available, extended long paths, non-ASCII parents and relevant ANSI/OEM/effective UTF-8 modes; record which native branches actually execute.",
+    "Windows canonical/long-path tests can return after a deliberate encoding rejection when the temporary root contains non-ASCII on a non-UTF8 code page. Such a branch is rejection coverage, not successful native-open qualification.",
+    "Actual Windows compiler/CRT path conversion behavior and stable process FileAPI assumptions across native use.",
+    "Unknown author parallel leaked-output-handle observations; clean serial execution does not diagnose their cause.",
+    "75 existing pending-foundation warnings, full S2 fast seal/phase admission, collector, automatic runtime, Linux/Windows platform and aggregate closure remain pending."
+  ],
+  "workflow_limits": [
+    "Configured graph indexes older original checkout; graph-first discovery plus explicit frozen/Scryer anchors guided source reads.",
+    "Source-only archive has no Scryer model; previously fetched approved chg-6vx5tj node-9emgn1/resp-2x4van and node-2xwzve intent retained without model mutation/substitution.",
+    "No source/test/wiki/Scryer/Git mutation. Historical reports and logs preserved unchanged."
+  ],
+  "primary_sources": [
+    "https://doc.rust-lang.org/std/fs/fn.canonicalize.html",
+    "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-arefileapisansi",
+    "https://learn.microsoft.com/en-us/windows/win32/api/winnls/nf-winnls-getacp",
+    "https://learn.microsoft.com/en-us/windows/apps/design/globalizing/use-utf8-code-page",
+    "https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea",
+    "https://github.com/microsoft/STL/blob/main/stl/src/filesystem.cpp"
+  ],
+  "evidence": {
+    "snapshot.json": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/snapshot.json",
+      "sha256": "1be27a626cc5300c2d9026e27e4071f216ca8b4bc09516f3ec4e2623cc88d77c"
+    },
+    "inputs-before.json": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/inputs-before.json",
+      "sha256": "948869d96918ed4f98b9f237569e3c4059b0c67beb7ed8fa7b98b9992f7105a3"
+    },
+    "inputs-after.json": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/inputs-after.json",
+      "sha256": "948869d96918ed4f98b9f237569e3c4059b0c67beb7ed8fa7b98b9992f7105a3"
+    },
+    "binary-before.json": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/binary-before.json",
+      "sha256": "0269a6b5dd9910ecf56beb76f83fc07c1a73c7e40e41bb49b1fdd2d40dfb8af5"
+    },
+    "binary-after.json": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/binary-after.json",
+      "sha256": "0269a6b5dd9910ecf56beb76f83fc07c1a73c7e40e41bb49b1fdd2d40dfb8af5"
+    },
+    "inventory.json": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/inventory.json",
+      "sha256": "1ef4acf972d72e3205bbc48f861fb67b2751488ff22b1711b7e3c7f31bb546bb"
+    },
+    "build.log": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/build.log",
+      "sha256": "1063effcc8018939cbdb6803d4e2c1ab89634509db512c1c2fa701e5603cedac"
+    },
+    "run-serial.log": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/run-serial.log",
+      "sha256": "c7bd425fbcf52a12ca590d954cfd2a5482312650339ae3326230d022af9d9ccb"
+    },
+    "junit-serial.xml": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/junit-serial.xml",
+      "sha256": "b539f8fa4d2cc86f107177ed8951a5858797c34e70bb17e43dcf260c1b4a6fee"
+    },
+    "doctests.log": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/doctests.log",
+      "sha256": "7eff7df4c5c6bedfe3976f440d2563f1704606089292ba5a0285923e340bae21"
+    },
+    "fmt.log": {
+      "path": "/private/tmp/cleanup-s2-windowsfix-review-s6o1lmgl/fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "memory_decision": "Durable lesson remains exact native-path/encoding identity at FFI ownership boundaries; coordinator owns wiki/memory recording. No reviewer memory mutation.",
+  "cargo": "RELEASED"
+}

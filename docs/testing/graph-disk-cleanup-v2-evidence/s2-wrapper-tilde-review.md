@@ -1,0 +1,15 @@
+Confirmed **P1 — native path interpretation can bypass the retained database-use lease** at `src/db_writer/access.rs:141-142`.
+
+`DatabaseUseLease::acquire_shared` protects the input path's physical parent. The same unmodified input goes to lbug 0.19.0, which expands leading `~` and resolves/normalizes the result. The isolated Darwin probe opened a temporary native database through such a path, executed `RETURN 1` and `RETURN 2`, and acquired exclusive ownership on that actual database's parent-family coordination file while the wrapper and connection remained live. The literal addressed database did not exist. Native expansion predates the patch; the new lifetime guarantee is incomplete because its lease is acquired for a different resource.
+
+Use one validated, supported absolute path consistently for both guard and native open, handling native lexical normalization explicitly. Reject unsupported/lossy native forms before side effects when necessary; do not silently turn expanded tilde input into a different literal database. Preserve raw Direct writer/journal keys and SystemConfig behavior. A plain absolute conversion addresses process-CWD drift but needs separate treatment of native normalization and in-memory tokens.
+
+Reviewed as a fresh independent GPT-6.1 Sol Max reviewer. Frozen baseline `88a369f5820c7c21e05a4336f061887cc5f5d52f`, exact patch SHA256 `b45624c7390ada1316cee51c18720fa908ea2bf2502a0baa67aeaabb8374092b`; all four source identities matched at reconstruction. Full identities and source trace are in `review-report.json` / `snapshot.json`.
+
+Actual checks: a uniquely rebuilt root 143 test binary from this isolated checkout passed 24 focused wrapper/native, physical-family and optional-read-availability tests; separate JUnit is `junit.xml`. Three actual wrapper doctests passed. Test binary `codebase_graph-cafb7613f0ed9fdf`, SHA256 `4af16ffad5ee0bb32c0280d7afd57292e10dc4e2797f5dbb6a8d3e1089eb8cff`. Tilde probe source is `probe/src/main.rs`, output `tilde-probe.log`.
+
+Additional source-based considerations: lbug converts the full Rust Path using display text, so non-UTF8 Linux parents can diverge; the Darwin raw-parent attempt stopped at EILSEQ and is not Linux qualification. Native lexical dot-dot normalization can differ from Rust filesystem resolution across a symlink. Relative inputs can be redirected by a process-CWD change between guard acquisition and native open. These additional cases were not executed as native repros. Empty and `:memory:` inputs have native in-memory semantics and must not silently become on-disk paths.
+
+No other confirmed P0-P3 finding survived this wrapper review. The borrow/drop structure and caller flags appear correct within the reviewed snapshot. The graph index is older than the new ownership module; explicit Scryer/frozen anchors supplied that dependency. 75 preexisting warnings remain. The worker's discarded corrupt-native-file LEAK result is not counted as qualification.
+
+The P1 remains unresolved; fix verification and all whole-S2/collector/native-platform/aggregate gates remain pending. No repository/wiki/Scryer/Git mutation occurred. **Cargo is released.**
