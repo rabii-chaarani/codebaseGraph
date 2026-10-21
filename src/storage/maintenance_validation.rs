@@ -308,13 +308,65 @@ fn compare<S: ByteSource + ?Sized>(
 ) -> Result<Ordering, ValidationIssue> {
     compare_complete(Decoded::new(source, a)?, Decoded::new(source, b)?)
 }
-fn compare_complete<A: ByteSource + ?Sized, B: ByteSource + ?Sized>(
-    mut left: Decoded<'_, A>,
-    mut right: Decoded<'_, B>,
+trait KeyBytes {
+    fn next_key_byte(&mut self) -> Result<Option<u8>, ValidationIssue>;
+}
+impl<S: ByteSource + ?Sized> KeyBytes for Decoded<'_, S> {
+    fn next_key_byte(&mut self) -> Result<Option<u8>, ValidationIssue> {
+        self.next()
+    }
+}
+struct NativeUtf8<'a, S: ByteSource + ?Sized> {
+    raw: SpanReader<'a, S>,
+    carry: [u8; 4],
+    at: usize,
+    filled: usize,
+}
+impl<'a, S: ByteSource + ?Sized> NativeUtf8<'a, S> {
+    fn new(source: &'a S, span: Span) -> Result<Self, ValidationIssue> {
+        Ok(Self {
+            raw: SpanReader::new(source, span)?,
+            carry: [0; 4],
+            at: 0,
+            filled: 0,
+        })
+    }
+}
+impl<S: ByteSource + ?Sized> KeyBytes for NativeUtf8<'_, S> {
+    fn next_key_byte(&mut self) -> Result<Option<u8>, ValidationIssue> {
+        if self.at < self.filled {
+            let byte = self.carry[self.at];
+            self.at += 1;
+            return Ok(Some(byte));
+        }
+        let Some(byte) = self.raw.next()? else {
+            return Ok(None);
+        };
+        if byte >= 0x80 {
+            self.filled = match byte {
+                0xc2..=0xdf => 2,
+                0xe0..=0xef => 3,
+                0xf0..=0xf4 => 4,
+                _ => return Err(ValidationIssue::NonProducer),
+            };
+            self.carry[0] = byte;
+            for value in &mut self.carry[1..self.filled] {
+                *value = self.raw.required()?;
+            }
+            std::str::from_utf8(&self.carry[..self.filled])
+                .map_err(|_| ValidationIssue::NonProducer)?;
+            self.at = 1;
+        }
+        Ok(Some(byte))
+    }
+}
+fn compare_complete<A: KeyBytes, B: KeyBytes>(
+    mut left: A,
+    mut right: B,
 ) -> Result<Ordering, ValidationIssue> {
     let mut ordering = Ordering::Equal;
     loop {
-        let pair = (left.next()?, right.next()?);
+        let pair = (left.next_key_byte()?, right.next_key_byte()?);
         if pair == (None, None) {
             return Ok(ordering);
         }
@@ -328,6 +380,58 @@ fn compare_complete<A: ByteSource + ?Sized, B: ByteSource + ?Sized>(
                 (None, None) => unreachable!(),
             };
         }
+    }
+}
+/// Native spans address a LOGICAL UTF8 view, not compressed physical bytes.
+/// Source/encoding/locator identity remains explicit and confers no origin.
+pub(crate) fn compare_native_json<A: ByteSource + ?Sized, B: ByteSource + ?Sized>(
+    native: &A,
+    native_span: Span,
+    json: &B,
+    json_span: Span,
+    memory: &CleanupMemory,
+) -> Result<Ordering, ValidationIssue> {
+    let floor = std::mem::size_of::<NativeUtf8<'_, A>>()
+        .checked_add(std::mem::size_of::<Decoded<'_, B>>())
+        .and_then(|n| n.checked_add(128))
+        .ok_or(ValidationIssue::Overflow)?;
+    let _reservation = memory.reserve(floor)?;
+    compare_complete(
+        NativeUtf8::new(native, native_span)?,
+        Decoded::new(json, json_span)?,
+    )
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum KeyEncoding {
+    NativeUtf8,
+    JsonDecoded,
+}
+/// Domain separation and decoded bytes are shared across encodings. A digest
+/// is an accelerator only; callers still compare complete exact key streams.
+pub(crate) fn key_stream_hash<S: ByteSource + ?Sized>(
+    source: &S,
+    span: Span,
+    encoding: KeyEncoding,
+    domain: u64,
+    memory: &CleanupMemory,
+) -> Result<[u8; 32], ValidationIssue> {
+    let floor = std::mem::size_of::<NativeUtf8<'_, S>>()
+        .checked_add(std::mem::size_of::<Decoded<'_, S>>())
+        .and_then(|n| n.checked_add(std::mem::size_of::<Sha256>()))
+        .and_then(|n| n.checked_add(128))
+        .ok_or(ValidationIssue::Overflow)?;
+    let _reservation = memory.reserve(floor)?;
+    fn hash(mut reader: impl KeyBytes, domain: u64) -> Result<[u8; 32], ValidationIssue> {
+        let mut hash = Sha256::new();
+        hash.update(domain.to_le_bytes());
+        while let Some(byte) = reader.next_key_byte()? {
+            hash.update([byte]);
+        }
+        Ok(hash.finalize().into())
+    }
+    match encoding {
+        KeyEncoding::NativeUtf8 => hash(NativeUtf8::new(source, span)?, domain),
+        KeyEncoding::JsonDecoded => hash(Decoded::new(source, span)?, domain),
     }
 }
 /// Exact decoded bytes across independently bound sources. Digest equality is
@@ -2076,6 +2180,95 @@ mod tests {
         )
         .is_err());
         assert_eq!(small.used(), used);
+    }
+    #[test]
+    fn dc_validation_native_json_stream_keys_hash_unicode_nul_and_suffixes() {
+        let memory = CleanupMemory::new(4096).unwrap();
+        let floor = memory.used();
+        let span = |bytes: &[u8]| Span {
+            start: 0,
+            end: bytes.len() as u64,
+        };
+        for text in [
+            String::new(),
+            "a\0é😀".to_owned(),
+            format!("{}😀\0é", "x".repeat(255)),
+            "é".repeat(100_000),
+        ] {
+            let native = text.as_bytes();
+            let json = serde_json::to_vec(&text).unwrap();
+            assert_eq!(
+                compare_native_json(native, span(native), json.as_slice(), span(&json), &memory),
+                Ok(Ordering::Equal)
+            );
+            let a =
+                key_stream_hash(native, span(native), KeyEncoding::NativeUtf8, 7, &memory).unwrap();
+            assert_eq!(
+                a,
+                key_stream_hash(
+                    json.as_slice(),
+                    span(&json),
+                    KeyEncoding::JsonDecoded,
+                    7,
+                    &memory
+                )
+                .unwrap()
+            );
+            assert_ne!(
+                a,
+                key_stream_hash(native, span(native), KeyEncoding::NativeUtf8, 8, &memory).unwrap()
+            );
+        }
+        let json = br#""b""#;
+        for native in [
+            b"a\xff".as_slice(),
+            b"a\xc0\x80".as_slice(),
+            b"a\xed\xa0\x80".as_slice(),
+            b"a\xf4\x90\x80\x80".as_slice(),
+            b"a\xe2\x82".as_slice(),
+        ] {
+            assert!(compare_native_json(
+                native,
+                span(native),
+                json.as_slice(),
+                span(json),
+                &memory
+            )
+            .is_err());
+            assert!(
+                key_stream_hash(native, span(native), KeyEncoding::NativeUtf8, 7, &memory).is_err()
+            );
+        }
+        let native = b"a";
+        let malformed = br#""b\q""#;
+        assert!(compare_native_json(
+            native.as_slice(),
+            span(native),
+            malformed.as_slice(),
+            span(malformed),
+            &memory
+        )
+        .is_err());
+        assert_eq!(
+            compare_native_json(
+                b"azzz".as_slice(),
+                span(b"azzz"),
+                br#""baaa""#.as_slice(),
+                span(br#""baaa""#),
+                &memory
+            ),
+            Ok(Ordering::Less)
+        );
+        assert_eq!(memory.used(), floor);
+        let small = CleanupMemory::new(64).unwrap();
+        assert!(compare_native_json(
+            native.as_slice(),
+            span(native),
+            json.as_slice(),
+            span(json),
+            &small
+        )
+        .is_err());
     }
     #[test]
     fn dc_validation_cross_source_propagates_late_read_failure_after_ordering() {
