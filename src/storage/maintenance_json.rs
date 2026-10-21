@@ -498,7 +498,7 @@ mod tests {
     fn dc_json_unicode_duplicate_keys_and_lexical_facts() {
         let input = r#"{"x":"\uD83D\uDE00","x":"😀"}"#.as_bytes();
         let memory = CleanupMemory::new(16384).unwrap();
-        let mut reader = MaintenanceJsonReader::new(&input[..], &memory).unwrap();
+        let mut reader = MaintenanceJsonReader::new(input, &memory).unwrap();
         let mut strings = Vec::new();
         while let Some(token) = reader.next_token().unwrap() {
             if let TokenKind::String {

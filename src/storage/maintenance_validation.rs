@@ -3,7 +3,9 @@
 use super::maintenance_budget::{CleanupMemory, MemoryReservation, ReservedBytes, ResourceLimit};
 use super::maintenance_json::{JsonFailure, JsonToken, MaintenanceJsonReader, TokenKind};
 use sha2::{Digest, Sha256};
+use std::cell::Cell;
 use std::cmp::Ordering;
+use std::fs::File;
 use std::io::{self, Read};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -16,6 +18,9 @@ pub(crate) enum ValidationIssue {
     Numeric,
     RawRowsDiffer,
     Overflow,
+    Io(io::ErrorKind),
+    #[cfg(not(any(unix, windows)))]
+    UnsupportedPositionedRead,
 }
 impl From<ResourceLimit> for ValidationIssue {
     fn from(e: ResourceLimit) -> Self {
@@ -57,6 +62,64 @@ impl ByteSource for [u8] {
         let count = source.len().min(output.len());
         output[..count].copy_from_slice(&source[..count]);
         Ok(count)
+    }
+}
+/// Borrows a dedicated, already-open preparation handle; no path is allocated
+/// or opened and no file identity/association/immutability is certified.
+///
+/// The mutable borrow excludes concurrent ordinary cursor use through this
+/// handle. The caller must also exclude cursor-sharing clones. On Windows,
+/// seek_read moves the native cursor; Unix read_at does not. Never borrow a
+/// producer's sequential-writing handle here. File/type/stamp authority remains
+/// the caller's later noncreating S2 preparation, not this length observation.
+pub(crate) struct BorrowedFileSource<'a> {
+    file: &'a File,
+    length: u64,
+    _floor: MemoryReservation,
+}
+impl<'a> BorrowedFileSource<'a> {
+    pub(crate) fn new(file: &'a mut File, memory: &CleanupMemory) -> Result<Self, ValidationIssue> {
+        let floor = std::mem::size_of::<Self>()
+            .checked_add(std::mem::size_of::<std::fs::Metadata>())
+            .and_then(|n| n.checked_add(128))
+            .ok_or(ValidationIssue::Overflow)?;
+        let reservation = memory.reserve(floor)?;
+        let metadata = file.metadata().map_err(|e| ValidationIssue::Io(e.kind()))?;
+        if !metadata.is_file() {
+            return Err(ValidationIssue::Schema);
+        }
+        Ok(Self {
+            file,
+            length: metadata.len(),
+            _floor: reservation,
+        })
+    }
+}
+impl ByteSource for BorrowedFileSource<'_> {
+    fn len(&self) -> u64 {
+        self.length
+    }
+    fn read_at(&self, offset: u64, output: &mut [u8]) -> Result<usize, ValidationIssue> {
+        let remaining = self
+            .length
+            .checked_sub(offset)
+            .ok_or(ValidationIssue::InvalidSpan)?;
+        let count = remaining.min(output.len() as u64) as usize;
+        let output = &mut output[..count];
+        loop {
+            #[cfg(unix)]
+            let result = std::os::unix::fs::FileExt::read_at(self.file, output, offset);
+            #[cfg(windows)]
+            let result = std::os::windows::fs::FileExt::seek_read(self.file, output, offset);
+            #[cfg(not(any(unix, windows)))]
+            return Err(ValidationIssue::UnsupportedPositionedRead);
+            #[cfg(any(unix, windows))]
+            match result {
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                Err(e) => return Err(ValidationIssue::Io(e.kind())),
+                Ok(n) => return Ok(n),
+            }
+        }
     }
 }
 struct SourceReader<'a, S: ?Sized> {
@@ -190,6 +253,21 @@ impl<'a, S: ByteSource + ?Sized> Decoded<'a, S> {
             if byte < 32 {
                 return Err(ValidationIssue::NonProducer);
             }
+            if byte >= 0x80 {
+                self.filled = match byte {
+                    0xc2..=0xdf => 2,
+                    0xe0..=0xef => 3,
+                    0xf0..=0xf4 => 4,
+                    _ => return Err(ValidationIssue::NonProducer),
+                };
+                self.pending[0] = byte;
+                for value in &mut self.pending[1..self.filled] {
+                    *value = self.raw.required()?;
+                }
+                std::str::from_utf8(&self.pending[..self.filled])
+                    .map_err(|_| ValidationIssue::NonProducer)?;
+                self.at = 1;
+            }
             return Ok(Some(byte));
         }
         let escape = self.raw.required()?;
@@ -228,17 +306,48 @@ fn compare<S: ByteSource + ?Sized>(
     a: Span,
     b: Span,
 ) -> Result<Ordering, ValidationIssue> {
-    let mut a = Decoded::new(source, a)?;
-    let mut b = Decoded::new(source, b)?;
+    compare_complete(Decoded::new(source, a)?, Decoded::new(source, b)?)
+}
+fn compare_complete<A: ByteSource + ?Sized, B: ByteSource + ?Sized>(
+    mut left: Decoded<'_, A>,
+    mut right: Decoded<'_, B>,
+) -> Result<Ordering, ValidationIssue> {
+    let mut ordering = Ordering::Equal;
     loop {
-        match (a.next()?, b.next()?) {
-            (None, None) => return Ok(Ordering::Equal),
-            (None, _) => return Ok(Ordering::Less),
-            (_, None) => return Ok(Ordering::Greater),
-            (Some(a), Some(b)) if a != b => return Ok(a.cmp(&b)),
-            _ => {}
+        let pair = (left.next()?, right.next()?);
+        if pair == (None, None) {
+            return Ok(ordering);
+        }
+        // Ordering is decided by the first difference, but both complete spans
+        // must still validate before that ordering can become a successful fact.
+        if ordering == Ordering::Equal {
+            ordering = match pair {
+                (None, Some(_)) => Ordering::Less,
+                (Some(_), None) => Ordering::Greater,
+                (Some(a), Some(b)) => a.cmp(&b),
+                (None, None) => unreachable!(),
+            };
         }
     }
+}
+/// Exact decoded bytes across independently bound sources. Digest equality is
+/// never substituted for equality; long strings stream through fixed buffers.
+pub(crate) fn compare_decoded_spans<A: ByteSource + ?Sized, B: ByteSource + ?Sized>(
+    left: &A,
+    left_span: Span,
+    right: &B,
+    right_span: Span,
+    memory: &CleanupMemory,
+) -> Result<Ordering, ValidationIssue> {
+    let bytes = std::mem::size_of::<Decoded<'_, A>>()
+        .checked_add(std::mem::size_of::<Decoded<'_, B>>())
+        .and_then(|n| n.checked_add(128))
+        .ok_or(ValidationIssue::Overflow)?;
+    let _floor = memory.reserve(bytes)?;
+    compare_complete(
+        Decoded::new(left, left_span)?,
+        Decoded::new(right, right_span)?,
+    )
 }
 fn equals<S: ByteSource + ?Sized>(
     source: &S,
@@ -410,6 +519,7 @@ pub(crate) struct RawRowsMatch {
     pub(crate) passes: u64,
     pub(crate) events: u64,
     pub(crate) collision_batches: u64,
+    pub(crate) lookup_probes: u64,
 }
 
 const SLOT: usize = 128;
@@ -429,6 +539,7 @@ struct Row {
 struct Table {
     bytes: ReservedBytes,
     capacity: usize,
+    probes: Cell<u64>,
 }
 impl Table {
     fn new(memory: &CleanupMemory, capacity: usize) -> Result<Self, ValidationIssue> {
@@ -441,6 +552,7 @@ impl Table {
         Ok(Self {
             bytes: memory.reserve(len)?.bytes(len)?,
             capacity,
+            probes: Cell::new(0),
         })
     }
     fn clear(&mut self) {
@@ -474,7 +586,9 @@ impl Table {
     fn put(&mut self, index: usize, r: Row) {
         let b = &mut self.bytes.as_mut_slice()[index * SLOT..(index + 1) * SLOT];
         b.fill(0);
-        b[0] = u8::from(r.occupied);
+        // Insert/replace only. There is no single-slot deletion operation that
+        // could invalidate first-empty termination of an open-address probe.
+        b[0] = 1;
         b[9..41].copy_from_slice(&r.hash);
         for (o, v) in [
             (1, r.domain),
@@ -500,13 +614,20 @@ impl Table {
     ) -> Result<Result<usize, usize>, ValidationIssue> {
         let start =
             (u64::from_le_bytes(hash[..8].try_into().unwrap()) % self.capacity as u64) as usize;
-        let mut empty = None;
         for delta in 0..self.capacity {
+            self.probes.set(
+                self.probes
+                    .get()
+                    .checked_add(1)
+                    .ok_or(ValidationIssue::Overflow)?,
+            );
             let index = (start + delta) % self.capacity;
             let row = self.row(index);
             if !row.occupied {
-                empty.get_or_insert(index);
-                continue;
+                // Buckets have no deletion holes: insertion uses this first
+                // empty slot, and collision selection replaces only FULL
+                // tables. Therefore the key cannot occur beyond this empty.
+                return Ok(Err(index));
             }
             if row.domain == event.domain
                 && row.hash == hash
@@ -515,7 +636,7 @@ impl Table {
                 return Ok(Ok(index));
             }
         }
-        Ok(Err(empty.unwrap_or(self.capacity)))
+        Ok(Err(self.capacity))
     }
     fn apply(
         &mut self,
@@ -694,6 +815,7 @@ fn join_inner<S: ReplayEvents + ?Sized>(
         }
         prefix[(bits - 1) / 8] |= 0x80 >> ((bits - 1) % 8);
     }
+    stats.lookup_probes = table.probes.get();
     Ok(stats)
 }
 fn collision_batches<S: ReplayEvents + ?Sized>(
@@ -1419,6 +1541,43 @@ mod tests {
     use crate::protocol::ManifestEntry;
     use crate::syntax_materializer::{GraphEdgeRow, GraphNodeRow};
     use std::collections::BTreeMap;
+    use std::io::{Seek, SeekFrom, Write};
+    struct TestFile {
+        path: std::path::PathBuf,
+        file: Option<File>,
+    }
+    impl TestFile {
+        fn new(bytes: &[u8]) -> Self {
+            static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let seq = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let path = std::env::temp_dir().join(format!(
+                "cleanup-validation-source-{}-{nonce}-{seq}",
+                std::process::id()
+            ));
+            let mut file = std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create_new(true)
+                .open(&path)
+                .unwrap();
+            file.write_all(bytes).unwrap();
+            file.sync_all().unwrap();
+            Self {
+                path,
+                file: Some(file),
+            }
+        }
+    }
+    impl Drop for TestFile {
+        fn drop(&mut self) {
+            drop(self.file.take());
+            let _ = std::fs::remove_file(&self.path);
+        }
+    }
     fn node(id: &str, kind: &str) -> GraphNodeRow {
         GraphNodeRow {
             id: id.into(),
@@ -1817,5 +1976,281 @@ mod tests {
             }
         }
         assert!(accepted > 0 && rejected > 0);
+    }
+    #[test]
+    fn dc_validation_borrowed_fd_position_and_exact_bounded_reads() {
+        let mut fixture = TestFile::new(b"0123456789abcdef");
+        let memory = CleanupMemory::new(4096).unwrap();
+        fixture
+            .file
+            .as_mut()
+            .unwrap()
+            .seek(SeekFrom::Start(3))
+            .unwrap();
+        {
+            let source = BorrowedFileSource::new(fixture.file.as_mut().unwrap(), &memory).unwrap();
+            let mut bytes = [0u8; 4];
+            assert_eq!(source.len(), 16);
+            assert_eq!(source.read_at(7, &mut bytes).unwrap(), 4);
+            assert_eq!(&bytes, b"789a");
+            assert_eq!(
+                source.read_at(17, &mut bytes),
+                Err(ValidationIssue::InvalidSpan)
+            );
+        }
+        #[cfg(unix)]
+        assert_eq!(fixture.file.as_mut().unwrap().stream_position().unwrap(), 3);
+        #[cfg(windows)]
+        assert_eq!(
+            fixture.file.as_mut().unwrap().stream_position().unwrap(),
+            11
+        );
+    }
+    #[test]
+    fn dc_validation_borrowed_fd_schema_replay_without_payload_copy() {
+        let p = partition(vec![node("n", "N")], vec![edge("e", "E", 0.5)]);
+        let bytes = envelope(&p);
+        let mut fixture = TestFile::new(&bytes);
+        let memory = CleanupMemory::new(131072).unwrap();
+        let before = memory.used();
+        {
+            let source = BorrowedFileSource::new(fixture.file.as_mut().unwrap(), &memory).unwrap();
+            let f = facts_from_source(&source, &memory).unwrap();
+            assert!(f.stable_numbers && f.metadata_keys_sorted);
+            assert!(wire_checksum_matches(&source, &f, &memory).unwrap());
+            join_raw_rows(&ArtifactEvents { source: &source }, &memory, 8).unwrap();
+        }
+        assert_eq!(memory.used(), before);
+        assert_eq!(std::fs::read(&fixture.path).unwrap(), bytes);
+    }
+    fn facts_from_source<S: ByteSource + ?Sized>(
+        source: &S,
+        memory: &CleanupMemory,
+    ) -> Result<ArtifactFacts, ValidationIssue> {
+        scan_artifact(source, memory, &mut |_| Ok(()))
+    }
+    #[test]
+    fn dc_validation_cross_source_exact_unicode_long_strings_and_memory() {
+        let memory = CleanupMemory::new(16384).unwrap();
+        let left = br#""\uD83D\uDE00\n""#;
+        let right = "\"😀\\n\"".as_bytes();
+        let span = |n: usize| Span {
+            start: 0,
+            end: n as u64,
+        };
+        assert_eq!(
+            compare_decoded_spans(
+                left.as_slice(),
+                span(left.len()),
+                right,
+                span(right.len()),
+                &memory
+            )
+            .unwrap(),
+            Ordering::Equal
+        );
+        let a = serde_json::to_vec(&format!("{}a", "é".repeat(100_000))).unwrap();
+        let b = serde_json::to_vec(&format!("{}b", "é".repeat(100_000))).unwrap();
+        let floor = memory.used();
+        assert_eq!(
+            compare_decoded_spans(
+                a.as_slice(),
+                span(a.len()),
+                b.as_slice(),
+                span(b.len()),
+                &memory
+            )
+            .unwrap(),
+            Ordering::Less
+        );
+        assert_eq!(memory.used(), floor);
+        assert!(memory.peak() < 16384);
+        let small = CleanupMemory::new(64).unwrap();
+        let used = small.used();
+        assert!(compare_decoded_spans(
+            left.as_slice(),
+            span(left.len()),
+            right,
+            span(right.len()),
+            &small
+        )
+        .is_err());
+        assert_eq!(small.used(), used);
+    }
+    #[test]
+    fn dc_validation_cross_source_propagates_late_read_failure_after_ordering() {
+        struct LateFailure<'a>(&'a [u8]);
+        impl ByteSource for LateFailure<'_> {
+            fn len(&self) -> u64 {
+                self.0.len() as u64
+            }
+            fn read_at(&self, offset: u64, output: &mut [u8]) -> Result<usize, ValidationIssue> {
+                if offset >= 256 {
+                    return Err(ValidationIssue::Io(io::ErrorKind::PermissionDenied));
+                }
+                self.0.read_at(offset, output)
+            }
+        }
+        let memory = CleanupMemory::new(4096).unwrap();
+        let bytes = serde_json::to_vec(&format!("a{}", "x".repeat(512))).unwrap();
+        let failing = LateFailure(&bytes);
+        let long = Span {
+            start: 0,
+            end: bytes.len() as u64,
+        };
+        let short = Span { start: 0, end: 3 };
+        assert_eq!(
+            compare_decoded_spans(&failing, long, br#""b""#.as_slice(), short, &memory),
+            Err(ValidationIssue::Io(io::ErrorKind::PermissionDenied))
+        );
+        assert_eq!(
+            compare_decoded_spans(br#""b""#.as_slice(), short, &failing, long, &memory),
+            Err(ValidationIssue::Io(io::ErrorKind::PermissionDenied))
+        );
+    }
+    #[test]
+    fn dc_validation_cross_source_rejects_invalid_utf8_and_incomplete_spans() {
+        let memory = CleanupMemory::new(4096).unwrap();
+        let invalid = b"\"\xff\"";
+        let span = Span { start: 0, end: 3 };
+        assert!(
+            compare_decoded_spans(invalid.as_slice(), span, invalid.as_slice(), span, &memory)
+                .is_err()
+        );
+        let valid = br#""a""#;
+        assert!(compare_decoded_spans(
+            valid.as_slice(),
+            Span { start: 0, end: 2 },
+            valid.as_slice(),
+            span,
+            &memory
+        )
+        .is_err());
+    }
+    #[test]
+    fn dc_validation_cross_source_validates_suffixes_after_first_difference() {
+        let memory = CleanupMemory::new(4096).unwrap();
+        let floor = memory.used();
+        let span = |s: &[u8]| Span {
+            start: 0,
+            end: s.len() as u64,
+        };
+        for (left, right, error) in [
+            (
+                b"\"a\xff\"".as_slice(),
+                b"\"b\"".as_slice(),
+                ValidationIssue::NonProducer,
+            ),
+            (
+                b"\"a".as_slice(),
+                b"\"b\"".as_slice(),
+                ValidationIssue::InvalidSpan,
+            ),
+            (
+                b"\"a\"trailing".as_slice(),
+                b"\"b\"".as_slice(),
+                ValidationIssue::InvalidSpan,
+            ),
+            (
+                b"\"\"".as_slice(),
+                b"\"a\xff\"".as_slice(),
+                ValidationIssue::NonProducer,
+            ),
+            (
+                br#""a\q""#.as_slice(),
+                br#""b""#.as_slice(),
+                ValidationIssue::NonProducer,
+            ),
+            (
+                b"\"a\x01\"".as_slice(),
+                br#""b""#.as_slice(),
+                ValidationIssue::NonProducer,
+            ),
+            (
+                br#""a\uD800""#.as_slice(),
+                br#""b""#.as_slice(),
+                ValidationIssue::NonProducer,
+            ),
+        ] {
+            assert_eq!(
+                compare_decoded_spans(left, span(left), right, span(right), &memory),
+                Err(error)
+            );
+            assert_eq!(
+                compare_decoded_spans(right, span(right), left, span(left), &memory),
+                Err(error)
+            );
+        }
+        for (left, right, expected) in [
+            (
+                br#""azzz""#.as_slice(),
+                br#""baaa""#.as_slice(),
+                Ordering::Less,
+            ),
+            (
+                br#""azzz""#.as_slice(),
+                br#""a""#.as_slice(),
+                Ordering::Greater,
+            ),
+            (br#""""#.as_slice(), br#""a""#.as_slice(), Ordering::Less),
+        ] {
+            assert_eq!(
+                compare_decoded_spans(left, span(left), right, span(right), &memory).unwrap(),
+                expected
+            );
+        }
+        assert_eq!(memory.used(), floor);
+    }
+    #[test]
+    fn dc_validation_sparse_lookup_work_and_forced_collision_probe() {
+        let memory = CleanupMemory::new(4 * 1024 * 1024).unwrap();
+        let p = partition(
+            (0..64).map(|i| node(&format!("n{i:03}"), "N")).collect(),
+            vec![],
+        );
+        let bytes = envelope(&p);
+        let started = std::time::Instant::now();
+        let stats = join_raw_rows(
+            &ArtifactEvents {
+                source: bytes.as_slice(),
+            },
+            &memory,
+            16384,
+        )
+        .unwrap();
+        eprintln!("normal join bytes={} capacity=16384 passes={} events={} lookup_probes={} elapsed_us={}",bytes.len(),stats.passes,stats.events,stats.lookup_probes,started.elapsed().as_micros());
+        assert_eq!(stats.passes, 1);
+        assert!(
+            stats.lookup_probes < stats.events * 3,
+            "a missing key must stop at the first empty slot, not scan all16384 slots"
+        );
+        assert!(memory.peak() < 4 * 1024 * 1024);
+        let small = partition(
+            vec![node("a", "A"), node("b", "B"), node("a", "Latest")],
+            vec![],
+        );
+        let bytes = envelope(&small);
+        let stats = join_inner(
+            &ArtifactEvents {
+                source: bytes.as_slice(),
+            },
+            &memory,
+            1,
+            true,
+        )
+        .unwrap();
+        eprintln!(
+            "forced collision passes={} events={} probes={} batches={}",
+            stats.passes, stats.events, stats.lookup_probes, stats.collision_batches
+        );
+        assert!(stats.collision_batches > 0);
+        assert!(stats.lookup_probes > 0);
+        assert!(small.validate_raw_rows().is_ok());
+        let mut extra = small.clone();
+        extra
+            .entry
+            .node_types
+            .insert("map-only-extra".into(), "N".into());
+        assert!(!joined(&extra, 1, true));
     }
 }
