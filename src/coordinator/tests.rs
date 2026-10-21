@@ -57,8 +57,8 @@ fn retryable_receive_failure_retries_the_same_owner() {
                 }),
                 owner: None,
             }),
-            monitor_stop: AtomicBool::new(false),
-            monitor: Mutex::new(None),
+            monitor_stop: Arc::new(AtomicBool::new(false)),
+            monitor: JoinedThread::new(None),
         }),
     };
 
@@ -509,8 +509,8 @@ fn test_client_with_state(root: &Path, state: CoordinatorState) -> CoordinatorCl
                 state: Some(state),
                 owner: None,
             }),
-            monitor_stop: AtomicBool::new(true),
-            monitor: Mutex::new(None),
+            monitor_stop: Arc::new(AtomicBool::new(true)),
+            monitor: JoinedThread::new(None),
         }),
     }
 }
@@ -525,8 +525,9 @@ fn test_client_with_owner(
     let mut client = test_client_with_state(root, state.clone());
     let owner = Arc::new(CoordinatorOwner {
         stop,
-        thread: Mutex::new(Some(server)),
+        thread: JoinedThread::new(Some(server)),
         dispatcher,
+        refresh_cancel: RefreshCancellation::default(),
     });
     Arc::get_mut(&mut client.inner)
         .expect("test client has a unique inner")
@@ -1002,6 +1003,294 @@ mod joined_maintenance_driver {
             }
             release_dispose.send(()).unwrap();
             runtime.stop_and_join();
+        }
+    }
+}
+
+mod refresh_owned_join {
+    use super::*;
+    use std::sync::mpsc;
+
+    struct Release(Option<mpsc::Sender<()>>);
+    impl Release {
+        fn release(&mut self) {
+            if let Some(tx) = self.0.take() {
+                let _ = tx.send(());
+            }
+        }
+    }
+    impl Drop for Release {
+        fn drop(&mut self) {
+            self.release();
+        }
+    }
+
+    struct Payload {
+        entered: mpsc::Sender<()>,
+        release: mpsc::Receiver<()>,
+        panic_again: bool,
+    }
+    impl Drop for Payload {
+        fn drop(&mut self) {
+            let _ = self.entered.send(());
+            let _ = self.release.recv();
+            if self.panic_again {
+                panic!("fixture join payload destructor");
+            }
+        }
+    }
+    #[test]
+    fn refresh_join_two_drainers_wait_for_payload_drop_and_wake_after_unwind() {
+        for panic_again in [false, true] {
+            let (entered, disposing) = mpsc::channel();
+            let (release, released) = mpsc::channel();
+            let target = thread::spawn(move || {
+                std::panic::panic_any(Payload {
+                    entered,
+                    release: released,
+                    panic_again,
+                })
+            });
+            let joined = Arc::new(JoinedThread::new(Some(target)));
+            let mut release = Release(Some(release));
+            let first = joined.clone();
+            let (first_tx, first_rx) = mpsc::channel();
+            let first = thread::spawn(move || {
+                let result =
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| first.join()));
+                first_tx.send(result.is_ok()).unwrap();
+            });
+            disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(
+                joined.state.try_lock().is_ok(),
+                "mutex held during join/payload drop"
+            );
+            assert!(matches!(
+                *joined.state.lock().unwrap(),
+                JoinState::Joining(_)
+            ));
+            let second = joined.clone();
+            let (second_tx, second_rx) = mpsc::channel();
+            let second = thread::spawn(move || second_tx.send(second.join()).unwrap());
+            assert!(
+                second_rx.recv_timeout(Duration::from_millis(50)).is_err(),
+                "concurrent drain returned before disposal"
+            );
+            assert!(first_rx.try_recv().is_err());
+            release.release();
+            assert_eq!(
+                first_rx.recv_timeout(Duration::from_secs(5)).unwrap(),
+                !panic_again
+            );
+            assert!(second_rx.recv_timeout(Duration::from_secs(5)).unwrap());
+            first.join().unwrap();
+            second.join().unwrap();
+            assert!(matches!(*joined.state.lock().unwrap(), JoinState::Joined));
+        }
+    }
+
+    #[test]
+    fn refresh_join_self_identity_survives_handle_taken_by_another_drainer() {
+        let joined = Arc::new(JoinedThread::new(None));
+        let weak = Arc::downgrade(&joined);
+        let (release, released) = mpsc::channel();
+        let (result, result_rx) = mpsc::channel();
+        let target = thread::spawn(move || {
+            let _ = released.recv();
+            result.send(weak.upgrade().unwrap().join()).unwrap();
+        });
+        joined.install(target);
+        let mut release = Release(Some(release));
+        let drainer = joined.clone();
+        let drainer = thread::spawn(move || assert!(drainer.join()));
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !matches!(*joined.state.lock().unwrap(), JoinState::Joining(_)) {
+            assert!(Instant::now() < deadline);
+            thread::yield_now();
+        }
+        release.release();
+        assert!(!result_rx.recv_timeout(Duration::from_secs(5)).unwrap());
+        drainer.join().unwrap();
+        assert!(joined.join());
+    }
+
+    fn await_join_transition(joined: &JoinedThread) {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            // Condition synchronization only: the actual unlocked-join probe
+            // below executes once, after admission's short guard has gone.
+            if let Ok(state) = joined.state.try_lock() {
+                if matches!(*state, JoinState::Joining(_)) {
+                    break;
+                }
+            }
+            assert!(
+                Instant::now() < deadline,
+                "drainer did not release its joining transition"
+            );
+            thread::yield_now();
+        }
+    }
+
+    #[test]
+    fn refresh_owner_and_monitor_release_state_and_route_mutexes_before_join() {
+        let stop = Arc::new(AtomicBool::new(false));
+        let owner = Arc::new(CoordinatorOwner {
+            stop: stop.clone(),
+            thread: JoinedThread::new(None),
+            dispatcher: Arc::new(ExecutionDispatcher::default()),
+            refresh_cancel: RefreshCancellation::default(),
+        });
+        let weak = Arc::downgrade(&owner);
+        let (observed, observed_rx) = mpsc::channel();
+        let target = thread::spawn(move || {
+            while !stop.load(Ordering::Acquire) {
+                thread::yield_now();
+            }
+            let owner = weak.upgrade().unwrap();
+            await_join_transition(&owner.thread);
+            observed
+                .send(owner.thread.state.try_lock().is_ok())
+                .unwrap();
+        });
+        owner.thread.install(target);
+        owner.stop_and_drain();
+        assert!(observed_rx.recv_timeout(Duration::from_secs(5)).unwrap());
+
+        let root = temp_dir("monitor-unlocked-drain");
+        let client = test_client_with_state(&root, test_state("127.0.0.1:1".parse().unwrap()));
+        client.inner.monitor_stop.store(false, Ordering::Release);
+        let weak = Arc::downgrade(&client.inner);
+        let stop = client.inner.monitor_stop.clone();
+        let (observed, observed_rx) = mpsc::channel();
+        let target = thread::spawn(move || {
+            while !stop.load(Ordering::Acquire) {
+                thread::yield_now();
+            }
+            let inner = weak.upgrade().unwrap();
+            await_join_transition(&inner.monitor);
+            observed
+                .send((
+                    inner.monitor.state.try_lock().is_ok(),
+                    inner.route.try_lock().is_ok(),
+                ))
+                .unwrap();
+        });
+        client.inner.monitor.install(target);
+        client.drain_owned_operation();
+        assert_eq!(
+            observed_rx.recv_timeout(Duration::from_secs(5)).unwrap(),
+            (true, true)
+        );
+    }
+
+    #[test]
+    fn refresh_monitor_final_self_drop_exits_before_another_wait_or_work() {
+        let root = temp_dir("monitor-self-drop-tail");
+        let owner_stop = Arc::new(AtomicBool::new(false));
+        let server_stop = owner_stop.clone();
+        let (server_done, server_drained) = mpsc::channel();
+        let server = thread::spawn(move || {
+            while !server_stop.load(Ordering::Acquire) {
+                thread::yield_now();
+            }
+            server_done.send(()).unwrap();
+        });
+        let client = test_client_with_owner(
+            &root,
+            test_state("127.0.0.1:1".parse().unwrap()),
+            owner_stop,
+            Arc::new(ExecutionDispatcher::default()),
+            server,
+        );
+        client.inner.monitor_stop.store(false, Ordering::Release);
+        let stop = client.inner.monitor_stop.clone();
+        let weak = Arc::downgrade(&client.inner);
+        let probe_weak = weak.clone();
+        let (observed, observation) = mpsc::channel();
+        let (release, released) = mpsc::channel();
+        let waits = Arc::new(AtomicU64::new(0));
+        let probe_waits = waits.clone();
+        let (done, drained) = mpsc::channel();
+        let monitor = thread::spawn(move || {
+            monitor_route_with_probe(probe_weak, stop, |phase| match phase {
+                MonitorPhase::BeforeWait => {
+                    probe_waits.fetch_add(1, Ordering::SeqCst);
+                }
+                MonitorPhase::Observed => {
+                    observed.send(()).unwrap();
+                    let _ = released.recv();
+                }
+            });
+            done.send(()).unwrap();
+        });
+        client.inner.monitor.install(monitor);
+        let mut release = Release(Some(release));
+        observation.recv_timeout(Duration::from_secs(5)).unwrap();
+        drop(client); // monitor's iteration now owns the last strong reference
+        release.release();
+        drained.recv_timeout(Duration::from_secs(5)).unwrap();
+        server_drained.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert!(weak.upgrade().is_none());
+        assert_eq!(waits.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn refresh_owner_executor_start_failure_and_stop_before_api_start_join_refresh() {
+        for stop_before_api in [false, true] {
+            let root = temp_dir("owner-refresh-startup");
+            let control = CoordinatorControlPaths {
+                lock: root.join("coordinator.lock"),
+                state: root.join("coordinator.json"),
+            };
+            let lease = try_open_locked(&control.lock, LockMode::Exclusive)
+                .unwrap()
+                .unwrap();
+            let mut config = direct_config(&root);
+            config.identity = Some(RepositoryIdentity::capture(&config.selector).unwrap());
+            config.refresh = Some(RefreshServiceConfig::default());
+            let (before, before_rx) = mpsc::channel();
+            let (release, released) = mpsc::channel();
+            let (started, started_rx) = mpsc::channel();
+            let (_, owner) =
+                start_owner_with_probe(control.clone(), lease, config, move |stage| match stage {
+                    OwnerStartup::BeforeRefresh => {
+                        if stop_before_api {
+                            before.send(()).unwrap();
+                            let _ = released.recv();
+                        }
+                    }
+                    OwnerStartup::RefreshStarted(state) => {
+                        INJECT_EXECUTOR_SPAWN_FAILURE.with(|flag| flag.set(true));
+                        started.send(state.unwrap()).unwrap();
+                    }
+                })
+                .unwrap();
+            let mut release = Release(Some(release));
+            if stop_before_api {
+                before_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                // This is the exact owner token created before its serving thread.
+                owner.stop.store(true, Ordering::Release);
+                owner.refresh_cancel.request_stop();
+                owner.dispatcher.stop_admission();
+                release.release();
+            }
+            let refresh = started_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            owner.stop_and_drain();
+            assert!(!refresh.snapshot().task_alive);
+            assert!(
+                !control.state.exists(),
+                "serving state survived completed cleanup"
+            );
+            assert!(
+                try_open_locked(&control.lock, LockMode::Exclusive)
+                    .unwrap()
+                    .is_some(),
+                "coordinator lease escaped drain"
+            );
+            if stop_before_api {
+                assert_eq!(refresh.snapshot().effective_root, None);
+            }
         }
     }
 }

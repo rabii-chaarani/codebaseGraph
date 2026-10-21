@@ -1478,7 +1478,6 @@ impl<'a> RefreshServiceContext<'a> {
             |candidate_paths| self.execution.execute_isolated(candidate_paths, self.state),
         )?;
         if refresh_task_should_stop(self.state) {
-            self.state.mark_stopped();
             return Ok(false);
         }
         if !result {
@@ -1635,7 +1634,7 @@ pub(crate) struct RefreshStatus {
     /// Whether the refresh task is still running and able to make progress.
     ///
     /// This is deliberately separate from `enabled`: a configured service can
-    /// remain enabled after its detached task has stopped.
+    /// remain enabled after its owned task has stopped.
     pub(crate) task_alive: bool,
     /// Supervised task state.  The values are part of the structured status
     /// contract: starting, running, retrying, blocked, stopped, standby, and
@@ -1735,10 +1734,16 @@ impl Default for RefreshStatus {
 #[derive(Debug)]
 pub(crate) struct RefreshState {
     status: Mutex<RefreshStatus>,
+    cancellation: RefreshCancellation,
 }
 
 impl RefreshState {
+    #[cfg(test)]
     pub(crate) fn with_config(config: RefreshServiceConfig) -> Self {
+        Self::with_cancellation(config, RefreshCancellation::default())
+    }
+
+    fn with_cancellation(config: RefreshServiceConfig, cancellation: RefreshCancellation) -> Self {
         let status = RefreshStatus {
             worker_memory_mib: config.worker_memory_mib,
             rust_memory_mib: config.rust_memory_mib,
@@ -1752,6 +1757,7 @@ impl RefreshState {
         };
         Self {
             status: Mutex::new(status),
+            cancellation,
         }
     }
 
@@ -1908,7 +1914,7 @@ impl RefreshState {
             status.backend = backend.to_string();
             status.enabled = true;
             if backend == "failed" {
-                // The detached service calls this form only after its task
+                // The owned service calls this form only after its task
                 // has actually terminated.  Fallback errors use another
                 // backend (currently `poll`) and must keep reporting the
                 // still-live owner while the fallback loop takes over.
@@ -2183,46 +2189,185 @@ impl RefreshState {
     }
 }
 
+/// Explicit control is independent of retained Core/status Arc clones.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct RefreshCancellation {
+    stop: Arc<AtomicBool>,
+}
+impl RefreshCancellation {
+    pub(crate) fn request_stop(&self) {
+        self.stop.store(true, Ordering::Release);
+    }
+    fn is_stopping(&self) -> bool {
+        self.stop.load(Ordering::Acquire)
+    }
+}
+
+/// The serving thread owns this value; the refresh worker captures only state.
+#[derive(Debug)]
+pub(crate) struct RefreshRuntime {
+    state: Arc<RefreshState>,
+    thread: Option<thread::JoinHandle<()>>,
+}
+impl RefreshRuntime {
+    pub(crate) fn state(&self) -> Arc<RefreshState> {
+        Arc::clone(&self.state)
+    }
+    pub(crate) fn request_stop(&self) {
+        self.state.cancellation.request_stop();
+    }
+    pub(crate) fn stop_and_join(&mut self) {
+        self.request_stop();
+        if let Some(thread) = self.thread.take() {
+            let joined = thread.join();
+            if joined.is_err() && self.state.snapshot().backend != "failed" {
+                self.state.set_error(
+                    "failed",
+                    "refresh supervisor thread panicked during teardown".into(),
+                );
+            }
+            // No status/owner mutex is held across join or panic-payload disposal.
+            drop(joined);
+        }
+    }
+}
+impl Drop for RefreshRuntime {
+    fn drop(&mut self) {
+        self.stop_and_join();
+    }
+}
+
+enum RefreshServiceExit {
+    StoppedAfterDrain,
+    LegacyDisabled(String),
+}
+enum RefreshTerminal {
+    Stopped,
+    Disabled(String),
+    Failed(String),
+}
+
+// First local in the worker, last to dispose. A panic during payload destruction
+// cannot leave task_alive true or replace a real failure with ordinary stopped.
+struct RefreshExitFinalizer<'a> {
+    state: &'a RefreshState,
+    terminal: Option<RefreshTerminal>,
+}
+impl Drop for RefreshExitFinalizer<'_> {
+    fn drop(&mut self) {
+        let terminal = self.terminal.take();
+        if thread::panicking() {
+            drop(terminal);
+            self.state.set_error(
+                "failed",
+                "refresh supervisor panicked during teardown".into(),
+            );
+            return;
+        }
+        match terminal {
+            Some(RefreshTerminal::Stopped) => self.state.mark_stopped(),
+            Some(RefreshTerminal::Disabled(reason)) => self.state.disable("disabled", reason),
+            Some(RefreshTerminal::Failed(error)) => self.state.set_error("failed", error),
+            None => self.state.set_error(
+                "failed",
+                "refresh supervisor exited without a disposition".into(),
+            ),
+        }
+    }
+}
+
+#[cfg(test)]
+thread_local! {
+    static INJECT_REFRESH_SPAWN_FAILURE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+fn spawn_refresh_task<F>(state: Arc<RefreshState>, run: F) -> RefreshRuntime
+where
+    F: FnOnce(&Arc<RefreshState>) -> Result<RefreshServiceExit, String> + Send + 'static,
+{
+    let thread_state = Arc::clone(&state);
+    let body = move || {
+        let mut exit = RefreshExitFinalizer {
+            state: &thread_state,
+            terminal: None,
+        };
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| run(&thread_state)));
+        match result {
+            Ok(Ok(RefreshServiceExit::StoppedAfterDrain)) => {
+                exit.terminal = Some(RefreshTerminal::Stopped)
+            }
+            Ok(Ok(RefreshServiceExit::LegacyDisabled(reason))) => {
+                exit.terminal = Some(RefreshTerminal::Disabled(reason));
+            }
+            Ok(Err(error)) => {
+                eprintln!(
+                    "{}",
+                    json!({"event":"repository.refresh_error", "message":&error})
+                );
+                exit.terminal = Some(RefreshTerminal::Failed(error));
+            }
+            Err(payload) => {
+                exit.terminal = Some(RefreshTerminal::Failed(
+                    "refresh supervisor panicked; retry requires service restart".into(),
+                ));
+                drop(payload);
+            }
+        }
+    };
+    let spawned = spawn_refresh_thread(body);
+    match spawned {
+        Ok(thread) => RefreshRuntime {
+            state,
+            thread: Some(thread),
+        },
+        Err(error) => {
+            state.set_error(
+                "failed",
+                format!("failed to start refresh supervisor: {error}"),
+            );
+            RefreshRuntime {
+                state,
+                thread: None,
+            }
+        }
+    }
+}
+
+fn spawn_refresh_thread<F: FnOnce() + Send + 'static>(
+    body: F,
+) -> std::io::Result<thread::JoinHandle<()>> {
+    #[cfg(test)]
+    if INJECT_REFRESH_SPAWN_FAILURE.with(|flag| flag.replace(false)) {
+        drop(body);
+        return Err(std::io::Error::other("fixture refresh spawn failure"));
+    }
+    thread::Builder::new()
+        .name("codebase-graph-refresh".into())
+        .spawn(body)
+}
+
 pub(crate) fn start_refresh_service(
     selector: RepoSelector,
     config: RefreshServiceConfig,
-) -> Arc<RefreshState> {
-    let state = Arc::new(RefreshState::with_config(config));
-    let thread_state = Arc::clone(&state);
-    thread::spawn(move || {
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            run_refresh_service(selector, config, &thread_state)
-        }));
-        match result {
-            Ok(Err(error)) => {
-                thread_state.set_error("failed", error.clone());
-                eprintln!(
-                    "{}",
-                    json!({"event": "repository.refresh_error", "message": error})
-                );
-            }
-            Ok(Ok(())) if refresh_task_should_stop(&thread_state) => thread_state.mark_stopped(),
-            Err(_) => thread_state.set_error(
-                "failed",
-                "refresh supervisor panicked; retry requires service restart".to_string(),
-            ),
-            _ => {}
-        }
-    });
-    state
+    cancellation: RefreshCancellation,
+) -> RefreshRuntime {
+    let state = Arc::new(RefreshState::with_cancellation(config, cancellation));
+    spawn_refresh_task(state, move |state| {
+        run_refresh_service(selector, config, state)
+    })
 }
 
 fn run_refresh_service(
     selector: RepoSelector,
     config: RefreshServiceConfig,
     state: &Arc<RefreshState>,
-) -> Result<(), String> {
+) -> Result<RefreshServiceExit, String> {
     let mut identity = None;
     let mut retry_delay = Duration::from_millis(250);
     let mut blocked_delay = Duration::from_secs(5);
     loop {
         if refresh_task_should_stop(state) {
-            return Ok(());
+            return Ok(RefreshServiceExit::StoppedAfterDrain);
         }
         if identity.is_none() {
             match RepositoryIdentity::capture(&selector) {
@@ -2232,7 +2377,7 @@ fn run_refresh_service(
                     let delay = blocked_delay;
                     state.mark_blocked_until(unix_ms().saturating_add(delay.as_millis()));
                     if supervisor_wait(state, delay)? {
-                        return Ok(());
+                        return Ok(RefreshServiceExit::StoppedAfterDrain);
                     }
                     blocked_delay = blocked_delay.saturating_mul(2).min(Duration::from_secs(60));
                     continue;
@@ -2244,7 +2389,7 @@ fn run_refresh_service(
             let delay = blocked_delay;
             state.mark_blocked_until(unix_ms().saturating_add(delay.as_millis()));
             if supervisor_wait(state, delay)? {
-                return Ok(());
+                return Ok(RefreshServiceExit::StoppedAfterDrain);
             }
             blocked_delay = blocked_delay.saturating_mul(2).min(Duration::from_secs(60));
             continue;
@@ -2256,7 +2401,7 @@ fn run_refresh_service(
                 let delay = blocked_delay;
                 state.mark_blocked_until(unix_ms().saturating_add(delay.as_millis()));
                 if supervisor_wait(state, delay)? {
-                    return Ok(());
+                    return Ok(RefreshServiceExit::StoppedAfterDrain);
                 }
                 blocked_delay = blocked_delay.saturating_mul(2).min(Duration::from_secs(60));
                 continue;
@@ -2270,7 +2415,7 @@ fn run_refresh_service(
                 let delay = blocked_delay;
                 state.mark_blocked_until(unix_ms().saturating_add(delay.as_millis()));
                 if supervisor_wait(state, delay)? {
-                    return Ok(());
+                    return Ok(RefreshServiceExit::StoppedAfterDrain);
                 }
                 blocked_delay = blocked_delay.saturating_mul(2).min(Duration::from_secs(60));
                 continue;
@@ -2282,13 +2427,12 @@ fn run_refresh_service(
             let delay = Duration::from_secs(5);
             state.mark_policy_disabled_until(unix_ms().saturating_add(delay.as_millis()));
             if supervisor_wait(state, delay)? {
-                return Ok(());
+                return Ok(RefreshServiceExit::StoppedAfterDrain);
             }
             continue;
         }
         if let Err(error) = runtime.require_graph_write() {
-            state.disable("disabled", error);
-            return Ok(());
+            return Ok(RefreshServiceExit::LegacyDisabled(error));
         }
         let lock_path = refresh_lock_path(&runtime);
         let lease_result = try_open_locked(&lock_path, LockMode::Exclusive).map_err(|error| {
@@ -2303,7 +2447,7 @@ fn run_refresh_service(
                 let delay = blocked_delay;
                 state.mark_blocked_until(unix_ms().saturating_add(delay.as_millis()));
                 if supervisor_wait(state, delay)? {
-                    return Ok(());
+                    return Ok(RefreshServiceExit::StoppedAfterDrain);
                 }
                 blocked_delay = blocked_delay.saturating_mul(2).min(Duration::from_secs(60));
             }
@@ -2315,7 +2459,7 @@ fn run_refresh_service(
                         retry_delay = Duration::from_millis(250);
                         blocked_delay = Duration::from_secs(5);
                         if refresh_task_should_stop(state) {
-                            return Ok(());
+                            return Ok(RefreshServiceExit::StoppedAfterDrain);
                         }
                     }
                     Err(error) => {
@@ -2325,7 +2469,7 @@ fn run_refresh_service(
                             let delay = retry_delay;
                             state.mark_retrying(unix_ms().saturating_add(delay.as_millis()));
                             if supervisor_wait(state, delay)? {
-                                return Ok(());
+                                return Ok(RefreshServiceExit::StoppedAfterDrain);
                             }
                             retry_delay = retry_delay.saturating_mul(2).min(Duration::from_secs(5));
                         } else {
@@ -2333,7 +2477,7 @@ fn run_refresh_service(
                             let delay = blocked_delay;
                             state.mark_blocked_until(unix_ms().saturating_add(delay.as_millis()));
                             if supervisor_wait(state, delay)? {
-                                return Ok(());
+                                return Ok(RefreshServiceExit::StoppedAfterDrain);
                             }
                             blocked_delay =
                                 blocked_delay.saturating_mul(2).min(Duration::from_secs(60));
@@ -2344,7 +2488,7 @@ fn run_refresh_service(
             Ok(None) => {
                 state.mark_standby();
                 if supervisor_wait(state, refresh_election_delay())? {
-                    return Ok(());
+                    return Ok(RefreshServiceExit::StoppedAfterDrain);
                 }
             }
         }
@@ -2378,12 +2522,10 @@ fn default_reconcile_interval() -> Duration {
     Duration::from_millis(crate::api::context::DEFAULT_RECONCILE_INTERVAL_MS)
 }
 
-/// The coordinator owns the externally visible `Arc<RefreshState>`, while the
-/// service thread owns one temporary strong reference.  Once the coordinator
-/// owner is dropped only that thread reference remains, so bounded watcher
-/// waits can terminate without retaining the task forever.
+/// Status observers never determine service lifetime. Cancellation also works
+/// before startup and while Core/API clones retain the state for ordinary reads.
 fn refresh_task_should_stop(state: &Arc<RefreshState>) -> bool {
-    Arc::strong_count(state) == 1
+    state.cancellation.is_stopping()
 }
 
 fn run_refresh_leader(
@@ -3350,7 +3492,7 @@ mod tests {
         )
         .unwrap();
 
-        let state = start_refresh_service(
+        let mut service = start_refresh_service(
             RepoSelector {
                 repo_root: Some(root.clone()),
                 config_path: None,
@@ -3358,7 +3500,9 @@ mod tests {
                 manifest_path: None,
             },
             RefreshServiceConfig::default(),
+            RefreshCancellation::default(),
         );
+        let state = service.state();
 
         let mut snapshot = state.snapshot();
         for _ in 0..50 {
@@ -3373,6 +3517,7 @@ mod tests {
         assert_eq!(snapshot.backend, "disabled");
         assert!(snapshot.last_error.as_deref().is_some_and(|error| error
             .contains("legacy installed graph storage requires reinstall before writes")));
+        service.stop_and_join();
         let _ = fs::remove_dir_all(root);
     }
 
@@ -3406,7 +3551,7 @@ mod tests {
             db_path: None,
             manifest_path: None,
         };
-        let state = start_refresh_service(
+        let mut service = start_refresh_service(
             selector.clone(),
             RefreshServiceConfig {
                 backend: GraphRefreshBackend::Native,
@@ -3418,7 +3563,9 @@ mod tests {
                 },
                 ..RefreshServiceConfig::default()
             },
+            RefreshCancellation::default(),
         );
+        let state = service.state();
 
         let startup_deadline = Instant::now() + Duration::from_secs(20);
         let snapshot = loop {
@@ -3448,6 +3595,7 @@ mod tests {
         let runtime = resolve_refresh_runtime(&selector).unwrap();
         let lock_path = refresh_lock_path(&runtime);
         drop(runtime);
+        service.stop_and_join();
         drop(state);
 
         let release_deadline = Instant::now() + Duration::from_secs(5);
@@ -3464,6 +3612,28 @@ mod tests {
                 Err(error) => panic!("failed to inspect refresh lease: {error}"),
             }
         };
+        // A refresh spawn failure is optional: the committed native graph
+        // remains readable even while API/Core/status clones retain its state.
+        INJECT_REFRESH_SPAWN_FAILURE.with(|flag| flag.set(true));
+        let (api, mut failed_runtime) = crate::api::CodebaseGraphApi::for_coordinator_owner(
+            selector.clone(),
+            Some(RefreshServiceConfig::default()),
+            RefreshCancellation::default(),
+        );
+        let failed_state = failed_runtime.as_ref().unwrap().state();
+        assert_eq!(failed_state.snapshot().backend, "failed");
+        let response = api
+            .execute_operation(&crate::api::OperationRequest::Health(
+                crate::api::HealthRequest {
+                    repo: selector.clone(),
+                    refresh_status: None,
+                    output_format: crate::api::OutputFormat::Typed,
+                    confirm_legacy_quiescence: false,
+                },
+            ))
+            .unwrap();
+        assert_eq!(response.payload["graph_readable"], true);
+        failed_runtime.as_mut().unwrap().stop_and_join();
         let cleanup = fs::remove_dir_all(&root);
         assert!(released, "refresh service did not release its lease");
         assert!(cleanup.is_ok(), "refresh test cleanup failed: {cleanup:?}");
@@ -3556,5 +3726,196 @@ mod tests {
         drop(exclusive);
         drop(runtime);
         let _ = fs::remove_dir_all(root);
+    }
+}
+
+#[cfg(test)]
+mod owned_refresh_tests {
+    use super::*;
+    use crate::api::core::ApiCore;
+    use std::sync::mpsc;
+
+    struct ReleaseOnDrop(Option<mpsc::Sender<()>>);
+    impl ReleaseOnDrop {
+        fn release(&mut self) {
+            if let Some(sender) = self.0.take() {
+                let _ = sender.send(());
+            }
+        }
+    }
+    impl Drop for ReleaseOnDrop {
+        fn drop(&mut self) {
+            self.release();
+        }
+    }
+
+    #[test]
+    fn refresh_owned_join_ignores_retained_core_clones_and_has_no_cycle() {
+        let state = Arc::new(RefreshState::with_config(RefreshServiceConfig::default()));
+        let weak = Arc::downgrade(&state);
+        let core = ApiCore::for_coordinator(Some(state.clone()));
+        let clones = [core.clone(), core.clone()];
+        let (started, ready) = mpsc::channel();
+        let mut runtime = spawn_refresh_task(state.clone(), move |state| {
+            state.set_backend("poll");
+            started.send(()).unwrap();
+            while !refresh_task_should_stop(state) {
+                thread::yield_now();
+            }
+            Ok(RefreshServiceExit::StoppedAfterDrain)
+        });
+        ready.recv_timeout(Duration::from_secs(5)).unwrap();
+        runtime.stop_and_join();
+        assert!(!state.snapshot().task_alive);
+        assert_eq!(state.snapshot().state, "stopped");
+        assert_eq!(clones[0].operations().len(), core.operations().len());
+        drop(runtime);
+        drop(state);
+        drop(clones);
+        drop(core);
+        assert!(
+            weak.upgrade().is_none(),
+            "runtime/state/Core ownership cycle"
+        );
+    }
+
+    struct SlowResource {
+        entered: mpsc::Sender<()>,
+        release: mpsc::Receiver<()>,
+    }
+    impl Drop for SlowResource {
+        fn drop(&mut self) {
+            let _ = self.entered.send(());
+            let _ = self.release.recv();
+        }
+    }
+    #[test]
+    fn refresh_owned_join_waits_for_resource_drop_without_early_stopped_or_status_lock() {
+        let state = Arc::new(RefreshState::with_config(RefreshServiceConfig::default()));
+        let (started, ready) = mpsc::channel();
+        let (entered, disposing) = mpsc::channel();
+        let (release, released) = mpsc::channel();
+        let mut runtime = spawn_refresh_task(state.clone(), move |state| {
+            let _resource = SlowResource {
+                entered,
+                release: released,
+            };
+            state.set_backend("poll");
+            started.send(()).unwrap();
+            while !refresh_task_should_stop(state) {
+                thread::yield_now();
+            }
+            Ok(RefreshServiceExit::StoppedAfterDrain)
+        });
+        let mut release = ReleaseOnDrop(Some(release));
+        ready.recv_timeout(Duration::from_secs(5)).unwrap();
+        runtime.request_stop();
+        disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+        let (done, drained) = mpsc::channel();
+        let joiner = thread::spawn(move || {
+            runtime.stop_and_join();
+            done.send(()).unwrap();
+        });
+        assert!(state.status.try_lock().is_ok());
+        assert!(state.snapshot().task_alive);
+        assert_ne!(state.snapshot().state, "stopped");
+        assert!(drained.try_recv().is_err());
+        release.release();
+        drained.recv_timeout(Duration::from_secs(5)).unwrap();
+        joiner.join().unwrap();
+        assert_eq!(state.snapshot().state, "stopped");
+        assert!(!state.snapshot().task_alive);
+    }
+
+    #[test]
+    fn refresh_owned_terminal_disposition_survives_stop_disable_failure_and_panic_races() {
+        for outcome in 0..3 {
+            let state = Arc::new(RefreshState::with_config(RefreshServiceConfig::default()));
+            let (entered, ready) = mpsc::channel();
+            let (release, released) = mpsc::channel();
+            let mut runtime = spawn_refresh_task(state.clone(), move |_| {
+                entered.send(()).unwrap();
+                let _ = released.recv();
+                match outcome {
+                    0 => Ok(RefreshServiceExit::LegacyDisabled("legacy witness".into())),
+                    1 => Err("primary failure witness".into()),
+                    _ => panic!("primary panic witness"),
+                }
+            });
+            let mut release = ReleaseOnDrop(Some(release));
+            ready.recv_timeout(Duration::from_secs(5)).unwrap();
+            runtime.request_stop();
+            release.release();
+            runtime.stop_and_join();
+            let status = state.snapshot();
+            assert!(!status.task_alive);
+            if outcome == 0 {
+                assert_eq!(status.state, "disabled");
+                assert_eq!(status.backend, "disabled");
+                assert!(!status.enabled);
+                assert_eq!(status.last_error.as_deref(), Some("legacy witness"));
+            } else {
+                assert_eq!(status.backend, "failed");
+                assert!(status
+                    .last_error
+                    .as_deref()
+                    .unwrap()
+                    .contains(if outcome == 1 {
+                        "primary failure witness"
+                    } else {
+                        "panicked"
+                    }));
+            }
+        }
+    }
+
+    struct PanicPayload;
+    impl Drop for PanicPayload {
+        fn drop(&mut self) {
+            panic!("refresh payload destructor");
+        }
+    }
+    #[test]
+    fn refresh_owned_join_publishes_failure_if_panic_payload_disposal_panics() {
+        let state = Arc::new(RefreshState::with_config(RefreshServiceConfig::default()));
+        let mut runtime =
+            spawn_refresh_task(state.clone(), |_| std::panic::panic_any(PanicPayload));
+        runtime.stop_and_join();
+        assert_eq!(state.snapshot().backend, "failed");
+        assert!(!state.snapshot().task_alive);
+        assert!(state
+            .snapshot()
+            .last_error
+            .as_deref()
+            .unwrap()
+            .contains("panicked"));
+    }
+
+    #[test]
+    fn refresh_owned_precancelled_startup_skips_resolution_and_resources() {
+        let root = std::env::temp_dir().join(format!(
+            "refresh-precancelled-{}-{}",
+            std::process::id(),
+            unix_ms()
+        ));
+        fs::create_dir(&root).unwrap();
+        let cancellation = RefreshCancellation::default();
+        cancellation.request_stop();
+        let mut runtime = start_refresh_service(
+            RepoSelector {
+                repo_root: Some(root.clone()),
+                config_path: None,
+                db_path: None,
+                manifest_path: None,
+            },
+            RefreshServiceConfig::default(),
+            cancellation,
+        );
+        let state = runtime.state();
+        runtime.stop_and_join();
+        assert_eq!(state.snapshot().state, "stopped");
+        assert_eq!(state.snapshot().effective_root, None);
+        assert_eq!(fs::read_dir(&root).unwrap().count(), 0);
+        fs::remove_dir(root).unwrap();
     }
 }

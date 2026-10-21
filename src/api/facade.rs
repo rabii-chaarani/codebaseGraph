@@ -5,7 +5,10 @@ use crate::api::{
         RefreshWatchConfig, RefreshWatchObserver, RepoSelector,
     },
     core::{ApiCore, OperationDescriptor},
-    refresh::{run_refresh_watch, start_refresh_service, RefreshServiceConfig},
+    refresh::{
+        run_refresh_watch, start_refresh_service, RefreshCancellation, RefreshRuntime,
+        RefreshServiceConfig,
+    },
 };
 use crate::coordinator::{CoordinatorApiConfig, CoordinatorClient};
 
@@ -84,11 +87,16 @@ impl CodebaseGraphApi<ApiCore> {
     pub(crate) fn for_coordinator_owner(
         selector: RepoSelector,
         refresh: Option<RefreshServiceConfig>,
-    ) -> Self {
-        let refresh = refresh.map(|config| start_refresh_service(selector, config));
-        Self {
-            core: ApiCore::for_coordinator(refresh),
-        }
+        cancellation: RefreshCancellation,
+    ) -> (Self, Option<RefreshRuntime>) {
+        let runtime = refresh.map(|config| start_refresh_service(selector, config, cancellation));
+        let state = runtime.as_ref().map(RefreshRuntime::state);
+        (
+            Self {
+                core: ApiCore::for_coordinator(state),
+            },
+            runtime,
+        )
     }
 
     pub(crate) fn watch_repository(
