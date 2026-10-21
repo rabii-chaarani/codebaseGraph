@@ -3028,8 +3028,42 @@ pub(crate) mod tests {
         let parent = fixture.root.join("replaceable-parent");
         fs::create_dir(&parent).unwrap();
         let database = parent.join("graph.ldb");
+        let sentinel = parent.join("public-sentinel");
+        fs::write(&sentinel, b"original public data").unwrap();
         let shared = DatabaseUseLease::acquire_shared(&database).unwrap();
-        fs::rename(&parent, fixture.root.join("detached-parent")).unwrap();
+        let detached = fixture.root.join("detached-parent");
+        if let Err(error) = fs::rename(&parent, &detached) {
+            #[cfg(windows)]
+            if error.kind() == std::io::ErrorKind::PermissionDenied {
+                // Windows can reject renaming a directory with open descendant
+                // handles. Prove that this native prevention leaves the public
+                // incarnation and actual family exclusion intact; do not skip.
+                assert_eq!(directory_identity(&parent).unwrap(), shared.parent_identity);
+                assert_eq!(fs::read(&sentinel).unwrap(), b"original public data");
+                assert!(!database.exists());
+                assert!(!detached.exists());
+                shared.revalidate().unwrap();
+                assert!(DatabaseUseLease::try_exclusive(&database)
+                    .unwrap()
+                    .is_none());
+                let other = fixture.root.join("independent-parent");
+                fs::create_dir(&other).unwrap();
+                let independent = DatabaseUseLease::try_exclusive(&other.join("graph.ldb"))
+                    .unwrap()
+                    .unwrap();
+                drop(independent);
+                drop(shared);
+                assert!(DatabaseUseLease::try_exclusive(&database)
+                    .unwrap()
+                    .is_some());
+                return;
+            }
+            panic!("unexpected parent rename failure: {error}");
+        }
+        assert_eq!(
+            fs::read(detached.join("public-sentinel")).unwrap(),
+            b"original public data"
+        );
         fs::create_dir(&parent).unwrap();
         fs::write(&database, b"fresh incarnation").unwrap();
         assert!(shared.revalidate().is_err());

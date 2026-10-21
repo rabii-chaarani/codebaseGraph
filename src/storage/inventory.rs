@@ -141,21 +141,55 @@ fn allocation(_: &Metadata) -> Option<u64> {
 
 // Check every existing component: leaf checks alone allow symlinked ancestors.
 pub(crate) fn real_path(path: &Path) -> bool {
+    real_path_with_metadata(path, |path| fs::symlink_metadata(path))
+}
+
+fn real_path_with_metadata(
+    path: &Path,
+    mut metadata: impl FnMut(&Path) -> std::io::Result<Metadata>,
+) -> bool {
     if !path.is_absolute() {
         return false;
     }
     let mut prefix = PathBuf::new();
-    for component in path.components() {
+    let mut components = path.components().peekable();
+    while let Some(component) = components.next() {
         match component {
+            Component::Prefix(value) => {
+                #[cfg(windows)]
+                let unc_root = match value.kind() {
+                    std::path::Prefix::Disk(_) | std::path::Prefix::VerbatimDisk(_) => false,
+                    std::path::Prefix::UNC(server, share)
+                    | std::path::Prefix::VerbatimUNC(server, share)
+                        if !server.is_empty() && !share.is_empty() =>
+                    {
+                        true
+                    }
+                    _ => return false,
+                };
+                #[cfg(not(windows))]
+                let _ = value;
+                // Preserve the original spelling. A disk prefix needs RootDir
+                // before it can be probed, whereas a complete verbatim UNC root
+                // can consist solely of Prefix when its trailing slash is absent.
+                prefix.push(component);
+                #[cfg(windows)]
+                if components.peek().is_none() {
+                    return unc_root
+                        && metadata(&prefix)
+                            .is_ok_and(|m| m.is_dir() && !m.file_type().is_symlink());
+                }
+                continue;
+            }
             Component::CurDir => continue,
             Component::ParentDir => {
-                if !fs::symlink_metadata(&prefix).is_ok_and(|m| m.is_dir()) || !prefix.pop() {
+                if !metadata(&prefix).is_ok_and(|m| m.is_dir()) || !prefix.pop() {
                     return false;
                 }
             }
             _ => prefix.push(component),
         }
-        match fs::symlink_metadata(&prefix) {
+        match metadata(&prefix) {
             Ok(m) if !m.file_type().is_symlink() => (),
             _ => return false,
         }
@@ -1177,6 +1211,107 @@ mod tests {
         walk(root, &mut out);
         out
     }
+    #[cfg(windows)]
+    #[test]
+    fn dc_s1_windows_canonical_prefix_is_probed_only_as_complete_root() {
+        let fixture = Fixture::new();
+        let canonical = fs::canonicalize(&fixture.root).unwrap();
+        assert!(
+            matches!(canonical.components().next(), Some(Component::Prefix(p)) if matches!(p.kind(), std::path::Prefix::VerbatimDisk(_) | std::path::Prefix::VerbatimUNC(_, _)))
+        );
+        assert!(real_path(&canonical));
+        assert!(real_path(canonical.ancestors().last().unwrap()));
+        assert!(!real_path(&canonical.join("missing-component")));
+        assert!(!real_path(Path::new(r"\\.\C:\")));
+        // Ordinary default storage observation must reach its real state,
+        // rather than fail centrally before any candidate-specific checks.
+        let inventory = inspect_storage(&fixture.target);
+        assert_eq!(inventory.status, InventoryStatus::Missing);
+        assert!(!inventory
+            .issues
+            .iter()
+            .any(|issue| issue == "invalid_repository_or_state_identity"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn dc_s1_windows_prefix_only_malformed_roots_are_rejected_without_io() {
+        for input in [
+            r"\\?\C:",
+            r"\\?\UNC\",
+            r"\\?\UNC\server",
+            r"\\?\UNC\\share",
+            r"\\?\GLOBALROOT",
+            r"\\.\C:",
+        ] {
+            assert!(
+                !real_path_with_metadata(Path::new(input), |_| {
+                    panic!("malformed or unsupported root must not be probed: {input}")
+                }),
+                "{input}"
+            );
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn dc_s1_windows_prefix_only_unavailable_unc_root_is_rejected() {
+        let root = Path::new(r"\\?\UNC\localhost\codebasegraph-unavailable-share");
+        assert_eq!(root.components().count(), 1);
+        let mut calls = 0;
+        assert!(!real_path_with_metadata(root, |observed| {
+            assert_eq!(observed.as_os_str(), root.as_os_str());
+            calls += 1;
+            Err(std::io::Error::from(std::io::ErrorKind::NotFound))
+        }));
+        assert_eq!(calls, 1);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn dc_s1_windows_prefix_only_available_unc_root_requires_directory_metadata() {
+        let fixture = Fixture::new();
+        let directory = fs::symlink_metadata(&fixture.root).unwrap();
+        let file = fixture.root.join("file");
+        fs::write(&file, b"not a directory").unwrap();
+        let file_metadata = fs::symlink_metadata(file).unwrap();
+        // Supply deterministic existing metadata: Windows CI need not expose
+        // an administrative/network share to exercise its native path parser.
+        let root = Path::new(r"\\?\UNC\server\share");
+        assert_eq!(root.components().count(), 1);
+        let mut calls = 0;
+        assert!(real_path_with_metadata(root, |observed| {
+            assert_eq!(observed.as_os_str(), root.as_os_str());
+            calls += 1;
+            Ok(directory.clone())
+        }));
+        assert_eq!(calls, 1);
+        assert!(!real_path_with_metadata(
+            root,
+            |_| Ok(file_metadata.clone())
+        ));
+        assert!(!real_path_with_metadata(root, |_| {
+            Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+        }));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn dc_s1_windows_root_prefix_fix_keeps_symlink_ancestor_rejection() {
+        let fixture = Fixture::new();
+        let foreign = Fixture::new();
+        fs::create_dir(foreign.root.join("nested")).unwrap();
+        let alias = fixture.root.join("foreign-alias");
+        std::os::windows::fs::symlink_dir(&foreign.root, &alias).unwrap();
+        assert!(!real_path(&alias));
+        assert!(!real_path(&alias.join("nested")));
+        assert!(!real_path(&alias.join("nested/../nested")));
+        assert!(!real_path(Path::new(
+            r"\\?\GLOBALROOT\Device\HarddiskVolume1\"
+        )));
+        fs::remove_dir(alias).unwrap();
+    }
+
     #[test]
     fn dc_s1_a1_classifies_and_counts_active_live_recovery_and_legacy() {
         let fixture = Fixture::new();
@@ -1689,6 +1824,39 @@ mod tests {
         assert_eq!(observation.status, InventoryStatus::Invalid);
         assert!(observation.entries.is_empty());
     }
+    // Fixture-only DOS/UNC spelling. Joining a canonical verbatim Windows
+    // prefix normalizes dot/parent components before the fixture can test raw
+    // address keys; an ordinary prefix preserves the intended distinct input.
+    #[cfg(windows)]
+    fn ordinary_windows_fixture_path(path: &Path) -> PathBuf {
+        use std::path::Prefix;
+        let Some(Component::Prefix(prefix)) = path.components().next() else {
+            panic!("absolute Windows fixture prefix");
+        };
+        let mut result = match prefix.kind() {
+            Prefix::VerbatimDisk(drive) => PathBuf::from(format!("{}:\\", char::from(drive))),
+            Prefix::VerbatimUNC(server, share) => {
+                let mut root = std::ffi::OsString::from(r"\\");
+                root.push(server);
+                root.push(r"\");
+                root.push(share);
+                root.push(r"\");
+                PathBuf::from(root)
+            }
+            _ => return path.to_owned(),
+        };
+        for component in path.components() {
+            if let Component::Normal(name) = component {
+                result.push(name);
+            }
+        }
+        assert_eq!(
+            fs::canonicalize(&result).unwrap(),
+            fs::canonicalize(path).unwrap()
+        );
+        result
+    }
+
     #[test]
     fn review_raw_config_direct_spelling_selects_matching_cache() {
         for address in ["./", "../"] {
@@ -1700,6 +1868,8 @@ mod tests {
                 external.root.clone()
             };
             fs::create_dir_all(&config_parent).unwrap();
+            #[cfg(windows)]
+            let config_parent = ordinary_windows_fixture_path(&config_parent);
             let raw_db = format!("{address}graph.ldb");
             let raw_manifest = format!("{address}manifest.json");
             let pair = DirectPair {
