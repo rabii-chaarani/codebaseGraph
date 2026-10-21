@@ -215,6 +215,10 @@ impl MutationGrant {
     pub(crate) fn start() -> Self {
         Self::with_limits(100, Duration::from_millis(100))
     }
+    #[cfg(test)]
+    pub(crate) fn for_test(entries: usize, duration: Duration) -> Self {
+        Self::with_limits(entries, duration)
+    }
     fn with_limits(entries: usize, duration: Duration) -> Self {
         Self {
             started: Instant::now(),

@@ -379,6 +379,298 @@ pub(crate) fn observe_reference_epoch(
     Ok(EpochObservation::Verified(epoch))
 }
 
+// Private foundation only. Borrowed paths/bytes keep their owning Work and
+// reservations OFF the authority stack. This is not PreparedMaintenance,
+// current config/reference completeness, Ready admission or deletion authority.
+struct CanonicalEpochPaths<'a> {
+    root: &'a Path,
+    destination: &'a Path,
+    writer: &'a Path,
+    root_use: &'a Path,
+    cohort: &'a Path,
+    epoch: &'a Path,
+    activity: &'a Path,
+    serial: &'a Path,
+    reference_roots: [Option<&'a Path>; 2],
+}
+struct CanonicalEpochFrame<'a> {
+    paths: CanonicalEpochPaths<'a>,
+    expected: &'a ReferenceEpoch,
+    bytes: &'a [u8],
+    cohort: super::locks::FixedFileStamp,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CanonicalEpochAdvance {
+    before: u64,
+    after: u64,
+}
+
+fn encode_fixed_epoch(
+    record: &ReferenceEpochRecord,
+    bytes: &mut [u8],
+) -> Result<(), super::locks::FixedControlError> {
+    use super::locks::{FixedControlError as Error, FixedControlProblem as Problem};
+    if bytes.len() != REFERENCE_EPOCH_SIZE {
+        return Err(Error::Invalid(Problem::BufferTooSmall));
+    }
+    bytes.fill(0);
+    let len = {
+        let mut cursor = std::io::Cursor::new(&mut bytes[12..REFERENCE_EPOCH_SIZE - 32]);
+        serde_json::to_writer(&mut cursor, record)
+            .map_err(|_| Error::Invalid(Problem::InvalidRecord))?;
+        cursor.position() as usize
+    };
+    bytes[..8].copy_from_slice(REFERENCE_EPOCH_MAGIC);
+    bytes[8..12].copy_from_slice(&(len as u32).to_le_bytes());
+    let checksum = Sha256::digest(&bytes[..REFERENCE_EPOCH_SIZE - 32]);
+    bytes[REFERENCE_EPOCH_SIZE - 32..].copy_from_slice(&checksum);
+    Ok(())
+}
+
+/// Pure bounded preparation, no locks or writes. The caller reserved both
+/// buffers in the shared account. Fixed producer codecs use a slice writer;
+/// no arbitrary JSON is decoded and no expected-E bytes are relabeled later.
+fn prepare_canonical_epoch_frame<'a>(
+    paths: CanonicalEpochPaths<'a>,
+    expected: &'a ReferenceEpoch,
+    prepared: &'a mut super::maintenance_budget::ReservedBytes,
+    read: &mut super::maintenance_budget::ReservedBytes,
+    scratch: &mut super::locks::FixedControlScratch,
+) -> Result<CanonicalEpochFrame<'a>, super::locks::FixedControlError> {
+    use super::locks::{
+        open_fixed_control, read_fixed_control, FixedControlError as Error,
+        FixedControlKind as Kind, FixedControlProblem as Problem, FixedFileStamp,
+    };
+    if !expected.record.covered || expected.record.version != 1 {
+        return Err(Error::Invalid(Problem::InvalidRecord));
+    }
+    let next = expected
+        .record
+        .counter
+        .checked_add(1)
+        .ok_or(Error::Invalid(Problem::EpochExhausted))?;
+    if prepared.as_slice().len() < 2 * REFERENCE_EPOCH_SIZE
+        || read.as_slice().len() < REFERENCE_EPOCH_SIZE
+    {
+        return Err(Error::Invalid(Problem::BufferTooSmall));
+    }
+    let mut cohort_file = open_fixed_control(paths.cohort, Kind::File, false, scratch)?;
+    let cohort = FixedFileStamp::capture(&cohort_file, Kind::File)?;
+    if cohort.identity() != expected.record.cohort || cohort.len() > 1024 {
+        return Err(Error::Invalid(Problem::InvalidRecord));
+    }
+    let len = read_fixed_control(&mut cohort_file, &cohort, read)?;
+    // These are the exact two compact encodings of the current producer
+    // contract. A different JSON spelling remains unknown, never an implicit
+    // controlled migration or a reason to repair the record.
+    let mut recognized = false;
+    for origin in [
+        CohortOrigin::GuardedCreation,
+        CohortOrigin::ControlledMigration,
+    ] {
+        let record = ArtifactCohortRecord {
+            version: 1,
+            root: expected.record.root,
+            coordination: expected.record.use_lock,
+            origin,
+        };
+        let mut cursor = std::io::Cursor::new(&mut prepared.as_mut_slice()[..REFERENCE_EPOCH_SIZE]);
+        serde_json::to_writer(&mut cursor, &record)
+            .map_err(|_| Error::Invalid(Problem::InvalidRecord))?;
+        let encoded_len = cursor.position() as usize;
+        if encoded_len == len && prepared.as_slice()[..len] == read.as_slice()[..len] {
+            recognized = true;
+            break;
+        }
+    }
+    if !recognized {
+        return Err(Error::Invalid(Problem::InvalidRecord));
+    }
+    let current = open_fixed_control(paths.cohort, Kind::File, false, scratch)?;
+    cohort.recheck(&current)?;
+    encode_fixed_epoch(
+        &expected.record,
+        &mut prepared.as_mut_slice()[..REFERENCE_EPOCH_SIZE],
+    )?;
+    let mut updated = expected.record.clone();
+    updated.counter = next;
+    encode_fixed_epoch(
+        &updated,
+        &mut prepared.as_mut_slice()[REFERENCE_EPOCH_SIZE..2 * REFERENCE_EPOCH_SIZE],
+    )?;
+    Ok(CanonicalEpochFrame {
+        paths,
+        expected,
+        bytes: &prepared.as_slice()[..2 * REFERENCE_EPOCH_SIZE],
+        cohort,
+    })
+}
+
+fn fixed_epoch_open(
+    path: &Path,
+    kind: super::locks::FixedControlKind,
+    write: bool,
+    scratch: &mut super::locks::FixedControlScratch,
+    grant: &mut super::maintenance_budget::MutationGrant,
+) -> Result<fs::File, super::locks::FixedControlError> {
+    grant.take_entry()?;
+    let file = super::locks::open_fixed_control(path, kind, write, scratch)?;
+    grant.check_time()?;
+    Ok(file)
+}
+
+/// Exact private canonical E -> E+1 step, retaining owned exclusive activity
+/// and serial handles through a BORROWED callback. No full Work/closure owner
+/// moves in or drops on error/panic; callers retain their writer/root guards.
+/// No production caller exists until full bounded admission is reviewed.
+fn with_canonical_epoch_advance(
+    frame: &CanonicalEpochFrame<'_>,
+    writer: &WriterLease,
+    root_use: &ArtifactUseLease,
+    read: &mut super::maintenance_budget::ReservedBytes,
+    scratch: &mut super::locks::FixedControlScratch,
+    grant: &mut super::maintenance_budget::MutationGrant,
+    apply: &mut impl FnMut(CanonicalEpochAdvance) -> Result<(), super::locks::FixedControlError>,
+) -> Result<CanonicalEpochAdvance, super::locks::FixedControlError> {
+    use super::locks::{
+        read_fixed_control, FixedControlError as Error, FixedControlKind as Kind,
+        FixedControlProblem as Problem, FixedFileStamp, FixedLockedFile,
+    };
+    let expected = &frame.expected.record;
+    grant.check()?;
+    if read.as_slice().len() < REFERENCE_EPOCH_SIZE || frame.bytes.len() != 2 * REFERENCE_EPOCH_SIZE
+    {
+        return Err(Error::Invalid(Problem::BufferTooSmall));
+    }
+    // Check only fixed identities/modes here; generic revalidate/claim helpers
+    // allocate paths, decode configuration or scan registries and are excluded.
+    let writer_current = fixed_epoch_open(frame.paths.writer, Kind::File, false, scratch, grant)?;
+    let writer_stamp = FixedFileStamp::capture(&writer_current, Kind::File)?;
+    if writer_stamp.identity() != expected.scope.writer
+        || !writer.matches_fixed_current(&writer_stamp, LockMode::Exclusive)?
+    {
+        return Err(Error::Invalid(Problem::GuardMismatch));
+    }
+    let use_current = fixed_epoch_open(frame.paths.root_use, Kind::File, false, scratch, grant)?;
+    let use_stamp = FixedFileStamp::capture(&use_current, Kind::File)?;
+    if root_use.identity != expected.root
+        || use_stamp.identity() != expected.use_lock
+        || !root_use
+            .lock
+            .matches_fixed_current(&use_stamp, LockMode::Exclusive)?
+        || root_use.reference_activity.is_some()
+    {
+        return Err(Error::Invalid(Problem::GuardMismatch));
+    }
+    let activity_file = fixed_epoch_open(frame.paths.activity, Kind::File, true, scratch, grant)?;
+    let activity = FixedLockedFile::try_lock(activity_file, LockMode::Exclusive)?
+        .ok_or(Error::Invalid(Problem::Busy))?;
+    if FixedFileStamp::capture(activity.file(), Kind::File)?.identity() != expected.activity {
+        return Err(Error::Invalid(Problem::Changed));
+    }
+    let serial_file = fixed_epoch_open(frame.paths.serial, Kind::File, true, scratch, grant)?;
+    let serial = FixedLockedFile::try_lock(serial_file, LockMode::Exclusive)?
+        .ok_or(Error::Invalid(Problem::Busy))?;
+    if FixedFileStamp::capture(serial.file(), Kind::File)?.identity() != expected.serial {
+        return Err(Error::Invalid(Problem::Changed));
+    }
+    // No shared activity has been acquired by this operation; no observer tries
+    // to upgrade its own shared guard. Both real controls remain owned below.
+    for (path, identity) in [
+        (frame.paths.root, expected.root),
+        (frame.paths.destination, expected.scope.destination),
+    ] {
+        let file = fixed_epoch_open(path, Kind::Directory, false, scratch, grant)?;
+        if FixedFileStamp::capture(&file, Kind::Directory)?.identity() != identity {
+            return Err(Error::Invalid(Problem::Changed));
+        }
+    }
+    for (path, identity) in frame
+        .paths
+        .reference_roots
+        .iter()
+        .zip(expected.scope.reference_roots)
+    {
+        match (path, identity) {
+            (Some(path), Some(identity)) => {
+                let file = fixed_epoch_open(path, Kind::Directory, false, scratch, grant)?;
+                if FixedFileStamp::capture(&file, Kind::Directory)?.identity() != identity {
+                    return Err(Error::Invalid(Problem::Changed));
+                }
+            }
+            (None, None) => (),
+            _ => return Err(Error::Invalid(Problem::InvalidRecord)),
+        }
+    }
+    let cohort = fixed_epoch_open(frame.paths.cohort, Kind::File, false, scratch, grant)?;
+    frame.cohort.recheck(&cohort)?;
+    let mut epoch_file = fixed_epoch_open(frame.paths.epoch, Kind::File, true, scratch, grant)?;
+    let epoch_stamp = FixedFileStamp::capture(&epoch_file, Kind::File)?;
+    if epoch_stamp.identity() != frame.expected.file
+        || epoch_stamp.len() != REFERENCE_EPOCH_SIZE as u64
+    {
+        return Err(Error::Invalid(Problem::Changed));
+    }
+    read_fixed_control(&mut epoch_file, &epoch_stamp, read)?;
+    if read.as_slice()[..REFERENCE_EPOCH_SIZE] != frame.bytes[..REFERENCE_EPOCH_SIZE] {
+        return Err(Error::Invalid(Problem::EpochMismatch));
+    }
+    // Recheck the actual control addresses, including lock inode replacement,
+    // AFTER taking their locks and BEFORE changing the captured epoch E.
+    for (path, identity) in [
+        (frame.paths.writer, writer_stamp.identity()),
+        (frame.paths.root_use, use_stamp.identity()),
+        (frame.paths.activity, expected.activity),
+        (frame.paths.serial, expected.serial),
+    ] {
+        let current = fixed_epoch_open(path, Kind::File, false, scratch, grant)?;
+        if FixedFileStamp::capture(&current, Kind::File)?.identity() != identity {
+            return Err(Error::Invalid(Problem::Changed));
+        }
+    }
+    let current_root = fixed_epoch_open(frame.paths.root, Kind::Directory, false, scratch, grant)?;
+    if FixedFileStamp::capture(&current_root, Kind::Directory)?.identity() != expected.root {
+        return Err(Error::Invalid(Problem::Changed));
+    }
+    // Reserve the epoch file effect before starting it. Encoding and checksum
+    // were already prepared outside authority; no decode/hash/state lock here.
+    grant.take_entries(2)?; // epoch effect plus its fresh-address/readback check
+    grant.check_time()?;
+    epoch_file.seek(SeekFrom::Start(0))?;
+    epoch_file.write_all(&frame.bytes[REFERENCE_EPOCH_SIZE..])?;
+    grant.check_time()?;
+    epoch_file.sync_all()?;
+    grant.check_time()?;
+    // This independent entry was already reserved with the complete effect.
+    let mut current =
+        super::locks::open_fixed_control(frame.paths.epoch, Kind::File, false, scratch)?;
+    let written_stamp = FixedFileStamp::capture(&current, Kind::File)?;
+    if written_stamp.identity() != frame.expected.file
+        || written_stamp.len() != REFERENCE_EPOCH_SIZE as u64
+    {
+        return Err(Error::Invalid(Problem::Changed));
+    }
+    read_fixed_control(&mut current, &written_stamp, read)?;
+    if read.as_slice()[..REFERENCE_EPOCH_SIZE] != frame.bytes[REFERENCE_EPOCH_SIZE..] {
+        return Err(Error::Invalid(Problem::Changed));
+    }
+    grant.check_time()?;
+    let advance = CanonicalEpochAdvance {
+        before: expected.counter,
+        after: expected
+            .counter
+            .checked_add(1)
+            .ok_or(Error::Invalid(Problem::EpochExhausted))?,
+    };
+    apply(advance)?;
+    grant.check_time()?;
+    // Explicit uses document retention through callback; RAII also covers all
+    // preceding errors and callback unwind. No caller-owned guard is released.
+    drop(serial);
+    drop(activity);
+    Ok(advance)
+}
+
 #[derive(Debug)]
 struct ReferenceActivity {
     guard: Option<LockedFile>,
@@ -3215,5 +3507,622 @@ pub(crate) mod tests {
         fs::remove_file(&path).unwrap();
         drop(open_locked(&path, LockMode::Shared).unwrap());
         assert!(claim_maintenance_with_owned(&fixture.target, &writer).is_err());
+    }
+
+    // Test-only owning preparation: all paths and budgeted buffers stay outside
+    // the primitive's authority callback, including errors and panic unwind.
+    struct FixedEpochPaths {
+        root: PathBuf,
+        destination: PathBuf,
+        writer: PathBuf,
+        root_use: PathBuf,
+        cohort: PathBuf,
+        epoch: PathBuf,
+        activity: PathBuf,
+        serial: PathBuf,
+        references: [Option<PathBuf>; 2],
+    }
+    impl FixedEpochPaths {
+        fn new(domain: &ReferenceDomain) -> Self {
+            Self {
+                root: domain.artifact_root.clone(),
+                destination: domain.destination_root.clone(),
+                writer: domain.writer_path.clone(),
+                root_use: domain.artifact_root.join(".use.lock"),
+                cohort: domain.artifact_root.join(".use-cohort.json"),
+                epoch: domain.artifact_root.join(REFERENCE_EPOCH_FILE),
+                activity: domain.artifact_root.join(REFERENCE_ACTIVITY_FILE),
+                serial: domain.artifact_root.join(REFERENCE_SERIAL_FILE),
+                references: domain.reference_roots.clone(),
+            }
+        }
+        fn borrow(&self) -> CanonicalEpochPaths<'_> {
+            CanonicalEpochPaths {
+                root: &self.root,
+                destination: &self.destination,
+                writer: &self.writer,
+                root_use: &self.root_use,
+                cohort: &self.cohort,
+                epoch: &self.epoch,
+                activity: &self.activity,
+                serial: &self.serial,
+                reference_roots: [self.references[0].as_deref(), self.references[1].as_deref()],
+            }
+        }
+    }
+    struct FixedEpochBuffers {
+        memory: super::super::maintenance_budget::CleanupMemory,
+        scratch: super::super::locks::FixedControlScratch,
+        prepared: super::super::maintenance_budget::ReservedBytes,
+        read: super::super::maintenance_budget::ReservedBytes,
+    }
+    impl FixedEpochBuffers {
+        fn new() -> Self {
+            use super::super::{locks::FixedControlScratch, maintenance_budget::CleanupMemory};
+            let memory = CleanupMemory::new(1024 * 1024).unwrap();
+            let scratch = FixedControlScratch::new(
+                memory
+                    .reserve(FixedControlScratch::required_bytes())
+                    .unwrap(),
+            )
+            .unwrap();
+            let prepared = memory
+                .reserve(2 * REFERENCE_EPOCH_SIZE)
+                .unwrap()
+                .bytes(2 * REFERENCE_EPOCH_SIZE)
+                .unwrap();
+            let read = memory
+                .reserve(REFERENCE_EPOCH_SIZE)
+                .unwrap()
+                .bytes(REFERENCE_EPOCH_SIZE)
+                .unwrap();
+            Self {
+                memory,
+                scratch,
+                prepared,
+                read,
+            }
+        }
+    }
+    fn fixed_epoch_guards(layout: &ManagedLayout) -> (WriterLease, ArtifactUseLease) {
+        let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap();
+        let root = ArtifactUseLease::try_exclusive(&layout.artifacts_root())
+            .unwrap()
+            .unwrap();
+        (writer, root)
+    }
+    fn fixed_epoch_controls_released(paths: &FixedEpochPaths) {
+        for path in [&paths.activity, &paths.serial] {
+            assert!(try_open_existing_locked(path, LockMode::Exclusive)
+                .unwrap()
+                .is_some());
+        }
+    }
+
+    #[test]
+    fn dc_fixed_epoch_exact_compare_precedes_increment_and_retains_real_controls() {
+        use super::super::maintenance_budget::MutationGrant;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "fixed-advance");
+        let expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let frame = prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch,
+        )
+        .unwrap();
+        let (writer, root) = fixed_epoch_guards(&layout);
+        let mut called = false;
+        let advance = with_canonical_epoch_advance(
+            &frame,
+            &writer,
+            &root,
+            &mut buffers.read,
+            &mut buffers.scratch,
+            &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+            &mut |advance| {
+                called = true;
+                assert_eq!(advance.before, expected.counter());
+                assert_eq!(advance.after, expected.counter() + 1);
+                for path in [&paths.activity, &paths.serial] {
+                    assert!(try_open_existing_locked(path, LockMode::Exclusive)
+                        .unwrap()
+                        .is_none());
+                }
+                assert!(matches!(
+                    observe_reference_epoch(&domain).unwrap(),
+                    EpochObservation::Pending(_)
+                ));
+                Ok(())
+            },
+        )
+        .unwrap();
+        assert!(called);
+        assert_eq!(observed(&domain).counter(), advance.after);
+        fixed_epoch_controls_released(&paths);
+        assert!(writer
+            .verifies(&layout.writer_lock_path(), LockMode::Exclusive)
+            .unwrap());
+        root.revalidate().unwrap();
+        assert!(buffers.memory.used() <= buffers.memory.limit());
+    }
+
+    #[test]
+    fn dc_fixed_epoch_stale_preparation_never_adopts_an_unrelated_increment() {
+        use super::super::{
+            locks::{FixedControlError, FixedControlProblem},
+            maintenance_budget::MutationGrant,
+        };
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "fixed-stale");
+        let expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let frame = prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch,
+        )
+        .unwrap();
+        drop(ReferenceMutation::begin_in_domain(&domain).unwrap());
+        let before = fs::read(&paths.epoch).unwrap();
+        let (writer, root) = fixed_epoch_guards(&layout);
+        let mut called = false;
+        assert!(matches!(
+            with_canonical_epoch_advance(
+                &frame,
+                &writer,
+                &root,
+                &mut buffers.read,
+                &mut buffers.scratch,
+                &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                &mut |_| {
+                    called = true;
+                    Ok(())
+                }
+            ),
+            Err(FixedControlError::Invalid(
+                FixedControlProblem::EpochMismatch
+            ))
+        ));
+        assert!(!called);
+        assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+        fixed_epoch_controls_released(&paths);
+    }
+
+    #[test]
+    fn dc_fixed_epoch_rejects_shared_writer_and_shared_root_without_reacquiring_them() {
+        use super::super::{
+            locks::{FixedControlError, FixedControlProblem},
+            maintenance_budget::MutationGrant,
+        };
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "fixed-wrong-guards");
+        let expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let frame = prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch,
+        )
+        .unwrap();
+        let shared_writer = open_locked(layout.writer_lock_path(), LockMode::Shared).unwrap();
+        let root = ArtifactUseLease::try_exclusive(&layout.artifacts_root())
+            .unwrap()
+            .unwrap();
+        let before = fs::read(&paths.epoch).unwrap();
+        assert!(matches!(
+            with_canonical_epoch_advance(
+                &frame,
+                &shared_writer,
+                &root,
+                &mut buffers.read,
+                &mut buffers.scratch,
+                &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                &mut |_| panic!("not admitted")
+            ),
+            Err(FixedControlError::Invalid(
+                FixedControlProblem::GuardMismatch
+            ))
+        ));
+        assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+        drop(root);
+        drop(shared_writer);
+        let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap();
+        let shared_root = ArtifactUseLease::acquire_in_domain(&domain).unwrap();
+        let before = fs::read(&paths.epoch).unwrap();
+        assert!(matches!(
+            with_canonical_epoch_advance(
+                &frame,
+                &writer,
+                &shared_root,
+                &mut buffers.read,
+                &mut buffers.scratch,
+                &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                &mut |_| panic!("not admitted")
+            ),
+            Err(FixedControlError::Invalid(
+                FixedControlProblem::GuardMismatch
+            ))
+        ));
+        assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+    }
+
+    #[test]
+    fn dc_fixed_epoch_activity_contention_returns_and_preserves_caller_ownership() {
+        use super::super::{
+            locks::{FixedControlError, FixedControlProblem},
+            maintenance_budget::MutationGrant,
+        };
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "fixed-contention");
+        let expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let frame = prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch,
+        )
+        .unwrap();
+        let (writer, root) = fixed_epoch_guards(&layout);
+        let activity = try_open_existing_locked(&paths.activity, LockMode::Shared)
+            .unwrap()
+            .unwrap();
+        let before = fs::read(&paths.epoch).unwrap();
+        assert!(matches!(
+            with_canonical_epoch_advance(
+                &frame,
+                &writer,
+                &root,
+                &mut buffers.read,
+                &mut buffers.scratch,
+                &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                &mut |_| panic!("not admitted")
+            ),
+            Err(FixedControlError::Invalid(FixedControlProblem::Busy))
+        ));
+        assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+        assert!(writer
+            .verifies(&layout.writer_lock_path(), LockMode::Exclusive)
+            .unwrap());
+        root.revalidate().unwrap();
+        drop(activity);
+        fixed_epoch_controls_released(&paths);
+    }
+
+    #[test]
+    fn dc_fixed_epoch_cohort_or_control_replacement_rejects_before_effect() {
+        use super::super::maintenance_budget::MutationGrant;
+        for replace_cohort in [false, true] {
+            let fixture = Fixture::new();
+            let (layout, domain) = tracked_domain(&fixture, "fixed-control-replaced");
+            let expected = observed(&domain);
+            let paths = FixedEpochPaths::new(&domain);
+            let mut buffers = FixedEpochBuffers::new();
+            let frame = prepare_canonical_epoch_frame(
+                paths.borrow(),
+                &expected,
+                &mut buffers.prepared,
+                &mut buffers.read,
+                &mut buffers.scratch,
+            )
+            .unwrap();
+            let target = if replace_cohort {
+                &paths.cohort
+            } else {
+                &paths.serial
+            };
+            let bytes = fs::read(target).unwrap();
+            fs::rename(target, target.with_extension("old")).unwrap();
+            fs::write(target, bytes).unwrap();
+            let before = fs::read(&paths.epoch).unwrap();
+            let (writer, root) = fixed_epoch_guards(&layout);
+            assert!(with_canonical_epoch_advance(
+                &frame,
+                &writer,
+                &root,
+                &mut buffers.read,
+                &mut buffers.scratch,
+                &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                &mut |_| panic!("not admitted")
+            )
+            .is_err());
+            assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+            fixed_epoch_controls_released(&paths);
+        }
+    }
+
+    #[test]
+    fn dc_fixed_epoch_replaced_root_with_same_control_inodes_is_not_the_same_domain() {
+        use super::super::maintenance_budget::MutationGrant;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "fixed-root-replaced");
+        let expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let frame = prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch,
+        )
+        .unwrap();
+        let (writer, root) = fixed_epoch_guards(&layout);
+        let old = paths.root.with_extension("old");
+        fs::rename(&paths.root, &old).unwrap();
+        fs::create_dir(&paths.root).unwrap();
+        for entry in fs::read_dir(&old).unwrap() {
+            let entry = entry.unwrap();
+            fs::rename(entry.path(), paths.root.join(entry.file_name())).unwrap();
+        }
+        let before = fs::read(&paths.epoch).unwrap();
+        assert!(with_canonical_epoch_advance(
+            &frame,
+            &writer,
+            &root,
+            &mut buffers.read,
+            &mut buffers.scratch,
+            &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+            &mut |_| panic!("not admitted")
+        )
+        .is_err());
+        assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+        fixed_epoch_controls_released(&paths);
+    }
+
+    #[test]
+    fn dc_fixed_epoch_callback_error_and_unwind_release_owned_controls_only() {
+        use super::super::{
+            locks::{FixedControlError, FixedControlProblem},
+            maintenance_budget::MutationGrant,
+        };
+        for panic_in_callback in [false, true] {
+            let fixture = Fixture::new();
+            let (layout, domain) = tracked_domain(&fixture, "fixed-callback-exit");
+            let expected = observed(&domain);
+            let paths = FixedEpochPaths::new(&domain);
+            let mut buffers = FixedEpochBuffers::new();
+            let frame = prepare_canonical_epoch_frame(
+                paths.borrow(),
+                &expected,
+                &mut buffers.prepared,
+                &mut buffers.read,
+                &mut buffers.scratch,
+            )
+            .unwrap();
+            let (writer, root) = fixed_epoch_guards(&layout);
+            let memory_before = buffers.memory.used();
+            let mut callback = |_| -> Result<(), FixedControlError> {
+                if panic_in_callback {
+                    panic!("fixture callback unwind");
+                }
+                Err(FixedControlError::Invalid(
+                    FixedControlProblem::InvalidRecord,
+                ))
+            };
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                with_canonical_epoch_advance(
+                    &frame,
+                    &writer,
+                    &root,
+                    &mut buffers.read,
+                    &mut buffers.scratch,
+                    &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                    &mut callback,
+                )
+            }));
+            if panic_in_callback {
+                assert!(result.is_err());
+            } else {
+                assert!(result.unwrap().is_err());
+            }
+            fixed_epoch_controls_released(&paths);
+            assert!(writer
+                .verifies(&layout.writer_lock_path(), LockMode::Exclusive)
+                .unwrap());
+            root.revalidate().unwrap();
+            assert_eq!(observed(&domain).counter(), expected.counter() + 1);
+            assert_eq!(buffers.memory.used(), memory_before);
+        }
+    }
+
+    #[test]
+    fn dc_fixed_epoch_zero_and_short_grants_have_no_epoch_effect() {
+        use super::super::maintenance_budget::MutationGrant;
+        for remaining in [0, 1, 16] {
+            let fixture = Fixture::new();
+            let (layout, domain) = tracked_domain(&fixture, "fixed-budget");
+            let expected = observed(&domain);
+            let paths = FixedEpochPaths::new(&domain);
+            let mut buffers = FixedEpochBuffers::new();
+            let frame = prepare_canonical_epoch_frame(
+                paths.borrow(),
+                &expected,
+                &mut buffers.prepared,
+                &mut buffers.read,
+                &mut buffers.scratch,
+            )
+            .unwrap();
+            let before = fs::read(&paths.epoch).unwrap();
+            let (writer, root) = fixed_epoch_guards(&layout);
+            let mut grant = MutationGrant::for_test(100, std::time::Duration::from_secs(10));
+            grant.take_entries(100 - remaining).unwrap();
+            assert!(with_canonical_epoch_advance(
+                &frame,
+                &writer,
+                &root,
+                &mut buffers.read,
+                &mut buffers.scratch,
+                &mut grant,
+                &mut |_| panic!("not admitted")
+            )
+            .is_err());
+            assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+            fixed_epoch_controls_released(&paths);
+        }
+    }
+
+    #[test]
+    fn dc_fixed_epoch_complete_effect_reservation_allows_its_last_reserved_entry() {
+        use super::super::maintenance_budget::MutationGrant;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "fixed-exact-grant");
+        let expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let frame = prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch,
+        )
+        .unwrap();
+        let (writer, root) = fixed_epoch_guards(&layout);
+        let mut grant = MutationGrant::for_test(17, std::time::Duration::from_secs(10));
+        let mut called = false;
+        with_canonical_epoch_advance(
+            &frame,
+            &writer,
+            &root,
+            &mut buffers.read,
+            &mut buffers.scratch,
+            &mut grant,
+            &mut |_| {
+                called = true;
+                Ok(())
+            },
+        )
+        .unwrap();
+        assert!(called);
+        assert_eq!(grant.remaining_entries(), 0);
+        assert_eq!(observed(&domain).counter(), expected.counter() + 1);
+    }
+
+    #[test]
+    fn dc_fixed_epoch_expired_grant_does_not_open_or_change_epoch_controls() {
+        use super::super::maintenance_budget::MutationGrant;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "fixed-expired");
+        let expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let frame = prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch,
+        )
+        .unwrap();
+        let before = fs::read(&paths.epoch).unwrap();
+        let (writer, root) = fixed_epoch_guards(&layout);
+        assert!(matches!(
+            with_canonical_epoch_advance(
+                &frame,
+                &writer,
+                &root,
+                &mut buffers.read,
+                &mut buffers.scratch,
+                &mut MutationGrant::for_test(100, std::time::Duration::ZERO),
+                &mut |_| panic!("not admitted")
+            ),
+            Err(super::super::locks::FixedControlError::Grant(
+                super::super::maintenance_budget::GrantExhausted::Time
+            ))
+        ));
+        assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+        fixed_epoch_controls_released(&paths);
+    }
+
+    #[test]
+    fn dc_fixed_epoch_preparation_delay_does_not_consume_fresh_mutation_grant() {
+        use super::super::maintenance_budget::MutationGrant;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "fixed-slow-preparation");
+        let expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let frame = prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch,
+        )
+        .unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(110));
+        // Real writer ownership is available during the advisory pause.
+        drop(
+            try_open_existing_locked(&layout.writer_lock_path(), LockMode::Exclusive)
+                .unwrap()
+                .unwrap(),
+        );
+        let (writer, root) = fixed_epoch_guards(&layout);
+        with_canonical_epoch_advance(
+            &frame,
+            &writer,
+            &root,
+            &mut buffers.read,
+            &mut buffers.scratch,
+            &mut MutationGrant::start(),
+            &mut |_| Ok(()),
+        )
+        .unwrap();
+        assert_eq!(observed(&domain).counter(), expected.counter() + 1);
+    }
+
+    #[test]
+    fn dc_fixed_epoch_preparation_is_noncreating_and_rejects_exhausted_or_oversized_controls() {
+        let fixture = Fixture::new();
+        let (_layout, domain) = tracked_domain(&fixture, "fixed-preparation-errors");
+        let mut expected = observed(&domain);
+        let paths = FixedEpochPaths::new(&domain);
+        let mut buffers = FixedEpochBuffers::new();
+        let before = fs::read(&paths.epoch).unwrap();
+        expected.record.counter = u64::MAX;
+        assert!(prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch
+        )
+        .is_err());
+        assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+        let expected = observed(&domain);
+        fs::write(&paths.cohort, vec![b'x'; 1025]).unwrap();
+        assert!(prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch
+        )
+        .is_err());
+        fs::remove_file(&paths.cohort).unwrap();
+        assert!(prepare_canonical_epoch_frame(
+            paths.borrow(),
+            &expected,
+            &mut buffers.prepared,
+            &mut buffers.read,
+            &mut buffers.scratch
+        )
+        .is_err());
+        assert!(!paths.cohort.exists());
+        assert_eq!(fs::read(&paths.epoch).unwrap(), before);
     }
 }
