@@ -924,6 +924,9 @@ impl ArtifactRootProducerCapability<'_> {
     pub(crate) fn incarnation(&self) -> [u8; 32] {
         self.binding.incarnation
     }
+    pub(crate) fn cohort_identity(&self) -> FileIdentity {
+        self.binding.cohort
+    }
 
     /// Existing-only checks. A failed optional attestation must not be promoted
     /// into a mandatory primary publication/read error by its consumer.
@@ -1424,6 +1427,31 @@ pub(crate) struct ArtifactCohortRecord {
     origin: CohortOrigin,
 }
 
+/// Creation-only evidence. This type has no public constructor and is minted
+/// only by the genuine fresh-root branch while retaining actual Exclusive use.
+pub(crate) struct FreshPublicationRoot<'a> {
+    anchor: &'a super::locks::RootedDirectory,
+    root_use: &'a LockedFile,
+    incarnation: [u8; 32],
+}
+impl FreshPublicationRoot<'_> {
+    pub(crate) fn anchor(&self) -> &super::locks::RootedDirectory {
+        self.anchor
+    }
+    pub(crate) fn incarnation(&self) -> [u8; 32] {
+        self.incarnation
+    }
+    pub(crate) fn coordination_identity(&self) -> std::io::Result<FileIdentity> {
+        if self.root_use.mode() != LockMode::Exclusive {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        self.root_use.identity().map_err(|error| match error {
+            NativeError::Io(error) => error,
+            _ => std::io::ErrorKind::InvalidInput.into(),
+        })
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct ArtifactUseLease {
     root: PathBuf,
@@ -1465,15 +1493,45 @@ impl ArtifactUseLease {
         let mut incarnation = [0; 32];
         getrandom::fill(&mut incarnation)
             .map_err(|_| invalid("artifact_coordination_entropy_unavailable"))?;
+        self.revalidate()?;
+        // Failure to prepare optional provenance cannot introduce a new primary
+        // write requirement. No header/cohort is published if anchoring fails.
+        let anchor = match super::locks::RootedDirectory::open(&self.root, self.identity) {
+            Ok(anchor) => anchor,
+            Err(_) => return Ok(()),
+        };
+        let named_use = anchor.open_existing(b".use.lock")?;
+        if super::locks::file_identity(&named_use)? != self.lock.identity()? {
+            return Err(invalid("artifact_coordination_incarnation_changed"));
+        }
+        drop(named_use);
         self.lock.initialize_creation_incarnation(incarnation)?;
+        {
+            let fresh = FreshPublicationRoot {
+                anchor: &anchor,
+                root_use: &self.lock,
+                incarnation,
+            };
+            let mut scratch = super::maintenance_controls::PublicationFactoryScratch::new();
+            // Partial controls remain finite Unknown. Primary publication must
+            // use S3's approved safe lanes without inventing origin attestation.
+            let _ =
+                super::maintenance_controls::initialize_publication_controls(&fresh, &mut scratch);
+        }
         let record = self.record(CohortOrigin::GuardedCreation)?;
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(self.root.join(".use-cohort.json"))?;
-        file.write_all(&serde_json::to_vec(&record)?)?;
+        let mut file = anchor.create_new(b".use-cohort.json")?;
+        serde_json::to_writer(&mut file, &record)?;
         file.sync_all()?;
-        super::atomic::sync_dir(&self.root)?;
+        #[cfg(not(windows))]
+        anchor.sync_namespace()?;
+        #[cfg(windows)]
+        {
+            // The existing primary cohort policy never fails an otherwise
+            // successful write for unsupported Windows directory flushing.
+            // Publisher attestation independently requires both actual flushes.
+            let _ = anchor.sync_namespace();
+        }
+        self.revalidate()?;
         Ok(())
     }
 
@@ -1514,14 +1572,11 @@ impl ArtifactUseLease {
         // confirmation. A create_new write cannot replace an existing proof.
         if created {
             lease.write_guarded_creation_record()?;
-            let incarnation = lease
-                .lock
-                .coordination_incarnation()?
-                .ok_or_else(|| invalid("artifact_coordination_incarnation_unknown"))?;
+            let incarnation = lease.lock.coordination_incarnation()?;
             lease.lock = lease.lock.share_after_creation()?;
             lease.revalidate()?;
             // Check the actual held header after any Windows downgrade gap.
-            if lease.lock.coordination_incarnation()? != Some(incarnation) {
+            if lease.lock.coordination_incarnation()? != incarnation {
                 return Err(invalid("artifact_coordination_incarnation_changed"));
             }
         }
@@ -1545,6 +1600,37 @@ impl ArtifactUseLease {
         let mut lease = Self::acquire_shared(&domain.artifact_root)?;
         lease.bind_reference_domain(domain)?;
         Ok(lease)
+    }
+
+    /// Cache-consumer guard: existing-only readonly Shared ownership, with no
+    /// creation, reference epoch increment, optional cohort decode or repair.
+    /// Mere use never establishes collection ownership for a caller-owned root.
+    pub(crate) fn try_existing_shared_read(root: &Path) -> Result<Option<Self>, NativeError> {
+        let root = absolute(root)?;
+        let identity = match directory_identity(&root) {
+            Ok(identity) => identity,
+            Err(NativeError::Io(error)) if error.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(None)
+            }
+            Err(error) => return Err(error),
+        };
+        let lock =
+            match super::locks::try_open_existing_shared_coordination(&root.join(".use.lock")) {
+                Ok(Some(lock)) => lock,
+                Ok(None) => return Ok(None),
+                Err(NativeError::Io(error)) if error.kind() == std::io::ErrorKind::NotFound => {
+                    return Ok(None)
+                }
+                Err(error) => return Err(error),
+            };
+        let lease = Self {
+            root,
+            identity,
+            lock,
+            reference_activity: None,
+        };
+        lease.revalidate()?;
+        Ok(Some(lease))
     }
 
     pub(crate) fn try_exclusive(root: &Path) -> Result<Option<Self>, NativeError> {
@@ -2428,6 +2514,239 @@ pub(crate) mod tests {
         )
         .unwrap()
         .is_some());
+    }
+
+    #[test]
+    fn dc_s2_factory_creates_bound_fixed_names_before_tracked_producer_use() {
+        use super::super::maintenance_controls::{self as controls, PublisherBinding};
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "bound-publisher-factory");
+        let root = layout.artifacts_root();
+        let binding_path = root.join(".publication.binding");
+        let mutation = ReferenceMutation::begin_in_domain(&domain).unwrap();
+        let mut capability = mutation
+            .artifact_root_producer_capability()
+            .unwrap()
+            .unwrap();
+        if !binding_path.exists() {
+            #[cfg(windows)]
+            {
+                // Unsupported native directory flushing leaves attestation
+                // absent, never a new primary failure or pretend qualification.
+                assert!(root.join(".use-cohort.json").is_file());
+                assert!(controls::try_begin_root_publication(&mut capability)
+                    .unwrap()
+                    .is_none());
+                fs::write(root.join("primary-without-attestation"), b"primary data").unwrap();
+                eprintln!("native Windows factory attestation inactive: no durable binding");
+                return;
+            }
+            #[cfg(not(windows))]
+            panic!("factory binding must be durable on the native fixture filesystem");
+        }
+        let bytes = fs::read(&binding_path).unwrap();
+        let binding = PublisherBinding::decode(&bytes).unwrap();
+        assert_eq!(binding.root, capability.root_identity());
+        assert_eq!(binding.coordination, capability.coordination_identity());
+        assert_eq!(binding.incarnation, capability.incarnation());
+        assert_eq!(
+            binding.stream,
+            Some(path_identity(&root.join(".publication.stream")).unwrap())
+        );
+        assert!(fs::read(root.join(".publication.stream"))
+            .unwrap()
+            .is_empty());
+        let mut publication = controls::try_begin_root_publication(&mut capability)
+            .unwrap()
+            .unwrap();
+        assert_eq!(publication.directory().identity(), binding.root);
+        assert_eq!(publication.root(), root);
+        assert_eq!(
+            publication.root_cohort_identity(),
+            path_identity(&root.join(".use-cohort.json")).unwrap()
+        );
+        assert_eq!(
+            publication.publication_binding_identity(),
+            path_identity(&binding_path).unwrap()
+        );
+        assert_eq!(publication.binding(), &binding);
+        assert_eq!(publication.committed().generation, 0);
+        assert!(publication.revalidate_existing().unwrap());
+        let mut update = controls::PrimaryPublicationScratch::new();
+        let next = publication
+            .publish_primary_control(b"producer creation intent", &mut update)
+            .unwrap();
+        assert_eq!(next.generation, 1);
+        assert!(publication.revalidate_existing().unwrap());
+        let mut committed = [0; controls::PAYLOAD_BYTES];
+        let len = publication.read_primary_control(&mut committed).unwrap();
+        assert_eq!(&committed[..len], b"producer creation intent");
+        assert!(
+            try_open_existing_locked(&root.join(".publication.selector"), LockMode::Exclusive)
+                .unwrap()
+                .is_none()
+        );
+        drop(publication);
+        assert!(
+            try_open_existing_locked(&root.join(".publication.selector"), LockMode::Exclusive)
+                .unwrap()
+                .is_some()
+        );
+        let reopened = controls::try_begin_root_publication(&mut capability)
+            .unwrap()
+            .unwrap();
+        assert_eq!(reopened.committed().generation, 1);
+        drop(reopened);
+        // Namespace lease drop cannot release the caller's root/activity guards.
+        assert!(ArtifactUseLease::try_exclusive(&root).unwrap().is_none());
+        drop(capability);
+        drop(mutation);
+        assert!(ArtifactUseLease::try_exclusive(&root).unwrap().is_some());
+    }
+
+    #[test]
+    fn dc_s2_factory_partial_names_are_never_repaired_or_retried_on_acquisition() {
+        use super::super::maintenance_controls::{
+            initialize_publication_controls, PublicationFactoryScratch,
+        };
+        let fixture = Fixture::new();
+        let root = fixture.root.join("partial-factory");
+        fs::create_dir(&root).unwrap();
+        let lock = open_locked(root.join(".use.lock"), LockMode::Exclusive).unwrap();
+        lock.initialize_creation_incarnation([9; 32]).unwrap();
+        let anchor =
+            super::super::locks::RootedDirectory::open(&root, directory_identity(&root).unwrap())
+                .unwrap();
+        fs::write(
+            root.join(".publication.data1"),
+            b"unknown preexisting control",
+        )
+        .unwrap();
+        let fresh = FreshPublicationRoot {
+            anchor: &anchor,
+            root_use: &lock,
+            incarnation: [9; 32],
+        };
+        let mut scratch = PublicationFactoryScratch::new();
+        assert!(initialize_publication_controls(&fresh, &mut scratch).is_err());
+        assert!(!root.join(".publication.binding").exists());
+        let first_id = path_identity(&root.join(".publication.data0")).unwrap();
+        assert!(initialize_publication_controls(&fresh, &mut scratch).is_err());
+        assert_eq!(
+            path_identity(&root.join(".publication.data0")).unwrap(),
+            first_id
+        );
+        assert_eq!(
+            fs::read(root.join(".publication.data1")).unwrap(),
+            b"unknown preexisting control"
+        );
+        drop(lock);
+        let producer = ReferenceMutation::begin_producing(&root).unwrap();
+        assert!(producer
+            .artifact_root_producer_capability()
+            .unwrap()
+            .is_none());
+        fs::write(root.join("primary-data"), b"primary work remains possible").unwrap();
+        assert!(!root.join(".publication.binding").exists());
+        assert!(!root.join(".use-cohort.json").exists());
+    }
+
+    #[test]
+    fn dc_s2_cache_consumer_is_existing_readonly_and_does_not_advance_or_decode_optional_proof() {
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "read-only-cache-consumer");
+        let root = layout.artifacts_root();
+        fs::write(root.join("partition.json"), b"validated cached data").unwrap();
+        let before_epoch = fs::read(root.join(REFERENCE_EPOCH_FILE)).unwrap();
+        let cohort_path = root.join(".use-cohort.json");
+        let before_cohort = fs::read(&cohort_path).unwrap();
+        fs::write(&cohort_path, b"invalid optional cleanup proof").unwrap();
+        let lock_path = root.join(".use.lock");
+        let before_lock = fs::read(&lock_path).unwrap();
+        let probe = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+            .unwrap();
+        struct RestorePermissions {
+            path: PathBuf,
+            permissions: fs::Permissions,
+        }
+        impl Drop for RestorePermissions {
+            fn drop(&mut self) {
+                let _ = fs::set_permissions(&self.path, self.permissions.clone());
+            }
+        }
+        let original = fs::metadata(&lock_path).unwrap().permissions();
+        let _restore = RestorePermissions {
+            path: lock_path.clone(),
+            permissions: original.clone(),
+        };
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&lock_path, fs::Permissions::from_mode(0o444)).unwrap();
+        }
+        #[cfg(windows)]
+        {
+            let mut readonly = original.clone();
+            readonly.set_readonly(true);
+            fs::set_permissions(&lock_path, readonly).unwrap();
+        }
+        let reader = ArtifactUseLease::try_existing_shared_read(&root)
+            .unwrap()
+            .unwrap();
+        assert!(reader.reference_activity.is_none());
+        assert_eq!(
+            fs::read(root.join("partition.json")).unwrap(),
+            b"validated cached data"
+        );
+        assert_eq!(reader.lock.mode(), LockMode::Shared);
+        // The probe's rights were granted BEFORE readonly permissions changed,
+        // so this failure proves real lock exclusion rather than an ACL denial.
+        assert!(fs2::FileExt::try_lock_exclusive(&probe).is_err());
+        drop(reader);
+        fs2::FileExt::try_lock_exclusive(&probe).unwrap();
+        fs2::FileExt::unlock(&probe).unwrap();
+        drop(probe);
+        fs::set_permissions(&lock_path, original).unwrap();
+        assert_eq!(fs::read(&lock_path).unwrap(), before_lock);
+        assert_eq!(
+            fs::read(root.join(REFERENCE_EPOCH_FILE)).unwrap(),
+            before_epoch
+        );
+        assert_eq!(
+            fs::read(&cohort_path).unwrap(),
+            b"invalid optional cleanup proof"
+        );
+        fs::write(&cohort_path, before_cohort).unwrap();
+        assert!(matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Verified(_)
+        ));
+    }
+
+    #[test]
+    fn dc_s2_cache_consumer_missing_guard_never_creates_or_attests_caller_owned_root() {
+        let fixture = Fixture::new();
+        let missing = fixture.root.join("missing-cache-root");
+        assert!(ArtifactUseLease::try_existing_shared_read(&missing)
+            .unwrap()
+            .is_none());
+        assert!(!missing.exists());
+        let caller = fixture.root.join("caller-owned-cache");
+        fs::create_dir(&caller).unwrap();
+        fs::write(caller.join("payload"), b"caller data").unwrap();
+        assert!(ArtifactUseLease::try_existing_shared_read(&caller)
+            .unwrap()
+            .is_none());
+        assert_eq!(fs::read(caller.join("payload")).unwrap(), b"caller data");
+        assert_eq!(fs::read_dir(&caller).unwrap().count(), 1);
+        assert!(
+            matches!(observe_artifact_cohort(&caller), Err(NativeError::Io(error)) if error.kind()==std::io::ErrorKind::NotFound)
+        );
+        assert!(!caller.join(".use.lock").exists());
+        assert!(!caller.join(".use-cohort.json").exists());
     }
 
     #[test]

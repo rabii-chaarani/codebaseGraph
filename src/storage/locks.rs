@@ -245,6 +245,16 @@ pub(crate) fn try_open_existing_locked(
     try_open_locked_inner(path, mode, false, false)
 }
 
+pub(crate) fn try_open_existing_shared_coordination(
+    path: &Path,
+) -> Result<Option<LockedFile>, NativeError> {
+    match open_locked_inner(path, LockMode::Shared, true, false, false, true) {
+        Ok(lock) => Ok(Some(lock)),
+        Err(NativeError::Io(error)) if is_lock_contended(&error) => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
 pub(crate) fn open_existing_shared_coordination(path: &Path) -> Result<LockedFile, NativeError> {
     open_locked_inner(path, LockMode::Shared, false, false, false, true)
 }
@@ -370,6 +380,15 @@ fn open_locked_inner(
 pub(crate) struct FileIdentity {
     volume: u64,
     index: u64,
+}
+impl FileIdentity {
+    /// Fixed persistence facts only; these words confer no ownership.
+    pub(crate) fn fixed_words(self) -> (u64, u64) {
+        (self.volume, self.index)
+    }
+    pub(crate) fn from_fixed_words(volume: u64, index: u64) -> Self {
+        Self { volume, index }
+    }
 }
 
 pub(crate) fn path_identity(path: &Path) -> Result<FileIdentity, NativeError> {
@@ -1118,5 +1137,758 @@ mod fixed_control_tests {
         assert!(!caller
             .matches_fixed_current(&stamp, LockMode::Shared)
             .unwrap());
+    }
+}
+
+/// Actual directory anchor for fixed-name creation. Relative native operations
+/// address this retained object even if a public ancestor/name is substituted.
+/// Opening/preparing the anchor belongs outside a cleanup execution permit.
+pub(crate) struct RootedDirectory {
+    directory: File,
+    identity: FileIdentity,
+    _same_thread: std::marker::PhantomData<std::rc::Rc<()>>,
+}
+impl RootedDirectory {
+    pub(crate) fn open(path: &Path, expected: FileIdentity) -> std::io::Result<Self> {
+        Self::open_root(path, expected, true)
+    }
+    pub(crate) fn open_readonly_root(path: &Path, expected: FileIdentity) -> std::io::Result<Self> {
+        Self::open_root(path, expected, false)
+    }
+    fn open_root(path: &Path, expected: FileIdentity, write: bool) -> std::io::Result<Self> {
+        #[cfg(not(windows))]
+        let _ = write;
+        let mut options = OpenOptions::new();
+        options.read(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC);
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            use windows_sys::Win32::Storage::FileSystem::{
+                FILE_ADD_FILE, FILE_ADD_SUBDIRECTORY, FILE_FLAG_BACKUP_SEMANTICS,
+                FILE_FLAG_OPEN_REPARSE_POINT, FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES,
+                FILE_WRITE_ATTRIBUTES, SYNCHRONIZE,
+            };
+            options
+                .access_mode(
+                    FILE_LIST_DIRECTORY
+                        | FILE_READ_ATTRIBUTES
+                        | SYNCHRONIZE
+                        | if write {
+                            FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY | FILE_WRITE_ATTRIBUTES
+                        } else {
+                            0
+                        },
+                )
+                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT);
+        }
+        let directory = options.open(path)?;
+        let metadata = directory.metadata()?;
+        if !metadata.is_dir() || metadata.file_type().is_symlink() {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::MetadataExt;
+            if metadata.file_attributes()
+                & windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT
+                != 0
+            {
+                return Err(std::io::ErrorKind::InvalidInput.into());
+            }
+        }
+        let identity = file_identity(&directory).map_err(native_io)?;
+        if identity != expected {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        Ok(Self {
+            directory,
+            identity,
+            _same_thread: std::marker::PhantomData,
+        })
+    }
+    pub(crate) fn identity(&self) -> FileIdentity {
+        self.identity
+    }
+    pub(crate) fn create_new(&self, name: &[u8]) -> std::io::Result<File> {
+        self.child(name, true)
+    }
+    pub(crate) fn open_existing(&self, name: &[u8]) -> std::io::Result<File> {
+        self.child(name, false)
+    }
+    fn child(&self, name: &[u8], create: bool) -> std::io::Result<File> {
+        self.relative_handle(name, create, false, false, true)
+    }
+    pub(crate) fn open_readonly_file(&self, name: &[u8]) -> std::io::Result<File> {
+        self.relative_handle(name, false, false, false, false)
+    }
+    pub(crate) fn open_directory_readonly(&self, name: &[u8]) -> std::io::Result<Self> {
+        let directory = self.relative_handle(name, false, true, false, false)?;
+        let identity = file_identity(&directory).map_err(native_io)?;
+        Ok(Self {
+            directory,
+            identity,
+            _same_thread: std::marker::PhantomData,
+        })
+    }
+    pub(crate) fn create_directory(&self, name: &[u8]) -> std::io::Result<Self> {
+        self.child_directory(name, true)
+    }
+    pub(crate) fn open_directory(&self, name: &[u8]) -> std::io::Result<Self> {
+        self.child_directory(name, false)
+    }
+    fn child_directory(&self, name: &[u8], create: bool) -> std::io::Result<Self> {
+        let directory = self.relative_handle(name, create, true, false, true)?;
+        let identity = file_identity(&directory).map_err(native_io)?;
+        Ok(Self {
+            directory,
+            identity,
+            _same_thread: std::marker::PhantomData,
+        })
+    }
+    fn relative_handle(
+        &self,
+        name: &[u8],
+        create: bool,
+        directory: bool,
+        delete: bool,
+        write: bool,
+    ) -> std::io::Result<File> {
+        if name.is_empty()
+            || name.len() >= 256
+            || name == b"."
+            || name == b".."
+            || name
+                .iter()
+                .any(|byte| !byte.is_ascii() || matches!(*byte, b'/' | b'\\' | b':' | 0))
+        {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        #[cfg(unix)]
+        let file = {
+            use std::os::fd::{AsRawFd, FromRawFd};
+            let mut native = [0u8; 256];
+            native[..name.len()].copy_from_slice(name);
+            if create && directory {
+                // SAFETY: retained actual parent FD and one validated basename.
+                if unsafe {
+                    libc::mkdirat(self.directory.as_raw_fd(), native.as_ptr().cast(), 0o700)
+                } != 0
+                {
+                    return Err(std::io::Error::last_os_error());
+                }
+            }
+            let _ = delete;
+            let flags = if directory {
+                libc::O_RDONLY | libc::O_DIRECTORY
+            } else if write {
+                libc::O_RDWR
+            } else {
+                libc::O_RDONLY
+            } | libc::O_NOFOLLOW
+                | libc::O_CLOEXEC
+                | if create && !directory {
+                    libc::O_CREAT | libc::O_EXCL
+                } else {
+                    0
+                };
+            // SAFETY: actual directory FD is retained; native name is one
+            // validated NUL-terminated basename with no separators/traversal.
+            let fd = unsafe {
+                libc::openat(
+                    self.directory.as_raw_fd(),
+                    native.as_ptr().cast(),
+                    flags,
+                    0o600,
+                )
+            };
+            if fd < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            // SAFETY: successful openat returned a uniquely owned descriptor.
+            unsafe { File::from_raw_fd(fd) }
+        };
+        #[cfg(windows)]
+        let file = {
+            use std::os::windows::io::{AsRawHandle, FromRawHandle};
+            use windows_sys::{
+                Wdk::{
+                    Foundation::OBJECT_ATTRIBUTES,
+                    Storage::FileSystem::{
+                        NtCreateFile, FILE_CREATE, FILE_DIRECTORY_FILE, FILE_NON_DIRECTORY_FILE,
+                        FILE_OPEN, FILE_OPEN_REPARSE_POINT, FILE_SYNCHRONOUS_IO_NONALERT,
+                        FILE_WRITE_THROUGH,
+                    },
+                },
+                Win32::{
+                    Foundation::{
+                        RtlNtStatusToDosError, GENERIC_READ, GENERIC_WRITE, OBJ_CASE_INSENSITIVE,
+                        UNICODE_STRING,
+                    },
+                    Storage::FileSystem::{
+                        DELETE, FILE_ADD_FILE, FILE_ADD_SUBDIRECTORY, FILE_ATTRIBUTE_NORMAL,
+                        FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE,
+                        FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_WRITE_ATTRIBUTES, SYNCHRONIZE,
+                    },
+                    System::IO::IO_STATUS_BLOCK,
+                },
+            };
+            let mut native = [0u16; 256];
+            for (out, byte) in native.iter_mut().zip(name) {
+                *out = u16::from(*byte);
+            }
+            let mut unicode = UNICODE_STRING {
+                Length: (name.len() * 2) as u16,
+                MaximumLength: (name.len() * 2) as u16,
+                Buffer: native.as_mut_ptr(),
+            };
+            let attributes = OBJECT_ATTRIBUTES {
+                Length: std::mem::size_of::<OBJECT_ATTRIBUTES>() as u32,
+                RootDirectory: self.directory.as_raw_handle(),
+                ObjectName: &mut unicode,
+                Attributes: OBJ_CASE_INSENSITIVE,
+                SecurityDescriptor: std::ptr::null_mut(),
+                SecurityQualityOfService: std::ptr::null_mut(),
+            };
+            let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
+            let mut handle = std::ptr::null_mut();
+            // SAFETY: all pointers refer to fixed initialized stack records;
+            // RootDirectory is the live actual anchor, not a joined pathname.
+            let result = unsafe {
+                NtCreateFile(
+                    &mut handle,
+                    (if directory {
+                        FILE_LIST_DIRECTORY
+                            | FILE_READ_ATTRIBUTES
+                            | if write {
+                                FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY | FILE_WRITE_ATTRIBUTES
+                            } else {
+                                0
+                            }
+                    } else {
+                        GENERIC_READ | if write { GENERIC_WRITE } else { 0 }
+                    }) | SYNCHRONIZE
+                        | if delete { DELETE } else { 0 },
+                    &attributes,
+                    &mut status,
+                    std::ptr::null(),
+                    FILE_ATTRIBUTE_NORMAL,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    if create { FILE_CREATE } else { FILE_OPEN },
+                    (if directory {
+                        FILE_DIRECTORY_FILE
+                    } else {
+                        FILE_NON_DIRECTORY_FILE
+                    }) | FILE_OPEN_REPARSE_POINT
+                        | FILE_SYNCHRONOUS_IO_NONALERT
+                        | FILE_WRITE_THROUGH,
+                    std::ptr::null(),
+                    0,
+                )
+            };
+            if result < 0 {
+                return Err(std::io::Error::from_raw_os_error(unsafe {
+                    RtlNtStatusToDosError(result)
+                } as i32));
+            }
+            // SAFETY: successful NtCreateFile returned one owned file handle.
+            unsafe { File::from_raw_handle(handle) }
+        };
+        #[cfg(not(any(unix, windows)))]
+        return Err(std::io::ErrorKind::Unsupported.into());
+        let metadata = file.metadata()?;
+        if (directory && !metadata.is_dir())
+            || (!directory
+                && (!metadata.is_file() || file_link_count(&file).map_err(native_io)? != 1))
+        {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::MetadataExt;
+            if file.metadata()?.file_attributes()
+                & windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT
+                != 0
+            {
+                return Err(std::io::ErrorKind::InvalidInput.into());
+            }
+        }
+        Ok(file)
+    }
+    pub(crate) fn sync_namespace(&self) -> std::io::Result<()> {
+        #[cfg(not(windows))]
+        {
+            self.directory.sync_all()
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::io::AsRawHandle;
+            use windows_sys::{
+                Wdk::Storage::FileSystem::NtFlushBuffersFileEx,
+                Win32::{Foundation::RtlNtStatusToDosError, System::IO::IO_STATUS_BLOCK},
+            };
+            let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
+            // SAFETY: live actual directory handle and initialized output. A
+            // denied/unsupported filesystem flush fails closed for attestation.
+            let result = unsafe {
+                NtFlushBuffersFileEx(
+                    self.directory.as_raw_handle(),
+                    0,
+                    std::ptr::null(),
+                    0,
+                    &mut status,
+                )
+            };
+            if result < 0 {
+                Err(std::io::Error::from_raw_os_error(
+                    unsafe { RtlNtStatusToDosError(result) } as i32,
+                ))
+            } else {
+                Ok(())
+            }
+        }
+    }
+}
+fn native_io(error: NativeError) -> std::io::Error {
+    match error {
+        NativeError::Io(error) => error,
+        _ => std::io::ErrorKind::InvalidInput.into(),
+    }
+}
+
+fn checked_relative_name(name: &[u8]) -> std::io::Result<[u8; 256]> {
+    if name.is_empty()
+        || name.len() >= 256
+        || name == b"."
+        || name == b".."
+        || name
+            .iter()
+            .any(|byte| !byte.is_ascii() || matches!(*byte, b'/' | b'\\' | b':' | 0))
+    {
+        return Err(std::io::ErrorKind::InvalidInput.into());
+    }
+    let mut native = [0; 256];
+    native[..name.len()].copy_from_slice(name);
+    Ok(native)
+}
+impl RootedDirectory {
+    /// Low-level entry operation only. Caller retains actual namespace ownership
+    /// and the exact source's creation/origin proof; this helper grants neither.
+    pub(crate) fn rename_file_no_replace(
+        &self,
+        name: &[u8],
+        destination: &Self,
+        target: &[u8],
+        expected: FileIdentity,
+    ) -> std::io::Result<()> {
+        self.rename_no_replace(name, destination, target, expected, false)
+    }
+    pub(crate) fn rename_directory_no_replace(
+        &self,
+        name: &[u8],
+        destination: &Self,
+        target: &[u8],
+        expected: FileIdentity,
+    ) -> std::io::Result<()> {
+        self.rename_no_replace(name, destination, target, expected, true)
+    }
+    fn rename_no_replace(
+        &self,
+        name: &[u8],
+        destination: &Self,
+        target: &[u8],
+        expected: FileIdentity,
+        directory: bool,
+    ) -> std::io::Result<()> {
+        let source_name = checked_relative_name(name)?;
+        let target_name = checked_relative_name(target)?;
+        let source = self.relative_handle(name, false, directory, true, false)?;
+        if file_identity(&source).map_err(native_io)? != expected {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        #[cfg(unix)]
+        {
+            use std::os::fd::AsRawFd;
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
+            // SAFETY: both retained directory FDs and fixed NUL basenames live
+            // through the native atomic exclusive-destination rename.
+            let result = unsafe {
+                libc::renameatx_np(
+                    self.directory.as_raw_fd(),
+                    source_name.as_ptr().cast(),
+                    destination.directory.as_raw_fd(),
+                    target_name.as_ptr().cast(),
+                    libc::RENAME_EXCL,
+                )
+            };
+            #[cfg(target_os = "linux")]
+            // SAFETY: same anchored arguments; RENAME_NOREPLACE never overwrites.
+            let result = unsafe {
+                libc::renameat2(
+                    self.directory.as_raw_fd(),
+                    source_name.as_ptr().cast(),
+                    destination.directory.as_raw_fd(),
+                    target_name.as_ptr().cast(),
+                    libc::RENAME_NOREPLACE,
+                )
+            };
+            #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "linux")))]
+            return Err(std::io::ErrorKind::Unsupported.into());
+            if result != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::io::AsRawHandle;
+            use windows_sys::{
+                Wdk::Storage::FileSystem::{
+                    FileRenameInformation, NtSetInformationFile, FILE_RENAME_INFORMATION,
+                },
+                Win32::{
+                    Foundation::{RtlNtStatusToDosError, HANDLE},
+                    System::IO::IO_STATUS_BLOCK,
+                },
+            };
+            #[repr(C)]
+            struct Rename {
+                flags: u32,
+                root: HANDLE,
+                length: u32,
+                name: [u16; 256],
+            }
+            const _: () = assert!(
+                std::mem::offset_of!(Rename, name)
+                    == std::mem::offset_of!(FILE_RENAME_INFORMATION, FileName)
+            );
+            let _ = (source_name, target_name);
+            let mut rename = Rename {
+                flags: 0,
+                root: destination.directory.as_raw_handle(),
+                length: (target.len() * 2) as u32,
+                name: [0; 256],
+            };
+            for (out, byte) in rename.name.iter_mut().zip(target) {
+                *out = u16::from(*byte);
+            }
+            let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
+            let len = std::mem::offset_of!(Rename, name) + target.len() * 2;
+            // SAFETY: actual source handle carries DELETE; target is relative
+            // to the retained destination HANDLE. Zero flags means no replace.
+            let result = unsafe {
+                NtSetInformationFile(
+                    source.as_raw_handle(),
+                    &mut status,
+                    (&rename as *const Rename).cast(),
+                    len as u32,
+                    FileRenameInformation,
+                )
+            };
+            if result < 0 {
+                return Err(std::io::Error::from_raw_os_error(unsafe {
+                    RtlNtStatusToDosError(result)
+                } as i32));
+            }
+        }
+        #[cfg(not(any(unix, windows)))]
+        return Err(std::io::ErrorKind::Unsupported.into());
+        let moved = destination.relative_handle(target, false, directory, false, false)?;
+        if file_identity(&moved).map_err(native_io)? != expected {
+            return Err(std::io::ErrorKind::InvalidData.into());
+        }
+        Ok(())
+    }
+    pub(crate) fn unlink_file(&self, name: &[u8], expected: FileIdentity) -> std::io::Result<()> {
+        self.remove_entry(name, expected, false)
+    }
+    /// Atomic empty-only removal. Unknown siblings always produce NotEmpty;
+    /// no recursive walk, control recreation or forced-delete fallback exists.
+    pub(crate) fn remove_empty_directory(
+        &self,
+        name: &[u8],
+        expected: FileIdentity,
+    ) -> std::io::Result<()> {
+        self.remove_entry(name, expected, true)
+    }
+    fn remove_entry(
+        &self,
+        name: &[u8],
+        expected: FileIdentity,
+        directory: bool,
+    ) -> std::io::Result<()> {
+        let native = checked_relative_name(name)?;
+        let file = self.relative_handle(name, false, directory, true, false)?;
+        if file_identity(&file).map_err(native_io)? != expected {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        #[cfg(unix)]
+        {
+            use std::os::fd::AsRawFd;
+            // SAFETY: retained actual parent FD + validated basename; the kernel
+            // enforces emptiness for directory removal at this instant.
+            let result = unsafe {
+                libc::unlinkat(
+                    self.directory.as_raw_fd(),
+                    native.as_ptr().cast(),
+                    if directory { libc::AT_REMOVEDIR } else { 0 },
+                )
+            };
+            if result != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::io::AsRawHandle;
+            use windows_sys::{
+                Wdk::Storage::FileSystem::{
+                    FileDispositionInformation, NtSetInformationFile, FILE_DISPOSITION_INFORMATION,
+                },
+                Win32::{Foundation::RtlNtStatusToDosError, System::IO::IO_STATUS_BLOCK},
+            };
+            let _ = native;
+            let disposition = FILE_DISPOSITION_INFORMATION { DeleteFile: true };
+            let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
+            // SAFETY: DELETE access was acquired on this exact native object;
+            // classic disposition retains native sharing/empty-directory rules.
+            let result = unsafe {
+                NtSetInformationFile(
+                    file.as_raw_handle(),
+                    &mut status,
+                    (&disposition as *const FILE_DISPOSITION_INFORMATION).cast(),
+                    std::mem::size_of::<FILE_DISPOSITION_INFORMATION>() as u32,
+                    FileDispositionInformation,
+                )
+            };
+            if result < 0 {
+                return Err(std::io::Error::from_raw_os_error(unsafe {
+                    RtlNtStatusToDosError(result)
+                } as i32));
+            }
+        }
+        #[cfg(not(any(unix, windows)))]
+        return Err(std::io::ErrorKind::Unsupported.into());
+        drop(file);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod rooted_directory_tests {
+    use super::*;
+    struct Fixture {
+        root: PathBuf,
+    }
+    impl Fixture {
+        fn new() -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "cleanup-rooted-{}",
+                crate::storage::layout::managed_generation_id()
+            ));
+            fs::create_dir(&root).unwrap();
+            Self { root }
+        }
+        fn anchor(&self) -> RootedDirectory {
+            RootedDirectory::open(&self.root, path_identity(&self.root).unwrap()).unwrap()
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+    #[test]
+    fn dc_rooted_namespace_no_replace_and_exact_empty_removal_preserve_foreign_entries() {
+        use std::io::Write;
+        let f = Fixture::new();
+        let root = f.anchor();
+        let temp = root.create_directory(b"temp-owned").unwrap();
+        let mut payload = temp.create_new(b"partition.json").unwrap();
+        payload.write_all(b"own payload").unwrap();
+        payload.sync_all().unwrap();
+        let payload_id = file_identity(&payload).unwrap();
+        drop(payload);
+        let mut foreign = root.create_new(b"canonical").unwrap();
+        foreign.write_all(b"foreign canonical").unwrap();
+        drop(foreign);
+        assert!(root
+            .rename_directory_no_replace(b"temp-owned", &root, b"canonical", temp.identity())
+            .is_err());
+        assert_eq!(
+            fs::read(f.root.join("canonical")).unwrap(),
+            b"foreign canonical"
+        );
+        assert!(root
+            .remove_empty_directory(b"temp-owned", temp.identity())
+            .is_err());
+        let sentinel = temp.create_new(b"unknown-sibling").unwrap();
+        drop(sentinel);
+        temp.unlink_file(b"partition.json", payload_id).unwrap();
+        assert!(root
+            .remove_empty_directory(b"temp-owned", temp.identity())
+            .is_err());
+        assert!(f.root.join("temp-owned/unknown-sibling").exists());
+        let sentinel = temp.open_existing(b"unknown-sibling").unwrap();
+        let sentinel_id = file_identity(&sentinel).unwrap();
+        drop(sentinel);
+        // Fixture teardown owns this sentinel; production never adopts unknowns.
+        temp.unlink_file(b"unknown-sibling", sentinel_id).unwrap();
+        drop(temp);
+        let empty = root.open_directory(b"temp-owned").unwrap();
+        let empty_id = empty.identity();
+        drop(empty);
+        root.remove_empty_directory(b"temp-owned", empty_id)
+            .unwrap();
+        assert!(!f.root.join("temp-owned").exists());
+        // Also exercise actual directory publication, with only our exact
+        // completed payload and every descendant handle closed beforehand.
+        let ready = root.create_directory(b"owned-ready").unwrap();
+        let mut file = ready.create_new(b"partition.json").unwrap();
+        file.write_all(b"completed own leaf").unwrap();
+        file.sync_all().unwrap();
+        drop(file);
+        let ready_id = ready.identity();
+        drop(ready);
+        root.rename_directory_no_replace(b"owned-ready", &root, b"published-owned", ready_id)
+            .unwrap();
+        assert_eq!(
+            path_identity(&f.root.join("published-owned")).unwrap(),
+            ready_id
+        );
+        assert_eq!(
+            fs::read(f.root.join("published-owned/partition.json")).unwrap(),
+            b"completed own leaf"
+        );
+        assert!(!f.root.join("owned-ready").exists());
+        assert_eq!(
+            fs::read(f.root.join("canonical")).unwrap(),
+            b"foreign canonical"
+        );
+    }
+    #[test]
+    fn dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity() {
+        use std::io::Write;
+        let f = Fixture::new();
+        let root = f.anchor();
+        let mut source = root.create_new(b"new").unwrap();
+        source.write_all(b"new bytes").unwrap();
+        let id = file_identity(&source).unwrap();
+        drop(source);
+        let mut target = root.create_new(b"old").unwrap();
+        target.write_all(b"old bytes").unwrap();
+        let other_id = file_identity(&target).unwrap();
+        drop(target);
+        assert!(root
+            .rename_file_no_replace(b"new", &root, b"old", id)
+            .is_err());
+        assert_eq!(fs::read(f.root.join("old")).unwrap(), b"old bytes");
+        assert!(root
+            .rename_file_no_replace(b"new", &root, b"renamed", other_id)
+            .is_err());
+        assert!(!f.root.join("renamed").exists());
+        root.rename_file_no_replace(b"new", &root, b"renamed", id)
+            .unwrap();
+        assert_eq!(path_identity(&f.root.join("renamed")).unwrap(), id);
+        assert!(root.unlink_file(b"renamed", other_id).is_err());
+        assert_eq!(fs::read(f.root.join("renamed")).unwrap(), b"new bytes");
+        root.unlink_file(b"renamed", id).unwrap();
+    }
+    #[test]
+    fn dc_rooted_component_validation_is_noncreating_and_accepts_exact_key64() {
+        let f = Fixture::new();
+        let root = f.anchor();
+        for name in [
+            b"".as_slice(),
+            b".",
+            b"..",
+            b"../outside",
+            b"a/b",
+            b"a\\b",
+            b"a:b",
+            b"a\0b",
+        ] {
+            assert!(root.create_new(name).is_err());
+            assert!(root.create_directory(name).is_err());
+        }
+        assert_eq!(fs::read_dir(&f.root).unwrap().count(), 0);
+        let key = [b'a'; 64];
+        drop(root.create_new(&key).unwrap());
+        assert!(f.root.join("a".repeat(64)).is_file());
+    }
+    #[test]
+    fn dc_rooted_readonly_payload_access_needs_no_payload_write_permission() {
+        let f = Fixture::new();
+        let child = f.root.join("canonical");
+        fs::create_dir(&child).unwrap();
+        let target = child.join("readonly-payload");
+        fs::write(&target, b"readable payload").unwrap();
+        let original = fs::metadata(&target).unwrap().permissions();
+        struct Restore {
+            path: PathBuf,
+            permissions: fs::Permissions,
+        }
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                let _ = fs::set_permissions(&self.path, self.permissions.clone());
+            }
+        }
+        let _restore = Restore {
+            path: target.clone(),
+            permissions: original.clone(),
+        };
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&target, fs::Permissions::from_mode(0o444)).unwrap();
+        }
+        #[cfg(windows)]
+        {
+            let mut permissions = original.clone();
+            permissions.set_readonly(true);
+            fs::set_permissions(&target, permissions).unwrap();
+        }
+        let root =
+            RootedDirectory::open_readonly_root(&f.root, path_identity(&f.root).unwrap()).unwrap();
+        let canonical = root.open_directory_readonly(b"canonical").unwrap();
+        let mut file = canonical.open_readonly_file(b"readonly-payload").unwrap();
+        use std::io::Read;
+        let mut bytes = [0; 16];
+        file.read_exact(&mut bytes).unwrap();
+        assert_eq!(&bytes, b"readable payload");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn dc_rooted_operations_remain_on_actual_parent_after_public_name_substitution() {
+        let f = Fixture::new();
+        let public = f.root.join("public");
+        fs::create_dir(&public).unwrap();
+        let anchor = RootedDirectory::open(&public, path_identity(&public).unwrap()).unwrap();
+        fs::rename(&public, f.root.join("old-owned")).unwrap();
+        fs::create_dir(&public).unwrap();
+        drop(anchor.create_new(b"created-on-original").unwrap());
+        assert!(f.root.join("old-owned/created-on-original").is_file());
+        assert!(!public.join("created-on-original").exists());
+    }
+    #[cfg(any(unix, windows))]
+    #[test]
+    fn dc_rooted_nonfollowing_open_rejects_symlinks_and_hardlinked_controls() {
+        let f = Fixture::new();
+        let root = f.anchor();
+        let target = f.root.join("target");
+        fs::write(&target, b"foreign target").unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&target, f.root.join("alias")).unwrap();
+        #[cfg(windows)]
+        std::os::windows::fs::symlink_file(&target, f.root.join("alias")).unwrap();
+        assert!(root.open_existing(b"alias").is_err());
+        assert!(root.create_new(b"alias").is_err());
+        fs::hard_link(&target, f.root.join("hardlink")).unwrap();
+        assert!(root.open_existing(b"hardlink").is_err());
+        assert_eq!(fs::read(target).unwrap(), b"foreign target");
     }
 }
