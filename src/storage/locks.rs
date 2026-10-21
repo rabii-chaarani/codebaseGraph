@@ -716,8 +716,11 @@ pub(crate) fn open_fixed_control(
         if before.st_mode & libc::S_IFMT != expected_type {
             return Err(FixedControlError::Invalid(FixedControlProblem::WrongKind));
         }
-        let flags = (if write { libc::O_RDWR } else { libc::O_RDONLY })
-            | libc::O_CLOEXEC
+        let flags = (if write && kind == FixedControlKind::File {
+            libc::O_RDWR
+        } else {
+            libc::O_RDONLY
+        }) | libc::O_CLOEXEC
             | libc::O_NOFOLLOW
             | libc::O_NONBLOCK;
         let fd = unsafe { libc::open(pointer, flags) };
@@ -773,7 +776,18 @@ pub(crate) fn open_fixed_control(
         }
         scratch.path[len] = 0;
         let access = if kind == FixedControlKind::Directory {
+            use windows_sys::Win32::Storage::FileSystem::{
+                FILE_ADD_FILE, FILE_ADD_SUBDIRECTORY, FILE_LIST_DIRECTORY, FILE_WRITE_ATTRIBUTES,
+                SYNCHRONIZE,
+            };
             FILE_READ_ATTRIBUTES
+                | FILE_LIST_DIRECTORY
+                | SYNCHRONIZE
+                | if write {
+                    FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY | FILE_WRITE_ATTRIBUTES
+                } else {
+                    0
+                }
         } else {
             GENERIC_READ | if write { GENERIC_WRITE } else { 0 }
         };
@@ -1890,5 +1904,306 @@ mod rooted_directory_tests {
         fs::hard_link(&target, f.root.join("hardlink")).unwrap();
         assert!(root.open_existing(b"hardlink").is_err());
         assert_eq!(fs::read(target).unwrap(), b"foreign target");
+    }
+}
+
+/// Fixed-buffer native directory streaming. Names are borrowed only for the
+/// callback; there is no retained union/catalog, libc DIR or child-path join.
+impl RootedDirectory {
+    pub(crate) fn visit_entries(
+        &self,
+        bytes: &mut [u8; 4096],
+        visit: &mut impl FnMut(&[u8]) -> std::io::Result<()>,
+    ) -> std::io::Result<()> {
+        #[cfg(target_os = "macos")]
+        {
+            use std::os::fd::AsRawFd;
+            let mut attributes: libc::attrlist = unsafe { std::mem::zeroed() };
+            attributes.bitmapcount = libc::ATTR_BIT_MAP_COUNT;
+            attributes.commonattr = libc::ATTR_CMN_NAME | libc::ATTR_CMN_RETURNED_ATTRS;
+            // SAFETY: actual directory FD, bounded writable caller scratch and
+            // initialized attrlist. No libc DIR allocation or path expansion.
+            if unsafe { libc::lseek(self.directory.as_raw_fd(), 0, libc::SEEK_SET) } < 0 {
+                return Err(std::io::Error::last_os_error().into());
+            }
+            loop {
+                let count = unsafe {
+                    libc::getattrlistbulk(
+                        self.directory.as_raw_fd(),
+                        (&mut attributes as *mut libc::attrlist).cast(),
+                        bytes.as_mut_ptr().cast(),
+                        bytes.len(),
+                        0,
+                    )
+                };
+                if count < 0 {
+                    return Err(std::io::Error::last_os_error().into());
+                }
+                if count == 0 {
+                    return Ok(());
+                }
+                let mut offset = 0usize;
+                for _ in 0..count {
+                    if offset + 32 > bytes.len() {
+                        return Err(std::io::ErrorKind::InvalidData.into());
+                    }
+                    let length =
+                        u32::from_ne_bytes(bytes[offset..offset + 4].try_into().unwrap()) as usize;
+                    if length < 32 || offset + length > bytes.len() {
+                        return Err(std::io::ErrorKind::InvalidData.into());
+                    }
+                    let relative =
+                        i32::from_ne_bytes(bytes[offset + 24..offset + 28].try_into().unwrap());
+                    let name_len =
+                        u32::from_ne_bytes(bytes[offset + 28..offset + 32].try_into().unwrap())
+                            as usize;
+                    let start = (offset + 24)
+                        .checked_add_signed(relative as isize)
+                        .ok_or(std::io::ErrorKind::InvalidData)?;
+                    let end = start
+                        .checked_add(name_len)
+                        .ok_or(std::io::ErrorKind::InvalidData)?;
+                    if name_len == 0
+                        || start < offset
+                        || end > offset + length
+                        || bytes[end - 1] != 0
+                    {
+                        return Err(std::io::ErrorKind::InvalidData.into());
+                    }
+                    let name = &bytes[start..end - 1];
+                    if name != b"." && name != b".." {
+                        visit(name)?;
+                    }
+                    offset += length;
+                }
+            }
+        }
+        #[cfg(target_os = "linux")]
+        {
+            use std::os::fd::AsRawFd;
+            if unsafe { libc::lseek(self.directory.as_raw_fd(), 0, libc::SEEK_SET) } < 0 {
+                return Err(std::io::Error::last_os_error().into());
+            }
+            loop {
+                // SAFETY: Linux getdents64 ABI and fixed writable buffer.
+                let count = unsafe {
+                    libc::syscall(
+                        libc::SYS_getdents64,
+                        self.directory.as_raw_fd(),
+                        bytes.as_mut_ptr(),
+                        bytes.len(),
+                    )
+                };
+                if count < 0 {
+                    return Err(std::io::Error::last_os_error().into());
+                }
+                if count == 0 {
+                    return Ok(());
+                }
+                let mut offset = 0usize;
+                while offset < count as usize {
+                    if offset + 20 > count as usize {
+                        return Err(std::io::ErrorKind::InvalidData.into());
+                    }
+                    let length =
+                        u16::from_ne_bytes(bytes[offset + 16..offset + 18].try_into().unwrap())
+                            as usize;
+                    if length < 20 || offset + length > count as usize {
+                        return Err(std::io::ErrorKind::InvalidData.into());
+                    }
+                    let field = &bytes[offset + 19..offset + length];
+                    let end = field
+                        .iter()
+                        .position(|x| *x == 0)
+                        .ok_or(std::io::ErrorKind::InvalidData)?;
+                    let name = &field[..end];
+                    if name != b"." && name != b".." {
+                        visit(name)?;
+                    }
+                    offset += length;
+                }
+            }
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::io::AsRawHandle;
+            use windows_sys::{
+                Wdk::Storage::FileSystem::{FileNamesInformation, NtQueryDirectoryFile},
+                Win32::{Foundation::STATUS_NO_MORE_FILES, System::IO::IO_STATUS_BLOCK},
+            };
+            let mut first = true;
+            loop {
+                let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
+                // SAFETY: synchronous directory handle and fixed writable
+                // FILE_NAMES_INFORMATION buffer; request one entry per call.
+                let result = unsafe {
+                    NtQueryDirectoryFile(
+                        self.directory.as_raw_handle(),
+                        std::ptr::null_mut(),
+                        None,
+                        std::ptr::null(),
+                        &mut status,
+                        bytes.as_mut_ptr().cast(),
+                        bytes.len() as u32,
+                        FileNamesInformation,
+                        true,
+                        std::ptr::null(),
+                        first,
+                    )
+                };
+                first = false;
+                if result == STATUS_NO_MORE_FILES {
+                    return Ok(());
+                }
+                if result < 0 {
+                    return Err(std::io::Error::from_raw_os_error(unsafe {
+                        windows_sys::Win32::Foundation::RtlNtStatusToDosError(result)
+                    } as i32)
+                    .into());
+                }
+                let length = u32::from_le_bytes(bytes[8..12].try_into().unwrap()) as usize;
+                if length > bytes.len() - 12 || length % 2 != 0 {
+                    return Err(std::io::ErrorKind::InvalidData.into());
+                }
+                // Decode into the disjoint second half of the SAME caller
+                // buffer. No per-depth stack/Vec name allocation, and no lossy
+                // interpretation of unpaired UTF-16 surrogates.
+                if length > 2036 {
+                    return Err(std::io::ErrorKind::InvalidData.into());
+                }
+                let (input, output) = bytes.split_at_mut(2048);
+                let mut written = 0usize;
+                for scalar in char::decode_utf16(
+                    input[12..12 + length]
+                        .chunks_exact(2)
+                        .map(|unit| u16::from_le_bytes(unit.try_into().unwrap())),
+                ) {
+                    let scalar = scalar.map_err(|_| std::io::ErrorKind::InvalidData)?;
+                    let mut encoded = [0u8; 4];
+                    let text = scalar.encode_utf8(&mut encoded).as_bytes();
+                    let end = written
+                        .checked_add(text.len())
+                        .ok_or(std::io::ErrorKind::InvalidData)?;
+                    if end > output.len() {
+                        return Err(std::io::ErrorKind::InvalidData.into());
+                    }
+                    output[written..end].copy_from_slice(text);
+                    written = end;
+                }
+                let name = &output[..written];
+                if name != b"." && name != b".." {
+                    visit(name)?;
+                }
+            }
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
+        Err(std::io::ErrorKind::Unsupported.into())
+    }
+    pub(crate) fn contains_only(
+        &self,
+        allowed: Option<&[u8]>,
+        bytes: &mut [u8; 4096],
+        grant: &mut super::maintenance_budget::MutationGrant,
+    ) -> Result<bool, FixedControlError> {
+        let mut seen = false;
+        let mut stopped = false;
+        let mut exhausted = None;
+        let result = self.visit_entries(bytes, &mut |name| {
+            if let Err(error) = grant.take_entry() {
+                exhausted = Some(error);
+                return Err(std::io::ErrorKind::Interrupted.into());
+            }
+            if !seen && allowed == Some(name) {
+                seen = true;
+                Ok(())
+            } else {
+                stopped = true;
+                Err(std::io::ErrorKind::Interrupted.into())
+            }
+        });
+        if let Some(error) = exhausted {
+            return Err(error.into());
+        }
+        if stopped {
+            return Ok(false);
+        }
+        result?;
+        Ok(true)
+    }
+}
+
+impl FixedLockedFile {
+    pub(crate) fn matches_fixed_current(
+        &self,
+        current: &FixedFileStamp,
+        mode: LockMode,
+    ) -> Result<bool, FixedControlError> {
+        Ok(self.mode == mode
+            && FixedFileStamp::capture(&self.file, FixedControlKind::File)?.identity()
+                == current.identity())
+    }
+    pub(crate) fn matches_fixed_header(
+        &self,
+        expected: &[u8; COORDINATION_HEADER_BYTES],
+    ) -> Result<bool, FixedControlError> {
+        let stamp = FixedFileStamp::capture(&self.file, FixedControlKind::File)?;
+        let mut bytes = [0; COORDINATION_HEADER_BYTES];
+        if !read_coordination_header(&self.file, &mut bytes)? {
+            return Ok(false);
+        }
+        stamp.recheck(&self.file)?;
+        Ok(bytes == *expected)
+    }
+}
+
+impl RootedDirectory {
+    pub(crate) fn open_fixed(
+        path: &Path,
+        expected: FileIdentity,
+        write: bool,
+        scratch: &mut FixedControlScratch,
+    ) -> Result<Self, FixedControlError> {
+        let directory = open_fixed_control(path, FixedControlKind::Directory, write, scratch)?;
+        let identity = FixedFileStamp::capture(&directory, FixedControlKind::Directory)?.identity();
+        if identity != expected {
+            return Err(FixedControlError::Invalid(FixedControlProblem::Changed));
+        }
+        Ok(Self {
+            directory,
+            identity,
+            _same_thread: std::marker::PhantomData,
+        })
+    }
+}
+
+impl From<std::io::ErrorKind> for FixedControlError {
+    fn from(kind: std::io::ErrorKind) -> Self {
+        Self::Io(kind.into())
+    }
+}
+
+impl FixedFileStamp {
+    pub(crate) fn binding_digest(&self) -> [u8; 32] {
+        use sha2::{Digest, Sha256};
+        let mut hash = Sha256::new();
+        let (a, b) = self.identity.fixed_words();
+        hash.update(a.to_le_bytes());
+        hash.update(b.to_le_bytes());
+        hash.update(self.len.to_le_bytes());
+        hash.update(self.links.to_le_bytes());
+        hash.update([match self.kind {
+            FixedControlKind::File => 0,
+            FixedControlKind::Directory => 1,
+        }]);
+        for part in self.modified.into_iter().chain(self.changed) {
+            hash.update(part.to_le_bytes());
+        }
+        hash.finalize().into()
+    }
+}
+
+impl RootedDirectory {
+    pub(crate) fn metadata(&self) -> std::io::Result<std::fs::Metadata> {
+        self.directory.metadata()
     }
 }

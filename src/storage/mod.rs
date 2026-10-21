@@ -15,3 +15,7 @@ pub(crate) mod maintenance_scheduler;
 pub(crate) mod maintenance_validation;
 pub(crate) mod managed;
 pub(crate) mod run_workspace;
+
+pub(crate) mod maintenance_projection;
+
+pub(crate) mod maintenance_admission;

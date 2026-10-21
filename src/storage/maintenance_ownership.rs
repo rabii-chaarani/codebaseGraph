@@ -404,28 +404,28 @@ pub(crate) fn observe_reference_epoch(
 // Private foundation only. Borrowed paths/bytes keep their owning Work and
 // reservations OFF the authority stack. This is not PreparedMaintenance,
 // current config/reference completeness, Ready admission or deletion authority.
-struct CanonicalEpochPaths<'a> {
-    root: &'a Path,
-    destination: &'a Path,
-    writer: &'a Path,
-    root_use: &'a Path,
-    cohort: &'a Path,
-    epoch: &'a Path,
-    activity: &'a Path,
-    serial: &'a Path,
-    reference_roots: [Option<&'a Path>; 2],
+pub(super) struct CanonicalEpochPaths<'a> {
+    pub(super) root: &'a Path,
+    pub(super) destination: &'a Path,
+    pub(super) writer: &'a Path,
+    pub(super) root_use: &'a Path,
+    pub(super) cohort: &'a Path,
+    pub(super) epoch: &'a Path,
+    pub(super) activity: &'a Path,
+    pub(super) serial: &'a Path,
+    pub(super) reference_roots: [Option<&'a Path>; 2],
 }
-struct CanonicalEpochFrame<'a> {
-    paths: CanonicalEpochPaths<'a>,
-    expected: &'a ReferenceEpoch,
-    bytes: &'a [u8],
-    cohort: super::locks::FixedFileStamp,
-    coordination_header: [u8; super::locks::COORDINATION_HEADER_BYTES],
+pub(super) struct CanonicalEpochFrame<'a> {
+    pub(super) paths: CanonicalEpochPaths<'a>,
+    pub(super) expected: &'a ReferenceEpoch,
+    pub(super) bytes: &'a [u8],
+    pub(super) cohort: super::locks::FixedFileStamp,
+    pub(super) coordination_header: [u8; super::locks::COORDINATION_HEADER_BYTES],
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct CanonicalEpochAdvance {
-    before: u64,
-    after: u64,
+pub(crate) struct CanonicalEpochAdvance {
+    pub(crate) before: u64,
+    pub(crate) after: u64,
 }
 
 fn encode_fixed_epoch(
@@ -453,7 +453,7 @@ fn encode_fixed_epoch(
 /// Pure bounded preparation, no locks or writes. The caller reserved both
 /// buffers in the shared account. Fixed producer codecs use a slice writer;
 /// no arbitrary JSON is decoded and no expected-E bytes are relabeled later.
-fn prepare_canonical_epoch_frame<'a>(
+pub(super) fn prepare_canonical_epoch_frame<'a>(
     paths: CanonicalEpochPaths<'a>,
     expected: &'a ReferenceEpoch,
     prepared: &'a mut super::maintenance_budget::ReservedBytes,
@@ -559,6 +559,66 @@ fn with_canonical_epoch_advance(
     grant: &mut super::maintenance_budget::MutationGrant,
     apply: &mut impl FnMut(CanonicalEpochAdvance) -> Result<(), super::locks::FixedControlError>,
 ) -> Result<CanonicalEpochAdvance, super::locks::FixedControlError> {
+    if root_use.identity != frame.expected.record.root || root_use.reference_activity.is_some() {
+        return Err(super::locks::FixedControlError::Invalid(
+            super::locks::FixedControlProblem::GuardMismatch,
+        ));
+    }
+    with_canonical_epoch_handles(
+        frame,
+        EpochLock::Legacy(writer),
+        EpochLock::Legacy(&root_use.lock),
+        read,
+        scratch,
+        grant,
+        0,
+        &mut |_, _| Ok(()),
+        &mut |advance, _| apply(advance),
+    )
+}
+
+pub(super) enum EpochLock<'a> {
+    Legacy(&'a LockedFile),
+    Fixed(&'a super::locks::FixedLockedFile),
+}
+impl EpochLock<'_> {
+    fn matches_fixed_current(
+        &self,
+        stamp: &super::locks::FixedFileStamp,
+        mode: LockMode,
+    ) -> Result<bool, super::locks::FixedControlError> {
+        match self {
+            Self::Legacy(lock) => lock.matches_fixed_current(stamp, mode),
+            Self::Fixed(lock) => lock.matches_fixed_current(stamp, mode),
+        }
+    }
+    fn matches_fixed_header(
+        &self,
+        header: &[u8; super::locks::COORDINATION_HEADER_BYTES],
+    ) -> Result<bool, super::locks::FixedControlError> {
+        match self {
+            Self::Legacy(lock) => lock.matches_fixed_header(header),
+            Self::Fixed(lock) => lock.matches_fixed_header(header),
+        }
+    }
+}
+pub(super) fn with_canonical_epoch_handles(
+    frame: &CanonicalEpochFrame<'_>,
+    writer: EpochLock<'_>,
+    root_use: EpochLock<'_>,
+    read: &mut super::maintenance_budget::ReservedBytes,
+    scratch: &mut super::locks::FixedControlScratch,
+    grant: &mut super::maintenance_budget::MutationGrant,
+    effect_entries: usize,
+    validate: &mut impl FnMut(
+        &mut super::locks::FixedControlScratch,
+        &mut super::maintenance_budget::MutationGrant,
+    ) -> Result<(), super::locks::FixedControlError>,
+    apply: &mut impl FnMut(
+        CanonicalEpochAdvance,
+        &mut super::maintenance_budget::MutationGrant,
+    ) -> Result<(), super::locks::FixedControlError>,
+) -> Result<CanonicalEpochAdvance, super::locks::FixedControlError> {
     use super::locks::{
         read_fixed_control, FixedControlError as Error, FixedControlKind as Kind,
         FixedControlProblem as Problem, FixedFileStamp, FixedLockedFile,
@@ -580,19 +640,12 @@ fn with_canonical_epoch_advance(
     }
     let use_current = fixed_epoch_open(frame.paths.root_use, Kind::File, false, scratch, grant)?;
     let use_stamp = FixedFileStamp::capture(&use_current, Kind::File)?;
-    if root_use.identity != expected.root
-        || use_stamp.identity() != expected.use_lock
-        || !root_use
-            .lock
-            .matches_fixed_current(&use_stamp, LockMode::Exclusive)?
-        || root_use.reference_activity.is_some()
+    if use_stamp.identity() != expected.use_lock
+        || !root_use.matches_fixed_current(&use_stamp, LockMode::Exclusive)?
     {
         return Err(Error::Invalid(Problem::GuardMismatch));
     }
-    if !root_use
-        .lock
-        .matches_fixed_header(&frame.coordination_header)?
-    {
+    if !root_use.matches_fixed_header(&frame.coordination_header)? {
         return Err(Error::Invalid(Problem::Changed));
     }
     let activity_file = fixed_epoch_open(frame.paths.activity, Kind::File, true, scratch, grant)?;
@@ -667,7 +720,10 @@ fn with_canonical_epoch_advance(
     }
     // Reserve the epoch file effect before starting it. Encoding and checksum
     // were already prepared outside authority; no decode/hash/state lock here.
-    grant.take_entries(2)?; // epoch effect plus its fresh-address/readback check
+    validate(scratch, grant)?;
+    grant.take_entries(effect_entries.checked_add(2).ok_or(Error::Resource(
+        super::maintenance_budget::ResourceLimit::ArithmeticOverflow,
+    ))?)?; // complete effect reservation before E changes
     grant.check_time()?;
     epoch_file.seek(SeekFrom::Start(0))?;
     epoch_file.write_all(&frame.bytes[REFERENCE_EPOCH_SIZE..])?;
@@ -695,7 +751,7 @@ fn with_canonical_epoch_advance(
             .checked_add(1)
             .ok_or(Error::Invalid(Problem::EpochExhausted))?,
     };
-    apply(advance)?;
+    apply(advance, grant)?;
     grant.check_time()?;
     // Explicit uses document retention through callback; RAII also covers all
     // preceding errors and callback unwind. No caller-owned guard is released.
@@ -1862,7 +1918,7 @@ pub(crate) struct DatabaseUseProof {
     coordination: FileIdentity,
 }
 
-fn database_lock_path(
+pub(super) fn database_lock_path(
     database: &Path,
     create_parent: bool,
 ) -> Result<(PathBuf, PathBuf), NativeError> {
@@ -2528,22 +2584,10 @@ pub(crate) mod tests {
             .artifact_root_producer_capability()
             .unwrap()
             .unwrap();
-        if !binding_path.exists() {
-            #[cfg(windows)]
-            {
-                // Unsupported native directory flushing leaves attestation
-                // absent, never a new primary failure or pretend qualification.
-                assert!(root.join(".use-cohort.json").is_file());
-                assert!(controls::try_begin_root_publication(&mut capability)
-                    .unwrap()
-                    .is_none());
-                fs::write(root.join("primary-without-attestation"), b"primary data").unwrap();
-                eprintln!("native Windows factory attestation inactive: no durable binding");
-                return;
-            }
-            #[cfg(not(windows))]
-            panic!("factory binding must be durable on the native fixture filesystem");
-        }
+        // This is the positive native activation qualification. Optional
+        // unsupported-filesystem fallback is tested separately and cannot make
+        // this test pass without a durable, actually usable publisher binding.
+        assert!(binding_path.is_file(), "factory activation requires durable native namespace flushing on this fixture filesystem");
         let bytes = fs::read(&binding_path).unwrap();
         let binding = PublisherBinding::decode(&bytes).unwrap();
         assert_eq!(binding.root, capability.root_identity());
@@ -5061,5 +5105,313 @@ pub(crate) mod tests {
         .is_err());
         assert!(!paths.cohort.exists());
         assert_eq!(fs::read(&paths.epoch).unwrap(), before);
+    }
+}
+
+/// Owned advisory epoch images. Paths and both images remain off the mutation
+/// slot; a callback borrows only their fixed frame. No authority is stored.
+pub(super) struct PreparedEpoch {
+    domain: ReferenceDomain,
+    expected: ReferenceEpoch,
+    controls: [PathBuf; 5],
+    images: super::maintenance_budget::ReservedBytes,
+    cohort: super::locks::FixedFileStamp,
+    header: [u8; super::locks::COORDINATION_HEADER_BYTES],
+    _paths: super::maintenance_budget::MemoryReservation,
+}
+impl PreparedEpoch {
+    pub(super) fn prepare(
+        domain: &ReferenceDomain,
+        expected: &ReferenceEpoch,
+        memory: &super::maintenance_budget::CleanupMemory,
+        read: &mut super::maintenance_budget::ReservedBytes,
+        scratch: &mut super::locks::FixedControlScratch,
+    ) -> Result<Self, super::locks::FixedControlError> {
+        use super::locks::{FixedControlError as Error, FixedControlProblem as Problem};
+        if domain.scope != expected.record.scope
+            || domain.artifact_identity != Some(expected.record.root)
+            || domain.use_identity != Some(expected.record.use_lock)
+        {
+            return Err(Error::Invalid(Problem::InvalidRecord));
+        }
+        let mut path_bytes = 16384usize;
+        for path in [
+            Some(&domain.artifact_root),
+            Some(&domain.destination_root),
+            Some(&domain.writer_path),
+            domain.reference_roots[0].as_ref(),
+            domain.reference_roots[1].as_ref(),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            path_bytes = path_bytes
+                .checked_add(
+                    path.as_os_str()
+                        .as_encoded_bytes()
+                        .len()
+                        .checked_mul(16)
+                        .ok_or(Error::Resource(
+                            super::maintenance_budget::ResourceLimit::ArithmeticOverflow,
+                        ))?,
+                )
+                .ok_or(Error::Resource(
+                    super::maintenance_budget::ResourceLimit::ArithmeticOverflow,
+                ))?;
+        }
+        let paths = memory.reserve(path_bytes).map_err(Error::Resource)?;
+        let domain = domain.clone();
+        let controls = [
+            domain.artifact_root.join(".use.lock"),
+            domain.artifact_root.join(".use-cohort.json"),
+            domain.artifact_root.join(REFERENCE_EPOCH_FILE),
+            domain.artifact_root.join(REFERENCE_ACTIVITY_FILE),
+            domain.artifact_root.join(REFERENCE_SERIAL_FILE),
+        ];
+        let mut images = memory
+            .reserve(2 * REFERENCE_EPOCH_SIZE)
+            .map_err(Error::Resource)?
+            .bytes(2 * REFERENCE_EPOCH_SIZE)
+            .map_err(Error::Resource)?;
+        let frame = prepare_canonical_epoch_frame(
+            CanonicalEpochPaths {
+                root: &domain.artifact_root,
+                destination: &domain.destination_root,
+                writer: &domain.writer_path,
+                root_use: &controls[0],
+                cohort: &controls[1],
+                epoch: &controls[2],
+                activity: &controls[3],
+                serial: &controls[4],
+                reference_roots: [
+                    domain.reference_roots[0].as_deref(),
+                    domain.reference_roots[1].as_deref(),
+                ],
+            },
+            expected,
+            &mut images,
+            read,
+            scratch,
+        )?;
+        let cohort = frame.cohort;
+        let header = frame.coordination_header;
+        Ok(Self {
+            domain,
+            expected: expected.clone(),
+            controls,
+            images,
+            cohort,
+            header,
+            _paths: paths,
+        })
+    }
+    pub(super) fn frame(&self) -> CanonicalEpochFrame<'_> {
+        CanonicalEpochFrame {
+            paths: CanonicalEpochPaths {
+                root: &self.domain.artifact_root,
+                destination: &self.domain.destination_root,
+                writer: &self.domain.writer_path,
+                root_use: &self.controls[0],
+                cohort: &self.controls[1],
+                epoch: &self.controls[2],
+                activity: &self.controls[3],
+                serial: &self.controls[4],
+                reference_roots: [
+                    self.domain.reference_roots[0].as_deref(),
+                    self.domain.reference_roots[1].as_deref(),
+                ],
+            },
+            expected: &self.expected,
+            bytes: self.images.as_slice(),
+            cohort: self.cohort,
+            coordination_header: self.header,
+        }
+    }
+    pub(super) fn fingerprint(&self) -> [u8; 32] {
+        let mut hash = Sha256::new();
+        hash.update(self.header);
+        hash.update(self.expected.record.incarnation);
+        for identity in [
+            self.expected.record.root,
+            self.expected.record.use_lock,
+            self.expected.record.scope.destination,
+            self.expected.record.scope.writer,
+        ] {
+            let (a, b) = identity.fixed_words();
+            hash.update(a.to_le_bytes());
+            hash.update(b.to_le_bytes());
+        }
+        hash.update(self.expected.record.scope.address);
+        hash.finalize().into()
+    }
+}
+
+impl PreparedEpoch {
+    /// Local lane observes a stable fixed record without requiring exclusive
+    /// global observation. A concurrently torn producer write simply retries.
+    pub(super) fn prepare_local(
+        domain: &ReferenceDomain,
+        memory: &super::maintenance_budget::CleanupMemory,
+        read: &mut super::maintenance_budget::ReservedBytes,
+        scratch: &mut super::locks::FixedControlScratch,
+    ) -> Result<Self, super::locks::FixedControlError> {
+        let expected = read_reference_epoch(domain.artifact_root()).map_err(|_| {
+            super::locks::FixedControlError::Invalid(
+                super::locks::FixedControlProblem::InvalidRecord,
+            )
+        })?;
+        Self::prepare(domain, &expected, memory, read, scratch)
+    }
+    /// Invalidate CURRENT global E under Shared activity + Exclusive serial.
+    /// Immutable local source E/A/G are deliberately not parameters to this
+    /// primitive. It cannot relabel a local sealed source as global references.
+    pub(super) fn with_local_invalidation(
+        &self,
+        read: &mut super::maintenance_budget::ReservedBytes,
+        scratch: &mut super::locks::FixedControlScratch,
+        grant: &mut super::maintenance_budget::MutationGrant,
+        effect_entries: usize,
+        apply: &mut impl FnMut(
+            CanonicalEpochAdvance,
+            &mut super::maintenance_budget::MutationGrant,
+        ) -> Result<(), super::locks::FixedControlError>,
+    ) -> Result<CanonicalEpochAdvance, super::locks::FixedControlError> {
+        use super::locks::{
+            read_fixed_control, FixedControlError as Error, FixedControlKind as Kind,
+            FixedControlProblem as Problem, FixedFileStamp, FixedLockedFile,
+        };
+        grant.check()?;
+        let frame = self.frame();
+        let expected = &self.expected.record;
+        let root_file = fixed_epoch_open(frame.paths.root_use, Kind::File, false, scratch, grant)?;
+        let root_use = FixedLockedFile::try_lock(root_file, LockMode::Shared)?
+            .ok_or(Error::Invalid(Problem::Busy))?;
+        if FixedFileStamp::capture(root_use.file(), Kind::File)?.identity() != expected.use_lock
+            || !root_use.matches_fixed_header(&self.header)?
+        {
+            return Err(Error::Invalid(Problem::Changed));
+        }
+        let activity_file =
+            fixed_epoch_open(frame.paths.activity, Kind::File, false, scratch, grant)?;
+        let activity = FixedLockedFile::try_lock(activity_file, LockMode::Shared)?
+            .ok_or(Error::Invalid(Problem::Busy))?;
+        let serial_file = fixed_epoch_open(frame.paths.serial, Kind::File, true, scratch, grant)?;
+        let serial = FixedLockedFile::try_lock(serial_file, LockMode::Exclusive)?
+            .ok_or(Error::Invalid(Problem::Busy))?;
+        for (path, kind, id) in [
+            (frame.paths.root, Kind::Directory, expected.root),
+            (frame.paths.root_use, Kind::File, expected.use_lock),
+            (frame.paths.activity, Kind::File, expected.activity),
+            (frame.paths.serial, Kind::File, expected.serial),
+            (frame.paths.cohort, Kind::File, expected.cohort),
+        ] {
+            let file = fixed_epoch_open(path, kind, false, scratch, grant)?;
+            if FixedFileStamp::capture(&file, kind)?.identity() != id {
+                return Err(Error::Invalid(Problem::Changed));
+            }
+        }
+        if FixedFileStamp::capture(activity.file(), Kind::File)?.identity() != expected.activity
+            || FixedFileStamp::capture(serial.file(), Kind::File)?.identity() != expected.serial
+        {
+            return Err(Error::Invalid(Problem::Changed));
+        }
+        let mut epoch = fixed_epoch_open(frame.paths.epoch, Kind::File, true, scratch, grant)?;
+        let stamp = FixedFileStamp::capture(&epoch, Kind::File)?;
+        if stamp.identity() != self.expected.file || stamp.len() != REFERENCE_EPOCH_SIZE as u64 {
+            return Err(Error::Invalid(Problem::Changed));
+        }
+        read_fixed_control(&mut epoch, &stamp, read)?;
+        // Fixed2048 checksum/decimal patch is the explicit local invalidation
+        // exception. No Serde/Value/string/path allocation or payload hash.
+        let bytes = &mut read.as_mut_slice()[..REFERENCE_EPOCH_SIZE];
+        if bytes[..8] != REFERENCE_EPOCH_MAGIC[..]
+            || Sha256::digest(&bytes[..REFERENCE_EPOCH_SIZE - 32]).as_slice()
+                != &bytes[REFERENCE_EPOCH_SIZE - 32..]
+        {
+            return Err(Error::Invalid(Problem::InvalidRecord));
+        }
+        let template = &self.images.as_slice()[..REFERENCE_EPOCH_SIZE];
+        let marker = b"\"counter\":";
+        let position = template
+            .windows(marker.len())
+            .position(|w| w == marker)
+            .ok_or(Error::Invalid(Problem::InvalidRecord))?
+            + marker.len();
+        if bytes[12..position] != template[12..position] {
+            return Err(Error::Invalid(Problem::Changed));
+        }
+        let mut end = position;
+        let mut before = 0u64;
+        while end < REFERENCE_EPOCH_SIZE - 32 && bytes[end].is_ascii_digit() {
+            before = before
+                .checked_mul(10)
+                .and_then(|n| n.checked_add(u64::from(bytes[end] - b'0')))
+                .ok_or(Error::Invalid(Problem::EpochExhausted))?;
+            end += 1;
+        }
+        if end == position || (end - position > 1 && bytes[position] == b'0') {
+            return Err(Error::Invalid(Problem::InvalidRecord));
+        }
+        let after = before
+            .checked_add(1)
+            .ok_or(Error::Invalid(Problem::EpochExhausted))?;
+        let length = u32::from_le_bytes(bytes[8..12].try_into().unwrap()) as usize;
+        let suffix = b",\"covered\":true}";
+        if end + suffix.len() != 12 + length
+            || bytes.get(end..end + suffix.len()) != Some(suffix.as_slice())
+            || bytes[12 + length..REFERENCE_EPOCH_SIZE - 32]
+                .iter()
+                .any(|b| *b != 0)
+        {
+            return Err(Error::Invalid(Problem::InvalidRecord));
+        }
+        let mut decimal = [0u8; 20];
+        let mut cursor = decimal.len();
+        let mut number = after;
+        loop {
+            cursor -= 1;
+            decimal[cursor] = b'0' + (number % 10) as u8;
+            number /= 10;
+            if number == 0 {
+                break;
+            }
+        }
+        let digits = &decimal[cursor..];
+        let updated_end = position + digits.len();
+        bytes[position..updated_end].copy_from_slice(digits);
+        bytes[updated_end..updated_end + suffix.len()].copy_from_slice(suffix);
+        bytes[updated_end + suffix.len()..REFERENCE_EPOCH_SIZE - 32].fill(0);
+        bytes[8..12].copy_from_slice(&((updated_end + suffix.len() - 12) as u32).to_le_bytes());
+        let checksum = Sha256::digest(&bytes[..REFERENCE_EPOCH_SIZE - 32]);
+        bytes[REFERENCE_EPOCH_SIZE - 32..].copy_from_slice(&checksum);
+        grant.take_entries(effect_entries.checked_add(2).ok_or(Error::Resource(
+            super::maintenance_budget::ResourceLimit::ArithmeticOverflow,
+        ))?)?;
+        grant.check_time()?;
+        epoch.seek(SeekFrom::Start(0))?;
+        epoch.write_all(bytes)?;
+        grant.check_time()?;
+        epoch.sync_all()?;
+        grant.check_time()?;
+        // Exact fresh-address binding and actual readback; use the already
+        // allocated second image as scratch, never allocate under authority.
+        let current =
+            super::locks::open_fixed_control(frame.paths.epoch, Kind::File, false, scratch)?;
+        if FixedFileStamp::capture(&current, Kind::File)?.identity() != self.expected.file {
+            return Err(Error::Invalid(Problem::Changed));
+        }
+        let mut verify = [0u8; REFERENCE_EPOCH_SIZE];
+        let mut current = current;
+        current.read_exact(&mut verify)?;
+        if verify != bytes {
+            return Err(Error::Invalid(Problem::Changed));
+        }
+        grant.check_time()?;
+        let advance = CanonicalEpochAdvance { before, after };
+        apply(advance, grant)?;
+        drop(serial);
+        drop(activity);
+        drop(root_use);
+        Ok(advance)
     }
 }

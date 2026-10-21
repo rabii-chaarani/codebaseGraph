@@ -297,13 +297,20 @@ fn managed_direct_roles_overlap(
         .any(|path| physically_within(path, storage) || physically_within(storage, path))
 }
 pub(crate) fn bound_roles_overlap(target: &MaintenanceTarget, binding: &ObservedBinding) -> bool {
+    bound_roles_overlap_paths(target, &binding.storage, binding.current_direct.as_ref())
+}
+pub(crate) fn bound_roles_overlap_paths(
+    target: &MaintenanceTarget,
+    storage: &Path,
+    selected: Option<&DirectPair>,
+) -> bool {
     let default = default_direct(target);
-    let direct = binding.current_direct.as_ref().unwrap_or(&default);
+    let direct = selected.unwrap_or(&default);
     let mut paths = direct_bundle_paths(&direct.database);
     paths.push(direct.manifest.clone());
-    real_path(&binding.storage)
+    real_path(storage)
         && managed_direct_roles_overlap(
-            &binding.storage,
+            storage,
             &paths,
             &DirectLayout::new(&direct.database, &direct.manifest).artifact_root_path(),
         )
