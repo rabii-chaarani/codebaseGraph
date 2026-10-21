@@ -5,6 +5,7 @@ use std::{
 };
 
 use k_wiki::{
+    compiler::{compile_projection, CompileRequest, SourceBundle, SourceDocument},
     diagnostic::Diagnostic,
     model::{
         Bundle, Citation, Concept, Directory, Heading, IndexSource, Link, LinkStatus, LogEntry,
@@ -239,6 +240,308 @@ fn representative_html_fixtures_stay_deterministic_for_desktop_and_narrow_layout
     let css = String::from_utf8(stylesheet.bytes.clone()).expect("stylesheet utf-8");
     assert!(css.contains("@media (max-width: 52rem)"));
     assert!(css.contains(".site-layout"));
+}
+
+fn compiled_projection() -> WikiProjection {
+    let repeats = (0..12).map(|_| "## Repeat\n\n").collect::<String>();
+    compile_projection(CompileRequest {
+        generated_at: "2026-10-16T00:00:00Z".into(),
+        bundles: vec![SourceBundle {
+            id: "compiled".into(),
+            title: "Compiled".into(),
+            documents: vec![
+                SourceDocument::index("index.md", "# Bundle Summary\n\n## Directory Body"),
+                SourceDocument::index("guide/index.md", "# Directory Body"),
+                SourceDocument::concept("source.md", "guide", "# Zebra\n\n[concept](target.md) [fragment](target.md#alpha) [self](#zebra) [directory](guide/) [directory fragment](guide/#directory-body) [root](/) [root fragment](/#bundle-summary) [missing](missing.md) [missing fragment](target.md#absent)\n\n<script>alert(1)</script>"),
+                SourceDocument::concept("target.md", "guide", format!("# Zebra\n\n# \n\n## Alpha\n\n## **Inline** `Code`\n\n{repeats}")),
+            ],
+            ..SourceBundle::default()
+        }],
+        ..CompileRequest::default()
+    })
+}
+
+fn compiled_site(projection: &WikiProjection) -> RenderSite {
+    Renderer::new(RenderOptions::default())
+        .unwrap()
+        .render_site(projection, &RenderContext::default())
+        .unwrap()
+}
+
+fn page_html<'a>(site: &'a RenderSite, route: &str) -> &'a str {
+    &site
+        .pages
+        .iter()
+        .find(|page| page.route == route)
+        .expect("page route")
+        .html
+}
+
+fn body_href<'a>(html: &'a str, label: &str) -> &'a str {
+    let prose = html
+        .split("<div class=\"prose\">")
+        .nth(1)
+        .expect("prose")
+        .split("</div>")
+        .next()
+        .unwrap();
+    let prefix = prose.split(&format!(">{label}</a>")).next().unwrap();
+    prefix
+        .rsplit("<a href=\"")
+        .next()
+        .unwrap()
+        .split('"')
+        .next()
+        .unwrap()
+}
+
+#[test]
+fn compiled_projection_body_links_resolve_qualified_concepts_directories_and_root() {
+    let site = compiled_site(&compiled_projection());
+    let html = page_html(&site, "/b/compiled/c/source/");
+    for (label, route) in [
+        ("concept", "/b/compiled/c/target/"),
+        ("fragment", "/b/compiled/c/target/#alpha"),
+        ("self", "/b/compiled/c/source/#zebra"),
+        ("directory", "/b/compiled/d/guide/"),
+        ("directory fragment", "/b/compiled/d/guide/#directory-body"),
+        ("root", "/b/compiled/"),
+        ("root fragment", "/b/compiled/#bundle-summary"),
+    ] {
+        assert_eq!(body_href(html, label), route, "body link {label}");
+    }
+    for label in ["missing", "missing fragment"] {
+        assert!(body_href(html, label).starts_with("/b/compiled/diagnostics/#diag-"));
+    }
+    assert!(!html.contains("<script"));
+}
+
+#[test]
+fn compiled_projection_heading_ids_follow_source_text_and_occurrences() {
+    let site = compiled_site(&compiled_projection());
+    let html = page_html(&site, "/b/compiled/c/target/");
+    assert!(html.contains("<h1 id=\"zebra\">Zebra</h1>"));
+    assert!(html.contains("<h2 id=\"alpha\">Alpha</h2>"));
+    assert!(html.contains("<h2 id=\"inline-code\"><strong>Inline</strong> <code>Code</code></h2>"));
+    let mut previous = 0;
+    for occurrence in 1..=12 {
+        let id = if occurrence == 1 {
+            "repeat".into()
+        } else {
+            format!("repeat-{occurrence}")
+        };
+        let position = html
+            .find(&format!("<h2 id=\"{id}\">Repeat</h2>"))
+            .expect("repeat heading");
+        assert!(position > previous, "source order for {id}");
+        previous = position;
+    }
+}
+
+#[test]
+fn compiled_directory_fragments_are_unique_and_target_source_headings() {
+    let site = compiled_site(&compiled_projection());
+    for (route, id, text) in [
+        ("/b/compiled/d/guide/", "directory-body", "Directory Body"),
+        ("/b/compiled/", "bundle-summary", "Bundle Summary"),
+        ("/b/compiled/", "directory-body", "Directory Body"),
+    ] {
+        let html = page_html(&site, route);
+        assert_eq!(
+            html.matches(&format!("id=\"{id}\"")).count(),
+            1,
+            "unique {id} on {route}"
+        );
+        assert!(
+            html.contains(&format!("id=\"{id}\">{text}</h")),
+            "source heading {id}"
+        );
+    }
+}
+
+#[test]
+fn resolved_inconsistent_targets_fail_closed_and_legacy_self_links_are_validated() {
+    let mut projection = compiled_projection();
+    let source = projection.bundles[0]
+        .concepts
+        .iter_mut()
+        .find(|c| c.id == "source")
+        .unwrap();
+    for (label, target, fragment) in [
+        ("foreign", Some("bundle:foreign:concept:target"), None),
+        ("malformed", Some("bundle:compiled:directory:"), None),
+        ("absent", Some("bundle:compiled:concept:absent"), None),
+        ("none nonself", None, None),
+        ("none bad fragment", None, Some("absent")),
+        ("none self", None, Some("zebra")),
+        ("legacy bare", Some("target"), Some("alpha")),
+    ] {
+        let raw = if label == "none self" {
+            "#zebra".to_string()
+        } else if label == "none bad fragment" {
+            "#absent".into()
+        } else {
+            format!("{}.md", label.replace(' ', "-"))
+        };
+        source
+            .body_markdown
+            .push_str(&format!("\n\n[{label}]({raw})"));
+        source.outbound_links.push(Link {
+            source_id: "source".into(),
+            raw_href: raw,
+            normalized_target_id: target.map(str::to_owned),
+            fragment: fragment.map(str::to_owned),
+            status: LinkStatus::Resolved,
+            context: None,
+        });
+    }
+    let site = compiled_site(&projection);
+    let html = page_html(&site, "/b/compiled/c/source/");
+    for label in [
+        "foreign",
+        "malformed",
+        "absent",
+        "none nonself",
+        "none bad fragment",
+    ] {
+        assert!(
+            body_href(html, label).starts_with("/b/compiled/diagnostics/#diag-"),
+            "{label}"
+        );
+    }
+    assert_eq!(body_href(html, "none self"), "/b/compiled/c/source/#zebra");
+    assert_eq!(
+        body_href(html, "legacy bare"),
+        "/b/compiled/c/target/#alpha"
+    );
+}
+
+#[test]
+fn source_anchors_survive_extended_markdown_without_inventing_metadata_ids() {
+    let mut projection = compiled_projection();
+    let body = "# Main\n\n## ~~Old~~ `Code` [^note]\n\n## Before\n\n[^note]:\n    ## Footnote Heading\n\n## After\n";
+    let compiled = compile_projection(CompileRequest {
+        bundles: vec![SourceBundle {
+            id: "extensions".into(),
+            documents: vec![SourceDocument::concept("page.md", "guide", body)],
+            ..SourceBundle::default()
+        }],
+        ..CompileRequest::default()
+    });
+    let site = compiled_site(&compiled);
+    let html = page_html(&site, "/b/extensions/c/page/");
+    assert!(html.contains("<h2 id=\"old-code-note\"><del>Old</del> <code>Code</code>"));
+    assert!(html.contains("<h2 id=\"before\">Before</h2>"));
+    assert!(html.contains("<h2 id=\"after\">After</h2>"));
+    assert!(!html.contains("id=\"footnote-heading\""));
+
+    let target = projection.bundles[0]
+        .concepts
+        .iter_mut()
+        .find(|c| c.id == "target")
+        .unwrap();
+    target.headings.retain(|heading| heading.id != "alpha");
+    let site = compiled_site(&projection);
+    let html = page_html(&site, "/b/compiled/c/target/");
+    assert!(!html.contains("id=\"alpha\""));
+    assert!(html.contains("<h2>Alpha</h2>"));
+}
+
+#[test]
+fn concept_source_anchors_take_precedence_over_colliding_chrome() {
+    let mut projection = compiled_projection();
+    let target = projection.bundles[0]
+        .concepts
+        .iter_mut()
+        .find(|c| c.id == "target")
+        .unwrap();
+    for (id, text) in [
+        ("concept-body", "Concept Body"),
+        ("source-context", "Source Context"),
+        ("toc-heading", "Toc Heading"),
+        ("main-content", "Main Content"),
+    ] {
+        target.body_markdown.push_str(&format!("\n\n## {text}"));
+        target.headings.push(Heading {
+            level: 2,
+            id: id.into(),
+            text: text.into(),
+        });
+    }
+    target.body_markdown.push_str(
+        "\n\n` id=\"main-content\"`\n\n<h2 id=\"wiki:main-content\">Raw reserved heading</h2>",
+    );
+    let site = compiled_site(&projection);
+    let html = page_html(&site, "/b/compiled/c/target/");
+    assert!(html.contains("<main id=\"wiki:wiki:main-content\""));
+    assert!(html.contains("class=\"skip-link\" href=\"#wiki:wiki:main-content\""));
+    assert!(html.contains("<code> id=\"main-content\"</code>"));
+    assert!(html.contains("<h2 id=\"wiki:main-content\">Raw reserved heading</h2>"));
+    for (id, text) in [
+        ("concept-body", "Concept Body"),
+        ("source-context", "Source Context"),
+        ("toc-heading", "Toc Heading"),
+        ("main-content", "Main Content"),
+    ] {
+        assert_eq!(html.matches(&format!("<h2 id=\"{id}\"")).count(), 1);
+        assert!(html.contains(&format!("<h2 id=\"{id}\">{text}</h2>")));
+        if id != "main-content" {
+            assert!(html.contains(&format!("aria-labelledby=\"wiki:{id}\"")));
+        }
+        assert!(html.contains(&format!("href=\"#{id}\"")));
+    }
+}
+
+#[test]
+fn unicode_body_fragments_decode_to_canonical_source_ids() {
+    let projection = compile_projection(CompileRequest {
+        bundles: vec![SourceBundle {
+            id: "unicode".into(),
+            documents: vec![
+                SourceDocument::index("index.md", "# Über Root"),
+                SourceDocument::index("guide/index.md", "# Café 東京"),
+                SourceDocument::concept("target.md", "guide", "# Café 東京"),
+                SourceDocument::concept("source.md", "guide", "# Café 東京\n\n[concept](target.md#café-東京) [self](#café-東京) [directory](guide/#café-東京) [root](/#über-root)"),
+            ],
+            ..SourceBundle::default()
+        }],
+        ..CompileRequest::default()
+    });
+    for base_path in ["", "/docs/wiki"] {
+        let site = Renderer::new(RenderOptions {
+            base_path: base_path.into(),
+        })
+        .unwrap()
+        .render_site(&projection, &RenderContext::default())
+        .unwrap();
+        let source = page_html(&site, &format!("{base_path}/b/unicode/c/source/"));
+        for (label, route, canonical_id, text) in [
+            ("concept", "/b/unicode/c/target/", "café-東京", "Café 東京"),
+            ("self", "/b/unicode/c/source/", "café-東京", "Café 東京"),
+            ("directory", "/b/unicode/d/guide/", "café-東京", "Café 東京"),
+            ("root", "/b/unicode/", "über-root", "Über Root"),
+        ] {
+            let route = format!("{base_path}{route}");
+            let (path, encoded_fragment) = body_href(source, label)
+                .split_once('#')
+                .expect("body fragment");
+            assert_eq!(path, route, "body link {label}");
+            let fragment =
+                RouteHelper::decode_segment(encoded_fragment).expect("decode UTF-8 URL fragment");
+            assert_eq!(fragment, canonical_id, "body link {label}");
+            let target = page_html(&site, &route);
+            assert!(target.contains(&format!("<h1 id=\"{fragment}\">{text}</h1>")));
+        }
+    }
+    let route = RouteHelper::new("")
+        .unwrap()
+        .concept("unicode", "target", Some("café-東京\"<>&"))
+        .unwrap()
+        .route;
+    assert_eq!(
+        route.split_once('#').unwrap().1,
+        "caf%C3%A9-%E6%9D%B1%E4%BA%AC%22%3C%3E%26"
+    );
 }
 
 fn sample_projection() -> WikiProjection {
