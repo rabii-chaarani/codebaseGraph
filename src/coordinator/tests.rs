@@ -690,3 +690,318 @@ fn maintenance_panic_releases_slot_without_resurrecting_stopped_admission() {
     assert!(!dispatcher.active());
     assert!(dispatcher.try_acquire_maintenance().is_none());
 }
+
+// Uses the actual ExecutionDispatcher, not a parallel scheduler occupancy flag.
+mod joined_maintenance_driver {
+    use super::*;
+    use crate::storage::maintenance_budget::{CleanupMemory, MutationGrant, ReservedBytes};
+    use crate::storage::maintenance_scheduler::{
+        AttemptOutcome, Cancellation, DriverError, DriverLiveness, MaintenanceDriver,
+        MaintenanceRuntime, RequestDisposition, TargetBinding, Trigger,
+    };
+    use std::rc::Rc;
+    use std::sync::mpsc::{self, Receiver, Sender};
+
+    struct Work {
+        dispose_entered: Sender<()>,
+        dispose_release: Receiver<()>,
+        _bytes: ReservedBytes,
+        _not_send: Rc<()>,
+    }
+    impl Drop for Work {
+        fn drop(&mut self) {
+            self.dispose_entered.send(()).unwrap();
+            self.dispose_release.recv().unwrap();
+        }
+    }
+    struct Driver {
+        prepare_entered: Sender<()>,
+        prepare_release: Receiver<()>,
+        disposal: Option<(Sender<()>, Receiver<()>)>,
+        confirmations: Sender<bool>,
+        mode: u8,
+        _not_send: Rc<()>,
+    }
+    impl MaintenanceDriver for Driver {
+        type Work = Work;
+        fn prepare(
+            &mut self,
+            _: TargetBinding,
+            _: &Cancellation<'_>,
+            memory: &CleanupMemory,
+        ) -> Result<Option<Work>, DriverError> {
+            self.prepare_entered.send(()).unwrap();
+            self.prepare_release.recv().unwrap();
+            let (dispose_entered, dispose_release) = self.disposal.take().unwrap();
+            Ok(Some(Work {
+                dispose_entered,
+                dispose_release,
+                _bytes: memory.reserve(32).unwrap().bytes(32).unwrap(),
+                _not_send: Rc::new(()),
+            }))
+        }
+        fn mutate(
+            &mut self,
+            _: &Work,
+            grant: &mut MutationGrant,
+            confirmation: bool,
+        ) -> Result<AttemptOutcome, DriverError> {
+            grant.take_entry().unwrap();
+            self.confirmations.send(confirmation).unwrap();
+            match self.mode {
+                0 => Ok(AttemptOutcome::Complete),
+                1 => Err(DriverError::Mutation),
+                _ => panic!("fixture mutation panic"),
+            }
+        }
+    }
+
+    fn real_request_progresses(dispatcher: &Arc<ExecutionDispatcher>) {
+        dispatcher.try_submit(maintenance_test_job()).unwrap();
+        let job = dispatcher.take().unwrap();
+        assert!(dispatcher.active());
+        drop(job);
+        dispatcher.finish_one();
+    }
+
+    #[test]
+    fn dc_joined_driver_releases_real_permit_before_slow_drop_on_success_error_and_panic() {
+        for mode in 0..3 {
+            let dispatcher = Arc::new(ExecutionDispatcher::default());
+            let (prepare_entered, prepared) = mpsc::channel();
+            let (release_prepare, prepare_release) = mpsc::channel();
+            let (dispose_entered, disposing) = mpsc::channel();
+            let (release_dispose, dispose_release) = mpsc::channel();
+            let (confirmations, confirmation) = mpsc::channel();
+            let mut runtime = MaintenanceRuntime::start(
+                CleanupMemory::new(1024 * 1024).unwrap(),
+                TargetBinding([1; 32]),
+                dispatcher.clone(),
+                move |_| {
+                    Ok(Driver {
+                        prepare_entered,
+                        prepare_release,
+                        disposal: Some((dispose_entered, dispose_release)),
+                        confirmations,
+                        mode,
+                        _not_send: Rc::new(()),
+                    })
+                },
+            )
+            .unwrap();
+            prepared.recv_timeout(Duration::from_secs(5)).unwrap();
+            real_request_progresses(&dispatcher);
+            assert_eq!(
+                runtime
+                    .handle()
+                    .request(Trigger::Health, Some(TargetBinding([1; 32]))),
+                RequestDisposition::Enqueued
+            );
+            // Duplicate true coalesces; a later ordinary request cannot clear it.
+            assert_eq!(
+                runtime
+                    .handle()
+                    .request(Trigger::Health, Some(TargetBinding([1; 32]))),
+                RequestDisposition::Enqueued
+            );
+            assert_eq!(
+                runtime.handle().request(Trigger::Health, None),
+                RequestDisposition::Enqueued
+            );
+            release_prepare.send(()).unwrap();
+            assert!(confirmation.recv_timeout(Duration::from_secs(5)).unwrap());
+            disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(!dispatcher.active());
+            real_request_progresses(&dispatcher);
+            let handle = runtime.handle();
+            // Joining must wait for actual disposal, but cannot hold the mailbox.
+            let (joined_tx, joined) = mpsc::channel();
+            let joiner = thread::spawn(move || {
+                runtime.stop_and_join();
+                joined_tx.send(()).unwrap();
+            });
+            while handle.snapshot().liveness == DriverLiveness::Running {
+                thread::yield_now();
+            }
+            assert_eq!(
+                handle.request(Trigger::Health, None),
+                RequestDisposition::Stopped
+            );
+            assert!(joined.try_recv().is_err());
+            release_dispose.send(()).unwrap();
+            joined.recv_timeout(Duration::from_secs(5)).unwrap();
+            joiner.join().unwrap();
+            assert_eq!(
+                handle.snapshot().liveness,
+                if mode == 2 {
+                    DriverLiveness::Failed
+                } else {
+                    DriverLiveness::Stopped
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn dc_joined_driver_rebind_and_stop_during_preparation_prevent_mutation() {
+        for stop in [false, true] {
+            let dispatcher = Arc::new(ExecutionDispatcher::default());
+            let (prepare_entered, prepared) = mpsc::channel();
+            let (release_prepare, prepare_release) = mpsc::channel();
+            let (dispose_entered, disposing) = mpsc::channel();
+            let (release_dispose, dispose_release) = mpsc::channel();
+            let (confirmations, confirmation) = mpsc::channel();
+            let mut runtime = MaintenanceRuntime::start(
+                CleanupMemory::new(1024 * 1024).unwrap(),
+                TargetBinding([1; 32]),
+                dispatcher.clone(),
+                move |_| {
+                    Ok(Driver {
+                        prepare_entered,
+                        prepare_release,
+                        disposal: Some((dispose_entered, dispose_release)),
+                        confirmations,
+                        mode: 0,
+                        _not_send: Rc::new(()),
+                    })
+                },
+            )
+            .unwrap();
+            prepared.recv_timeout(Duration::from_secs(5)).unwrap();
+            let handle = runtime.handle();
+            assert_eq!(
+                handle.request(Trigger::Health, Some(TargetBinding([9; 32]))),
+                RequestDisposition::UnboundConfirmation
+            );
+            assert_eq!(
+                handle.request(Trigger::Health, Some(TargetBinding([1; 32]))),
+                RequestDisposition::Enqueued
+            );
+            assert_eq!(
+                handle.rebind(TargetBinding([1; 32])),
+                RequestDisposition::Enqueued
+            );
+            assert_eq!(handle.snapshot().generation, 0);
+            if stop {
+                runtime.request_stop();
+            } else {
+                handle.rebind(TargetBinding([2; 32]));
+            }
+            release_prepare.send(()).unwrap();
+            disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(confirmation.try_recv().is_err());
+            if !stop {
+                real_request_progresses(&dispatcher);
+            }
+            release_dispose.send(()).unwrap();
+            runtime.stop_and_join();
+            assert!(!dispatcher.active());
+            assert!(handle
+                .snapshot()
+                .last_attempt
+                .is_none_or(|record| record.generation == handle.snapshot().generation));
+        }
+    }
+
+    #[test]
+    fn dc_joined_driver_start_limit_and_factory_failure_are_truthful() {
+        let dispatcher = Arc::new(ExecutionDispatcher::default());
+        assert!(MaintenanceRuntime::start::<Driver, _>(
+            CleanupMemory::new(128).unwrap(),
+            TargetBinding([1; 32]),
+            dispatcher.clone(),
+            |_| unreachable!()
+        )
+        .is_err());
+        let mut runtime = MaintenanceRuntime::start::<Driver, _>(
+            CleanupMemory::new(1024 * 1024).unwrap(),
+            TargetBinding([1; 32]),
+            dispatcher,
+            |_| Err(DriverError::ResourceLimit),
+        )
+        .unwrap();
+        let handle = runtime.handle();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while handle.snapshot().liveness != DriverLiveness::Failed {
+            assert!(Instant::now() < deadline);
+            thread::yield_now();
+        }
+        assert_eq!(handle.snapshot().failure, Some(DriverError::ResourceLimit));
+        assert_eq!(
+            handle.request(Trigger::Health, None),
+            RequestDisposition::Failed
+        );
+        runtime.stop_and_join();
+    }
+
+    struct GateAdmission {
+        dispatcher: Arc<ExecutionDispatcher>,
+        acquired: Sender<()>,
+        release: Mutex<Receiver<()>>,
+    }
+    impl crate::storage::maintenance_scheduler::MaintenanceAdmission for GateAdmission {
+        type Permit = MaintenanceExecutionPermit;
+        fn try_acquire(&self) -> Option<Self::Permit> {
+            let permit = self.dispatcher.try_acquire_maintenance()?;
+            self.acquired.send(()).unwrap();
+            self.release.lock().unwrap().recv().unwrap();
+            Some(permit)
+        }
+        fn stop_admission(&self) {
+            self.dispatcher.stop_admission();
+        }
+    }
+
+    #[test]
+    fn dc_joined_driver_stop_or_rebind_winning_postpermit_gate_has_no_mutation() {
+        for stop in [false, true] {
+            let dispatcher = Arc::new(ExecutionDispatcher::default());
+            let (prepare_entered, prepared) = mpsc::channel();
+            let (release_prepare, prepare_release) = mpsc::channel();
+            let (dispose_entered, disposing) = mpsc::channel();
+            let (release_dispose, dispose_release) = mpsc::channel();
+            let (confirmations, confirmation) = mpsc::channel();
+            let (acquired, acquired_rx) = mpsc::channel();
+            let (release_gate, release) = mpsc::channel();
+            let mut runtime = MaintenanceRuntime::start(
+                CleanupMemory::new(1024 * 1024).unwrap(),
+                TargetBinding([1; 32]),
+                GateAdmission {
+                    dispatcher: dispatcher.clone(),
+                    acquired,
+                    release: Mutex::new(release),
+                },
+                move |_| {
+                    Ok(Driver {
+                        prepare_entered,
+                        prepare_release,
+                        disposal: Some((dispose_entered, dispose_release)),
+                        confirmations,
+                        mode: 0,
+                        _not_send: Rc::new(()),
+                    })
+                },
+            )
+            .unwrap();
+            prepared.recv_timeout(Duration::from_secs(5)).unwrap();
+            release_prepare.send(()).unwrap();
+            acquired_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(dispatcher.active());
+            assert!(dispatcher.try_submit(maintenance_test_job()).is_err());
+            if stop {
+                runtime.request_stop();
+            } else {
+                runtime.handle().rebind(TargetBinding([2; 32]));
+            }
+            release_gate.send(()).unwrap();
+            disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(!dispatcher.active());
+            assert!(confirmation.try_recv().is_err());
+            if !stop {
+                real_request_progresses(&dispatcher);
+            }
+            release_dispose.send(()).unwrap();
+            runtime.stop_and_join();
+        }
+    }
+}

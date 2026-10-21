@@ -185,6 +185,20 @@ impl Drop for MaintenanceExecutionPermit {
     }
 }
 
+// Driver-only boundary: advisory work never owns this permit. Production
+// collection wiring remains gated on the accepted storage controller contract.
+impl crate::storage::maintenance_scheduler::MaintenanceAdmission for Arc<ExecutionDispatcher> {
+    type Permit = MaintenanceExecutionPermit;
+
+    fn try_acquire(&self) -> Option<Self::Permit> {
+        self.try_acquire_maintenance()
+    }
+
+    fn stop_admission(&self) {
+        ExecutionDispatcher::stop_admission(self);
+    }
+}
+
 impl ExecutionDispatcher {
     fn try_acquire_maintenance(self: &Arc<Self>) -> Option<MaintenanceExecutionPermit> {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
