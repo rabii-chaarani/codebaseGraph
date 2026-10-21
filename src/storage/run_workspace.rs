@@ -208,6 +208,14 @@ impl RunWorkspace {
         self.write_journal(journal)
     }
 
+    /// Retain exact publication evidence after an ambiguous transaction result.
+    /// This changes only destructor state; ordinary guard release still runs.
+    pub(crate) fn retain_for_recovery(mut self) {
+        self.finished = true;
+        drop(self.lease.take());
+        drop(self._reference_mutation.take());
+    }
+
     pub(crate) fn finish(mut self) -> Result<(), NativeError> {
         self.finish_inner(None)
     }
@@ -369,7 +377,7 @@ fn read_reference_scope(root: &Path) -> Result<Option<ReferenceDomain>, NativeEr
     Ok(Some(scope.domain))
 }
 
-fn ensure_persisted_cleanup_allowed(root: &Path) -> Result<(), NativeError> {
+pub(super) fn ensure_persisted_cleanup_allowed(root: &Path) -> Result<(), NativeError> {
     let bytes = match fs::read(root.join("cleanup-barrier.json")) {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
@@ -590,6 +598,45 @@ mod tests {
         fs::remove_dir_all(&raced_run_root).unwrap();
         remove_validated_path(&raced_run_root).unwrap();
 
+        fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod retain_recovery_tests {
+    use super::*;
+    #[test]
+    fn retain_for_recovery_preserves_journal_and_payload_but_releases_actual_lease() {
+        let root = std::env::temp_dir().join(format!(
+            "run-retain-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let workspace = RunWorkspace::create(&root, None).unwrap();
+        workspace
+            .mark_phase(RunPhase::Publishing, Some("published-test".into()), None)
+            .unwrap();
+        fs::write(
+            workspace.staging_root().join("evidence"),
+            b"owned recovery evidence",
+        )
+        .unwrap();
+        let path = workspace.root().to_path_buf();
+        let before = fs::read(workspace.journal_path()).unwrap();
+        workspace.retain_for_recovery();
+        assert_eq!(fs::read(path.join("journal.json")).unwrap(), before);
+        assert_eq!(
+            fs::read(path.join("staging/evidence")).unwrap(),
+            b"owned recovery evidence"
+        );
+        assert!(
+            try_open_locked_in_existing_parent(path.join("lease.lock"), LockMode::Exclusive)
+                .unwrap()
+                .is_some()
+        );
         fs::remove_dir_all(root).unwrap();
     }
 }

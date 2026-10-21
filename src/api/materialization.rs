@@ -12,7 +12,9 @@ use crate::protocol::{
 };
 use crate::storage::direct::{DirectStore, DirectWriteSession};
 use crate::storage::layout::{DirectLayout, RepositoryLayout, DIRECT_DB_SIDECAR_SUFFIXES};
-use crate::storage::managed::{GraphStorage, ManagedStore, ManagedWriteSession, StorageMode};
+use crate::storage::managed::{
+    GraphStorage, ManagedJanitorReport, ManagedStore, ManagedWriteSession, StorageMode,
+};
 use crate::storage::run_workspace::{RunPhase, RunWorkspace};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -1065,36 +1067,93 @@ fn finalize_materialization(
             store,
             ..
         } => {
-            let published_generation = session
-                .publish_with_stats(&response.graph_summary)
+            let publication = session
+                .publish_with_stats_typed(&response.graph_summary)
                 .map_err(|error| format!("failed to publish managed graph generation: {error}"))?;
-            let read = store
-                .open_read()
-                .map_err(|error| format!("failed to reopen managed graph generation: {error}"))?;
+            let published_generation = publication.generation_id;
+            let mut janitor = publication.janitor;
+            let read = match store.open_read() {
+                Ok(read) => read,
+                Err(error) => {
+                    return Err(append_managed_janitor_secondary(
+                        format!("failed to reopen managed graph generation: {error}"),
+                        &mut janitor,
+                    ))
+                }
+            };
             if read.generation_id != published_generation {
-                return Err(format!(
+                let error = format!(
                     "managed publish activated {}, but reopened generation was {}",
                     published_generation, read.generation_id
-                ));
+                );
+                drop(read);
+                return Err(append_managed_janitor_secondary(error, &mut janitor));
             }
-            let published_manifest = read_manifest(&read.manifest_path)?;
-            validate_candidate_bundle(
+            let published_manifest = match read_manifest(&read.manifest_path) {
+                Ok(manifest) => manifest,
+                Err(error) => {
+                    drop(read);
+                    return Err(append_managed_janitor_secondary(error, &mut janitor));
+                }
+            };
+            if let Err(error) = validate_candidate_bundle(
                 &read.db_path,
                 &read.manifest_path,
                 &artifact_root,
                 &published_manifest,
                 response,
-            )?;
-            let cleanup = session
-                .recover_and_gc()
-                .map_err(|error| format!("failed to reconcile managed storage cleanup: {error}"))?;
+            ) {
+                drop(read);
+                return Err(append_managed_janitor_secondary(error, &mut janitor));
+            }
+            #[cfg(test)]
+            POST_MANAGED_VERIFICATION_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(&session, &store);
+                }
+            });
+            let reconciliation = match session.reconcile_typed() {
+                Ok(report) => report,
+                Err(error) => {
+                    drop(read);
+                    return Err(append_managed_janitor_secondary(
+                        format!("failed to reconcile managed storage cleanup: {error}"),
+                        &mut janitor,
+                    ));
+                }
+            };
+            #[cfg(test)]
+            POST_MANAGED_RECONCILE_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(&session, &store);
+                }
+            });
+            let recovery_complete = reconciliation.recovery.observation_complete;
+            janitor.merge_latest(reconciliation.janitor);
+            if let Err(error) = session.check_active_generation(&published_generation) {
+                drop(read);
+                return Err(append_managed_janitor_secondary(
+                    error.to_string(),
+                    &mut janitor,
+                ));
+            }
+            if !recovery_complete {
+                janitor.deferred_reason = Some("managed_recovery_deferred");
+                janitor.pending = true;
+                janitor.observation_complete = false;
+            }
+            // GenerationLease::drop must see this writer still held, otherwise
+            // it could start an unreported best-effort cleanup opportunity.
+            drop(read);
             defer_artifact_maintenance(response);
             response.storage_format = "managed_v2".to_string();
             response.active_generation = Some(published_generation);
-            response.cleanup_pending =
-                cleanup.retired_generations_pending > 0 || cleanup.run_recovery.skipped_locked > 0;
-            response.pending_runs = cleanup.run_recovery.skipped_locked;
-            session.finish();
+            response.cleanup_pending = janitor.pending
+                || janitor.legacy.retired_generations_pending > 0
+                || janitor.legacy.run_recovery.skipped_locked > 0;
+            response.pending_runs = janitor.legacy.run_recovery.skipped_locked;
+            record_managed_janitor_report(response, janitor);
+            session.finish_without_cleanup();
         }
     }
     Ok(())
@@ -1225,10 +1284,60 @@ fn record_postpublication_cleanup_error(
         .push(format!("cleanup pending: {error}"));
 }
 
+fn record_managed_janitor_report(
+    response: &mut NativeSyntaxMaterializationResponse,
+    mut report: ManagedJanitorReport,
+) {
+    let summary = response
+        .maintenance
+        .get_or_insert_with(MaintenanceSummary::default);
+    if !report.observation_complete {
+        summary.observation_complete = false;
+        summary
+            .reasons
+            .push("managed_janitor_observation_incomplete".into());
+    }
+    if let Some(reason) = report.deferred_reason {
+        if !report.observation_complete {
+            summary.reasons.push(reason.into());
+        }
+    }
+    summary.pending |= report.pending;
+    if let Some(issue) = report.first_issue.take() {
+        let reason = if report.pending {
+            issue.stage.reason()
+        } else {
+            "managed_janitor_issue_resolved"
+        };
+        summary.reasons.push(reason.into());
+        let error = issue.source.to_string();
+        summary.errors.push(error.clone());
+        response.diagnostics.push(format!(
+            "{}: {error}",
+            if report.pending {
+                "cleanup pending"
+            } else {
+                "cleanup diagnostic"
+            }
+        ));
+    }
+    if report.issue_count > 1 {
+        summary
+            .reasons
+            .push("additional_managed_janitor_errors_omitted".into());
+        response.diagnostics.push(format!(
+            "{} additional managed cleanup errors",
+            report.issue_count - 1
+        ));
+    }
+}
+
 #[cfg(test)]
 thread_local! {
     // Inject a real workspace cleanup failure only after commit/readback.
     static POST_DIRECT_CLEANUP_HOOK: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
+    static POST_MANAGED_VERIFICATION_HOOK: std::cell::Cell<Option<fn(&ManagedWriteSession, &ManagedStore)>> = const { std::cell::Cell::new(None) };
+    static POST_MANAGED_RECONCILE_HOOK: std::cell::Cell<Option<fn(&ManagedWriteSession, &ManagedStore)>> = const { std::cell::Cell::new(None) };
 }
 
 fn cleanup_direct_candidate(session: &DirectWriteSession) -> Result<(), String> {
@@ -1280,6 +1389,19 @@ fn remove_path_if_exists(path: &Path) -> Result<(), String> {
         fs::remove_file(path)
             .map_err(|error| format!("failed to remove file {}: {error}", path.display()))
     }
+}
+
+fn append_managed_janitor_secondary(
+    primary_error: String,
+    report: &mut ManagedJanitorReport,
+) -> String {
+    append_cleanup_error(
+        primary_error,
+        report
+            .first_issue
+            .take()
+            .map(|issue| issue.source.to_string()),
+    )
 }
 
 fn append_cleanup_error(primary_error: String, cleanup_error: Option<String>) -> String {
@@ -1957,5 +2079,153 @@ mod tests {
             )
         );
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn managed_committed_native_result_survives_real_run_disposal_failure() {
+        let (root, options, _) = committed_artifact_fixture(true);
+        crate::storage::managed::set_managed_cleanup_hook(|run| {
+            fs::write(run.join("cleanup-barrier.json"), b"invalid cleanup barrier").unwrap();
+        });
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn managed_cleanup_pending_symbol() {}\n",
+        )
+        .unwrap();
+        let (_, response) = execute_materialization(&options)
+            .expect("verified committed graph must survive optional run disposal failure");
+        assert!(response.database_written);
+        assert!(response.cleanup_pending);
+        assert_eq!(
+            response.pending_runs, 1,
+            "same run counted more than once across publication/reconcile"
+        );
+        let summary = response.maintenance.as_ref().unwrap();
+        assert!(summary.pending);
+        assert!(!summary.requested);
+        assert!(!summary.observation_complete);
+        assert!(
+            summary
+                .errors
+                .iter()
+                .any(|e| e.contains("invalid run cleanup barrier")),
+            "{summary:?}"
+        );
+        assert!(response
+            .diagnostics
+            .iter()
+            .any(|d| d.starts_with("cleanup pending:")));
+        assert_published_graph_readable(&options, &response);
+        let store = GraphStorage::managed(options.storage_root.as_ref().unwrap());
+        for entry in fs::read_dir(store.layout().runs_root()).unwrap() {
+            let entry = entry.unwrap();
+            if entry.path().join("cleanup-barrier.json").exists() {
+                fs::remove_file(entry.path().join("cleanup-barrier.json")).unwrap();
+            }
+        }
+        store.cleanup().unwrap();
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn managed_native_pointer_error_is_primary_and_retains_publishing_evidence() {
+        use crate::storage::managed::{inject_managed_fault, ManagedFault};
+        let (root, options, _) = committed_artifact_fixture(true);
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn uncertain_managed_publication() {}\n",
+        )
+        .unwrap();
+        let fault = inject_managed_fault(ManagedFault::PointerAfterRename);
+        let error = execute_materialization(&options).unwrap_err();
+        assert!(
+            error.starts_with("failed to publish managed graph generation:"),
+            "{error}"
+        );
+        assert!(error.contains("after rename"));
+        drop(fault);
+        let store = GraphStorage::managed(options.storage_root.as_ref().unwrap());
+        let active = store.read_active_generation().unwrap().unwrap();
+        let generation = store.layout().generation(&active.generation_id).unwrap();
+        assert!(!generation.retired_path().exists());
+        let runs = fs::read_dir(store.layout().runs_root())
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .collect::<Vec<_>>();
+        assert_eq!(runs.len(), 1);
+        let journal = fs::read(runs[0].join("journal.json")).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<crate::storage::run_workspace::RunJournal>(&journal)
+                .unwrap()
+                .phase,
+            RunPhase::Publishing
+        );
+        assert!(crate::api::graph_read::count_graph_nodes(&generation.db_path()).unwrap() > 0);
+        assert_eq!(fs::read(runs[0].join("journal.json")).unwrap(), journal);
+        store.cleanup().unwrap();
+        assert!(!runs[0].exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn managed_native_postreconcile_active_change_remains_primary() {
+        let (root, options, _) = committed_artifact_fixture(true);
+        POST_MANAGED_VERIFICATION_HOOK.with(|hook| {
+            hook.set(Some(|_, _| {
+                crate::storage::managed::reset_best_effort_entries()
+            }))
+        });
+        POST_MANAGED_RECONCILE_HOOK.with(|hook| {
+            hook.set(Some(|_, store| {
+                let _state = crate::storage::locks::open_locked(
+                    store.layout().state_lock_path(),
+                    crate::storage::locks::LockMode::Exclusive,
+                )
+                .unwrap();
+                crate::storage::atomic::write_json_atomically(
+                    &store.layout().active_pointer_path(),
+                    &crate::storage::managed::ActiveGeneration {
+                        schema_version: 2,
+                        generation_id: "unexpected-active".into(),
+                        published_at: "fixture".into(),
+                        activated_at_ms: 0,
+                    },
+                )
+                .unwrap();
+            }))
+        });
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn changed_before_report() {}\n",
+        )
+        .unwrap();
+        let error = execute_materialization(&options).unwrap_err();
+        assert!(error.starts_with("managed publish activated"), "{error}");
+        assert!(error.contains("unexpected-active"), "{error}");
+        assert_eq!(
+            crate::storage::managed::best_effort_entries(),
+            0,
+            "error-path snapshot outlived writer ownership"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn managed_native_verification_snapshot_drops_before_writer_release() {
+        let (root, options, _) = committed_artifact_fixture(true);
+        POST_MANAGED_VERIFICATION_HOOK.with(|hook| {
+            hook.set(Some(|_, _| {
+                crate::storage::managed::reset_best_effort_entries()
+            }))
+        });
+        fs::write(root.join("src/lib.rs"), "pub fn no_hidden_janitor() {}\n").unwrap();
+        let (_, response) = execute_materialization(&options).unwrap();
+        assert_eq!(
+            crate::storage::managed::best_effort_entries(),
+            0,
+            "last-reader Drop started a hidden post-release cleanup"
+        );
+        assert_published_graph_readable(&options, &response);
+        fs::remove_dir_all(root).unwrap();
     }
 }

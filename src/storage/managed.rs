@@ -117,6 +117,142 @@ pub(crate) struct ManagedCleanupReport {
     pub retired_generations_pending: usize,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ManagedJanitorStage {
+    PreviousRetirementMarker,
+    PublishedRunJournal,
+    TerminalRunRemoval,
+    GenerationEnumeration,
+    RetiredGenerationRemoval,
+}
+impl ManagedJanitorStage {
+    pub(crate) fn reason(self) -> &'static str {
+        match self {
+            Self::PreviousRetirementMarker => "managed_previous_retirement_pending",
+            Self::PublishedRunJournal => "managed_run_journal_pending",
+            Self::TerminalRunRemoval => "managed_run_cleanup_pending",
+            Self::GenerationEnumeration => "managed_generation_observation_pending",
+            Self::RetiredGenerationRemoval => "managed_generation_cleanup_pending",
+        }
+    }
+}
+#[derive(Debug)]
+pub(crate) struct ManagedJanitorIssue {
+    pub stage: ManagedJanitorStage,
+    pub source: NativeError,
+}
+#[derive(Debug, Default)]
+pub(crate) struct ManagedJanitorReport {
+    pub legacy: ManagedCleanupReport,
+    pub pending: bool,
+    pub observation_complete: bool,
+    pub issue_count: usize,
+    pub first_issue: Option<ManagedJanitorIssue>,
+    pub deferred_reason: Option<&'static str>,
+}
+impl ManagedJanitorReport {
+    fn complete() -> Self {
+        Self {
+            observation_complete: true,
+            ..Self::default()
+        }
+    }
+    fn issue(&mut self, stage: ManagedJanitorStage, source: NativeError, pending: bool) {
+        self.issue_count = self.issue_count.saturating_add(1);
+        if self.first_issue.is_none() {
+            self.first_issue = Some(ManagedJanitorIssue { stage, source });
+        }
+        self.pending |= pending;
+    }
+    pub(crate) fn merge_latest(&mut self, mut latest: Self) {
+        self.issue_count = self.issue_count.saturating_add(latest.issue_count);
+        if self.first_issue.is_none() {
+            self.first_issue = latest.first_issue.take();
+        }
+        if latest.observation_complete {
+            self.pending = latest.pending;
+            self.legacy = latest.legacy;
+        } else {
+            self.pending |= latest.pending;
+            self.legacy.run_recovery.skipped_locked = self
+                .legacy
+                .run_recovery
+                .skipped_locked
+                .max(latest.legacy.run_recovery.skipped_locked);
+            self.legacy.retired_pending = self
+                .legacy
+                .retired_pending
+                .max(latest.legacy.retired_pending);
+            self.legacy.retired_generations_pending = self.legacy.retired_pending;
+        }
+        self.observation_complete &= latest.observation_complete;
+        self.deferred_reason = latest.deferred_reason.or(self.deferred_reason);
+    }
+    fn into_legacy(mut self) -> Result<ManagedCleanupReport, NativeError> {
+        match self.first_issue.take() {
+            Some(issue) => Err(issue.source),
+            None => Ok(self.legacy),
+        }
+    }
+}
+#[derive(Debug)]
+pub(crate) struct ManagedPublication {
+    pub generation_id: String,
+    pub janitor: ManagedJanitorReport,
+}
+#[derive(Debug)]
+pub(crate) struct ManagedReconciliation {
+    pub recovery: ManagedRecoveryReport,
+    pub janitor: ManagedJanitorReport,
+}
+#[derive(Debug, Default)]
+pub(crate) struct ManagedRecoveryReport {
+    pub publishing_recovered: usize,
+    pub skipped_locked: usize,
+    pub observation_complete: bool,
+}
+impl ManagedReconciliation {
+    fn new(recovery: ManagedRecoveryReport, mut janitor: ManagedJanitorReport) -> Self {
+        janitor.legacy.run_recovery.publishing_recovered = recovery.publishing_recovered;
+        janitor.legacy.run_recovery.skipped_locked = janitor
+            .legacy
+            .run_recovery
+            .skipped_locked
+            .max(recovery.skipped_locked);
+        Self { recovery, janitor }
+    }
+}
+#[derive(Debug)]
+struct PublicationFailure {
+    source: NativeError,
+    may_have_effects: bool,
+}
+impl PublicationFailure {
+    fn before(source: NativeError) -> Self {
+        Self {
+            source,
+            may_have_effects: false,
+        }
+    }
+    fn ambiguous(source: NativeError) -> Self {
+        Self {
+            source,
+            may_have_effects: true,
+        }
+    }
+}
+#[derive(Debug)]
+enum ReadyProbe {
+    Absent,
+    Valid,
+    Invalid(NativeError),
+}
+#[derive(Debug)]
+enum RunResolution {
+    Committed { previous: Option<String> },
+    Obsolete { published: GenerationPaths },
+}
+
 #[derive(Debug)]
 pub(crate) struct ManagedReadSnapshot {
     pub generation_id: String,
@@ -149,6 +285,7 @@ pub(crate) struct ManagedWriteSession {
     pub base_generation: Option<ActiveGeneration>,
     ready: bool,
     finished: bool,
+    publication_report: Option<ManagedJanitorReport>,
 }
 
 impl ManagedWriteSession {
@@ -214,6 +351,15 @@ impl ManagedWriteSession {
         &mut self,
         graph_summary: &S,
     ) -> Result<String, NativeError> {
+        let publication = self.publish_with_stats_typed(graph_summary)?;
+        self.publication_report = Some(publication.janitor);
+        Ok(publication.generation_id)
+    }
+
+    pub(crate) fn publish_with_stats_typed<S: GenerationStats>(
+        &mut self,
+        graph_summary: &S,
+    ) -> Result<ManagedPublication, NativeError> {
         if !self.ready {
             if let Err(error) = self.mark_ready_with_stats(graph_summary) {
                 return Err(self.abort_after_error(error));
@@ -226,42 +372,73 @@ impl ManagedWriteSession {
             drop(self.writer_lease.take());
             return Err(error);
         }
-        match self
+        let mut janitor = match self
             .store
-            .publish_candidate_inner(&workspace, &self.candidate)
+            .publish_candidate_inner_typed(&workspace, &self.candidate)
         {
-            Ok(generation_id) => {
-                finish_committed_workspace(workspace, &generation_id);
-                Ok(generation_id)
-            }
-            Err(error) => {
-                let generation_id = self.candidate.generation_id.clone();
-                if self
-                    .store
-                    .publication_is_committed(&generation_id)
-                    .unwrap_or(false)
-                {
-                    finish_committed_workspace(workspace, &generation_id);
-                    return Ok(generation_id);
-                }
+            Ok(report) => report,
+            Err(failure) => {
                 self.finished = true;
-                let error = abort_workspace_after_error(workspace, error);
+                let error = if failure.may_have_effects {
+                    workspace.retain_for_recovery();
+                    failure.source
+                } else {
+                    abort_workspace_after_error(workspace, failure.source)
+                };
                 drop(self.writer_lease.take());
-                Err(error)
+                return Err(error);
             }
+        };
+        let generation_id = self.candidate.generation_id.clone();
+        #[cfg(test)]
+        MANAGED_POST_PUBLICATION.with(|hook| {
+            if let Some(hook) = hook.take() {
+                hook(workspace.root());
+            }
+        });
+        // These are the same resolved publication's independent optional
+        // finalization steps. A failed journal update does not invent an extant
+        // run if actual disposal subsequently succeeds.
+        if let Err(error) =
+            workspace.mark_phase(RunPhase::Published, Some(generation_id.clone()), None)
+        {
+            janitor.issue(ManagedJanitorStage::PublishedRunJournal, error, false);
         }
+        if let Err(error) = workspace.finish() {
+            janitor.issue(ManagedJanitorStage::TerminalRunRemoval, error, true);
+            janitor.legacy.run_recovery.skipped_locked = 1;
+        }
+        Ok(ManagedPublication {
+            generation_id,
+            janitor,
+        })
     }
 
+    pub(crate) fn reconcile_typed(&self) -> Result<ManagedReconciliation, NativeError> {
+        let writer = self.writer_lease()?;
+        self.store.cleanup_with_owned_writer_typed(writer)
+    }
     pub(crate) fn recover_and_gc(&self) -> Result<ManagedCleanupReport, NativeError> {
-        if self.writer_lease.is_none() {
-            return Err(NativeError::InvalidInput(
-                "managed cleanup requires this session's writer lease".into(),
-            ));
+        self.reconcile_typed()?.janitor.into_legacy()
+    }
+    pub(crate) fn check_active_generation(&self, expected: &str) -> Result<(), NativeError> {
+        let active = self.store.read_active_with_shared_lock()?;
+        if active.as_ref().map(|a| a.generation_id.as_str()) != Some(expected) {
+            return Err(NativeError::InvalidInput(format!(
+                "managed publish activated {}, but reopened generation was {:?}",
+                expected,
+                active.map(|a| a.generation_id)
+            )));
         }
-        self.store.cleanup_with_owned_writer()
+        validate_ready_generation(&self.store.layout.generation(expected)?)
+    }
+    pub(crate) fn finish_without_cleanup(mut self) {
+        self.finished = true;
+        drop(self.writer_lease.take());
     }
 
     pub(crate) fn finish(mut self) {
+        let _legacy_report = self.publication_report.take();
         self.finished = true;
         drop(self.writer_lease.take());
         // A final old-generation reader may have released its lease while this
@@ -296,6 +473,58 @@ impl Drop for ManagedWriteSession {
                 "managed write session dropped without publish".to_string(),
             ));
         }
+    }
+}
+
+#[cfg(test)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ManagedFault {
+    None,
+    PointerAfterRename,
+    MandatorySync,
+    GenerationScan,
+}
+#[cfg(test)]
+thread_local! { static MANAGED_FAULT: std::cell::Cell<ManagedFault> = const { std::cell::Cell::new(ManagedFault::None) }; }
+#[cfg(test)]
+thread_local! {
+    static MANAGED_POST_PUBLICATION: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
+    static MANAGED_BEST_EFFORT_ENTRIES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+#[cfg(test)]
+pub(crate) fn set_managed_cleanup_hook(hook: fn(&Path)) {
+    MANAGED_POST_PUBLICATION.with(|value| value.set(Some(hook)));
+}
+#[cfg(test)]
+pub(crate) fn reset_best_effort_entries() {
+    MANAGED_BEST_EFFORT_ENTRIES.with(|value| value.set(0));
+}
+#[cfg(test)]
+pub(crate) fn best_effort_entries() -> usize {
+    MANAGED_BEST_EFFORT_ENTRIES.with(|value| value.get())
+}
+#[cfg(test)]
+pub(crate) struct ManagedFaultReset(ManagedFault);
+#[cfg(test)]
+impl Drop for ManagedFaultReset {
+    fn drop(&mut self) {
+        MANAGED_FAULT.with(|f| f.set(self.0));
+    }
+}
+#[cfg(test)]
+pub(crate) fn inject_managed_fault(fault: ManagedFault) -> ManagedFaultReset {
+    ManagedFaultReset(MANAGED_FAULT.with(|f| f.replace(fault)))
+}
+#[cfg(test)]
+fn managed_fault(fault: ManagedFault) -> Result<(), NativeError> {
+    if MANAGED_FAULT.with(|f| f.get()) == fault {
+        Err(std::io::Error::other(match fault {
+            ManagedFault::MandatorySync => "injected mandatory managed sync failure",
+            _ => "injected generation-only scan failure",
+        })
+        .into())
+    } else {
+        Ok(())
     }
 }
 
@@ -414,6 +643,7 @@ impl ManagedStore {
             base_generation,
             ready: false,
             finished: false,
+            publication_report: None,
         })
     }
 
@@ -451,111 +681,218 @@ impl ManagedStore {
     }
 
     pub(crate) fn cleanup(&self) -> Result<ManagedCleanupReport, NativeError> {
-        self.ensure_layout()?;
-        // Cleanup is opportunistic for readers. Never replay or collect while
-        // a writer or an unproven native phase still owns candidate files.
-        let Some(_writer_lease) =
-            try_open_locked(self.layout.writer_lock_path(), LockMode::Exclusive)?
-        else {
-            return self.pending_cleanup_report();
-        };
-        self.cleanup_with_owned_writer()
+        self.cleanup_typed()?.janitor.into_legacy()
     }
-
-    fn cleanup_with_owned_writer(&self) -> Result<ManagedCleanupReport, NativeError> {
+    pub(crate) fn cleanup_typed(&self) -> Result<ManagedReconciliation, NativeError> {
+        self.ensure_layout()?;
+        let Some(writer) = try_open_locked(self.layout.writer_lock_path(), LockMode::Exclusive)?
+        else {
+            return self.pending_reconciliation("managed_writer_busy");
+        };
+        self.cleanup_with_owned_writer_typed(&writer)
+    }
+    fn cleanup_with_owned_writer_typed(
+        &self,
+        _writer: &WriterLease,
+    ) -> Result<ManagedReconciliation, NativeError> {
+        let run_work = self.has_reference_run_work()?;
+        let active_before = self.read_active_with_shared_lock()?;
+        let mut report = ManagedJanitorReport::complete();
+        let generation_work = match self
+            .has_generation_cleanup_work(active_before.as_ref().map(|a| a.generation_id.as_str()))
+        {
+            Ok(work) => work,
+            Err(error) => {
+                report.issue(ManagedJanitorStage::GenerationEnumeration, error, true);
+                report.observation_complete = false;
+                false
+            }
+        };
+        if !run_work && !generation_work {
+            let observed = self.pending_reconciliation("managed_cleanup_observation")?;
+            report.merge_latest(observed.janitor);
+            return Ok(ManagedReconciliation::new(observed.recovery, report));
+        }
         if !matches!(
             probe_registry(&self.layout.phase_workspace_root()),
             Ok(true)
         ) {
-            return self.pending_cleanup_report();
+            let mut deferred = self.pending_reconciliation("managed_containment_unresolved")?;
+            report.merge_latest(deferred.janitor);
+            report.observation_complete = false;
+            deferred = ManagedReconciliation::new(deferred.recovery, report);
+            return Ok(deferred);
         }
-        if !self.has_reference_cleanup_work()? {
-            return self.pending_cleanup_report();
-        }
-        // This maintenance is optional for an already committed reader. An
-        // unverifiable invalidation control preserves residue, not an outage.
         let domain = match super::maintenance_ownership::ReferenceDomain::managed(&self.layout) {
             Ok(domain) => domain,
-            Err(_) => return self.pending_cleanup_report(),
+            Err(_) => {
+                return self.pending_reconciliation_with_issue(
+                    "managed_reference_control_unavailable",
+                    report,
+                )
+            }
         };
         let _mutation =
             match super::maintenance_ownership::ReferenceMutation::try_begin_in_domain(&domain) {
                 Ok(Some(mutation)) => mutation,
-                Ok(None) | Err(_) => return self.pending_cleanup_report(),
+                Ok(None) | Err(_) => {
+                    return self.pending_reconciliation_with_issue(
+                        "managed_reference_control_unavailable",
+                        report,
+                    )
+                }
             };
-        let _state_lease = self.open_state_lock(LockMode::Exclusive)?;
-        let mut report = ManagedCleanupReport::default();
+        let _state = self.open_state_lock(LockMode::Exclusive)?;
         let mut active = self.read_active_generation()?;
-        report.run_recovery = self.recover_runs_locked(&mut active)?;
-        self.collect_retired_generations_locked(
-            active.as_ref().map(|value| value.generation_id.as_str()),
-            &mut report,
-        )?;
-        report.retired_generations_deleted = report.retired_deleted;
-        report.retired_generations_pending = report.retired_pending;
-        Ok(report)
+        let mut recovery = ManagedRecoveryReport {
+            observation_complete: true,
+            ..ManagedRecoveryReport::default()
+        };
+        self.recover_runs_locked_typed(&mut active, &mut report, &mut recovery)
+            .map_err(|primary| append_janitor_secondary(primary, &mut report))?;
+        if report.first_issue.is_none() {
+            if let Err(error) = self.collect_retired_generations_locked(
+                active.as_ref().map(|a| a.generation_id.as_str()),
+                &mut report.legacy,
+            ) {
+                report.issue(ManagedJanitorStage::RetiredGenerationRemoval, error, true);
+                report.observation_complete = false;
+            }
+        } else {
+            report.pending = true;
+            report.observation_complete = false;
+        }
+        report.legacy.retired_generations_deleted = report.legacy.retired_deleted;
+        report.legacy.retired_generations_pending = report.legacy.retired_pending;
+        report.pending |=
+            report.legacy.retired_pending > 0 || report.legacy.run_recovery.skipped_locked > 0;
+        Ok(ManagedReconciliation::new(recovery, report))
     }
-
-    fn has_reference_cleanup_work(&self) -> Result<bool, NativeError> {
+    fn pending_reconciliation_with_issue(
+        &self,
+        reason: &'static str,
+        mut issue: ManagedJanitorReport,
+    ) -> Result<ManagedReconciliation, NativeError> {
+        let observed = self.pending_reconciliation(reason)?;
+        issue.merge_latest(observed.janitor);
+        issue.observation_complete = false;
+        Ok(ManagedReconciliation::new(observed.recovery, issue))
+    }
+    fn has_reference_run_work(&self) -> Result<bool, NativeError> {
         for entry in fs::read_dir(self.layout.runs_root())? {
             let entry = entry?;
             if entry.file_type()?.is_dir()
                 && entry.file_name().to_string_lossy().starts_with("run-")
-                && matches!(RunWorkspace::reference_domain(&entry.path()), Ok(Some(_)))
+                && RunWorkspace::reference_domain(&entry.path())?.is_some()
             {
-                return Ok(true);
-            }
-        }
-        let active = self
-            .read_active_generation()?
-            .map(|active| format!("gen-{}", active.generation_id));
-        for entry in fs::read_dir(self.layout.generations_root())? {
-            let entry = entry?;
-            if !entry.file_type()?.is_dir() || active.as_deref() == entry.file_name().to_str() {
-                continue;
-            }
-            if entry.path().join("retired.json").exists() || !entry.path().join("READY").exists() {
                 return Ok(true);
             }
         }
         Ok(false)
     }
-
-    fn pending_cleanup_report(&self) -> Result<ManagedCleanupReport, NativeError> {
-        // This report is observational: never acquire another writer's locks,
-        // replay journals, or remove retained work merely to report pending GC.
-        let mut report = ManagedCleanupReport::default();
-        report.run_recovery.skipped_locked =
-            existing_directories_with_prefix(&self.layout.runs_root(), "run-")?.len();
-        let active = match self.read_active_generation() {
-            Ok(active) => active,
-            Err(e) if is_not_found_error(&e) => None,
-            Err(e) => return Err(e),
-        };
-        for generation in existing_directories_with_prefix(&self.layout.generations_root(), "gen-")?
-        {
-            if active.as_ref().is_some_and(|a| {
-                generation
-                    .file_name()
-                    .is_some_and(|n| n == format!("gen-{}", a.generation_id).as_str())
-            }) {
+    fn has_generation_cleanup_work(&self, active: Option<&str>) -> Result<bool, NativeError> {
+        #[cfg(test)]
+        managed_fault(ManagedFault::GenerationScan)?;
+        for entry in fs::read_dir(self.layout.generations_root())? {
+            let entry = entry?;
+            if !entry.file_type()?.is_dir()
+                || active.is_some_and(|id| entry.file_name() == format!("gen-{id}").as_str())
+            {
                 continue;
             }
-            match fs::symlink_metadata(generation.join("retired.json")) {
-                Ok(metadata) if metadata.is_file() => report.retired_pending += 1,
+            let retired = match fs::symlink_metadata(entry.path().join("retired.json")) {
+                Ok(_) => true,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+                Err(e) => return Err(e.into()),
+            };
+            let ready = match fs::symlink_metadata(entry.path().join("READY")) {
+                Ok(_) => true,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+                Err(e) => return Err(e.into()),
+            };
+            if retired || !ready {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+    fn pending_reconciliation(
+        &self,
+        reason: &'static str,
+    ) -> Result<ManagedReconciliation, NativeError> {
+        let mut report = ManagedJanitorReport::complete();
+        report.deferred_reason = Some(reason);
+        for entry in fs::read_dir(self.layout.runs_root())? {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => return Err(e.into()),
+            };
+            match entry.file_type() {
+                Ok(kind)
+                    if kind.is_dir() && entry.file_name().to_string_lossy().starts_with("run-") =>
+                {
+                    report.legacy.run_recovery.skipped_locked += 1
+                }
                 Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
                 Err(e) => return Err(e.into()),
             }
         }
-        report.retired_generations_pending = report.retired_pending;
-        Ok(report)
+        let active = self.read_active_generation()?;
+        let generation_observation = (|| -> Result<(), NativeError> {
+            #[cfg(test)]
+            managed_fault(ManagedFault::GenerationScan)?;
+            for entry in fs::read_dir(self.layout.generations_root())? {
+                let entry = entry?;
+                if !entry.file_type()?.is_dir() {
+                    continue;
+                }
+                if active.as_ref().is_some_and(|a| {
+                    entry.file_name() == format!("gen-{}", a.generation_id).as_str()
+                }) {
+                    continue;
+                }
+                match fs::symlink_metadata(entry.path().join("retired.json")) {
+                    Ok(meta) if meta.is_file() => report.legacy.retired_pending += 1,
+                    Ok(_) => {}
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(e) => return Err(e.into()),
+                }
+            }
+            Ok(())
+        })();
+        if let Err(error) = generation_observation {
+            report.issue(ManagedJanitorStage::GenerationEnumeration, error, true);
+            report.observation_complete = false;
+        }
+        report.legacy.retired_generations_pending = report.legacy.retired_pending;
+        report.pending |=
+            report.legacy.run_recovery.skipped_locked > 0 || report.legacy.retired_pending > 0;
+        let recovery = ManagedRecoveryReport {
+            publishing_recovered: 0,
+            skipped_locked: report.legacy.run_recovery.skipped_locked,
+            observation_complete: reason == "managed_cleanup_observation"
+                && report.legacy.run_recovery.skipped_locked == 0,
+        };
+        if reason != "managed_cleanup_observation" {
+            report.observation_complete = false;
+        }
+        Ok(ManagedReconciliation::new(recovery, report))
     }
 
     pub(crate) fn read_active_generation(&self) -> Result<Option<ActiveGeneration>, NativeError> {
         let path = self.layout.active_pointer_path();
-        if !path.exists() {
-            return Ok(None);
+        match fs::symlink_metadata(&path) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error.into()),
+            Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_file() => {
+                return Err(NativeError::InvalidInput(format!(
+                    "active generation pointer is not a regular file: {}",
+                    path.display()
+                )))
+            }
+            Ok(_) => {}
         }
         let text = fs::read_to_string(path)?;
         let active: ActiveGeneration = serde_json::from_str(&text)?;
@@ -591,28 +928,44 @@ impl ManagedStore {
         workspace.mark_candidate_ready()
     }
 
-    fn publish_candidate_inner(
+    fn publish_candidate_inner_typed(
         &self,
         workspace: &RunWorkspace,
         candidate: &ManagedCandidate,
-    ) -> Result<String, NativeError> {
+    ) -> Result<ManagedJanitorReport, PublicationFailure> {
         ensure_registry_empty(&self.layout.phase_workspace_root())
-            .map_err(NativeError::InvalidInput)?;
-        let _state_lease = self.open_state_lock(LockMode::Exclusive)?;
-        let mut active = self.read_active_generation()?;
-        self.finish_run_locked(workspace.root(), &workspace.journal()?, &mut active, false)?;
-        Ok(candidate.generation_id.clone())
+            .map_err(|e| PublicationFailure::before(NativeError::InvalidInput(e)))?;
+        let _state = self
+            .open_state_lock(LockMode::Exclusive)
+            .map_err(PublicationFailure::before)?;
+        let mut active = self
+            .read_active_generation()
+            .map_err(PublicationFailure::before)?;
+        let journal = workspace.journal().map_err(PublicationFailure::before)?;
+        let resolution =
+            self.finish_run_transaction_locked(&journal, workspace.root(), &mut active, false)?;
+        let mut report = ManagedJanitorReport::complete();
+        self.finish_run_janitor_locked(
+            workspace.root(),
+            resolution,
+            active.as_ref().map(|a| a.generation_id.as_str()),
+            false,
+            &mut report,
+        );
+        debug_assert_eq!(
+            active.as_ref().map(|a| a.generation_id.as_str()),
+            Some(candidate.generation_id.as_str())
+        );
+        Ok(report)
     }
 
-    fn recover_runs_locked(
+    fn recover_runs_locked_typed(
         &self,
         active: &mut Option<ActiveGeneration>,
-    ) -> Result<RunWorkspaceRecovery, NativeError> {
+        report: &mut ManagedJanitorReport,
+        recovery: &mut ManagedRecoveryReport,
+    ) -> Result<(), NativeError> {
         let runs_root = self.layout.runs_root();
-        if !runs_root.exists() {
-            return Ok(RunWorkspaceRecovery::default());
-        }
-        let mut report = RunWorkspaceRecovery::default();
         for entry in fs::read_dir(&runs_root)? {
             // A worker can finish and remove its run workspace after the
             // directory iterator yields an entry. Windows reports that
@@ -646,7 +999,9 @@ impl ManagedStore {
             ) {
                 Ok(Some(lease)) => lease,
                 Ok(None) => {
-                    report.skipped_locked += 1;
+                    report.legacy.run_recovery.skipped_locked += 1;
+                    recovery.skipped_locked += 1;
+                    recovery.observation_complete = false;
                     continue;
                 }
                 Err(error) if is_not_found_error(&error) => continue,
@@ -654,10 +1009,15 @@ impl ManagedStore {
             };
             let expected_domain =
                 super::maintenance_ownership::ReferenceDomain::managed(&self.layout)?;
-            if !matches!(RunWorkspace::reference_domain(&path), Ok(Some(domain)) if domain.same_scope(&expected_domain))
-            {
-                report.skipped_locked += 1;
-                continue;
+            match RunWorkspace::reference_domain(&path)? {
+                Some(domain) if domain.same_scope(&expected_domain) => {}
+                _ => {
+                    report.legacy.run_recovery.skipped_locked += 1;
+                    report.observation_complete = false;
+                    recovery.skipped_locked += 1;
+                    recovery.observation_complete = false;
+                    continue;
+                }
             }
             let journal = match read_run_journal_or_default(&path, name) {
                 Ok(journal) => journal,
@@ -667,121 +1027,213 @@ impl ManagedStore {
                 }
                 Err(error) => return Err(error),
             };
-            let recovered = match journal.phase {
-                RunPhase::Publishing | RunPhase::Published => {
-                    self.finish_run_locked(&path, &journal, active, true)?;
-                    report.publishing_recovered += 1;
-                    true
+            let resolution = if matches!(journal.phase, RunPhase::Publishing | RunPhase::Published)
+            {
+                match self.finish_run_transaction_locked(&journal, &path, active, true) {
+                    Ok(resolution) => {
+                        report.legacy.run_recovery.publishing_recovered += 1;
+                        recovery.publishing_recovered += 1;
+                        Some(resolution)
+                    }
+                    Err(failure) => return Err(failure.source),
                 }
-                _ => false,
+            } else {
+                None
             };
             drop(lease);
-            if !recovered {
-                remove_run_root_confined(&path, &runs_root)?;
-                report.deleted += 1;
-            }
-        }
-        Ok(report)
-    }
-
-    fn finish_run_locked(
-        &self,
-        run_root: &Path,
-        journal: &RunJournal,
-        active: &mut Option<ActiveGeneration>,
-        cleanup_run_root: bool,
-    ) -> Result<(), NativeError> {
-        ensure_registry_empty(&self.layout.phase_workspace_root())
-            .map_err(NativeError::InvalidInput)?;
-        let Some(candidate_id) = journal.candidate_generation_id.as_ref() else {
-            if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
-            }
-            return Ok(());
-        };
-        validate_generation_id(candidate_id)?;
-        if let Some(base_generation_id) = journal.base_generation_id.as_deref() {
-            validate_generation_id(base_generation_id)?;
-        }
-        let staged =
-            CandidateGenerationLayout::new(run_root.join("candidate"), candidate_id.clone())
-                .generation_paths();
-        let published = self.layout.generation(candidate_id)?;
-        let active_id = active.as_ref().map(|value| value.generation_id.clone());
-        let base_matches = active_id == journal.base_generation_id;
-        let published_valid = is_ready_generation_valid(&published);
-        let staged_valid = is_ready_generation_valid(&staged);
-
-        if active_id.as_deref() == Some(candidate_id.as_str()) && published_valid {
-            self.finalize_previous_retirement(journal.base_generation_id.as_deref())?;
-            if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
-            }
-            return Ok(());
-        }
-
-        if !base_matches {
-            if published.root().exists() {
-                write_json_atomically(
-                    &published.retired_path(),
-                    &GenerationRetirement {
-                        schema_version: MANAGED_SCHEMA_VERSION,
-                        retired_at_ms: unix_time_ms(),
-                    },
-                )?;
-                self.retire_or_delete_generation_locked(
-                    &published,
-                    active.as_ref().map(|value| value.generation_id.as_str()),
-                )?;
-            }
-            if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
-                return Ok(());
-            }
-            return Err(NativeError::InvalidInput(
-                ManagedValidationError::StaleBaseGeneration {
-                    expected: journal.base_generation_id.clone(),
-                    found: active_id,
+            if let Some(resolution) = resolution {
+                self.finish_run_janitor_locked(
+                    &path,
+                    resolution,
+                    active.as_ref().map(|a| a.generation_id.as_str()),
+                    true,
+                    report,
+                );
+            } else if report.first_issue.is_none() {
+                match super::run_workspace::ensure_persisted_cleanup_allowed(&path)
+                    .and_then(|()| remove_run_root_confined(&path, &runs_root))
+                {
+                    Ok(()) => report.legacy.run_recovery.deleted += 1,
+                    Err(error) => {
+                        report.issue(ManagedJanitorStage::TerminalRunRemoval, error, true);
+                        report.legacy.run_recovery.skipped_locked += 1;
+                    }
                 }
-                .to_string(),
-            ));
-        }
-
-        if published_valid && base_matches {
-            let activated = self.activate_published_generation_locked(
-                &published,
-                journal.base_generation_id.as_deref(),
-            )?;
-            *active = Some(activated);
-            if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
+            } else {
+                report.legacy.run_recovery.skipped_locked += 1;
+                report.pending = true;
             }
-            return Ok(());
-        }
-
-        if staged_valid && base_matches {
-            self.promote_candidate_generation_locked(&staged, &published)?;
-            let activated = self.activate_published_generation_locked(
-                &published,
-                journal.base_generation_id.as_deref(),
-            )?;
-            *active = Some(activated);
-            if cleanup_run_root {
-                remove_run_root_confined(run_root, &self.layout.runs_root())?;
-            }
-            return Ok(());
-        }
-
-        if published.root().exists() {
-            self.retire_or_delete_generation_locked(
-                &published,
-                active.as_ref().map(|value| value.generation_id.as_str()),
-            )?;
-        }
-        if cleanup_run_root {
-            remove_run_root_confined(run_root, &self.layout.runs_root())?;
         }
         Ok(())
+    }
+
+    fn probe_ready(paths: &GenerationPaths) -> ReadyProbe {
+        match fs::symlink_metadata(paths.root()) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => ReadyProbe::Absent,
+            Err(error) => ReadyProbe::Invalid(error.into()),
+            Ok(metadata) if !metadata.is_dir() || metadata.file_type().is_symlink() => {
+                ReadyProbe::Invalid(NativeError::InvalidInput(format!(
+                    "invalid generation root {}",
+                    paths.root().display()
+                )))
+            }
+            Ok(_) => match validate_ready_generation(paths) {
+                Ok(()) => ReadyProbe::Valid,
+                Err(error) => ReadyProbe::Invalid(error),
+            },
+        }
+    }
+    fn require_ready(paths: &GenerationPaths) -> Result<(), NativeError> {
+        match Self::probe_ready(paths) {
+            ReadyProbe::Valid => Ok(()),
+            ReadyProbe::Invalid(error) => Err(error),
+            ReadyProbe::Absent => Err(NativeError::InvalidInput(format!(
+                "required generation is absent: {}",
+                paths.root().display()
+            ))),
+        }
+    }
+    fn finish_run_transaction_locked(
+        &self,
+        journal: &RunJournal,
+        run_root: &Path,
+        active: &mut Option<ActiveGeneration>,
+        recovery: bool,
+    ) -> Result<RunResolution, PublicationFailure> {
+        let before = PublicationFailure::before;
+        ensure_registry_empty(&self.layout.phase_workspace_root())
+            .map_err(|e| before(NativeError::InvalidInput(e)))?;
+        let candidate_id = journal.candidate_generation_id.as_ref().ok_or_else(|| {
+            before(NativeError::InvalidInput(
+                "publishing run is missing its candidate generation".into(),
+            ))
+        })?;
+        validate_generation_id(candidate_id).map_err(before)?;
+        if let Some(base) = journal.base_generation_id.as_deref() {
+            validate_generation_id(base).map_err(before)?;
+        }
+        let published = self.layout.generation(candidate_id).map_err(before)?;
+        let active_id = active.as_ref().map(|a| a.generation_id.clone());
+        if active_id.as_deref() == Some(candidate_id.as_str()) {
+            Self::require_ready(&published).map_err(PublicationFailure::ambiguous)?;
+            // Complete interrupted mandatory barriers without rewriting identity,
+            // timestamps, metadata or READY. Readability is not a commit ack.
+            sync_parent_dir(published.root()).map_err(PublicationFailure::ambiguous)?;
+            self.complete_root_sync()
+                .map_err(PublicationFailure::ambiguous)?;
+            return Ok(RunResolution::Committed {
+                previous: journal.base_generation_id.clone(),
+            });
+        }
+        if active_id != journal.base_generation_id {
+            if !recovery {
+                return Err(before(NativeError::InvalidInput(
+                    ManagedValidationError::StaleBaseGeneration {
+                        expected: journal.base_generation_id.clone(),
+                        found: active_id,
+                    }
+                    .to_string(),
+                )));
+            }
+            if let Some(current) = active.as_ref() {
+                Self::require_ready(
+                    &self
+                        .layout
+                        .generation(&current.generation_id)
+                        .map_err(before)?,
+                )
+                .map_err(before)?;
+            } else {
+                return Err(before(NativeError::InvalidInput(
+                    "cannot resolve stale publishing evidence without a valid active generation"
+                        .into(),
+                )));
+            }
+            return Ok(RunResolution::Obsolete { published });
+        }
+        match Self::probe_ready(&published) {
+            ReadyProbe::Invalid(error) => return Err(before(error)),
+            ReadyProbe::Valid => {}
+            ReadyProbe::Absent => {
+                let staged = CandidateGenerationLayout::new(
+                    run_root.join("candidate"),
+                    candidate_id.clone(),
+                )
+                .generation_paths();
+                Self::require_ready(&staged).map_err(before)?;
+                self.promote_candidate_generation_locked(&staged, &published)
+                    .map_err(PublicationFailure::ambiguous)?;
+            }
+        }
+        // Recovered published-only state may still need promotion's directory
+        // barriers; complete them before making its pointer authoritative.
+        sync_parent_dir(published.root()).map_err(PublicationFailure::ambiguous)?;
+        let activated = self
+            .activate_published_generation_locked(&published)
+            .map_err(PublicationFailure::ambiguous)?;
+        *active = Some(activated);
+        Ok(RunResolution::Committed {
+            previous: journal.base_generation_id.clone(),
+        })
+    }
+
+    fn finish_run_janitor_locked(
+        &self,
+        run_root: &Path,
+        resolution: RunResolution,
+        active_id: Option<&str>,
+        cleanup_root: bool,
+        report: &mut ManagedJanitorReport,
+    ) {
+        if report.first_issue.is_some() {
+            if cleanup_root {
+                report.legacy.run_recovery.skipped_locked += 1;
+            }
+            report.pending = true;
+            return;
+        }
+        if cleanup_root {
+            if let Err(error) = super::run_workspace::ensure_persisted_cleanup_allowed(run_root) {
+                report.issue(ManagedJanitorStage::TerminalRunRemoval, error, true);
+                report.legacy.run_recovery.skipped_locked += 1;
+                return;
+            }
+        }
+        let action = match resolution {
+            RunResolution::Committed { previous } => self
+                .finalize_previous_retirement(previous.as_deref())
+                .map_err(|e| (ManagedJanitorStage::PreviousRetirementMarker, e)),
+            RunResolution::Obsolete { published } => (|| -> Result<(), NativeError> {
+                if published.root().exists() {
+                    write_json_atomically(
+                        &published.retired_path(),
+                        &GenerationRetirement {
+                            schema_version: MANAGED_SCHEMA_VERSION,
+                            retired_at_ms: unix_time_ms(),
+                        },
+                    )?;
+                    self.retire_or_delete_generation_locked(&published, active_id)?;
+                }
+                Ok(())
+            })()
+            .map_err(|e| (ManagedJanitorStage::RetiredGenerationRemoval, e)),
+        };
+        if let Err((stage, error)) = action {
+            report.issue(stage, error, true);
+            if cleanup_root {
+                report.legacy.run_recovery.skipped_locked += 1;
+            }
+            return;
+        }
+        if cleanup_root {
+            match remove_run_root_confined(run_root, &self.layout.runs_root()) {
+                Ok(()) => report.legacy.run_recovery.deleted += 1,
+                Err(error) => {
+                    report.issue(ManagedJanitorStage::TerminalRunRemoval, error, true);
+                    report.legacy.run_recovery.skipped_locked += 1;
+                }
+            }
+        }
     }
 
     fn promote_candidate_generation_locked(
@@ -807,7 +1259,6 @@ impl ManagedStore {
     fn activate_published_generation_locked(
         &self,
         published: &GenerationPaths,
-        previous_active_id: Option<&str>,
     ) -> Result<ActiveGeneration, NativeError> {
         validate_ready_generation(published)?;
         let mut metadata = read_generation_metadata(published)?;
@@ -823,21 +1274,27 @@ impl ManagedStore {
             published_at: format!("unix:{now_ms}"),
             activated_at_ms: now_ms,
         };
-        if let Err(error) = write_json_atomically(&self.layout.active_pointer_path(), &active) {
-            let _ = write_json_atomically(
-                &published.retired_path(),
-                &GenerationRetirement {
-                    schema_version: MANAGED_SCHEMA_VERSION,
-                    retired_at_ms: unix_time_ms(),
-                },
-            );
-            return Err(error);
-        }
-        sync_dir(self.layout.storage_root())?;
-        self.finalize_previous_retirement(previous_active_id)?;
+        self.write_active_pointer(&active)?;
+        self.complete_root_sync()?;
         Ok(active)
     }
 
+    fn write_active_pointer(&self, active: &ActiveGeneration) -> Result<(), NativeError> {
+        #[cfg(test)]
+        if MANAGED_FAULT.with(|f| f.get()) == ManagedFault::PointerAfterRename {
+            return crate::storage::atomic::write_json_atomically_with_fault(
+                &self.layout.active_pointer_path(),
+                active,
+                crate::storage::atomic::AtomicWriteFailure::AfterRename,
+            );
+        }
+        write_json_atomically(&self.layout.active_pointer_path(), active)
+    }
+    fn complete_root_sync(&self) -> Result<(), NativeError> {
+        #[cfg(test)]
+        managed_fault(ManagedFault::MandatorySync)?;
+        sync_dir(self.layout.storage_root())
+    }
     fn finalize_previous_retirement(
         &self,
         previous_active_id: Option<&str>,
@@ -863,6 +1320,8 @@ impl ManagedStore {
         active_id: Option<&str>,
         report: &mut ManagedCleanupReport,
     ) -> Result<(), NativeError> {
+        #[cfg(test)]
+        managed_fault(ManagedFault::GenerationScan)?;
         let generations_root = self.layout.generations_root();
         if !generations_root.exists() {
             return Ok(());
@@ -940,6 +1399,8 @@ impl ManagedStore {
         else {
             return;
         };
+        #[cfg(test)]
+        MANAGED_BEST_EFFORT_ENTRIES.with(|value| value.set(value.get().saturating_add(1)));
         if !matches!(
             probe_registry(&self.layout.phase_workspace_root()),
             Ok(true)
@@ -995,18 +1456,6 @@ impl ManagedStore {
     fn read_active_with_shared_lock(&self) -> Result<Option<ActiveGeneration>, NativeError> {
         let _lease = self.open_state_lock(LockMode::Shared)?;
         self.read_active_generation()
-    }
-
-    fn publication_is_committed(&self, generation_id: &str) -> Result<bool, NativeError> {
-        let _lease = self.open_state_lock(LockMode::Shared)?;
-        let Some(active) = self.read_active_generation()? else {
-            return Ok(false);
-        };
-        if active.generation_id != generation_id {
-            return Ok(false);
-        }
-        validate_ready_generation(&self.layout.generation(generation_id)?)?;
-        Ok(true)
     }
 }
 
@@ -1125,10 +1574,6 @@ fn validate_ready_generation(paths: &GenerationPaths) -> Result<(), NativeError>
     Ok(())
 }
 
-fn is_ready_generation_valid(paths: &GenerationPaths) -> bool {
-    validate_ready_generation(paths).is_ok()
-}
-
 fn generation_sizes(paths: &GenerationPaths) -> Result<FileSizeSummary, NativeError> {
     let mut logical = 0_u64;
     let mut physical = 0_u64;
@@ -1215,39 +1660,6 @@ fn remove_path_without_symlinks(path: &Path) -> Result<(), NativeError> {
     Ok(())
 }
 
-fn existing_directories_with_prefix(
-    root: &Path,
-    prefix: &str,
-) -> Result<Vec<PathBuf>, NativeError> {
-    let entries = match fs::read_dir(root) {
-        Ok(entries) => entries,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
-        Err(e) => return Err(e.into()),
-    };
-    let mut paths = Vec::new();
-    for entry in entries {
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
-            Err(e) => return Err(e.into()),
-        };
-        if !entry
-            .file_name()
-            .to_str()
-            .is_some_and(|name| name.starts_with(prefix))
-        {
-            continue;
-        }
-        match entry.file_type() {
-            Ok(kind) if kind.is_dir() => paths.push(entry.path()),
-            Ok(_) => {}
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-            Err(e) => return Err(e.into()),
-        }
-    }
-    Ok(paths)
-}
-
 fn read_run_journal_or_default(path: &Path, name: &str) -> Result<RunJournal, NativeError> {
     let journal_path = path.join("journal.json");
     let text = match fs::read_to_string(&journal_path) {
@@ -1315,9 +1727,306 @@ fn abort_workspace_after_error(workspace: RunWorkspace, primary: NativeError) ->
     }
 }
 
-fn finish_committed_workspace(workspace: RunWorkspace, generation_id: &str) {
-    // The active pointer is the transaction commit. Journal finalization and
-    // workspace removal remain recoverable cleanup after that boundary.
-    let _ = workspace.mark_phase(RunPhase::Published, Some(generation_id.to_string()), None);
-    let _ = workspace.finish();
+fn append_janitor_secondary(
+    primary: NativeError,
+    report: &mut ManagedJanitorReport,
+) -> NativeError {
+    match report.first_issue.take() {
+        None => primary,
+        Some(issue) => {
+            NativeError::InvalidInput(format!("{primary}; cleanup failed: {}", issue.source))
+        }
+    }
+}
+
+#[cfg(test)]
+mod transaction_janitor_tests {
+    use super::*;
+    use crate::protocol::GraphSummary;
+
+    fn store(label: &str) -> (PathBuf, ManagedStore) {
+        let root = std::env::temp_dir().join(format!(
+            "managed-role-{label}-{}-{}",
+            std::process::id(),
+            unix_time_ms()
+        ));
+        fs::create_dir(&root).unwrap();
+        (
+            root.clone(),
+            ManagedStore::new(ManagedLayout::new(root.join("storage"))),
+        )
+    }
+    fn prepared(store: &ManagedStore) -> ManagedWriteSession {
+        let mut session = store.begin_write().unwrap();
+        fs::write(session.candidate_db_path(), b"storage ABI fixture").unwrap();
+        fs::write(session.candidate_manifest_path(), b"{}").unwrap();
+        session
+            .mark_ready_with_stats(&GraphSummary::default())
+            .unwrap();
+        session
+    }
+    fn leave_publishing(mut session: ManagedWriteSession, promoted: bool) -> PathBuf {
+        let workspace = session.workspace.take().unwrap();
+        workspace
+            .mark_phase(RunPhase::Publishing, None, None)
+            .unwrap();
+        if promoted {
+            let _state = session.store.open_state_lock(LockMode::Exclusive).unwrap();
+            let published = session
+                .store
+                .layout
+                .generation(&session.candidate.generation_id)
+                .unwrap();
+            session
+                .store
+                .promote_candidate_generation_locked(&session.candidate.paths, &published)
+                .unwrap();
+        }
+        let root = workspace.root().to_path_buf();
+        workspace.retain_for_recovery();
+        session.finish_without_cleanup();
+        root
+    }
+
+    #[test]
+    fn managed_typed_recovery_accepts_staged_only_and_published_only_seams() {
+        for promoted in [false, true] {
+            let (root, store) = store(if promoted { "published" } else { "staged" });
+            let session = prepared(&store);
+            let id = session.candidate.generation_id.clone();
+            let run = leave_publishing(session, promoted);
+            let result = store.cleanup_typed().unwrap();
+            assert_eq!(result.recovery.publishing_recovered, 1);
+            assert!(result.recovery.observation_complete);
+            assert!(result.janitor.first_issue.is_none());
+            assert_eq!(
+                store
+                    .read_active_generation()
+                    .unwrap()
+                    .unwrap()
+                    .generation_id,
+                id
+            );
+            assert!(!run.exists());
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn managed_typed_ambiguous_pointer_error_retains_bytes_and_requires_durability_recovery() {
+        let (root, store) = store("ambiguous");
+        let mut session = prepared(&store);
+        let id = session.candidate.generation_id.clone();
+        let run = session.workspace.as_ref().unwrap().root().to_path_buf();
+        let fault = inject_managed_fault(ManagedFault::PointerAfterRename);
+        let error = session
+            .publish_with_stats_typed(&GraphSummary::default())
+            .unwrap_err();
+        assert!(error.to_string().contains("after rename"));
+        drop(fault);
+        drop(session);
+        let generation = store.layout.generation(&id).unwrap();
+        assert!(
+            !generation.retired_path().exists(),
+            "uncertain pointer failure marked candidate retired"
+        );
+        let evidence = || {
+            [
+                fs::read(run.join("journal.json")).unwrap(),
+                fs::read(store.layout.active_pointer_path()).unwrap(),
+                fs::read(generation.metadata_path()).unwrap(),
+                fs::read(generation.ready_path()).unwrap(),
+            ]
+        };
+        let before = evidence();
+        assert!(
+            try_open_locked(store.layout.writer_lock_path(), LockMode::Exclusive)
+                .unwrap()
+                .is_some()
+        );
+        let fault = inject_managed_fault(ManagedFault::MandatorySync);
+        assert!(store
+            .cleanup_typed()
+            .unwrap_err()
+            .to_string()
+            .contains("mandatory managed sync"));
+        assert_eq!(evidence(), before);
+        drop(fault);
+        let result = store.cleanup_typed().unwrap();
+        assert_eq!(result.recovery.publishing_recovered, 1);
+        assert_eq!(
+            fs::read(store.layout.active_pointer_path()).unwrap(),
+            before[1]
+        );
+        assert_eq!(fs::read(generation.metadata_path()).unwrap(), before[2]);
+        assert_eq!(fs::read(generation.ready_path()).unwrap(), before[3]);
+        assert!(!run.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn managed_typed_required_corrupt_or_missing_evidence_is_not_an_absent_alternative() {
+        for corrupt_present in [false, true] {
+            let (root, store) = store(if corrupt_present {
+                "corrupt"
+            } else {
+                "missing"
+            });
+            let session = prepared(&store);
+            let staged = session.candidate.paths.root().to_path_buf();
+            let published = store
+                .layout
+                .generation(&session.candidate.generation_id)
+                .unwrap();
+            let run = leave_publishing(session, false);
+            if corrupt_present {
+                fs::create_dir_all(published.root()).unwrap();
+                fs::write(published.db_path(), b"invalid present evidence").unwrap();
+            } else {
+                fs::remove_dir_all(&staged).unwrap();
+            }
+            let journal = fs::read(run.join("journal.json")).unwrap();
+            assert!(store.cleanup_typed().is_err());
+            assert_eq!(fs::read(run.join("journal.json")).unwrap(), journal);
+            if corrupt_present {
+                assert!(
+                    staged.exists(),
+                    "silently preferred/replaced staged alternative"
+                );
+            }
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn managed_typed_generation_issue_never_preempts_required_replay_or_its_error() {
+        for corrupt_run in [false, true] {
+            let (root, store) = store(if corrupt_run {
+                "later-error"
+            } else {
+                "later-success"
+            });
+            let session = prepared(&store);
+            let id = session.candidate.generation_id.clone();
+            let run = leave_publishing(session, false);
+            if corrupt_run {
+                let mut journal: RunJournal =
+                    serde_json::from_slice(&fs::read(run.join("journal.json")).unwrap()).unwrap();
+                journal.candidate_generation_id = Some("../invalid".into());
+                write_json_atomically(&run.join("journal.json"), &journal).unwrap();
+            }
+            let fault = inject_managed_fault(ManagedFault::GenerationScan);
+            if corrupt_run {
+                let error = store.cleanup_typed().unwrap_err().to_string();
+                assert!(
+                    error.starts_with("invalid managed generation id"),
+                    "{error}"
+                );
+                assert!(
+                    error.contains("cleanup failed: injected generation-only"),
+                    "{error}"
+                );
+            } else {
+                let result = store.cleanup_typed().unwrap();
+                assert_eq!(result.recovery.publishing_recovered, 1);
+                assert!(result.recovery.observation_complete);
+                assert!(result.janitor.first_issue.is_some());
+                assert_eq!(
+                    store
+                        .read_active_generation()
+                        .unwrap()
+                        .unwrap()
+                        .generation_id,
+                    id
+                );
+                assert!(run.exists(), "first optional issue should defer disposal");
+                assert_eq!(result.janitor.legacy.run_recovery.skipped_locked, 1);
+            }
+            drop(fault);
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn managed_typed_recovered_publication_retains_run_until_persisted_barrier_resolves() {
+        let (root, store) = store("persisted-barrier");
+        let session = prepared(&store);
+        let id = session.candidate.generation_id.clone();
+        let run = leave_publishing(session, false);
+        fs::write(run.join("cleanup-barrier.json"), b"invalid cleanup barrier").unwrap();
+        let journal = fs::read(run.join("journal.json")).unwrap();
+        let report = store.cleanup_typed().unwrap();
+        assert_eq!(report.recovery.publishing_recovered, 1);
+        assert!(report.recovery.observation_complete);
+        assert!(report.janitor.pending);
+        assert_eq!(report.janitor.legacy.run_recovery.skipped_locked, 1);
+        assert!(report
+            .janitor
+            .first_issue
+            .as_ref()
+            .unwrap()
+            .source
+            .to_string()
+            .contains("invalid run cleanup barrier"));
+        assert_eq!(
+            store
+                .read_active_generation()
+                .unwrap()
+                .unwrap()
+                .generation_id,
+            id
+        );
+        assert_eq!(fs::read(run.join("journal.json")).unwrap(), journal);
+        // Strict compatibility still returns the original optional source and
+        // never bypasses the persisted containment gate on its next attempt.
+        assert!(store
+            .cleanup()
+            .unwrap_err()
+            .to_string()
+            .contains("invalid run cleanup barrier"));
+        assert!(run.exists());
+        fs::remove_file(run.join("cleanup-barrier.json")).unwrap();
+        store.cleanup().unwrap();
+        assert!(!run.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn managed_typed_first_issue_is_moved_and_actual_disposal_clears_pending_run() {
+        let (root, store) = store("issue-count");
+        let mut session = prepared(&store);
+        let workspace = session.workspace.take().unwrap();
+        let run = workspace.root().to_path_buf();
+        let mut first = ManagedJanitorReport::complete();
+        first.issue(
+            ManagedJanitorStage::PublishedRunJournal,
+            NativeError::InvalidInput("first journal diagnostic".into()),
+            true,
+        );
+        first.legacy.run_recovery.skipped_locked = 1;
+        workspace.finish().unwrap();
+        assert!(!run.exists());
+        let mut latest = ManagedJanitorReport::complete();
+        latest.issue(
+            ManagedJanitorStage::TerminalRunRemoval,
+            NativeError::InvalidInput("second diagnostic".into()),
+            false,
+        );
+        first.merge_latest(latest);
+        assert_eq!(first.issue_count, 2);
+        assert!(!first.pending);
+        assert_eq!(first.legacy.run_recovery.skipped_locked, 0);
+        assert_eq!(
+            first.first_issue.as_ref().unwrap().source.to_string(),
+            "first journal diagnostic"
+        );
+        assert_eq!(
+            first.into_legacy().unwrap_err().to_string(),
+            "first journal diagnostic"
+        );
+        // Exercise the strict session wrapper without any issue.
+        assert!(session.recover_and_gc().is_ok());
+        session.finish_without_cleanup();
+        fs::remove_dir_all(root).unwrap();
+    }
 }
