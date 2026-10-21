@@ -27,6 +27,8 @@ pub(crate) enum NativeUnknown {
     Truncated,
     InvalidRange,
     Overflow,
+    SourceChanged,
+    Cancelled,
     UnsupportedField { offset: u64, tag: u64 },
 }
 impl From<ValidationIssue> for NativeUnknown {
@@ -1007,6 +1009,924 @@ pub(crate) fn trace_native_metadata43<S: ByteSource + ?Sized>(
     Ok(facts)
 }
 
+// Selected strings are resolved before a callback and contain no group-local
+// references. The only retained stream is the dictionary's unsigned byte DATA.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct NativeStringLocator {
+    source: u8,
+    compression: u8,
+    bits: u8,
+    reserved: [u8; 5],
+    page: u32,
+    pages: u32,
+    values: u64,
+    min: u64,
+    max: u64,
+    pub(crate) start: u64,
+    pub(crate) length: u64,
+}
+const _: [(); 56] = [(); std::mem::size_of::<NativeStringLocator>()];
+
+struct NativeDataScratch {
+    page: [u8; 4096],
+    tag: Option<u32>,
+}
+impl NativeDataScratch {
+    fn new() -> Self {
+        Self {
+            page: [0; 4096],
+            tag: None,
+        }
+    }
+    fn read<S: ByteSource + ?Sized>(
+        &mut self,
+        source: &S,
+        page: u32,
+        offset: usize,
+        out: &mut [u8],
+    ) -> Result<(), NativeUnknown> {
+        if offset.checked_add(out.len()).is_none_or(|n| n > 4096) {
+            return Err(NativeUnknown::InvalidRange);
+        }
+        if self.tag != Some(page) {
+            self.tag = None;
+            let base = u64::from(page)
+                .checked_mul(PAGE_BYTES)
+                .ok_or(NativeUnknown::Overflow)?;
+            let mut done = 0;
+            while done < self.page.len() {
+                let n = source.read_at(base + done as u64, &mut self.page[done..])?;
+                if n == 0 || n > self.page.len() - done {
+                    return Err(NativeUnknown::Truncated);
+                }
+                done += n;
+            }
+            self.tag = Some(page);
+        }
+        out.copy_from_slice(&self.page[offset..offset + out.len()]);
+        Ok(())
+    }
+}
+fn unsigned_bounds(m: NativePrimitiveMetadata, bits: u8) -> Result<(u64, u64), NativeUnknown> {
+    if !matches!(bits, 1 | 8 | 32 | 64) {
+        return Err(NativeUnknown::UnsupportedLayout);
+    }
+    let bytes = usize::from(bits.div_ceil(8));
+    if m.min[bytes..].iter().any(|v| *v != 0) || m.max[bytes..].iter().any(|v| *v != 0) {
+        return Err(NativeUnknown::UnsupportedLayout);
+    }
+    let min = u64::from_le_bytes(m.min[..8].try_into().unwrap());
+    let max = u64::from_le_bytes(m.max[..8].try_into().unwrap());
+    if min > max || (bits == 1 && max > 1) {
+        return Err(NativeUnknown::InvalidRange);
+    }
+    Ok((min, max))
+}
+fn scalar<S: ByteSource + ?Sized>(
+    source: &S,
+    scratch: &mut NativeDataScratch,
+    m: NativePrimitiveMetadata,
+    bits: u8,
+    ordinal: u64,
+) -> Result<u64, NativeUnknown> {
+    if ordinal >= m.values {
+        return Err(NativeUnknown::InvalidRange);
+    }
+    let (min, max) = unsigned_bounds(m, bits)?;
+    let (width, offset) = match m.compression {
+        3 => {
+            return if min == max {
+                Ok(min)
+            } else {
+                Err(NativeUnknown::InvalidRange)
+            }
+        }
+        0 if bits != 1 => (u32::from(bits), 0),
+        2 if bits == 1 => (1, 0),
+        1 if bits != 1 => {
+            let full = 64 - max.leading_zeros();
+            let delta = 64 - (max - min).leading_zeros();
+            if min > 0 && delta < full {
+                (delta, min)
+            } else {
+                (full, 0)
+            }
+        }
+        _ => return Err(NativeUnknown::UnsupportedLayout),
+    };
+    // Equal-value producer chunks use CONSTANT; a zero-width packed mode has
+    // not been observed from the qualified writer and is kept unknown.
+    if width == 0
+        || width > u32::from(bits)
+        || m.page == INVALID_PAGE
+        || m.page == 0
+        || m.pages == 0
+    {
+        return Err(NativeUnknown::InvalidRange);
+    }
+    let per_page = PAGE_BYTES * 8 / u64::from(width);
+    let page_index = ordinal / per_page;
+    if page_index >= u64::from(m.pages) {
+        return Err(NativeUnknown::InvalidRange);
+    }
+    let page = m
+        .page
+        .checked_add(u32::try_from(page_index).map_err(|_| NativeUnknown::Overflow)?)
+        .ok_or(NativeUnknown::Overflow)?;
+    let bit = (ordinal % per_page) * u64::from(width);
+    let shift = (bit % 8) as u32;
+    let bytes = ((shift + width).div_ceil(8)) as usize;
+    let mut encoded = [0u8; 12];
+    scratch.read(source, page, (bit / 8) as usize, &mut encoded[..bytes])?;
+    let mut assembled = 0u128;
+    for (i, b) in encoded[..bytes].iter().enumerate() {
+        assembled |= u128::from(*b) << (i * 8);
+    }
+    let mask = (1u128 << width) - 1;
+    let value = u64::try_from((assembled >> shift) & mask)
+        .map_err(|_| NativeUnknown::Overflow)?
+        .checked_add(offset)
+        .ok_or(NativeUnknown::Overflow)?;
+    // Uncompressed metadata may carry no meaningful extrema, but compressed
+    // ranges define the frame and must cover each decoded scalar.
+    if m.compression != 0 && (value < min || value > max) {
+        return Err(NativeUnknown::InvalidRange);
+    }
+    Ok(value)
+}
+impl NativeStringLocator {
+    fn metadata(self) -> NativePrimitiveMetadata {
+        let mut min = [0; 16];
+        let mut max = [0; 16];
+        min[..8].copy_from_slice(&self.min.to_le_bytes());
+        max[..8].copy_from_slice(&self.max.to_le_bytes());
+        NativePrimitiveMetadata {
+            page: self.page,
+            pages: self.pages,
+            values: self.values,
+            min,
+            max,
+            compression: self.compression,
+        }
+    }
+}
+/// A logical UTF8 source with an independent DATA cache. Caller retains the
+/// immutable source incarnation; this wrapper neither opens nor owns a path.
+pub(crate) struct NativeStringSource<'a, S: ByteSource + ?Sized> {
+    source: &'a S,
+    locator: NativeStringLocator,
+    scratch: std::cell::RefCell<NativeDataScratch>,
+    _floor: super::maintenance_budget::MemoryReservation,
+}
+impl<'a, S: ByteSource + ?Sized> NativeStringSource<'a, S> {
+    pub(crate) fn new(
+        source: &'a S,
+        locator: NativeStringLocator,
+        memory: &CleanupMemory,
+    ) -> Result<Self, NativeUnknown> {
+        if locator.source != 0
+            || locator.bits != 8
+            || locator.reserved != [0; 5]
+            || locator
+                .start
+                .checked_add(locator.length)
+                .is_none_or(|end| end > locator.values)
+        {
+            return Err(NativeUnknown::InvalidRange);
+        }
+        let floor = memory
+            .reserve(std::mem::size_of::<Self>())
+            .map_err(ValidationIssue::from)?;
+        Ok(Self {
+            source,
+            locator,
+            scratch: std::cell::RefCell::new(NativeDataScratch::new()),
+            _floor: floor,
+        })
+    }
+}
+impl<S: ByteSource + ?Sized> ByteSource for NativeStringSource<'_, S> {
+    fn len(&self) -> u64 {
+        self.locator.length
+    }
+    fn read_at(&self, offset: u64, out: &mut [u8]) -> Result<usize, ValidationIssue> {
+        let remaining = self
+            .locator
+            .length
+            .checked_sub(offset)
+            .ok_or(ValidationIssue::InvalidSpan)?;
+        let n = remaining.min(out.len() as u64) as usize;
+        let mut scratch = self.scratch.borrow_mut();
+        for (i, b) in out[..n].iter_mut().enumerate() {
+            *b = scalar(
+                self.source,
+                &mut scratch,
+                self.locator.metadata(),
+                8,
+                self.locator.start + offset + i as u64,
+            )
+            .map_err(native_validation_issue)? as u8;
+        }
+        Ok(n)
+    }
+}
+fn native_validation_issue(e: NativeUnknown) -> ValidationIssue {
+    match e {
+        NativeUnknown::Source(e) => e,
+        NativeUnknown::Overflow => ValidationIssue::Overflow,
+        _ => ValidationIssue::Schema,
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NativeSelectedTable {
+    Repository,
+    SourceRoot,
+    File,
+    Contains,
+}
+impl NativeSelectedTable {
+    fn fields(self) -> [&'static [u8]; 5] {
+        match self {
+            Self::Repository | Self::SourceRoot => [b"id", b"label", b"kind", b"path", b"metadata"],
+            Self::File => [b"id", b"kind", b"path", b"content_hash", b"metadata"],
+            Self::Contains => [b"id", b"kind", b"source_id", b"target_id", b"metadata"],
+        }
+    }
+}
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct NativeSelectedRow {
+    pub(crate) table: NativeSelectedTable,
+    pub(crate) ordinal: u64,
+    /// SQL NULL is None; an empty string is Some(locator with length zero).
+    pub(crate) fields: [Option<NativeStringLocator>; 5],
+    /// Quoted JSON string span in the logical metadata field, if present.
+    pub(crate) canonical_key: Option<super::maintenance_validation::Span>,
+}
+#[derive(Clone, Copy)]
+struct SelectedMap {
+    table: u64,
+    kind: NativeSelectedTable,
+    properties: [u32; 5],
+    columns: [u32; 5],
+}
+#[derive(Clone, Copy)]
+struct StringSegment {
+    logical: u8,
+    physical: u8,
+    parent: NativePrimitiveMetadata,
+    null: Option<NativePrimitiveMetadata>,
+    index: NativePrimitiveMetadata,
+    offsets: NativePrimitiveMetadata,
+    data: NativePrimitiveMetadata,
+}
+impl<S: ByteSource + ?Sized> CatalogCursor<'_, S> {
+    fn string_segment(&mut self, available: u64) -> Result<StringSegment, NativeUnknown> {
+        let ty = self.primitive()?;
+        if !matches!(ty, (50, 20) | (60, 21)) {
+            return Err(self.fail(110));
+        }
+        let parent = self.compression_metadata(available, false)?;
+        self.flag()?;
+        let null = if self.flag()? {
+            Some(self.compression_metadata(available, false)?)
+        } else {
+            None
+        };
+        let mut child = |expected| -> Result<NativePrimitiveMetadata, NativeUnknown> {
+            if self.primitive()? != expected {
+                return Err(self.fail(111));
+            }
+            let m = self.compression_metadata(available, false)?;
+            self.flag()?;
+            if self.flag()? {
+                return Err(self.fail(112));
+            }
+            Ok(m)
+        };
+        let index = child((28, 7))?;
+        let offsets = child((27, 6))?;
+        let data = child((30, 9))?;
+        if index.values != parent.values || null.is_some_and(|n| n.values != parent.values) {
+            return Err(self.fail(113));
+        }
+        Ok(StringSegment {
+            logical: ty.0,
+            physical: ty.1,
+            parent,
+            null,
+            index,
+            offsets,
+            data,
+        })
+    }
+}
+fn check_selected_segment_ranges(
+    segment: StringSegment,
+    header: NativeHeader43Facts,
+) -> Result<(), NativeUnknown> {
+    for m in [
+        Some(segment.parent),
+        segment.null,
+        Some(segment.index),
+        Some(segment.offsets),
+        Some(segment.data),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        if m.pages != 0 {
+            if m.page == 0 {
+                return Err(NativeUnknown::InvalidRange);
+            }
+            let start = u64::from(m.page);
+            let end = start + u64::from(m.pages);
+            for range in [header.catalog, header.metadata] {
+                let r = u64::from(range.start);
+                if start < r + u64::from(range.count) && r < end {
+                    return Err(NativeUnknown::InvalidRange);
+                }
+            }
+        }
+    }
+    Ok(())
+}
+struct ColumnCursor<'a, S: ByteSource + ?Sized> {
+    reader: CatalogCursor<'a, S>,
+    remaining: u64,
+    end_row: u64,
+    start_row: u64,
+    current: Option<StringSegment>,
+}
+impl<'a, S: ByteSource + ?Sized> ColumnCursor<'a, S> {
+    fn new(
+        source: &'a S,
+        span: super::maintenance_validation::Span,
+    ) -> Result<Self, NativeUnknown> {
+        let mut reader = CatalogCursor::new(source, span.start, span.end)?;
+        reader.flag()?;
+        let remaining = reader.u64()?;
+        Ok(Self {
+            reader,
+            remaining,
+            end_row: 0,
+            start_row: 0,
+            current: None,
+        })
+    }
+    fn value(
+        &mut self,
+        row: u64,
+        header: NativeHeader43Facts,
+        scratch: &mut NativeDataScratch,
+    ) -> Result<Option<NativeStringLocator>, NativeUnknown> {
+        while self.current.is_none() || row >= self.end_row {
+            if self.remaining == 0 {
+                return Err(self.reader.fail(114));
+            }
+            self.current = Some(
+                self.reader
+                    .string_segment(u64::from(header.data_file_pages))?,
+            );
+            self.remaining -= 1;
+            self.start_row = self.end_row;
+            self.end_row = self
+                .end_row
+                .checked_add(self.current.unwrap().parent.values)
+                .ok_or(NativeUnknown::Overflow)?;
+        }
+        let segment = self.current.unwrap();
+        check_selected_segment_ranges(segment, header)?;
+        let ordinal = row
+            .checked_sub(self.start_row)
+            .ok_or(NativeUnknown::InvalidRange)?;
+        if let Some(null) = segment.null {
+            if scalar(self.reader.source, scratch, null, 1, ordinal)? != 0 {
+                return Ok(None);
+            }
+        }
+        let index = scalar(self.reader.source, scratch, segment.index, 32, ordinal)?;
+        if index >= segment.offsets.values {
+            return Err(self.reader.fail(115));
+        }
+        let start = scalar(self.reader.source, scratch, segment.offsets, 64, index)?;
+        let end = if index + 1 < segment.offsets.values {
+            scalar(self.reader.source, scratch, segment.offsets, 64, index + 1)?
+        } else {
+            segment.data.values
+        };
+        if start > end || end > segment.data.values {
+            return Err(self.reader.fail(116));
+        }
+        let (min, max) = unsigned_bounds(segment.data, 8)?;
+        Ok(Some(NativeStringLocator {
+            source: 0,
+            compression: segment.data.compression,
+            bits: 8,
+            reserved: [0; 5],
+            page: segment.data.page,
+            pages: segment.data.pages,
+            values: segment.data.values,
+            min,
+            max,
+            start,
+            length: end - start,
+        }))
+    }
+}
+struct VersionCursor<'a, S: ByteSource + ?Sized> {
+    reader: CatalogCursor<'a, S>,
+    vectors: u64,
+    insert: bool,
+    deletion: u8,
+    same: u64,
+}
+impl<'a, S: ByteSource + ?Sized> VersionCursor<'a, S> {
+    fn new(source: &'a S, start: u64, end: u64) -> Result<Self, NativeUnknown> {
+        let mut reader = CatalogCursor::new(source, start, end)?;
+        let vectors = if reader.flag()? { reader.u64()? } else { 0 };
+        Ok(Self {
+            reader,
+            vectors,
+            insert: true,
+            deletion: 0,
+            same: 0,
+        })
+    }
+    fn visible(&mut self, row: u64) -> Result<bool, NativeUnknown> {
+        if row % 2048 == 0 {
+            self.insert = true;
+            self.deletion = 0;
+            self.same = 0;
+            if row / 2048 < self.vectors && self.reader.flag()? {
+                self.insert = self.reader.byte()? == 2;
+                self.deletion = self.reader.byte()?;
+                if self.deletion == 1 {
+                    self.same = self.reader.u64()?;
+                }
+            }
+        }
+        let deleted = if self.deletion == 0 {
+            false
+        } else if self.same == u64::MAX {
+            self.reader.u64()? != u64::MAX
+        } else {
+            true
+        };
+        Ok(self.insert && !deleted)
+    }
+}
+
+struct RowStringSource<'a, 'b, S: ByteSource + ?Sized> {
+    source: &'a S,
+    locator: NativeStringLocator,
+    scratch: &'b std::cell::RefCell<NativeDataScratch>,
+}
+impl<S: ByteSource + ?Sized> ByteSource for RowStringSource<'_, '_, S> {
+    fn len(&self) -> u64 {
+        self.locator.length
+    }
+    fn read_at(&self, offset: u64, out: &mut [u8]) -> Result<usize, ValidationIssue> {
+        let n = self
+            .locator
+            .length
+            .checked_sub(offset)
+            .ok_or(ValidationIssue::InvalidSpan)?
+            .min(out.len() as u64) as usize;
+        let mut scratch = self.scratch.borrow_mut();
+        for (i, b) in out[..n].iter_mut().enumerate() {
+            *b = scalar(
+                self.source,
+                &mut scratch,
+                self.locator.metadata(),
+                8,
+                self.locator.start + offset + i as u64,
+            )
+            .map_err(native_validation_issue)? as u8;
+        }
+        Ok(n)
+    }
+}
+fn validate_logical_utf8(
+    source: &impl ByteSource,
+    memory: &CleanupMemory,
+) -> Result<(), NativeUnknown> {
+    super::maintenance_validation::key_stream_hash(
+        source,
+        super::maintenance_validation::Span {
+            start: 0,
+            end: source.len(),
+        },
+        super::maintenance_validation::KeyEncoding::NativeUtf8,
+        0,
+        memory,
+    )?;
+    Ok(())
+}
+fn logical_matches(source: &impl ByteSource, text: &[u8]) -> Result<bool, NativeUnknown> {
+    if source.len() != text.len() as u64 {
+        return Ok(false);
+    }
+    let mut byte = [0];
+    for (i, b) in text.iter().enumerate() {
+        if source.read_at(i as u64, &mut byte)? != 1 {
+            return Err(NativeUnknown::Truncated);
+        }
+        if byte[0] != *b {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+struct LogicalRead<'a, S: ByteSource + ?Sized> {
+    source: &'a S,
+    at: u64,
+    error: &'a std::cell::Cell<Option<ValidationIssue>>,
+}
+impl<S: ByteSource + ?Sized> std::io::Read for LogicalRead<'_, S> {
+    fn read(&mut self, out: &mut [u8]) -> std::io::Result<usize> {
+        let n = self.source.read_at(self.at, out).map_err(|e| {
+            self.error.set(Some(e));
+            // The tokenizer retries Interrupted as ordinary I/O; a source's
+            // cancellation/stale error is terminal and must retain its type.
+            std::io::Error::from(std::io::ErrorKind::InvalidData)
+        })?;
+        self.at = self.at.checked_add(n as u64).ok_or_else(|| {
+            self.error.set(Some(ValidationIssue::Overflow));
+            std::io::Error::from(std::io::ErrorKind::InvalidData)
+        })?;
+        Ok(n)
+    }
+}
+fn metadata_canonical_key(
+    source: &impl ByteSource,
+    memory: &CleanupMemory,
+) -> Result<Option<super::maintenance_validation::Span>, NativeUnknown> {
+    use super::maintenance_json::{MaintenanceJsonReader, TokenKind};
+    use super::maintenance_validation::{compare_native_json, Span};
+    let source_error = std::cell::Cell::new(None);
+    let mut reader = MaintenanceJsonReader::new(
+        LogicalRead {
+            source,
+            at: 0,
+            error: &source_error,
+        },
+        memory,
+    )
+    .map_err(ValidationIssue::from)?;
+    let mut depth = 0u64;
+    let mut canonical = false;
+    let mut result = None;
+    while let Some(token) = reader.next_token().map_err(|e| {
+        NativeUnknown::Source(
+            source_error
+                .take()
+                .unwrap_or_else(|| ValidationIssue::from(e)),
+        )
+    })? {
+        if canonical {
+            if !matches!(token.kind, TokenKind::String { key: false, .. }) || result.is_some() {
+                return Err(NativeUnknown::UnsupportedLayout);
+            }
+            result = Some(Span {
+                start: token.start,
+                end: token.end,
+            });
+            canonical = false;
+        }
+        match token.kind {
+            TokenKind::ObjectStart => {
+                depth += 1;
+                if depth == 1 && token.start != 0 {
+                    return Err(NativeUnknown::UnsupportedLayout);
+                }
+            }
+            TokenKind::ArrayStart => {
+                if depth == 0 {
+                    return Err(NativeUnknown::UnsupportedLayout);
+                }
+                depth += 1;
+            }
+            TokenKind::ObjectEnd | TokenKind::ArrayEnd => {
+                depth = depth.checked_sub(1).ok_or(NativeUnknown::InvalidRange)?;
+            }
+            TokenKind::String { key: true, .. } if depth == 1 => {
+                canonical = compare_native_json(
+                    b"canonical_key".as_slice(),
+                    Span { start: 0, end: 13 },
+                    source,
+                    Span {
+                        start: token.start,
+                        end: token.end,
+                    },
+                    memory,
+                )? == std::cmp::Ordering::Equal;
+            }
+            _ if depth == 0 => return Err(NativeUnknown::UnsupportedLayout),
+            _ => {}
+        }
+    }
+    if depth != 0 || canonical {
+        return Err(NativeUnknown::UnsupportedLayout);
+    }
+    Ok(result)
+}
+
+/// Visit the four selected NODE tables. Framing and DATA facts are revoked by
+/// any later error. `check` must enforce cancellation and source-incarnation
+/// stability; it runs before/after every pass and before every emitted row.
+/// Table/schema provenance and cache association remain separate consumers.
+pub(crate) fn scan_native_selected43<S: ByteSource + ?Sized>(
+    source: &S,
+    memory: &CleanupMemory,
+    check: &mut impl FnMut() -> Result<(), NativeUnknown>,
+    emit: &mut impl FnMut(NativeSelectedRow) -> Result<(), NativeUnknown>,
+) -> Result<u64, NativeUnknown> {
+    use super::maintenance_validation::Span;
+    check()?;
+    let floor = std::mem::size_of::<[SelectedMap; 4]>()
+        .checked_add(std::mem::size_of::<[Option<ColumnCursor<'_, S>>; 5]>())
+        .and_then(|n| n.checked_add(std::mem::size_of::<CatalogCursor<'_, S>>()))
+        .and_then(|n| n.checked_add(std::mem::size_of::<VersionCursor<'_, S>>()))
+        .and_then(|n| n.checked_add(std::mem::size_of::<NativeDataScratch>()))
+        .and_then(|n| n.checked_add(std::mem::size_of::<NativeSelectedRow>() * 2))
+        .and_then(|n| n.checked_add(std::mem::size_of::<StringSegment>() * 2))
+        .and_then(|n| n.checked_add(std::mem::size_of::<NativePrimitiveMetadata>() * 5))
+        .and_then(|n| n.checked_add(std::mem::size_of::<[Span; 5]>() + 512))
+        .ok_or(NativeUnknown::Overflow)?;
+    let _floor = memory.reserve(floor).map_err(ValidationIssue::from)?;
+    let mut maps = std::array::from_fn::<_, 4, _>(|i| SelectedMap {
+        table: u64::MAX,
+        kind: [
+            NativeSelectedTable::Repository,
+            NativeSelectedTable::SourceRoot,
+            NativeSelectedTable::File,
+            NativeSelectedTable::Contains,
+        ][i],
+        properties: [u32::MAX; 5],
+        columns: [u32::MAX; 5],
+    });
+    let header = scan_native_header43(source, memory)?;
+    let matcher = CatalogCursor::new(source, 0, source.len())?;
+    trace_native_catalog43(source, memory, &mut |event| {
+        match event {
+            NativeCatalogEvent::Table {
+                id,
+                name,
+                node: true,
+            } => {
+                for (i, n) in [
+                    b"Repository".as_slice(),
+                    b"SourceRoot",
+                    b"File",
+                    b"Contains",
+                ]
+                .iter()
+                .enumerate()
+                {
+                    if matcher.matches(name, n)? {
+                        if maps[i].table != u64::MAX {
+                            return Err(NativeUnknown::UnsupportedLayout);
+                        }
+                        maps[i].table = id;
+                    }
+                }
+            }
+            NativeCatalogEvent::Property {
+                table,
+                id,
+                name,
+                logical,
+                physical,
+                ..
+            } => {
+                if let Some(m) = maps.iter_mut().find(|m| m.table == table) {
+                    for (i, n) in m.kind.fields().iter().enumerate() {
+                        if matcher.matches(name, n)? {
+                            if (logical, physical) != if i == 4 { (60, 21) } else { (50, 20) }
+                                || m.properties[i] != u32::MAX
+                            {
+                                return Err(NativeUnknown::UnsupportedLayout);
+                            }
+                            m.properties[i] = id;
+                        }
+                    }
+                }
+            }
+            NativeCatalogEvent::Column {
+                table,
+                property,
+                column,
+            } => {
+                if let Some(m) = maps.iter_mut().find(|m| m.table == table) {
+                    for (i, p) in m.properties.iter().enumerate() {
+                        if *p == property {
+                            m.columns[i] = column;
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    })?;
+    drop(matcher);
+    if maps
+        .iter()
+        .any(|m| m.table == u64::MAX || m.columns.contains(&u32::MAX))
+    {
+        return Err(NativeUnknown::UnsupportedLayout);
+    }
+    // Complete framing validates duplicate/missing metadata tables and all
+    // version trailers before any selected row callback can be accepted.
+    trace_native_metadata43(source, memory, &mut |_| check())?;
+    check()?;
+    if header.catalog.start == 0
+        || header.metadata.start == 0
+        || header.data_file_pages == 0
+        || u64::from(header.catalog.start) + u64::from(header.catalog.count)
+            > u64::from(header.data_file_pages)
+        || u64::from(header.metadata.start) + u64::from(header.metadata.count)
+            > u64::from(header.data_file_pages)
+    {
+        return Err(NativeUnknown::InvalidRange);
+    }
+    let a = u64::from(header.catalog.start);
+    let b = u64::from(header.metadata.start);
+    if a < b + u64::from(header.metadata.count) && b < a + u64::from(header.catalog.count) {
+        return Err(NativeUnknown::InvalidRange);
+    }
+    let start = u64::from(header.metadata.start) * PAGE_BYTES;
+    let end = start + u64::from(header.metadata.count) * PAGE_BYTES;
+    let mut reader = CatalogCursor::new(source, start, end)?;
+    let tables = reader.u64()?;
+    let mut emitted = 0u64;
+    let scratch = std::cell::RefCell::new(NativeDataScratch::new());
+    for _ in 0..tables {
+        check()?;
+        let table = reader.u64()?;
+        let groups = reader.u64()?;
+        let selected = maps.iter().find(|m| m.table == table).copied();
+        for _ in 0..groups {
+            check()?;
+            reader.u64()?;
+            reader.flag()?;
+            if reader.byte()? != 0 {
+                return Err(reader.fail(117));
+            }
+            if !reader.flag()? {
+                continue;
+            }
+            let columns = reader.u64()?;
+            let mut spans = [Span::default(); 5];
+            let mut rows = 0;
+            for column in 0..columns {
+                let begin = reader.at;
+                reader.flag()?;
+                let segments = reader.u64()?;
+                let mut total = 0u64;
+                for _ in 0..segments {
+                    let field = selected
+                        .and_then(|m| m.columns.iter().position(|c| u64::from(*c) == column));
+                    let values = if let Some(field) = field {
+                        let segment = reader.string_segment(u64::from(header.data_file_pages))?;
+                        let expected = if field == 4 { (60, 21) } else { (50, 20) };
+                        if (segment.logical, segment.physical) != expected {
+                            return Err(reader.fail(121));
+                        }
+                        check_selected_segment_ranges(segment, header)?;
+                        segment.parent.values
+                    } else {
+                        reader.chunk_data(header.available_pages, 0)?.2.values
+                    };
+                    total = total.checked_add(values).ok_or(NativeUnknown::Overflow)?;
+                }
+                rows = total;
+                if let Some(m) = selected {
+                    for (i, c) in m.columns.iter().enumerate() {
+                        if u64::from(*c) == column {
+                            spans[i] = Span {
+                                start: begin,
+                                end: reader.at,
+                            };
+                        }
+                    }
+                }
+            }
+            let row_start = reader.u64()?;
+            let version_start = reader.at;
+            reader.versions()?;
+            let resume = reader.at;
+            if let Some(m) = selected {
+                if spans.iter().any(|s| s.start == s.end) {
+                    return Err(reader.fail(118));
+                }
+                let mut cursors = std::array::from_fn::<_, 5, _>(|_| None);
+                for i in 0..5 {
+                    cursors[i] = Some(ColumnCursor::new(source, spans[i])?);
+                }
+                let mut versions = VersionCursor::new(source, version_start, resume)?;
+                for row in 0..rows {
+                    check()?;
+                    let visible = versions.visible(row)?;
+                    if !visible {
+                        continue;
+                    }
+                    let mut fields = [None; 5];
+                    if m.kind == NativeSelectedTable::Contains {
+                        fields[1] = cursors[1].as_mut().unwrap().value(
+                            row,
+                            header,
+                            &mut scratch.borrow_mut(),
+                        )?;
+                        let Some(kind) = fields[1] else {
+                            return Err(reader.fail(119));
+                        };
+                        let logical = RowStringSource {
+                            source,
+                            locator: kind,
+                            scratch: &scratch,
+                        };
+                        validate_logical_utf8(&logical, memory)?;
+                        if !logical_matches(&logical, b"repository_source_root")?
+                            && !logical_matches(&logical, b"source_root_file")?
+                        {
+                            continue;
+                        }
+                    }
+                    for i in 0..5 {
+                        if fields[i].is_none() {
+                            fields[i] = cursors[i].as_mut().unwrap().value(
+                                row,
+                                header,
+                                &mut scratch.borrow_mut(),
+                            )?;
+                        }
+                    }
+                    for locator in fields.iter().flatten() {
+                        validate_logical_utf8(
+                            &RowStringSource {
+                                source,
+                                locator: *locator,
+                                scratch: &scratch,
+                            },
+                            memory,
+                        )?;
+                    }
+                    let canonical_key = if let Some(locator) = fields[4] {
+                        metadata_canonical_key(
+                            &RowStringSource {
+                                source,
+                                locator,
+                                scratch: &scratch,
+                            },
+                            memory,
+                        )?
+                    } else {
+                        None
+                    };
+                    if canonical_key.is_none() {
+                        return Err(reader.fail(120));
+                    }
+                    emit(NativeSelectedRow {
+                        table: m.kind,
+                        ordinal: row_start.checked_add(row).ok_or(NativeUnknown::Overflow)?,
+                        fields,
+                        canonical_key,
+                    })?;
+                    emitted = emitted.checked_add(1).ok_or(NativeUnknown::Overflow)?;
+                }
+            }
+        }
+        reader.u64()?;
+        let stats = reader.u64()?;
+        for _ in 0..stats {
+            if reader.flag()? {
+                reader.skip(64)?;
+            }
+        }
+        let indexes = reader.u64()?;
+        for _ in 0..indexes {
+            reader.text(memory)?;
+            reader.text(memory)?;
+            reader.u64()?;
+            let n = reader.u64()?;
+            for _ in 0..n {
+                reader.u32()?;
+            }
+            let n = reader.u64()?;
+            reader.skip(n)?;
+            reader.flag()?;
+            reader.flag()?;
+            let n = reader.u64()?;
+            reader.skip(n)?;
+        }
+    }
+    check()?;
+    Ok(emitted)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1438,5 +2358,565 @@ mod tests {
                 response["node_rows"].as_u64().unwrap() + response["edge_rows"].as_u64().unwrap()
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod selected_tests {
+    use super::super::maintenance_validation::{key_stream_hash, KeyEncoding, Span};
+    use super::*;
+    fn meta(
+        page: u32,
+        pages: u32,
+        values: u64,
+        min: u64,
+        max: u64,
+        compression: u8,
+    ) -> NativePrimitiveMetadata {
+        let mut lo = [0; 16];
+        let mut hi = [0; 16];
+        lo[..8].copy_from_slice(&min.to_le_bytes());
+        hi[..8].copy_from_slice(&max.to_le_bytes());
+        NativePrimitiveMetadata {
+            page,
+            pages,
+            values,
+            min: lo,
+            max: hi,
+            compression,
+        }
+    }
+    fn packed(
+        width: u8,
+        offset: u64,
+        count: usize,
+    ) -> (Vec<u8>, NativePrimitiveMetadata, Vec<u64>) {
+        let per = 32768 / usize::from(width);
+        let pages = count.div_ceil(per);
+        let mut bytes = vec![0; (pages + 1) * 4096];
+        let mask = if width == 64 {
+            u64::MAX
+        } else {
+            (1u64 << width) - 1
+        };
+        let mut expected = Vec::new();
+        for row in 0..count {
+            let encoded = (row as u64).wrapping_mul(0x123456789abcdef) & mask;
+            let value = encoded.checked_add(offset).unwrap();
+            expected.push(value);
+            let bit = (row % per) * usize::from(width);
+            let base = (1 + row / per) * 4096;
+            for k in 0..usize::from(width) {
+                if encoded & (1u64 << k) != 0 {
+                    bytes[base + (bit + k) / 8] |= 1 << ((bit + k) % 8);
+                }
+            }
+        }
+        (
+            bytes,
+            meta(1, pages as u32, count as u64, offset, mask + offset, 1),
+            expected,
+        )
+    }
+    #[test]
+    fn dc_native_scalar_unsigned_every_width_page_word_and_frame_crossing() {
+        for width in 1..=64 {
+            for offset in [0, if width < 63 { 1u64 << 63 } else { 0 }] {
+                let count = 32768 / width as usize + 39;
+                let (bytes, m, expected) = packed(width, offset, count);
+                let mut scratch = NativeDataScratch::new();
+                for (i, want) in expected.iter().enumerate() {
+                    assert_eq!(
+                        scalar(bytes.as_slice(), &mut scratch, m, 64, i as u64).unwrap(),
+                        *want,
+                        "width={width} row={i}"
+                    );
+                }
+            }
+        }
+        for bits in [8, 32, 64] {
+            let mut bytes = vec![0; 8192];
+            let n = usize::from(bits) / 8;
+            let value = if bits == 64 {
+                u64::MAX
+            } else {
+                (1u64 << bits) - 1
+            };
+            bytes[4096..4096 + n].copy_from_slice(&value.to_le_bytes()[..n]);
+            let mut scratch = NativeDataScratch::new();
+            assert_eq!(
+                scalar(
+                    bytes.as_slice(),
+                    &mut scratch,
+                    meta(1, 1, 1, 0, 0, 0),
+                    bits,
+                    0
+                )
+                .unwrap(),
+                value
+            );
+            assert_eq!(
+                scalar(
+                    bytes.as_slice(),
+                    &mut scratch,
+                    meta(INVALID_PAGE, 0, 1, value, value, 3),
+                    bits,
+                    0
+                )
+                .unwrap(),
+                value
+            );
+        }
+    }
+    #[test]
+    fn dc_native_scalar_null_mask_and_corrupt_ranges_are_explicit() {
+        let mut bytes = vec![0; 3 * 4096];
+        bytes[4096] = 0b10000001;
+        bytes[8192] = 1;
+        let mut scratch = NativeDataScratch::new();
+        let m = meta(1, 2, 32769, 0, 1, 2);
+        for row in [0, 7, 32768] {
+            assert_eq!(
+                scalar(bytes.as_slice(), &mut scratch, m, 1, row).unwrap(),
+                1
+            );
+        }
+        assert_eq!(scalar(bytes.as_slice(), &mut scratch, m, 1, 1).unwrap(), 0);
+        for bad in [
+            meta(0, 1, 1, 0, 1, 1),
+            meta(1, 0, 1, 0, 1, 1),
+            meta(1, 1, 1, 2, 1, 1),
+            meta(1, 1, 1, 0, 0, 1),
+            meta(1, 1, 1, 0, 1, 4),
+        ] {
+            assert!(scalar(bytes.as_slice(), &mut scratch, bad, 64, 0).is_err());
+        }
+        assert!(scalar(bytes.as_slice(), &mut scratch, m, 1, m.values).is_err());
+        let mut bad = meta(1, 1, 1, 0, 1, 1);
+        bad.max[8] = 1;
+        assert!(scalar(bytes.as_slice(), &mut scratch, bad, 64, 0).is_err());
+    }
+    fn locator(bytes: &[u8]) -> (Vec<u8>, NativeStringLocator) {
+        let pages = bytes.len().div_ceil(4096);
+        let mut source = vec![0; (pages + 1) * 4096];
+        source[4096..4096 + bytes.len()].copy_from_slice(bytes);
+        (
+            source,
+            NativeStringLocator {
+                source: 0,
+                compression: 0,
+                bits: 8,
+                reserved: [0; 5],
+                page: 1,
+                pages: pages as u32,
+                values: bytes.len() as u64,
+                min: 0,
+                max: 0,
+                start: 0,
+                length: bytes.len() as u64,
+            },
+        )
+    }
+    #[test]
+    fn dc_native_logical_long_utf8_metadata_empty_and_late_errors() {
+        let memory = CleanupMemory::new(100_000).unwrap();
+        let floor = memory.used();
+        let text = format!("{}é🙂\0{}", "a".repeat(4095), "b".repeat(100_000));
+        let (bytes, l) = locator(text.as_bytes());
+        {
+            let source = NativeStringSource::new(bytes.as_slice(), l, &memory).unwrap();
+            assert_eq!(
+                key_stream_hash(
+                    &source,
+                    Span {
+                        start: 0,
+                        end: l.length
+                    },
+                    KeyEncoding::NativeUtf8,
+                    8,
+                    &memory
+                )
+                .unwrap(),
+                key_stream_hash(
+                    text.as_bytes(),
+                    Span {
+                        start: 0,
+                        end: text.len() as u64
+                    },
+                    KeyEncoding::NativeUtf8,
+                    8,
+                    &memory
+                )
+                .unwrap()
+            );
+        }
+        assert_eq!(memory.used(), floor);
+        let empty = NativeStringLocator {
+            page: INVALID_PAGE,
+            pages: 0,
+            values: 0,
+            start: 0,
+            length: 0,
+            ..l
+        };
+        let source = NativeStringSource::new([].as_slice(), empty, &memory).unwrap();
+        assert!(validate_logical_utf8(&source, &memory).is_ok());
+        drop(source);
+        let (mut bad, l) = locator(text.as_bytes());
+        bad[4096 + text.len() - 1] = 0xff;
+        let source = NativeStringSource::new(bad.as_slice(), l, &memory).unwrap();
+        assert!(validate_logical_utf8(&source, &memory).is_err());
+        drop(source);
+        let json = br#"{"canonical_key":"p\u0061th","extra":{"x":[1,null]}}"#;
+        let (bytes, l) = locator(json);
+        let source = NativeStringSource::new(bytes.as_slice(), l, &memory).unwrap();
+        let span = metadata_canonical_key(&source, &memory).unwrap().unwrap();
+        assert_eq!(
+            super::super::maintenance_validation::compare_native_json(
+                b"path".as_slice(),
+                Span { start: 0, end: 4 },
+                &source,
+                span,
+                &memory
+            )
+            .unwrap(),
+            std::cmp::Ordering::Equal
+        );
+        let (bytes, l) = locator(br#"{"canonical_key":"a","canonical_key":"b"}"#);
+        let source = NativeStringSource::new(bytes.as_slice(), l, &memory).unwrap();
+        assert!(metadata_canonical_key(&source, &memory).is_err());
+        let small = CleanupMemory::new(64).unwrap();
+        assert!(NativeStringSource::new(bytes.as_slice(), l, &small).is_err());
+    }
+    #[test]
+    fn dc_native_visibility_deleted_early_vector_and_implicit_tail() {
+        let mut bytes = vec![1];
+        bytes.extend(1u64.to_le_bytes());
+        bytes.extend([1, 2, 1]);
+        bytes.extend(u64::MAX.to_le_bytes());
+        for i in 0..2048 {
+            bytes.extend(if i == 4 { 42u64 } else { u64::MAX }.to_le_bytes());
+        }
+        let mut version = VersionCursor::new(bytes.as_slice(), 0, bytes.len() as u64).unwrap();
+        for row in 0..4097 {
+            assert_eq!(version.visible(row).unwrap(), row != 4);
+        }
+        bytes.truncate(20);
+        let mut version = VersionCursor::new(bytes.as_slice(), 0, bytes.len() as u64).unwrap();
+        assert!(version.visible(0).is_err());
+    }
+    #[test]
+    fn dc_native_scan_cancellation_precedes_any_source_read() {
+        struct NoRead;
+        impl ByteSource for NoRead {
+            fn len(&self) -> u64 {
+                0
+            }
+            fn read_at(&self, _: u64, _: &mut [u8]) -> Result<usize, ValidationIssue> {
+                panic!("cancelled source must not read")
+            }
+        }
+        let memory = CleanupMemory::new(100_000).unwrap();
+        let mut emits = 0;
+        assert_eq!(
+            scan_native_selected43(
+                &NoRead,
+                &memory,
+                &mut || Err(NativeUnknown::Source(ValidationIssue::Io(
+                    std::io::ErrorKind::Interrupted
+                ))),
+                &mut |_| {
+                    emits += 1;
+                    Ok(())
+                }
+            ),
+            Err(NativeUnknown::Source(ValidationIssue::Io(
+                std::io::ErrorKind::Interrupted
+            )))
+        );
+        assert_eq!(emits, 0);
+    }
+}
+
+#[cfg(test)]
+mod selected_oracle_tests {
+    use super::super::maintenance_validation::{compare_native_json, BorrowedFileSource, Span};
+    use super::*;
+    #[test]
+    #[ignore = "requires separately generated actual public-producer187 synthetic fixtures"]
+    fn dc_native_actual_producer187_selected_strings_and_support_rows() {
+        let root = std::path::PathBuf::from(
+            std::env::var_os("DC_S3_NATIVE_FIXTURES")
+                .expect("explicit synthetic fixture directory"),
+        );
+        let oracle: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(root.join("oracle-results.json")).unwrap())
+                .unwrap();
+        let string = |value: &serde_json::Value| -> String {
+            let s = value.as_str().unwrap();
+            serde_json::from_str(
+                s.strip_prefix("String(")
+                    .unwrap()
+                    .strip_suffix(')')
+                    .unwrap(),
+            )
+            .unwrap()
+        };
+        for case in oracle["cases"].as_array().unwrap() {
+            let name = case["fixture"].as_str().unwrap();
+            assert!(name.starts_with("synthetic_native_"));
+            let mut expected = std::collections::BTreeMap::new();
+            for (index, query) in case["native_oracles"].as_array().unwrap()[..4]
+                .iter()
+                .enumerate()
+            {
+                for row in query["rows"].as_array().unwrap() {
+                    let id = string(&row[0]);
+                    let fields = match index {
+                        0 => [
+                            id.clone(),
+                            string(&row[1]),
+                            "repository".into(),
+                            string(&row[2]),
+                            string(&row[1]),
+                        ],
+                        1 => [
+                            id.clone(),
+                            string(&row[1]),
+                            "sourceroot".into(),
+                            string(&row[2]),
+                            string(&row[2]),
+                        ],
+                        2 => [
+                            id.clone(),
+                            "file".into(),
+                            string(&row[1]),
+                            string(&row[2]),
+                            string(&row[1]),
+                        ],
+                        3 => {
+                            let kind = string(&row[1]);
+                            let source = string(&row[2]);
+                            let target = string(&row[3]);
+                            [
+                                id.clone(),
+                                kind.clone(),
+                                source.clone(),
+                                target.clone(),
+                                format!("Contains|{source}|{target}|{kind}"),
+                            ]
+                        }
+                        _ => unreachable!(),
+                    };
+                    assert!(expected.insert(id, fields).is_none());
+                }
+            }
+            let path = root
+                .join(name)
+                .join(".codebaseGraph")
+                .join(format!("{name}_graph.ldb"));
+            let mut file = std::fs::File::open(path).unwrap();
+            let memory = CleanupMemory::new(1024 * 1024).unwrap();
+            let source = BorrowedFileSource::new(&mut file, &memory).unwrap();
+            let mut actual = 0;
+            scan_native_selected43(&source, &memory, &mut || Ok(()), &mut |row| {
+                let mut fields = Vec::new();
+                for locator in row.fields[..4].iter() {
+                    let l = locator.unwrap();
+                    let s = NativeStringSource::new(&source, l, &memory)?;
+                    let mut bytes = vec![0; s.len() as usize];
+                    s.read_at(0, &mut bytes)?;
+                    fields.push(String::from_utf8(bytes).unwrap());
+                }
+                let want = expected.remove(&fields[0]).unwrap();
+                assert_eq!(&fields[..], &want[..4]);
+                let metadata = NativeStringSource::new(&source, row.fields[4].unwrap(), &memory)?;
+                assert_eq!(
+                    compare_native_json(
+                        want[4].as_bytes(),
+                        Span {
+                            start: 0,
+                            end: want[4].len() as u64
+                        },
+                        &metadata,
+                        row.canonical_key.unwrap(),
+                        &memory
+                    )?,
+                    std::cmp::Ordering::Equal
+                );
+                actual += 1;
+                Ok(())
+            })
+            .unwrap();
+            assert_eq!(actual, 7);
+            assert!(expected.is_empty());
+            assert!(memory.peak() < 64 * 1024);
+            eprintln!(
+                "{name}: exact7selected rows+5fields+canonical metadata; requestedpeak={}",
+                memory.peak()
+            );
+            // A changed incarnation/cancellation invalidates the entire pass,
+            // including rows already observed by the provisional callback.
+            let mut checks = 0;
+            let result = scan_native_selected43(
+                &source,
+                &memory,
+                &mut || {
+                    checks += 1;
+                    if checks > 3 {
+                        Err(NativeUnknown::Source(ValidationIssue::Io(
+                            std::io::ErrorKind::Interrupted,
+                        )))
+                    } else {
+                        Ok(())
+                    }
+                },
+                &mut |_| Ok(()),
+            );
+            assert!(result.is_err());
+            let epoch = std::cell::Cell::new(0);
+            let mut provisional = 0;
+            let changed = scan_native_selected43(
+                &source,
+                &memory,
+                &mut || {
+                    if epoch.get() == 0 {
+                        Ok(())
+                    } else {
+                        Err(NativeUnknown::SourceChanged)
+                    }
+                },
+                &mut |_| {
+                    provisional += 1;
+                    epoch.set(1);
+                    Ok(())
+                },
+            );
+            assert_eq!(changed, Err(NativeUnknown::SourceChanged));
+            assert_eq!(provisional, 1);
+        }
+    }
+}
+
+#[cfg(test)]
+mod dictionary_tests {
+    use super::*;
+    fn m(page: u32, values: u64, value: u64, compression: u8) -> NativePrimitiveMetadata {
+        let mut min = [0; 16];
+        min[..8].copy_from_slice(&value.to_le_bytes());
+        NativePrimitiveMetadata {
+            page,
+            pages: if page == INVALID_PAGE { 0 } else { 1 },
+            values,
+            min,
+            max: min,
+            compression,
+        }
+    }
+    fn put(out: &mut Vec<u8>, m: NativePrimitiveMetadata) {
+        out.extend(m.page.to_le_bytes());
+        out.extend(m.pages.to_le_bytes());
+        out.extend(m.values.to_le_bytes());
+        out.extend(m.min);
+        out.extend(m.max);
+        out.push(m.compression);
+    }
+    fn child(out: &mut Vec<u8>, logical: u8, physical: u8, m: NativePrimitiveMetadata) {
+        out.extend([logical, physical, 0]);
+        put(out, m);
+        out.extend([1, 0]);
+    }
+    fn segment(out: &mut Vec<u8>, page: u32, len: u64, null: bool, index: u64) {
+        out.extend([50, 20, 0]);
+        put(out, m(INVALID_PAGE, 1, 0, 0));
+        out.extend([1, 1]);
+        put(out, m(INVALID_PAGE, 1, u64::from(null), 3));
+        child(out, 28, 7, m(INVALID_PAGE, 1, index, 3));
+        child(out, 27, 6, m(INVALID_PAGE, 1, 0, 3));
+        child(out, 30, 9, m(page, len, 0, 0));
+    }
+    #[test]
+    fn dc_native_dictionary_segment_advance_retained_locator_null_empty_and_invalid_index() {
+        let memory = CleanupMemory::new(100_000).unwrap();
+        let mut metadata = vec![1];
+        metadata.extend(4u64.to_le_bytes());
+        segment(&mut metadata, 1, 3, false, 0);
+        segment(&mut metadata, 2, 3, false, 0);
+        segment(&mut metadata, INVALID_PAGE, 0, false, 0);
+        segment(&mut metadata, INVALID_PAGE, 0, true, 99);
+        let mut bytes = vec![0; 30 * 4096];
+        bytes[..metadata.len()].copy_from_slice(&metadata);
+        bytes[4096..4099].copy_from_slice(b"one");
+        bytes[8192..8195].copy_from_slice(b"two");
+        let header = NativeHeader43Facts {
+            catalog: NativePageRange {
+                start: 20,
+                count: 1,
+            },
+            metadata: NativePageRange {
+                start: 21,
+                count: 1,
+            },
+            database_id: [0; 16],
+            data_file_pages: 30,
+            available_pages: 30,
+        };
+        let mut cursor = ColumnCursor::new(
+            bytes.as_slice(),
+            super::super::maintenance_validation::Span {
+                start: 0,
+                end: metadata.len() as u64,
+            },
+        )
+        .unwrap();
+        let mut scratch = NativeDataScratch::new();
+        let retained = cursor.value(0, header, &mut scratch).unwrap().unwrap();
+        let second = cursor.value(1, header, &mut scratch).unwrap().unwrap();
+        for (l, text) in [(retained, b"one"), (second, b"two")] {
+            let source = NativeStringSource::new(bytes.as_slice(), l, &memory).unwrap();
+            let mut actual = [0; 3];
+            source.read_at(0, &mut actual).unwrap();
+            assert_eq!(&actual, text);
+        }
+        assert_eq!(
+            cursor
+                .value(2, header, &mut scratch)
+                .unwrap()
+                .unwrap()
+                .length,
+            0
+        );
+        assert_eq!(cursor.value(3, header, &mut scratch).unwrap(), None);
+        let mut metadata = vec![1];
+        metadata.extend(1u64.to_le_bytes());
+        segment(&mut metadata, 1, 3, false, 2);
+        let mut cursor = ColumnCursor::new(
+            metadata.as_slice(),
+            super::super::maintenance_validation::Span {
+                start: 0,
+                end: metadata.len() as u64,
+            },
+        )
+        .unwrap();
+        assert!(cursor.value(0, header, &mut scratch).is_err());
+    }
+    #[test]
+    fn dc_native_metadata_preserves_terminal_source_cancellation_instead_of_retry() {
+        struct Cancel;
+        impl ByteSource for Cancel {
+            fn len(&self) -> u64 {
+                5000
+            }
+            fn read_at(&self, _: u64, _: &mut [u8]) -> Result<usize, ValidationIssue> {
+                Err(ValidationIssue::Io(std::io::ErrorKind::Interrupted))
+            }
+        }
+        let memory = CleanupMemory::new(100_000).unwrap();
+        assert_eq!(
+            metadata_canonical_key(&Cancel, &memory),
+            Err(NativeUnknown::Source(ValidationIssue::Io(
+                std::io::ErrorKind::Interrupted
+            )))
+        );
     }
 }

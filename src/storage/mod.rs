@@ -10,6 +10,7 @@ pub(crate) mod maintenance_controls;
 pub(crate) mod maintenance_journal;
 pub(crate) mod maintenance_json;
 pub(crate) mod maintenance_native_projection;
+pub(crate) mod maintenance_origin;
 pub(crate) mod maintenance_ownership;
 pub(crate) mod maintenance_scheduler;
 pub(crate) mod maintenance_validation;

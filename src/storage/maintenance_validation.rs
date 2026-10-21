@@ -1638,6 +1638,466 @@ fn partition_id_matches<S: ByteSource + ?Sized>(
     equals(source, id, &expected)
 }
 
+/// Fixed, caller-owned key addresses (including source incarnation) only. A
+/// replay must include every expected/native selected ID, including extras.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct WitnessEvent<K: Copy> {
+    pub(crate) domain: u64,
+    pub(crate) native: bool,
+    /// Producer source order; lowest nonempty field wins independently.
+    pub(crate) ordinal: u64,
+    pub(crate) fields: [Option<K>; 5],
+}
+pub(crate) trait ReplayWitnesses {
+    type Key: Copy;
+    /// Validate each complete row/key before emission, including later
+    /// duplicate fields that FIRSTNONEMPTY will not retain.
+    fn replay(
+        &self,
+        memory: &CleanupMemory,
+        emit: &mut dyn FnMut(WitnessEvent<Self::Key>) -> Result<(), ValidationIssue>,
+    ) -> Result<(), ValidationIssue>;
+    /// Validate complete decoded keys, including suffixes, in all three calls.
+    /// Reopening must check the captured incarnation, never refresh its stamp.
+    fn hash(
+        &self,
+        key: Self::Key,
+        domain: u64,
+        memory: &CleanupMemory,
+    ) -> Result<[u8; 32], ValidationIssue>;
+    fn compare(
+        &self,
+        left: Self::Key,
+        right: Self::Key,
+        memory: &CleanupMemory,
+    ) -> Result<Ordering, ValidationIssue>;
+    fn empty(&self, key: Self::Key, memory: &CleanupMemory) -> Result<bool, ValidationIssue>;
+}
+#[derive(Clone, Copy)]
+struct WitnessSlot<K: Copy> {
+    key: Option<K>,
+    domain: u64,
+    hash: [u8; 32],
+    native_count: u64,
+    expected_count: u64,
+    native: [Option<K>; 4],
+    expected: [Option<K>; 4],
+    ordinal: [u64; 4],
+}
+impl<K: Copy> WitnessSlot<K> {
+    fn empty() -> Self {
+        Self {
+            key: None,
+            domain: 0,
+            hash: [0; 32],
+            native_count: 0,
+            expected_count: 0,
+            native: [None; 4],
+            expected: [None; 4],
+            ordinal: [u64::MAX; 4],
+        }
+    }
+}
+struct WitnessTable<K: Copy> {
+    pointer: std::ptr::NonNull<WitnessSlot<K>>,
+    capacity: usize,
+    layout: std::alloc::Layout,
+    probes: Cell<u64>,
+    _charge: MemoryReservation,
+}
+impl<K: Copy> WitnessTable<K> {
+    fn new(memory: &CleanupMemory, capacity: usize) -> Result<Self, ValidationIssue> {
+        if capacity == 0 {
+            return Err(ValidationIssue::Resource(ResourceLimit::CeilingExceeded));
+        }
+        let layout = std::alloc::Layout::array::<WitnessSlot<K>>(capacity)
+            .map_err(|_| ValidationIssue::Overflow)?;
+        let charge = memory.reserve(layout.size())?;
+        // SAFETY: the exact typed layout is precharged; every slot is initialized
+        // before reading and no references escape table mutation or disposal.
+        let pointer =
+            std::ptr::NonNull::new(unsafe { std::alloc::alloc(layout) }.cast::<WitnessSlot<K>>())
+                .ok_or(ValidationIssue::Resource(ResourceLimit::AllocationFailed))?;
+        let mut table = Self {
+            pointer,
+            capacity,
+            layout,
+            probes: Cell::new(0),
+            _charge: charge,
+        };
+        table.clear();
+        Ok(table)
+    }
+    fn clear(&mut self) {
+        for i in 0..self.capacity {
+            self.put(i, WitnessSlot::empty());
+        }
+    }
+    fn get(&self, i: usize) -> WitnessSlot<K> {
+        assert!(i < self.capacity);
+        // SAFETY: i is bounded and every allocated slot was initialized.
+        unsafe { self.pointer.as_ptr().add(i).read() }
+    }
+    fn put(&mut self, i: usize, row: WitnessSlot<K>) {
+        assert!(i < self.capacity);
+        // SAFETY: i is bounded; Copy slots own no destructors and no borrow escapes.
+        unsafe {
+            self.pointer.as_ptr().add(i).write(row);
+        }
+    }
+    fn find<R: ReplayWitnesses<Key = K> + ?Sized>(
+        &self,
+        r: &R,
+        memory: &CleanupMemory,
+        event: WitnessEvent<K>,
+        hash: [u8; 32],
+    ) -> Result<Result<usize, usize>, ValidationIssue> {
+        let key = event.fields[0].ok_or(ValidationIssue::Schema)?;
+        let start =
+            (u64::from_le_bytes(hash[..8].try_into().unwrap()) % self.capacity as u64) as usize;
+        for delta in 0..self.capacity {
+            self.probes.set(
+                self.probes
+                    .get()
+                    .checked_add(1)
+                    .ok_or(ValidationIssue::Overflow)?,
+            );
+            let i = (start + delta) % self.capacity;
+            let slot = self.get(i);
+            let Some(old) = slot.key else {
+                return Ok(Err(i));
+            };
+            if slot.domain == event.domain
+                && slot.hash == hash
+                && r.compare(old, key, memory)? == Ordering::Equal
+            {
+                return Ok(Ok(i));
+            }
+        }
+        Ok(Err(self.capacity))
+    }
+    fn apply<R: ReplayWitnesses<Key = K> + ?Sized>(
+        &mut self,
+        r: &R,
+        memory: &CleanupMemory,
+        i: usize,
+        event: WitnessEvent<K>,
+        hash: [u8; 32],
+    ) -> Result<(), ValidationIssue> {
+        let mut slot = self.get(i);
+        if slot.key.is_none() {
+            slot.key = Some(event.fields[0].ok_or(ValidationIssue::Schema)?);
+            slot.domain = event.domain;
+            slot.hash = hash;
+        }
+        if event.native {
+            slot.native_count = slot
+                .native_count
+                .checked_add(1)
+                .ok_or(ValidationIssue::Overflow)?;
+            slot.native.copy_from_slice(&event.fields[1..]);
+        } else {
+            slot.expected_count = slot
+                .expected_count
+                .checked_add(1)
+                .ok_or(ValidationIssue::Overflow)?;
+            for j in 0..4 {
+                if let Some(key) = event.fields[j + 1] {
+                    if (slot.expected[j].is_none() || event.ordinal < slot.ordinal[j])
+                        && !r.empty(key, memory)?
+                    {
+                        slot.expected[j] = Some(key);
+                        slot.ordinal[j] = event.ordinal;
+                    }
+                }
+            }
+        }
+        self.put(i, slot);
+        Ok(())
+    }
+    fn verify<R: ReplayWitnesses<Key = K> + ?Sized>(
+        &self,
+        r: &R,
+        memory: &CleanupMemory,
+    ) -> Result<(), ValidationIssue> {
+        for i in 0..self.capacity {
+            let slot = self.get(i);
+            if slot.key.is_none() {
+                continue;
+            }
+            if slot.native_count != 1 || slot.expected_count == 0 {
+                return Err(ValidationIssue::RawRowsDiffer);
+            }
+            for j in 0..4 {
+                let native = slot.native[j].ok_or(ValidationIssue::RawRowsDiffer)?;
+                let equal = if let Some(expected) = slot.expected[j] {
+                    r.compare(native, expected, memory)? == Ordering::Equal
+                } else {
+                    r.empty(native, memory)?
+                };
+                if !equal {
+                    return Err(ValidationIssue::RawRowsDiffer);
+                }
+            }
+        }
+        Ok(())
+    }
+}
+impl<K: Copy> Drop for WitnessTable<K> {
+    fn drop(&mut self) {
+        // SAFETY: this owner holds the original pointer and exact allocation
+        // layout; Copy slots need no element drops. The charge drops afterward.
+        unsafe {
+            std::alloc::dealloc(self.pointer.as_ptr().cast(), self.layout);
+        }
+    }
+}
+fn witness_order<R: ReplayWitnesses + ?Sized>(
+    r: &R,
+    memory: &CleanupMemory,
+    left: (u64, R::Key),
+    right: (u64, R::Key),
+) -> Result<Ordering, ValidationIssue> {
+    if left.0 != right.0 {
+        Ok(left.0.cmp(&right.0))
+    } else {
+        r.compare(left.1, right.1, memory)
+    }
+}
+/// Exact requested join layout, excluding the caller's source/resolver and
+/// decoder owners. Use the real retained Key type, including its full stamp.
+pub(crate) fn witness_join_requested_bytes<K: Copy>(
+    capacity: usize,
+) -> Result<usize, ValidationIssue> {
+    if capacity == 0 {
+        return Err(ValidationIssue::Resource(ResourceLimit::CeilingExceeded));
+    }
+    let floor = std::mem::size_of::<WitnessTable<K>>()
+        .checked_add(
+            std::mem::size_of::<WitnessSlot<K>>()
+                .checked_mul(6)
+                .ok_or(ValidationIssue::Overflow)?,
+        )
+        .and_then(|n| n.checked_add(std::mem::size_of::<WitnessEvent<K>>() * 3))
+        .and_then(|n| n.checked_add(1024))
+        .ok_or(ValidationIssue::Overflow)?;
+    let layout = std::alloc::Layout::array::<WitnessSlot<K>>(capacity)
+        .map_err(|_| ValidationIssue::Overflow)?;
+    floor
+        .checked_add(layout.size())
+        .ok_or(ValidationIssue::Overflow)
+}
+/// Hash partitioning handles ordinary inventories; complete-hash collisions use
+/// finite lexicographic batches and exact equality. Capacity one makes progress.
+/// No key/source inventory, file registry, input-sized decoder or spill is owned.
+pub(crate) fn join_selected_witnesses<R: ReplayWitnesses + ?Sized>(
+    r: &R,
+    memory: &CleanupMemory,
+    capacity: usize,
+) -> Result<RawRowsMatch, ValidationIssue> {
+    let total = witness_join_requested_bytes::<R::Key>(capacity)?;
+    let slots = std::alloc::Layout::array::<WitnessSlot<R::Key>>(capacity)
+        .map_err(|_| ValidationIssue::Overflow)?
+        .size();
+    let floor = total.checked_sub(slots).ok_or(ValidationIssue::Overflow)?;
+    let _floor = memory.reserve(floor)?;
+    let mut table = WitnessTable::new(memory, capacity)?;
+    let mut stats = RawRowsMatch::default();
+    let mut prefix = [0; 32];
+    let mut bits = 0;
+    loop {
+        table.clear();
+        let mut overflow = false;
+        let mut first = None;
+        let mut same = true;
+        stats.passes = stats
+            .passes
+            .checked_add(1)
+            .ok_or(ValidationIssue::Overflow)?;
+        r.replay(memory, &mut |event| {
+            stats.events = stats
+                .events
+                .checked_add(1)
+                .ok_or(ValidationIssue::Overflow)?;
+            let hash = r.hash(
+                event.fields[0].ok_or(ValidationIssue::Schema)?,
+                event.domain,
+                memory,
+            )?;
+            if !matches_prefix(&hash, &prefix, bits) {
+                return Ok(());
+            }
+            if let Some(h) = first {
+                same &= h == hash;
+            } else {
+                first = Some(hash);
+            }
+            match table.find(r, memory, event, hash)? {
+                Ok(i) => table.apply(r, memory, i, event, hash)?,
+                Err(i) if i < capacity => table.apply(r, memory, i, event, hash)?,
+                _ => overflow = true,
+            }
+            Ok(())
+        })?;
+        if overflow && !same && bits < 256 {
+            bits += 1;
+            prefix[(bits - 1) / 8] &= !(0x80 >> ((bits - 1) % 8));
+            continue;
+        }
+        if overflow {
+            let bucket = first.ok_or(ValidationIssue::Schema)?;
+            let mut lower = None;
+            loop {
+                table.clear();
+                stats.passes = stats
+                    .passes
+                    .checked_add(1)
+                    .ok_or(ValidationIssue::Overflow)?;
+                let mut selected = 0usize;
+                r.replay(memory, &mut |event| {
+                    stats.events = stats
+                        .events
+                        .checked_add(1)
+                        .ok_or(ValidationIssue::Overflow)?;
+                    let key = event.fields[0].ok_or(ValidationIssue::Schema)?;
+                    let hash = r.hash(key, event.domain, memory)?;
+                    if hash != bucket {
+                        return Ok(());
+                    }
+                    if let Some(bound) = lower {
+                        if witness_order(r, memory, (event.domain, key), bound)?
+                            != Ordering::Greater
+                        {
+                            return Ok(());
+                        }
+                    }
+                    for i in 0..selected {
+                        table.probes.set(
+                            table
+                                .probes
+                                .get()
+                                .checked_add(1)
+                                .ok_or(ValidationIssue::Overflow)?,
+                        );
+                        let old = table.get(i);
+                        if old.domain == event.domain
+                            && r.compare(old.key.unwrap(), key, memory)? == Ordering::Equal
+                        {
+                            return Ok(());
+                        }
+                    }
+                    if selected < capacity {
+                        let mut slot = WitnessSlot::empty();
+                        slot.key = Some(key);
+                        slot.domain = event.domain;
+                        slot.hash = hash;
+                        table.put(selected, slot);
+                        selected += 1;
+                    } else {
+                        let mut largest = 0;
+                        for i in 1..capacity {
+                            let a = table.get(i);
+                            let b = table.get(largest);
+                            if witness_order(
+                                r,
+                                memory,
+                                (a.domain, a.key.unwrap()),
+                                (b.domain, b.key.unwrap()),
+                            )? == Ordering::Greater
+                            {
+                                largest = i;
+                            }
+                        }
+                        let old = table.get(largest);
+                        if witness_order(
+                            r,
+                            memory,
+                            (event.domain, key),
+                            (old.domain, old.key.unwrap()),
+                        )? == Ordering::Less
+                        {
+                            let mut slot = WitnessSlot::empty();
+                            slot.key = Some(key);
+                            slot.domain = event.domain;
+                            slot.hash = hash;
+                            table.put(largest, slot);
+                        }
+                    }
+                    Ok(())
+                })?;
+                if selected == 0 {
+                    break;
+                }
+                // Selection uses dense slots, so aggregate by exact scan rather
+                // than open addressing (replacement would introduce holes).
+                stats.passes = stats
+                    .passes
+                    .checked_add(1)
+                    .ok_or(ValidationIssue::Overflow)?;
+                r.replay(memory, &mut |event| {
+                    stats.events = stats
+                        .events
+                        .checked_add(1)
+                        .ok_or(ValidationIssue::Overflow)?;
+                    let key = event.fields[0].ok_or(ValidationIssue::Schema)?;
+                    let hash = r.hash(key, event.domain, memory)?;
+                    if hash != bucket {
+                        return Ok(());
+                    }
+                    for i in 0..selected {
+                        table.probes.set(
+                            table
+                                .probes
+                                .get()
+                                .checked_add(1)
+                                .ok_or(ValidationIssue::Overflow)?,
+                        );
+                        let slot = table.get(i);
+                        if slot.domain == event.domain
+                            && r.compare(slot.key.unwrap(), key, memory)? == Ordering::Equal
+                        {
+                            table.apply(r, memory, i, event, hash)?;
+                            break;
+                        }
+                    }
+                    Ok(())
+                })?;
+                table.verify(r, memory)?;
+                let mut largest = table.get(0);
+                for i in 1..selected {
+                    let slot = table.get(i);
+                    if witness_order(
+                        r,
+                        memory,
+                        (slot.domain, slot.key.unwrap()),
+                        (largest.domain, largest.key.unwrap()),
+                    )? == Ordering::Greater
+                    {
+                        largest = slot;
+                    }
+                }
+                lower = Some((largest.domain, largest.key.unwrap()));
+                stats.collision_batches = stats
+                    .collision_batches
+                    .checked_add(1)
+                    .ok_or(ValidationIssue::Overflow)?;
+            }
+        } else {
+            table.verify(r, memory)?;
+        }
+        while bits > 0 && (prefix[(bits - 1) / 8] & (0x80 >> ((bits - 1) % 8))) != 0 {
+            prefix[(bits - 1) / 8] &= !(0x80 >> ((bits - 1) % 8));
+            bits -= 1;
+        }
+        if bits == 0 {
+            break;
+        }
+        prefix[(bits - 1) / 8] |= 0x80 >> ((bits - 1) % 8);
+    }
+    stats.lookup_probes = table.probes.get();
+    Ok(stats)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2445,5 +2905,211 @@ mod tests {
             .node_types
             .insert("map-only-extra".into(), "N".into());
         assert!(!joined(&extra, 1, true));
+    }
+}
+
+#[cfg(test)]
+mod witness_tests {
+    use super::*;
+    #[derive(Clone, Copy)]
+    struct Key(&'static str);
+    struct Replay {
+        rows: Vec<WitnessEvent<Key>>,
+        collision: bool,
+    }
+    impl ReplayWitnesses for Replay {
+        type Key = Key;
+        fn replay(
+            &self,
+            _: &CleanupMemory,
+            emit: &mut dyn FnMut(WitnessEvent<Key>) -> Result<(), ValidationIssue>,
+        ) -> Result<(), ValidationIssue> {
+            for row in &self.rows {
+                emit(*row)?;
+            }
+            Ok(())
+        }
+        fn hash(
+            &self,
+            key: Key,
+            domain: u64,
+            _: &CleanupMemory,
+        ) -> Result<[u8; 32], ValidationIssue> {
+            if self.collision {
+                Ok([0; 32])
+            } else {
+                let mut hash = Sha256::new();
+                hash.update(domain.to_le_bytes());
+                hash.update(key.0.as_bytes());
+                Ok(hash.finalize().into())
+            }
+        }
+        fn compare(
+            &self,
+            left: Key,
+            right: Key,
+            _: &CleanupMemory,
+        ) -> Result<Ordering, ValidationIssue> {
+            Ok(left.0.cmp(right.0))
+        }
+        fn empty(&self, key: Key, _: &CleanupMemory) -> Result<bool, ValidationIssue> {
+            Ok(key.0.is_empty())
+        }
+    }
+    fn row(id: &'static str, native: bool, ordinal: u64, value: &'static str) -> WitnessEvent<Key> {
+        WitnessEvent {
+            domain: 0,
+            native,
+            ordinal,
+            fields: [
+                Some(Key(id)),
+                Some(Key(value)),
+                Some(Key("kind")),
+                Some(Key("path")),
+                Some(Key("canonical")),
+            ],
+        }
+    }
+    #[test]
+    fn dc_witness_first_nonempty_all_ids_multiplicity_and_capacity_one_collisions() {
+        for collision in [false, true] {
+            for capacity in [1, 2, 10] {
+                let memory = CleanupMemory::new(100_000).unwrap();
+                let floor = memory.used();
+                let replay = Replay {
+                    collision,
+                    rows: vec![
+                        row("b", false, 0, ""),
+                        row("a", true, 0, "first"),
+                        row("b", true, 0, "first"),
+                        row("b", false, 2, "later"),
+                        row("a", false, 1, "first"),
+                        row("b", false, 1, "first"),
+                    ],
+                };
+                let facts = join_selected_witnesses(&replay, &memory, capacity).unwrap();
+                assert!(facts.passes >= 1);
+                assert_eq!(memory.used(), floor);
+                let mut bad = replay;
+                bad.rows.push(row("extra", true, 0, "first"));
+                assert_eq!(
+                    join_selected_witnesses(&bad, &memory, capacity).unwrap_err(),
+                    ValidationIssue::RawRowsDiffer
+                );
+                bad.rows.pop();
+                bad.rows.push(row("extra", false, 0, "first"));
+                assert_eq!(
+                    join_selected_witnesses(&bad, &memory, capacity).unwrap_err(),
+                    ValidationIssue::RawRowsDiffer
+                );
+                bad.rows.pop();
+                bad.rows.push(row("a", true, 0, "first"));
+                assert_eq!(
+                    join_selected_witnesses(&bad, &memory, capacity).unwrap_err(),
+                    ValidationIssue::RawRowsDiffer
+                );
+            }
+        }
+    }
+    #[test]
+    fn dc_witness_each_field_chooses_first_nonempty_and_allocation_failure() {
+        let memory = CleanupMemory::new(100_000).unwrap();
+        let mut first = row("id", false, 0, "");
+        first.fields[2] = Some(Key(""));
+        let second = row("id", false, 1, "value");
+        let native = row("id", true, 0, "value");
+        let replay = Replay {
+            rows: vec![first, second, native],
+            collision: true,
+        };
+        assert!(join_selected_witnesses(&replay, &memory, 1).is_ok());
+        assert!(join_selected_witnesses(&replay, &memory, 0).is_err());
+        let small = CleanupMemory::new(64).unwrap();
+        assert!(join_selected_witnesses(&replay, &small, 1).is_err());
+        assert_eq!(small.used(), CleanupMemory::new(64).unwrap().used());
+    }
+}
+
+#[cfg(test)]
+mod witness_large_tests {
+    use super::*;
+    struct Large {
+        keys: Vec<String>,
+        collision: bool,
+    }
+    impl ReplayWitnesses for Large {
+        type Key = usize;
+        fn replay(
+            &self,
+            _: &CleanupMemory,
+            emit: &mut dyn FnMut(WitnessEvent<usize>) -> Result<(), ValidationIssue>,
+        ) -> Result<(), ValidationIssue> {
+            for id in 4..self.keys.len() {
+                for native in [false, true] {
+                    emit(WitnessEvent {
+                        domain: 3,
+                        native,
+                        ordinal: id as u64,
+                        fields: [Some(id), Some(1), Some(1), Some(2), Some(3)],
+                    })?;
+                }
+            }
+            Ok(())
+        }
+        fn hash(
+            &self,
+            key: usize,
+            domain: u64,
+            _: &CleanupMemory,
+        ) -> Result<[u8; 32], ValidationIssue> {
+            if self.collision {
+                Ok([0; 32])
+            } else {
+                let mut hash = Sha256::new();
+                hash.update(domain.to_le_bytes());
+                hash.update(self.keys[key].as_bytes());
+                Ok(hash.finalize().into())
+            }
+        }
+        fn compare(
+            &self,
+            a: usize,
+            b: usize,
+            _: &CleanupMemory,
+        ) -> Result<Ordering, ValidationIssue> {
+            Ok(self.keys[a].cmp(&self.keys[b]))
+        }
+        fn empty(&self, key: usize, _: &CleanupMemory) -> Result<bool, ValidationIssue> {
+            Ok(self.keys[key].is_empty())
+        }
+    }
+    #[test]
+    fn dc_witness_large_inventory_peak_independent_of_row_count_and_collision_progress() {
+        let mut peaks = Vec::new();
+        for count in [17, 4097] {
+            let mut keys = vec!["".into(), "value".into(), "path".into(), "canonical".into()];
+            keys.extend((0..count).map(|i| format!("id-{i:08}")));
+            let replay = Large {
+                keys,
+                collision: false,
+            };
+            let memory = CleanupMemory::new(100_000).unwrap();
+            let before = memory.used();
+            let result = join_selected_witnesses(&replay, &memory, 32).unwrap();
+            assert!(result.lookup_probes > 0);
+            assert_eq!(memory.used(), before);
+            peaks.push(memory.peak());
+        }
+        assert_eq!(peaks[0], peaks[1]);
+        let mut keys = vec!["".into(), "value".into(), "path".into(), "canonical".into()];
+        keys.extend((0..33).map(|i| format!("id-{i:08}")));
+        let replay = Large {
+            keys,
+            collision: true,
+        };
+        let memory = CleanupMemory::new(100_000).unwrap();
+        let result = join_selected_witnesses(&replay, &memory, 1).unwrap();
+        assert_eq!(result.collision_batches, 33);
+        assert!(result.passes <= 70);
     }
 }
