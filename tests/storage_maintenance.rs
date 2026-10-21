@@ -169,3 +169,35 @@ fn repeated_health_entries_preserve_source_and_foreign_sentinels() {
         }
     }
 }
+
+/// Public producer/query/reuse coverage only. Disk convergence and injected
+/// failure/retirement boundaries require the real collector hooks separately.
+#[test]
+fn twenty_public_builds_match_clean_control_and_preserve_unchanged_artifact() {
+    use fixture::workload::{self, BehaviorSnapshot, StableArtifact, WorkloadPair, UPDATES};
+
+    let pair = WorkloadPair::new().unwrap();
+    workload::install(&pair.churn).expect("public setup must publish the initial fixture graph");
+    let stable = StableArtifact::observe(&pair.churn).unwrap();
+    for revision in 1..=UPDATES {
+        pair.churn.write_revision(revision).unwrap();
+        let response = workload::materialize(&pair.churn, "full")
+            .unwrap_or_else(|error| panic!("revision {revision} materialization failed: {error}"));
+        stable.assert_reused(&StableArtifact::observe(&pair.churn).unwrap(), &response);
+        let unchanged = workload::unchanged_refresh(&pair.churn).unwrap_or_else(|error| {
+            panic!("revision {revision} unchanged refresh failed: {error}")
+        });
+        println!("revision {revision}: published with stable artifact reuse; {unchanged}");
+
+        assert_eq!(stable, StableArtifact::observe(&pair.churn).unwrap());
+    }
+    pair.assert_equal_final_sources();
+    workload::install(&pair.control)
+        .expect("public setup must publish the independent final-state control");
+    let churn = BehaviorSnapshot::observe(&pair.churn, UPDATES).unwrap();
+    let control = BehaviorSnapshot::observe(&pair.control, UPDATES).unwrap();
+    assert_eq!(
+        churn, control,
+        "churn changed reachable graph/search/context behavior"
+    );
+}

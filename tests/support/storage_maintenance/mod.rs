@@ -1,6 +1,8 @@
 //! Isolated fixture inputs and independent filesystem observations for DC-S5.
 //! This module is consumed once the production maintenance surfaces are available.
 
+pub mod workload;
+
 use std::collections::BTreeMap;
 use std::fs;
 use std::io;
