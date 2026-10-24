@@ -78,9 +78,38 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
         .map(str::to_owned)
         .collect();
     if selected == Cohort::All {
-        let mut base = base;
-        base.push("--no-fail-fast".into());
-        return vec![base];
+        let mut commands = Vec::new();
+        if target == NativeTarget::WindowsX86_64 {
+            let mut regressions: Vec<String> = base
+                .iter()
+                .filter(|s| *s != "--workspace")
+                .cloned()
+                .collect();
+            regressions.extend(
+                [
+                    "--package",
+                    "codebase-graph",
+                    "--lib",
+                    "--",
+                    "namespace_flush_accepts",
+                    "maintenance_legacy_bootstrap::",
+                    "dc_workspace_root_removal_restarts",
+                    "managed_read_recovery_does_not_recreate",
+                    "dc_generation_actual_",
+                    "dc_generation_engine_actual_",
+                    "maintenance_projection::tests::",
+                    "busy_writer_is_reported",
+                    "dc_s2_current_v2_receipt",
+                    "dc_s5_canonical_only_real_producer_spare_key",
+                ]
+                .map(str::to_owned),
+            );
+            commands.push(regressions);
+        }
+        let mut complete = base;
+        complete.push("--no-fail-fast".into());
+        commands.push(complete);
+        return commands;
     }
     let mut commands = Vec::new();
     if selected == Cohort::Unit {
@@ -161,9 +190,12 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
             ("inventory", vec!["--list"]),
             ("ignored", vec!["--list", "--ignored"]),
         ] {
-            let listing = Command::new("cargo")
-                .args(args)
-                .arg("--")
+            let mut listing = Command::new("cargo");
+            listing.args(args);
+            if !args.iter().any(|arg| arg == "--") {
+                listing.arg("--");
+            }
+            let listing = listing
                 .args(extra)
                 .env("CARGO_BIN_EXE_codebase-graph", &executable)
                 .output()
@@ -201,6 +233,9 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
         save(&report)?;
         if let Err(error) = result {
             failures.push(error);
+            if target == NativeTarget::WindowsX86_64 && selected == Cohort::All && index == 0 {
+                break;
+            }
         }
     }
     report["total_seconds"] = json!(started.elapsed().as_secs_f64());
@@ -219,6 +254,16 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn windows_regressions_precede_the_complete_unfiltered_suite() {
+        let commands = commands(NativeTarget::WindowsX86_64, Cohort::All, &[]);
+        assert_eq!(commands.len(), 2);
+        assert!(commands[0].contains(&"--lib".into()));
+        assert!(commands[0].contains(&"--".into()));
+        assert!(commands[1].contains(&"--workspace".into()));
+        assert!(!commands[1].contains(&"--".into()));
+        assert!(commands[1].contains(&"--no-fail-fast".into()));
+    }
     #[test]
     fn partitions_every_test_target_and_keeps_new_integration_targets() {
         let metadata = json!({"workspace_members":["root","wiki"],"packages":[

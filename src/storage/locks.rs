@@ -1599,8 +1599,8 @@ impl RootedDirectory {
                     Foundation::{RtlNtStatusToDosError, INVALID_HANDLE_VALUE},
                     Storage::FileSystem::{
                         ReOpenFile, FILE_ADD_FILE, FILE_FLAG_BACKUP_SEMANTICS,
-                        FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_DELETE, FILE_SHARE_READ,
-                        FILE_SHARE_WRITE, SYNCHRONIZE,
+                        FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE,
+                        FILE_SHARE_READ, FILE_SHARE_WRITE, SYNCHRONIZE,
                     },
                     System::IO::IO_STATUS_BLOCK,
                 },
@@ -1610,7 +1610,7 @@ impl RootedDirectory {
             let handle = unsafe {
                 ReOpenFile(
                     self.directory.as_raw_handle(),
-                    FILE_ADD_FILE | SYNCHRONIZE,
+                    FILE_ADD_FILE | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
                     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                     FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
                 )
