@@ -310,12 +310,8 @@ fn span(token: JsonToken, decoded_bytes: u64) -> StringSpan {
 /// is no64-byte producer-number cutoff here. Default-runtime Number parsing is
 /// incremental; this fixed same-account floor covers its scalar/error scratch.
 fn number(file: &File, token: JsonToken) -> Result<serde_json::Number, ProjectionFailure> {
-    serde_json::from_reader(SpanReader {
-        file,
-        offset: token.start,
-        end: token.end,
-    })
-    .map_err(|_| ProjectionFailure::InvalidNumber)
+    serde_json::from_reader(SpanReader::new(file, token.start, token.end)?)
+        .map_err(|_| ProjectionFailure::InvalidNumber)
 }
 pub(crate) fn project_config(
     file: &File,
@@ -682,6 +678,21 @@ mod tests {
     use super::*;
     use std::fs::{self, OpenOptions};
     use std::path::PathBuf;
+
+    #[test]
+    fn numeric_projection_preserves_the_input_cursor() {
+        use std::io::{Seek, SeekFrom};
+        let fixture = Fixture::new(br#"{"schema_version":3,"ignored":[1,-2,3.5]}"#);
+        let mut file = fixture.file();
+        file.seek(SeekFrom::Start(2)).unwrap();
+        let memory = CleanupMemory::new(32768).unwrap();
+        let projection = project_config(&file, &memory).unwrap();
+        assert_eq!(
+            projection.field(ConfigField::SchemaVersion),
+            ScalarProjection::Number { unsigned: Some(3) }
+        );
+        assert_eq!(file.stream_position().unwrap(), 2);
+    }
 
     struct Fixture {
         path: PathBuf,
