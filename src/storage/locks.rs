@@ -2378,7 +2378,7 @@ impl RootedDirectory {
         {
             use std::os::fd::AsRawFd;
             if unsafe { libc::lseek(self.directory.as_raw_fd(), 0, libc::SEEK_SET) } < 0 {
-                return Err(std::io::Error::last_os_error().into());
+                return Err(std::io::Error::last_os_error());
             }
             loop {
                 // SAFETY: Linux getdents64 ABI and fixed writable buffer.
@@ -2391,7 +2391,7 @@ impl RootedDirectory {
                     )
                 };
                 if count < 0 {
-                    return Err(std::io::Error::last_os_error().into());
+                    return Err(std::io::Error::last_os_error());
                 }
                 if count == 0 {
                     return Ok(());

@@ -46,8 +46,35 @@ jobs:
           target: ${{ inputs.target }}
 
       - name: Run platform tests
+        id: platform_tests
         if: inputs.run-tests
         run: cargo run -p xtask -- native-test --target "${{ inputs.target }}"
+
+      # Diagnostic retry only. The original platform-test failure remains a
+      # failed required job; no profile, feature, stack size or test gate changes.
+      - name: Capture Linux test stack after failure
+        id: linux_stack_trace
+        if: failure() && inputs.run-tests && inputs.target == 'linux-x86_64' && steps.platform_tests.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 6
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.source-sha }}
+        run: |
+          if ! command -v gdb >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install --yes gdb
+          fi
+          python3 .github/scripts/linux_stack_trace.py --output diagnostics/linux-stack --timeout-seconds 180
+
+      - name: Upload Linux stack diagnostics
+        if: always() && inputs.run-tests && inputs.target == 'linux-x86_64' && steps.linux_stack_trace.outcome != 'skipped'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-stack-diagnostics
+          path: diagnostics/linux-stack/
+          if-no-files-found: warn
+          retention-days: 3
 
       - name: Build and smoke release artifact
         run: cargo run -p xtask -- native-artifact --target "${{ inputs.target }}" --commit-sha "${{ inputs.source-sha }}" --output "dist/${{ inputs.target }}"

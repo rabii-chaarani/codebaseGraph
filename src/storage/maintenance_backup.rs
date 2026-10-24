@@ -219,7 +219,7 @@ mod tests {
         let address = BackupAddress::parse(name.as_bytes()).unwrap();
         assert_eq!(address.key(), [0xab; 32]);
         assert_eq!(address.name(), name.as_bytes());
-        assert_eq!(address.canonical(), [b'a', b'b'].repeat(32).as_slice());
+        assert_eq!(address.canonical(), b"ab".repeat(32).as_slice());
     }
     #[test]
     fn backup_names_do_not_supply_origin_or_guess_other_formats() {

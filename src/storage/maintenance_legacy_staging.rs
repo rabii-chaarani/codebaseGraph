@@ -193,10 +193,9 @@ pub(crate) fn staging_profile(name: &[u8]) -> Option<StagingProfile> {
     }
     let (mut stem, csv) = if let Some(s) = name.strip_suffix(b".json") {
         (s, false)
-    } else if let Some(s) = name.strip_suffix(b".csv") {
-        (s, true)
     } else {
-        return None;
+        let stem = name.strip_suffix(b".csv")?;
+        (stem, true)
     };
     let mut chunk = 0u64;
     if let Some(at) = stem.windows(2).rposition(|s| s == b"__") {
