@@ -53,6 +53,48 @@ with open(output_path, "w") as output:
 '''
 
 
+class FailedTestSelectionError(ValueError):
+    pass
+
+
+def select_failed_case(log):
+    """Use actual harness records, never the last merely mentioned test path."""
+    log = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", log)
+    rust_path = r"[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*"
+    record = re.compile(r"^[ \t]*test (" + rust_path + r") \.\.\.[ \t]*(.*)$")
+    status = re.compile(r"^(ok|FAILED|ignored)(?:\b|,)")
+    opened = []
+    failed = []
+    for line in log.splitlines():
+        match = record.match(line)
+        if match:
+            name, tail = match.groups()
+            result = status.match(tail)
+            if result:
+                if result.group(1) == "FAILED":
+                    failed.append(name)
+            else:
+                opened.append(name)
+        elif line.strip() in ("ok", "FAILED", "ignored") and len(opened) == 1:
+            # --nocapture output can split a harness prefix from its result.
+            name = opened.pop()
+            if line.strip() == "FAILED":
+                failed.append(name)
+    aborted = re.search(r"overflowed its stack|fatal runtime error:.*stack overflow|"
+                        r"signal:[ \t]*[0-9]+|SIGABRT|SIGSEGV|process abort signal", log)
+    if aborted:
+        candidates = list(dict.fromkeys(opened))
+        if len(candidates) != 1:
+            raise FailedTestSelectionError(
+                "Abort has no unique incomplete actual test record: " + repr(candidates))
+        return {"case": opened[-1], "selection": "last_incomplete_actual_record_at_abort"}
+    if failed:
+        return {"case": failed[-1], "selection": "last_actual_FAILED_record"}
+    if "test result: ok." in log:
+        return None
+    raise FailedTestSelectionError("Failure log has no attributable actual test record")
+
+
 def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n")
 
@@ -68,10 +110,11 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--case", default=DEFAULT_CASE, help="Exact Rust test name, verified against the existing binary inventory")
+    parser.add_argument("--case", help="Explicit exact test name/fallback, verified against existing binary inventory")
+    parser.add_argument("--failed-log", type=Path, help="Original combined Cargo/xtask output; select its actual failed test")
     parser.add_argument("--timeout-seconds", type=int, default=180)
     args = parser.parse_args()
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*", args.case):
+    if args.case is not None and not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*", args.case):
         parser.error("case must be an exact Rust test path")
     if not 1 <= args.timeout_seconds <= 300:
         parser.error("timeout must be between 1 and 300 seconds")
@@ -80,6 +123,30 @@ def main():
     summary = {"platform": platform.platform(), "case": args.case,
                "source_sha": os.environ.get("SOURCE_SHA"), "no_build": True,
                "stack_rlimit_unchanged": list(resource.getrlimit(resource.RLIMIT_STACK))}
+    if args.failed_log is not None:
+        summary["failed_log"] = str(args.failed_log)
+        try:
+            selected_case = select_failed_case(args.failed_log.read_text(errors="replace"))
+        except OSError as error:
+            if args.case is None:
+                summary["unavailable"] = "Failure log unavailable: " + str(error)
+                write_json(output / "summary.json", summary)
+                return
+            selected_case = {"case": args.case, "selection": "explicit_fallback_log_unavailable"}
+        except FailedTestSelectionError as error:
+            # Ambiguity is never replaced by a stale default or a guessed case.
+            summary["unavailable"] = str(error)
+            write_json(output / "summary.json", summary)
+            return
+        if selected_case is None:
+            summary["unavailable"] = "Original log records normal completion and no failed test"
+            write_json(output / "summary.json", summary)
+            return
+        args.case = selected_case["case"]
+        summary.update(selected_case)
+    else:
+        args.case = args.case or DEFAULT_CASE
+        summary.update({"case": args.case, "selection": "explicit_or_default_exact_case"})
     write_json(output / "summary.json", summary)
     if platform.system() != "Linux" or not shutil.which("gdb"):
         summary["unavailable"] = "Linux and an existing GDB are required"

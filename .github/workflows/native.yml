@@ -47,7 +47,15 @@ jobs:
 
       - name: Run platform tests
         id: platform_tests
-        if: inputs.run-tests
+        if: inputs.run-tests && inputs.target == 'linux-x86_64'
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p diagnostics/linux-stack
+          cargo run -p xtask -- native-test --target "${{ inputs.target }}" 2>&1 | tee diagnostics/linux-stack/native-platform-test.log
+
+      - name: Run platform tests on other native targets
+        if: inputs.run-tests && inputs.target != 'linux-x86_64'
         run: cargo run -p xtask -- native-test --target "${{ inputs.target }}"
 
       # Diagnostic retry only. The original platform-test failure remains a
@@ -66,7 +74,7 @@ jobs:
             sudo apt-get install --yes gdb
           fi
           python3 .github/scripts/linux_stack_trace.py --output diagnostics/linux-stack \
-            --case storage::maintenance_collector_tests::dc_s5_artifact_use_lease_defers_obsolete_key_until_release \
+            --failed-log diagnostics/linux-stack/native-platform-test.log \
             --timeout-seconds 240
 
       - name: Upload Linux stack diagnostics
