@@ -2795,7 +2795,7 @@ fn legacy_cohort_scope(
 /// Only replay of genuine root-administration controls plus verified future-use
 /// coverage constructs this capability. It carries no payload origin or finality.
 pub(crate) struct AcceptedLegacyRootCohort {
-    target_binding: std::cell::RefCell<PreparedTargetBinding>,
+    target_binding: std::cell::RefCell<super::maintenance_budget::MemoryBox<PreparedTargetBinding>>,
     gate_header: [u8; locks::COORDINATION_HEADER_BYTES],
     owner_header: [u8; locks::COORDINATION_HEADER_BYTES],
     artifact_identity: FileIdentity,
@@ -2861,11 +2861,36 @@ impl AcceptedLegacyRootCohort {
         Ok(true)
     }
 }
+// Preserve the existing value API for standalone callers; worker preparation
+// returns the charged opaque cohort directly without copying its raw Result.
+#[allow(dead_code)]
 pub(crate) fn observe_accepted_root_cohort(
     target: &MaintenanceTarget,
     binding: &PreparedTargetBinding,
     memory: &CleanupMemory,
 ) -> Result<Option<AcceptedLegacyRootCohort>, FixedControlError> {
+    observe_accepted_root_cohort_boxed(target, binding, memory)
+        .map(|cohort| cohort.map(super::maintenance_budget::MemoryBox::into_inner))
+}
+
+#[inline(never)]
+fn duplicate_cohort_binding_boxed(
+    binding: &PreparedTargetBinding,
+    memory: &CleanupMemory,
+) -> Result<super::maintenance_budget::MemoryBox<PreparedTargetBinding>, FixedControlError> {
+    let binding = binding.duplicate(memory)?;
+    super::maintenance_budget::MemoryBox::new(binding, memory).map_err(FixedControlError::Resource)
+}
+
+/// Same administrative enrollment-only observations, placed behind a charged
+/// owner before returning to any joined-worker preparation stage.
+#[inline(never)]
+pub(crate) fn observe_accepted_root_cohort_boxed(
+    target: &MaintenanceTarget,
+    binding: &PreparedTargetBinding,
+    memory: &CleanupMemory,
+) -> Result<Option<super::maintenance_budget::MemoryBox<AcceptedLegacyRootCohort>>, FixedControlError>
+{
     let floor = memory
         .reserve(
             std::mem::size_of::<AcceptedLegacyRootCohort>()
@@ -2873,7 +2898,7 @@ pub(crate) fn observe_accepted_root_cohort(
                 + target.repository_root.as_os_str().as_encoded_bytes().len() * 16,
         )
         .map_err(FixedControlError::Resource)?;
-    let mut current = binding.duplicate(memory)?;
+    let mut current = duplicate_cohort_binding_boxed(binding, memory)?;
     if !current.is_current()? {
         return Ok(None);
     }
@@ -2937,24 +2962,31 @@ pub(crate) fn observe_accepted_root_cohort(
         &artifact.open_readonly_file(b".publication.binding")?,
         Kind::File,
     )?;
-    Ok(Some(AcceptedLegacyRootCohort {
-        target_binding: std::cell::RefCell::new(binding.duplicate(memory)?),
-        gate_header: raw_coordination(&gate)?,
-        owner_header: raw_coordination(&root.open_readonly_file(ADMIN_OWNER)?)?,
-        artifact_identity: artifact.identity(),
-        operator_generation: observed.record.operator_generation,
-        scope,
-        binding: observed.binding,
-        record_stamp: observed.state_stamp,
-        cohort_stamp,
-        scope_stamp,
-        default_source: observed.record.root_default_source,
-        root: root_path,
-        _root_pin: root.pin_handle()?,
-        _state_pin: state,
-        _artifact_pin: artifact.pin_handle()?,
-        _floor: floor,
-    }))
+    super::maintenance_budget::MemoryBox::new(
+        AcceptedLegacyRootCohort {
+            target_binding: std::cell::RefCell::new(duplicate_cohort_binding_boxed(
+                binding, memory,
+            )?),
+            gate_header: raw_coordination(&gate)?,
+            owner_header: raw_coordination(&root.open_readonly_file(ADMIN_OWNER)?)?,
+            artifact_identity: artifact.identity(),
+            operator_generation: observed.record.operator_generation,
+            scope,
+            binding: observed.binding,
+            record_stamp: observed.state_stamp,
+            cohort_stamp,
+            scope_stamp,
+            default_source: observed.record.root_default_source,
+            root: root_path,
+            _root_pin: root.pin_handle()?,
+            _state_pin: state,
+            _artifact_pin: artifact.pin_handle()?,
+            _floor: floor,
+        },
+        memory,
+    )
+    .map(Some)
+    .map_err(FixedControlError::Resource)
 }
 pub(crate) fn with_legacy_enrollment<R>(
     prepared: &mut PreparedLegacyScope,
@@ -4108,3 +4140,19 @@ fn recover_with_owner(
 #[cfg(test)]
 #[path = "maintenance_legacy_source_recovery_tests.rs"]
 mod source_recovery_tests;
+
+#[cfg(test)]
+mod cohort_preparation_layout_tests {
+    use super::*;
+    #[test]
+    fn accepted_administrative_cohort_keeps_binding_image_out_of_fixed_owner_layout() {
+        // A small enrollment-only owner crosses preparation stages. Original
+        // inline binding copies exceeded this bound; its image stays charged.
+        assert!(std::mem::size_of::<AcceptedLegacyRootCohort>() <= 2048);
+        let _: fn(AcceptedLegacyRootCohort) = |cohort| {
+            let _: std::cell::RefCell<
+                super::super::maintenance_budget::MemoryBox<PreparedTargetBinding>,
+            > = cohort.target_binding;
+        };
+    }
+}

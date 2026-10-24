@@ -343,9 +343,7 @@ pub(crate) fn prepare_root_cohort_boxed(
     binding: &PreparedTargetBinding,
     memory: &CleanupMemory,
 ) -> Result<Option<MemoryBox<AcceptedLegacyRootCohort>>, FixedControlError> {
-    source::observe_accepted_root_cohort(target, binding, memory)?
-        .map(|cohort| boxed(cohort, memory))
-        .transpose()
+    source::observe_accepted_root_cohort_boxed(target, binding, memory)
 }
 #[inline(never)]
 fn select_job(
