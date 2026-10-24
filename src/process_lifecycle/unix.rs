@@ -161,7 +161,14 @@ impl Contained {
         let pid = unsafe { info.si_pid() };
         #[cfg(not(target_os = "linux"))]
         let pid = info.si_pid;
-        Ok(pid != 0)
+        // Darwin can return CLD_STOPPED despite WEXITED. A nonzero pid is
+        // therefore an observation, not exit proof; keep stopped/traced or
+        // continued children alive until an actual exit class is reported.
+        Ok(pid != 0
+            && matches!(
+                info.si_code,
+                libc::CLD_EXITED | libc::CLD_KILLED | libc::CLD_DUMPED
+            ))
     }
     pub fn teardown(&mut self, deadline: Instant) -> Result<std::process::ExitStatus, String> {
         self.teardown_attempted = true;
@@ -342,6 +349,120 @@ pub(super) fn create_private_file(path: &Path) -> Result<File, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn contained_child_for_exit_probe() -> (PathBuf, Contained) {
+        let dir = std::env::temp_dir().join(format!("graph-native-exit-{}", random_id().unwrap()));
+        fs::create_dir(&dir).unwrap();
+        let path = dir.join("writers.fifo");
+        let encoded = CString::new(path.as_os_str().as_encoded_bytes()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(encoded.as_ptr(), 0o600) }, 0);
+        let fifo = OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
+            .open(&path)
+            .unwrap();
+        let writer = OpenOptions::new()
+            .write(true)
+            .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
+            .open(&path)
+            .unwrap();
+        let metadata = fifo.metadata().unwrap();
+        // Isolate the real native peek/teardown boundary using an actual owned
+        // process group and FIFO; no serialized PID is adopted as authority.
+        let mut child = Command::new("/bin/sh")
+            .args(["-c", "read command; exit 7"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .process_group(0)
+            .spawn()
+            .unwrap();
+        let gate = child.stdin.take();
+        let proof = BuildDescriptorV2 {
+            version: 2,
+            build_id: "native-exit-probe".into(),
+            lifecycle_dir: dir.clone(),
+            endpoint: String::new(),
+            nonce: String::new(),
+            worker_pid: child.id(),
+            guardian_pid: 0,
+            proof: ContainmentProof::UnixFifo {
+                path,
+                device: metadata.dev(),
+                inode: metadata.ino(),
+            },
+        };
+        let mut lifetime_pipe = [-1; 2];
+        assert_eq!(unsafe { libc::pipe(lifetime_pipe.as_mut_ptr()) }, 0);
+        let lifetime_reader = unsafe { File::from_raw_fd(lifetime_pipe[0]) };
+        let lifetime = unsafe { File::from_raw_fd(lifetime_pipe[1]) };
+        drop(lifetime_reader);
+        (
+            dir,
+            Contained {
+                child,
+                gate,
+                fifo,
+                writer: Some(writer),
+                proof,
+                _lifetime_writer: lifetime,
+                teardown_attempted: false,
+            },
+        )
+    }
+
+    #[test]
+    fn stopped_owned_child_is_not_an_exit_and_resume_or_cancellation_still_completes() {
+        use std::os::unix::process::ExitStatusExt;
+        for cancel in [false, true] {
+            let (dir, mut child) = contained_child_for_exit_probe();
+            assert_eq!(unsafe { libc::kill(child.id() as i32, libc::SIGSTOP) }, 0);
+            let deadline = Instant::now() + Duration::from_secs(5);
+            loop {
+                let mut info = std::mem::MaybeUninit::<libc::siginfo_t>::zeroed();
+                assert_eq!(
+                    unsafe {
+                        libc::waitid(
+                            libc::P_PID,
+                            child.id() as libc::id_t,
+                            info.as_mut_ptr(),
+                            libc::WSTOPPED | libc::WNOHANG | libc::WNOWAIT,
+                        )
+                    },
+                    0
+                );
+                let info = unsafe { info.assume_init() };
+                if info.si_code == libc::CLD_STOPPED {
+                    break;
+                }
+                assert!(Instant::now() < deadline, "owned child did not stop");
+                thread::sleep(Duration::from_millis(5));
+            }
+            for _ in 0..3 {
+                assert!(!child.exited().unwrap(), "stopped child reported exited");
+            }
+            if cancel {
+                let status = child.teardown(Instant::now() + DEADLINE).unwrap();
+                assert_eq!(status.signal(), Some(libc::SIGKILL));
+            } else {
+                assert_eq!(unsafe { libc::kill(child.id() as i32, libc::SIGCONT) }, 0);
+                child.gate.as_mut().unwrap().write_all(b"finish\n").unwrap();
+                let deadline = Instant::now() + Duration::from_secs(5);
+                while !child.exited().unwrap() {
+                    assert!(Instant::now() < deadline, "resumed child did not exit");
+                    thread::sleep(Duration::from_millis(5));
+                }
+                // Repeated peeks must not consume the owned child's status.
+                for _ in 0..3 {
+                    assert!(child.exited().unwrap());
+                }
+                let status = child.teardown(Instant::now() + DEADLINE).unwrap();
+                assert_eq!(status.code(), Some(7));
+            }
+            drop(child);
+            fs::remove_dir_all(dir).unwrap();
+        }
+    }
+
     #[test]
     fn absent_proof_never_establishes_emptiness() {
         let d = BuildDescriptorV2 {

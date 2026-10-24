@@ -264,6 +264,21 @@ fn prepare_scope(
     drop(canonical);
     Ok(Some(scope))
 }
+#[inline(never)]
+fn prepare_generation_metadata(
+    target: &MaintenanceTarget,
+    scope: &RootOriginBinding,
+    memory: &CleanupMemory,
+) -> Result<Option<MemoryBox<PreparedPrivateMetadata>>, FixedControlError> {
+    let metadata = match admission::prepare_private_metadata(target, scope, memory) {
+        Ok(metadata) => metadata,
+        Err(FixedControlError::Resource(error)) => return Err(FixedControlError::Resource(error)),
+        Err(_) => return Ok(None),
+    };
+    boxed(metadata, memory).map(Some)
+}
+
+#[inline(never)]
 pub(crate) fn prepare_work(
     target: &MaintenanceTarget,
     binding: &PreparedTargetBinding,
@@ -283,10 +298,8 @@ pub(crate) fn prepare_work(
     let Some(scope) = prepare_scope(target, domain, expected, memory)? else {
         return Ok(None);
     };
-    let metadata = match admission::prepare_private_metadata(target, &scope, memory) {
-        Ok(metadata) => boxed(metadata, memory)?,
-        Err(FixedControlError::Resource(error)) => return Err(FixedControlError::Resource(error)),
-        Err(_) => return Ok(None),
+    let Some(metadata) = prepare_generation_metadata(target, &scope, memory)? else {
+        return Ok(None);
     };
     if let Some(recovery) = admission::prepare_metadata_recovery(&metadata, memory)? {
         // Recovery belongs to whichever role actually committed the intent.
@@ -316,6 +329,19 @@ pub(crate) fn prepare_work(
             target, domain, expected, state, metadata, scope, memory, cancel,
         );
     }
+    prepare_retained_generation_work(target, domain, expected, metadata, scope, memory, cancel)
+}
+#[inline(never)]
+fn prepare_retained_generation_work(
+    target: &MaintenanceTarget,
+    domain: &ReferenceDomain,
+    expected: &ReferenceEpoch,
+    metadata: MemoryBox<PreparedPrivateMetadata>,
+    scope: RootOriginBinding,
+    memory: &CleanupMemory,
+    cancel: &dyn Fn() -> bool,
+) -> Result<Option<MemoryBox<GenerationWork>>, FixedControlError> {
+    let payload = metadata.payload().ok_or_else(changed)?;
     let mut control = Control::decode(payload, scope)?;
     if control.stage == RESET_INTENT {
         return prepare_reset(metadata, control, memory);
@@ -358,8 +384,7 @@ fn prepare_selection(
 ) -> Result<Option<MemoryBox<GenerationWork>>, FixedControlError> {
     let payload = metadata.payload().ok_or_else(changed)?;
 
-    let Some(mut cursor) =
-        candidate::idle_control_cursor(payload, scope).map_err(candidate_error)?
+    let Some(cursor) = candidate::idle_control_cursor(payload, scope).map_err(candidate_error)?
     else {
         return Ok(None);
     };
@@ -395,6 +420,21 @@ fn prepare_selection(
         cancel,
     )
     .map_err(generation_error)?;
+    finish_generation_selection(
+        metadata, cursor, prepared, address, expected, observed, memory,
+    )
+}
+#[inline(never)]
+fn finish_generation_selection(
+    metadata: MemoryBox<PreparedPrivateMetadata>,
+    mut cursor: MaintenanceCursor,
+    prepared: MemoryBox<PreparedGeneration>,
+    address: CursorAddress,
+    expected: &ReferenceEpoch,
+    observed: generations::GenerationReport,
+    memory: &CleanupMemory,
+) -> Result<Option<MemoryBox<GenerationWork>>, FixedControlError> {
+    let len = address.0.iter().position(|byte| *byte == 0).unwrap_or(128);
     let proof = prepared.inventory().encode_proof();
     cursor.inspected(WorkCategory::Generation, address);
     let mut operation = [0; 32];

@@ -380,8 +380,8 @@ fn generation_admission(error: AdmissionError) -> GenerationError {
 }
 /// Advisory owners are Send; no directory/lock authority survives preparation.
 pub(crate) struct PreparedGeneration {
-    binding: PreparedTargetBinding,
-    scoped: PreparedScopedInvalidation,
+    binding: MemoryBox<PreparedTargetBinding>,
+    scoped: MemoryBox<PreparedScopedInvalidation>,
     layout: ManagedLayout,
     inventory: MemoryBox<GenerationInventory>,
     selected: usize,
@@ -503,11 +503,39 @@ fn control_leaf(
         stamp: before,
     })
 }
+// Large prepared admission values finish construction in their own frame and
+// remain charged on the heap through every callback. They carry no authority.
+#[inline(never)]
+fn boxed_generation_binding(
+    target: &MaintenanceTarget,
+    memory: &CleanupMemory,
+) -> Result<MemoryBox<PreparedTargetBinding>, GenerationError> {
+    let binding = maintenance_admission::prepare_target_binding(target, memory)
+        .map_err(generation_admission)?;
+    MemoryBox::new(binding, memory).map_err(|_| GenerationError::ResourceLimit)
+}
+#[inline(never)]
+fn boxed_generation_invalidation(
+    domain: &ReferenceDomain,
+    memory: &CleanupMemory,
+) -> Result<MemoryBox<PreparedScopedInvalidation>, GenerationError> {
+    let scoped = maintenance_admission::prepare_scoped_invalidation(domain, memory)
+        .map_err(generation_admission)?;
+    MemoryBox::new(scoped, memory).map_err(|_| GenerationError::ResourceLimit)
+}
+#[inline(never)]
 fn common(
     target: &MaintenanceTarget,
     domain: &ReferenceDomain,
     memory: &CleanupMemory,
-) -> Result<(ManagedLayout, PreparedTargetBinding, MemoryReservation), GenerationError> {
+) -> Result<
+    (
+        ManagedLayout,
+        MemoryBox<PreparedTargetBinding>,
+        MemoryReservation,
+    ),
+    GenerationError,
+> {
     if target.direct_pair.is_some() {
         return Err(GenerationError::Unknown);
     }
@@ -534,8 +562,7 @@ fn common(
     if !actual.same_scope(domain) || !domain.revalidate().map_err(generation_error)? {
         return Err(GenerationError::Changed);
     }
-    let binding = maintenance_admission::prepare_target_binding(target, memory)
-        .map_err(generation_admission)?;
+    let binding = boxed_generation_binding(target, memory)?;
     Ok((layout, binding, floor))
 }
 /// Metadata-only fair discovery. IDs are emitted only after exact genuine
@@ -704,6 +731,7 @@ fn allocate_inventory(
 
 /// Validate one exact selected payload, after fair metadata discovery selected
 /// this category. Other cohort leaves get fixed producer-bound stamp checks.
+#[inline(never)]
 pub(crate) fn prepare_exact_generation(
     target: &MaintenanceTarget,
     domain: &ReferenceDomain,
@@ -778,8 +806,7 @@ pub(crate) fn prepare_exact_generation(
     let final_stamp = inventory.leaves[13].map(|l| l.stamp);
     let prepared = PreparedGeneration {
         binding,
-        scoped: maintenance_admission::prepare_scoped_invalidation(domain, memory)
-            .map_err(generation_admission)?,
+        scoped: boxed_generation_invalidation(domain, memory)?,
         layout,
         inventory,
         selected: usize::from(selected),
@@ -986,8 +1013,7 @@ fn prepare_generation_resume_inner(
     MemoryBox::new(
         PreparedGeneration {
             binding,
-            scoped: maintenance_admission::prepare_scoped_invalidation(domain, memory)
-                .map_err(generation_admission)?,
+            scoped: boxed_generation_invalidation(domain, memory)?,
             layout,
             inventory,
             selected,
@@ -1154,6 +1180,23 @@ mod tests {
             other => panic!("actual reference epoch unavailable: {other:?}"),
         }
     }
+    #[test]
+    fn generation_preparation_keeps_admission_images_out_of_fixed_owner_layout() {
+        // The worker remains 256 KiB on every platform. These fixed owner
+        // envelopes must carry charged handles, not embed/copy large admission
+        // scratch images above configuration, inventory and payload validation.
+        assert!(std::mem::size_of::<PreparedGeneration>() <= 1024);
+        assert!(std::mem::size_of::<PreparedGenerationRootRemoval>() <= 4096);
+        assert!(
+            std::mem::size_of::<PreparedGeneration>()
+                < std::mem::size_of::<PreparedTargetBinding>()
+        );
+        assert!(
+            std::mem::size_of::<PreparedGeneration>()
+                < std::mem::size_of::<PreparedScopedInvalidation>()
+        );
+    }
+
     #[test]
     fn dc_generation_actual_publication_closed_role_lease_stale_and_resume_after_db_detach() {
         let base = std::env::temp_dir().join(format!(
@@ -1544,8 +1587,8 @@ mod tests {
 /// caller's durable cohort journal; receipt/lock/root removal is indivisible in
 /// authority and restartable through the outside-generation closed intent.
 pub(crate) struct PreparedGenerationRootRemoval {
-    binding: PreparedTargetBinding,
-    scoped: PreparedScopedInvalidation,
+    binding: MemoryBox<PreparedTargetBinding>,
+    scoped: MemoryBox<PreparedScopedInvalidation>,
     layout: ManagedLayout,
     origin: Origin,
     final_record: Final,
@@ -1618,8 +1661,7 @@ pub(crate) fn prepare_generation_root_removal(
     MemoryBox::new(
         PreparedGenerationRootRemoval {
             binding,
-            scoped: maintenance_admission::prepare_scoped_invalidation(domain, memory)
-                .map_err(generation_admission)?,
+            scoped: boxed_generation_invalidation(domain, memory)?,
             layout,
             origin,
             final_record,

@@ -215,5 +215,24 @@
       "browser_download_url": "https://github.com/ip7z/7zip/releases/download/26.05/7z2605-mac.tar.xz"
     },
     "actual_sha256": "12ef6830317743cfd3f0ab1724bde43fcc270d8b6d8564f8c12c2a2b7f993570"
+  },
+  "after_platform_fixes": {
+    "final_archive": "/private/tmp/cgraph-package-size-private-final-256/package/codebase-graph-3.0.4.crate",
+    "final_bytes": 10479813,
+    "limit_bytes": 10485760,
+    "headroom_bytes": 5947,
+    "final_sha256": "bc87d245246f76649d8e9ad47cc2eb3385b97e93c3a3232414537d983688093e",
+    "member_count": 209,
+    "member_names_unchanged_since_recompression": true,
+    "changed_members_since_recompression": [
+      "codebase-graph-3.0.4/.cargo_vcs_info.json",
+      "codebase-graph-3.0.4/src/process_lifecycle/unix.rs",
+      "codebase-graph-3.0.4/src/storage/maintenance_generation_engine.rs",
+      "codebase-graph-3.0.4/src/storage/maintenance_generations.rs"
+    ],
+    "initial_recompression_proof": "/private/tmp/cgraph-package-size-private-256/selected-verified-assets.json",
+    "initial_archive_comparison": "/private/tmp/cgraph-package-size-private-256/package-result.json",
+    "initial_recompressed_archive_bytes": 10478516,
+    "source_growth_since_recompression_bytes": 1297
   }
 }
