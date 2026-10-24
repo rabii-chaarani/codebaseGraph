@@ -190,7 +190,8 @@ fn recover_after_cut(allowance: usize) {
                 Ok(())
             }) {
                 Ok((_, actual)) => *owner = Some(actual),
-                Err(FixedControlError::Invalid(Problem::Busy)) if scope.enrollment_pending() => {}
+                Err(FixedControlError::Invalid(Problem::Busy) | FixedControlError::Grant(_))
+                    if scope.enrollment_pending() => {}
                 Err(error) => panic!("enrollment: {error:?}"),
             }
             Ok(AttemptOutcome::Pending)

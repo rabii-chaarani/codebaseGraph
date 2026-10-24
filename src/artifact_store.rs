@@ -252,6 +252,11 @@ impl ArtifactStore {
             );
             return Err(error);
         }
+        // Windows cannot rename a directory containing open child files. Keep
+        // real root/publication ownership and the pinned directory, while the
+        // consumed creator supplies the only possible receipt continuation.
+        let origin_publication = origin.take().and_then(OriginWriter::into_publication);
+        drop(payload);
         match root.rename_directory_no_replace(
             temp_name.as_bytes(),
             &prefix,
@@ -275,7 +280,7 @@ impl ArtifactStore {
                 prefix.sync_namespace()?;
                 root.sync_namespace()?;
                 if let Some(lease) = publication.as_ref() {
-                    if let Some(origin) = origin.as_mut() {
+                    if let Some(origin) = origin_publication {
                         let _ = origin.published(lease, &temp);
                     }
                 }
@@ -339,6 +344,12 @@ impl ArtifactStore {
                         }
                         Err(error) => return Err(error.into()),
                     };
+                    let payload = temp.open_readonly_file(ENVELOPE_FILE_NAME.as_bytes())?;
+                    if file_identity(&payload)? != payload_identity {
+                        return Err(NativeError::InvalidInput(
+                            "artifact_temporary_payload_changed".into(),
+                        ));
+                    }
                     if !same_file_bytes(&existing, &payload)? {
                         return Err(NativeError::InvalidInput(
                             "artifact_existing_payload_differs_or_unproven".into(),

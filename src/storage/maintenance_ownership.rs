@@ -4473,12 +4473,32 @@ pub(crate) mod tests {
             ArtifactUseLease::acquire_shared(&producer_root)
         });
         opened_rx.recv_timeout(Duration::from_secs(10)).unwrap();
-        fs::rename(&root, fixture.layout.storage_root().join("detached")).unwrap();
-        drop(ArtifactUseLease::acquire_shared(&root).unwrap());
-        start_tx.send(()).unwrap();
-        drop(exclusive);
-        assert!(producer.join().unwrap().is_err());
-        assert!(observe_artifact_cohort(&root).unwrap().is_some());
+        let detached = fixture.layout.storage_root().join("detached");
+        let moved = fs::rename(&root, &detached);
+        #[cfg(windows)]
+        {
+            // An open descendant prevents directory replacement on Windows.
+            // Exercise that real exclusion and let the waiting producer use
+            // only the unchanged physical root after its owner releases it.
+            let error = moved.unwrap_err();
+            assert!(matches!(error.raw_os_error(), Some(5 | 32)), "{error}");
+            let identity = path_identity(&root).unwrap();
+            assert!(!detached.exists());
+            start_tx.send(()).unwrap();
+            drop(exclusive);
+            let lease = producer.join().unwrap().unwrap();
+            lease.revalidate().unwrap();
+            assert_eq!(lease.identity, identity);
+        }
+        #[cfg(not(windows))]
+        {
+            moved.unwrap();
+            drop(ArtifactUseLease::acquire_shared(&root).unwrap());
+            start_tx.send(()).unwrap();
+            drop(exclusive);
+            assert!(producer.join().unwrap().is_err());
+            assert!(observe_artifact_cohort(&root).unwrap().is_some());
+        }
     }
 
     #[test]
@@ -4702,10 +4722,20 @@ pub(crate) mod tests {
         let old = fixture.layout.artifacts_root();
         let artifact_record = fs::read(old.join(".use-cohort.json")).unwrap();
         let detached = fixture.layout.storage_root().join("detached-artifacts");
+        #[cfg(windows)]
+        {
+            let error = fs::rename(&old, &detached).unwrap_err();
+            assert!(matches!(error.raw_os_error(), Some(5 | 32)), "{error}");
+            lease.revalidate().unwrap();
+            drop(lease);
+        }
         fs::rename(&old, &detached).unwrap();
         drop(ArtifactUseLease::acquire_shared(&old).unwrap());
-        assert!(lease.revalidate().is_err());
-        drop(lease);
+        #[cfg(not(windows))]
+        {
+            assert!(lease.revalidate().is_err());
+            drop(lease);
+        }
         // Copying the old proof onto a new incarnation is not authority.
         fs::write(old.join(".use-cohort.json"), artifact_record).unwrap();
         let fresh = acquired(claim_maintenance(&fixture.target).unwrap());
@@ -5258,12 +5288,22 @@ pub(crate) mod tests {
         .unwrap();
         let (writer, root) = fixed_epoch_guards(&layout);
         let old = paths.root.with_extension("old");
+        #[cfg(windows)]
+        {
+            let error = fs::rename(&paths.root, &old).unwrap_err();
+            assert!(matches!(error.raw_os_error(), Some(5 | 32)), "{error}");
+            root.revalidate().unwrap();
+            drop(root);
+            drop(writer);
+        }
         fs::rename(&paths.root, &old).unwrap();
         fs::create_dir(&paths.root).unwrap();
         for entry in fs::read_dir(&old).unwrap() {
             let entry = entry.unwrap();
             fs::rename(entry.path(), paths.root.join(entry.file_name())).unwrap();
         }
+        #[cfg(windows)]
+        let (writer, root) = fixed_epoch_guards(&layout);
         let before = fs::read(&paths.epoch).unwrap();
         assert!(with_canonical_epoch_advance(
             &frame,

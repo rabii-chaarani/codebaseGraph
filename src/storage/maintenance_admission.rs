@@ -80,6 +80,14 @@ fn check_entry(
     grant: &mut MutationGrant,
 ) -> Result<(), AdmissionError> {
     grant.take_entry()?;
+    check_entry_identity(path, kind, stamp, scratch)
+}
+fn check_entry_identity(
+    path: &Path,
+    kind: Kind,
+    stamp: Option<FixedFileStamp>,
+    scratch: &mut FixedControlScratch,
+) -> Result<(), AdmissionError> {
     match (open_fixed_control(path, kind, false, scratch), stamp) {
         (Ok(file), Some(stamp)) => stamp.recheck(&file),
         (Err(AdmissionError::Io(error)), None) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -149,12 +157,25 @@ pub(crate) fn prepare_canonical(
     memory: &CleanupMemory,
 ) -> Result<PreparedCanonical, AdmissionError> {
     let binding = project_binding(target, memory).map_err(projection)?;
-    #[cfg(windows)]
-    const PATH_BYTES: usize = 65536;
-    #[cfg(not(windows))]
-    const PATH_BYTES: usize = 4096;
     let floor = memory
-        .reserve(32 * PATH_BYTES + std::mem::size_of::<PreparedCanonical>())
+        .reserve(
+            super::maintenance_projection::path_charge(
+                [
+                    Some(target.repository_root.as_path()),
+                    Some(target.state_root.as_path()),
+                    Some(binding.storage.as_path()),
+                    Some(binding.config_path.as_path()),
+                    Some(domain.artifact_root()),
+                    binding.direct.as_ref().map(|p| p.database.as_path()),
+                    binding.direct.as_ref().map(|p| p.manifest.as_path()),
+                ]
+                .into_iter()
+                .flatten(),
+                32,
+                std::mem::size_of::<PreparedCanonical>(),
+            )
+            .map_err(AdmissionError::Resource)?,
+        )
         .map_err(AdmissionError::Resource)?;
     let mut scratch = FixedControlScratch::new(
         memory
@@ -551,6 +572,21 @@ mod tests {
             let _ = fs::remove_dir_all(&self.root);
         }
     }
+
+    #[test]
+    fn simultaneous_preparations_fit_one_account_without_maximum_path_overcharges() {
+        let f = Fixture::new();
+        let before = f.memory.used();
+        let witness = prepare_target_binding(&f.target, &f.memory).unwrap();
+        let duplicate = witness.duplicate(&f.memory).unwrap();
+        let first = f.prepared();
+        let second = f.prepared();
+        let metadata =
+            prepare_private_metadata(&f.target, &first.origin_scope(), &f.memory).unwrap();
+        assert!(f.memory.used() <= f.memory.limit());
+        drop((metadata, second, first, duplicate, witness));
+        assert_eq!(f.memory.used(), before);
+    }
     #[test]
     fn legacy_request_source_replacement_invalidates_confirmation_without_rebinding_runtime() {
         let f = Fixture::new();
@@ -926,7 +962,7 @@ mod tests {
             .with_local_invalidation(
                 &mut read,
                 &mut scratch,
-                &mut MutationGrant::start(),
+                &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
                 0,
                 &mut |advance, _| {
                     assert_eq!(advance.before, before + 1);
@@ -1483,11 +1519,19 @@ impl PreparedTargetBinding {
     pub(crate) fn is_current(&mut self) -> Result<bool, AdmissionError> {
         // Advisory fixed recheck; no mutation authority or user confirmation is
         // implied by this convenience. The real admission repeats these checks.
-        let mut grant = MutationGrant::start();
-        self.recheck(&mut grant).map(|_| true)
+        self.recheck_identity(&mut || Ok(())).map(|_| true)
     }
     pub(super) fn recheck(&mut self, grant: &mut MutationGrant) -> Result<(), AdmissionError> {
-        grant.take_entry()?;
+        self.recheck_identity(&mut || {
+            grant.take_entry()?;
+            Ok(())
+        })
+    }
+    fn recheck_identity(
+        &mut self,
+        charge: &mut impl FnMut() -> Result<(), AdmissionError>,
+    ) -> Result<(), AdmissionError> {
+        charge()?;
         let current =
             open_fixed_control(&self.root.path, Kind::Directory, false, &mut self.scratch)?;
         if FixedFileStamp::capture(&current, Kind::Directory)?.identity()
@@ -1495,19 +1539,25 @@ impl PreparedTargetBinding {
         {
             return Err(invalid(Problem::Changed));
         }
-        self.coordination.check(&mut self.scratch, grant)?;
-        check_entry(
+        charge()?;
+        check_entry_identity(
+            &self.coordination.path,
+            self.coordination.kind,
+            self.coordination.stamp,
+            &mut self.scratch,
+        )?;
+        charge()?;
+        check_entry_identity(
             &self.binding.config_path,
             Kind::File,
             self.binding.config_stamp,
             &mut self.scratch,
-            grant,
         )?;
         for (entry, pin) in [
             (&self.repository, &self._repository_file),
             (&self.state, &self._state_file),
         ] {
-            grant.take_entry()?;
+            charge()?;
             let current =
                 open_fixed_control(&entry.path, Kind::Directory, false, &mut self.scratch)?;
             let expected = entry

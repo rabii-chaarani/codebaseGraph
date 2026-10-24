@@ -3219,7 +3219,7 @@ impl WorkspaceControlFile {
                     control.binding.parent,
                 )?;
                 let source_name = &control.binding.name[..control.binding.name_len as usize];
-                if super::locks::file_identity(&parent.open_readonly_file(source_name)?)
+                if super::locks::file_identity(&parent.open_metadata_file(source_name)?)
                     .map_err(|_| invalid_control_io())?
                     != control.binding.output
                 {

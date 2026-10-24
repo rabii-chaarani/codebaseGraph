@@ -103,8 +103,52 @@ impl ConfigProjection {
 /// Unix FDs would share offsets, so File::try_clone is deliberately not used.
 struct SpanReader<'a> {
     file: &'a File,
+    #[cfg(windows)]
+    independent: File,
     offset: u64,
     end: u64,
+}
+impl<'a> SpanReader<'a> {
+    fn new(file: &'a File, offset: u64, end: u64) -> io::Result<Self> {
+        #[cfg(windows)]
+        let independent = {
+            use std::os::windows::io::{AsRawHandle, FromRawHandle};
+            use windows_sys::Win32::{
+                Foundation::{GENERIC_READ, INVALID_HANDLE_VALUE},
+                Storage::FileSystem::{
+                    ReOpenFile, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+                },
+            };
+            // A duplicated handle shares its cursor. ReOpenFile creates a new
+            // file object for this exact inode without resolving a pathname.
+            let handle = unsafe {
+                ReOpenFile(
+                    file.as_raw_handle(),
+                    GENERIC_READ,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    0,
+                )
+            };
+            if handle == INVALID_HANDLE_VALUE {
+                return Err(io::Error::last_os_error());
+            }
+            // SAFETY: the successful reopen returned one uniquely owned handle.
+            let reopened = unsafe { File::from_raw_handle(handle) };
+            if super::locks::file_identity(file).map_err(|_| io::ErrorKind::InvalidData)?
+                != super::locks::file_identity(&reopened).map_err(|_| io::ErrorKind::InvalidData)?
+            {
+                return Err(io::ErrorKind::InvalidData.into());
+            }
+            reopened
+        };
+        Ok(Self {
+            file,
+            #[cfg(windows)]
+            independent,
+            offset,
+            end,
+        })
+    }
 }
 impl Read for SpanReader<'_> {
     fn read(&mut self, output: &mut [u8]) -> io::Result<usize> {
@@ -121,7 +165,9 @@ impl Read for SpanReader<'_> {
         #[cfg(windows)]
         let read = {
             use std::os::windows::fs::FileExt;
-            self.file.seek_read(&mut output[..len], self.offset)?
+            let _ = self.file;
+            self.independent
+                .seek_read(&mut output[..len], self.offset)?
         };
         #[cfg(not(any(unix, windows)))]
         return Err(io::ErrorKind::Unsupported.into());
@@ -171,11 +217,7 @@ fn decode_string_into(
         return Err(ProjectionFailure::InvalidString);
     }
     let mut reader = StringReader {
-        input: SpanReader {
-            file,
-            offset: span.start,
-            end: span.end,
-        },
+        input: SpanReader::new(file, span.start, span.end)?,
         buffer: [0; 512],
         cursor: 0,
         filled: 0,
@@ -290,14 +332,7 @@ pub(crate) fn project_config(
     let source = FixedFileStamp::capture(file, FixedControlKind::File)
         .map_err(|_| ProjectionFailure::Changed)?;
     let end = file.metadata()?.len();
-    let mut scanner = MaintenanceJsonReader::new(
-        SpanReader {
-            file,
-            offset: 0,
-            end,
-        },
-        memory,
-    )?;
+    let mut scanner = MaintenanceJsonReader::new(SpanReader::new(file, 0, end)?, memory)?;
     let mut fields = [ScalarProjection::Missing; 5];
     let mut depth = 0usize;
     let mut key = None;
@@ -378,6 +413,32 @@ pub(crate) struct BoundConfiguration {
     pub(crate) repository: super::locks::FileIdentity,
     pub(crate) state: super::locks::FileIdentity,
     _paths: MemoryReservation,
+    _projected_paths: Option<MemoryReservation>,
+}
+
+/// Reserve a conservative envelope for actual native path allocations and
+/// transient joins. Long-path support does not require charging every short
+/// selector as a maximum-length Windows path, repeatedly, in the same account.
+pub(super) fn path_charge<'a>(
+    paths: impl IntoIterator<Item = &'a std::path::Path>,
+    copies: usize,
+    owner: usize,
+) -> Result<usize, ResourceLimit> {
+    paths.into_iter().try_fold(
+        owner
+            .checked_add(4096)
+            .ok_or(ResourceLimit::ArithmeticOverflow)?,
+        |total, path| {
+            path.as_os_str()
+                .as_encoded_bytes()
+                .len()
+                .checked_add(512)
+                .and_then(|bytes| bytes.checked_mul(2))
+                .and_then(|bytes| bytes.checked_mul(copies))
+                .and_then(|bytes| total.checked_add(bytes))
+                .ok_or(ResourceLimit::ArithmeticOverflow)
+        },
+    )
 }
 
 pub(crate) fn project_binding(
@@ -419,7 +480,20 @@ pub(crate) fn project_binding(
     // Native paths have a fixed addressing domain. This envelope covers all
     // simultaneously retained selector clones, joins and decoded path images;
     // strings themselves are separately reserved exactly before decoding.
-    let paths = memory.reserve(24 * PATH_BYTES + std::mem::size_of::<BoundConfiguration>())?;
+    let paths = memory.reserve(path_charge(
+        [
+            Some(target.repository_root.as_path()),
+            Some(target.state_root.as_path()),
+            target.storage_root.as_deref(),
+            target.config_path.as_deref(),
+            target.direct_pair.as_ref().map(|p| p.database.as_path()),
+            target.direct_pair.as_ref().map(|p| p.manifest.as_path()),
+        ]
+        .into_iter()
+        .flatten(),
+        24,
+        std::mem::size_of::<BoundConfiguration>(),
+    )?)?;
     if !target.repository_root.is_absolute() || !real_path(&target.repository_root) {
         return Err(ProjectionFailure::InvalidObject);
     }
@@ -449,8 +523,28 @@ pub(crate) fn project_binding(
     let mut storage = conventional.join("storage");
     let mut configured = default_direct(target);
     let mut config_stamp = None;
+    let mut projected_paths = None;
     if let Some(file) = file {
         let projection = project_config(&file, memory)?;
+        let projected_bytes = [
+            ConfigField::Repository,
+            ConfigField::Storage,
+            ConfigField::Database,
+            ConfigField::Manifest,
+        ]
+        .into_iter()
+        .try_fold(0usize, |total, field| {
+            let bytes = match projection.field(field) {
+                ScalarProjection::String(span) => usize::try_from(span.decoded_bytes)
+                    .map_err(|_| ResourceLimit::ArithmeticOverflow)?,
+                _ => 0,
+            };
+            bytes
+                .checked_mul(48)
+                .and_then(|bytes| total.checked_add(bytes))
+                .ok_or(ResourceLimit::ArithmeticOverflow)
+        })?;
+        projected_paths = Some(memory.reserve(projected_bytes)?);
         config_stamp = Some(*projection.source());
         let path = |field: ConfigField| -> Result<Option<PathBuf>, ProjectionFailure> {
             let Some(bytes) = projection.string(&file, field, memory)? else {
@@ -558,12 +652,18 @@ pub(crate) fn project_binding(
             .map_err(|_| ProjectionFailure::Changed)?,
         state: path_identity(&target.state_root).map_err(|_| ProjectionFailure::Changed)?,
         _paths: paths,
+        _projected_paths: projected_paths,
     })
 }
 
 impl BoundConfiguration {
     pub(super) fn duplicate(&self, memory: &CleanupMemory) -> Result<Self, ResourceLimit> {
         let paths = memory.reserve(self._paths.remaining())?;
+        let projected_paths = self
+            ._projected_paths
+            .as_ref()
+            .map(|charge| memory.reserve(charge.remaining()))
+            .transpose()?;
         Ok(Self {
             storage: self.storage.clone(),
             direct: self.direct.clone(),
@@ -572,6 +672,7 @@ impl BoundConfiguration {
             repository: self.repository,
             state: self.state,
             _paths: paths,
+            _projected_paths: projected_paths,
         })
     }
 }

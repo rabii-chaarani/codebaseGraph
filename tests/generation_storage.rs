@@ -568,5 +568,6 @@ fn temp_repo(name: &str) -> PathBuf {
     }
     fs::create_dir_all(&root)
         .unwrap_or_else(|error| panic!("failed to create temp dir {}: {error}", root.display()));
-    root
+    fs::canonicalize(&root)
+        .unwrap_or_else(|error| panic!("failed to resolve temp dir {}: {error}", root.display()))
 }

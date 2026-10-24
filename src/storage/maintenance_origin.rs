@@ -204,7 +204,47 @@ pub(crate) struct OriginWriter {
     facts: OriginFacts,
     usable: bool,
 }
+/// A consumed creator's continuation, never reconstructed from an observed
+/// receipt. It retains no child file handle across a Windows directory move.
+pub(crate) struct OriginPublication {
+    facts: OriginFacts,
+}
+impl OriginPublication {
+    pub(crate) fn published(
+        self,
+        lease: &RootPublicationLease<'_, '_>,
+        directory: &RootedDirectory,
+    ) -> Result<(), NativeError> {
+        if directory.identity() != self.facts.directory {
+            return Err(invalid("artifact_origin_publication_changed"));
+        }
+        let mut file = directory.open_existing(ORIGIN_NAME)?;
+        let before = stamp(&file)?;
+        let frames = u64::from(self.facts.phase.number()) + 1;
+        if before.identity() != self.facts.receipt || before.len() != frames * FRAME as u64 {
+            return Err(invalid("artifact_origin_receipt_changed"));
+        }
+        file.seek(SeekFrom::Start((frames - 1) * FRAME as u64))?;
+        let mut last = [0; FRAME];
+        file.read_exact(&mut last)?;
+        recheck(before, &file)?;
+        if last != encode(self.facts) {
+            return Err(invalid("artifact_origin_receipt_changed"));
+        }
+        file.seek(SeekFrom::End(0))?;
+        OriginWriter {
+            file,
+            facts: self.facts,
+            usable: true,
+        }
+        .published(lease, directory)
+    }
+}
 impl OriginWriter {
+    pub(crate) fn into_publication(self) -> Option<OriginPublication> {
+        (self.usable && self.facts.phase == OriginPhase::Complete)
+            .then_some(OriginPublication { facts: self.facts })
+    }
     pub(crate) fn create(
         lease: &RootPublicationLease<'_, '_>,
         directory: &RootedDirectory,

@@ -564,13 +564,23 @@ pub(crate) fn prepare_candidate_with_state(
         state.clear();
         return Err(CandidateError::Cancelled);
     }
-    #[cfg(windows)]
-    const PATH_BYTES: usize = 65536;
-    #[cfg(not(windows))]
-    const PATH_BYTES: usize = 4096;
     let floor = memory
         .reserve(
-            std::mem::size_of::<PreparedCandidate>() + 24 * PATH_BYTES + 3 * 4096 + CONTROL_BYTES,
+            super::maintenance_projection::path_charge(
+                [
+                    Some(target.repository_root.as_path()),
+                    Some(target.state_root.as_path()),
+                    target.storage_root.as_deref(),
+                    target.config_path.as_deref(),
+                    target.direct_pair.as_ref().map(|p| p.database.as_path()),
+                    target.direct_pair.as_ref().map(|p| p.manifest.as_path()),
+                ]
+                .into_iter()
+                .flatten(),
+                24,
+                std::mem::size_of::<PreparedCandidate>() + 3 * 4096 + CONTROL_BYTES,
+            )
+            .map_err(|_| CandidateError::ResourceLimit)?,
         )
         .map_err(|_| CandidateError::ResourceLimit)?;
     let retained = duplicate_target_binding_boxed(binding, memory)?;

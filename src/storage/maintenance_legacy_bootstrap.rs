@@ -2319,9 +2319,9 @@ mod tests {
                         *owner = Some(actual);
                         Ok(super::super::maintenance_scheduler::AttemptOutcome::Pending)
                     }
-                    Err(FixedControlError::Invalid(Problem::Busy))
-                        if scope.enrollment_pending() =>
-                    {
+                    Err(
+                        FixedControlError::Invalid(Problem::Busy) | FixedControlError::Grant(_),
+                    ) if scope.enrollment_pending() => {
                         Ok(super::super::maintenance_scheduler::AttemptOutcome::Pending)
                     }
                     Err(error) => panic!("actual source enrollment failed: {error:?}"),
@@ -2454,9 +2454,9 @@ mod tests {
                         *owner = Some(actual);
                         Ok(super::super::maintenance_scheduler::AttemptOutcome::Pending)
                     }
-                    Err(FixedControlError::Invalid(Problem::Busy))
-                        if scope.enrollment_pending() =>
-                    {
+                    Err(
+                        FixedControlError::Invalid(Problem::Busy) | FixedControlError::Grant(_),
+                    ) if scope.enrollment_pending() => {
                         Ok(super::super::maintenance_scheduler::AttemptOutcome::Pending)
                     }
                     Err(error) => panic!("actual staging enrollment failed: {error:?}"),

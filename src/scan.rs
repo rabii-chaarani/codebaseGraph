@@ -5,6 +5,7 @@ use crate::protocol::{
     LanguageProfile, ManifestDiff, NativeSyntaxMaterializationRequest, SourceSnapshot,
 };
 use crate::source_selection::SourceSelection;
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -180,6 +181,7 @@ fn copy_snapshot(
 ) -> std::io::Result<(
     u64,
     Option<crate::storage::maintenance_controls::WorkspaceControlFile>,
+    String,
 )> {
     use crate::process_lifecycle::FreshLifecycleFile;
     use crate::storage::maintenance_controls::WorkspaceControlFile;
@@ -190,10 +192,30 @@ fn copy_snapshot(
         if let Some(tracked) = output.tracking() {
             let _ = crate::storage::maintenance_origin::record_created_workspace_control(tracked);
         }
-        let length = std::io::copy(&mut fs::File::open(source)?, &mut output)?;
-        return Ok((length, Some(output)));
+        struct HashingWriter<'a> {
+            output: &'a mut WorkspaceControlFile,
+            hash: Sha256,
+        }
+        impl std::io::Write for HashingWriter<'_> {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                let count = std::io::Write::write(self.output, bytes)?;
+                self.hash.update(&bytes[..count]);
+                Ok(count)
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                std::io::Write::flush(self.output)
+            }
+        }
+        let mut writer = HashingWriter {
+            output: &mut output,
+            hash: Sha256::new(),
+        };
+        let length = std::io::copy(&mut fs::File::open(source)?, &mut writer)?;
+        let copied_hash = format!("{:x}", writer.hash.finalize());
+        return Ok((length, Some(output), copied_hash));
     }
-    fs::copy(source, temporary).map(|length| (length, None))
+    let length = fs::copy(source, temporary)?;
+    Ok((length, None, hash::sha256_file(temporary)?))
 }
 
 fn spool_stable_source(
@@ -216,19 +238,7 @@ fn spool_stable_source(
         ));
         let final_path = shard.join(format!("{partition_id}-{expected_hash}.snapshot"));
         match copy_snapshot(source_path, &temporary_path, &final_path) {
-            Ok((byte_len, output)) => {
-                let copied_hash = match hash::sha256_file(&temporary_path) {
-                    Ok(value) => value,
-                    Err(error) => {
-                        last_error = Some(error.to_string());
-                        if error.kind() == std::io::ErrorKind::NotFound {
-                            source_changed = true;
-                        }
-                        drop(output);
-                        let _ = fs::remove_file(&temporary_path);
-                        continue;
-                    }
-                };
+            Ok((byte_len, output, copied_hash)) => {
                 let current_hash = match hash::sha256_file(source_path) {
                     Ok(value) => value,
                     Err(error) => {
@@ -409,6 +419,31 @@ fn requires_full_source_rebuild(request: &NativeSyntaxMaterializationRequest) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn snapshot_hashing_keeps_the_exclusive_creator_open_until_publication() {
+        let root = std::env::temp_dir().join(format!(
+            "snapshot-private-{}",
+            crate::storage::layout::managed_generation_id()
+        ));
+        fs::create_dir(&root).unwrap();
+        let source = root.join("source.rs");
+        let temporary = root.join("temporary");
+        let destination = root.join("published");
+        fs::write(&source, b"fn preserved() {}\n").unwrap();
+        let (length, output, digest) = copy_snapshot(&source, &temporary, &destination).unwrap();
+        assert_eq!(length, fs::metadata(&source).unwrap().len());
+        assert_eq!(digest, hash::sha256_file(&source).unwrap());
+        #[cfg(windows)]
+        assert_eq!(
+            fs::File::open(&temporary).unwrap_err().raw_os_error(),
+            Some(32)
+        );
+        output.unwrap().publish_recorded(&destination).unwrap();
+        assert!(!temporary.exists());
+        assert_eq!(fs::read(&destination).unwrap(), fs::read(&source).unwrap());
+        fs::remove_dir_all(root).unwrap();
+    }
     use crate::protocol::{
         LanguageProfile, ManifestEntry, NativeManifest, OntologySchema,
         MATERIALIZATION_MANIFEST_SCHEMA_VERSION,

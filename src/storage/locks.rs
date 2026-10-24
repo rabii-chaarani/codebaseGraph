@@ -1367,6 +1367,11 @@ impl RootedDirectory {
     pub(crate) fn open_readonly_file(&self, name: &[u8]) -> std::io::Result<File> {
         self.relative_handle(name, false, false, false, false)
     }
+    /// Query the named inode without requesting data access. Windows permits
+    /// this while its exclusive creator still denies read/write/delete sharing.
+    pub(crate) fn open_metadata_file(&self, name: &[u8]) -> std::io::Result<File> {
+        self.relative_handle_access(name, false, false, false, false, true)
+    }
     pub(crate) fn open_directory_readonly(&self, name: &[u8]) -> std::io::Result<Self> {
         let directory = self.relative_handle(name, false, true, false, false)?;
         let identity = file_identity(&directory).map_err(native_io)?;
@@ -1399,6 +1404,17 @@ impl RootedDirectory {
         delete: bool,
         write: bool,
     ) -> std::io::Result<File> {
+        self.relative_handle_access(name, create, directory, delete, write, false)
+    }
+    fn relative_handle_access(
+        &self,
+        name: &[u8],
+        create: bool,
+        directory: bool,
+        delete: bool,
+        write: bool,
+        metadata_only: bool,
+    ) -> std::io::Result<File> {
         if name.is_empty()
             || name.len() >= 256
             || name == b"."
@@ -1411,6 +1427,7 @@ impl RootedDirectory {
         }
         #[cfg(unix)]
         let file = {
+            let _ = metadata_only;
             use std::os::fd::{AsRawFd, FromRawFd};
             let mut native = [0u8; 256];
             native[..name.len()].copy_from_slice(name);
@@ -1516,6 +1533,8 @@ impl RootedDirectory {
                             } else {
                                 0
                             }
+                    } else if metadata_only {
+                        FILE_READ_ATTRIBUTES
                     } else {
                         GENERIC_READ | if write { GENERIC_WRITE } else { 0 }
                     }) | SYNCHRONIZE
@@ -1960,6 +1979,35 @@ impl RootedDirectory {
 #[cfg(test)]
 mod rooted_directory_tests {
     use super::*;
+
+    #[test]
+    fn metadata_validation_preserves_private_creator_sharing_and_identity() {
+        let fixture = Fixture::new();
+        let root = fixture.anchor();
+        let path = fixture.root.join("private-output");
+        let fresh = crate::process_lifecycle::FreshLifecycleFile::create(&path).unwrap();
+        #[cfg(windows)]
+        {
+            let error = root.open_readonly_file(b"private-output").unwrap_err();
+            assert_eq!(error.raw_os_error(), Some(32));
+        }
+        let metadata = root.open_metadata_file(b"private-output").unwrap();
+        assert_eq!(
+            file_identity(&metadata).unwrap(),
+            file_identity(fresh.file()).unwrap()
+        );
+        assert_eq!(file_link_count(&metadata).unwrap(), 1);
+        drop(metadata);
+        drop(fresh);
+        assert_eq!(
+            root.open_readonly_file(b"private-output")
+                .unwrap()
+                .metadata()
+                .unwrap()
+                .len(),
+            0
+        );
+    }
     struct Fixture {
         root: PathBuf,
     }
