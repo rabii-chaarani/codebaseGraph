@@ -1238,7 +1238,7 @@ mod output_tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root = std::env::temp_dir().join(format!(
+        let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
             "codebase_graph_output_{name}_{}_{nanos}",
             std::process::id()
         ));

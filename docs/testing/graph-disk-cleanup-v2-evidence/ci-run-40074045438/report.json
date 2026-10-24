@@ -1,0 +1,170 @@
+{
+  "work": {
+    "pull_request": "https://github.com/rabii-chaarani/codebaseGraph/pull/153",
+    "failed_run": 40074045438,
+    "baseline": "073f0fb91e8a866d31e5f01a07a20898c3eb2370",
+    "source_patch_sha256": "55cc9bc3fcffac942ee10827eeea436bad4758637700253dc08fb1ebe5de04aa",
+    "spec": "knowledge/architecture/graph-disk-cleanup-contract.md",
+    "spec_revisions": {
+      "DC-S1": "0.1",
+      "DC-S2": "0.2",
+      "DC-S3": "0.2",
+      "DC-S4": "0.2",
+      "DC-S5": "0.1"
+    },
+    "approval": "Existing all-step approval and amendments recorded in the canonical wiki contract; current user request to fix CI run 40074045438. No scope, public contract or architecture-claim changes.",
+    "scryer_change": "chg-30es7n",
+    "linear": "Existing RAB-6 through RAB-10. Synchronization pending: the CodebaseGraph connection cannot resolve configured P-RAB-1; no unrelated workspace writes.",
+    "closure_owner": "repository maintainer/user"
+  },
+  "repairs": [
+    {
+      "platform": "Windows",
+      "failure": "Native-tests process exited 0xc00000fd in first materializing CLI case. FixedControlScratch carried a 64 KiB UTF-16 array inline through preparation aggregates.",
+      "change": "Keep the native path buffer in an aligned MemoryBox initialized directly in place using the caller’s existing MemoryReservation. Retain the complete charge through disposal; enforce allocation failure normally.",
+      "contracts": [
+        "DC-S4-R3",
+        "DC-S4-R4",
+        "DC-S5-R6",
+        "DC-S5-R8"
+      ],
+      "claim": "resp-hakfnc",
+      "anchors": [
+        "src/storage/locks.rs::FixedControlScratch",
+        "src/storage/maintenance_budget.rs::MemoryBox::new_uninit_reserved"
+      ],
+      "checks": [
+        "dc_control_scratch_uses_small_worker_frame_and_retains_reserved_path_storage",
+        "dc_driver_real_requested_allocations_fit_tight_ceiling_and_aligned_factory",
+        "git_diff_plan_scopes_to_changed_paths",
+        "windows-path-probe.log.gz"
+      ]
+    },
+    {
+      "platform": "Darwin ARM64",
+      "failure": "Six CI tests expected genuine workspace registration beneath an uncanonicalized temporary path containing the macOS /var symlink. Strict real_path validation correctly declined optional origin registration.",
+      "change": "Canonicalize only the existing temporary parent in four test fixture constructors; preserve actual fresh directory creation and every production ownership check.",
+      "contracts": [
+        "DC-S2-R3",
+        "DC-S2-R6",
+        "DC-S5-R5",
+        "DC-S5-R6"
+      ],
+      "claim": "resp-232",
+      "checks": [
+        "baseline-macos.log",
+        "canonical-temp-probe.log.gz",
+        "initial-focused.junit.xml",
+        "targeted.junit.xml"
+      ]
+    },
+    {
+      "platform": "Linux fixture, reproduced on Darwin",
+      "failure": "A 10-second hook wait was shorter than the 60-second cleanup cooldown. Forced initial producer activity also showed the 250 ms full-reconciliation loop could repeatedly defer actual epoch preparation.",
+      "change": "Force and observe one genuine deferred startup attempt; allow the existing 60-second retry plus preparation time; keep periodic full rescans outside the fixture window while ordinary Poll source-change detection performs the real write; include owner health on timeout.",
+      "contracts": [
+        "DC-S2-R5",
+        "DC-S3-R1",
+        "DC-S3-R7",
+        "DC-S3-A5",
+        "DC-S5-R5"
+      ],
+      "claim": "resp-109",
+      "checks": [
+        "dc_s5_real_mcp_and_writer_progress_during_preparation_and_changed_epoch_blocks_stale_effect",
+        "dc_s5_real_owner_cancel_joins_paused_preparation_before_fixture_reuse"
+      ]
+    }
+  ],
+  "executed": {
+    "native_target": "aarch64-apple-darwin",
+    "profile": "default dev/test, debug assertions enabled",
+    "targeted_tests": {
+      "passed": 334,
+      "failed": 0,
+      "ignored_in_selection": 0,
+      "unselected": 757,
+      "junit": "targeted.junit.xml",
+      "command": "cargo nextest run --offline -p codebase-graph --lib --test storage_foundation --profile ci-pr153 --config-file /private/tmp/pr153-native-ci-final-nextest.toml -E <selection below>",
+      "selection": "fixed_control_tests; maintenance_budget::tests; six original macOS failures and Managed janitor tests; git_diff_plan_scopes_to_changed_paths; both real preparation/cancellation tests; actual driver allocation boundary; Scryer radius install, execution::run, semantic_enrichment, staging_writer::tests and storage_foundation"
+    },
+    "clippy": {
+      "command": "cargo clippy --offline --workspace --all-targets --all-features -- -D warnings",
+      "result": "pass",
+      "log": "clippy.log"
+    },
+    "format": {
+      "command": "cargo fmt --all -- --check",
+      "result": "pass"
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "result": "pass"
+    },
+    "windows_layout_probe": {
+      "result": "10/10 standalone copied-module host tests pass with the exact Windows 64 KiB path layout; the same probe cross-compiles to x86_64-pc-windows-msvc LLVM IR with -D warnings",
+      "native_command": "rustc --edition=2021 --test -D warnings windows-path-probe.rs -o windows-path-probe; ./windows-path-probe",
+      "cross_command": "rustc --edition=2021 --test --target x86_64-pc-windows-msvc --emit=llvm-ir -C opt-level=3 -D warnings windows-path-probe.rs -o windows-path-probe.ll",
+      "limitations": "This validates the constructor, layout, alignment and accounting; it is not native Windows OS or whole-program execution."
+    },
+    "input_stability": {
+      "source_and_native_files": 206,
+      "executed_binaries": 3,
+      "source_hashes_unchanged": true,
+      "binary_hashes_unchanged": true
+    },
+    "scryer": {
+      "junit_ingested": 334,
+      "claims_with_verdicts_recorded": 32,
+      "claims_changed": 0,
+      "drift_scopes_after_reconciliation": 0,
+      "remaining_preexisting_attachment_radius": [
+        "src/adapters/cli/tests/install.rs (2 claims)",
+        "src/execution/run.rs (2 claims)",
+        "src/semantic_enrichment/mod.rs (2 claims)",
+        "src/storage/test_harness.rs (1 claim)"
+      ],
+      "note": "Every existing enabled test in the requested radius files was selected and passed. Seven pre-existing missing attachment verdicts remain; there are no failing or stale verdicts. No replacement test names or claims were invented. Empty proportional ledger closed."
+    },
+    "wiki": {
+      "profile": "recommended",
+      "accepted": true,
+      "validation_diagnostics": 0,
+      "link_diagnostics": 0,
+      "site_routes": 322,
+      "site_assets": 2,
+      "active_memory": "memory/procedural/canonical-temp-parents-for-owned-workspace-fixtures-2026-10-24"
+    }
+  },
+  "review": {
+    "method": "Primary-agent review of the actual diff, allocation layout/RAII, confinement and capability preservation, fixture-only canonicalization, and real retry/read/write/cancellation assertions. The repository exempts bounded CI fixes from its large-implementation multi-agent workflow.",
+    "outcome": "No remaining confirmed defect in the reviewed change."
+  },
+  "history": {
+    "initial_focused": "31/31 passing; preserves the baseline macOS failure and same-binary canonical-temp comparison.",
+    "intermediate": "333/334 passed; forced producer activity exposed repeated full-rescan contention. The failed snapshot, JUnit and source/binary identities are retained separately.",
+    "final": "334/334 selected checks passed on the final correction; all 206 source/native input and three binary hashes remained unchanged."
+  },
+  "limits": [
+    "Native Linux/Windows and full hosted CI qualification of the new commit remain pending. Local evidence does not close aggregate, milestone, rollout or release gates.",
+    "The repository graph registration indexes the older primary checkout, so PR branch discovery used its verified GitHub changed-file list after graph searches and the existing same-repository Scryer model.",
+    "A new-spec copy, live graph migration, installed helper upgrade and architecture topology changes were outside this CI repair."
+  ],
+  "files_sha256": {
+    "baseline-macos.log": "d2c41a7bcfb3e96e50c11f37a437a106811169127b656009695a257e4a455954",
+    "binaries.json": "66fe588b69149198077197cd9dcef65a493d69ccb342aef5bb2936295abb292e",
+    "canonical-temp-probe.log.gz": "1245e61208c7d86652f505233bd5350637cf33bd826a9450019d01f03e9d271c",
+    "clippy.log": "d1c3dd556a510606b7cf300a4743ce8ec28827d60433d68dcfbf695c8a53ffbc",
+    "initial-focused.junit.xml": "637fc9f29282bc598c24793ff402d88722b480debac405e49eb6b0512662e14a",
+    "intermediate-binaries.json": "428796a23638bb6b0bd609df13b6f25ffe15a1b9ea723610430405fe94a58180",
+    "intermediate-failure.junit.xml": "e28fadcb1e5b07550b8421baee606d10013d1dcdd96367b4d92e3147d3ec36c5",
+    "intermediate-failure.log.gz": "ca762dd677bf88c7cbacd669d3d165469264d124abc0c4c81f299b5594ca6ce0",
+    "intermediate-source.json": "841b9ba299bfd002e51d81fe3634c11535779ba587ba7d758832dbb7bbb2e23c",
+    "source-manifest.json": "03eaefca92ce313a4da2e28bc512b244b7b218e63001eeb6f769f1dfd49c50e7",
+    "targeted.junit.xml": "8857ee16bd2bc20e206310ae63a6eae935f9b828139c0081b04ecf3d70a63a7d",
+    "targeted.log.gz": "0fb62b112631339ad642cefbd22677bd7ea58be7afd3562f3becc6db290aa7a2",
+    "windows-path-probe.json": "068eae61cf83cd0ac0bef7ebc70da92bf005627f6b4c2a44a00b843e0a1ed726",
+    "windows-path-probe.log.gz": "1374d492df6cb4dce76816faf67941273d7592c042ed82c488249afa3b00f1e4",
+    "windows-path-probe.rs.gz": "5781379df6a230e4c6559eb4005280a7d1cd7030c26ccbc6b4f85596c80eca90"
+  }
+}

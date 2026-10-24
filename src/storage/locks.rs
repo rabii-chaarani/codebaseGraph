@@ -588,15 +588,15 @@ impl From<super::maintenance_budget::GrantExhausted> for FixedControlError {
 /// as its preparation buffers, before constructing the scratch. No PathBuf,
 /// CString, wide Vec, formatted path/error or growable collection is created.
 pub(crate) struct FixedControlScratch {
-    _reservation: super::maintenance_budget::MemoryReservation,
-    #[cfg(unix)]
-    path: [u8; libc::PATH_MAX as usize],
-    #[cfg(windows)]
-    path: [u16; 32768],
+    path: super::maintenance_budget::MemoryBox<FixedControlPath>,
 }
+#[cfg(unix)]
+type FixedControlPath = [u8; libc::PATH_MAX as usize];
+#[cfg(windows)]
+type FixedControlPath = [u16; 32768];
 impl FixedControlScratch {
     pub(crate) fn required_bytes() -> usize {
-        std::mem::size_of::<Self>() + 4096
+        std::mem::size_of::<Self>() + std::mem::size_of::<FixedControlPath>() + 4096
     }
     pub(crate) fn new(
         reservation: super::maintenance_budget::MemoryReservation,
@@ -606,12 +606,18 @@ impl FixedControlScratch {
                 super::maintenance_budget::ResourceLimit::CeilingExceeded,
             ));
         }
+        let mut path =
+            super::maintenance_budget::MemoryBox::<FixedControlPath>::new_uninit_reserved(
+                reservation,
+            )
+            .map_err(FixedControlError::Resource)?;
+        // SAFETY: the exact aligned allocation is uniquely owned, and every
+        // element of either native character array accepts the all-zero value.
+        // Initialize in place so Windows never copies a 64 KiB temporary.
+        unsafe { path.as_mut_ptr().write_bytes(0, 1) };
         Ok(Self {
-            _reservation: reservation,
-            #[cfg(unix)]
-            path: [0; libc::PATH_MAX as usize],
-            #[cfg(windows)]
-            path: [0; 32768],
+            // SAFETY: every element was initialized above; ownership transfers once.
+            path: unsafe { path.assume_init() },
         })
     }
 }
@@ -979,6 +985,34 @@ mod fixed_control_tests {
     use super::*;
     use crate::storage::maintenance_budget::CleanupMemory;
     use std::io::Write;
+
+    #[test]
+    fn dc_control_scratch_uses_small_worker_frame_and_retains_reserved_path_storage() {
+        // Exercise the shipping worker's stack limit, including the 64 KiB
+        // native Windows path buffer, without constructing it on that stack.
+        std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(|| {
+                assert!(std::mem::size_of::<FixedControlScratch>() <= 64);
+                let memory = CleanupMemory::new(128 * 1024).unwrap();
+                let before = memory.used();
+                let charge = FixedControlScratch::required_bytes();
+                let mut scratch =
+                    FixedControlScratch::new(memory.reserve(charge).unwrap()).unwrap();
+                assert_eq!(memory.used(), before + charge);
+                assert!(scratch.path.iter().all(|unit| *unit == 0));
+                let last = scratch.path.len() - 1;
+                scratch.path[last] = 1;
+                assert_eq!(scratch.path[last], 1);
+                drop(scratch);
+                assert_eq!(memory.used(), before);
+                assert!(FixedControlScratch::new(memory.reserve(charge - 1).unwrap()).is_err());
+                assert_eq!(memory.used(), before);
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
 
     struct Fixture {
         root: PathBuf,

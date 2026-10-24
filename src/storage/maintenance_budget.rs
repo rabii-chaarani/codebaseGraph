@@ -219,6 +219,17 @@ impl<T> MemoryBox<T> {
     ) -> Result<MemoryBox<std::mem::MaybeUninit<T>>, ResourceLimit> {
         let layout = Layout::new::<T>();
         let reservation = memory.reserve(layout.size())?;
+        Self::new_uninit_reserved(reservation)
+    }
+    /// Reuse a caller's retained layout allowance without charging a second
+    /// pool or first constructing the pointee in a by-value stack frame.
+    pub(crate) fn new_uninit_reserved(
+        reservation: MemoryReservation,
+    ) -> Result<MemoryBox<std::mem::MaybeUninit<T>>, ResourceLimit> {
+        let layout = Layout::new::<T>();
+        if reservation.remaining() < layout.size() {
+            return Err(ResourceLimit::CeilingExceeded);
+        }
         let pointer = if layout.size() == 0 {
             NonNull::dangling()
         } else {

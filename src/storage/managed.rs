@@ -1966,7 +1966,7 @@ mod transaction_janitor_tests {
     use crate::protocol::GraphSummary;
 
     fn store(label: &str) -> (PathBuf, ManagedStore) {
-        let root = std::env::temp_dir().join(format!(
+        let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
             "managed-role-{label}-{}-{}",
             std::process::id(),
             unix_time_ms()

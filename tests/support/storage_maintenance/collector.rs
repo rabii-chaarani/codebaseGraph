@@ -664,6 +664,7 @@ fn dc_s5_terminal_absent_barrier_rejects_appeared_entries_under_real_dispatcher(
         let prepare_terminal = terminal.clone();
         let domain = ReferenceDomain::managed(&ManagedLayout::new(&storage)).unwrap();
         let barrier = barrier.clone();
+        #[cfg(unix)]
         let sentinel = sentinel.clone();
         let seen = Arc::new(AtomicBool::new(false));
         let seen_callback = seen.clone();
@@ -2380,12 +2381,20 @@ fn dc_s5_real_referenced_backup_payload_restore_interruption_resumes_without_edi
     );
 }
 
-fn wait_for_real_preparation(guard: &crate::storage::maintenance_candidate::CandidateFaultGuard) {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+fn wait_for_real_preparation(
+    guard: &crate::storage::maintenance_candidate::CandidateFaultGuard,
+    owner: &crate::coordinator::CoordinatorClient,
+    root: &FixtureRoot,
+) {
+    // Startup refresh may legitimately hold reference activity during the
+    // first advisory pass. Allow its unchanged 60-second continuation cooldown
+    // plus preparation time before declaring the real hook unreachable.
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(75);
     while !guard.reached() {
         assert!(
             std::time::Instant::now() < deadline,
-            "actual advisory preparation never reached its root-scoped hook"
+            "actual advisory preparation never reached its root-scoped hook: {}",
+            coordinator_health(owner, root)
         );
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
@@ -2538,7 +2547,7 @@ fn dc_s5_real_mcp_and_writer_progress_during_preparation_and_changed_epoch_block
     use crate::coordinator::{CoordinatorApiConfig, CoordinatorClient};
     use crate::storage::maintenance_candidate::arm_preparation_pause;
     use crate::storage::maintenance_ownership::{
-        observe_reference_epoch, EpochObservation, ReferenceDomain,
+        observe_reference_epoch, EpochObservation, ReferenceDomain, ReferenceMutation,
     };
     let root = FixtureRoot::new();
     root.write_revision(0);
@@ -2564,11 +2573,17 @@ fn dc_s5_real_mcp_and_writer_progress_during_preparation_and_changed_epoch_block
         EpochObservation::Verified(epoch) => epoch.counter(),
         other => panic!("future-cache fixture lacks genuine covered E: {other:?}"),
     };
+    // Reproduce the CI startup race deterministically: the first real cleanup
+    // attempt must defer while a genuine producer keeps reference activity live.
+    let startup_activity = ReferenceMutation::begin_in_domain(&domain).unwrap();
     let guard = arm_preparation_pause(&artifact_root).unwrap();
     let refresh = crate::api::RefreshServiceConfig {
         backend: crate::api::context::GraphRefreshBackend::Poll,
         max_parallelism: 1,
-        reconcile_interval: std::time::Duration::from_millis(250),
+        // Source polling still detects the real edit below. Keep periodic
+        // full rescans outside the fixture window: repeated no-op writers
+        // otherwise race every advisory epoch observation before its hook.
+        reconcile_interval: std::time::Duration::from_secs(120),
         explicit_overrides: crate::api::RefreshConfigOverrides {
             policy: true,
             backend: true,
@@ -2583,7 +2598,21 @@ fn dc_s5_real_mcp_and_writer_progress_during_preparation_and_changed_epoch_block
         Some(refresh),
     ))
     .unwrap();
-    wait_for_real_preparation(&guard);
+    let startup_deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    loop {
+        let health = coordinator_health(&owner, &root);
+        if health["maintenance"]["last_attempt"]["status"] == "deferred" {
+            assert!(!guard.reached());
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < startup_deadline,
+            "actual startup preparation did not observe held reference activity: {health}"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    drop(startup_activity);
+    wait_for_real_preparation(&guard, &owner, &root);
     let preparing = coordinator_health(&owner, &root);
     assert_eq!(preparing["maintenance"]["running"], true);
     assert!(
@@ -2695,7 +2724,7 @@ fn dc_s5_real_owner_cancel_joins_paused_preparation_before_fixture_reuse() {
         None,
     ))
     .unwrap();
-    wait_for_real_preparation(&guard);
+    wait_for_real_preparation(&guard, &owner, fixture.root());
     query_through_same_owner_mcp(fixture.root(), 0);
     let (sender, receiver) = std::sync::mpsc::channel();
     let join = std::thread::spawn(move || {

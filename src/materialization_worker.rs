@@ -908,7 +908,7 @@ mod tests {
     #[test]
     fn empty_worker_cancellation_and_setup_failure_publish_terminal_owner() {
         for cancel in [true, false] {
-            let root = std::env::temp_dir().join(format!(
+            let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
                 "cgraph-worker-terminal-{}-{}",
                 std::process::id(),
                 WORKER_SEQUENCE.fetch_add(1, Ordering::Relaxed)

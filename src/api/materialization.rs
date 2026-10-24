@@ -1541,7 +1541,8 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {
-        std::env::temp_dir().join(format!(
+        // Ownership fixtures need a real parent; macOS TMPDIR can start at /var.
+        std::env::temp_dir().canonicalize().unwrap().join(format!(
             "{prefix}-{}-{}",
             std::process::id(),
             SystemTime::now()
