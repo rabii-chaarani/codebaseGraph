@@ -1,6 +1,51 @@
 use super::*;
 
 #[test]
+fn managed_coordinator_acquisition_preserves_real_fresh_root_enrollment() {
+    use crate::storage::maintenance_ownership::{
+        observe_reference_epoch, EpochObservation, ReferenceDomain,
+    };
+    let root = fs::canonicalize(temp_dir("managed-first-acquisition")).unwrap();
+    let state = root.join(".codebaseGraph");
+    fs::create_dir(&state).unwrap();
+    let storage = root.join("fresh-managed-storage");
+    let config_path = state.join("config.json");
+    fs::write(
+        &config_path,
+        serde_json::to_vec(&serde_json::json!({
+            "schema_version": 2, "repo_root": root, "storage_root": storage
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let selector = RepoSelector {
+        repo_root: Some(root.clone()),
+        config_path: Some(config_path),
+        ..Default::default()
+    };
+    let paths = coordinator_control_paths(&selector).unwrap();
+    assert!(
+        !storage.exists(),
+        "path-only observation created the producer namespace"
+    );
+    assert!(paths.managed_initialization.is_some());
+    let client =
+        CoordinatorClient::connect_or_start(CoordinatorApiConfig::new(selector, None)).unwrap();
+    assert!(paths.lock.exists());
+    let domain = ReferenceDomain::managed(&ManagedLayout::new(&storage)).unwrap();
+    assert!(
+        matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Verified(_)
+        ),
+        "coordinator lock erased genuine first-root creation before factory enrollment"
+    );
+    client.drain_owned_operation();
+    drop(client);
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn request_receive_failure_is_retryable_before_dispatch() {
     use std::net::Shutdown;
 
@@ -45,6 +90,8 @@ fn retryable_receive_failure_retries_the_same_owner() {
             control: CoordinatorControlPaths {
                 lock: root.join("coordinator.lock"),
                 state: root.join("coordinator.json"),
+                managed_initialization: None,
+                direct_initialization: None,
             },
             api_config: direct_config(&root),
             route: Mutex::new(CoordinatorRoute {
@@ -57,8 +104,8 @@ fn retryable_receive_failure_retries_the_same_owner() {
                 }),
                 owner: None,
             }),
-            monitor_stop: AtomicBool::new(false),
-            monitor: Mutex::new(None),
+            monitor_stop: Arc::new(AtomicBool::new(false)),
+            monitor: JoinedThread::new(None),
         }),
     };
 
@@ -441,8 +488,8 @@ where
             &server_state,
             &server_stop,
             &server_dispatcher,
-            Ok,
-            execute,
+            |_, invocation| Ok((invocation, None)),
+            move |operation_id, invocation, context, _| execute(operation_id, invocation, context),
         );
     });
     test_client_with_owner(root, state, stop, dispatcher, server)
@@ -503,14 +550,16 @@ fn test_client_with_state(root: &Path, state: CoordinatorState) -> CoordinatorCl
             control: CoordinatorControlPaths {
                 lock: root.join("coordinator.lock"),
                 state: root.join("coordinator.json"),
+                managed_initialization: None,
+                direct_initialization: None,
             },
             api_config: direct_config(root),
             route: Mutex::new(CoordinatorRoute {
                 state: Some(state),
                 owner: None,
             }),
-            monitor_stop: AtomicBool::new(true),
-            monitor: Mutex::new(None),
+            monitor_stop: Arc::new(AtomicBool::new(true)),
+            monitor: JoinedThread::new(None),
         }),
     }
 }
@@ -525,8 +574,9 @@ fn test_client_with_owner(
     let mut client = test_client_with_state(root, state.clone());
     let owner = Arc::new(CoordinatorOwner {
         stop,
-        thread: Mutex::new(Some(server)),
+        thread: JoinedThread::new(Some(server)),
         dispatcher,
+        refresh_cancel: RefreshCancellation::default(),
     });
     Arc::get_mut(&mut client.inner)
         .expect("test client has a unique inner")
@@ -584,4 +634,875 @@ fn temp_dir(label: &str) -> PathBuf {
     ));
     fs::create_dir_all(&path).unwrap();
     path
+}
+
+fn maintenance_test_job() -> ExecutionJob {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let stream = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (_server, _) = listener.accept().unwrap();
+    let registry = Arc::new(ConnectionRegistry::default());
+    let connection = registry.register(&stream).unwrap();
+    ExecutionJob {
+        operation_id: "health".into(),
+        invocation: test_invocation(),
+        context: ExecutionContext::with_timeout(Instant::now(), Duration::from_secs(60)),
+        legacy_confirmation: None,
+        stream,
+        _connection: connection,
+    }
+}
+
+#[test]
+fn maintenance_permit_blocks_real_execution_until_actual_drop() {
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    let permit = dispatcher.try_acquire_maintenance().unwrap();
+    assert!(dispatcher.active());
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    let rejected = dispatcher.try_submit(maintenance_test_job()).unwrap_err();
+    assert!(dispatcher.active());
+    drop(permit);
+    assert!(!dispatcher.active());
+    dispatcher.try_submit(*rejected).unwrap();
+    // Taking the queued job does not release actual operation ownership.
+    let job = dispatcher.take().unwrap();
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    drop(job);
+    dispatcher.finish_one();
+    assert!(dispatcher.try_acquire_maintenance().is_some());
+}
+
+#[test]
+fn maintenance_cannot_bypass_queued_or_active_real_execution() {
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    dispatcher.try_submit(maintenance_test_job()).unwrap();
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    let job = dispatcher.take().unwrap();
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    drop(job);
+    dispatcher.finish_one();
+    let permit = dispatcher.try_acquire_maintenance().unwrap();
+    dispatcher.stop_admission();
+    assert!(dispatcher.active());
+    drop(permit);
+    assert!(!dispatcher.active());
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+    assert!(dispatcher.try_submit(maintenance_test_job()).is_err());
+}
+
+#[test]
+fn maintenance_permit_is_exclusive_during_simultaneous_grant_requests() {
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    let start = Arc::new(std::sync::Barrier::new(9));
+    let acquired = Arc::new(std::sync::Barrier::new(9));
+    let release = Arc::new(std::sync::Barrier::new(9));
+    let mut workers = Vec::new();
+    for _ in 0..8 {
+        let dispatcher = Arc::clone(&dispatcher);
+        let start = Arc::clone(&start);
+        let acquired = Arc::clone(&acquired);
+        let release = Arc::clone(&release);
+        workers.push(thread::spawn(move || {
+            start.wait();
+            let permit = dispatcher.try_acquire_maintenance();
+            let won = permit.is_some();
+            acquired.wait();
+            release.wait();
+            drop(permit);
+            won
+        }));
+    }
+    start.wait();
+    acquired.wait();
+    assert!(dispatcher.active());
+    release.wait();
+    assert_eq!(
+        workers
+            .into_iter()
+            .map(|worker| worker.join().unwrap())
+            .filter(|won| *won)
+            .count(),
+        1
+    );
+    assert!(!dispatcher.active());
+}
+
+#[test]
+fn maintenance_panic_releases_slot_without_resurrecting_stopped_admission() {
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    let result = std::panic::catch_unwind({
+        let dispatcher = Arc::clone(&dispatcher);
+        move || {
+            let _permit = dispatcher.try_acquire_maintenance().unwrap();
+            dispatcher.stop_admission();
+            panic!("fixture maintenance panic");
+        }
+    });
+    assert!(result.is_err());
+    assert!(!dispatcher.active());
+    assert!(dispatcher.try_acquire_maintenance().is_none());
+}
+
+// Uses the actual ExecutionDispatcher, not a parallel scheduler occupancy flag.
+mod joined_maintenance_driver {
+    use super::*;
+    use crate::storage::maintenance_budget::{CleanupMemory, MutationGrant, ReservedBytes};
+    use crate::storage::maintenance_scheduler::{
+        AttemptOutcome, Cancellation, DriverError, DriverLiveness, MaintenanceDriver,
+        MaintenanceRuntime, RequestDisposition, TargetBinding, Trigger,
+    };
+    use std::rc::Rc;
+    use std::sync::mpsc::{self, Receiver, Sender};
+
+    struct Work {
+        dispose_entered: Sender<()>,
+        dispose_release: Receiver<()>,
+        _bytes: ReservedBytes,
+        _not_send: Rc<()>,
+    }
+    impl Drop for Work {
+        fn drop(&mut self) {
+            self.dispose_entered.send(()).unwrap();
+            self.dispose_release.recv().unwrap();
+        }
+    }
+    struct Driver {
+        prepare_entered: Sender<()>,
+        prepare_release: Receiver<()>,
+        disposal: Option<(Sender<()>, Receiver<()>)>,
+        confirmations: Sender<bool>,
+        mode: u8,
+        _not_send: Rc<()>,
+    }
+    impl MaintenanceDriver for Driver {
+        type Work = Work;
+        fn prepare(
+            &mut self,
+            _: TargetBinding,
+            _: &Cancellation<'_>,
+            memory: &CleanupMemory,
+        ) -> Result<Option<Work>, DriverError> {
+            self.prepare_entered.send(()).unwrap();
+            self.prepare_release.recv().unwrap();
+            let (dispose_entered, dispose_release) = self.disposal.take().unwrap();
+            Ok(Some(Work {
+                dispose_entered,
+                dispose_release,
+                _bytes: memory.reserve(32).unwrap().bytes(32).unwrap(),
+                _not_send: Rc::new(()),
+            }))
+        }
+        fn requires_legacy_confirmation(&self, _: &Work) -> bool {
+            true
+        }
+        fn mutate(
+            &mut self,
+            _: &Work,
+            grant: &mut MutationGrant,
+            confirmation: Option<
+                &crate::storage::maintenance_scheduler::LegacyQuiescenceConfirmation<'_>,
+            >,
+        ) -> Result<AttemptOutcome, DriverError> {
+            grant.take_entry().unwrap();
+            self.confirmations.send(confirmation.is_some()).unwrap();
+            match self.mode {
+                0 => Ok(AttemptOutcome::Complete),
+                1 => Err(DriverError::Mutation),
+                _ => panic!("fixture mutation panic"),
+            }
+        }
+    }
+
+    fn real_request_progresses(dispatcher: &Arc<ExecutionDispatcher>) {
+        dispatcher.try_submit(maintenance_test_job()).unwrap();
+        let job = dispatcher.take().unwrap();
+        assert!(dispatcher.active());
+        drop(job);
+        dispatcher.finish_one();
+    }
+
+    #[test]
+    fn dc_joined_driver_releases_real_permit_before_slow_drop_on_success_error_and_panic() {
+        struct ReleaseGates {
+            prepare: Option<Sender<()>>,
+            dispose: Option<Sender<()>>,
+        }
+        impl ReleaseGates {
+            fn prepare(&mut self) {
+                if let Some(tx) = self.prepare.take() {
+                    let _ = tx.send(());
+                }
+            }
+            fn dispose(&mut self) {
+                if let Some(tx) = self.dispose.take() {
+                    let _ = tx.send(());
+                }
+            }
+        }
+        impl Drop for ReleaseGates {
+            fn drop(&mut self) {
+                self.prepare();
+                self.dispose();
+            }
+        }
+        for mode in 0..3 {
+            let dispatcher = Arc::new(ExecutionDispatcher::default());
+            let (prepare_entered, prepared) = mpsc::channel();
+            let (release_prepare, prepare_release) = mpsc::channel();
+            let (dispose_entered, disposing) = mpsc::channel();
+            let (release_dispose, dispose_release) = mpsc::channel();
+            let (confirmations, confirmation) = mpsc::channel();
+            // Confirmation must be part of the preparation snapshot. A later
+            // true request cannot authorize work prepared without that source.
+            let mut runtime = MaintenanceRuntime::start_with_confirmation(
+                CleanupMemory::new(1024 * 1024).unwrap(),
+                TargetBinding([1; 32]),
+                dispatcher.clone(),
+                move |_| {
+                    Ok(Driver {
+                        prepare_entered,
+                        prepare_release,
+                        disposal: Some((dispose_entered, dispose_release)),
+                        confirmations,
+                        mode,
+                        _not_send: Rc::new(()),
+                    })
+                },
+                true,
+                None,
+            )
+            .unwrap();
+            // Declared after runtime: unwind opens both gates before runtime
+            // Drop joins a preparer or slow Work destructor.
+            let mut release = ReleaseGates {
+                prepare: Some(release_prepare),
+                dispose: Some(release_dispose),
+            };
+            prepared.recv_timeout(Duration::from_secs(5)).unwrap();
+            real_request_progresses(&dispatcher);
+            assert_eq!(
+                runtime
+                    .handle()
+                    .request(Trigger::Health, Some(TargetBinding([1; 32]))),
+                RequestDisposition::Enqueued
+            );
+            // Duplicate true coalesces; a later ordinary request cannot clear it.
+            assert_eq!(
+                runtime
+                    .handle()
+                    .request(Trigger::Health, Some(TargetBinding([1; 32]))),
+                RequestDisposition::Enqueued
+            );
+            assert_eq!(
+                runtime.handle().request(Trigger::Health, None),
+                RequestDisposition::Enqueued
+            );
+            release.prepare();
+            assert!(confirmation.recv_timeout(Duration::from_secs(5)).unwrap());
+            disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(!dispatcher.active());
+            real_request_progresses(&dispatcher);
+            let handle = runtime.handle();
+            // Joining must wait for actual disposal, but cannot hold the mailbox.
+            let (joined_tx, joined) = mpsc::channel();
+            let joiner = thread::spawn(move || {
+                runtime.stop_and_join();
+                joined_tx.send(()).unwrap();
+            });
+            let stopping_deadline = Instant::now() + Duration::from_secs(5);
+            while handle.snapshot().liveness == DriverLiveness::Running {
+                assert!(
+                    Instant::now() < stopping_deadline,
+                    "join did not publish stopping"
+                );
+                thread::yield_now();
+            }
+            assert_eq!(
+                handle.request(Trigger::Health, None),
+                RequestDisposition::Stopped
+            );
+            assert!(joined.try_recv().is_err());
+            release.dispose();
+            joined.recv_timeout(Duration::from_secs(5)).unwrap();
+            joiner.join().unwrap();
+            assert_eq!(
+                handle.snapshot().liveness,
+                if mode == 2 {
+                    DriverLiveness::Failed
+                } else {
+                    DriverLiveness::Stopped
+                }
+            );
+        }
+    }
+
+    struct AdvisoryFinishWork {
+        disposed: Arc<AtomicBool>,
+        _not_send: Rc<()>,
+    }
+    impl Drop for AdvisoryFinishWork {
+        fn drop(&mut self) {
+            self.disposed.store(true, Ordering::Release);
+        }
+    }
+    struct AdvisoryFinishDriver {
+        entered: Sender<()>,
+        release: Receiver<()>,
+        disposed: Arc<AtomicBool>,
+        dispatcher: Arc<ExecutionDispatcher>,
+        recovered: Arc<AtomicBool>,
+    }
+    impl MaintenanceDriver for AdvisoryFinishDriver {
+        type Work = AdvisoryFinishWork;
+        fn prepare(
+            &mut self,
+            _: TargetBinding,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<Option<Self::Work>, DriverError> {
+            Ok(Some(AdvisoryFinishWork {
+                disposed: Arc::clone(&self.disposed),
+                _not_send: Rc::new(()),
+            }))
+        }
+        fn mutate(
+            &mut self,
+            _: &Self::Work,
+            _: &mut MutationGrant,
+            _: Option<&crate::storage::maintenance_scheduler::LegacyQuiescenceConfirmation<'_>>,
+        ) -> Result<AttemptOutcome, DriverError> {
+            assert!(self.dispatcher.active());
+            Ok(AttemptOutcome::Complete)
+        }
+        fn finish(
+            &mut self,
+            _: &mut Self::Work,
+            outcome: AttemptOutcome,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<AttemptOutcome, DriverError> {
+            self.entered.send(()).unwrap();
+            self.release.recv().unwrap();
+            Ok(outcome)
+        }
+        fn after_disposal(
+            &mut self,
+            outcome: AttemptOutcome,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<AttemptOutcome, DriverError> {
+            assert!(
+                self.disposed.load(Ordering::Acquire),
+                "old prepared work survived into required recovery"
+            );
+            use crate::storage::maintenance_scheduler::MaintenanceAdmission;
+            let dispatcher = Arc::clone(&self.dispatcher);
+            let entered = dispatcher.run_recovery(&mut || {
+                assert!(
+                    dispatcher.active(),
+                    "required recovery bypassed actual execution admission"
+                );
+                assert!(dispatcher.try_submit(maintenance_test_job()).is_err());
+                self.recovered.store(true, Ordering::Release);
+                Ok(())
+            })?;
+            assert!(entered);
+            Ok(outcome)
+        }
+    }
+    #[test]
+    fn dc_joined_driver_advisory_finish_allows_real_requests_then_drops_work_before_recovery() {
+        let dispatcher = Arc::new(ExecutionDispatcher::default());
+        let (entered, enter_rx) = mpsc::channel();
+        let (release_tx, release) = mpsc::channel();
+        let disposed = Arc::new(AtomicBool::new(false));
+        let recovered = Arc::new(AtomicBool::new(false));
+        let driver_disposed = Arc::clone(&disposed);
+        let driver_recovered = Arc::clone(&recovered);
+        let driver_dispatcher = Arc::clone(&dispatcher);
+        let mut runtime = MaintenanceRuntime::start(
+            CleanupMemory::new(1024 * 1024).unwrap(),
+            TargetBinding([7; 32]),
+            Arc::clone(&dispatcher),
+            move |_| {
+                Ok(AdvisoryFinishDriver {
+                    entered,
+                    release,
+                    disposed: driver_disposed,
+                    dispatcher: driver_dispatcher,
+                    recovered: driver_recovered,
+                })
+            },
+        )
+        .unwrap();
+        enter_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert!(!dispatcher.active());
+        real_request_progresses(&dispatcher);
+        assert!(runtime.handle().snapshot().last_attempt.is_none());
+        assert!(!disposed.load(Ordering::Acquire));
+        let handle = runtime.handle();
+        let waiter = thread::spawn(move || handle.wait_for_first_attempt());
+        release_tx.send(()).unwrap();
+        let completed = waiter.join().unwrap();
+        assert_eq!(
+            completed.last_attempt.unwrap().outcome,
+            AttemptOutcome::Complete
+        );
+        assert!(disposed.load(Ordering::Acquire));
+        assert!(recovered.load(Ordering::Acquire));
+        runtime.stop_and_join();
+        assert!(!dispatcher.active());
+    }
+
+    #[test]
+    fn dc_joined_driver_rebind_and_stop_during_preparation_prevent_mutation() {
+        for stop in [false, true] {
+            let dispatcher = Arc::new(ExecutionDispatcher::default());
+            let (prepare_entered, prepared) = mpsc::channel();
+            let (release_prepare, prepare_release) = mpsc::channel();
+            let (dispose_entered, disposing) = mpsc::channel();
+            let (release_dispose, dispose_release) = mpsc::channel();
+            let (confirmations, confirmation) = mpsc::channel();
+            let mut runtime = MaintenanceRuntime::start(
+                CleanupMemory::new(1024 * 1024).unwrap(),
+                TargetBinding([1; 32]),
+                dispatcher.clone(),
+                move |_| {
+                    Ok(Driver {
+                        prepare_entered,
+                        prepare_release,
+                        disposal: Some((dispose_entered, dispose_release)),
+                        confirmations,
+                        mode: 0,
+                        _not_send: Rc::new(()),
+                    })
+                },
+            )
+            .unwrap();
+            prepared.recv_timeout(Duration::from_secs(5)).unwrap();
+            let handle = runtime.handle();
+            assert_eq!(
+                handle.request(Trigger::Health, Some(TargetBinding([9; 32]))),
+                RequestDisposition::UnboundConfirmation
+            );
+            assert_eq!(
+                handle.request(Trigger::Health, Some(TargetBinding([1; 32]))),
+                RequestDisposition::Enqueued
+            );
+            assert_eq!(
+                handle.rebind(TargetBinding([1; 32])),
+                RequestDisposition::Enqueued
+            );
+            assert_eq!(handle.snapshot().generation, 0);
+            if stop {
+                runtime.request_stop();
+            } else {
+                handle.rebind(TargetBinding([2; 32]));
+            }
+            release_prepare.send(()).unwrap();
+            disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(confirmation.try_recv().is_err());
+            if !stop {
+                real_request_progresses(&dispatcher);
+            }
+            release_dispose.send(()).unwrap();
+            runtime.stop_and_join();
+            assert!(!dispatcher.active());
+            assert!(handle
+                .snapshot()
+                .last_attempt
+                .is_none_or(|record| record.generation == handle.snapshot().generation));
+        }
+    }
+
+    #[test]
+    fn dc_joined_driver_start_limit_and_factory_failure_are_truthful() {
+        let dispatcher = Arc::new(ExecutionDispatcher::default());
+        assert!(MaintenanceRuntime::start::<Driver, _>(
+            CleanupMemory::new(128).unwrap(),
+            TargetBinding([1; 32]),
+            dispatcher.clone(),
+            |_| unreachable!()
+        )
+        .is_err());
+        let mut runtime = MaintenanceRuntime::start::<Driver, _>(
+            CleanupMemory::new(1024 * 1024).unwrap(),
+            TargetBinding([1; 32]),
+            dispatcher,
+            |_| Err(DriverError::ResourceLimit),
+        )
+        .unwrap();
+        let handle = runtime.handle();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while handle.snapshot().liveness != DriverLiveness::Failed {
+            assert!(Instant::now() < deadline);
+            thread::yield_now();
+        }
+        assert_eq!(handle.snapshot().failure, Some(DriverError::ResourceLimit));
+        assert_eq!(
+            handle.request(Trigger::Health, None),
+            RequestDisposition::Failed
+        );
+        runtime.stop_and_join();
+    }
+
+    struct GateAdmission {
+        dispatcher: Arc<ExecutionDispatcher>,
+        acquired: Sender<()>,
+        release: Mutex<Receiver<()>>,
+    }
+    impl crate::storage::maintenance_scheduler::MaintenanceAdmission for GateAdmission {
+        type Permit = MaintenanceExecutionPermit;
+        fn try_acquire(&self) -> Option<Self::Permit> {
+            let permit = self.dispatcher.try_acquire_maintenance()?;
+            self.acquired.send(()).unwrap();
+            self.release.lock().unwrap().recv().unwrap();
+            Some(permit)
+        }
+        fn stop_admission(&self) {
+            self.dispatcher.stop_admission();
+        }
+    }
+
+    #[test]
+    fn dc_joined_driver_stop_or_rebind_winning_postpermit_gate_has_no_mutation() {
+        for stop in [false, true] {
+            let dispatcher = Arc::new(ExecutionDispatcher::default());
+            let (prepare_entered, prepared) = mpsc::channel();
+            let (release_prepare, prepare_release) = mpsc::channel();
+            let (dispose_entered, disposing) = mpsc::channel();
+            let (release_dispose, dispose_release) = mpsc::channel();
+            let (confirmations, confirmation) = mpsc::channel();
+            let (acquired, acquired_rx) = mpsc::channel();
+            let (release_gate, release) = mpsc::channel();
+            let mut runtime = MaintenanceRuntime::start(
+                CleanupMemory::new(1024 * 1024).unwrap(),
+                TargetBinding([1; 32]),
+                GateAdmission {
+                    dispatcher: dispatcher.clone(),
+                    acquired,
+                    release: Mutex::new(release),
+                },
+                move |_| {
+                    Ok(Driver {
+                        prepare_entered,
+                        prepare_release,
+                        disposal: Some((dispose_entered, dispose_release)),
+                        confirmations,
+                        mode: 0,
+                        _not_send: Rc::new(()),
+                    })
+                },
+            )
+            .unwrap();
+            prepared.recv_timeout(Duration::from_secs(5)).unwrap();
+            release_prepare.send(()).unwrap();
+            acquired_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(dispatcher.active());
+            assert!(dispatcher.try_submit(maintenance_test_job()).is_err());
+            if stop {
+                runtime.request_stop();
+            } else {
+                runtime.handle().rebind(TargetBinding([2; 32]));
+            }
+            release_gate.send(()).unwrap();
+            disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(!dispatcher.active());
+            assert!(confirmation.try_recv().is_err());
+            if !stop {
+                real_request_progresses(&dispatcher);
+            }
+            release_dispose.send(()).unwrap();
+            runtime.stop_and_join();
+        }
+    }
+}
+
+mod refresh_owned_join {
+    use super::*;
+    use std::sync::mpsc;
+
+    struct Release(Option<mpsc::Sender<()>>);
+    impl Release {
+        fn release(&mut self) {
+            if let Some(tx) = self.0.take() {
+                let _ = tx.send(());
+            }
+        }
+    }
+    impl Drop for Release {
+        fn drop(&mut self) {
+            self.release();
+        }
+    }
+
+    struct Payload {
+        entered: mpsc::Sender<()>,
+        release: mpsc::Receiver<()>,
+        panic_again: bool,
+    }
+    impl Drop for Payload {
+        fn drop(&mut self) {
+            let _ = self.entered.send(());
+            let _ = self.release.recv();
+            if self.panic_again {
+                panic!("fixture join payload destructor");
+            }
+        }
+    }
+    #[test]
+    fn refresh_join_two_drainers_wait_for_payload_drop_and_wake_after_unwind() {
+        for panic_again in [false, true] {
+            let (entered, disposing) = mpsc::channel();
+            let (release, released) = mpsc::channel();
+            let target = thread::spawn(move || {
+                std::panic::panic_any(Payload {
+                    entered,
+                    release: released,
+                    panic_again,
+                })
+            });
+            let joined = Arc::new(JoinedThread::new(Some(target)));
+            let mut release = Release(Some(release));
+            let first = joined.clone();
+            let (first_tx, first_rx) = mpsc::channel();
+            let first = thread::spawn(move || {
+                let result =
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| first.join()));
+                first_tx.send(result.is_ok()).unwrap();
+            });
+            disposing.recv_timeout(Duration::from_secs(5)).unwrap();
+            assert!(
+                joined.state.try_lock().is_ok(),
+                "mutex held during join/payload drop"
+            );
+            assert!(matches!(
+                *joined.state.lock().unwrap(),
+                JoinState::Joining(_)
+            ));
+            let second = joined.clone();
+            let (second_tx, second_rx) = mpsc::channel();
+            let second = thread::spawn(move || second_tx.send(second.join()).unwrap());
+            assert!(
+                second_rx.recv_timeout(Duration::from_millis(50)).is_err(),
+                "concurrent drain returned before disposal"
+            );
+            assert!(first_rx.try_recv().is_err());
+            release.release();
+            assert_eq!(
+                first_rx.recv_timeout(Duration::from_secs(5)).unwrap(),
+                !panic_again
+            );
+            assert!(second_rx.recv_timeout(Duration::from_secs(5)).unwrap());
+            first.join().unwrap();
+            second.join().unwrap();
+            assert!(matches!(*joined.state.lock().unwrap(), JoinState::Joined));
+        }
+    }
+
+    #[test]
+    fn refresh_join_self_identity_survives_handle_taken_by_another_drainer() {
+        let joined = Arc::new(JoinedThread::new(None));
+        let weak = Arc::downgrade(&joined);
+        let (release, released) = mpsc::channel();
+        let (result, result_rx) = mpsc::channel();
+        let target = thread::spawn(move || {
+            let _ = released.recv();
+            result.send(weak.upgrade().unwrap().join()).unwrap();
+        });
+        joined.install(target);
+        let mut release = Release(Some(release));
+        let drainer = joined.clone();
+        let drainer = thread::spawn(move || assert!(drainer.join()));
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !matches!(*joined.state.lock().unwrap(), JoinState::Joining(_)) {
+            assert!(Instant::now() < deadline);
+            thread::yield_now();
+        }
+        release.release();
+        assert!(!result_rx.recv_timeout(Duration::from_secs(5)).unwrap());
+        drainer.join().unwrap();
+        assert!(joined.join());
+    }
+
+    fn await_join_transition(joined: &JoinedThread) {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            // Condition synchronization only: the actual unlocked-join probe
+            // below executes once, after admission's short guard has gone.
+            if let Ok(state) = joined.state.try_lock() {
+                if matches!(*state, JoinState::Joining(_)) {
+                    break;
+                }
+            }
+            assert!(
+                Instant::now() < deadline,
+                "drainer did not release its joining transition"
+            );
+            thread::yield_now();
+        }
+    }
+
+    #[test]
+    fn refresh_owner_and_monitor_release_state_and_route_mutexes_before_join() {
+        let stop = Arc::new(AtomicBool::new(false));
+        let owner = Arc::new(CoordinatorOwner {
+            stop: stop.clone(),
+            thread: JoinedThread::new(None),
+            dispatcher: Arc::new(ExecutionDispatcher::default()),
+            refresh_cancel: RefreshCancellation::default(),
+        });
+        let weak = Arc::downgrade(&owner);
+        let (observed, observed_rx) = mpsc::channel();
+        let target = thread::spawn(move || {
+            while !stop.load(Ordering::Acquire) {
+                thread::yield_now();
+            }
+            let owner = weak.upgrade().unwrap();
+            await_join_transition(&owner.thread);
+            observed
+                .send(owner.thread.state.try_lock().is_ok())
+                .unwrap();
+        });
+        owner.thread.install(target);
+        owner.stop_and_drain();
+        assert!(observed_rx.recv_timeout(Duration::from_secs(5)).unwrap());
+
+        let root = temp_dir("monitor-unlocked-drain");
+        let client = test_client_with_state(&root, test_state("127.0.0.1:1".parse().unwrap()));
+        client.inner.monitor_stop.store(false, Ordering::Release);
+        let weak = Arc::downgrade(&client.inner);
+        let stop = client.inner.monitor_stop.clone();
+        let (observed, observed_rx) = mpsc::channel();
+        let target = thread::spawn(move || {
+            while !stop.load(Ordering::Acquire) {
+                thread::yield_now();
+            }
+            let inner = weak.upgrade().unwrap();
+            await_join_transition(&inner.monitor);
+            observed
+                .send((
+                    inner.monitor.state.try_lock().is_ok(),
+                    inner.route.try_lock().is_ok(),
+                ))
+                .unwrap();
+        });
+        client.inner.monitor.install(target);
+        client.drain_owned_operation();
+        assert_eq!(
+            observed_rx.recv_timeout(Duration::from_secs(5)).unwrap(),
+            (true, true)
+        );
+    }
+
+    #[test]
+    fn refresh_monitor_final_self_drop_exits_before_another_wait_or_work() {
+        let root = temp_dir("monitor-self-drop-tail");
+        let owner_stop = Arc::new(AtomicBool::new(false));
+        let server_stop = owner_stop.clone();
+        let (server_done, server_drained) = mpsc::channel();
+        let server = thread::spawn(move || {
+            while !server_stop.load(Ordering::Acquire) {
+                thread::yield_now();
+            }
+            server_done.send(()).unwrap();
+        });
+        let client = test_client_with_owner(
+            &root,
+            test_state("127.0.0.1:1".parse().unwrap()),
+            owner_stop,
+            Arc::new(ExecutionDispatcher::default()),
+            server,
+        );
+        client.inner.monitor_stop.store(false, Ordering::Release);
+        let stop = client.inner.monitor_stop.clone();
+        let weak = Arc::downgrade(&client.inner);
+        let probe_weak = weak.clone();
+        let (observed, observation) = mpsc::channel();
+        let (release, released) = mpsc::channel();
+        let waits = Arc::new(AtomicU64::new(0));
+        let probe_waits = waits.clone();
+        let (done, drained) = mpsc::channel();
+        let monitor = thread::spawn(move || {
+            monitor_route_with_probe(probe_weak, stop, |phase| match phase {
+                MonitorPhase::BeforeWait => {
+                    probe_waits.fetch_add(1, Ordering::SeqCst);
+                }
+                MonitorPhase::Observed => {
+                    observed.send(()).unwrap();
+                    let _ = released.recv();
+                }
+            });
+            done.send(()).unwrap();
+        });
+        client.inner.monitor.install(monitor);
+        let mut release = Release(Some(release));
+        observation.recv_timeout(Duration::from_secs(5)).unwrap();
+        drop(client); // monitor's iteration now owns the last strong reference
+        release.release();
+        drained.recv_timeout(Duration::from_secs(5)).unwrap();
+        server_drained.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert!(weak.upgrade().is_none());
+        assert_eq!(waits.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn refresh_owner_executor_start_failure_and_stop_before_api_start_join_refresh() {
+        for stop_before_api in [false, true] {
+            let root = temp_dir("owner-refresh-startup");
+            let control = CoordinatorControlPaths {
+                lock: root.join("coordinator.lock"),
+                state: root.join("coordinator.json"),
+                managed_initialization: None,
+                direct_initialization: None,
+            };
+            let lease = try_open_locked(&control.lock, LockMode::Exclusive)
+                .unwrap()
+                .unwrap();
+            let mut config = direct_config(&root);
+            config.identity = Some(RepositoryIdentity::capture(&config.selector).unwrap());
+            config.refresh = Some(RefreshServiceConfig::default());
+            let (before, before_rx) = mpsc::channel();
+            let (release, released) = mpsc::channel();
+            let (started, started_rx) = mpsc::channel();
+            let (_, owner) =
+                start_owner_with_probe(control.clone(), lease, config, move |stage| match stage {
+                    OwnerStartup::BeforeRefresh => {
+                        if stop_before_api {
+                            before.send(()).unwrap();
+                            let _ = released.recv();
+                        }
+                    }
+                    OwnerStartup::RefreshStarted(state) => {
+                        INJECT_EXECUTOR_SPAWN_FAILURE.with(|flag| flag.set(true));
+                        started.send(state.unwrap()).unwrap();
+                    }
+                })
+                .unwrap();
+            let mut release = Release(Some(release));
+            if stop_before_api {
+                before_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+                // This is the exact owner token created before its serving thread.
+                owner.stop.store(true, Ordering::Release);
+                owner.refresh_cancel.request_stop();
+                owner.dispatcher.stop_admission();
+                release.release();
+            }
+            let refresh = started_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+            owner.stop_and_drain();
+            assert!(!refresh.snapshot().task_alive);
+            assert!(
+                !control.state.exists(),
+                "serving state survived completed cleanup"
+            );
+            assert!(
+                try_open_locked(&control.lock, LockMode::Exclusive)
+                    .unwrap()
+                    .is_some(),
+                "coordinator lease escaped drain"
+            );
+            if stop_before_api {
+                assert_eq!(refresh.snapshot().effective_root, None);
+            }
+        }
+    }
 }

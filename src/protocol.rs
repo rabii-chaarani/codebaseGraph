@@ -380,6 +380,108 @@ impl ManifestDiff {
     }
 }
 
+/// Compact cached maintenance measurements. Unknown bytes remain JSON null.
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
+pub struct MaintenanceByteBucket {
+    pub logical_bytes: Option<u64>,
+    pub allocated_bytes: Option<u64>,
+}
+
+/// Fixed categories make absence of an observation explicit for every category.
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
+pub struct MaintenanceCategoryBytes {
+    pub active_graph: MaintenanceByteBucket,
+    pub active_cache: MaintenanceByteBucket,
+    pub leased_generation: MaintenanceByteBucket,
+    pub live_run: MaintenanceByteBucket,
+    pub recovery_evidence: MaintenanceByteBucket,
+    pub artifact_temporary: MaintenanceByteBucket,
+    pub legacy_staging: MaintenanceByteBucket,
+    pub retired_direct: MaintenanceByteBucket,
+    pub coordination: MaintenanceByteBucket,
+    pub unknown: MaintenanceByteBucket,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize, PartialEq, Eq)]
+pub struct MaintenanceBytes {
+    pub total: MaintenanceByteBucket,
+    pub retained: MaintenanceByteBucket,
+    pub potential_reclamation: MaintenanceByteBucket,
+    pub deferred: MaintenanceByteBucket,
+    pub unknown: MaintenanceByteBucket,
+    pub by_category: MaintenanceCategoryBytes,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MaintenanceInventoryStatus {
+    Complete,
+    Partial,
+    Busy,
+    Missing,
+    Invalid,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MaintenanceAttemptStatus {
+    Complete,
+    Partial,
+    Deferred,
+    Missing,
+    Invalid,
+}
+
+/// Metrics are unknown until this attempt completes. A running attempt must not
+/// reuse metrics from a prior attempt with its newer start time.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct MaintenanceAttempt {
+    pub started_at_unix_ms: u64,
+    pub finished_at_unix_ms: Option<u64>,
+    pub status: Option<MaintenanceAttemptStatus>,
+    pub attempted_entries: Option<usize>,
+    pub deleted_entries: Option<usize>,
+    pub reclaimed_allocated_bytes: Option<u64>,
+    pub continuation_phase: Option<String>,
+}
+
+/// Additive health/materialization presentation, independent of legacy
+/// `cleanup_pending`. This contains no inventory entries or storage authority.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct MaintenanceSummary {
+    pub requested: bool,
+    pub running: bool,
+    pub pending: bool,
+    pub observed_at_unix_ms: Option<u64>,
+    pub observation_age_ms: Option<u64>,
+    pub inventory_status: Option<MaintenanceInventoryStatus>,
+    pub measurement_complete: bool,
+    pub observation_complete: bool,
+    pub bytes: MaintenanceBytes,
+    pub reasons: Vec<String>,
+    pub errors: Vec<String>,
+    pub last_attempt: Option<MaintenanceAttempt>,
+}
+
+impl Default for MaintenanceSummary {
+    fn default() -> Self {
+        Self {
+            requested: false,
+            running: false,
+            pending: true,
+            observed_at_unix_ms: None,
+            observation_age_ms: None,
+            inventory_status: None,
+            measurement_complete: false,
+            observation_complete: false,
+            bytes: MaintenanceBytes::default(),
+            reasons: vec!["maintenance_not_observed".to_string()],
+            errors: Vec::new(),
+            last_attempt: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct NativeSyntaxMaterializationResponse {
     pub snapshots: BTreeMap<String, SourceSnapshot>,
@@ -404,6 +506,8 @@ pub struct NativeSyntaxMaterializationResponse {
     pub active_generation: Option<String>,
     #[serde(default)]
     pub cleanup_pending: bool,
+    #[serde(default)]
+    pub maintenance: Option<MaintenanceSummary>,
     #[serde(default)]
     pub pending_runs: usize,
     #[serde(default)]
@@ -463,6 +567,7 @@ impl NativeSyntaxMaterializationResponse {
             storage_format: String::new(),
             active_generation: None,
             cleanup_pending: false,
+            maintenance: None,
             pending_runs: 0,
             artifacts_reused: 0,
             artifacts_rebuilt: 0,
@@ -508,6 +613,7 @@ impl NativeSyntaxMaterializationResponse {
             storage_format: String::new(),
             active_generation: None,
             cleanup_pending: false,
+            maintenance: None,
             pending_runs: 0,
             artifacts_reused: 0,
             artifacts_rebuilt: 0,
@@ -916,6 +1022,114 @@ mod tests {
         assert_eq!(
             current.graph_build_compatibility_digest().unwrap(),
             legacy.graph_build_compatibility_digest().unwrap()
+        );
+    }
+}
+
+#[cfg(test)]
+mod maintenance_summary_tests {
+    use super::*;
+
+    #[test]
+    fn unobserved_maintenance_keeps_all_measurements_unknown() {
+        let value = serde_json::to_value(MaintenanceSummary::default()).unwrap();
+        assert_eq!(
+            value["reasons"],
+            serde_json::json!(["maintenance_not_observed"])
+        );
+        assert!(value["observed_at_unix_ms"].is_null());
+        assert!(value["inventory_status"].is_null());
+        assert!(value["last_attempt"].is_null());
+        assert_eq!(value["measurement_complete"], false);
+        assert_eq!(value["observation_complete"], false);
+        let bytes = value["bytes"].as_object().unwrap();
+        for (name, bucket) in bytes {
+            if name == "by_category" {
+                assert_eq!(bucket.as_object().unwrap().len(), 10);
+                for bucket in bucket.as_object().unwrap().values() {
+                    assert!(bucket["logical_bytes"].is_null());
+                    assert!(bucket["allocated_bytes"].is_null());
+                }
+            } else {
+                assert!(bucket["logical_bytes"].is_null());
+                assert!(bucket["allocated_bytes"].is_null());
+            }
+        }
+    }
+
+    #[test]
+    fn running_attempt_does_not_require_fabricated_metrics() {
+        let summary = MaintenanceSummary {
+            running: true,
+            observed_at_unix_ms: Some(100),
+            observation_age_ms: Some(200),
+            last_attempt: Some(MaintenanceAttempt {
+                started_at_unix_ms: 300,
+                finished_at_unix_ms: None,
+                status: None,
+                attempted_entries: None,
+                deleted_entries: None,
+                reclaimed_allocated_bytes: None,
+                continuation_phase: None,
+            }),
+            ..MaintenanceSummary::default()
+        };
+        let value = serde_json::to_value(&summary).unwrap();
+        for field in [
+            "finished_at_unix_ms",
+            "status",
+            "attempted_entries",
+            "deleted_entries",
+            "reclaimed_allocated_bytes",
+        ] {
+            assert!(value["last_attempt"][field].is_null(), "{field}");
+        }
+        assert_eq!(value["observed_at_unix_ms"], 100);
+        assert_eq!(value["last_attempt"]["started_at_unix_ms"], 300);
+        assert_eq!(
+            serde_json::from_value::<MaintenanceSummary>(value).unwrap(),
+            summary
+        );
+    }
+
+    #[test]
+    fn partial_measurements_and_deferred_outcomes_round_trip_without_zero_fill() {
+        let summary = MaintenanceSummary {
+            inventory_status: Some(MaintenanceInventoryStatus::Partial),
+            bytes: MaintenanceBytes {
+                by_category: MaintenanceCategoryBytes {
+                    active_cache: MaintenanceByteBucket {
+                        logical_bytes: Some(4096),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                deferred: MaintenanceByteBucket {
+                    logical_bytes: Some(8192),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            reasons: vec!["writer_in_use".into()],
+            errors: vec!["fixture permission failure".into()],
+            last_attempt: Some(MaintenanceAttempt {
+                started_at_unix_ms: 100,
+                finished_at_unix_ms: Some(200),
+                status: Some(MaintenanceAttemptStatus::Deferred),
+                attempted_entries: Some(1),
+                deleted_entries: Some(0),
+                reclaimed_allocated_bytes: None,
+                continuation_phase: Some("validation_pending".into()),
+            }),
+            ..MaintenanceSummary::default()
+        };
+        let value = serde_json::to_value(&summary).unwrap();
+        assert_eq!(value["inventory_status"], "partial");
+        assert_eq!(value["last_attempt"]["status"], "deferred");
+        assert!(value["bytes"]["deferred"]["allocated_bytes"].is_null());
+        assert_eq!(
+            serde_json::from_value::<MaintenanceSummary>(value).unwrap(),
+            summary
         );
     }
 }

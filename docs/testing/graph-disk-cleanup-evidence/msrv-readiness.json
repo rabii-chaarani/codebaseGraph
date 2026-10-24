@@ -1,0 +1,145 @@
+{
+  "status": "blocked_before_compilation",
+  "toolchain": "cargo1.82.0/rustc1.82.0 aarch64-apple-darwin",
+  "declared_project_msrv": "1.82",
+  "lockfile_sha256": "17e5add36d90045704049e45154977fd4d569d5968989e1d7047dea3e965a4a6",
+  "baseline": "018df35e72447fc3e014e950d1d3c6648bbd4820",
+  "baseline_manifest_lock_diff": "",
+  "attempts": [
+    {
+      "command": "cargo +1.82.0 metadata --offline --locked --format-version 1",
+      "outcome": "Failed resolving locked zlib-rs0.6.8; Cargo1.82 cache hash6f17 lacks the version, current Cargo cache1949 contains it.",
+      "stderr": "s5-msrv-metadata.stderr",
+      "actual_exit_code": 101,
+      "stdout_bytes": 0,
+      "stderr_sha256": "3789ba8ed22ae4a82b1fc7adaea6cd8d86d3c94beb1f30f698bd4afb3f7e6ff0"
+    },
+    {
+      "command": "CARGO_HOME=/private/tmp/codebasegraph-disk-cleanup-7t9af0a6/s5-cargo-home cargo +1.82.0 metadata --offline --locked --format-version 1",
+      "cache_preparation": "Copied current registry index into isolated /tmp Cargo home old-hash directory; sources/cache symlink existing current cache; no dependency or global cache modifications.",
+      "outcome": "Cargo1.82 cannot parse pinned clap4.6.1 manifest requiring edition2024.",
+      "stderr": "s5-msrv-ready-metadata.stderr",
+      "actual_exit_code": 101,
+      "stdout_bytes": 0,
+      "stderr_sha256": "d75191f480933414ac1b27956d159e407be16eecac57c0d782ec127207ea333e"
+    }
+  ],
+  "pinned_packages_declaring_higher_msrv": [
+    {
+      "name": "clap",
+      "version": "4.6.1",
+      "declared_rust_version": "1.85",
+      "pinned_manifest_sha256": "1c1430d702b4b85e2cdb15b1d6444743707ce6bafb27477ebaa78789ef81ce92",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clap-4.6.1/Cargo.toml"
+    },
+    {
+      "name": "clap_builder",
+      "version": "4.6.0",
+      "declared_rust_version": "1.85",
+      "pinned_manifest_sha256": "e025ac79c30ed67555492f797f3ce2637678c1e9b1637e4571f95db81e7037e8",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clap_builder-4.6.0/Cargo.toml"
+    },
+    {
+      "name": "clap_lex",
+      "version": "1.1.0",
+      "declared_rust_version": "1.85",
+      "pinned_manifest_sha256": "01d043b9d8911420d51b1b21313278cbcdac10cd852e277b25260a458f5f8fee",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clap_lex-1.1.0/Cargo.toml"
+    },
+    {
+      "name": "crc",
+      "version": "3.4.0",
+      "declared_rust_version": "1.83",
+      "pinned_manifest_sha256": "bc9ea8bd807209d10bd7ab9ecd78f7275723850c3eab962093e1fe6325ce5c4b",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/crc-3.4.0/Cargo.toml"
+    },
+    {
+      "name": "icu_collections",
+      "version": "2.2.0",
+      "declared_rust_version": "1.86",
+      "pinned_manifest_sha256": "5d9b5823c57b369a560661513d2399e8e1bf0d240bc3f44b689b14a66c2c4aef",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/icu_collections-2.2.0/Cargo.toml"
+    },
+    {
+      "name": "icu_locale_core",
+      "version": "2.2.0",
+      "declared_rust_version": "1.86",
+      "pinned_manifest_sha256": "c53044fbad7932db685457e57fde142f28e0d72f3509d3a459ac75e7b210492a",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/icu_locale_core-2.2.0/Cargo.toml"
+    },
+    {
+      "name": "icu_normalizer",
+      "version": "2.2.0",
+      "declared_rust_version": "1.86",
+      "pinned_manifest_sha256": "0b2859370d4c2ea8026fde77d76c79c08038a1b9934a541868e2900a21c20959",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/icu_normalizer-2.2.0/Cargo.toml"
+    },
+    {
+      "name": "icu_normalizer_data",
+      "version": "2.2.0",
+      "declared_rust_version": "1.86",
+      "pinned_manifest_sha256": "0c9f8f56b470681a8608cbf3a8e5be3b573c834594a91efce0f47be00b825eb3",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/icu_normalizer_data-2.2.0/Cargo.toml"
+    },
+    {
+      "name": "icu_properties",
+      "version": "2.2.0",
+      "declared_rust_version": "1.86",
+      "pinned_manifest_sha256": "34478d473cded8d8ee6a23a12fe2b3ab9d92fb5b0e88d299b5f339e4f6bdd0cb",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/icu_properties-2.2.0/Cargo.toml"
+    },
+    {
+      "name": "icu_properties_data",
+      "version": "2.2.0",
+      "declared_rust_version": "1.86",
+      "pinned_manifest_sha256": "40734ae7bdd99a9271e77406adc25203089e95d6e046ff33c0f3ff30c65ccd8b",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/icu_properties_data-2.2.0/Cargo.toml"
+    },
+    {
+      "name": "icu_provider",
+      "version": "2.2.0",
+      "declared_rust_version": "1.86",
+      "pinned_manifest_sha256": "7eb8e22e09b90f38286e669869154d4549a481e64ef670639cc21390205d1245",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/icu_provider-2.2.0/Cargo.toml"
+    },
+    {
+      "name": "idna_adapter",
+      "version": "1.2.2",
+      "declared_rust_version": "1.86",
+      "pinned_manifest_sha256": "a5be3efe6b6b3ee7823820c9a3d47f318234f6a5fd48ab878d33cac9bc3ee573",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna_adapter-1.2.2/Cargo.toml"
+    },
+    {
+      "name": "tree-sitter-language",
+      "version": "0.1.8",
+      "declared_rust_version": "1.90",
+      "pinned_manifest_sha256": "7f5a66a1708bac89478e7f6261d759af5643c8d68d38df73110c36482a384aaa",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tree-sitter-language-0.1.8/Cargo.toml"
+    },
+    {
+      "name": "wasip2",
+      "version": "1.0.4+wasi-0.2.12",
+      "declared_rust_version": "1.87.0",
+      "pinned_manifest_sha256": "a4cf47d49115ca7543113c3c4c136e0cdd3dfff344eefa0f64ee8c5200e99fa9",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wasip2-1.0.4+wasi-0.2.12/Cargo.toml"
+    },
+    {
+      "name": "wit-bindgen",
+      "version": "0.57.1",
+      "declared_rust_version": "1.85.0",
+      "pinned_manifest_sha256": "bb7fe08cf7f552712e29c7373c058d5fe74d650f954c2462e523e40fee273f9f",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wit-bindgen-0.57.1/Cargo.toml"
+    },
+    {
+      "name": "zerovec",
+      "version": "0.11.6",
+      "declared_rust_version": "1.83",
+      "pinned_manifest_sha256": "90d4ff34b86ae816f0c0bcc740d8e2ad5378341e6a13231b914d6525cb29232e",
+      "manifest": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/zerovec-0.11.6/Cargo.toml"
+    }
+  ],
+  "conclusion": "Two distinct preexisting setup blockers: old Cargo offline index lacks pinned package, then actual pinned dependency edition/MSRV incompatibility. Cleanup source compatibility has not been tested under1.82. Target-specific dependencies above1.82 are not all necessarily compiled on macOS; tree-sitter-language0.1.8 is a direct production dependency declaring1.90.",
+  "proposed_coordinator_action": "Choose a separate approved dependency-compatibility repair or minimum-toolchain policy; do not silently downgrade dependencies or claim1.82 qualified.",
+  "network_access": false,
+  "production_files_changed": false
+}

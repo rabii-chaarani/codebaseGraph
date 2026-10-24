@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="29" failures="0" errors="0" uuid="853e45ac-213f-49b3-ae26-3fa6d245940b" timestamp="2026-10-21T11:08:15.546+09:30" time="10.785">
+    <testsuite name="codebase-graph" tests="29" disabled="0" errors="0" failures="0">
+        <testcase name="api::context::tests::dc_epoch_optional_direct_cleanup_keeps_both_runtime_selectors_readable_and_pending" classname="codebase-graph" timestamp="2026-10-21T11:08:15.548+09:30" time="0.613">
+        </testcase>
+        <testcase name="api::context::tests::dc_epoch_optional_managed_cleanup_keeps_runtime_readable_and_pending" classname="codebase-graph" timestamp="2026-10-21T11:08:16.162+09:30" time="1.009">
+        </testcase>
+        <testcase name="api::graph_read::tests::manifest_without_backend_metadata_uses_legacy_ladybug_fts" classname="codebase-graph" timestamp="2026-10-21T11:08:17.171+09:30" time="6.250">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_failed_native_open_releases_exclusion" classname="codebase-graph" timestamp="2026-10-21T11:08:23.421+09:30" time="0.026">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_move_and_connection_retain_physical_family" classname="codebase-graph" timestamp="2026-10-21T11:08:23.447+09:30" time="0.124">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_native_path_rejects_full_non_utf8_before_effects" classname="codebase-graph" timestamp="2026-10-21T11:08:23.572+09:30" time="0.020">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_native_path_rejects_transforms_before_filesystem_effects" classname="codebase-graph" timestamp="2026-10-21T11:08:23.592+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_readonly_rejects_parent_without_coordination_write_access" classname="codebase-graph" timestamp="2026-10-21T11:08:23.611+09:30" time="0.069">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_rejects_symlink_and_hardlink_resources_before_open" classname="codebase-graph" timestamp="2026-10-21T11:08:23.680+09:30" time="0.071">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_relative_native_open_uses_one_absolute_guarded_resource" classname="codebase-graph" timestamp="2026-10-21T11:08:23.751+09:30" time="0.077">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_symlink_parent_traversal_cannot_bind_another_native_resource" classname="codebase-graph" timestamp="2026-10-21T11:08:23.828+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_unicode_alias_retains_physical_parent_exclusion" classname="codebase-graph" timestamp="2026-10-21T11:08:23.847+09:30" time="0.104">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_unwind_closes_native_handle_and_releases_exclusion" classname="codebase-graph" timestamp="2026-10-21T11:08:23.951+09:30" time="0.125">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_windows_encoding_policy_checks_the_complete_native_path" classname="codebase-graph" timestamp="2026-10-21T11:08:24.076+09:30" time="0.020">
+        </testcase>
+        <testcase name="db_writer::tests::native_writer_loads_json_staging_through_ladybug_copy" classname="codebase-graph" timestamp="2026-10-21T11:08:24.096+09:30" time="0.227">
+        </testcase>
+        <testcase name="db_writer::tests::native_writer_loads_multiple_chunks_into_one_primary_key_table" classname="codebase-graph" timestamp="2026-10-21T11:08:24.324+09:30" time="0.230">
+        </testcase>
+        <testcase name="db_writer::tests::transient_database_error_detection_matches_ladybug_lock_failures" classname="codebase-graph" timestamp="2026-10-21T11:08:24.553+09:30" time="0.021">
+        </testcase>
+        <testcase name="db_writer::tests::transient_database_retry_replays_operation_until_success" classname="codebase-graph" timestamp="2026-10-21T11:08:24.574+09:30" time="0.122">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay" classname="codebase-graph" timestamp="2026-10-21T11:08:24.697+09:30" time="0.331">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue" classname="codebase-graph" timestamp="2026-10-21T11:08:25.028+09:30" time="0.935">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards" classname="codebase-graph" timestamp="2026-10-21T11:08:25.963+09:30" time="0.043">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys" classname="codebase-graph" timestamp="2026-10-21T11:08:26.006+09:30" time="0.032">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record" classname="codebase-graph" timestamp="2026-10-21T11:08:26.038+09:30" time="0.062">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family" classname="codebase-graph" timestamp="2026-10-21T11:08:26.101+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude" classname="codebase-graph" timestamp="2026-10-21T11:08:26.129+09:30" time="0.030">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release" classname="codebase-graph" timestamp="2026-10-21T11:08:26.160+09:30" time="0.028">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof" classname="codebase-graph" timestamp="2026-10-21T11:08:26.188+09:30" time="0.083">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use" classname="codebase-graph" timestamp="2026-10-21T11:08:26.272+09:30" time="0.030">
+        </testcase>
+        <testcase name="storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission" classname="codebase-graph" timestamp="2026-10-21T11:08:26.301+09:30" time="0.030">
+        </testcase>
+    </testsuite>
+</testsuites>

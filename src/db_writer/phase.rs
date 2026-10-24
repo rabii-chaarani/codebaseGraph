@@ -21,6 +21,7 @@ static PHASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 thread_local! {
     static PHASE_WORKSPACE_ROOT: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
+    static PHASE_PARENT_RUN: RefCell<Option<crate::storage::run_workspace::ParentRunScope>> = const { RefCell::new(None) };
 }
 
 // Synchronous API execution owns this scope. Keep it local to the calling
@@ -37,6 +38,26 @@ pub(crate) fn with_phase_workspace_root<T>(root: PathBuf, execute: impl FnOnce()
     let previous = PHASE_WORKSPACE_ROOT.with(|slot| slot.replace(Some(root)));
     let _scope = PhaseWorkspaceScope(previous);
     execute()
+}
+
+pub(crate) fn phase_has_parent_workspace() -> bool {
+    PHASE_PARENT_RUN.with(|slot| slot.borrow().is_some())
+}
+
+struct PhaseParentScope(Option<crate::storage::run_workspace::ParentRunScope>);
+impl Drop for PhaseParentScope {
+    fn drop(&mut self) {
+        PHASE_PARENT_RUN.with(|slot| *slot.borrow_mut() = self.0.take());
+    }
+}
+pub(crate) fn with_phase_workspace_scope<T>(
+    root: PathBuf,
+    parent: Option<crate::storage::run_workspace::ParentRunScope>,
+    execute: impl FnOnce() -> T,
+) -> T {
+    let previous = PHASE_PARENT_RUN.with(|slot| slot.replace(parent));
+    let _parent = PhaseParentScope(previous);
+    with_phase_workspace_root(root, execute)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,6 +119,8 @@ pub(super) fn phase_worker_available() -> bool {
 }
 
 pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u64, NativeError> {
+    let _database_use =
+        crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(&request.db_path)?;
     let executable = PHASE_WORKER_EXECUTABLE.get().ok_or_else(|| {
         NativeError::InvalidInput("Ladybug phase worker executable is not registered".to_string())
     })?;
@@ -123,13 +146,23 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             })
             .transpose()?
     };
-    let request_path = write_phase_request(request, registry_root.as_deref())?;
+    let (request_path, phase_owner) = write_phase_request_owned(request, registry_root.as_deref())?;
     let mut command = traced_phase_command(executable, request, &request_path)?;
     command
         .arg("__codebase_graph_internal")
         .arg("ladybug-write-phase-v2")
         .arg(&request_path);
     let stderr_path = request_path.with_extension("stderr");
+    if phase_owner.is_some() {
+        if let Ok(Some(output)) =
+            crate::storage::maintenance_controls::WorkspaceOutputFile::create_new(&stderr_path)
+        {
+            // The guardian will append accepted OS bytes to this exact inode.
+            // Bound creation provenance owns incomplete output; it does not
+            // certify loader usability or pretend to hash child-owned writes.
+            let _ = crate::storage::maintenance_origin::record_created_workspace_output(&output);
+        }
+    }
     if !inherited {
         let workspace = if registry_root.is_some() {
             request_path
@@ -141,7 +174,7 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             // their local fallback; API callers always supply a stable root.
             request_path.with_extension("containment")
         };
-        return run_guarded_phase(
+        let result = run_guarded_phase(
             request,
             executable,
             command,
@@ -149,6 +182,10 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             &stderr_path,
             workspace,
         );
+        if let Some(owner) = phase_owner {
+            owner.finish_if_empty();
+        }
+        return result;
     }
     // Preserve the root guardian's proof writer through both the native child
     // and the optional /usr/bin/time wrapper.
@@ -254,7 +291,7 @@ fn run_guarded_phase(
             .is_ok_and(|outcome| outcome.containment_empty)
         {
             cleanup_phase_files(request_path, stderr_path);
-            let _ = fs::remove_dir_all(&workspace);
+            cleanup_phase_workspace(&workspace);
         }
         return Err(NativeError::Database(format!(
             "failed to start guarded Ladybug phase: {error}; cleanup: {cleanup:?}"
@@ -271,7 +308,7 @@ fn run_guarded_phase(
                 .is_ok_and(|outcome| outcome.containment_empty)
             {
                 cleanup_phase_files(request_path, stderr_path);
-                let _ = fs::remove_dir_all(&workspace);
+                cleanup_phase_workspace(&workspace);
             }
             return Err(NativeError::Database(format!(
                 "failed to supervise guarded Ladybug phase: {error}; cleanup: {cleanup:?}"
@@ -286,7 +323,7 @@ fn run_guarded_phase(
         )));
     }
     cleanup_phase_files(request_path, stderr_path);
-    let _ = fs::remove_dir_all(&workspace);
+    cleanup_phase_workspace(&workspace);
     if let Some(reason) = &outcome.budget_reason {
         let failure: MemoryBudgetExceeded = serde_json::from_str(reason).map_err(|error| {
             NativeError::Database(format!(
@@ -302,6 +339,29 @@ fn run_guarded_phase(
         )));
     }
     Ok(outcome.high_water_bytes)
+}
+
+fn cleanup_phase_workspace(workspace: &Path) {
+    // A registered root is disposed only through the bounded local lane.
+    if !workspace.join(".workspace.binding").exists() {
+        let _ = fs::remove_dir_all(workspace);
+    }
+}
+
+struct PhaseWorkspaceOwner {
+    registration: crate::storage::maintenance_controls::WorkspaceRegistration,
+    owner: crate::storage::locks::LockedFile,
+    mutation: crate::storage::maintenance_ownership::ReferenceMutation<'static>,
+    _parent: crate::storage::run_workspace::ParentRunScope,
+}
+impl PhaseWorkspaceOwner {
+    fn finish_if_empty(self) {
+        let _ = self.registration.terminal(
+            &self.owner,
+            &self.mutation,
+            crate::storage::maintenance_controls::WorkspaceDisposition::AbortedNotPublished,
+        );
+    }
 }
 
 fn cleanup_phase_files(request_path: &Path, stderr_path: &Path) {
@@ -341,6 +401,9 @@ pub(crate) fn execute_phase_file(path: &Path) -> Result<(), String> {
     let request: LadybugWritePhaseRequest = serde_json::from_reader(BufReader::new(file))
         .map_err(|error| format!("failed to parse Ladybug phase request: {error}"))?;
     validate_phase_protocol(request.version)?;
+    let _database_use =
+        crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(&request.db_path)
+            .map_err(|error| error.to_string())?;
     #[cfg(debug_assertions)]
     wait_for_test_phase_barrier(path)?;
     execute_phase(&request).map_err(|error| error.to_string())
@@ -505,10 +568,17 @@ fn execute_phase(request: &LadybugWritePhaseRequest) -> Result<(), NativeError> 
     }
 }
 
+#[cfg(test)]
 fn write_phase_request(
     request: &LadybugWritePhaseRequest,
     registry_root: Option<&Path>,
 ) -> Result<PathBuf, NativeError> {
+    write_phase_request_owned(request, registry_root).map(|(path, _)| path)
+}
+fn write_phase_request_owned(
+    request: &LadybugWritePhaseRequest,
+    registry_root: Option<&Path>,
+) -> Result<(PathBuf, Option<PhaseWorkspaceOwner>), NativeError> {
     let parent = match registry_root {
         Some(root) => root,
         None => request.db_path.parent().ok_or_else(|| {
@@ -521,25 +591,113 @@ fn write_phase_request(
     fs::create_dir_all(parent)?;
     for _ in 0..16 {
         let sequence = PHASE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+        let mut phase_owner = None;
         let path = if registry_root.is_some() {
             let workspace = parent.join(format!("phase-{}-{sequence}", std::process::id()));
-            match fs::create_dir(&workspace) {
-                Ok(()) => workspace.join("request.json"),
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
-                Err(error) => return Err(NativeError::Io(error)),
+            let parent_scope =
+                PHASE_PARENT_RUN.with(|slot| slot.borrow().as_ref().map(|parent| parent.retain()));
+            let mutation = parent_scope
+                .as_ref()
+                .map(|parent| {
+                    crate::storage::maintenance_ownership::ReferenceMutation::begin_in_domain(
+                        parent.domain(),
+                    )
+                })
+                .transpose()?;
+            let _startup = parent_scope
+                .as_ref()
+                .map(|parent| {
+                    crate::storage::locks::open_shared_coordination(
+                        &parent.domain().workspace_startup_path(),
+                    )
+                })
+                .transpose()?;
+            let Some(fresh) = crate::storage::layout::create_fresh_reference_root(&workspace)?
+            else {
+                continue;
+            };
+            if let (Some(parent), Some(mutation)) = (parent_scope, mutation) {
+                let directory =
+                    crate::storage::locks::RootedDirectory::open(&workspace, fresh.identity())?;
+                let owner = crate::storage::locks::create_new_coordination_in(
+                    &directory,
+                    b"lease.lock",
+                    &workspace.join("lease.lock"),
+                )?;
+                if let Some(registration) =
+                    crate::storage::maintenance_controls::WorkspaceRegistration::create_with_parent(
+                        &fresh,
+                        parent.domain(),
+                        &mutation,
+                        &owner,
+                        3,
+                        Some(&parent),
+                    )
+                    .ok()
+                    .flatten()
+                {
+                    phase_owner = Some(PhaseWorkspaceOwner {
+                        registration,
+                        owner,
+                        mutation,
+                        _parent: parent,
+                    });
+                }
             }
+            workspace.join("request.json")
         } else {
             parent.join(format!(
                 ".ladybug-phase-{}-{sequence}.json",
                 std::process::id()
             ))
         };
+        if phase_owner.is_some() {
+            match crate::storage::maintenance_controls::WorkspaceOutputFile::create_new(&path) {
+                Ok(Some(output)) => {
+                    let _ = crate::storage::maintenance_origin::record_created_workspace_output(
+                        &output,
+                    );
+                    let mut writer = BufWriter::new(output);
+                    serde_json::to_writer(&mut writer, request)?;
+                    writer.flush()?;
+                    let output = writer
+                        .into_inner()
+                        .map_err(|error| NativeError::Io(error.into_error()))?;
+                    if let Ok(completed) = output.finish() {
+                        let _ =
+                            crate::storage::maintenance_origin::record_completed_workspace_output(
+                                &completed,
+                            );
+                    }
+                    return Ok((path, phase_owner));
+                }
+                Ok(None) => {
+                    // Optional activation may have created an unattested empty
+                    // inode. Primary request construction remains available.
+                    let file = OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .truncate(true)
+                        .open(&path)?;
+                    let mut writer = BufWriter::new(file);
+                    serde_json::to_writer(&mut writer, request)?;
+                    writer.flush()?;
+                    return Ok((path, phase_owner));
+                }
+                Err(NativeError::Io(error))
+                    if error.kind() == std::io::ErrorKind::AlreadyExists =>
+                {
+                    continue
+                }
+                Err(error) => return Err(error),
+            }
+        }
         match OpenOptions::new().write(true).create_new(true).open(&path) {
             Ok(file) => {
                 let mut writer = BufWriter::new(file);
                 serde_json::to_writer(&mut writer, request)?;
                 writer.flush()?;
-                return Ok(path);
+                return Ok((path, phase_owner));
             }
             Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
             Err(error) => return Err(NativeError::Io(error)),

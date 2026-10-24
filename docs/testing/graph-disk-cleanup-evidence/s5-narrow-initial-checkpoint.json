@@ -1,0 +1,42 @@
+{
+  "scope": "S5 readiness/evidence and2externalproductionhealth/requesttests; fullS5pending",
+  "owned_files_sha256": {
+    "tests/storage_maintenance.rs": "c7f5de722a579ea665cacc04ccaf5b05680986f68f5252f62d9ca3d71c1fe693",
+    "tests/support/storage_maintenance/mod.rs": "bf79e22e33cd260953e4eaa1c7ab323772c62f3ebe6ade166f870b6250304d09",
+    "docs/testing/graph-disk-cleanup-evidence.json": "f2d9ba24ef6f4b9a602d5530e30d19c37e0cb0f9d5ca7e1e311fb09cf6b18795",
+    "docs/testing/graph-disk-cleanup-evidence/audit.py": "43f748026768955879cb8ff8d0e0d2f90044c16f58535bc4e7e551286650a42a",
+    "docs/testing/graph-disk-cleanup-evidence/foundation-reports.json": "88eff4652ee0d4914980912c2a9600481bb891bc539706fea1677062133b3bb8",
+    "docs/testing/graph-disk-cleanup-evidence/msrv-readiness.json": "0dc7bd221b6d210f260677b1c2027b707a3bd0f8a0a314d35eefb64d0402e151",
+    "docs/testing/graph-disk-cleanup-evidence/review-outcomes.json": "0538febc432243201e622d0c734ac82bceaab3abdf7f441c9bd6d08f07e008c9",
+    "docs/testing/graph-disk-cleanup-evidence/s1-post-main-junit.xml": "43789b2717a390d201e486c0c1def0e0f7aa8cfe3548a61fe2ee4fc8546e0603",
+    "docs/testing/graph-disk-cleanup-evidence/s2-family-focused-junit.xml": "6118b539934bbec11a16cacaf410fe10b12aea7d4b9e17a5ef600dc1d7941876",
+    "docs/testing/graph-disk-cleanup-evidence/s2-family-focused-source-manifest.json": "6437fb98f04feaced02de55c63f5063822bb8a7eb415b2dcede249face8e9be8",
+    "docs/testing/graph-disk-cleanup-evidence/s2-family-regression-junit.xml": "ddccd6f40a368bcacd87f7c1c826028dde700841371e4d54fd6c27e45a11be92",
+    "docs/testing/graph-disk-cleanup-evidence/s2-family-regression-source-manifest.json": "6437fb98f04feaced02de55c63f5063822bb8a7eb415b2dcede249face8e9be8",
+    "docs/testing/graph-disk-cleanup-evidence/s3-expanded-junit.xml": "e00f773cf313ef6575f4fdcf79486dc865dd19ee634888b5b4cf3e1d427e0627",
+    "docs/testing/graph-disk-cleanup-evidence/s3-expanded-review-expanded-report.json": "65d9f8a5c1124a215f66e63f5819f60aef52382559cb627d807ce7a7d5bab718",
+    "docs/testing/graph-disk-cleanup-evidence/s3-expanded-reviewer-probe-notes.txt": "ffd58ad5367a31890d30ae14515523e74e76c810742d011f028c46a4729ae6ed",
+    "docs/testing/graph-disk-cleanup-evidence/s3-expanded-source-manifest.json": "95f89f93b01ad3c9b02cbab6b97278cdbb14d604080963a4a2b8a08deee39c5c",
+    "docs/testing/graph-disk-cleanup-evidence/s3-expanded-zero-budget-probe-output.txt": "c84d342763d48ca6fee1d2d644bb05cf49b4cd4b2f9f9cc26c21a9e4e2f2fc6c",
+    "docs/testing/graph-disk-cleanup-evidence/s4-independent-source-junit.xml": "8fa9207d515e7be607d98f1f9e799edc0970899e21bace664d9e971a270bd414",
+    "docs/testing/graph-disk-cleanup-evidence/s4-scheduler-primitive-junit.xml": "c4d0cbb89af4996d859c7da5b1bed3b04a1a9b90dd44135bc7c9d2d2c9ecfb3f",
+    "docs/testing/graph-disk-cleanup-evidence/s5-external-health-junit.xml": "8baac7efb57e9919f20d5ae9c019fa688fbf8a9ffb1b566053bfb02e90abe6c6",
+    "docs/testing/graph-disk-cleanup-evidence/s5-external-health-source-manifest.json": "51f3263d819bceae59b1eb471dab1005fc5bc27450bb089f4aa79727d115a600",
+    "docs/testing/graph-disk-cleanup-evidence/s5-msrv-metadata.stderr": "3789ba8ed22ae4a82b1fc7adaea6cd8d86d3c94beb1f30f698bd4afb3f7e6ff0",
+    "docs/testing/graph-disk-cleanup-evidence/s5-msrv-ready-metadata.stderr": "d75191f480933414ac1b27956d159e407be16eecac57c0d782ec127207ea333e"
+  },
+  "owned_snapshot_sha256": "df2fbc22f67bcb3c6d2c72105e66ef69c84f5f0300e980e697007f750ac25fa6",
+  "tested_source_identity_manifest": "docs/testing/graph-disk-cleanup-evidence/s5-external-health-source-manifest.json",
+  "executed_checks": [
+    "2/2 external health/request tests passed; no skipped",
+    "stable rustfmt --check passed on both owned Rustfiles",
+    "standalone rustc1.82 fixture support library compilation passed",
+    "evidence integrity audit passed"
+  ],
+  "limitations": [
+    "136 library dead-code warnings from unfinished productionintegration remain",
+    "MSRV workspace metadata blocked by unchanged baseline dependencies",
+    "No fullcollector/churn/fault/nativeplatformqualification",
+    "Final integrated different fresh Max review not performed"
+  ]
+}

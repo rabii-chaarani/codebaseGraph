@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="17" failures="0" errors="0" uuid="ce7bf792-cc80-48fa-ac01-54ce87aba79e" timestamp="2026-10-21T03:57:50.551+09:30" time="21.397">
+    <testsuite name="codebase-graph" tests="17" disabled="0" errors="0" failures="0">
+        <testcase name="api::materialization::tests::build_request_reads_manifest_and_merges_config_rules" classname="codebase-graph" timestamp="2026-10-21T03:57:50.552+09:30" time="0.025">
+        </testcase>
+        <testcase name="api::materialization::tests::cleanup_errors_are_appended_without_hiding_the_primary_failure" classname="codebase-graph" timestamp="2026-10-21T03:57:50.576+09:30" time="0.124">
+        </testcase>
+        <testcase name="api::materialization::tests::committed_direct_graph_survives_deferred_artifact_collection" classname="codebase-graph" timestamp="2026-10-21T03:57:50.700+09:30" time="7.331">
+        </testcase>
+        <testcase name="api::materialization::tests::committed_direct_graph_survives_real_workspace_cleanup_failure" classname="codebase-graph" timestamp="2026-10-21T03:57:58.031+09:30" time="7.205">
+        </testcase>
+        <testcase name="api::materialization::tests::committed_managed_graph_survives_deferred_artifact_collection" classname="codebase-graph" timestamp="2026-10-21T03:58:05.236+09:30" time="5.934">
+        </testcase>
+        <testcase name="api::materialization::tests::dc_epoch_manifest_finalization_advances_tracked_reference_domain" classname="codebase-graph" timestamp="2026-10-21T03:58:11.171+09:30" time="0.045">
+        </testcase>
+        <testcase name="api::materialization::tests::deferred_artifact_collection_preserves_unregistered_foreign_state" classname="codebase-graph" timestamp="2026-10-21T03:58:11.216+09:30" time="0.018">
+        </testcase>
+        <testcase name="api::materialization::tests::direct_abort_retains_candidate_staging_and_phase_evidence_while_lease_is_held" classname="codebase-graph" timestamp="2026-10-21T03:58:11.234+09:30" time="0.075">
+        </testcase>
+        <testcase name="api::materialization::tests::materialization_option_limits_override_install_config" classname="codebase-graph" timestamp="2026-10-21T03:58:11.309+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::materialization::tests::native_request_source_root_must_match_a_bound_repository_identity" classname="codebase-graph" timestamp="2026-10-21T03:58:11.327+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::materialization::tests::prepublication_failures_clean_managed_and_direct_run_state" classname="codebase-graph" timestamp="2026-10-21T03:58:11.343+09:30" time="0.409">
+        </testcase>
+        <testcase name="api::materialization::tests::public_materialization_request_preserves_transport_fields_without_preparation" classname="codebase-graph" timestamp="2026-10-21T03:58:11.753+09:30" time="0.023">
+        </testcase>
+        <testcase name="api::materialization::tests::refresh_noop_aborts_prepared_writer_when_storage_identity_rebinds" classname="codebase-graph" timestamp="2026-10-21T03:58:11.776+09:30" time="0.105">
+        </testcase>
+        <testcase name="api::materialization::tests::request_manifest_path_uses_override_for_native_requests_only_when_present" classname="codebase-graph" timestamp="2026-10-21T03:58:11.881+09:30" time="0.018">
+        </testcase>
+        <testcase name="protocol::maintenance_summary_tests::partial_measurements_and_deferred_outcomes_round_trip_without_zero_fill" classname="codebase-graph" timestamp="2026-10-21T03:58:11.899+09:30" time="0.017">
+        </testcase>
+        <testcase name="protocol::maintenance_summary_tests::running_attempt_does_not_require_fabricated_metrics" classname="codebase-graph" timestamp="2026-10-21T03:58:11.915+09:30" time="0.016">
+        </testcase>
+        <testcase name="protocol::maintenance_summary_tests::unobserved_maintenance_keeps_all_measurements_unknown" classname="codebase-graph" timestamp="2026-10-21T03:58:11.932+09:30" time="0.016">
+        </testcase>
+    </testsuite>
+</testsuites>

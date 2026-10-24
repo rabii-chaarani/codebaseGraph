@@ -15,8 +15,10 @@ use crate::storage::layout::{managed_generation_id, DirectLayout, ManagedLayout}
 use crate::storage::locks::{try_open_locked, LockMode, WorkerLease};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::fs::{self, File, OpenOptions};
-use std::io::{BufRead, BufReader, BufWriter, Write};
+#[cfg(test)]
+use std::fs::OpenOptions;
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
@@ -94,7 +96,7 @@ pub(crate) fn execute_explicit_worker(
 fn execute_worker(
     options: &MaterializeOptions,
     candidate_paths: Option<Vec<String>>,
-    mut worker_pid: impl FnMut(Option<u32>),
+    worker_pid: impl FnMut(Option<u32>),
     should_cancel: impl Fn() -> bool,
     wait_for_lock: bool,
 ) -> Result<NativeSyntaxMaterializationResponse, String> {
@@ -112,6 +114,25 @@ fn execute_worker(
         }
         .map(|(_, response)| response);
     };
+    execute_isolated_worker(
+        options,
+        candidate_paths,
+        worker_pid,
+        should_cancel,
+        wait_for_lock,
+        executable,
+    )
+}
+
+fn execute_isolated_worker(
+    options: &MaterializeOptions,
+    candidate_paths: Option<Vec<String>>,
+    mut worker_pid: impl FnMut(Option<u32>),
+    should_cancel: impl Fn() -> bool,
+    wait_for_lock: bool,
+    executable: &Path,
+) -> Result<NativeSyntaxMaterializationResponse, String> {
+    initialize_fresh_worker_domain(options)?;
     let _lease = if wait_for_lock {
         acquire_worker_lease_cancellable(options, &should_cancel)?
     } else {
@@ -125,16 +146,28 @@ fn execute_worker(
         return Err(materialization_cancelled_error());
     }
     let build_id = managed_generation_id();
-    let workspace = create_worker_workspace(options, &build_id)?;
+    let (workspace, worker_owner) = create_worker_workspace(options, &build_id)?;
     if should_cancel() {
-        cleanup_worker_workspace(&workspace);
+        finish_empty_worker_workspace(worker_owner, &workspace);
         return Err(materialization_cancelled_error());
     }
     let request_path = workspace.join("request.json");
     let result_path = workspace.join("result.json");
     let stderr_path = workspace.join("stderr.log");
-    let state_path = worker_state_path(options)?;
-    let before_publication = publication_marker(options)?;
+    // No containment exists before prepare; every error here can close the
+    // actual registered owner without changing the primary error.
+    let setup = (|| {
+        let state_path = worker_state_path(options)?;
+        let before_publication = publication_marker(options)?;
+        Ok::<_, String>((state_path, before_publication))
+    })();
+    let (state_path, before_publication) = match setup {
+        Ok(setup) => setup,
+        Err(error) => {
+            finish_empty_worker_workspace(worker_owner, &workspace);
+            return Err(error);
+        }
+    };
     if let Err(error) = write_worker_request(
         &request_path,
         &MaterializationWorkerRequest {
@@ -144,21 +177,24 @@ fn execute_worker(
             candidate_paths,
         },
     ) {
-        cleanup_worker_workspace(&workspace);
+        finish_empty_worker_workspace(worker_owner, &workspace);
         return Err(error);
     }
 
-    let memory_limit = options
+    let memory_limit = match options
         .worker_memory_mib
         .unwrap_or(DEFAULT_WORKER_MEMORY_MIB)
         .checked_mul(MIB)
-        .ok_or_else(|| {
-            cleanup_worker_workspace(&workspace);
-            "materialization worker memory limit overflowed".to_string()
-        })?;
+    {
+        Some(limit) => limit,
+        None => {
+            finish_empty_worker_workspace(worker_owner, &workspace);
+            return Err("materialization worker memory limit overflowed".into());
+        }
+    };
     let mut child = match PreparedChild::prepare(SpawnSpec {
-        program: executable.clone(),
-        guardian_executable: Some(executable.clone()),
+        program: executable.to_path_buf(),
+        guardian_executable: Some(executable.to_path_buf()),
         args: vec![
             "__codebase_graph_internal".into(),
             "materialization-worker-v2".into(),
@@ -176,7 +212,7 @@ fn execute_worker(
         Err(error) => {
             // A failed READY may still have a guardian or contained descendants.
             if process_lifecycle::cleanup_if_inactive(&workspace).unwrap_or(false) {
-                cleanup_worker_workspace(&workspace);
+                finish_empty_worker_workspace(worker_owner, &workspace);
                 return Err(error);
             }
             return Err(containment_unknown_error(error));
@@ -193,7 +229,7 @@ fn execute_worker(
         match child.terminate("state persistence failed") {
             Ok(outcome) if outcome.containment_empty => {
                 join_progress(progress.take());
-                cleanup_worker_workspace(&workspace);
+                finish_empty_worker_workspace(worker_owner, &workspace);
                 return Err(format!("failed to record materialization worker state: {error}"));
             }
             _ => return Err(containment_unknown_error(format!(
@@ -219,6 +255,7 @@ fn execute_worker(
             match child.terminate("supervision failed") {
                 Ok(outcome) if outcome.containment_empty => {
                     join_progress(progress.take());
+                    finish_empty_worker_workspace(worker_owner, &workspace);
                     clear_worker_execution_state(
                         &state_path,
                         &descriptor.build_id,
@@ -242,6 +279,7 @@ fn execute_worker(
     }
     join_progress(progress);
     if supervision.cancelled {
+        finish_empty_worker_workspace(worker_owner, &workspace);
         clear_worker_execution_state(
             &state_path,
             &descriptor.build_id,
@@ -271,7 +309,7 @@ fn execute_worker(
         response
     });
     remove_worker_state(&state_path, &descriptor.build_id);
-    cleanup_worker_workspace(&workspace);
+    finish_empty_worker_workspace(worker_owner, &workspace);
     outcome
 }
 
@@ -382,7 +420,7 @@ pub(crate) fn execute_worker_file(request_path: &Path, result_path: &Path) -> Re
             compact_refresh_worker_result(response);
         }
     }
-    write_json_atomically(
+    process_lifecycle::write_private_json(
         result_path,
         &MaterializationWorkerResult {
             version: WORKER_PROTOCOL_VERSION,
@@ -505,13 +543,76 @@ fn recover_orphan_worker(
     if should_cancel() {
         return Err(materialization_cancelled_error());
     }
-    cleanup_abandoned_workspaces(options)
+    Ok(())
+}
+
+fn initialize_fresh_worker_domain(options: &MaterializeOptions) -> Result<(), String> {
+    let Some(storage) = options.storage_root.as_ref() else {
+        if let (Some(database), Some(manifest)) = (&options.db, &options.manifest) {
+            crate::storage::maintenance_ownership::initialize_fresh_direct_domain(
+                &crate::storage::layout::DirectLayout::new(database, manifest),
+            )
+            .map_err(|error| error.to_string())?;
+        }
+        return Ok(());
+    };
+    crate::storage::maintenance_ownership::initialize_fresh_managed_domain(&ManagedLayout::new(
+        storage,
+    ))
+    .map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+struct WorkerWorkspaceOwner {
+    registration: crate::storage::maintenance_controls::WorkspaceRegistration,
+    owner: crate::storage::locks::LockedFile,
+    mutation: crate::storage::maintenance_ownership::ReferenceMutation<'static>,
+}
+impl WorkerWorkspaceOwner {
+    fn finish_if_empty(self) {
+        let _ = self.registration.terminal(
+            &self.owner,
+            &self.mutation,
+            crate::storage::maintenance_controls::WorkspaceDisposition::PublishedConsumed,
+        );
+    }
+}
+
+/// Call only before child preparation or after authenticated containment-empty
+/// proof. Unknown teardown paths deliberately retain their Building control.
+fn finish_empty_worker_workspace(owner: Option<WorkerWorkspaceOwner>, workspace: &Path) {
+    if let Some(owner) = owner {
+        owner.finish_if_empty();
+    }
+    cleanup_worker_workspace(workspace);
 }
 
 fn create_worker_workspace(
     options: &MaterializeOptions,
     build_id: &str,
-) -> Result<PathBuf, String> {
+) -> Result<(PathBuf, Option<WorkerWorkspaceOwner>), String> {
+    let domain = match options.storage_root.as_ref() {
+        Some(storage) => crate::storage::maintenance_ownership::ReferenceDomain::managed(
+            &ManagedLayout::new(storage),
+        )
+        .ok(),
+        None => options
+            .db
+            .as_ref()
+            .zip(options.manifest.as_ref())
+            .and_then(|(db, manifest)| {
+                crate::storage::maintenance_ownership::ReferenceDomain::direct(&DirectLayout::new(
+                    db, manifest,
+                ))
+                .ok()
+            }),
+    };
+    let mutation = domain.as_ref().and_then(|domain| {
+        crate::storage::maintenance_ownership::ReferenceMutation::begin_in_domain(domain).ok()
+    });
+    let _startup = domain.as_ref().and_then(|domain| {
+        crate::storage::locks::open_shared_coordination(&domain.workspace_startup_path()).ok()
+    });
     let root = worker_workspace_root(options)?;
     fs::create_dir_all(&root)
         .map_err(|error| format!("failed to create materialization worker root: {error}"))?;
@@ -528,9 +629,33 @@ fn create_worker_workspace(
         "worker-{build_id}-{}-{sequence}",
         std::process::id()
     ));
-    fs::create_dir(&workspace)
-        .map_err(|error| format!("failed to create materialization worker workspace: {error}"))?;
-    Ok(workspace)
+    let fresh = crate::storage::layout::create_fresh_reference_root(&workspace)
+        .map_err(|error| error.to_string())?
+        .ok_or_else(|| "worker workspace already exists".to_string())?;
+    let worker_owner = match (domain.as_ref(), mutation, _startup.as_ref()) {
+        (Some(domain), Some(mutation), Some(_)) => {
+            let anchor = crate::storage::locks::RootedDirectory::open(&workspace, fresh.identity())
+                .map_err(|error| error.to_string())?;
+            let owner = crate::storage::locks::create_new_coordination_in(
+                &anchor,
+                b"lease.lock",
+                &workspace.join("lease.lock"),
+            )
+            .map_err(|error| error.to_string())?;
+            crate::storage::maintenance_controls::WorkspaceRegistration::create(
+                &fresh, domain, &mutation, &owner, 2,
+            )
+            .ok()
+            .flatten()
+            .map(|registration| WorkerWorkspaceOwner {
+                registration,
+                owner,
+                mutation,
+            })
+        }
+        _ => None,
+    };
+    Ok((workspace, worker_owner))
 }
 
 fn worker_workspace_root(options: &MaterializeOptions) -> Result<PathBuf, String> {
@@ -548,71 +673,9 @@ fn worker_workspace_root(options: &MaterializeOptions) -> Result<PathBuf, String
     Ok(DirectLayout::new(db_path, manifest_path).worker_workspace_root_path())
 }
 
-fn cleanup_abandoned_workspaces(options: &MaterializeOptions) -> Result<(), String> {
-    let root = worker_workspace_root(options)?;
-    let entries = match fs::read_dir(&root) {
-        Ok(entries) => entries,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(error) => {
-            return Err(format!(
-                "failed to inspect materialization worker workspaces: {error}"
-            ))
-        }
-    };
-    let mut unknown = None;
-    for entry in entries {
-        let entry = entry.map_err(containment_unknown_error)?;
-        let path = entry.path();
-        if !path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .is_some_and(|name| name.starts_with("worker-"))
-        {
-            continue;
-        }
-        let metadata = fs::symlink_metadata(&path).map_err(containment_unknown_error)?;
-        if metadata.file_type().is_symlink() || !metadata.is_dir() {
-            unknown.get_or_insert_with(|| {
-                format!(
-                    "worker workspace must be a real directory: {}",
-                    path.display()
-                )
-            });
-            continue;
-        }
-        match process_lifecycle::cleanup_if_inactive(&path) {
-            Ok(true) => cleanup_worker_workspace(&path),
-            Ok(false) => {
-                unknown.get_or_insert_with(|| {
-                    format!(
-                        "abandoned worker containment is still active or unproven: {}",
-                        path.display()
-                    )
-                });
-            }
-            Err(error) => {
-                unknown.get_or_insert(error);
-            }
-        }
-    }
-    match unknown {
-        Some(reason) => Err(containment_unknown_error(reason)),
-        None => Ok(()),
-    }
-}
-
 fn write_worker_request(path: &Path, request: &MaterializationWorkerRequest) -> Result<(), String> {
-    let file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .map_err(|error| format!("failed to create materialization worker request: {error}"))?;
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, request)
-        .map_err(|error| format!("failed to encode materialization worker request: {error}"))?;
-    writer
-        .flush()
-        .map_err(|error| format!("failed to flush materialization worker request: {error}"))
+    process_lifecycle::write_private_json_new(path, request)
+        .map_err(|error| format!("failed to write materialization worker request: {error}"))
 }
 
 fn remove_worker_state(path: &Path, build_id: &str) {
@@ -819,6 +882,10 @@ fn bounded_child_error(bytes: &[u8]) -> String {
 }
 
 fn cleanup_worker_workspace(path: &Path) {
+    if path.join(".workspace.binding").exists() {
+        return;
+    }
+
     let is_owned_workspace = path
         .file_name()
         .and_then(|name| name.to_str())
@@ -837,6 +904,64 @@ fn cleanup_worker_workspace(path: &Path) {
 mod tests {
     use super::*;
     use crate::error::{MemoryBudgetExceeded, NativeError};
+
+    #[test]
+    fn empty_worker_cancellation_and_setup_failure_publish_terminal_owner() {
+        for cancel in [true, false] {
+            let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
+                "cgraph-worker-terminal-{}-{}",
+                std::process::id(),
+                WORKER_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+            ));
+            fs::create_dir_all(&root).unwrap();
+            let storage = root.join("storage");
+            let options = MaterializeOptions {
+                storage_root: Some(storage.clone()),
+                worker_memory_mib: Some(u64::MAX),
+                ..MaterializeOptions::default()
+            };
+            let polls = AtomicU64::new(0);
+            let result = execute_isolated_worker(
+                &options,
+                None,
+                |_| {},
+                || cancel && polls.fetch_add(1, Ordering::SeqCst) >= 3,
+                false,
+                &root.join("never-spawned"),
+            );
+            let error = result.unwrap_err();
+            assert_eq!(
+                error,
+                if cancel {
+                    materialization_cancelled_error()
+                } else {
+                    "materialization worker memory limit overflowed".to_string()
+                }
+            );
+            let workspaces = fs::read_dir(storage.join("workers"))
+                .unwrap()
+                .map(|entry| entry.unwrap().path())
+                .collect::<Vec<_>>();
+            assert_eq!(workspaces.len(), 1);
+            assert!(
+                workspaces[0].join(".workspace.binding").is_file(),
+                "test must exercise an actual registered workspace"
+            );
+            let domain = crate::storage::maintenance_ownership::ReferenceDomain::managed(
+                &ManagedLayout::new(&storage),
+            )
+            .unwrap();
+            let memory =
+                crate::storage::maintenance_budget::CleanupMemory::new(8 * 1024 * 1024).unwrap();
+            crate::storage::maintenance_controls::prepare_terminal_workspace_boxed(
+                &workspaces[0],
+                &domain,
+                &memory,
+            )
+            .unwrap();
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
 
     #[test]
     fn worker_request_ignores_retired_semantic_keys() {
@@ -994,7 +1119,7 @@ mod tests {
     }
 
     #[test]
-    fn abandoned_workspace_without_global_state_retains_held_lifecycle() {
+    fn unrelated_workspace_without_global_state_is_preserved_without_blocking_current_request() {
         use fs2::FileExt;
         let root = std::env::temp_dir().join(format!(
             "codebase-graph-held-lifecycle-{}-{}",
@@ -1017,15 +1142,22 @@ mod tests {
             .open(lifecycle.join("lease"))
             .unwrap();
         lease.lock_exclusive().unwrap();
-        let error = recover_orphan_worker(&options, &|| false).unwrap_err();
-        assert_eq!(
-            serde_json::from_str::<serde_json::Value>(&error).unwrap()["error"],
-            "containment_unknown"
-        );
+        recover_orphan_worker(&options, &|| false).unwrap();
         assert!(workspace.exists());
+        assert!(fs2::FileExt::try_lock_exclusive(
+            &OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(lifecycle.join("lease"))
+                .unwrap()
+        )
+        .is_err());
         drop(lease);
         recover_orphan_worker(&options, &|| false).unwrap();
-        assert!(!workspace.exists());
+        assert!(
+            workspace.exists(),
+            "unrelated orphan collection is exclusively a bounded-controller duty"
+        );
         fs::remove_dir_all(root).unwrap();
     }
 

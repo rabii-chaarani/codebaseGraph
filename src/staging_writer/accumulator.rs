@@ -1,4 +1,7 @@
-use super::files::{copy_path, stage_file_stem, write_csv_field};
+use super::files::{
+    copy_path, create_staging_directory, finish_output, stage_file_stem, write_csv_field,
+    StagingOutputFile,
+};
 use super::merge::{merge_edge_value, merge_node_value};
 use super::result::StagingResult;
 use super::rows::{edge_fields, node_fields, EdgeStagedRow, NodeStagedRow};
@@ -11,7 +14,7 @@ use crate::partition_builder::GraphPartition;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs::{self, File};
+use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -30,6 +33,11 @@ pub(crate) struct StagingAccumulator {
     pending_error: Option<NativeError>,
     relation_constraints: RelationConstraints,
     metrics: SpillMetrics,
+    // Last owner: actual legacy source admission survives all spool/output
+    // owners and transfers to StagingResult through native COPY/loader close.
+    legacy_staging: Option<
+        std::sync::Arc<crate::storage::maintenance_legacy_guard::LegacyStagingProducerGuard>,
+    >,
 }
 
 #[derive(Debug, Default)]
@@ -60,13 +68,18 @@ impl StagingAccumulator {
         output_chunk_limit: usize,
     ) -> Result<Self, NativeError> {
         let staging_dir = PathBuf::from(staging_dir);
+        let legacy_staging =
+            crate::storage::maintenance_legacy_guard::before_staging_producer(&staging_dir)?
+                .map(std::sync::Arc::new);
         let sequence = RUN_SEQUENCE.fetch_add(1, Ordering::Relaxed);
         let run_root = staging_dir.join(format!(".runs-{}-{sequence}", std::process::id()));
         let metrics = SpillMetrics::default();
         let raw_records = SortedSpool::new(&run_root, "staged", chunk_limit, metrics.clone())?;
+        let mut run_workspace = RunWorkspace::new(run_root);
+        run_workspace.defer_disposal |= legacy_staging.is_some();
         Ok(Self {
             staging_dir,
-            run_workspace: RunWorkspace::new(run_root),
+            run_workspace,
             chunk_limit,
             output_chunk_limit,
             raw_records: Some(raw_records),
@@ -74,6 +87,7 @@ impl StagingAccumulator {
             pending_error: None,
             relation_constraints: RelationConstraints::from_declared_schema(),
             metrics,
+            legacy_staging,
         })
     }
 
@@ -82,9 +96,11 @@ impl StagingAccumulator {
         let staging_dir = PathBuf::from(staging_dir);
         let sequence = RUN_SEQUENCE.fetch_add(1, Ordering::Relaxed);
         Self {
-            run_workspace: RunWorkspace::new(
-                staging_dir.join(format!(".runs-{}-{sequence}", std::process::id())),
-            ),
+            run_workspace: RunWorkspace {
+                path: staging_dir.join(format!(".runs-{}-{sequence}", std::process::id())),
+                // Failed initialization created no outputs to own or remove.
+                defer_disposal: true,
+            },
             staging_dir,
             chunk_limit,
             output_chunk_limit: chunk_limit,
@@ -93,6 +109,7 @@ impl StagingAccumulator {
             pending_error: Some(error),
             relation_constraints: RelationConstraints::from_declared_schema(),
             metrics: SpillMetrics::default(),
+            legacy_staging: None,
         }
     }
 
@@ -169,7 +186,7 @@ impl StagingAccumulator {
         if let Some(error) = self.pending_error.take() {
             return Err(error);
         }
-        fs::create_dir_all(&self.staging_dir)?;
+        create_staging_directory(&self.staging_dir)?;
         let raw_records = self.raw_records.take().ok_or_else(|| {
             NativeError::InvalidInput("staging record spool was not initialized".to_string())
         })?;
@@ -411,6 +428,7 @@ impl StagingAccumulator {
             unique_edge_count,
             spill_bytes,
             high_water_bytes,
+            _legacy_staging: self.legacy_staging.take(),
         })
     }
 
@@ -689,7 +707,7 @@ struct JsonTableSink {
     metrics: SpillMetrics,
     current_table: Option<String>,
     chunk_index: usize,
-    writer: Option<BufWriter<File>>,
+    writer: Option<BufWriter<StagingOutputFile>>,
     first_row: bool,
     current_bytes: usize,
     copy_statements: Vec<String>,
@@ -792,7 +810,7 @@ impl JsonTableSink {
             "json",
             self.chunk_index,
         );
-        let mut writer = BufWriter::new(File::create(&path)?);
+        let mut writer = BufWriter::new(StagingOutputFile::create(&path)?);
         writer.write_all(b"[")?;
         self.copy_statements
             .push(format!("COPY `{}` FROM \"{}\";", table, copy_path(&path)));
@@ -805,7 +823,7 @@ impl JsonTableSink {
     fn close_chunk(&mut self) -> Result<(), NativeError> {
         if let Some(mut writer) = self.writer.take() {
             writer.write_all(b"]\n")?;
-            writer.flush()?;
+            finish_output(writer)?;
         }
         self.current_bytes = 0;
         Ok(())
@@ -819,7 +837,7 @@ struct ConnectorSink {
     metrics: SpillMetrics,
     current_group: Option<(String, EndpointSide, String, String)>,
     chunk_index: usize,
-    writer: Option<BufWriter<File>>,
+    writer: Option<BufWriter<StagingOutputFile>>,
     current_bytes: usize,
     rows_in_chunk: usize,
     copy_statements: Vec<String>,
@@ -937,7 +955,7 @@ impl ConnectorSink {
             stage_file_stem(to_type)
         );
         let path = chunked_output_path(&self.staging_dir, &stem, "csv", self.chunk_index);
-        let mut writer = BufWriter::new(File::create(&path)?);
+        let mut writer = BufWriter::new(StagingOutputFile::create(&path)?);
         writer.write_all(CONNECTOR_HEADER)?;
         self.copy_statements.push(format!(
             "COPY `{}` FROM \"{}\" (header=true, from=\"{}\", to=\"{}\");",
@@ -953,8 +971,8 @@ impl ConnectorSink {
     }
 
     fn close_chunk(&mut self) -> Result<(), NativeError> {
-        if let Some(mut writer) = self.writer.take() {
-            writer.flush()?;
+        if let Some(writer) = self.writer.take() {
+            finish_output(writer)?;
         }
         self.current_bytes = 0;
         self.rows_in_chunk = 0;
@@ -983,11 +1001,19 @@ fn output_budget_error(phase: &str, limit: usize, accounted: usize) -> NativeErr
 
 struct RunWorkspace {
     path: PathBuf,
+    defer_disposal: bool,
 }
 
 impl RunWorkspace {
     fn new(path: PathBuf) -> Self {
-        Self { path }
+        // This predicate only restricts cleanup; it grants no Origin or
+        // authority over this directory or any injected child.
+        let defer_disposal = crate::db_writer::phase_has_parent_workspace()
+            || crate::storage::maintenance_controls::workspace_retention_required(&path);
+        Self {
+            path,
+            defer_disposal,
+        }
     }
 
     fn path(&self) -> &Path {
@@ -997,6 +1023,11 @@ impl RunWorkspace {
 
 impl Drop for RunWorkspace {
     fn drop(&mut self) {
+        if self.defer_disposal {
+            // Genuine directory/leaf receipts let the bounded terminal lane
+            // dispose owned entries. Recursive Drop cannot infer child Origin.
+            return;
+        }
         if self.path.is_dir() {
             let _ = fs::remove_dir_all(&self.path);
         }
@@ -1057,6 +1088,83 @@ mod output_tests {
     #[derive(Serialize)]
     struct OutputRow {
         id: String,
+    }
+
+    #[test]
+    fn unregistered_preexisting_output_preserves_plain_write_behavior_without_adoption() {
+        let root = temp_root("untracked-existing-output");
+        let path = root.join("caller-owned.csv");
+        fs::write(&path, b"previous caller bytes").unwrap();
+        let output = StagingOutputFile::create(&path).unwrap();
+        assert!(matches!(&output, StagingOutputFile::Plain(_)));
+        let mut buffered = BufWriter::new(output);
+        buffered.write_all(b"new accepted bytes").unwrap();
+        finish_output(buffered).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), b"new accepted bytes");
+        assert_eq!(
+            fs::read_dir(&root).unwrap().count(),
+            1,
+            "unknown output gained origin metadata"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn registered_spool_drop_preserves_unreceipted_injected_child_for_terminal_collection() {
+        let root = temp_root("registered-spool-retention");
+        let store = crate::storage::managed::GraphStorage::managed(root.join("storage"));
+        let session = store.begin_write().unwrap();
+        assert!(
+            session.phase_owner_scope().is_some(),
+            "real fresh run was not registered"
+        );
+        let spool = session
+            .staging_root()
+            .unwrap()
+            .join(".runs-retention-probe");
+        create_staging_directory(&spool).unwrap();
+        let child = spool.join("injected-unknown");
+        fs::write(&child, b"must remain untouched").unwrap();
+        drop(RunWorkspace::new(spool));
+        assert_eq!(fs::read(&child).unwrap(), b"must remain untouched");
+        session.abort(None).unwrap();
+        assert_eq!(fs::read(&child).unwrap(), b"must remain untouched");
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn legacy_staging_gate_survives_finish_and_result_clones_until_loader_owner_drops() {
+        use crate::storage::locks::{try_open_existing_locked, LockMode};
+        let root = temp_root("legacy-staging-result-lifetime");
+        let state = root.join(".codebaseGraph");
+        fs::create_dir(&state).unwrap();
+        let staging = state.join("native-staging");
+        let accumulator =
+            StagingAccumulator::with_limits(staging.to_str().unwrap(), 4096, 4096).unwrap();
+        let gate = state.join(".legacy-staging.use.lock");
+        assert!(try_open_existing_locked(&gate, LockMode::Exclusive)
+            .unwrap()
+            .is_none());
+        let result = accumulator.finish().unwrap();
+        assert!(
+            try_open_existing_locked(&gate, LockMode::Exclusive)
+                .unwrap()
+                .is_none(),
+            "finish released source admission before the returned CSV paths were consumed"
+        );
+        let clone = result.clone();
+        drop(result);
+        assert!(try_open_existing_locked(&gate, LockMode::Exclusive)
+            .unwrap()
+            .is_none());
+        drop(clone);
+        assert!(
+            try_open_existing_locked(&gate, LockMode::Exclusive)
+                .unwrap()
+                .is_some(),
+            "last internal loader owner failed to release the actual source gate"
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1130,7 +1238,7 @@ mod output_tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root = std::env::temp_dir().join(format!(
+        let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
             "codebase_graph_output_{name}_{}_{nanos}",
             std::process::id()
         ));

@@ -5,6 +5,7 @@ use crate::protocol::{
     LanguageProfile, ManifestDiff, NativeSyntaxMaterializationRequest, SourceSnapshot,
 };
 use crate::source_selection::SourceSelection;
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -144,7 +145,7 @@ fn spool_supported_snapshots(
     }
 
     let snapshot_root = Path::new(&request.staging_dir).join(SOURCE_SNAPSHOT_DIRECTORY);
-    fs::create_dir_all(&snapshot_root)?;
+    create_snapshot_directory(&snapshot_root)?;
     for snapshot in supported.values_mut() {
         if !required_paths.contains(&snapshot.path) {
             continue;
@@ -163,6 +164,60 @@ fn spool_supported_snapshots(
     Ok(())
 }
 
+fn create_snapshot_directory(path: &Path) -> Result<(), NativeError> {
+    if let Ok(Some(created)) =
+        crate::storage::maintenance_controls::WorkspaceCreatedDirectory::create_new(path)
+    {
+        let _ = crate::storage::maintenance_origin::record_created_workspace_directory(&created);
+        return Ok(());
+    }
+    Ok(fs::create_dir_all(path)?)
+}
+
+fn copy_snapshot(
+    source: &Path,
+    temporary: &Path,
+    final_path: &Path,
+) -> std::io::Result<(
+    u64,
+    Option<crate::storage::maintenance_controls::WorkspaceControlFile>,
+    String,
+)> {
+    use crate::process_lifecycle::FreshLifecycleFile;
+    use crate::storage::maintenance_controls::WorkspaceControlFile;
+    // Only the actual exclusive creator may bind this temporary inode and its
+    // intended publication name. Existing caller-owned paths are not adopted.
+    if let Ok(fresh) = FreshLifecycleFile::create(temporary) {
+        let mut output = WorkspaceControlFile::from_created(fresh, final_path);
+        if let Some(tracked) = output.tracking() {
+            let _ = crate::storage::maintenance_origin::record_created_workspace_control(tracked);
+        }
+        struct HashingWriter<'a> {
+            output: &'a mut WorkspaceControlFile,
+            hash: Sha256,
+        }
+        impl std::io::Write for HashingWriter<'_> {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                let count = std::io::Write::write(self.output, bytes)?;
+                self.hash.update(&bytes[..count]);
+                Ok(count)
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                std::io::Write::flush(self.output)
+            }
+        }
+        let mut writer = HashingWriter {
+            output: &mut output,
+            hash: Sha256::new(),
+        };
+        let length = std::io::copy(&mut fs::File::open(source)?, &mut writer)?;
+        let copied_hash = format!("{:x}", writer.hash.finalize());
+        return Ok((length, Some(output), copied_hash));
+    }
+    let length = fs::copy(source, temporary)?;
+    Ok((length, None, hash::sha256_file(temporary)?))
+}
+
 fn spool_stable_source(
     source_path: &Path,
     snapshot_root: &Path,
@@ -171,7 +226,7 @@ fn spool_stable_source(
 ) -> Result<(PathBuf, u64), NativeError> {
     let partition_id = hash::partition_id(relative_path);
     let shard = snapshot_root.join(&partition_id[..2]);
-    fs::create_dir_all(&shard)?;
+    create_snapshot_directory(&shard)?;
     let mut last_error = None;
     let mut source_changed = false;
 
@@ -181,19 +236,9 @@ fn spool_stable_source(
             std::process::id(),
             attempt
         ));
-        match fs::copy(source_path, &temporary_path) {
-            Ok(byte_len) => {
-                let copied_hash = match hash::sha256_file(&temporary_path) {
-                    Ok(value) => value,
-                    Err(error) => {
-                        last_error = Some(error.to_string());
-                        if error.kind() == std::io::ErrorKind::NotFound {
-                            source_changed = true;
-                        }
-                        let _ = fs::remove_file(&temporary_path);
-                        continue;
-                    }
-                };
+        let final_path = shard.join(format!("{partition_id}-{expected_hash}.snapshot"));
+        match copy_snapshot(source_path, &temporary_path, &final_path) {
+            Ok((byte_len, output, copied_hash)) => {
                 let current_hash = match hash::sha256_file(source_path) {
                     Ok(value) => value,
                     Err(error) => {
@@ -201,6 +246,7 @@ fn spool_stable_source(
                         if error.kind() == std::io::ErrorKind::NotFound {
                             source_changed = true;
                         }
+                        drop(output);
                         let _ = fs::remove_file(&temporary_path);
                         continue;
                     }
@@ -209,14 +255,15 @@ fn spool_stable_source(
                     source_changed = true;
                     last_error =
                         Some("source changed after its scan metadata was captured".to_string());
+                    drop(output);
                     let _ = fs::remove_file(&temporary_path);
                     continue;
                 }
 
-                let final_path = shard.join(format!("{partition_id}-{copied_hash}.snapshot"));
                 if final_path.exists() {
                     let existing_hash = hash::sha256_file(&final_path)?;
                     if existing_hash == copied_hash {
+                        drop(output);
                         let _ = fs::remove_file(&temporary_path);
                         return Ok((final_path, byte_len));
                     }
@@ -224,7 +271,11 @@ fn spool_stable_source(
                         "source snapshot collision for {relative_path}"
                     )));
                 }
-                fs::rename(&temporary_path, &final_path)?;
+                if let Some(output) = output {
+                    output.publish_recorded(&final_path)?;
+                } else {
+                    fs::rename(&temporary_path, &final_path)?;
+                }
                 return Ok((final_path, byte_len));
             }
             Err(error) => {
@@ -257,7 +308,7 @@ pub(crate) fn spool_snapshot_for_build(
     if current_path.starts_with(&snapshot_root) {
         return Ok(snapshot.clone());
     }
-    fs::create_dir_all(&snapshot_root)?;
+    create_snapshot_directory(&snapshot_root)?;
     let (snapshot_path, byte_len) = spool_stable_source(
         &current_path,
         &snapshot_root,
@@ -368,6 +419,31 @@ fn requires_full_source_rebuild(request: &NativeSyntaxMaterializationRequest) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn snapshot_hashing_keeps_the_exclusive_creator_open_until_publication() {
+        let root = std::env::temp_dir().join(format!(
+            "snapshot-private-{}",
+            crate::storage::layout::managed_generation_id()
+        ));
+        fs::create_dir(&root).unwrap();
+        let source = root.join("source.rs");
+        let temporary = root.join("temporary");
+        let destination = root.join("published");
+        fs::write(&source, b"fn preserved() {}\n").unwrap();
+        let (length, output, digest) = copy_snapshot(&source, &temporary, &destination).unwrap();
+        assert_eq!(length, fs::metadata(&source).unwrap().len());
+        assert_eq!(digest, hash::sha256_file(&source).unwrap());
+        #[cfg(windows)]
+        assert_eq!(
+            fs::File::open(&temporary).unwrap_err().raw_os_error(),
+            Some(32)
+        );
+        output.unwrap().publish_recorded(&destination).unwrap();
+        assert!(!temporary.exists());
+        assert_eq!(fs::read(&destination).unwrap(), fs::read(&source).unwrap());
+        fs::remove_dir_all(root).unwrap();
+    }
     use crate::protocol::{
         LanguageProfile, ManifestEntry, NativeManifest, OntologySchema,
         MATERIALIZATION_MANIFEST_SCHEMA_VERSION,

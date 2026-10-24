@@ -1,3 +1,4 @@
+use super::files::{create_staging_directory, finish_output, StagingOutputFile};
 use crate::error::{MemoryBudgetExceeded, NativeError};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -229,15 +230,15 @@ impl<T: SpillRecord> SortedSpool<T> {
         if self.buffered.is_empty() {
             return Ok(());
         }
-        fs::create_dir_all(&self.root)?;
+        create_staging_directory(&self.root)?;
         self.buffered
             .sort_by(|left, right| left.key.cmp(&right.key));
         let path = self.next_path("run");
-        let mut writer = BufWriter::new(File::create(&path)?);
+        let mut writer = BufWriter::new(StagingOutputFile::create(&path)?);
         for record in &self.buffered {
             write_encoded(&mut writer, &record.encoded, &self.metrics)?;
         }
-        writer.flush()?;
+        finish_output(writer)?;
         self.runs.push(RunDescriptor {
             path,
             max_heap_record_bytes: self.max_buffered_heap_record_bytes,
@@ -343,7 +344,7 @@ pub(super) struct SortedStream<T: SpillRecord> {
 }
 
 pub(super) struct RecordFileWriter<T: Serialize> {
-    writer: BufWriter<File>,
+    writer: BufWriter<StagingOutputFile>,
     record_limit: usize,
     phase: String,
     metrics: SpillMetrics,
@@ -358,10 +359,10 @@ impl<T: Serialize> RecordFileWriter<T> {
         metrics: SpillMetrics,
     ) -> Result<Self, NativeError> {
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
+            create_staging_directory(parent)?;
         }
         Ok(Self {
-            writer: BufWriter::new(File::create(path)?),
+            writer: BufWriter::new(StagingOutputFile::create(path)?),
             record_limit,
             phase: phase.to_string(),
             metrics,
@@ -374,9 +375,8 @@ impl<T: Serialize> RecordFileWriter<T> {
         write_encoded(&mut self.writer, &encoded, &self.metrics)
     }
 
-    pub(super) fn finish(mut self) -> Result<(), NativeError> {
-        self.writer.flush()?;
-        Ok(())
+    pub(super) fn finish(self) -> Result<(), NativeError> {
+        finish_output(self.writer)
     }
 }
 
@@ -647,12 +647,11 @@ fn merge_run_group<T: SpillRecord>(
         .max()
         .unwrap_or_default();
     let mut stream = SortedStream::<T>::open(inputs, heap_budget, metrics.clone(), phase, false)?;
-    let mut writer = BufWriter::new(File::create(output)?);
+    let mut writer = BufWriter::new(StagingOutputFile::create(output)?);
     while let Some(item) = stream.next_encoded()? {
         write_encoded(&mut writer, &item.encoded, metrics)?;
     }
-    writer.flush()?;
-    drop(writer);
+    finish_output(writer)?;
     drop(stream);
     for input in inputs {
         fs::remove_file(&input.path)?;

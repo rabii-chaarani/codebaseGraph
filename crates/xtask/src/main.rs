@@ -13,6 +13,7 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use yaml_serde::Value as YamlValue;
 
+mod native_tests;
 mod release;
 
 const CONFIRMATIONS: &[&str] = &["release-environment", "private-vulnerability-reporting"];
@@ -160,22 +161,115 @@ fn validate_crate_size(bytes: u64) -> Result<(), String> {
 }
 
 fn native_test(args: Vec<String>) -> Result<(), String> {
-    let options = parse_options(&args, &["--target"])?;
-    let target = NativeTarget::parse(required_option(&options, "--target")?)?;
-    ensure_native_host(target)?;
-    let command_args = native_test_command(target);
-    let mut command = Command::new("cargo");
-    command.args(command_args);
-    run_command(&mut command, "native test")
+    native_tests::run(args)
+}
+
+fn native_test_capture_command(target: NativeTarget) -> Vec<&'static str> {
+    let mut args = native_test_command(target);
+    args.extend(["--no-run", "--message-format=json-render-diagnostics"]);
+    args
+}
+
+fn record_native_test_cli_artifact(
+    message: &Value,
+    manifest: &Path,
+    candidates: &mut BTreeSet<PathBuf>,
+) -> Result<(), String> {
+    if message["reason"] != "compiler-artifact"
+        || message["target"]["name"] != "codebase-graph"
+        || message["profile"]["test"] != false
+        || !message["target"]["kind"]
+            .as_array()
+            .is_some_and(|kinds| kinds.iter().any(|kind| kind == "bin"))
+    {
+        return Ok(());
+    }
+    let actual_manifest = message["manifest_path"]
+        .as_str()
+        .ok_or("native-test CLI artifact has no source manifest")?;
+    if fs::canonicalize(actual_manifest).map_err(|error| error.to_string())? != manifest {
+        return Ok(());
+    }
+    let executable = message["executable"]
+        .as_str()
+        .ok_or("native-test normal CLI artifact has no executable")?;
+    let executable = fs::canonicalize(executable).map_err(|error| error.to_string())?;
+    if !executable.is_file() {
+        return Err("native-test CLI artifact is not a file".into());
+    }
+    candidates.insert(executable);
+    Ok(())
+}
+
+fn unique_native_test_cli(candidates: BTreeSet<PathBuf>) -> Result<PathBuf, String> {
+    if candidates.len() != 1 {
+        return Err(format!(
+            "expected one source-bound normal codebase-graph CLI compiler artifact, got {}",
+            candidates.len()
+        ));
+    }
+    Ok(candidates
+        .into_iter()
+        .next()
+        .expect("one captured executable"))
+}
+
+fn capture_native_test_cli(target: NativeTarget) -> Result<PathBuf, String> {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Cargo.toml");
+    let manifest = fs::canonicalize(manifest).map_err(|error| error.to_string())?;
+    let mut child = Command::new("cargo")
+        .args(native_test_capture_command(target))
+        .stdout(Stdio::piped())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .map_err(|error| format!("failed to capture native-test CLI: {error}"))?;
+    let stdout = child.stdout.take().expect("capture stdout was piped");
+    let mut candidates = BTreeSet::new();
+    let mut failure = None;
+    for line in BufReader::new(stdout).lines() {
+        let line = match line {
+            Ok(line) => line,
+            Err(error) => {
+                failure = Some(error.to_string());
+                break;
+            }
+        };
+        match serde_json::from_str::<Value>(&line) {
+            Ok(message) => {
+                if let Some(rendered) = message["message"]["rendered"].as_str() {
+                    eprint!("{rendered}");
+                }
+                if let Err(error) =
+                    record_native_test_cli_artifact(&message, &manifest, &mut candidates)
+                {
+                    failure.get_or_insert(error);
+                }
+            }
+            Err(error) => {
+                failure.get_or_insert(format!("invalid native-test compiler message: {error}"));
+            }
+        }
+    }
+    let status = child.wait().map_err(|error| error.to_string())?;
+    if !status.success() {
+        return Err(format!(
+            "native-test artifact capture failed with status {status}"
+        ));
+    }
+    if let Some(error) = failure {
+        return Err(error);
+    }
+    unique_native_test_cli(candidates)
 }
 
 fn native_test_command(target: NativeTarget) -> Vec<&'static str> {
     let mut args = vec!["test", "--workspace", "--locked"];
+    if target != NativeTarget::LinuxX86_64 {
+        args.extend(["--profile", "native-tests"]);
+    }
     if target.uses_windows_extensions() {
         // Keep optimized fault-test binaries separate from shipped artifacts.
         args.extend([
-            "--profile",
-            "native-tests",
             "--features",
             "codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions",
         ]);
@@ -982,8 +1076,14 @@ fn check_workflows(issues: &mut Vec<String>) {
             concat!("p", "ip", "-audit"),
             "scripts/",
         ];
+        // The bounded, opt-in native crash diagnostic is intentional. Keep the
+        // tooling ban for every other script reference.
+        let policy_text = text.replace(
+            ".github/scripts/linux_stack_trace.py",
+            "linux-stack-diagnostic",
+        );
         for forbidden in workflow_forbidden {
-            if text.contains(forbidden) {
+            if policy_text.contains(forbidden) {
                 issues.push(format!(
                     "FAIL: workflow-python-tooling-present: {workflow} contains {forbidden}."
                 ));
@@ -1088,6 +1188,16 @@ fn check_workflow_policy(
             "FAIL: workflow-native-permissions: native workflow must use contents: read."
                 .to_string(),
         );
+    }
+    if yaml_path(native, &["jobs", "tests", "if"]).and_then(YamlValue::as_str) != Some("inputs.run-tests")
+        || yaml_path(native, &["jobs", "tests", "strategy", "fail-fast"]).and_then(YamlValue::as_bool) != Some(false)
+        || yaml_path(native, &["jobs", "tests", "strategy", "matrix", "cohort"]).and_then(YamlValue::as_str)
+            != Some("${{ fromJSON(inputs.target == 'macos-arm64' && '[\"unit\",\"generation\",\"integration\"]' || '[\"all\"]') }}")
+        || yaml_path(native, &["jobs", "native", "needs"]).and_then(YamlValue::as_str) != Some("tests")
+        || yaml_path(native, &["jobs", "native", "if"]).and_then(YamlValue::as_str)
+            != Some("${{ always() && !cancelled() && (!inputs.run-tests || needs.tests.result == 'success') }}")
+    {
+        issues.push("FAIL: native-test-gate: require all three macOS cohorts and successful tests before artifact production; retain build-only callers.".into());
     }
 
     if yaml_path(release, &["on", "push"]).is_some() {
@@ -2228,6 +2338,8 @@ mod tests {
         validate_crate_size, validate_native_artifact_set, workflow_yaml_error, NativeProvenance,
         NativeTarget, YamlValue, CRATES_IO_PACKAGE_LIMIT_BYTES, NATIVE_TARGETS,
     };
+    use serde_json::{json, Value};
+    use std::collections::BTreeSet;
     use std::fs;
     use std::path::Path;
 
@@ -2275,8 +2387,65 @@ mod tests {
             let unix = native_test_command(target);
             assert!(!unix.contains(&"--features"));
             assert!(!unix.contains(&"--release"));
-            assert!(!unix.contains(&"--profile"));
+            assert_eq!(
+                unix.contains(&"--profile"),
+                target != NativeTarget::LinuxX86_64
+            );
         }
+    }
+
+    #[test]
+    fn native_capture_reuses_the_exact_test_profile_and_features() {
+        for target in super::NATIVE_TARGETS {
+            let test = native_test_command(target);
+            let capture = super::native_test_capture_command(target);
+            assert_eq!(&capture[..test.len()], test);
+            assert_eq!(
+                &capture[test.len()..],
+                ["--no-run", "--message-format=json-render-diagnostics"]
+            );
+        }
+    }
+
+    #[test]
+    fn native_capture_requires_unique_source_bound_normal_cli_artifact() {
+        let root = super::unique_temp_dir("native_cli_capture").unwrap();
+        let manifest = root.join("Cargo.toml");
+        let unrelated = root.join("other.toml");
+        let executable = root.join("normal-cli");
+        let second = root.join("second-cli");
+        for path in [&manifest, &unrelated, &executable, &second] {
+            fs::write(path, b"fixture").unwrap();
+        }
+        let manifest = fs::canonicalize(manifest).unwrap();
+        let mut candidates = BTreeSet::new();
+        let valid = json!({"reason":"compiler-artifact","manifest_path":manifest,
+            "target":{"name":"codebase-graph","kind":["bin"]},
+            "profile":{"test":false},"executable":executable});
+        let mut harness = valid.clone();
+        harness["profile"]["test"] = json!(true);
+        let mut wrong = valid.clone();
+        wrong["manifest_path"] = json!(unrelated);
+        for message in [&harness, &wrong, &json!({"reason":"build-finished"})] {
+            super::record_native_test_cli_artifact(message, &manifest, &mut candidates).unwrap();
+        }
+        assert!(super::unique_native_test_cli(candidates.clone()).is_err());
+        super::record_native_test_cli_artifact(&valid, &manifest, &mut candidates).unwrap();
+        super::record_native_test_cli_artifact(&valid, &manifest, &mut candidates).unwrap();
+        assert_eq!(
+            super::unique_native_test_cli(candidates.clone()).unwrap(),
+            fs::canonicalize(&executable).unwrap()
+        );
+        let mut missing = valid.clone();
+        missing["executable"] = Value::Null;
+        assert!(
+            super::record_native_test_cli_artifact(&missing, &manifest, &mut candidates).is_err()
+        );
+        let mut ambiguous = valid;
+        ambiguous["executable"] = json!(second);
+        super::record_native_test_cli_artifact(&ambiguous, &manifest, &mut candidates).unwrap();
+        assert!(super::unique_native_test_cli(candidates).is_err());
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -2387,10 +2556,26 @@ mod tests {
     }
 
     fn valid_native_workflow() -> YamlValue {
-        yaml_serde::from_str(
-            "on:\n  workflow_call:\n    inputs:\n      target: {}\n      source-sha: {}\n      run-tests: {}\n      upload-artifact: {}\n      artifact-retention-days: {}\njobs:\n  native:\n    permissions: {contents: read}\n",
-        )
-        .unwrap()
+        yaml_serde::from_str(include_str!("../../../.github/workflows/native.yml")).unwrap()
+    }
+
+    #[test]
+    fn native_test_failure_cannot_authorize_artifact_production() {
+        for replacement in ["${{ always() }}", "${{ !inputs.run-tests }}"] {
+            let mut native = valid_native_workflow();
+            native["jobs"]["native"]["if"] = YamlValue::String(replacement.into());
+            let mut issues = Vec::new();
+            check_workflow_policy(
+                &valid_ci_workflow(),
+                &native,
+                &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+                &mut issues,
+            );
+            assert!(
+                issues.iter().any(|i| i.contains("native-test-gate")),
+                "{issues:?}"
+            );
+        }
     }
 
     fn valid_release_workflow_text() -> String {

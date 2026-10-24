@@ -1,9 +1,10 @@
 use crate::api::catalog::support::{metadata_payload, value_array, value_str, GRAPH_SCHEMA_JSON};
 use crate::db_writer::{
-    connect_ladybug_database, open_ladybug_database, retry_transient_database, READ_RETRY_POLICY,
+    connect_ladybug_database, open_ladybug_database, open_ladybug_database_with_config,
+    retry_transient_database, READ_RETRY_POLICY,
 };
 use crate::protocol::SearchBackendMetadata;
-use lbug::{Connection, Database, SystemConfig, Value};
+use lbug::{Connection, SystemConfig, Value};
 use serde_json::json;
 use std::{collections::BTreeSet, path::Path};
 
@@ -54,12 +55,8 @@ pub(crate) fn execute_graph_search(
     manifest_path: &Path,
     options: &GraphSearchRequest,
 ) -> Result<Vec<serde_json::Value>, String> {
-    let db = Database::new(db_path, SystemConfig::default().read_only(true)).map_err(|error| {
-        format!(
-            "failed to open graph database {}: {error}",
-            db_path.display()
-        )
-    })?;
+    let db = open_ladybug_database_with_config(db_path, SystemConfig::default().read_only(true))
+        .map_err(|error| error.to_string())?;
     let conn =
         Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
     let candidate_limit = options.limit.clamp(10, 50);
@@ -236,12 +233,8 @@ pub(crate) fn execute_graph_context(
     if options.context_limit == 0 || options.budget == 0 {
         return Ok(Vec::new());
     }
-    let db = Database::new(db_path, SystemConfig::default().read_only(true)).map_err(|error| {
-        format!(
-            "failed to open graph database {}: {error}",
-            db_path.display()
-        )
-    })?;
+    let db = open_ladybug_database_with_config(db_path, SystemConfig::default().read_only(true))
+        .map_err(|error| error.to_string())?;
     let conn =
         Connection::new(&db).map_err(|error| format!("failed to connect to graph: {error}"))?;
     let schema = metadata_payload(GRAPH_SCHEMA_JSON)?;

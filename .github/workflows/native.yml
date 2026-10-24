@@ -28,8 +28,13 @@ env:
   CARGO_NET_RETRY: "10"
 
 jobs:
-  native:
-    name: native artifact (${{ inputs.target }})
+  tests:
+    name: native tests (${{ inputs.target }}, ${{ matrix.cohort }})
+    if: inputs.run-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        cohort: ${{ fromJSON(inputs.target == 'macos-arm64' && '["unit","generation","integration"]' || '["all"]') }}
     runs-on: ${{ fromJSON('{"linux-x86_64":"ubuntu-latest","macos-arm64":"macos-latest","macos-x86_64":"macos-15-intel","windows-x86_64":"windows-2022"}')[inputs.target] }}
     timeout-minutes: 90
     permissions:
@@ -46,8 +51,68 @@ jobs:
           target: ${{ inputs.target }}
 
       - name: Run platform tests
-        if: inputs.run-tests
-        run: cargo run -p xtask -- native-test --target "${{ inputs.target }}"
+        id: platform_tests
+        timeout-minutes: ${{ inputs.target == 'macos-arm64' && 75 || 85 }}
+        shell: bash
+        env:
+          RUST_TEST_NOCAPTURE: "1"
+          RUST_TEST_THREADS: "1"
+          SOURCE_SHA: ${{ inputs.source-sha }}
+        run: |
+          set -o pipefail
+          mkdir -p diagnostics/linux-stack
+          if [[ '${{ inputs.target }}' == 'windows-x86_64' ]]; then
+            export CGRAPH_CLEANUP_TRACE=1
+          fi
+          cargo run -p xtask -- native-test --target "${{ inputs.target }}" --cohort "${{ matrix.cohort }}" 2>&1 | tee diagnostics/platform-test.log
+
+      # Diagnostic retry only. The original platform-test failure remains a
+      # failed required job; no profile, feature, stack size or test gate changes.
+      - name: Capture Linux test stack after failure
+        id: linux_stack_trace
+        if: failure() && inputs.run-tests && inputs.target == 'linux-x86_64' && steps.platform_tests.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 6
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ inputs.source-sha }}
+        run: |
+          cp diagnostics/platform-test.log diagnostics/linux-stack/native-platform-test.log
+          if ! command -v gdb >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install --yes gdb
+          fi
+          python3 .github/scripts/linux_stack_trace.py --output diagnostics/linux-stack \
+            --failed-log diagnostics/linux-stack/native-platform-test.log \
+            --timeout-seconds 240
+
+      - name: Upload native test diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-diagnostics-${{ inputs.target }}-${{ matrix.cohort }}-${{ github.run_attempt }}
+          path: diagnostics/
+          if-no-files-found: warn
+          retention-days: 3
+
+  native:
+    name: native artifact (${{ inputs.target }})
+    needs: tests
+    if: ${{ always() && !cancelled() && (!inputs.run-tests || needs.tests.result == 'success') }}
+    runs-on: ${{ fromJSON('{"linux-x86_64":"ubuntu-latest","macos-arm64":"macos-latest","macos-x86_64":"macos-15-intel","windows-x86_64":"windows-2022"}')[inputs.target] }}
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source SHA
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.source-sha }}
+
+      - name: Set up native dependencies
+        uses: ./.github/actions/setup-native
+        with:
+          target: ${{ inputs.target }}
 
       - name: Build and smoke release artifact
         run: cargo run -p xtask -- native-artifact --target "${{ inputs.target }}" --commit-sha "${{ inputs.source-sha }}" --output "dist/${{ inputs.target }}"

@@ -1,0 +1,400 @@
+{
+  "scope": "Actual live producer capability and pure control codecs only; no complete Ready/effects/native platform closure. Actual accounting test failure179 preserved by author; focused originalP2 counterexample also archived.",
+  "commit": "a8b1c5b",
+  "files": [
+    {
+      "path": "s2-cap-controls-author/inputs-after.json",
+      "sha256": "38de44f2e70fe71da18452dd920704cbaec8a521605586d8ec808ce227c3f665",
+      "bytes": 57361,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/inputs-after.json",
+      "source_sha256": "38de44f2e70fe71da18452dd920704cbaec8a521605586d8ec808ce227c3f665"
+    },
+    {
+      "path": "s2-cap-controls-author/evidence.json",
+      "sha256": "0efd64fad14876445b35cb72e8e553069f6149ce6ae3746767507064c1caeb1a",
+      "bytes": 17090,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/evidence.json",
+      "source_sha256": "0efd64fad14876445b35cb72e8e553069f6149ce6ae3746767507064c1caeb1a"
+    },
+    {
+      "path": "s2-cap-controls-author/junit-lib-133.xml",
+      "sha256": "96a4ae26d76421a19ffcaabfb8c40b75ca4667cbc72ebe146cb86162bce5bbcf",
+      "bytes": 30512,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/junit-lib-133.xml",
+      "source_sha256": "96a4ae26d76421a19ffcaabfb8c40b75ca4667cbc72ebe146cb86162bce5bbcf"
+    },
+    {
+      "path": "s2-cap-controls-author/fmt.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/fmt.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "s2-cap-controls-author/run.log.gz",
+      "sha256": "864cffb747ffee0fa2a4787b5d1afd1214fcaf33eeac20851f3cae17e41654ae",
+      "bytes": 4220,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/run.log",
+      "source_sha256": "225d587a7e9a66195925c47f03b421916210075f44d7d3edcd468efc2337872f"
+    },
+    {
+      "path": "s2-cap-controls-author/harness-build.log.gz",
+      "sha256": "cc2dd83f1730709fb6fe62c3fadde0370cb1fd2fc7a1861bcf92c3da21289736",
+      "bytes": 9828,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/harness-build.log",
+      "source_sha256": "f9672b49fca0640cb215ca63c82e8e8206762fd43f6eca752010e6222771337d"
+    },
+    {
+      "path": "s2-cap-controls-author/binary-after.json",
+      "sha256": "876747a8c935b1affa8f1e93ba25b6a63a028a51b7e5bf303e08ee7bed59a724",
+      "bytes": 14609,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/binary-after.json",
+      "source_sha256": "876747a8c935b1affa8f1e93ba25b6a63a028a51b7e5bf303e08ee7bed59a724"
+    },
+    {
+      "path": "s2-cap-controls-author/snapshot.json",
+      "sha256": "7d5bc949e2f1c04df32d09186649fea86c8606040a94d8649d4e56a7cfcd49c4",
+      "bytes": 805,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/snapshot.json",
+      "source_sha256": "7d5bc949e2f1c04df32d09186649fea86c8606040a94d8649d4e56a7cfcd49c4"
+    },
+    {
+      "path": "s2-cap-controls-author/junit-harness-6.xml",
+      "sha256": "e60905739eeb3abe6873baecaa4e7873970e510a11c3dfe26b124070f9ecdb14",
+      "bytes": 1865,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/junit-harness-6.xml",
+      "source_sha256": "e60905739eeb3abe6873baecaa4e7873970e510a11c3dfe26b124070f9ecdb14"
+    },
+    {
+      "path": "s2-cap-controls-author/inputs-before.json",
+      "sha256": "38de44f2e70fe71da18452dd920704cbaec8a521605586d8ec808ce227c3f665",
+      "bytes": 57361,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/inputs-before.json",
+      "source_sha256": "38de44f2e70fe71da18452dd920704cbaec8a521605586d8ec808ce227c3f665"
+    },
+    {
+      "path": "s2-cap-controls-author/binary-before.json",
+      "sha256": "876747a8c935b1affa8f1e93ba25b6a63a028a51b7e5bf303e08ee7bed59a724",
+      "bytes": 14609,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/binary-before.json",
+      "source_sha256": "876747a8c935b1affa8f1e93ba25b6a63a028a51b7e5bf303e08ee7bed59a724"
+    },
+    {
+      "path": "s2-cap-controls-author/harness-run.log.gz",
+      "sha256": "1773e8a3a542ad0b2b38fc3da772363d2fce8c150dc9bcf2e21fc288a8520cb0",
+      "bytes": 10174,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/harness-run.log",
+      "source_sha256": "f88d7559775588f76aa98e922acf93bb9a31423becdab3cf885be512df535f30"
+    },
+    {
+      "path": "s2-cap-controls-author/harness-binary-before.json",
+      "sha256": "2ae9926263631019dc2fd0a958b2cb2e2a00d69ae868626e14fc6e8407246c03",
+      "bytes": 964,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/harness-binary-before.json",
+      "source_sha256": "2ae9926263631019dc2fd0a958b2cb2e2a00d69ae868626e14fc6e8407246c03"
+    },
+    {
+      "path": "s2-cap-controls-author/inventory.json",
+      "sha256": "699899307b9009b71bb670f67fb9360961e8ab6f6c481c5a24d2d3f71cc5f436",
+      "bytes": 108498,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/inventory.json",
+      "source_sha256": "699899307b9009b71bb670f67fb9360961e8ab6f6c481c5a24d2d3f71cc5f436"
+    },
+    {
+      "path": "s2-cap-controls-author/check.log.gz",
+      "sha256": "d3b24d2cd61691ca4647a18a3a098376de41af810e70a4c52697c0371fb671c2",
+      "bytes": 9905,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/check.log",
+      "source_sha256": "c856140be0224bd4271608ff2309140a36448116ae66ae3230a2c2dddd83025f"
+    },
+    {
+      "path": "s2-cap-controls-author/harness-inventory.json",
+      "sha256": "43a00e43cda540f4b7c246189899c9dff2d3637efd97d34dfe039e857837d12a",
+      "bytes": 33119,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/harness-inventory.json",
+      "source_sha256": "43a00e43cda540f4b7c246189899c9dff2d3637efd97d34dfe039e857837d12a"
+    },
+    {
+      "path": "s2-cap-controls-author/harness-binary-after.json",
+      "sha256": "2ae9926263631019dc2fd0a958b2cb2e2a00d69ae868626e14fc6e8407246c03",
+      "bytes": 964,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/harness-binary-after.json",
+      "source_sha256": "2ae9926263631019dc2fd0a958b2cb2e2a00d69ae868626e14fc6e8407246c03"
+    },
+    {
+      "path": "s2-cap-controls-author/build.log.gz",
+      "sha256": "b1f34d327a9417f7aff80b72e2bd3f88a20a15ffadf6826a3c8ba10dd8788126",
+      "bytes": 161,
+      "source": "/private/tmp/cleanup-s2-cap-controls-successor-rdqnse82/build.log",
+      "source_sha256": "946f6103dc7ea27bfb7704e4655fc8d6e7b1e47abd0849b4920bb0f7f6fde6b0"
+    },
+    {
+      "path": "s2-cap-controls-review/inputs-after.json",
+      "sha256": "a5d16616bb18398c65232b2e3b437b406ac2e096b4ac869bcf19ddb6cbd15d14",
+      "bytes": 57361,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/inputs-after.json",
+      "source_sha256": "a5d16616bb18398c65232b2e3b437b406ac2e096b4ac869bcf19ddb6cbd15d14"
+    },
+    {
+      "path": "s2-cap-controls-review/review-report.md",
+      "sha256": "86a827eedd4d89f24879e3a3371b9922c77e89c86131bee094006b098a3b04c9",
+      "bytes": 2392,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/review-report.md",
+      "source_sha256": "86a827eedd4d89f24879e3a3371b9922c77e89c86131bee094006b098a3b04c9"
+    },
+    {
+      "path": "s2-cap-controls-review/fmt.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/fmt.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-negative_serde.log.gz",
+      "sha256": "8ca75e40bb696f206b9377b81ccf37c065ed3cd65b9df2581a0e2afb5b0e19cb",
+      "bytes": 679,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-negative_serde.log",
+      "source_sha256": "6b7e3826516eb1ef655ff5b6f83eb2e0874ea61b1005d73d0f0f7998ebe3ce20"
+    },
+    {
+      "path": "s2-cap-controls-review/codec-boundary-run.log.gz",
+      "sha256": "b5c812a92f210e6378bc016ef99ce8a88bfb35b17973493b2f5f5fdb0780a756",
+      "bytes": 150,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/codec-boundary-run.log",
+      "source_sha256": "ca7c69f26c5bc38f82fa6741d47f2ac9b8300de02a4bc1cb3f6ef48a7379b6a3"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-negative_clone.log.gz",
+      "sha256": "721508589d4f9192de790beb81a197d0283c4f6e9f87280fc12998126206fae6",
+      "bytes": 439,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-negative_clone.log",
+      "source_sha256": "df312639877057382f2c4addb7da274b7f19392450fdcfa9b3ca62b7b0849fc1"
+    },
+    {
+      "path": "s2-cap-controls-review/review-report.json",
+      "sha256": "281cb48cbbbab4e5851c43376d37082a219866eed2103dc381f135382a8d7d40",
+      "bytes": 18437,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/review-report.json",
+      "source_sha256": "281cb48cbbbab4e5851c43376d37082a219866eed2103dc381f135382a8d7d40"
+    },
+    {
+      "path": "s2-cap-controls-review/capability-3.log.gz",
+      "sha256": "0c6bdfb5a1ba4a2182e0947c7f85551c1b2c5adb8b593f42746918b3691795d8",
+      "bytes": 181,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/capability-3.log",
+      "source_sha256": "d3a86ffa84b9514dafd3d52a529a6614840c507d22d0ada4f0f95ee4e271e48d"
+    },
+    {
+      "path": "s2-cap-controls-review/capability-2.log.gz",
+      "sha256": "1a1073a13f7e948d5bda1c3b2b5940a0b56a67f6aaa5c53b61298efce22e9a64",
+      "bytes": 187,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/capability-2.log",
+      "source_sha256": "e4bffbc4173211d8c1ae23c93d7fe905a2abcc57434e15b880d858f9a6d71234"
+    },
+    {
+      "path": "s2-cap-controls-review/snapshot.json",
+      "sha256": "4a18d281715a82c53772cdbc2c14b30efb1e40c9cb1c958a4016f4df97be4cf2",
+      "bytes": 963,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/snapshot.json",
+      "source_sha256": "4a18d281715a82c53772cdbc2c14b30efb1e40c9cb1c958a4016f4df97be4cf2"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-negative_send_sync.rs",
+      "sha256": "236ec2d9dd5025f3078d4370454d2120a829252589ae982dc85ece03f12a8e25",
+      "bytes": 1162,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-negative_send_sync.rs",
+      "source_sha256": "236ec2d9dd5025f3078d4370454d2120a829252589ae982dc85ece03f12a8e25"
+    },
+    {
+      "path": "s2-cap-controls-review/capability-1.log.gz",
+      "sha256": "f3fdf8e30a31c051e664b2698d5607bdb792b231c65f6bb1965b01d37c95e58f",
+      "bytes": 183,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/capability-1.log",
+      "source_sha256": "a0db291bc704746c7a0a75932d5de6a329bb994e822b1f0d1ad36fea89a7c975"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-negative_clone.rs",
+      "sha256": "8ac903dcd2efcbe533c508c5c4687184fe367a903d72cfa617a8636428ea7029",
+      "bytes": 1158,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-negative_clone.rs",
+      "source_sha256": "8ac903dcd2efcbe533c508c5c4687184fe367a903d72cfa617a8636428ea7029"
+    },
+    {
+      "path": "s2-cap-controls-review/codec-boundary-provenance.json",
+      "sha256": "d97972b274d3788946aba920a6a571799da90b522eb3e3594373035b0e420fcc",
+      "bytes": 521,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/codec-boundary-provenance.json",
+      "source_sha256": "d97972b274d3788946aba920a6a571799da90b522eb3e3594373035b0e420fcc"
+    },
+    {
+      "path": "s2-cap-controls-review/inputs-before.json",
+      "sha256": "a5d16616bb18398c65232b2e3b437b406ac2e096b4ac869bcf19ddb6cbd15d14",
+      "bytes": 57361,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/inputs-before.json",
+      "source_sha256": "a5d16616bb18398c65232b2e3b437b406ac2e096b4ac869bcf19ddb6cbd15d14"
+    },
+    {
+      "path": "s2-cap-controls-review/controls-actual-source-probe.rs",
+      "sha256": "ca466847c4a29f9f39f8f168403e2bdbda3561fd1e443cfd5350efc411944132",
+      "bytes": 308,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/controls-actual-source-probe.rs",
+      "source_sha256": "ca466847c4a29f9f39f8f168403e2bdbda3561fd1e443cfd5350efc411944132"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-provenance.json",
+      "sha256": "47a4952c891a538d760130074f29e26f2b846a504cb46d274e2e1e87c92d2aa8",
+      "bytes": 5771,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-provenance.json",
+      "source_sha256": "47a4952c891a538d760130074f29e26f2b846a504cb46d274e2e1e87c92d2aa8"
+    },
+    {
+      "path": "s2-cap-controls-review/codec-boundary-build.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/codec-boundary-build.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-negative_send_sync.log.gz",
+      "sha256": "92cd2f442f56cd9b4182f18b98ba0726abde82948d74b8dcd69b0f12adf6827f",
+      "bytes": 627,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-negative_send_sync.log",
+      "source_sha256": "bf1c94d58f399cb6fd9c2e0d786a2022add530b5e3f2425f697db1d446eb561f"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-positive_debug.rs",
+      "sha256": "b78fc7a954565a1bdec391f98ee7bb7d2c1decf5466324545820f598f906e92c",
+      "bytes": 1158,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-positive_debug.rs",
+      "source_sha256": "b78fc7a954565a1bdec391f98ee7bb7d2c1decf5466324545820f598f906e92c"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-positive_debug.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-positive_debug.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "s2-cap-controls-review/controls-probe-provenance.json",
+      "sha256": "b1a66bfbf7365fb00148349619a79828300c191dc9c36235cafaeef8fc10c1de",
+      "bytes": 742,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/controls-probe-provenance.json",
+      "source_sha256": "b1a66bfbf7365fb00148349619a79828300c191dc9c36235cafaeef8fc10c1de"
+    },
+    {
+      "path": "s2-cap-controls-review/codec-boundary-probe.rs",
+      "sha256": "12bc782eedd56f6da643e6b13d00697a40d76538f81466692d63c24076fe4b52",
+      "bytes": 2013,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/codec-boundary-probe.rs",
+      "source_sha256": "12bc782eedd56f6da643e6b13d00697a40d76538f81466692d63c24076fe4b52"
+    },
+    {
+      "path": "s2-cap-controls-review/cap-trait-negative_serde.rs",
+      "sha256": "37aa10a3cdbb5f6358a5981675c8b5b5cdccf06ba94fbdfaeda69ba1d219b699",
+      "bytes": 1158,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/cap-trait-negative_serde.rs",
+      "source_sha256": "37aa10a3cdbb5f6358a5981675c8b5b5cdccf06ba94fbdfaeda69ba1d219b699"
+    },
+    {
+      "path": "s2-cap-controls-review/controls-probe-run.log.gz",
+      "sha256": "d22e1f7b5f05246114d9785abc8c7995673171c2a40fad2519bbef1ae20d94da",
+      "bytes": 378,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/controls-probe-run.log",
+      "source_sha256": "b1103805f71cbea1669c5bb1af68c2f569ee9d80147daa12d204c4daf5275ecc"
+    },
+    {
+      "path": "s2-cap-controls-review/capability-probe-provenance.json",
+      "sha256": "2ab873f1f8dbdf3feb74e4d030cf64f6a3673411ff562d6c240c6838f51915d8",
+      "bytes": 2555,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/capability-probe-provenance.json",
+      "source_sha256": "2ab873f1f8dbdf3feb74e4d030cf64f6a3673411ff562d6c240c6838f51915d8"
+    },
+    {
+      "path": "s2-cap-controls-review/controls-probe-build.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "source": "/private/tmp/cleanup-s2-cap-controls-fix-review-kh0ry6yd/controls-probe-build.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "s2-cap-controls-first-review/snapshot.json",
+      "sha256": "1af34cf3c940fd9ee019499b90e4addef0719766b705c536d36a13654f992548",
+      "bytes": 946,
+      "source": "/private/tmp/cleanup-s2-cap-controls-review-v1be53fm/snapshot.json",
+      "source_sha256": "1af34cf3c940fd9ee019499b90e4addef0719766b705c536d36a13654f992548"
+    },
+    {
+      "path": "s2-cap-controls-first-review/inputs-before.json",
+      "sha256": "84d8d76280c8983f50d15d4ade9b3b50e352d854cf4b5594ddf437a72edcce2b",
+      "bytes": 57361,
+      "source": "/private/tmp/cleanup-s2-cap-controls-review-v1be53fm/inputs-before.json",
+      "source_sha256": "84d8d76280c8983f50d15d4ade9b3b50e352d854cf4b5594ddf437a72edcce2b"
+    },
+    {
+      "path": "s2-cap-controls-first-review/controls-account-failure.log.gz",
+      "sha256": "4ce166f8165b8245b00a1dab246d9e463725393ea6d412aae1afe93618b26bd9",
+      "bytes": 389,
+      "source": "/private/tmp/cleanup-s2-cap-controls-review-v1be53fm/controls-account-failure.log",
+      "source_sha256": "24f5f4e5e85f9cc21af322c764afdd578b7556fa2d55d085b42a18662afedde6"
+    },
+    {
+      "path": "s2-cap-controls-first-review/controls-actual-source-probe.rs",
+      "sha256": "3ea407dfc5e1720127ea087907423729c8a2b4d0f14733b12f695299eebbad05",
+      "bytes": 300,
+      "source": "/private/tmp/cleanup-s2-cap-controls-review-v1be53fm/controls-actual-source-probe.rs",
+      "source_sha256": "3ea407dfc5e1720127ea087907423729c8a2b4d0f14733b12f695299eebbad05"
+    },
+    {
+      "path": "s2-cap-controls-first-review/controls-all-original.log.gz",
+      "sha256": "9ea70879f4a4c90db0f297d82f0bf988f55e58721446c0491b10560db0dadb88",
+      "bytes": 614,
+      "source": "/private/tmp/cleanup-s2-cap-controls-review-v1be53fm/controls-all-original.log",
+      "source_sha256": "5db623bb326f943499f22a64148972e473a4cd73beaeb21de9de3c276b891c16"
+    },
+    {
+      "path": "s2-cap-controls-first-review/controls-probe-provenance.json",
+      "sha256": "2a96ffbffea2842d965ea79b72cc610b0cf6bb0425ac31220d9c6333e6c5c06c",
+      "bytes": 856,
+      "source": "/private/tmp/cleanup-s2-cap-controls-review-v1be53fm/controls-probe-provenance.json",
+      "source_sha256": "2a96ffbffea2842d965ea79b72cc610b0cf6bb0425ac31220d9c6333e6c5c06c"
+    },
+    {
+      "path": "s2-cap-controls-first-review/controls-probe-build.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 20,
+      "source": "/private/tmp/cleanup-s2-cap-controls-review-v1be53fm/controls-probe-build.log",
+      "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "proposal-v2/s2_publication_factory_extension_review.md",
+      "sha256": "4001b6ad34ae10a99be64e79b853c78347488f446c9d5f131d022a54bed63111",
+      "bytes": 8926,
+      "source": "/private/tmp/cleanup-v2-proposal-review-Ox0SyW/s2_publication_factory_extension_review.md"
+    },
+    {
+      "path": "proposal-v2/legacy_direct_minimum_origin_review.md",
+      "sha256": "beea9a010d508368d5f9c0833e61e97519de917106c7e5620aa2c6fea6d8891c",
+      "bytes": 8147,
+      "source": "/private/tmp/cleanup-v2-proposal-review-Ox0SyW/legacy_direct_minimum_origin_review.md"
+    },
+    {
+      "path": "proposal-v2/dc-s2-publication-factory-extension-20261021.md",
+      "sha256": "b2d6ce12530c4f96a9b1985d3ab2449b4cc41c4d9ba1f36e0f99ce3d691b8f96",
+      "bytes": 9274,
+      "source": "/private/tmp/dc-s2-publication-factory-extension-20261021.md"
+    },
+    {
+      "path": "proposal-v2/dc-s2-publication-factory-extension-addendum-20261021.md",
+      "sha256": "1bd90983b6591fb3c29d753cca85ccb4e8282c9891cf27f290b389e02c530564",
+      "bytes": 4554,
+      "source": "/private/tmp/dc-s2-publication-factory-extension-addendum-20261021.md"
+    },
+    {
+      "path": "proposal-v2/dc-s3-legacy-native-projection-proposal-20261021.md",
+      "sha256": "9ab1f97bd62d8bbe4cbc866b4d94d578a6f142aa587f34baa43b30f0c5602442",
+      "bytes": 11254,
+      "source": "/private/tmp/dc-s3-legacy-native-projection-proposal-20261021.md"
+    }
+  ]
+}

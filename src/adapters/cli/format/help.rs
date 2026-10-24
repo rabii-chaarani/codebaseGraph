@@ -35,7 +35,7 @@ pub(in crate::adapters::cli) fn uninstall_help() -> &'static str {
 }
 
 pub(in crate::adapters::cli) fn graph_health_help() -> &'static str {
-    "codebase-graph check-health\n\nUSAGE:\n  codebase-graph check-health [--repo-root <path>] [--config <path>] [--db <path>] [--manifest <path>] [--json]\n\nOPTIONS:\n  --repo-root <path>        Repository root override; auto-detected when omitted\n  --config <path>           Setup config path; defaults to .codebaseGraph/config.json\n  --db <path>               Ladybug database path override\n  --manifest <path>         Manifest path override\n  --json                    Emit JSON output"
+    "codebase-graph check-health\n\nUSAGE:\n  codebase-graph check-health [--repo-root <path>] [--config <path>] [--db <path>] [--manifest <path>] [--confirm-legacy-quiescence] [--json]\n\nOPTIONS:\n  --repo-root <path>        Repository root override; auto-detected when omitted\n  --config <path>           Setup config path; defaults to .codebaseGraph/config.json\n  --db <path>               Ladybug database path override\n  --manifest <path>         Manifest path override\n  --confirm-legacy-quiescence  Confirm all old daemons/helpers were stopped and upgraded before this maintenance request; does not replace ownership checks\n  --json                    Emit JSON output"
 }
 
 pub(in crate::adapters::cli) fn graph_schema_help() -> &'static str {

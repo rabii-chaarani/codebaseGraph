@@ -1,0 +1,72 @@
+{
+  "snapshot": "baseline88a369f plus only coordinator Cargo.toml feature and4wrapperfiles",
+  "inputs_identical": true,
+  "input_count": 424,
+  "binary": {
+    "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/codebase_graph-721629b084bb149b",
+    "sha256": "dde40bdbda09e7dc015c280977b933c9619693ab963c0a45ca6148f34a4c0bfd",
+    "cwd": "/private/tmp/cleanup-s2-wrapper-windowsfix-09wodcy6/repo",
+    "selected": [
+      "api::context::tests::dc_epoch_optional_direct_cleanup_keeps_both_runtime_selectors_readable_and_pending",
+      "api::context::tests::dc_epoch_optional_managed_cleanup_keeps_runtime_readable_and_pending",
+      "api::graph_read::tests::manifest_without_backend_metadata_uses_legacy_ladybug_fts",
+      "db_writer::tests::guarded_database_failed_native_open_releases_exclusion",
+      "db_writer::tests::guarded_database_move_and_connection_retain_physical_family",
+      "db_writer::tests::guarded_database_native_path_rejects_full_non_utf8_before_effects",
+      "db_writer::tests::guarded_database_native_path_rejects_transforms_before_filesystem_effects",
+      "db_writer::tests::guarded_database_readonly_rejects_parent_without_coordination_write_access",
+      "db_writer::tests::guarded_database_rejects_symlink_and_hardlink_resources_before_open",
+      "db_writer::tests::guarded_database_relative_native_open_uses_one_absolute_guarded_resource",
+      "db_writer::tests::guarded_database_symlink_parent_traversal_cannot_bind_another_native_resource",
+      "db_writer::tests::guarded_database_unicode_alias_retains_physical_parent_exclusion",
+      "db_writer::tests::guarded_database_unwind_closes_native_handle_and_releases_exclusion",
+      "db_writer::tests::guarded_database_windows_encoding_policy_checks_the_complete_native_path",
+      "db_writer::tests::native_writer_loads_json_staging_through_ladybug_copy",
+      "db_writer::tests::native_writer_loads_multiple_chunks_into_one_primary_key_table",
+      "db_writer::tests::transient_database_error_detection_matches_ladybug_lock_failures",
+      "db_writer::tests::transient_database_retry_replays_operation_until_success",
+      "storage::maintenance_ownership::tests::dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay",
+      "storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue",
+      "storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards",
+      "storage::maintenance_ownership::tests::dc_s2_family_group_handles_distinct_parents_and_duplicate_resource_keys",
+      "storage::maintenance_ownership::tests::dc_s2_family_macos_long_s_consumer_blocks_ascii_direct_even_with_valid_record",
+      "storage::maintenance_ownership::tests::dc_s2_family_macos_parent_aliases_deduplicate_physical_family",
+      "storage::maintenance_ownership::tests::dc_s2_family_macos_unicode_nfc_nfd_existing_and_creation_aliases_exclude",
+      "storage::maintenance_ownership::tests::dc_s2_family_producer_conversion_holds_parent_until_session_release",
+      "storage::maintenance_ownership::tests::dc_s2_family_recreated_coordination_invalidates_destination_proof",
+      "storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use",
+      "storage::maintenance_ownership::tests::dc_s2_family_shared_existing_readable_coordination_requires_no_write_permission"
+    ]
+  },
+  "runtime_parallel": {
+    "passed": 29,
+    "leaky": 3,
+    "log": "run.log",
+    "junit": "junit-parallel.xml"
+  },
+  "runtime_serial": {
+    "passed": 29,
+    "leaky": 0,
+    "log": "run-serial.log",
+    "junit": "junit-serial.xml"
+  },
+  "doctests": {
+    "passed": 3,
+    "log": "doctests.log"
+  },
+  "workspace_all_targets_check": {
+    "passed": true,
+    "existing_dead_code_warnings": 75,
+    "log": "workspace-check.log"
+  },
+  "format": {
+    "passed": true,
+    "log": "fmt.log"
+  },
+  "limitations": [
+    "cfg(windows) implementation and native tests were neither compiled nor executed by Darwin",
+    "UNC preservation is static/source coverage, not native UNC execution",
+    "parallel leaked-output-handle observations remain preserved; serial result is not proof of their root cause",
+    "no fullS2/collector/aggregate qualification"
+  ]
+}

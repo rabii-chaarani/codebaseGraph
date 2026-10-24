@@ -1,0 +1,28 @@
+{
+  "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/codebase_graph-ffa80bf96221ee79",
+  "binary_sha256": "9c17fa8b7204c785f0eab75195233a1b4121349472d1b1da1b57402098b2e4ba",
+  "listed_unit_tests": 561,
+  "selected_cases": [
+    "api::context::tests::dc_epoch_optional_direct_cleanup_keeps_both_runtime_selectors_readable_and_pending: test",
+    "api::context::tests::dc_epoch_optional_managed_cleanup_keeps_runtime_readable_and_pending: test",
+    "storage::maintenance_ownership::tests::dc_epoch_optional_direct_cleanup_preserves_committed_read_but_not_journal_replay: test",
+    "storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue: test",
+    "storage::maintenance_ownership::tests::review_epoch_corrupt_control_blocks_direct_read_with_unpublished_candidate: test",
+    "storage::maintenance_ownership::tests::review_epoch_corrupt_control_blocks_managed_runtime_with_retained_generation: test"
+  ],
+  "review_probe_tests_added": 2,
+  "original_frozen_unit_count": 559,
+  "junit": "/private/tmp/cleanup-s2-read-fix-review-4i1igj5d/junit.xml",
+  "junit_sha256": "640d1dc448e77ea726b0468255a488c9badce39a955176e7fa63158263fcdc76",
+  "junit_summary": {
+    "name": "nextest-run",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "uuid": "80fc793e-7da4-425f-a25e-23a7aeec1197",
+    "timestamp": "2026-10-21T04:01:06.534+09:30",
+    "time": "3.167"
+  },
+  "root_rebuilt_from": "/private/tmp/cleanup-s2-read-fix-review-4i1igj5d/repo",
+  "profile_request": "profile.test.package.codebase-graph.codegen-units=129"
+}
