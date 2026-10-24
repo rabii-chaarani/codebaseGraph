@@ -1308,13 +1308,67 @@ pub(super) fn prepare_source_observation(
     ),
     FixedControlError,
 > {
+    let data =
+        prepare_source_observation_boxed(root, gate, state, owner_name, memory)?.into_inner();
+    Ok((data.observed.into_inner(), data.recovery))
+}
+
+/// Off-permit source facts and the existing opaque recovery image. The hot
+/// observe_files/snapshot/codec functions remain allocation-free and unchanged.
+pub(super) struct PreparedSourceObservationData {
+    pub(super) observed: super::maintenance_budget::MemoryBox<Observation>,
+    pub(super) recovery: Option<super::maintenance_budget::MemoryBox<PreparedSourceRecovery>>,
+}
+#[inline(never)]
+fn source_snapshot_boxed(
+    root: &RootedDirectory,
+    gate: &File,
+    state: &File,
+    owner_name: &[u8],
+    memory: &CleanupMemory,
+) -> Result<super::maintenance_budget::MemoryBox<Observation>, FixedControlError> {
+    let observed = observe_source_snapshot(root, gate, state, owner_name, true)?;
+    super::maintenance_budget::MemoryBox::new(observed, memory).map_err(FixedControlError::Resource)
+}
+#[inline(never)]
+pub(super) fn prepare_source_observation_boxed(
+    root: &RootedDirectory,
+    gate: &File,
+    state: &File,
+    owner_name: &[u8],
+    memory: &CleanupMemory,
+) -> Result<super::maintenance_budget::MemoryBox<PreparedSourceObservationData>, FixedControlError>
+{
     let floor = memory
         .reserve(std::mem::size_of::<PreparedSourceRecovery>() * 2 + 16384)
         .map_err(FixedControlError::Resource)?;
-    let before = observe_source_snapshot(root, gate, state, owner_name, true)?;
-    if !before.pending {
-        return Ok((before, None));
-    }
+    let observed = source_snapshot_boxed(root, gate, state, owner_name, memory)?;
+    let recovery = if observed.pending {
+        Some(prepare_pending_source_recovery(
+            root, gate, state, owner_name, &observed, floor, memory,
+        )?)
+    } else {
+        None
+    };
+    super::maintenance_budget::MemoryBox::new(
+        PreparedSourceObservationData { observed, recovery },
+        memory,
+    )
+    .map_err(FixedControlError::Resource)
+}
+
+// Pending slot/commit images exist only after the snapshot stage returned;
+// they cannot multiply the stack above immutable source decoding.
+#[inline(never)]
+fn prepare_pending_source_recovery(
+    root: &RootedDirectory,
+    gate: &File,
+    state: &File,
+    owner_name: &[u8],
+    before: &Observation,
+    floor: super::maintenance_budget::MemoryReservation,
+    memory: &CleanupMemory,
+) -> Result<super::maintenance_budget::MemoryBox<PreparedSourceRecovery>, FixedControlError> {
     let mut intent = [0; codec::INTENT_BYTES];
     locks::read_fixed_range(state, SELECTOR + codec::COMMIT_BYTES as u64, &mut intent)?;
     let fact = codec::decode_intent(&intent, &before.binding.nonce)
@@ -1337,7 +1391,7 @@ pub(super) fn prepare_source_observation(
     before.state_stamp.recheck(state)?;
     let prepared = super::maintenance_budget::MemoryBox::new(
         PreparedSourceRecovery {
-            before,
+            before: *before,
             after,
             commit,
             slot,
@@ -1349,8 +1403,9 @@ pub(super) fn prepare_source_observation(
         memory,
     )
     .map_err(FixedControlError::Resource)?;
-    Ok((before, Some(prepared)))
+    Ok(prepared)
 }
+
 impl PreparedSourceRecovery {
     pub(super) fn apply(
         &self,
@@ -1417,4 +1472,20 @@ fn recognized_source_binding(
                 == Some(binding.owner_nonce))
     };
     check().unwrap_or(false)
+}
+
+#[cfg(test)]
+mod source_observation_layout_tests {
+    use super::*;
+    #[test]
+    fn prepared_source_observation_keeps_snapshot_and_recovery_images_boxed() {
+        // Measured fixed owner is48B on the qualified local compiler/target;
+        // larger protocol images must not be copied above hot snapshot reads.
+        assert!(std::mem::size_of::<PreparedSourceObservationData>() <= 128);
+        let _: fn(PreparedSourceObservationData) = |data| {
+            let _: super::super::maintenance_budget::MemoryBox<Observation> = data.observed;
+            let _: Option<super::super::maintenance_budget::MemoryBox<PreparedSourceRecovery>> =
+                data.recovery;
+        };
+    }
 }

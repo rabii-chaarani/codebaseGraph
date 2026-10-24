@@ -388,12 +388,18 @@ fn prepare_legacy_scope_layout(
     .map_err(FixedControlError::Resource)
 }
 #[inline(never)]
-fn prepare_legacy_scope_source(
-    prepared: &mut PreparedLegacyScope,
-    target: &MaintenanceTarget,
+fn pending_scope_capsule_boxed(
+    prepared: &PreparedLegacyScope,
     memory: &CleanupMemory,
-) -> Result<(), FixedControlError> {
-    let pending_capsule = {
+) -> Result<
+    Option<
+        super::maintenance_budget::MemoryBox<
+            super::maintenance_legacy_guard::SourceCreationCapsule,
+        >,
+    >,
+    FixedControlError,
+> {
+    let capsule = {
         let directory = RootedDirectory::open_readonly_root(
             &prepared.root,
             prepared.entries[0].stamp.unwrap().identity(),
@@ -409,26 +415,40 @@ fn prepare_legacy_scope_source(
             Err(e) => return Err(e.into()),
         }
     };
+    capsule
+        .map(|capsule| {
+            super::maintenance_budget::MemoryBox::new(capsule, memory)
+                .map_err(FixedControlError::Resource)
+        })
+        .transpose()
+}
+#[inline(never)]
+fn prepare_legacy_scope_source(
+    prepared: &mut PreparedLegacyScope,
+    target: &MaintenanceTarget,
+    memory: &CleanupMemory,
+) -> Result<(), FixedControlError> {
+    let pending_capsule = pending_scope_capsule_boxed(prepared, memory)?;
     prepared.confirmation_source = if prepared.kind == LegacyScopeKind::DefaultDirect {
-        if let Some(capsule) = pending_capsule {
+        if let Some(capsule) = pending_capsule.as_ref() {
             capsule.permission.root_default_source
-        } else if let Some((_, record)) =
+        } else if let Some(accepted) =
             accepted_source_observation(&prepared.root, &prepared.paths, false, memory)?.filter(
-                |(_, record)| record.phase != LegacyPhase::Active || record.operator_pending,
+                |accepted| accepted.1.phase != LegacyPhase::Active || accepted.1.operator_pending,
             )
         {
-            record.root_default_source
+            accepted.1.root_default_source
         } else {
             Some(super::maintenance_admission::capture_legacy_confirmation_source(target, memory)?)
         }
     } else {
         None
     };
-    if let Some(capsule) = pending_capsule {
+    if let Some(capsule) = pending_capsule.as_ref() {
         prepared.job = capsule.permission.job;
     }
     let observed_job = accepted_source_observation(&prepared.root, &prepared.paths, false, memory)?
-        .map(|(_, record)| record.job)
+        .map(|accepted| accepted.1.job)
         .unwrap_or(prepared.job);
     prepared.nonce = existing_coordination_nonce(&prepared.paths[0])?.unwrap_or(prepared.nonce);
     prepared.owner_nonce =
@@ -2427,18 +2447,26 @@ mod tests {
     }
 }
 
+#[inline(never)]
+fn source_observation_scratch_boxed(
+    memory: &CleanupMemory,
+) -> Result<super::maintenance_budget::MemoryBox<FixedControlScratch>, FixedControlError> {
+    let scratch = FixedControlScratch::new(
+        memory
+            .reserve(FixedControlScratch::required_bytes())
+            .map_err(FixedControlError::Resource)?,
+    )?;
+    super::maintenance_budget::MemoryBox::new(scratch, memory).map_err(FixedControlError::Resource)
+}
+#[inline(never)]
 fn accepted_source_observation(
     root_path: &Path,
     paths: &[PathBuf; 3],
     _staging: bool,
     memory: &CleanupMemory,
-) -> Result<Option<(Binding, Record)>, FixedControlError> {
+) -> Result<Option<super::maintenance_budget::MemoryBox<(Binding, Record)>>, FixedControlError> {
     let _floor = memory.reserve(24576).map_err(FixedControlError::Resource)?;
-    let mut scratch = FixedControlScratch::new(
-        memory
-            .reserve(FixedControlScratch::required_bytes())
-            .map_err(FixedControlError::Resource)?,
-    )?;
+    let mut scratch = source_observation_scratch_boxed(memory)?;
     let root_file = match locks::open_fixed_control(root_path, Kind::Directory, false, &mut scratch)
     {
         Ok(f) => f,
@@ -2469,7 +2497,7 @@ fn accepted_source_observation(
         }
         Err(e) => return Err(e),
     };
-    match super::maintenance_legacy_guard::prepare_source_observation(
+    match super::maintenance_legacy_guard::prepare_source_observation_boxed(
         &root,
         gate.file(),
         &state,
@@ -2479,13 +2507,23 @@ fn accepted_source_observation(
             .ok_or_else(|| invalid(Problem::InvalidRecord))?,
         memory,
     ) {
-        Ok((o, _)) => Ok(Some((o.binding, o.record))),
+        Ok(data) => super::maintenance_budget::MemoryBox::new(
+            (data.observed.binding, data.observed.record),
+            memory,
+        )
+        .map(Some)
+        .map_err(FixedControlError::Resource),
         Err(error) => {
             if let Some(capsule) =
                 super::maintenance_legacy_guard::read_creation_capsule(&root, &state)?
             {
                 if locks::created_file_nonce(&state)? == Some(capsule.permission.job) {
-                    return Ok(Some((capsule.template, capsule.permission)));
+                    return super::maintenance_budget::MemoryBox::new(
+                        (capsule.template, capsule.permission),
+                        memory,
+                    )
+                    .map(Some)
+                    .map_err(FixedControlError::Resource);
                 }
             }
             match error {
@@ -2503,11 +2541,11 @@ impl PreparedLegacyScope {
         if !self.binding.is_current()? {
             return Ok(false);
         }
-        let Some((binding, record)) =
-            accepted_source_observation(&self.root, &self.paths, false, memory)?
+        let Some(accepted) = accepted_source_observation(&self.root, &self.paths, false, memory)?
         else {
             return Ok(false);
         };
+        let (binding, record) = *accepted;
         if self.kind == LegacyScopeKind::ManagedAdministration {
             return Ok(binding.kind == self.kind
                 && binding.root == self.entries[0].stamp.unwrap().identity()
@@ -2708,11 +2746,12 @@ pub(crate) fn observe_legacy_source_version(
     if !prepared.binding.is_current()? {
         return Ok(None);
     }
-    let Some((binding, record)) =
+    let Some(accepted) =
         accepted_source_observation(&prepared.root, &prepared.paths, false, memory)?
     else {
         return Ok(None);
     };
+    let (binding, record) = *accepted;
     if binding.kind != prepared.kind
         || binding.root != prepared.entries[0].stamp.unwrap().identity()
         || binding.key != prepared.key
@@ -2732,11 +2771,12 @@ pub(crate) fn observe_legacy_staging_source_version(
     if !prepared.binding.is_current()? {
         return Ok(None);
     }
-    let Some((binding, record)) =
+    let Some(accepted) =
         accepted_source_observation(&prepared.root, &prepared.paths, true, memory)?
     else {
         return Ok(None);
     };
+    let (binding, record) = *accepted;
     if binding.kind != LegacyScopeKind::NativeStaging
         || binding.root != prepared.root_stamp.identity()
         || record.member != prepared.staging_stamp.identity()
@@ -3218,11 +3258,12 @@ pub(crate) fn observe_legacy_member_name(
     if prepared.kind != LegacyScopeKind::ManagedGeneration || !prepared.binding.is_current()? {
         return Ok(None);
     }
-    let Some((binding, record)) =
+    let Some(accepted) =
         accepted_source_observation(&prepared.root, &prepared.paths, false, memory)?
     else {
         return Ok(None);
     };
+    let (binding, record) = *accepted;
     if binding.kind != prepared.kind
         || binding.root != prepared.entries[0].stamp.unwrap().identity()
         || record.member_len == 0
@@ -3234,7 +3275,7 @@ pub(crate) fn observe_legacy_member_name(
 }
 
 struct PreparedSourceObservation {
-    observed: super::maintenance_legacy_guard::Observation,
+    observed: super::maintenance_budget::MemoryBox<super::maintenance_legacy_guard::Observation>,
     recovery: Option<
         super::maintenance_budget::MemoryBox<
             super::maintenance_legacy_guard::PreparedSourceRecovery,
@@ -3282,7 +3323,7 @@ impl PreparedSourceObservation {
                 .ok_or_else(|| invalid(Problem::InvalidRecord))?
                 .as_encoded_bytes(),
         )?;
-        let (observed, recovery) = match super::maintenance_legacy_guard::prepare_source_observation(
+        let data = match super::maintenance_legacy_guard::prepare_source_observation_boxed(
             &root,
             &gate,
             &state,
@@ -3302,6 +3343,8 @@ impl PreparedSourceObservation {
             }
             Err(_) => return Ok(None),
         };
+        let super::maintenance_legacy_guard::PreparedSourceObservationData { observed, recovery } =
+            data.into_inner();
         let gate_header = raw_coordination(&gate)?;
         let owner_header = raw_coordination(&owner)?;
         super::maintenance_budget::MemoryBox::new(
@@ -4153,6 +4196,22 @@ mod cohort_preparation_layout_tests {
             let _: std::cell::RefCell<
                 super::super::maintenance_budget::MemoryBox<PreparedTargetBinding>,
             > = cohort.target_binding;
+        };
+    }
+}
+
+#[cfg(test)]
+mod retained_source_observation_layout_tests {
+    use super::*;
+    #[test]
+    fn retained_source_observer_keeps_snapshot_image_out_of_fixed_owner_layout() {
+        // Measured fixed owner is224B locally; keep its actual source facts in
+        // charged storage without imposing relative sizes on other protocols.
+        assert!(std::mem::size_of::<PreparedSourceObservation>() <= 512);
+        let _: fn(PreparedSourceObservation) = |observation| {
+            let _: super::super::maintenance_budget::MemoryBox<
+                super::super::maintenance_legacy_guard::Observation,
+            > = observation.observed;
         };
     }
 }
