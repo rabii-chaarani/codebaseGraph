@@ -80,15 +80,9 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
     if selected == Cohort::All {
         let mut commands = Vec::new();
         if target == NativeTarget::WindowsX86_64 {
-            let mut regressions: Vec<String> = base
-                .iter()
-                .filter(|s| *s != "--workspace")
-                .cloned()
-                .collect();
+            let mut regressions = base.clone();
             regressions.extend(
                 [
-                    "--package",
-                    "codebase-graph",
                     "--lib",
                     "--",
                     "namespace_flush_accepts",
@@ -259,6 +253,8 @@ mod tests {
         let commands = commands(NativeTarget::WindowsX86_64, Cohort::All, &[]);
         assert_eq!(commands.len(), 2);
         assert!(commands[0].contains(&"--lib".into()));
+        assert!(commands[0].contains(&"--workspace".into()));
+        assert!(!commands[0].contains(&"--package".into()));
         assert!(commands[0].contains(&"--".into()));
         assert!(commands[1].contains(&"--workspace".into()));
         assert!(!commands[1].contains(&"--".into()));
