@@ -4419,7 +4419,7 @@ pub(crate) mod tests {
         drop(open_locked(lifecycle.join("lease"), LockMode::Exclusive).unwrap());
         let descriptor = BuildDescriptorV2 {
             version: 2,
-            build_id: "build".into(),
+            build_id: "a".repeat(64),
             lifecycle_dir: lifecycle.clone(),
             endpoint: "unused".into(),
             nonce: "unused".into(),

@@ -1415,6 +1415,9 @@ impl GenerationRetirementGate {
                 directory.unlink_file(names[i].0, names[i].1.unwrap())?;
             }
         }
+        // Names are gone under the retained writer/startup gate. Windows must
+        // release descendant handles before removing their containing directory.
+        drop(held);
         grant.check_time().map_err(grant_error)?;
         directory.sync_namespace()?;
         let generations = root.open_directory(b"generations")?;
