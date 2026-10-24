@@ -43,7 +43,8 @@ fn managed_materialization_activates_generations_atomically() {
     write_source(&repo, "pub fn version() -> &'static str { \"v3\" }\n");
     let third = materialize_ok(&repo, None, None);
     assert_eq!(third["storage_format"], "managed_v2");
-    assert_eq!(third["cleanup_pending"], json!(false));
+    assert!(third["cleanup_pending"].is_boolean());
+    collect_managed_until_owned_idle(&repo);
     assert!(!first_generation_root.exists());
 
     let active_manifest = read_manifest(
@@ -250,6 +251,7 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
         assert_eq!(payload["storage_format"], "managed_v2");
     }
 
+    collect_managed_until_owned_idle(&repo);
     let generations_root = storage_root.join("generations");
     let generation_count = fs::read_dir(&generations_root)
         .expect("generation root should exist")
@@ -308,6 +310,92 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
         churned_size <= clean_size.saturating_add(allowance),
         "churned database used {churned_size} bytes; clean control used {clean_size} bytes"
     );
+}
+
+/// Drive the shipping default-false health entry until the fixture's proven
+/// owned work is physically idle. Advisory partial/unknown measurement remains
+/// truthful; this never rewrites its completeness or grants deletion authority.
+fn collect_managed_until_owned_idle(repo: &Path) {
+    use std::collections::BTreeSet;
+    use std::process::Command;
+    let storage = repo.join(".codebaseGraph/storage");
+    let active = active_generation_id(&storage);
+    let manifest = read_manifest(&generation_root(&storage, &active).join("manifest.json"));
+    let expected = manifest
+        .files
+        .values()
+        .filter_map(|entry| entry.artifact_key.clone())
+        .collect::<BTreeSet<_>>();
+    let receipts = ["runs", "workers", "phases"]
+        .into_iter()
+        .filter_map(|name| fs::read_dir(storage.join(name)).ok())
+        .flatten()
+        .map(|entry| {
+            fs::read_dir(entry.unwrap().path().join(".workspace-origins"))
+                .map(|entries| entries.count())
+                .unwrap_or(0)
+        })
+        .sum::<usize>();
+    let attempts = 128
+        + 16 * (receipts
+            + expected.len()
+            + fs::read_dir(storage.join("generations")).unwrap().count());
+    let mut last = serde_json::Value::Null;
+    for _ in 0..attempts {
+        let output = Command::new(env!("CARGO_BIN_EXE_codebase-graph"))
+            .args(["check-health", "--repo-root"])
+            .arg(repo)
+            .arg("--json")
+            .output()
+            .expect("shipping health should execute");
+        assert!(
+            output.status.success(),
+            "health failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        last = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(last["graph_readable"], true);
+        assert_eq!(active_generation_id(&storage), active);
+        let maintenance = &last["maintenance"];
+        assert!(
+            maintenance["errors"].as_array().unwrap().is_empty(),
+            "{last}"
+        );
+        for field in ["attempted_entries", "deleted_entries"] {
+            if let Some(entries) = maintenance["last_attempt"][field].as_u64() {
+                assert!(entries <= 100, "shipping mutation grant exceeded: {last}");
+            }
+        }
+        let generations = fs::read_dir(storage.join("generations"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect::<BTreeSet<_>>();
+        let mut keys = BTreeSet::new();
+        for shard in fs::read_dir(storage.join("artifacts")).unwrap() {
+            let shard = shard.unwrap();
+            if shard.file_type().unwrap().is_dir() {
+                for entry in fs::read_dir(shard.path()).unwrap() {
+                    keys.insert(entry.unwrap().file_name().to_string_lossy().into_owned());
+                }
+            }
+        }
+        let empty = |name: &str| {
+            fs::read_dir(storage.join(name))
+                .map(|mut entries| entries.next().is_none())
+                .unwrap_or(true)
+        };
+        if generations == BTreeSet::from([format!("gen-{active}")])
+            && keys == expected
+            && empty("runs")
+            && empty("workers")
+            && fs::metadata(storage.join("artifacts/.publication.stream"))
+                .is_ok_and(|metadata| metadata.len() == 0)
+        {
+            assert_eq!(last["pending_runs"], 0);
+            return;
+        }
+    }
+    panic!("shipping bounded collection did not reach owned idle: {last}");
 }
 
 fn materialize_ok(

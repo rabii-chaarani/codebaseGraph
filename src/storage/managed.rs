@@ -6,8 +6,8 @@ use crate::storage::layout::{
     GenerationPaths, ManagedLayout,
 };
 use crate::storage::locks::{
-    open_locked, try_open_locked, try_open_locked_in_existing_parent, LockMode, LockedFile,
-    StateLease, WriterLease,
+    open_locked, try_open_existing_locked, try_open_locked, LockMode, LockedFile, StateLease,
+    WriterLease,
 };
 use crate::storage::run_workspace::{
     remove_run_root_confined, RunJournal, RunPhase, RunWorkspace, RunWorkspaceRecovery,
@@ -77,27 +77,24 @@ struct SearchBackendEnvelope {
 #[derive(Debug)]
 pub(crate) struct GenerationLease {
     lock: Option<LockedFile>,
-    store: ManagedStore,
-    generation_id: String,
+    _database_use: [super::maintenance_ownership::DatabaseUseLease; 2],
 }
-
 impl GenerationLease {
-    fn new(lock: LockedFile, store: ManagedStore, generation_id: String) -> Self {
+    fn new(
+        lock: Option<LockedFile>,
+        database_use: [super::maintenance_ownership::DatabaseUseLease; 2],
+    ) -> Self {
         Self {
-            lock: Some(lock),
-            store,
-            generation_id,
+            lock,
+            _database_use: database_use,
         }
     }
 }
-
 impl Drop for GenerationLease {
     fn drop(&mut self) {
+        // Reader release is only lease release. The joined controller observes
+        // the completion opportunity; no unbounded janitor runs in a destructor.
         drop(self.lock.take());
-        if self.store.layout.storage_root().exists() {
-            self.store
-                .best_effort_cleanup_generation(&self.generation_id);
-        }
     }
 }
 
@@ -111,8 +108,10 @@ pub(crate) enum StorageMode {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct ManagedCleanupReport {
     pub run_recovery: RunWorkspaceRecovery,
+    #[cfg(test)]
     pub retired_deleted: usize,
     pub retired_pending: usize,
+    #[cfg(test)]
     pub retired_generations_deleted: usize,
     pub retired_generations_pending: usize,
 }
@@ -122,8 +121,10 @@ pub(crate) enum ManagedJanitorStage {
     PreviousRetirementMarker,
     PublishedRunJournal,
     TerminalRunRemoval,
+    #[cfg(test)]
     GenerationEnumeration,
     RetiredGenerationRemoval,
+    GenerationDisposition,
 }
 impl ManagedJanitorStage {
     pub(crate) fn reason(self) -> &'static str {
@@ -131,8 +132,10 @@ impl ManagedJanitorStage {
             Self::PreviousRetirementMarker => "managed_previous_retirement_pending",
             Self::PublishedRunJournal => "managed_run_journal_pending",
             Self::TerminalRunRemoval => "managed_run_cleanup_pending",
+            #[cfg(test)]
             Self::GenerationEnumeration => "managed_generation_observation_pending",
             Self::RetiredGenerationRemoval => "managed_generation_cleanup_pending",
+            Self::GenerationDisposition => "managed_generation_disposition_pending",
         }
     }
 }
@@ -164,6 +167,10 @@ impl ManagedJanitorReport {
         }
         self.pending |= pending;
     }
+    pub(crate) fn record_generation_disposition_failure(&mut self, error: NativeError) {
+        self.issue(ManagedJanitorStage::GenerationDisposition, error, true);
+    }
+
     pub(crate) fn merge_latest(&mut self, mut latest: Self) {
         self.issue_count = self.issue_count.saturating_add(latest.issue_count);
         if self.first_issue.is_none() {
@@ -188,6 +195,7 @@ impl ManagedJanitorReport {
         self.observation_complete &= latest.observation_complete;
         self.deferred_reason = latest.deferred_reason.or(self.deferred_reason);
     }
+    #[cfg(test)]
     fn into_legacy(mut self) -> Result<ManagedCleanupReport, NativeError> {
         match self.first_issue.take() {
             Some(issue) => Err(issue.source),
@@ -285,6 +293,7 @@ pub(crate) struct ManagedWriteSession {
     pub base_generation: Option<ActiveGeneration>,
     ready: bool,
     finished: bool,
+    #[cfg(test)]
     publication_report: Option<ManagedJanitorReport>,
 }
 
@@ -347,11 +356,23 @@ impl ManagedWriteSession {
         result
     }
 
+    #[cfg(test)]
     pub(crate) fn publish_with_stats<S: GenerationStats>(
         &mut self,
         graph_summary: &S,
     ) -> Result<String, NativeError> {
-        let publication = self.publish_with_stats_typed(graph_summary)?;
+        let mut publication = self.publish_with_stats_typed(graph_summary)?;
+        // Explicit historical adapter only: production publication waits for
+        // native verification before genuine generation disposition is sealed.
+        if let Err(error) = self.store.finalize_previous_retirement(
+            self.base_generation
+                .as_ref()
+                .map(|active| active.generation_id.as_str()),
+        ) {
+            publication
+                .janitor
+                .issue(ManagedJanitorStage::PreviousRetirementMarker, error, true);
+        }
         self.publication_report = Some(publication.janitor);
         Ok(publication.generation_id)
     }
@@ -390,6 +411,12 @@ impl ManagedWriteSession {
             }
         };
         let generation_id = self.candidate.generation_id.clone();
+        if self.base_generation.is_some() {
+            janitor.pending = true;
+            janitor.legacy.retired_pending = 1;
+            janitor.legacy.retired_generations_pending = 1;
+            janitor.deferred_reason = Some("managed_generation_collection_deferred");
+        }
         #[cfg(test)]
         MANAGED_POST_PUBLICATION.with(|hook| {
             if let Some(hook) = hook.take() {
@@ -414,12 +441,20 @@ impl ManagedWriteSession {
         })
     }
 
+    pub(crate) fn phase_owner_scope(&self) -> Option<super::run_workspace::ParentRunScope> {
+        self.workspace.as_ref()?.phase_owner_scope()
+    }
+
     pub(crate) fn reconcile_typed(&self) -> Result<ManagedReconciliation, NativeError> {
         let writer = self.writer_lease()?;
-        self.store.cleanup_with_owned_writer_typed(writer)
+        self.store.recover_required_with_owned_writer(writer)
     }
+    #[cfg(test)]
     pub(crate) fn recover_and_gc(&self) -> Result<ManagedCleanupReport, NativeError> {
-        self.reconcile_typed()?.janitor.into_legacy()
+        self.store
+            .cleanup_with_owned_writer_typed(self.writer_lease()?)?
+            .janitor
+            .into_legacy()
     }
     pub(crate) fn check_active_generation(&self, expected: &str) -> Result<(), NativeError> {
         let active = self.store.read_active_with_shared_lock()?;
@@ -437,6 +472,7 @@ impl ManagedWriteSession {
         drop(self.writer_lease.take());
     }
 
+    #[cfg(test)]
     pub(crate) fn finish(mut self) {
         let _legacy_report = self.publication_report.take();
         self.finished = true;
@@ -489,20 +525,36 @@ thread_local! { static MANAGED_FAULT: std::cell::Cell<ManagedFault> = const { st
 #[cfg(test)]
 thread_local! {
     static MANAGED_POST_PUBLICATION: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
-    static MANAGED_BEST_EFFORT_ENTRIES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 #[cfg(test)]
 pub(crate) fn set_managed_cleanup_hook(hook: fn(&Path)) {
     MANAGED_POST_PUBLICATION.with(|value| value.set(Some(hook)));
 }
 #[cfg(test)]
-pub(crate) fn reset_best_effort_entries() {
-    MANAGED_BEST_EFFORT_ENTRIES.with(|value| value.set(0));
+static SCOPED_MANAGED_SYNC_FAULT: std::sync::Mutex<Option<super::locks::FileIdentity>> =
+    std::sync::Mutex::new(None);
+#[cfg(test)]
+pub(crate) struct ScopedManagedSyncFault(Option<super::locks::FileIdentity>);
+#[cfg(test)]
+impl Drop for ScopedManagedSyncFault {
+    fn drop(&mut self) {
+        *SCOPED_MANAGED_SYNC_FAULT
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = self.0;
+    }
 }
 #[cfg(test)]
-pub(crate) fn best_effort_entries() -> usize {
-    MANAGED_BEST_EFFORT_ENTRIES.with(|value| value.get())
+pub(crate) fn inject_scoped_managed_sync_fault(
+    root: &Path,
+) -> Result<ScopedManagedSyncFault, NativeError> {
+    let identity = super::locks::path_identity(root)?;
+    let mut current = SCOPED_MANAGED_SYNC_FAULT
+        .lock()
+        .unwrap_or_else(|error| error.into_inner());
+    let previous = current.replace(identity);
+    Ok(ScopedManagedSyncFault(previous))
 }
+
 #[cfg(test)]
 pub(crate) struct ManagedFaultReset(ManagedFault);
 #[cfg(test)]
@@ -643,6 +695,7 @@ impl ManagedStore {
             base_generation,
             ready: false,
             finished: false,
+            #[cfg(test)]
             publication_report: None,
         })
     }
@@ -656,19 +709,55 @@ impl ManagedStore {
     }
 
     pub(crate) fn resolve_active_read(&self) -> Result<Option<ManagedReadSnapshot>, NativeError> {
+        // A read probe before first publication must not create the storage
+        // root/state lock: doing so would erase the later genuine producer's
+        // exclusive root-creation event and leave its outputs untracked.
+        match fs::symlink_metadata(self.layout.active_pointer_path()) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error.into()),
+            Ok(_) => {}
+        }
         let _state_lease = self.open_state_lock(LockMode::Shared)?;
         let Some(active) = self.read_active_generation()? else {
             return Ok(None);
         };
         let generation = self.layout.generation(&active.generation_id)?;
+        let root = fs::symlink_metadata(generation.root())?;
+        if !root.is_dir() || root.file_type().is_symlink() {
+            return Err(NativeError::InvalidInput(
+                "managed generation root is not an owned directory".into(),
+            ));
+        }
+        let lock = super::locks::open_shared_coordination(&generation.lease_path()).ok();
+        // Missing/unwritable optional generation coordination must not deny an
+        // otherwise committed read. Actual physical DB/manifest family guards
+        // protect this snapshot even in that legacy/unknown metadata case.
+        let database_use = [
+            super::maintenance_ownership::DatabaseUseLease::acquire_shared(&generation.db_path())?,
+            super::maintenance_ownership::DatabaseUseLease::acquire_shared(
+                &generation.manifest_path(),
+            )?,
+        ];
+        // Fixed, noncreating optional metadata observation while the actual
+        // generation lease is held. Only a verified FINAL blocks late reads;
+        // untracked/unknown optional records cannot deny a committed read.
+        if let Ok(memory) = super::maintenance_budget::CleanupMemory::new(64 * 1024) {
+            if matches!(
+                super::maintenance_generation_gate::observe_generation_disposition(
+                    &self.layout,
+                    &generation,
+                    &memory
+                ),
+                Ok(super::maintenance_generation_gate::GenerationDisposition::Final)
+            ) {
+                return Err(NativeError::InvalidInput(
+                    "managed graph generation was retired; rebuild required".into(),
+                ));
+            }
+        }
         validate_ready_generation(&generation)?;
         let metadata = read_generation_metadata(&generation)?;
-        let lock = open_locked(generation.lease_path(), LockMode::Shared)?;
-        let lease = Arc::new(GenerationLease::new(
-            lock,
-            self.clone(),
-            active.generation_id.clone(),
-        ));
+        let lease = Arc::new(GenerationLease::new(lock, database_use));
         Ok(Some(ManagedReadSnapshot {
             generation_id: active.generation_id,
             db_path: generation.db_path(),
@@ -680,9 +769,98 @@ impl ManagedStore {
         }))
     }
 
+    /// Committed readers resolve only required transactions. Optional generation
+    /// metadata and janitor traversal never gate opening an existing graph.
+    fn has_existing_run_work(&self) -> Result<bool, NativeError> {
+        match fs::symlink_metadata(self.layout.runs_root()) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(error) => Err(error.into()),
+            Ok(_) => self.has_reference_run_work(),
+        }
+    }
+    fn deferred_required_report(
+        reason: &'static str,
+        pending: bool,
+        recovery_complete: bool,
+    ) -> ManagedReconciliation {
+        ManagedReconciliation::new(
+            ManagedRecoveryReport {
+                observation_complete: recovery_complete,
+                ..ManagedRecoveryReport::default()
+            },
+            ManagedJanitorReport {
+                deferred_reason: Some(reason),
+                pending,
+                ..ManagedJanitorReport::default()
+            },
+        )
+    }
+    pub(crate) fn recover_for_read(&self) -> Result<ManagedReconciliation, NativeError> {
+        if !self.has_existing_run_work()? {
+            return Ok(Self::deferred_required_report(
+                "managed_janitor_deferred",
+                false,
+                true,
+            ));
+        }
+        let Some(writer) = try_open_locked(self.layout.writer_lock_path(), LockMode::Exclusive)?
+        else {
+            return Ok(Self::deferred_required_report(
+                "managed_writer_busy",
+                true,
+                false,
+            ));
+        };
+        self.recover_required_with_owned_writer(&writer)
+    }
+    fn recover_required_with_owned_writer(
+        &self,
+        _writer: &WriterLease,
+    ) -> Result<ManagedReconciliation, NativeError> {
+        let mut result = Self::deferred_required_report("managed_janitor_deferred", false, true);
+        if !self.has_existing_run_work()? {
+            return Ok(result);
+        }
+        result.janitor.pending = true;
+        if !matches!(
+            probe_registry(&self.layout.phase_workspace_root()),
+            Ok(true)
+        ) {
+            return Ok(Self::deferred_required_report(
+                "managed_containment_unresolved",
+                true,
+                false,
+            ));
+        }
+        let domain = super::maintenance_ownership::ReferenceDomain::managed(&self.layout)?;
+        let _mutation =
+            match super::maintenance_ownership::ReferenceMutation::try_begin_in_domain(&domain) {
+                Ok(Some(mutation)) => mutation,
+                Ok(None) | Err(_) => {
+                    return Ok(Self::deferred_required_report(
+                        "managed_reference_control_unavailable",
+                        true,
+                        false,
+                    ))
+                }
+            };
+        let _state = self.open_state_lock(LockMode::Exclusive)?;
+        let mut active = self.read_active_generation()?;
+        self.recover_runs_locked_typed(
+            &mut active,
+            &mut result.janitor,
+            &mut result.recovery,
+            false,
+            &_mutation,
+        )?;
+        Ok(ManagedReconciliation::new(result.recovery, result.janitor))
+    }
+
+    #[cfg(test)]
     pub(crate) fn cleanup(&self) -> Result<ManagedCleanupReport, NativeError> {
         self.cleanup_typed()?.janitor.into_legacy()
     }
+    #[cfg(test)]
     pub(crate) fn cleanup_typed(&self) -> Result<ManagedReconciliation, NativeError> {
         self.ensure_layout()?;
         let Some(writer) = try_open_locked(self.layout.writer_lock_path(), LockMode::Exclusive)?
@@ -691,6 +869,7 @@ impl ManagedStore {
         };
         self.cleanup_with_owned_writer_typed(&writer)
     }
+    #[cfg(test)]
     fn cleanup_with_owned_writer_typed(
         &self,
         _writer: &WriterLease,
@@ -748,7 +927,7 @@ impl ManagedStore {
             observation_complete: true,
             ..ManagedRecoveryReport::default()
         };
-        self.recover_runs_locked_typed(&mut active, &mut report, &mut recovery)
+        self.recover_runs_locked_typed(&mut active, &mut report, &mut recovery, true, &_mutation)
             .map_err(|primary| append_janitor_secondary(primary, &mut report))?;
         if report.first_issue.is_none() {
             if let Err(error) = self.collect_retired_generations_locked(
@@ -768,6 +947,7 @@ impl ManagedStore {
             report.legacy.retired_pending > 0 || report.legacy.run_recovery.skipped_locked > 0;
         Ok(ManagedReconciliation::new(recovery, report))
     }
+    #[cfg(test)]
     fn pending_reconciliation_with_issue(
         &self,
         reason: &'static str,
@@ -790,6 +970,7 @@ impl ManagedStore {
         }
         Ok(false)
     }
+    #[cfg(test)]
     fn has_generation_cleanup_work(&self, active: Option<&str>) -> Result<bool, NativeError> {
         #[cfg(test)]
         managed_fault(ManagedFault::GenerationScan)?;
@@ -816,6 +997,7 @@ impl ManagedStore {
         }
         Ok(false)
     }
+    #[cfg(test)]
     fn pending_reconciliation(
         &self,
         reason: &'static str,
@@ -942,16 +1124,11 @@ impl ManagedStore {
             .read_active_generation()
             .map_err(PublicationFailure::before)?;
         let journal = workspace.journal().map_err(PublicationFailure::before)?;
-        let resolution =
-            self.finish_run_transaction_locked(&journal, workspace.root(), &mut active, false)?;
-        let mut report = ManagedJanitorReport::complete();
-        self.finish_run_janitor_locked(
-            workspace.root(),
-            resolution,
-            active.as_ref().map(|a| a.generation_id.as_str()),
-            false,
-            &mut report,
-        );
+        self.finish_run_transaction_locked(&journal, workspace.root(), &mut active, false)?;
+        // No optional predecessor marker/removal occurs before the API proves
+        // native coherence. Its NativeVerifiedGeneration capability is the
+        // sole production entry to new Origin/FINAL disposition.
+        let report = ManagedJanitorReport::complete();
         debug_assert_eq!(
             active.as_ref().map(|a| a.generation_id.as_str()),
             Some(candidate.generation_id.as_str())
@@ -964,6 +1141,8 @@ impl ManagedStore {
         active: &mut Option<ActiveGeneration>,
         report: &mut ManagedJanitorReport,
         recovery: &mut ManagedRecoveryReport,
+        perform_janitor: bool,
+        mutation: &super::maintenance_ownership::ReferenceMutation<'_>,
     ) -> Result<(), NativeError> {
         let runs_root = self.layout.runs_root();
         for entry in fs::read_dir(&runs_root)? {
@@ -991,22 +1170,20 @@ impl ManagedStore {
                 continue;
             }
 
-            // A cleanup reader must not recreate a workspace that disappeared
-            // after read_dir observed it.
-            let lease = match try_open_locked_in_existing_parent(
-                path.join("lease.lock"),
-                LockMode::Exclusive,
-            ) {
-                Ok(Some(lease)) => lease,
-                Ok(None) => {
-                    report.legacy.run_recovery.skipped_locked += 1;
-                    recovery.skipped_locked += 1;
-                    recovery.observation_complete = false;
-                    continue;
-                }
-                Err(error) if is_not_found_error(&error) => continue,
-                Err(error) => return Err(error),
-            };
+            // Neither a vanished parent nor a lease removed by cooperative
+            // retirement may be recreated by an ordinary recovery reader.
+            let lease =
+                match try_open_existing_locked(&path.join("lease.lock"), LockMode::Exclusive) {
+                    Ok(Some(lease)) => lease,
+                    Ok(None) => {
+                        report.legacy.run_recovery.skipped_locked += 1;
+                        recovery.skipped_locked += 1;
+                        recovery.observation_complete = false;
+                        continue;
+                    }
+                    Err(error) if is_not_found_error(&error) => continue,
+                    Err(error) => return Err(error),
+                };
             let expected_domain =
                 super::maintenance_ownership::ReferenceDomain::managed(&self.layout)?;
             match RunWorkspace::reference_domain(&path)? {
@@ -1019,6 +1196,38 @@ impl ManagedStore {
                     continue;
                 }
             }
+            // Optional registration damage must not preempt required journal
+            // replay. A validated owner-terminal control, however, is the
+            // actual resolution receipt and prevents replay on later reads.
+            let registration = if !perform_janitor {
+                match super::maintenance_controls::WorkspaceRegistration::recover_run(
+                    &path,
+                    &expected_domain,
+                    &lease,
+                    mutation,
+                )
+                .and_then(|registration| {
+                    let terminal = registration
+                        .as_ref()
+                        .map(|registration| registration.terminal_complete())
+                        .transpose()?
+                        .unwrap_or(false);
+                    Ok((registration, terminal))
+                }) {
+                    Ok((_, true)) => {
+                        report.pending = true;
+                        report.observation_complete = false;
+                        continue;
+                    }
+                    Ok((registration, false)) => registration,
+                    Err(error) => {
+                        report.issue(ManagedJanitorStage::TerminalRunRemoval, error, true);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
             let journal = match read_run_journal_or_default(&path, name) {
                 Ok(journal) => journal,
                 Err(error) if is_not_found_error(&error) => {
@@ -1040,6 +1249,58 @@ impl ManagedStore {
             } else {
                 None
             };
+            if !perform_janitor {
+                if let (Some(registration), Some(resolution)) = (&registration, &resolution) {
+                    let disposition = match resolution {
+                        RunResolution::Committed { .. } => {
+                            super::maintenance_controls::WorkspaceDisposition::PublishedConsumed
+                        }
+                        RunResolution::Obsolete { .. } => {
+                            super::maintenance_controls::WorkspaceDisposition::AbortedNotPublished
+                        }
+                    };
+                    let closure = (|| -> Result<(), NativeError> {
+                        registration.source_change(&lease, mutation, false, true)?;
+                        // Publishing closes ordinary metadata startup before its
+                        // old journal write. Recovery must produce its own resolved
+                        // journal and creator token; observing that old inode is
+                        // never metadata ownership or a terminal receipt.
+                        let resolved = RunJournal {
+                            run_id: journal.run_id.clone(),
+                            phase: match resolution {
+                                RunResolution::Committed { .. } => RunPhase::Published,
+                                RunResolution::Obsolete { .. } => RunPhase::Failed,
+                            },
+                            base_generation_id: journal.base_generation_id.clone(),
+                            candidate_generation_id: journal.candidate_generation_id.clone(),
+                            active_generation_id: active.as_ref().map(|a| a.generation_id.clone()),
+                            last_error: None,
+                        };
+                        let publication = crate::process_lifecycle::write_private_json_recorded(
+                            &path.join("journal.json"),
+                            &resolved,
+                        )
+                        .map_err(NativeError::InvalidInput)?
+                        .ok_or_else(|| {
+                            NativeError::InvalidInput(
+                                "recovered journal creation is unverified".into(),
+                            )
+                        })?;
+                        registration.record_metadata(&lease, mutation, &publication)?;
+                        sync_dir(&path)?;
+                        registration.terminal(&lease, mutation, disposition)
+                    })();
+                    if let Err(error) = closure {
+                        report.issue(ManagedJanitorStage::TerminalRunRemoval, error, true);
+                    }
+                }
+                // This run was actually locked and its required transaction
+                // was resolved. Retaining it for bounded optional collection
+                // does not invent a skipped/live recovery lock.
+                report.pending = true;
+                report.observation_complete = false;
+                continue;
+            }
             drop(lease);
             if let Some(resolution) = resolution {
                 self.finish_run_janitor_locked(
@@ -1292,6 +1553,16 @@ impl ManagedStore {
     }
     fn complete_root_sync(&self) -> Result<(), NativeError> {
         #[cfg(test)]
+        if SCOPED_MANAGED_SYNC_FAULT
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .is_some_and(|identity| {
+                super::locks::path_identity(self.layout.storage_root()).ok() == Some(identity)
+            })
+        {
+            return Err(std::io::Error::other("injected mandatory managed sync failure").into());
+        }
+        #[cfg(test)]
         managed_fault(ManagedFault::MandatorySync)?;
         sync_dir(self.layout.storage_root())
     }
@@ -1315,6 +1586,7 @@ impl ManagedStore {
         Ok(())
     }
 
+    #[cfg(test)]
     fn collect_retired_generations_locked(
         &self,
         active_id: Option<&str>,
@@ -1391,58 +1663,6 @@ impl ManagedStore {
             removal?;
         }
         Ok(())
-    }
-
-    fn best_effort_cleanup_generation(&self, generation_id: &str) {
-        let Ok(Some(_writer_lease)) =
-            try_open_locked(self.layout.writer_lock_path(), LockMode::Exclusive)
-        else {
-            return;
-        };
-        #[cfg(test)]
-        MANAGED_BEST_EFFORT_ENTRIES.with(|value| value.set(value.get().saturating_add(1)));
-        if !matches!(
-            probe_registry(&self.layout.phase_workspace_root()),
-            Ok(true)
-        ) {
-            return;
-        }
-        if self
-            .read_active_generation()
-            .ok()
-            .flatten()
-            .as_ref()
-            .is_some_and(|active| active.generation_id == generation_id)
-        {
-            return;
-        }
-        let Ok(domain) = super::maintenance_ownership::ReferenceDomain::managed(&self.layout)
-        else {
-            return;
-        };
-        let Ok(Some(_mutation)) =
-            super::maintenance_ownership::ReferenceMutation::try_begin_in_domain(&domain)
-        else {
-            return;
-        };
-        let Ok(Some(_state_lock)) =
-            try_open_locked(self.layout.state_lock_path(), LockMode::Exclusive)
-        else {
-            return;
-        };
-        let Ok(active) = self.read_active_generation() else {
-            return;
-        };
-        if active.as_ref().map(|value| value.generation_id.as_str()) == Some(generation_id) {
-            return;
-        }
-        let Ok(generation) = self.layout.generation(generation_id) else {
-            return;
-        };
-        let _ = self.retire_or_delete_generation_locked(
-            &generation,
-            active.as_ref().map(|value| value.generation_id.as_str()),
-        );
     }
 
     fn open_state_lock(&self, mode: LockMode) -> Result<StateLease, NativeError> {
@@ -1727,6 +1947,7 @@ fn abort_workspace_after_error(workspace: RunWorkspace, primary: NativeError) ->
     }
 }
 
+#[cfg(test)]
 fn append_janitor_secondary(
     primary: NativeError,
     report: &mut ManagedJanitorReport,
@@ -1756,6 +1977,31 @@ mod transaction_janitor_tests {
             ManagedStore::new(ManagedLayout::new(root.join("storage"))),
         )
     }
+    #[test]
+    fn managed_absent_read_probe_preserves_genuine_first_producer_root_creation() {
+        let (root, store) = store("noncreating-absent-read");
+        assert!(!store.layout.storage_root().exists());
+        assert!(store.resolve_active_read().unwrap().is_none());
+        assert!(
+            !store.layout.storage_root().exists(),
+            "read probe created producer namespace"
+        );
+        let session = store.begin_write().unwrap();
+        session.abort(None).unwrap();
+        assert!(
+            matches!(
+                super::super::maintenance_ownership::observe_reference_epoch(
+                    &super::super::maintenance_ownership::ReferenceDomain::managed(store.layout())
+                        .unwrap()
+                )
+                .unwrap(),
+                super::super::maintenance_ownership::EpochObservation::Verified(_)
+            ),
+            "actual first producer did not initialize its fresh reference domain"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
     fn prepared(store: &ManagedStore) -> ManagedWriteSession {
         let mut session = store.begin_write().unwrap();
         fs::write(session.candidate_db_path(), b"storage ABI fixture").unwrap();
@@ -1786,6 +2032,167 @@ mod transaction_janitor_tests {
         workspace.retain_for_recovery();
         session.finish_without_cleanup();
         root
+    }
+
+    #[test]
+    fn managed_read_recovery_does_not_recreate_a_partially_retired_run_lease() {
+        use crate::storage::maintenance_budget::{CleanupMemory, MutationGrant};
+        use crate::storage::{
+            maintenance_controls as controls, maintenance_workspace_gate as gate,
+        };
+        use std::time::Duration;
+        let (root, store) = store("noncreating-partial-retirement");
+        // A genuine still-Publishing sibling forces required read recovery;
+        // it must remain recoverable while another closed run is being removed.
+        let sibling = leave_publishing(prepared(&store), false);
+        let domain =
+            super::super::maintenance_ownership::ReferenceDomain::managed(store.layout()).unwrap();
+        let mut run = RunWorkspace::create_scoped(store.layout.runs_root(), &domain, None).unwrap();
+        run.set_cleanup_barrier(store.layout.phase_workspace_root())
+            .unwrap();
+        let retired = run.retire_for_maintenance().unwrap();
+        // Isolate fixed root transport after receipt collection. Every receipt
+        // here was created by this fixture, as in the root-transport unit tests.
+        for entry in fs::read_dir(retired.join(".workspace-origins")).unwrap() {
+            fs::remove_file(entry.unwrap().path()).unwrap();
+        }
+        let memory = CleanupMemory::new(8 * 1024 * 1024).unwrap();
+        let mut terminal =
+            controls::prepare_terminal_workspace_boxed(&retired, &domain, &memory).unwrap();
+        let mut initial =
+            gate::prepare_workspace_root_removal(&retired, &domain, Some(&terminal), &memory)
+                .unwrap();
+        let mut grant = MutationGrant::for_test(100, Duration::from_millis(100));
+        gate::begin_workspace_root_removal(&mut terminal, &mut initial, &mut grant).unwrap();
+        drop(initial);
+        drop(terminal);
+        let mut observed_gap = false;
+        for _ in 0..16 {
+            let mut next = gate::prepare_pending_workspace_root_removal(&domain, &memory)
+                .unwrap()
+                .unwrap();
+            let mut grant = MutationGrant::for_test(100, Duration::from_millis(100));
+            let progress =
+                gate::advance_workspace_root_removal(&mut next, &mut grant, 0, &mut |_, _| {
+                    panic!("root should not complete before the lease/rmdir grant seam")
+                })
+                .unwrap();
+            if retired.exists() && !retired.join("lease.lock").exists() {
+                assert_eq!(progress, gate::WorkspaceRemovalProgress::Pending);
+                observed_gap = true;
+                break;
+            }
+        }
+        assert!(
+            observed_gap,
+            "did not reach actual cooperative lease-removal seam"
+        );
+        let recovered = store.recover_for_read().unwrap();
+        assert_eq!(recovered.recovery.publishing_recovered, 1);
+        assert!(recovered.janitor.first_issue.is_none(), "{recovered:?}");
+        assert!(retired.exists());
+        assert!(
+            !retired.join("lease.lock").exists(),
+            "recovery recreated a removed lease inode"
+        );
+        assert!(
+            sibling.exists(),
+            "required read recovery removed retained sibling payload"
+        );
+        let mut complete = false;
+        for _ in 0..8 {
+            let mut next = gate::prepare_pending_workspace_root_removal(&domain, &memory)
+                .unwrap()
+                .unwrap();
+            let existed = retired.exists();
+            let mut grant = MutationGrant::for_test(100, Duration::from_millis(100));
+            let progress = gate::advance_workspace_root_removal(
+                &mut next,
+                &mut grant,
+                0,
+                &mut |outcome, _| {
+                    match outcome {
+                        gate::WorkspaceRootOutcome::Removed(_) => assert!(existed),
+                        gate::WorkspaceRootOutcome::RecoveredMissing(_) => assert!(!existed),
+                    }
+                    assert!(!retired.exists());
+                    Ok(())
+                },
+            )
+            .unwrap();
+            if progress == gate::WorkspaceRemovalProgress::Complete {
+                complete = true;
+                break;
+            }
+        }
+        assert!(complete);
+        assert!(!retired.exists());
+        assert!(
+            gate::prepare_pending_workspace_root_removal(&domain, &memory)
+                .unwrap()
+                .is_none()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn managed_read_recovery_closes_registered_run_without_replaying() {
+        use crate::storage::maintenance_budget::CleanupMemory;
+        for promoted in [false, true] {
+            let (root, store) = store(if promoted {
+                "read-published"
+            } else {
+                "read-staged"
+            });
+            let session = prepared(&store);
+            let id = session.candidate.generation_id.clone();
+            let run = leave_publishing(session, promoted);
+            assert!(
+                run.join(".workspace.binding").is_file(),
+                "fixture must have genuine producer registration"
+            );
+            let domain =
+                super::super::maintenance_ownership::ReferenceDomain::managed(store.layout())
+                    .unwrap();
+            let memory = CleanupMemory::new(8 * 1024 * 1024).unwrap();
+            assert!(
+                super::super::maintenance_controls::prepare_terminal_workspace_boxed(
+                    &run, &domain, &memory
+                )
+                .is_err()
+            );
+            let recovered = store.recover_for_read().unwrap();
+            assert_eq!(recovered.recovery.publishing_recovered, 1);
+            assert!(recovered.janitor.first_issue.is_none(), "{recovered:?}");
+            assert!(
+                run.exists(),
+                "read recovery traversed/removed retained payload"
+            );
+            assert_eq!(
+                store
+                    .read_active_generation()
+                    .unwrap()
+                    .unwrap()
+                    .generation_id,
+                id
+            );
+            let terminal = super::super::maintenance_controls::prepare_terminal_workspace_boxed(
+                &run, &domain, &memory,
+            )
+            .unwrap();
+            drop(terminal);
+            let pointer = fs::read(store.layout.active_pointer_path()).unwrap();
+            let repeated = store.recover_for_read().unwrap();
+            assert_eq!(
+                repeated.recovery.publishing_recovered, 0,
+                "owner-terminal recovered publication replayed on next read"
+            );
+            assert_eq!(
+                fs::read(store.layout.active_pointer_path()).unwrap(),
+                pointer
+            );
+            fs::remove_dir_all(root).unwrap();
+        }
     }
 
     #[test]
@@ -1992,11 +2399,9 @@ mod transaction_janitor_tests {
     }
 
     #[test]
-    fn managed_typed_first_issue_is_moved_and_actual_disposal_clears_pending_run() {
-        let (root, store) = store("issue-count");
-        let mut session = prepared(&store);
-        let workspace = session.workspace.take().unwrap();
-        let run = workspace.root().to_path_buf();
+    fn managed_typed_merge_preserves_first_issue_with_a_complete_latest_report() {
+        // Pure report algebra: this synthetic complete observation makes no
+        // filesystem-disposal claim. Actual removal is tested by bounded GC.
         let mut first = ManagedJanitorReport::complete();
         first.issue(
             ManagedJanitorStage::PublishedRunJournal,
@@ -2004,8 +2409,6 @@ mod transaction_janitor_tests {
             true,
         );
         first.legacy.run_recovery.skipped_locked = 1;
-        workspace.finish().unwrap();
-        assert!(!run.exists());
         let mut latest = ManagedJanitorReport::complete();
         latest.issue(
             ManagedJanitorStage::TerminalRunRemoval,
@@ -2024,9 +2427,46 @@ mod transaction_janitor_tests {
             first.into_legacy().unwrap_err().to_string(),
             "first journal diagnostic"
         );
-        // Exercise the strict session wrapper without any issue.
-        assert!(session.recover_and_gc().is_ok());
+    }
+
+    #[test]
+    fn managed_registered_owner_finish_retains_terminal_work_for_bounded_collection() {
+        let (root, store) = store("terminal-retention");
+        let mut session = prepared(&store);
+        // Strict recovery may report the genuinely live owner without deleting
+        // its workspace or turning that pending state into a primary error.
+        assert_eq!(
+            session
+                .recover_and_gc()
+                .unwrap()
+                .run_recovery
+                .skipped_locked,
+            1
+        );
+        let candidate = session.candidate_db_path();
+        let bytes = fs::read(&candidate).unwrap();
+        let workspace = session.workspace.take().unwrap();
+        let run = workspace.root().to_path_buf();
+        workspace.finish().unwrap();
+        assert!(run.exists());
+        assert_eq!(fs::read(&candidate).unwrap(), bytes);
         session.finish_without_cleanup();
+        let domain =
+            super::super::maintenance_ownership::ReferenceDomain::managed(store.layout()).unwrap();
+        let memory = super::super::maintenance_budget::CleanupMemory::new(8 * 1024 * 1024).unwrap();
+        super::super::maintenance_controls::prepare_terminal_workspace_boxed(
+            &run, &domain, &memory,
+        )
+        .unwrap();
+        let latest = store.recover_for_read().unwrap();
+        assert!(
+            latest.janitor.pending,
+            "terminal retention was reported disposed"
+        );
+        assert_eq!(latest.janitor.legacy.run_recovery.skipped_locked, 0);
+        assert!(latest.janitor.first_issue.is_none());
+        assert!(run.exists());
+        assert_eq!(fs::read(candidate).unwrap(), bytes);
         fs::remove_dir_all(root).unwrap();
     }
 }

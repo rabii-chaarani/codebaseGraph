@@ -1,10 +1,17 @@
 //! Read-only, advisory observations. An inventory never grants deletion authority.
-use super::layout::{direct_bundle_paths, validate_generation_id, DirectLayout};
+#[cfg(test)]
+use super::layout::validate_generation_id;
+use super::layout::{direct_bundle_paths, DirectLayout};
+#[cfg(test)]
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs::{self, File, Metadata};
+#[cfg(test)]
+use std::fs::File;
+use std::fs::{self, Metadata};
 use std::path::{Component, Path, PathBuf};
+#[cfg(test)]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -23,6 +30,7 @@ pub(crate) struct DirectPair {
 }
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 pub(crate) enum InventoryStatus {
     Complete,
     Partial,
@@ -32,6 +40,7 @@ pub(crate) enum InventoryStatus {
 }
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 pub(crate) enum InventoryCategory {
     ActiveGraph,
     ActiveCache,
@@ -46,6 +55,7 @@ pub(crate) enum InventoryCategory {
 }
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 pub(crate) enum Disposition {
     Retain,
     PotentialReclamation,
@@ -53,6 +63,7 @@ pub(crate) enum Disposition {
     Unknown,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct InventoryEntry {
     pub path: PathBuf,
     pub category: InventoryCategory,
@@ -66,6 +77,7 @@ pub(crate) struct InventoryEntry {
 /// Byte sums count a physical identity once, in deterministic path order. Null
 /// totals mean at least one size was unavailable; known subtotals remain useful.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct InventoryTotals {
     pub logical_bytes: Option<u64>,
     pub allocated_bytes: Option<u64>,
@@ -77,7 +89,8 @@ pub(crate) struct InventoryTotals {
     pub measurements_complete: bool,
     pub observation_complete: bool,
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg(test)]
 pub(crate) struct StorageInventory {
     pub observed_at_unix_ms: u64,
     pub target: MaintenanceTarget,
@@ -86,9 +99,22 @@ pub(crate) struct StorageInventory {
     pub entries: Vec<InventoryEntry>,
     pub totals: InventoryTotals,
     pub issues: Vec<String>,
+    #[serde(skip)]
+    _account: Option<DetailedAccount>,
+}
+#[cfg(test)]
+struct DetailedAccount {
+    _reservation: super::maintenance_budget::MemoryReservation,
+}
+#[cfg(test)]
+impl std::fmt::Debug for DetailedAccount {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("DetailedAccount")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 struct Stamp {
     len: u64,
     modified: Option<SystemTime>,
@@ -96,6 +122,7 @@ struct Stamp {
     changed: Option<(i64, i64)>,
     kind: u8,
 }
+#[cfg(test)]
 fn stamp(m: &Metadata) -> Stamp {
     Stamp {
         len: m.len(),
@@ -112,11 +139,13 @@ fn stamp(m: &Metadata) -> Stamp {
     }
 }
 #[cfg(unix)]
+#[cfg(test)]
 fn changed(m: &Metadata) -> Option<(i64, i64)> {
     use std::os::unix::fs::MetadataExt;
     Some((m.ctime(), m.ctime_nsec()))
 }
 #[cfg(not(unix))]
+#[cfg(test)]
 fn changed(_: &Metadata) -> Option<(i64, i64)> {
     None
 }
@@ -144,6 +173,8 @@ pub(crate) fn real_path(path: &Path) -> bool {
     real_path_with_metadata(path, |path| fs::symlink_metadata(path))
 }
 
+// Windows UNC prefixes require lookahead in the same iterator.
+#[allow(clippy::while_let_on_iterator)]
 fn real_path_with_metadata(
     path: &Path,
     mut metadata: impl FnMut(&Path) -> std::io::Result<Metadata>,
@@ -196,12 +227,15 @@ fn real_path_with_metadata(
     }
     true
 }
+#[cfg(test)]
 fn read_observed<T: serde::de::DeserializeOwned>(path: &Path) -> Option<T> {
     if !real_path(path) {
         return None;
     }
     let before = fs::symlink_metadata(path).ok()?;
-    if !before.is_file() {
+    // The detailed adapter is finite too; production byte observation below
+    // streams arbitrary manifests under the shared account.
+    if !before.is_file() || before.len() > 32 * 1024 {
         return None;
     }
     let file = File::open(path).ok()?;
@@ -215,18 +249,22 @@ fn read_observed<T: serde::de::DeserializeOwned>(path: &Path) -> Option<T> {
     Some(value)
 }
 
+#[cfg(test)]
 fn read_json(path: &Path) -> Option<serde_json::Value> {
     read_observed(path)
 }
 #[derive(Deserialize)]
+#[cfg(test)]
 struct ManifestKeyView {
     files: BTreeMap<String, ArtifactKeyView>,
 }
 #[derive(Deserialize)]
+#[cfg(test)]
 struct ArtifactKeyView {
     #[serde(default)]
     artifact_key: Option<String>,
 }
+#[cfg(test)]
 fn read_manifest_keys(path: &Path) -> Option<BTreeSet<String>> {
     let manifest: ManifestKeyView = read_observed(path)?;
     let mut keys = BTreeSet::new();
@@ -241,6 +279,7 @@ fn read_manifest_keys(path: &Path) -> Option<BTreeSet<String>> {
     Some(keys)
 }
 #[derive(Debug, PartialEq)]
+#[cfg(test)]
 pub(crate) struct ObservedBinding {
     pub(crate) storage: PathBuf,
     pub(crate) current_direct: Option<DirectPair>,
@@ -268,6 +307,7 @@ fn physically_within(path: &Path, root: &Path) -> bool {
     path.ancestors()
         .any(|ancestor| same_physical_path(ancestor, root))
 }
+#[cfg(test)]
 fn reconcile_observation_roots(mut roots: Vec<PathBuf>) -> Vec<PathBuf> {
     roots.sort();
     let mut disjoint: Vec<PathBuf> = Vec::new();
@@ -296,6 +336,7 @@ fn managed_direct_roles_overlap(
         .filter(|path| real_path(path))
         .any(|path| physically_within(path, storage) || physically_within(storage, path))
 }
+#[cfg(test)]
 pub(crate) fn bound_roles_overlap(target: &MaintenanceTarget, binding: &ObservedBinding) -> bool {
     bound_roles_overlap_paths(target, &binding.storage, binding.current_direct.as_ref())
 }
@@ -315,6 +356,7 @@ pub(crate) fn bound_roles_overlap_paths(
             &DirectLayout::new(&direct.database, &direct.manifest).artifact_root_path(),
         )
 }
+#[cfg(test)]
 fn observed_relative(path: &Path, root: &Path) -> Option<PathBuf> {
     if let Ok(relative) = path.strip_prefix(root) {
         return Some(relative.to_owned());
@@ -324,6 +366,7 @@ fn observed_relative(path: &Path, root: &Path) -> Option<PathBuf> {
         .and_then(|ancestor| path.strip_prefix(ancestor).ok())
         .map(Path::to_owned)
 }
+#[cfg(test)]
 fn config_raw_path(
     config: &serde_json::Value,
     key: &str,
@@ -349,6 +392,7 @@ fn config_raw_path(
     };
     Ok(Some(absolute))
 }
+#[cfg(test)]
 fn config_value_path(
     config: &serde_json::Value,
     key: &str,
@@ -369,6 +413,7 @@ fn config_value_path(
 /// deserialization as proof of association. Conventional state has one exact
 /// location; a configured root must be named by a currently repository-bound
 /// config. Explicit Direct selectors preserve their raw lock/journal spelling.
+#[cfg(test)]
 pub(crate) fn observe_binding(target: &MaintenanceTarget) -> Result<ObservedBinding, String> {
     let conventional = target.repository_root.join(".codebaseGraph");
     if !target.repository_root.is_absolute()
@@ -460,6 +505,7 @@ pub(crate) fn observe_binding(target: &MaintenanceTarget) -> Result<ObservedBind
         config,
     })
 }
+#[cfg(test)]
 fn classify_artifact(
     path: &Path,
     root: &Path,
@@ -503,93 +549,118 @@ fn classify_artifact(
     )
 }
 
+#[cfg(test)]
 struct Scan {
     entries: Vec<InventoryEntry>,
     stamps: BTreeMap<PathBuf, Stamp>,
-    seen: BTreeSet<(u64, u64)>,
     duplicates: u64,
     issues: Vec<String>,
+    retained_bytes: usize,
+    limited: bool,
+    memory: super::maintenance_budget::CleanupMemory,
 }
+#[cfg(test)]
 impl Scan {
-    fn new() -> Self {
+    fn new(memory: &super::maintenance_budget::CleanupMemory) -> Self {
         Self {
             entries: Vec::new(),
             stamps: BTreeMap::new(),
-            seen: BTreeSet::new(),
             duplicates: 0,
             issues: Vec::new(),
+            retained_bytes: 0,
+            limited: false,
+            memory: memory.clone(),
         }
     }
     fn walk(&mut self, path: &Path) {
-        let metadata = match fs::symlink_metadata(path) {
-            Ok(m) => m,
-            Err(e) => {
+        let memory = self.memory.clone();
+        let result = physical::path(path, &memory, &mut |entry| {
+            let bytes = entry
+                .path
+                .as_os_str()
+                .len()
+                .saturating_mul(3)
+                .saturating_add(1024);
+            let next = self.retained_bytes.checked_add(bytes);
+            if self.entries.len() >= 4096 || next.is_none_or(|n| n > 2 * 1024 * 1024) {
+                return Err(physical::Problem::Limit);
+            }
+            self.retained_bytes = next.unwrap();
+            let Some(metadata) = entry.metadata else {
                 self.issues
-                    .push(format!("unmeasurable {}: {e}", path.display()));
-                self.entries.push(unknown(path, "metadata_unavailable"));
-                return;
-            }
-        };
-        self.stamps.insert(path.to_owned(), stamp(&metadata));
-        if !real_path(path) || (!metadata.is_file() && !metadata.is_dir()) {
-            self.issues.push(format!("untraversed {}", path.display()));
-            self.entries
-                .push(unknown(path, "symlink_or_special_file_retained"));
-            return;
-        }
-        let is_dir = metadata.is_dir();
-        let duplicate = !is_dir && identity(&metadata).is_some_and(|id| !self.seen.insert(id));
-        if duplicate {
-            self.duplicates += 1;
-        }
-        self.entries.push(InventoryEntry {
-            path: path.to_owned(),
-            category: InventoryCategory::Unknown,
-            disposition: Disposition::Unknown,
-            logical_bytes: Some(if is_dir || duplicate {
-                0
-            } else {
-                metadata.len()
-            }),
-            allocated_bytes: if duplicate {
-                Some(0)
-            } else {
-                allocation(&metadata)
-            },
-            files: u64::from(!is_dir && !duplicate),
-            directories: u64::from(is_dir),
-            reason: if duplicate {
-                "physical_identity_counted_at_first_path"
-            } else {
-                "unrecognized_state_retained"
-            }
-            .into(),
-        });
-        if is_dir {
-            let children = match fs::read_dir(path).and_then(|r| {
-                r.map(|e| e.map(|e| e.path()))
-                    .collect::<std::io::Result<Vec<_>>>()
-            }) {
-                Ok(mut children) => {
-                    children.sort();
-                    children
-                }
-                Err(e) => {
-                    self.issues
-                        .push(format!("unreadable_directory {}: {e}", path.display()));
-                    if let Some(entry) = self.entries.last_mut() {
-                        entry.logical_bytes = None;
-                        entry.allocated_bytes = None;
-                    }
-                    return;
-                }
+                    .push(format!("unmeasurable {}", entry.path.display()));
+                self.entries
+                    .push(unknown(entry.path, "metadata_unavailable"));
+                return Ok(false);
             };
-            for child in children {
-                self.walk(&child);
+            let mut observed = stamp(metadata);
+            if let Some(identity) = entry.identity {
+                observed.identity = Some(identity.fixed_words());
+            }
+            self.stamps.insert(entry.path.to_owned(), observed);
+            if (!metadata.is_file() && !metadata.is_dir())
+                || (metadata.is_dir() && entry.identity.is_none())
+            {
+                self.issues
+                    .push(format!("untraversed {}", entry.path.display()));
+                self.entries
+                    .push(unknown(entry.path, "symlink_or_special_file_retained"));
+                return Ok(false);
+            }
+            self.entries.push(InventoryEntry {
+                path: entry.path.to_owned(),
+                category: InventoryCategory::Unknown,
+                disposition: Disposition::Unknown,
+                logical_bytes: Some(if metadata.is_dir() { 0 } else { metadata.len() }),
+                allocated_bytes: allocation(metadata),
+                files: u64::from(metadata.is_file()),
+                directories: u64::from(metadata.is_dir()),
+                reason: "unrecognized_state_retained".into(),
+            });
+            Ok(true)
+        });
+        if let Err(problem) = result {
+            match problem {
+                physical::Problem::Limit => {
+                    self.limited = true;
+                    self.issues.push("inventory_resource_limit_retained".into());
+                }
+                physical::Problem::Cancelled => {
+                    self.limited = true;
+                    self.issues.push("inventory_cancelled_retained".into());
+                }
+                physical::Problem::Io(kind) => self
+                    .issues
+                    .push(format!("unreadable_directory {}: {kind:?}", path.display())),
+            }
+            if let Some(entry) = self.entries.iter_mut().find(|entry| entry.path == path) {
+                entry.logical_bytes = None;
+                entry.allocated_bytes = None;
+            }
+        }
+    }
+    fn finish(&mut self) {
+        self.entries.sort_by(|a, b| a.path.cmp(&b.path));
+        let mut seen = BTreeSet::new();
+        for entry in &mut self.entries {
+            if entry.files != 0
+                && self
+                    .stamps
+                    .get(&entry.path)
+                    .and_then(|stamp| stamp.identity)
+                    .is_some_and(|identity| !seen.insert(identity))
+            {
+                self.duplicates += 1;
+                entry.logical_bytes = Some(0);
+                entry.allocated_bytes = Some(0);
+                entry.files = 0;
+                entry.reason = "physical_identity_counted_at_first_path".into();
             }
         }
     }
 }
+
+#[cfg(test)]
 fn unknown(path: &Path, reason: &str) -> InventoryEntry {
     InventoryEntry {
         path: path.to_owned(),
@@ -605,10 +676,19 @@ fn unknown(path: &Path, reason: &str) -> InventoryEntry {
 
 /// Observe only supplied repository state. All locks are opened without create;
 /// plain File drops only release the observation locks, never run recovery.
+#[cfg(test)]
 pub(crate) fn inspect_storage(target: &MaintenanceTarget) -> StorageInventory {
     inspect_with_hook(target, || {})
 }
+#[cfg(test)]
 fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -> StorageInventory {
+    let memory = super::maintenance_budget::CleanupMemory::new(8 * 1024 * 1024).ok();
+    let account = memory
+        .as_ref()
+        .and_then(|memory| memory.reserve(6 * 1024 * 1024).ok())
+        .map(|reservation| DetailedAccount {
+            _reservation: reservation,
+        });
     let mut result = StorageInventory {
         observed_at_unix_ms: SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -622,6 +702,13 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
         entries: Vec::new(),
         totals: InventoryTotals::default(),
         issues: Vec::new(),
+        _account: account,
+    };
+    let Some(memory) = memory.filter(|_| result._account.is_some()) else {
+        result
+            .issues
+            .push("inventory_resource_limit_retained".into());
+        return result;
     };
     let binding = match observe_binding(target) {
         Ok(binding) => binding,
@@ -785,10 +872,11 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
             .push("current_direct_manifest_unreadable_or_invalid".into());
     }
     direct_paths.push(direct_artifacts.clone());
-    let mut scan = Scan::new();
+    let mut scan = Scan::new(&memory);
     for root in &roots {
         scan.walk(root);
     }
+    scan.finish();
     let mut lease_observations = BTreeMap::new();
     for entry in &mut scan.entries {
         if entry.logical_bytes.is_none() {
@@ -860,10 +948,11 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
         }
     }
     between_scans();
-    let mut after = Scan::new();
+    let mut after = Scan::new(&memory);
     for root in &roots {
         after.walk(root);
     }
+    after.finish();
     if scan.stamps != after.stamps
         || observe_binding(target).ok().as_ref() != Some(&binding)
         || direct_keys
@@ -921,6 +1010,11 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
         .issues
         .push("worker_and_recovery_coherence_unverified".into());
     totals.observation_complete = false;
+    if scan.limited || after.limited {
+        totals.logical_bytes = None;
+        totals.allocated_bytes = None;
+        totals.measurements_complete = false;
+    }
     result.totals = totals;
     result.status = if busy {
         InventoryStatus::Busy
@@ -932,14 +1026,17 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
     drop(locks);
     result
 }
+#[cfg(test)]
 fn identity_supported() -> bool {
     cfg!(unix)
 }
+#[cfg(test)]
 enum LeaseObservation {
     InUse,
     Available,
     Unknown,
 }
+#[cfg(test)]
 fn lease_observation(path: &Path) -> LeaseObservation {
     if !real_path(path) {
         return LeaseObservation::Unknown;
@@ -975,6 +1072,7 @@ fn lease_observation(path: &Path) -> LeaseObservation {
         Err(_) => LeaseObservation::Unknown,
     }
 }
+#[cfg(test)]
 fn existing_shared_lock(path: &Path) -> std::io::Result<File> {
     if !real_path(path) {
         return Err(std::io::Error::new(
@@ -1003,11 +1101,13 @@ fn existing_shared_lock(path: &Path) -> std::io::Result<File> {
     Ok(file)
 }
 #[cfg(unix)]
+#[cfg(test)]
 fn ambiguous_file_identity(metadata: &Metadata) -> bool {
     use std::os::unix::fs::MetadataExt;
     metadata.is_file() && metadata.nlink() != 1
 }
 #[cfg(not(unix))]
+#[cfg(test)]
 fn ambiguous_file_identity(_: &Metadata) -> bool {
     false
 }
@@ -1032,12 +1132,14 @@ fn repository_name(root: &Path) -> String {
         trimmed.into()
     }
 }
+#[cfg(test)]
 fn valid_key(key: &str) -> bool {
     key.len() == 64
         && key
             .bytes()
             .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
+#[cfg(test)]
 fn classify<'a>(
     path: &Path,
     storage: &Path,
@@ -1135,6 +1237,976 @@ fn classify<'a>(
     )
 }
 
+/// The common noncreating physical visitor. It retains no entries or paths
+/// beyond its charged path/scratch buffers, and never follows a symlink.
+mod physical {
+    use super::super::locks::{file_identity, path_identity, FileIdentity, RootedDirectory};
+    use super::super::maintenance_budget::{CleanupMemory, ReservedBytes, ResourceLimit};
+    use std::fs::{self, Metadata};
+    use std::io;
+    use std::path::Path;
+    pub(super) const MAX_DEPTH: usize = 64;
+    const PATH_BYTES: usize = 65536;
+    #[derive(Clone, Copy)]
+    pub(super) enum Problem {
+        Io(io::ErrorKind),
+        Limit,
+        Cancelled,
+    }
+    impl From<io::Error> for Problem {
+        fn from(error: io::Error) -> Self {
+            Self::Io(error.kind())
+        }
+    }
+    impl From<ResourceLimit> for Problem {
+        fn from(_: ResourceLimit) -> Self {
+            Self::Limit
+        }
+    }
+    pub(super) struct Entry<'a> {
+        #[cfg(test)]
+        pub path: &'a Path,
+        pub name: &'a [u8],
+        pub depth: usize,
+        pub metadata: Option<&'a Metadata>,
+        pub identity: Option<FileIdentity>,
+    }
+    struct Visitor<'a, 'b> {
+        memory: &'a CleanupMemory,
+        cancel: &'a dyn Fn() -> bool,
+        path: ReservedBytes,
+        len: usize,
+        emit: &'b mut dyn FnMut(Entry<'_>) -> Result<bool, Problem>,
+    }
+    impl Visitor<'_, '_> {
+        fn path(&self) -> &Path {
+            // SAFETY: roots and names originate in OsStr::as_encoded_bytes on
+            // this platform. Separators preserve their encoding boundaries.
+            Path::new(unsafe {
+                std::ffi::OsStr::from_encoded_bytes_unchecked(&self.path.as_slice()[..self.len])
+            })
+        }
+        fn push(&mut self, name: &[u8]) -> Result<usize, Problem> {
+            let before = self.len;
+            let separator = usize::from(
+                !self.path.as_slice()[..before]
+                    .last()
+                    .is_some_and(|byte| std::path::is_separator(char::from(*byte))),
+            );
+            let end = before
+                .checked_add(separator)
+                .and_then(|n| n.checked_add(name.len()))
+                .ok_or(Problem::Limit)?;
+            if end > self.path.as_slice().len() {
+                return Err(Problem::Limit);
+            }
+            if separator != 0 {
+                self.path.as_mut_slice()[before] = std::path::MAIN_SEPARATOR as u8;
+            }
+            self.path.as_mut_slice()[before + separator..end].copy_from_slice(name);
+            self.len = end;
+            Ok(before)
+        }
+        fn emit(
+            &mut self,
+            name: &[u8],
+            depth: usize,
+            metadata: Option<&Metadata>,
+            identity: Option<FileIdentity>,
+        ) -> Result<bool, Problem> {
+            // The detailed reference adapter borrows the same physical path;
+            // shipping measurement consumes only fixed per-entry facts.
+            (self.emit)(Entry {
+                #[cfg(test)]
+                path: Path::new(unsafe {
+                    std::ffi::OsStr::from_encoded_bytes_unchecked(&self.path.as_slice()[..self.len])
+                }),
+                name,
+                depth,
+                metadata,
+                identity,
+            })
+        }
+        fn unknown(&mut self, name: &[u8], depth: usize) -> Result<(), Problem> {
+            let metadata = fs::symlink_metadata(self.path()).ok();
+            self.emit(name, depth, metadata.as_ref(), None)?;
+            Ok(())
+        }
+        fn directory(
+            &mut self,
+            directory: RootedDirectory,
+            name: &[u8],
+            depth: usize,
+        ) -> Result<(), Problem> {
+            if (self.cancel)() {
+                return Err(Problem::Cancelled);
+            }
+            if depth >= MAX_DEPTH {
+                return Err(Problem::Limit);
+            }
+            let metadata = directory.metadata()?;
+            if !self.emit(name, depth, Some(&metadata), Some(directory.identity()))? {
+                return Ok(());
+            }
+            let mut scratch = self.memory.reserve(4096)?.bytes(4096)?;
+            let scratch: &mut [u8; 4096] = scratch
+                .as_mut_slice()
+                .try_into()
+                .expect("fixed directory scratch");
+            let mut failure = None;
+            let result = directory.visit_entries(scratch, &mut |name| {
+                let result = (|| -> Result<(), Problem> {
+                    if (self.cancel)() {
+                        return Err(Problem::Cancelled);
+                    }
+                    let before = self.push(name)?;
+                    let result = match directory.open_directory_readonly(name) {
+                        Ok(child) => self.directory(child, name, depth + 1),
+                        Err(_) => match directory.open_readonly_file(name) {
+                            Ok(file) => {
+                                let metadata = file.metadata()?;
+                                let identity = file_identity(&file).ok();
+                                self.emit(name, depth + 1, Some(&metadata), identity)
+                                    .map(|_| ())
+                            }
+                            Err(_) => self.unknown(name, depth + 1),
+                        },
+                    };
+                    self.len = before;
+                    result
+                })();
+                if let Err(error) = result {
+                    failure = Some(error);
+                    return Err(io::ErrorKind::Interrupted.into());
+                }
+                Ok(())
+            });
+            if let Some(error) = failure {
+                return Err(error);
+            }
+            result.map_err(Problem::from)
+        }
+    }
+    pub(super) fn rooted(
+        path: &Path,
+        directory: RootedDirectory,
+        memory: &CleanupMemory,
+        cancel: &dyn Fn() -> bool,
+        emit: &mut dyn FnMut(Entry<'_>) -> Result<bool, Problem>,
+    ) -> Result<(), Problem> {
+        let mut bytes = memory.reserve(PATH_BYTES)?.bytes(PATH_BYTES)?;
+        let root = path.as_os_str().as_encoded_bytes();
+        if root.len() > PATH_BYTES {
+            return Err(Problem::Limit);
+        }
+        bytes.as_mut_slice()[..root.len()].copy_from_slice(root);
+        let mut visitor = Visitor {
+            memory,
+            cancel,
+            path: bytes,
+            len: root.len(),
+            emit,
+        };
+        visitor.directory(directory, b"", 0)
+    }
+    pub(super) fn path(
+        path: &Path,
+        memory: &CleanupMemory,
+        emit: &mut dyn FnMut(Entry<'_>) -> Result<bool, Problem>,
+    ) -> Result<(), Problem> {
+        let metadata = fs::symlink_metadata(path).ok();
+        if !super::real_path(path)
+            || metadata
+                .as_ref()
+                .is_none_or(|m| !m.is_dir() && !m.is_file())
+        {
+            emit(Entry {
+                #[cfg(test)]
+                path,
+                name: b"",
+                depth: 0,
+                metadata: metadata.as_ref(),
+                identity: None,
+            })?;
+            return Ok(());
+        }
+        if metadata.as_ref().is_some_and(Metadata::is_dir) {
+            let identity =
+                path_identity(path).map_err(|_| Problem::Io(io::ErrorKind::InvalidData))?;
+            rooted(
+                path,
+                RootedDirectory::open_readonly_root(path, identity)?,
+                memory,
+                &|| false,
+                emit,
+            )
+        } else {
+            let opened = path.parent().and_then(|parent| {
+                let root = RootedDirectory::open_readonly_root(parent, path_identity(parent).ok()?)
+                    .ok()?;
+                let file = root
+                    .open_readonly_file(path.file_name()?.as_encoded_bytes())
+                    .ok()?;
+                Some((file_identity(&file).ok()?, file.metadata().ok()?))
+            });
+            let (identity, actual) = match opened {
+                Some((identity, metadata)) => (Some(identity), Some(metadata)),
+                None => (None, metadata),
+            };
+            emit(Entry {
+                #[cfg(test)]
+                path,
+                name: path
+                    .file_name()
+                    .map_or(b"".as_slice(), |n| n.as_encoded_bytes()),
+                depth: 0,
+                metadata: actual.as_ref(),
+                identity,
+            })?;
+            if identity.is_some() && path_identity(path).ok() != identity {
+                return Err(Problem::Io(io::ErrorKind::InvalidData));
+            }
+            Ok(())
+        }
+    }
+}
+
+/// Bounded advisory measurements consume the same physical entry visitor as
+/// detailed inventory, while retaining only fixed aggregate counters.
+pub(crate) mod measurement {
+    use super::super::locks::{path_identity, RootedDirectory};
+    use super::super::maintenance_budget::ReservedBytes;
+    use super::super::maintenance_budget::{CleanupMemory, ResourceLimit};
+    use super::super::maintenance_json::{MaintenanceJsonReader, TokenKind};
+    use super::MaintenanceTarget;
+    use sha2::{Digest, Sha256};
+    use std::fs::{File, Metadata};
+    use std::io::{self, Read};
+    use std::path::Path;
+
+    const SLOTS: usize = 4096;
+    const ID_SLOT: usize = 17;
+    const KEY_SLOT: usize = 65;
+    const MAX_DEPTH: usize = super::physical::MAX_DEPTH;
+    const ACTIVE_GRAPH: usize = 0;
+    const ACTIVE_CACHE: usize = 1;
+    const LEASED_GENERATION: usize = 2;
+    const LIVE_RUN: usize = 3;
+    const RECOVERY: usize = 4;
+    const TEMPORARY: usize = 5;
+    const LEGACY: usize = 6;
+    const COORDINATION: usize = 8;
+    const UNKNOWN: usize = 9;
+    #[derive(Clone, Copy, Default)]
+    pub(crate) struct Bucket {
+        pub logical: Option<u64>,
+        pub allocated: Option<u64>,
+        seen: bool,
+    }
+    #[derive(Clone, Copy)]
+    pub(crate) struct Measurement {
+        pub total: Bucket,
+        pub retained: Bucket,
+        pub deferred: Bucket,
+        pub unknown: Bucket,
+        pub categories: [Bucket; 10],
+        pub complete: bool,
+        pub references_complete: bool,
+        pub resource_limited: bool,
+        pub allocation_unknown: bool,
+        pub unknown_entries: bool,
+    }
+    impl Default for Measurement {
+        fn default() -> Self {
+            Self {
+                total: Bucket::default(),
+                retained: Bucket::default(),
+                deferred: Bucket::default(),
+                unknown: Bucket::default(),
+                categories: [Bucket::default(); 10],
+                complete: true,
+                references_complete: false,
+                resource_limited: false,
+                allocation_unknown: false,
+                unknown_entries: false,
+            }
+        }
+    }
+    #[derive(Clone, Copy)]
+    enum Role {
+        State,
+        Managed,
+        Generations,
+        ActiveGraph,
+        Artifacts,
+        ArtifactShard([u8; 2]),
+        Artifact { active: bool },
+        Temporary,
+        Run,
+        Phase,
+        Coordination,
+        Legacy,
+        OtherGeneration,
+    }
+    struct Walker<'a> {
+        memory: &'a CleanupMemory,
+        cancel: &'a dyn Fn() -> bool,
+        ids: ReservedBytes,
+        keys: ReservedBytes,
+        measurement: Measurement,
+        unknown_sizes: bool,
+        active: [u8; 132],
+        active_len: usize,
+        storage_name: Option<&'a [u8]>,
+        direct_artifacts: Option<&'a [u8]>,
+        direct_db: Option<&'a [u8]>,
+        direct_manifest: Option<&'a [u8]>,
+    }
+    fn add(bucket: &mut Bucket, logical: u64, allocated: Option<u64>) {
+        if !bucket.seen {
+            bucket.logical = Some(logical);
+            bucket.allocated = allocated;
+            bucket.seen = true;
+        } else {
+            bucket.logical = bucket.logical.and_then(|total| total.checked_add(logical));
+            bucket.allocated = bucket
+                .allocated
+                .zip(allocated)
+                .and_then(|(total, value)| total.checked_add(value));
+        }
+    }
+    fn index(bytes: &[u8]) -> usize {
+        let mut hash = 14695981039346656037u64;
+        for byte in bytes {
+            hash = (hash ^ u64::from(*byte)).wrapping_mul(1099511628211);
+        }
+        hash as usize % SLOTS
+    }
+    impl Walker<'_> {
+        fn remember(&mut self, identity: super::super::locks::FileIdentity) -> bool {
+            let (volume, inode) = identity.fixed_words();
+            let mut key = [0u8; 16];
+            key[..8].copy_from_slice(&volume.to_le_bytes());
+            key[8..].copy_from_slice(&inode.to_le_bytes());
+            let start = index(&key);
+            for offset in 0..SLOTS {
+                let slot = (start + offset) % SLOTS * ID_SLOT;
+                let bytes = &mut self.ids.as_mut_slice()[slot..slot + ID_SLOT];
+                if bytes[0] == 0 {
+                    bytes[0] = 1;
+                    bytes[1..].copy_from_slice(&key);
+                    return true;
+                }
+                if bytes[1..] == key {
+                    return false;
+                }
+            }
+            self.measurement.complete = false;
+            self.unknown_sizes = true;
+            self.measurement.resource_limited = true;
+            false
+        }
+        fn key(&mut self, key: &[u8], insert: bool) -> bool {
+            if key.len() != 64 || !key.iter().all(u8::is_ascii_hexdigit) {
+                return false;
+            }
+            let start = index(key);
+            for offset in 0..SLOTS {
+                let slot = (start + offset) % SLOTS * KEY_SLOT;
+                let bytes = &mut self.keys.as_mut_slice()[slot..slot + KEY_SLOT];
+                if bytes[0] == 0 {
+                    if insert {
+                        bytes[0] = 1;
+                        bytes[1..].copy_from_slice(key);
+                    }
+                    return insert;
+                }
+                if bytes[1..] == *key {
+                    return true;
+                }
+            }
+            if insert {
+                self.measurement.references_complete = false;
+                self.measurement.resource_limited = true;
+            }
+            false
+        }
+        fn account(&mut self, metadata: &Metadata, category: usize, disposition: usize) {
+            if category == UNKNOWN {
+                self.measurement.complete = false;
+                self.measurement.unknown_entries = true;
+            }
+            let allocation = super::allocation(metadata);
+            if allocation.is_none() {
+                self.measurement.complete = false;
+                self.measurement.allocation_unknown = true;
+            }
+            add(&mut self.measurement.total, metadata.len(), allocation);
+            add(
+                &mut self.measurement.categories[category],
+                metadata.len(),
+                allocation,
+            );
+            match disposition {
+                0 => add(&mut self.measurement.retained, metadata.len(), allocation),
+                1 => add(&mut self.measurement.deferred, metadata.len(), allocation),
+                _ => add(&mut self.measurement.unknown, metadata.len(), allocation),
+            }
+        }
+        fn file_role(&self, role: Role, name: &[u8]) -> (usize, usize) {
+            if !name.is_empty()
+                && (name.ends_with(b".lock")
+                    || matches!(name, b".use-cohort.json" | b".reference.epoch"))
+            {
+                return (COORDINATION, 0);
+            }
+            if matches!(role, Role::State)
+                && self.direct_db.is_some_and(|base| {
+                    name == base
+                        || (name.starts_with(base)
+                            && name.get(base.len()) == Some(&b'.')
+                            && super::super::layout::DIRECT_DB_SIDECAR_SUFFIXES.iter().any(
+                                |suffix| name.get(base.len() + 1..) == Some(suffix.as_bytes()),
+                            ))
+                })
+            {
+                return (ACTIVE_GRAPH, 0);
+            }
+            match role {
+                Role::State
+                | Role::Managed
+                | Role::Generations
+                | Role::Artifacts
+                | Role::ArtifactShard(_)
+                    if name.is_empty() =>
+                {
+                    (COORDINATION, 0)
+                }
+                Role::ActiveGraph => (ACTIVE_GRAPH, 0),
+                Role::Artifact { active: true } => (ACTIVE_CACHE, 0),
+                Role::Artifact { active: false } => (UNKNOWN, 2),
+                Role::Temporary => (TEMPORARY, 1),
+                Role::Run => (LIVE_RUN, 1),
+                Role::Phase => (RECOVERY, 0),
+                Role::Coordination => (COORDINATION, 0),
+                Role::Legacy => (LEGACY, 1),
+                Role::OtherGeneration => (LEASED_GENERATION, 1),
+                Role::State
+                    if Some(name) == self.direct_db || Some(name) == self.direct_manifest =>
+                {
+                    (ACTIVE_GRAPH, 0)
+                }
+                Role::State | Role::Managed | Role::Artifacts
+                    if matches!(
+                        name,
+                        b"writer.lock"
+                            | b"state.lock"
+                            | b"use.lock"
+                            | b"lease.lock"
+                            | b"config.json"
+                            | b"active.json"
+                            | b"coordinator.lock"
+                            | b"coordinator.json"
+                    ) || name.starts_with(b".reference-")
+                        || name.starts_with(b".publication.") =>
+                {
+                    (COORDINATION, 0)
+                }
+                _ => (UNKNOWN, 2),
+            }
+        }
+        fn child_role(&mut self, role: Role, name: &[u8]) -> Option<Role> {
+            match role {
+                Role::State | Role::Managed | Role::Artifacts if name == b".legacy-coverage" => {
+                    Some(Role::Coordination)
+                }
+                Role::State if Some(name) == self.storage_name => Some(Role::Managed),
+                Role::State if Some(name) == self.direct_artifacts => Some(Role::Artifacts),
+                Role::State if matches!(name, b"native-staging" | b"snapshots") => {
+                    Some(Role::Legacy)
+                }
+                Role::State if name == b"direct-runs" => Some(Role::Run),
+                Role::Managed if name == b"generations" => Some(Role::Generations),
+                Role::Managed if name == b"artifacts" => Some(Role::Artifacts),
+                Role::Managed if name == b"runs" => Some(Role::Run),
+                Role::Managed if name == b"phases" => Some(Role::Phase),
+                Role::Generations if name == &self.active[..self.active_len] => {
+                    Some(Role::ActiveGraph)
+                }
+                Role::Generations if name.starts_with(b"gen-") => Some(Role::OtherGeneration),
+                Role::Artifacts if name.len() == 2 && name.iter().all(u8::is_ascii_hexdigit) => {
+                    Some(Role::ArtifactShard([name[0], name[1]]))
+                }
+                Role::Artifacts | Role::ArtifactShard(_)
+                    if name.starts_with(b".tmp-") || name.starts_with(b".replaced-") =>
+                {
+                    Some(Role::Temporary)
+                }
+                Role::ArtifactShard(prefix)
+                    if name.len() == 64
+                        && name[..2] == prefix
+                        && name.iter().all(u8::is_ascii_hexdigit) =>
+                {
+                    Some(Role::Artifact {
+                        active: self.measurement.references_complete && self.key(name, false),
+                    })
+                }
+                Role::Run
+                    if name.starts_with(b"run-")
+                        || matches!(name, b"candidate" | b"staging" | b"workers") =>
+                {
+                    Some(Role::Run)
+                }
+                Role::Phase => Some(Role::Phase),
+                // Unknown nested directories are observed as incomplete; a
+                // program-looking parent is not proof that their contents are
+                // in the registered observation scope.
+                Role::Legacy
+                | Role::Temporary
+                | Role::ActiveGraph
+                | Role::OtherGeneration
+                | Role::Artifact { .. } => None,
+                _ => None,
+            }
+        }
+        fn walk(&mut self, directory: RootedDirectory, role: Role, path: &Path) -> io::Result<()> {
+            let mut roles = [None; MAX_DEPTH];
+            let memory = self.memory.clone();
+            let cancel = self.cancel;
+            let result = super::physical::rooted(path, directory, &memory, cancel, &mut |entry| {
+                let Some(metadata) = entry.metadata else {
+                    self.measurement.complete = false;
+                    self.unknown_sizes = true;
+                    return Ok(false);
+                };
+                let Some(identity) = entry.identity else {
+                    self.measurement.complete = false;
+                    self.unknown_sizes = true;
+                    return Ok(false);
+                };
+                if metadata.is_dir() {
+                    let selected = if entry.depth == 0 {
+                        Some(role)
+                    } else {
+                        roles[entry.depth - 1]
+                            .and_then(|parent| self.child_role(parent, entry.name))
+                    };
+                    let Some(selected) = selected else {
+                        self.measurement.complete = false;
+                        self.unknown_sizes = true;
+                        return Ok(false);
+                    };
+                    if !self.remember(identity) {
+                        return Ok(false);
+                    }
+                    roles[entry.depth] = Some(selected);
+                    let (category, disposition) = self.file_role(selected, b"");
+                    self.account(metadata, category, disposition);
+                    Ok(true)
+                } else if metadata.is_file() {
+                    if self.remember(identity) {
+                        let parent = if entry.depth == 0 {
+                            role
+                        } else {
+                            roles[entry.depth - 1].ok_or(super::physical::Problem::Limit)?
+                        };
+                        let (category, disposition) = self.file_role(parent, entry.name);
+                        self.account(metadata, category, disposition);
+                    }
+                    Ok(false)
+                } else {
+                    self.measurement.complete = false;
+                    self.unknown_sizes = true;
+                    Ok(false)
+                }
+            });
+            match result {
+                Ok(()) => Ok(()),
+                Err(super::physical::Problem::Limit) => {
+                    self.measurement.resource_limited = true;
+                    self.unknown_sizes = true;
+                    Err(io::ErrorKind::OutOfMemory.into())
+                }
+                Err(super::physical::Problem::Cancelled) => {
+                    self.unknown_sizes = true;
+                    Err(io::ErrorKind::Interrupted.into())
+                }
+                Err(super::physical::Problem::Io(kind)) => {
+                    self.unknown_sizes = true;
+                    Err(kind.into())
+                }
+            }
+        }
+        fn file(&mut self, path: &Path) -> io::Result<()> {
+            match std::fs::symlink_metadata(path) {
+                Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+                Err(error) => return Err(error),
+                Ok(_) => {}
+            }
+            let memory = self.memory.clone();
+            super::physical::path(path, &memory, &mut |entry| {
+                match (entry.metadata, entry.identity) {
+                    (Some(metadata), Some(identity)) if metadata.is_file() => {
+                        if self.remember(identity) {
+                            self.account(metadata, ACTIVE_GRAPH, 0);
+                        }
+                    }
+                    _ => {
+                        self.measurement.complete = false;
+                        self.unknown_sizes = true;
+                    }
+                }
+                Ok(false)
+            })
+            .map_err(|problem| match problem {
+                super::physical::Problem::Io(kind) => kind.into(),
+                super::physical::Problem::Limit => io::ErrorKind::OutOfMemory.into(),
+                super::physical::Problem::Cancelled => io::ErrorKind::Interrupted.into(),
+            })
+        }
+        fn scan_references(&mut self, file: File) -> io::Result<()> {
+            let source = file.try_clone()?;
+            fn read_at(file: &File, offset: u64, output: &mut [u8]) -> io::Result<usize> {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::FileExt;
+                    file.read_at(output, offset)
+                }
+                #[cfg(windows)]
+                {
+                    use std::os::windows::fs::FileExt;
+                    file.seek_read(output, offset)
+                }
+                #[cfg(not(any(unix, windows)))]
+                {
+                    let _ = (file, offset, output);
+                    Err(io::ErrorKind::Unsupported.into())
+                }
+            }
+            let mut reader = MaintenanceJsonReader::new(file, self.memory)
+                .map_err(|_| io::ErrorKind::InvalidData)?;
+            let files_hash: [u8; 32] = Sha256::digest(b"files").into();
+            let key_hash: [u8; 32] = Sha256::digest(b"artifact_key").into();
+            let mut depth = 0usize;
+            let mut files = false;
+            let mut want_files = false;
+            let mut want_key = false;
+            let schema_hash: [u8; 32] = Sha256::digest(b"schema_version").into();
+            let mut want_schema = false;
+            let mut schema_valid = false;
+            let mut saw_files = false;
+            let mut entry_key_seen = false;
+            self.measurement.references_complete = true;
+            while let Some(token) = reader
+                .next_token()
+                .map_err(|_| io::ErrorKind::InvalidData)?
+            {
+                if (self.cancel)() {
+                    return Err(io::ErrorKind::Interrupted.into());
+                }
+                match token.kind {
+                    TokenKind::ObjectStart | TokenKind::ArrayStart => {
+                        depth += 1;
+                        if want_files && depth == 2 {
+                            files = true;
+                            if saw_files {
+                                self.measurement.references_complete = false;
+                            }
+                            saw_files = true;
+                        }
+                        if files && depth == 3 {
+                            entry_key_seen = false;
+                        }
+                        want_files = false;
+                        want_schema = false;
+                    }
+                    TokenKind::ObjectEnd | TokenKind::ArrayEnd => {
+                        if files && depth == 2 {
+                            files = false;
+                        }
+                        depth = depth.saturating_sub(1);
+                    }
+                    TokenKind::String {
+                        key: true,
+                        decoded_sha256,
+                        ..
+                    } => {
+                        want_files = depth == 1 && decoded_sha256 == files_hash;
+                        want_key = files && depth == 3 && decoded_sha256 == key_hash;
+                        want_schema = depth == 1 && decoded_sha256 == schema_hash;
+                        if want_key {
+                            if entry_key_seen {
+                                self.measurement.references_complete = false;
+                            }
+                            entry_key_seen = true;
+                        }
+                    }
+                    TokenKind::String {
+                        key: false,
+                        decoded_len: 64,
+                        ..
+                    } if want_key => {
+                        let mut raw_key = [0u8; 66];
+                        if token.end.saturating_sub(token.start) != 66
+                            || read_at(&source, token.start, &mut raw_key).ok() != Some(66)
+                            || raw_key[0] != b'"'
+                            || raw_key[65] != b'"'
+                            || !self.key(&raw_key[1..65], true)
+                        {
+                            self.measurement.references_complete = false;
+                        }
+                        want_key = false;
+                    }
+                    TokenKind::Number if want_schema => {
+                        let mut version = [0u8; 1];
+                        schema_valid = token.end.saturating_sub(token.start) == 1
+                            && read_at(&source, token.start, &mut version).ok() == Some(1)
+                            && version[0] == b'5';
+                        want_schema = false;
+                    }
+                    TokenKind::Null if want_key => want_key = false,
+                    _ if want_key => {
+                        self.measurement.references_complete = false;
+                        want_key = false;
+                    }
+                    _ => {}
+                }
+            }
+            reader.finish().map_err(|_| io::ErrorKind::InvalidData)?;
+            self.measurement.references_complete &= schema_valid && saw_files;
+            Ok(())
+        }
+    }
+    pub(crate) fn observe(
+        target: &MaintenanceTarget,
+        memory: &CleanupMemory,
+        cancel: &dyn Fn() -> bool,
+    ) -> Result<Measurement, ResourceLimit> {
+        let scratch_size = [&target.repository_root, &target.state_root]
+            .iter()
+            .map(|p| p.as_os_str().len())
+            .sum::<usize>()
+            .checked_add(
+                target
+                    .storage_root
+                    .as_ref()
+                    .map_or(0, |p| p.as_os_str().len()),
+            )
+            .and_then(|n| {
+                n.checked_add(target.direct_pair.as_ref().map_or(0, |p| {
+                    p.database.as_os_str().len() + p.manifest.as_os_str().len()
+                }))
+            })
+            .and_then(|n| n.checked_mul(16))
+            .and_then(|n| n.checked_add(65536))
+            .ok_or(ResourceLimit::ArithmeticOverflow)?;
+        let _scratch = memory.reserve(scratch_size)?;
+        let direct = target
+            .direct_pair
+            .as_ref()
+            .map(|pair| super::super::layout::DirectLayout::new(&pair.database, &pair.manifest));
+        let artifacts = direct.as_ref().map(|layout| layout.artifact_root_path());
+        let domain = match (&direct, &target.storage_root) {
+            (Some(layout), _) => {
+                super::super::maintenance_ownership::ReferenceDomain::direct(layout).ok()
+            }
+            (_, Some(storage)) => super::super::maintenance_ownership::ReferenceDomain::managed(
+                &super::super::layout::ManagedLayout::new(storage),
+            )
+            .ok(),
+            _ => None,
+        };
+        let binding_before =
+            super::super::maintenance_admission::observe_maintenance_binding(target, memory).ok();
+        let epoch_before = domain.as_ref().and_then(|domain| {
+            match super::super::maintenance_ownership::observe_reference_epoch(domain).ok()? {
+                super::super::maintenance_ownership::EpochObservation::Verified(epoch) => {
+                    Some(epoch)
+                }
+                _ => None,
+            }
+        });
+        let storage_name = target
+            .storage_root
+            .as_ref()
+            .filter(|path| path.parent() == Some(target.state_root.as_path()))
+            .and_then(|path| path.file_name())
+            .map(|name| name.as_encoded_bytes());
+        let direct_artifacts = artifacts
+            .as_ref()
+            .filter(|path| path.parent() == Some(target.state_root.as_path()))
+            .and_then(|path| path.file_name())
+            .map(|name| name.as_encoded_bytes());
+        let direct_db = target
+            .direct_pair
+            .as_ref()
+            .filter(|pair| pair.database.parent() == Some(target.state_root.as_path()))
+            .and_then(|pair| pair.database.file_name())
+            .map(|name| name.as_encoded_bytes());
+        let direct_manifest = target
+            .direct_pair
+            .as_ref()
+            .filter(|pair| pair.manifest.parent() == Some(target.state_root.as_path()))
+            .and_then(|pair| pair.manifest.file_name())
+            .map(|name| name.as_encoded_bytes());
+        let mut walker = Walker {
+            memory,
+            cancel,
+            ids: memory.reserve(SLOTS * ID_SLOT)?.bytes(SLOTS * ID_SLOT)?,
+            keys: memory.reserve(SLOTS * KEY_SLOT)?.bytes(SLOTS * KEY_SLOT)?,
+            measurement: Measurement::default(),
+            unknown_sizes: false,
+            active: [0; 132],
+            active_len: 0,
+            storage_name,
+            direct_artifacts,
+            direct_db,
+            direct_manifest,
+        };
+        walker.ids.as_mut_slice().fill(0);
+        walker.keys.as_mut_slice().fill(0);
+        let open = |path: &Path| {
+            path_identity(path)
+                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))
+                .and_then(|identity| RootedDirectory::open_readonly_root(path, identity))
+        };
+        if let Some(storage) = &target.storage_root {
+            if let Ok(root) = open(storage) {
+                let active = (|| -> Result<_, io::Error> {
+                    let mut file = root.open_readonly_file(b"active.json")?;
+                    if file.metadata()?.len() > 1024 {
+                        return Err(io::ErrorKind::InvalidData.into());
+                    }
+                    let mut bytes = [0u8; 1024];
+                    let mut filled = 0;
+                    loop {
+                        let n = file.read(&mut bytes[filled..])?;
+                        if n == 0 {
+                            break;
+                        }
+                        filled += n;
+                        if filled == bytes.len() {
+                            break;
+                        }
+                    }
+                    let active: super::super::managed::ActiveGeneration =
+                        serde_json::from_slice(&bytes[..filled])
+                            .map_err(|_| io::ErrorKind::InvalidData)?;
+                    super::super::layout::validate_generation_id(&active.generation_id)
+                        .map_err(|_| io::ErrorKind::InvalidData)?;
+                    walker.active[..4].copy_from_slice(b"gen-");
+                    walker.active[4..4 + active.generation_id.len()]
+                        .copy_from_slice(active.generation_id.as_bytes());
+                    walker.active_len = 4 + active.generation_id.len();
+                    let generations = root.open_directory_readonly(b"generations")?;
+                    let generation =
+                        generations.open_directory_readonly(&walker.active[..walker.active_len])?;
+                    walker.scan_references(generation.open_readonly_file(b"manifest.json")?)?;
+                    let generation_path = storage.join("generations").join(
+                        std::str::from_utf8(&walker.active[..walker.active_len])
+                            .map_err(|_| io::ErrorKind::InvalidData)?,
+                    );
+                    walker.walk(generation, Role::ActiveGraph, &generation_path)?;
+                    Ok(())
+                })();
+                if active.is_err() {
+                    walker.measurement.references_complete = false;
+                    walker.measurement.complete = false;
+                }
+                // Give known retained physical objects category priority over
+                // aliases encountered later in the general state namespace.
+                match root.open_directory_readonly(b"artifacts") {
+                    Ok(artifacts) => {
+                        if walker
+                            .walk(artifacts, Role::Artifacts, &storage.join("artifacts"))
+                            .is_err()
+                        {
+                            walker.measurement.complete = false;
+                            walker.unknown_sizes = true;
+                        }
+                    }
+                    Err(_) => walker.measurement.complete = false,
+                }
+            }
+        } else if let Some(pair) = &target.direct_pair {
+            if let Some(parent) = pair.manifest.parent() {
+                if let (Ok(root), Some(name)) = (open(parent), pair.manifest.file_name()) {
+                    if root
+                        .open_readonly_file(name.as_encoded_bytes())
+                        .and_then(|file| walker.scan_references(file))
+                        .is_err()
+                    {
+                        walker.measurement.references_complete = false;
+                    }
+                }
+            }
+        }
+        if let Some(pair) = &target.direct_pair {
+            let mut observe_file = |path: &Path| {
+                if walker.file(path).is_err() {
+                    walker.measurement.complete = false;
+                    walker.unknown_sizes = true;
+                }
+            };
+            observe_file(&pair.database);
+            observe_file(&pair.manifest);
+            for suffix in super::super::layout::DIRECT_DB_SIDECAR_SUFFIXES {
+                let mut sidecar = pair.database.as_os_str().to_os_string();
+                sidecar.push(".");
+                sidecar.push(suffix);
+                observe_file(Path::new(&sidecar));
+            }
+            if let Some(artifacts) = &artifacts {
+                if open(artifacts)
+                    .and_then(|root| walker.walk(root, Role::Artifacts, artifacts))
+                    .is_err()
+                {
+                    walker.measurement.complete = false;
+                    walker.unknown_sizes = true;
+                }
+            }
+        }
+        if open(&target.state_root)
+            .and_then(|root| walker.walk(root, Role::State, &target.state_root))
+            .is_err()
+        {
+            walker.measurement.complete = false;
+            walker.unknown_sizes = true;
+        }
+        if let Some(storage) = &target.storage_root {
+            if open(storage)
+                .and_then(|root| walker.walk(root, Role::Managed, storage))
+                .is_err()
+            {
+                walker.measurement.complete = false;
+                walker.unknown_sizes = true;
+            }
+        }
+        let epoch_after = domain.as_ref().and_then(|domain| {
+            match super::super::maintenance_ownership::observe_reference_epoch(domain).ok()? {
+                super::super::maintenance_ownership::EpochObservation::Verified(epoch) => {
+                    Some(epoch)
+                }
+                _ => None,
+            }
+        });
+        walker.measurement.complete &= epoch_before.is_some() && epoch_before == epoch_after;
+        let binding_after =
+            super::super::maintenance_admission::observe_maintenance_binding(target, memory).ok();
+        walker.measurement.complete &= binding_before.is_some() && binding_before == binding_after;
+        walker.measurement.complete &= walker.measurement.references_complete && !cancel();
+        if walker.unknown_sizes {
+            walker.measurement.total.logical = None;
+            walker.measurement.total.allocated = None;
+            walker.measurement.unknown.logical = None;
+            walker.measurement.unknown.allocated = None;
+            walker.measurement.categories[UNKNOWN].logical = None;
+            walker.measurement.categories[UNKNOWN].allocated = None;
+        }
+        Ok(walker.measurement)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1218,6 +2290,28 @@ mod tests {
         walk(root, &mut out);
         out
     }
+    #[test]
+    fn bounded_detailed_inventory_retains_overdeep_state_and_reports_unknown_totals() {
+        let fixture = Fixture::new();
+        fixture.active();
+        let mut path = fixture.target.state_root.join("native-staging");
+        for _ in 0..70 {
+            path.push("d");
+        }
+        fs::create_dir_all(&path).unwrap();
+        fs::write(path.join("untouched.csv"), b"foreign bytes").unwrap();
+        let before = tree(&fixture.root);
+        let observation = inspect_storage(&fixture.target);
+        assert_eq!(observation.status, InventoryStatus::Partial);
+        assert!(observation
+            .issues
+            .iter()
+            .any(|reason| reason == "inventory_resource_limit_retained"));
+        assert_eq!(observation.totals.logical_bytes, None);
+        assert_eq!(observation.totals.allocated_bytes, None);
+        assert_eq!(tree(&fixture.root), before);
+    }
+
     #[cfg(windows)]
     #[test]
     fn dc_s1_windows_canonical_prefix_is_probed_only_as_complete_root() {
@@ -2004,7 +3098,9 @@ mod tests {
         ] {
             let roots = reconcile_observation_roots(roots);
             assert_eq!(roots, vec![ancestor.clone()]);
-            let mut scan = Scan::new();
+            let memory =
+                super::super::maintenance_budget::CleanupMemory::new(8 * 1024 * 1024).unwrap();
+            let mut scan = Scan::new(&memory);
             for root in roots {
                 scan.walk(&root);
             }

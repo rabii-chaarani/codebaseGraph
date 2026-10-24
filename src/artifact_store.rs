@@ -10,6 +10,7 @@ use std::fmt::Write as _;
 use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
+#[cfg(test)]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub(crate) const ARTIFACT_FORMAT_VERSION: u64 = 2;
@@ -48,6 +49,9 @@ pub(crate) struct ArtifactExpectations<'a> {
 #[derive(Debug, Clone)]
 pub(crate) struct ArtifactStore {
     root: PathBuf,
+    // Parser workers share a store. Serialize their short publications so
+    // ordinary parallel parsing does not discard optional creation receipts.
+    publication: std::sync::Arc<std::sync::Mutex<()>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -105,7 +109,10 @@ struct ArtifactKeyMaterial<'a> {
 
 impl ArtifactStore {
     pub(crate) fn new(root: impl Into<PathBuf>) -> Self {
-        Self { root: root.into() }
+        Self {
+            root: root.into(),
+            publication: std::sync::Arc::new(std::sync::Mutex::new(())),
+        }
     }
 
     pub(crate) fn key_for_request(
@@ -133,6 +140,10 @@ impl ArtifactStore {
         partition: &GraphPartition,
     ) -> Result<ArtifactWriteOutcome, NativeError> {
         validate_artifact_key(artifact_key)?;
+        let _publication = self
+            .publication
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         // Hold actual root/use and reference activity through every producer
         // write, publication, equality check and exact-created-leaf cleanup.
         let mutation =
@@ -271,12 +282,63 @@ impl ArtifactStore {
                 Ok(ArtifactWriteOutcome::Written)
             }
             Err(rename_error) => {
-                let existing = (|| -> Result<bool, NativeError> {
+                let existing = (|| -> Result<ArtifactWriteOutcome, NativeError> {
                     let directory = match prefix.open_directory(artifact_key.as_bytes()) {
                         Ok(dir) => dir,
                         Err(_) => return Err(NativeError::Io(rename_error)),
                     };
-                    let existing = directory.open_readonly_file(ENVELOPE_FILE_NAME.as_bytes())?;
+                    let existing = match directory.open_readonly_file(ENVELOPE_FILE_NAME.as_bytes())
+                    {
+                        Ok(existing) => existing,
+                        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                            let Some(lease) = publication.as_ref() else {
+                                return Err(error.into());
+                            };
+                            if !crate::storage::maintenance_origin::observe_published_origin_without_payload(
+                                lease, &root, &directory, key_bytes,
+                            )? {
+                                return Err(error.into());
+                            }
+                            // Retirement can leave this exact key directory and
+                            // its old receipt behind after removing the payload.
+                            // Publish only our newly created inode into the absent
+                            // leaf; existing provenance and neighbors stay intact.
+                            if path_identity(&self.root)? != root.identity()
+                                || root.open_directory(prefix_name)?.identity() != prefix.identity()
+                                || prefix.open_directory(artifact_key.as_bytes())?.identity()
+                                    != directory.identity()
+                            {
+                                return Err(NativeError::InvalidInput(
+                                    "artifact_publication_parent_changed".into(),
+                                ));
+                            }
+                            temp.rename_file_no_replace(
+                                ENVELOPE_FILE_NAME.as_bytes(),
+                                &directory,
+                                ENVELOPE_FILE_NAME.as_bytes(),
+                                payload_identity,
+                            )?;
+                            if path_identity(&self.root)? != root.identity()
+                                || root.open_directory(prefix_name)?.identity() != prefix.identity()
+                                || prefix.open_directory(artifact_key.as_bytes())?.identity()
+                                    != directory.identity()
+                                || file_identity(
+                                    &directory.open_readonly_file(ENVELOPE_FILE_NAME.as_bytes())?,
+                                )? != payload_identity
+                            {
+                                return Err(NativeError::InvalidInput(
+                                    "artifact_published_incarnation_changed".into(),
+                                ));
+                            }
+                            directory.sync_namespace()?;
+                            temp.sync_namespace()?;
+                            // The temporary receipt binds its original directory.
+                            // It cannot attest this existing directory, and any
+                            // older receipt cannot attest the new payload inode.
+                            return Ok(ArtifactWriteOutcome::Written);
+                        }
+                        Err(error) => return Err(error.into()),
+                    };
                     if !same_file_bytes(&existing, &payload)? {
                         return Err(NativeError::InvalidInput(
                             "artifact_existing_payload_differs_or_unproven".into(),
@@ -309,7 +371,7 @@ impl ArtifactStore {
                             _ => {}
                         }
                     }
-                    Ok(true)
+                    Ok(ArtifactWriteOutcome::Reused)
                 })();
                 cleanup_created(
                     &root,
@@ -318,8 +380,7 @@ impl ArtifactStore {
                     payload_identity,
                     receipt_identity,
                 );
-                existing?;
-                Ok(ArtifactWriteOutcome::Reused)
+                existing
             }
         }
     }
@@ -360,47 +421,7 @@ impl ArtifactStore {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error.into()),
         };
-        let file_bytes = file.metadata()?.len();
-        let accounted_bytes = artifact_decode_accounted_bytes(file_bytes);
-        if accounted_bytes > memory_limit_bytes {
-            return Err(NativeError::MemoryBudgetExceeded(
-                MemoryBudgetExceeded::new("artifact_load", memory_limit_bytes, accounted_bytes, 0),
-            ));
-        }
-        let mut reader = BufReader::with_capacity(ARTIFACT_IO_BUFFER_BYTES, file);
-        let envelope: ArtifactEnvelope =
-            match serde_json::from_reader(&mut reader.by_ref().take(file_bytes)) {
-                Ok(envelope) => envelope,
-                Err(_) => return Ok(None),
-            };
-        if reader.get_ref().metadata()?.len() != file_bytes {
-            return Ok(None);
-        }
-        if envelope.format_version != ARTIFACT_FORMAT_VERSION
-            || envelope.artifact_key != artifact_key
-        {
-            return Ok(None);
-        }
-        if envelope.partition.entry.path != expected.path
-            || envelope.partition.entry.content_hash != expected.content_hash
-            || envelope.partition.entry.language != expected.language
-        {
-            return Ok(None);
-        }
-        if envelope.partition.entry.artifact_key.as_deref() != Some(artifact_key) {
-            return Ok(None);
-        }
-        let payload_sha256 = match partition_payload_sha256(&envelope.partition) {
-            Ok(payload_sha256) => payload_sha256,
-            Err(_) => return Ok(None),
-        };
-        if envelope.partition_payload_sha256 != payload_sha256 {
-            return Ok(None);
-        }
-        if envelope.partition.validate_raw_rows().is_err() {
-            return Ok(None);
-        }
-        Ok(Some(envelope.partition))
+        load_partition_file(file, artifact_key, expected, memory_limit_bytes)
     }
 
     pub(crate) fn list_keys(&self) -> Result<Vec<String>, NativeError> {
@@ -449,6 +470,7 @@ impl ArtifactStore {
         Ok(keys)
     }
 
+    #[cfg(test)]
     pub(crate) fn delete_key(&self, artifact_key: &str) -> Result<bool, NativeError> {
         if validate_artifact_key(artifact_key).is_err() {
             return Ok(false);
@@ -483,6 +505,227 @@ fn is_valid_artifact_prefix(prefix: &str) -> bool {
             .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
 }
 
+fn load_partition_file(
+    file: File,
+    artifact_key: &str,
+    expected: &ArtifactExpectations<'_>,
+    memory_limit_bytes: u64,
+) -> Result<Option<GraphPartition>, NativeError> {
+    let file_bytes = file.metadata()?.len();
+    let accounted_bytes = artifact_decode_accounted_bytes(file_bytes);
+    if accounted_bytes > memory_limit_bytes {
+        return Err(NativeError::MemoryBudgetExceeded(
+            MemoryBudgetExceeded::new("artifact_load", memory_limit_bytes, accounted_bytes, 0),
+        ));
+    }
+    let mut reader = BufReader::with_capacity(ARTIFACT_IO_BUFFER_BYTES, file);
+    let envelope: ArtifactEnvelope =
+        match serde_json::from_reader(&mut reader.by_ref().take(file_bytes)) {
+            Ok(envelope) => envelope,
+            Err(_) => return Ok(None),
+        };
+    if reader.get_ref().metadata()?.len() != file_bytes {
+        return Ok(None);
+    }
+    if envelope.format_version != ARTIFACT_FORMAT_VERSION || envelope.artifact_key != artifact_key {
+        return Ok(None);
+    }
+    if envelope.partition.entry.path != expected.path
+        || envelope.partition.entry.content_hash != expected.content_hash
+        || envelope.partition.entry.language != expected.language
+    {
+        return Ok(None);
+    }
+    if envelope.partition.entry.artifact_key.as_deref() != Some(artifact_key) {
+        return Ok(None);
+    }
+    let payload_sha256 = match partition_payload_sha256(&envelope.partition) {
+        Ok(payload_sha256) => payload_sha256,
+        Err(_) => return Ok(None),
+    };
+    if envelope.partition_payload_sha256 != payload_sha256 {
+        return Ok(None);
+    }
+    if envelope.partition.validate_raw_rows().is_err() {
+        return Ok(None);
+    }
+    Ok(Some(envelope.partition))
+}
+
+// Only this specific primary publication conflict permits a pipeline-local
+// rebuild copy. IO, source changes, budget failures and other guards propagate.
+pub(crate) fn is_canonical_payload_conflict(error: &NativeError) -> bool {
+    matches!(error, NativeError::InvalidInput(reason)
+        if reason == "artifact_existing_payload_differs_or_unproven")
+}
+
+/// An actual create_new owner for one per-run rebuild copy. It never adopts a
+/// canonical cache entry or grants reference/DB/cleanup authority. Files are
+/// closed between planning and staging; only fixed creator facts are retained.
+pub(crate) struct TransientPartition {
+    path: PathBuf,
+    parent: crate::storage::locks::FileIdentity,
+    identity: crate::storage::locks::FileIdentity,
+    nonce: Option<[u8; 32]>,
+    stamp: Option<crate::storage::locks::FixedFileStamp>,
+    key: String,
+}
+impl TransientPartition {
+    pub(crate) fn plan_bytes<'a>(staging: &str, paths: impl Iterator<Item = &'a str>) -> u64 {
+        // Owner slots, conservative path/key capacities and the extra retained
+        // conflict diagnostic are reserved before parse-worker fanout.
+        let fixed = (std::mem::size_of::<Option<Self>>() as u64)
+            .saturating_add((staging.len() as u64).saturating_add(80).saturating_mul(2))
+            .saturating_add(512);
+        paths.fold(
+            std::mem::size_of::<Vec<Option<Self>>>() as u64,
+            |bytes, path| {
+                bytes
+                    .saturating_add(fixed)
+                    .saturating_add((path.len() as u64).saturating_mul(2))
+            },
+        )
+    }
+    pub(crate) fn create(
+        staging: &std::path::Path,
+        key: &str,
+        partition: &GraphPartition,
+    ) -> Result<Self, NativeError> {
+        use crate::process_lifecycle::FreshLifecycleFile;
+        use crate::storage::{locks, maintenance_controls::WorkspaceControlFile};
+        validate_artifact_key(key)?;
+        let parent = locks::path_identity(staging)?;
+        let mut operation = [0; 32];
+        getrandom::fill(&mut operation).map_err(|_| {
+            NativeError::InvalidInput("transient_artifact_nonce_unavailable".into())
+        })?;
+        let path = staging.join(format!(
+            ".partition-fallback-{}.json",
+            hex_lower(&operation)
+        ));
+        let fresh = FreshLifecycleFile::create(&path).map_err(NativeError::InvalidInput)?;
+        let mut owner = Self {
+            path: path.clone(),
+            parent,
+            identity: locks::file_identity(fresh.file())?,
+            nonce: None,
+            stamp: None,
+            key: key.into(),
+        };
+        let mut output = WorkspaceControlFile::from_created(fresh, &path);
+        owner.nonce = match &output {
+            WorkspaceControlFile::Tracked(tracked) => {
+                let _ =
+                    crate::storage::maintenance_origin::record_created_workspace_control(tracked);
+                Some(tracked.origin_binding().operation)
+            }
+            WorkspaceControlFile::Plain(fresh) => {
+                match locks::set_created_file_nonce(fresh.file(), &operation) {
+                    Ok(()) => {
+                        if locks::created_file_nonce(fresh.file())? != Some(operation) {
+                            return Err(NativeError::InvalidInput(
+                                "transient_artifact_creator_changed".into(),
+                            ));
+                        }
+                        Some(operation)
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::Unsupported => None,
+                    Err(error) => return Err(error.into()),
+                }
+            }
+        };
+        let digest = partition_payload_sha256(partition)?;
+        {
+            let mut writer = BufWriter::with_capacity(ARTIFACT_IO_BUFFER_BYTES, &mut output);
+            write_envelope(&mut writer, key, &digest, partition)?;
+            writer.flush()?;
+        }
+        if let WorkspaceControlFile::Plain(fresh) = &output {
+            owner.stamp = Some(
+                locks::FixedFileStamp::capture(fresh.file(), locks::FixedControlKind::File)
+                    .map_err(|_| {
+                        NativeError::InvalidInput("transient_artifact_creator_changed".into())
+                    })?,
+            );
+        }
+        output.finish_created_recorded()?;
+        let file = owner.open_created()?;
+        owner.stamp = Some(
+            locks::FixedFileStamp::capture(&file, locks::FixedControlKind::File).map_err(|_| {
+                NativeError::InvalidInput("transient_artifact_creator_changed".into())
+            })?,
+        );
+        Ok(owner)
+    }
+    fn open_created(&self) -> Result<File, NativeError> {
+        use crate::storage::locks::{self, RootedDirectory};
+        let parent = RootedDirectory::open_readonly_root(self.path.parent().unwrap(), self.parent)?;
+        let file = parent.open_readonly_file(self.path.file_name().unwrap().as_encoded_bytes())?;
+        if locks::file_identity(&file)? != self.identity
+            || self
+                .nonce
+                .is_some_and(|nonce| locks::created_file_nonce(&file).ok().flatten() != Some(nonce))
+        {
+            return Err(NativeError::InvalidInput(
+                "transient_artifact_creator_changed".into(),
+            ));
+        }
+        if let Some(stamp) = self.stamp {
+            stamp
+                .recheck(&file)
+                .map_err(|_| NativeError::InvalidInput("transient_artifact_changed".into()))?;
+        }
+        Ok(file)
+    }
+    pub(crate) fn load(
+        &self,
+        expected: &ArtifactExpectations<'_>,
+        memory_limit_bytes: u64,
+    ) -> Result<GraphPartition, NativeError> {
+        let file = self.open_created()?;
+        let partition = load_partition_file(file, &self.key, expected, memory_limit_bytes)?
+            .ok_or_else(|| NativeError::InvalidInput("transient_artifact_invalid".into()))?;
+        drop(self.open_created()?);
+        Ok(partition)
+    }
+}
+impl Drop for TransientPartition {
+    fn drop(&mut self) {
+        // Replacements/aliases remain at their own paths. Never recurse or move
+        // the parent or a neighbor; only the exact file we exclusively created.
+        if (self.nonce.is_none() && self.stamp.is_none()) || self.open_created().is_err() {
+            return;
+        }
+        if let Ok(parent) =
+            crate::storage::locks::RootedDirectory::open(self.path.parent().unwrap(), self.parent)
+        {
+            let _ = parent.unlink_file(
+                self.path.file_name().unwrap().as_encoded_bytes(),
+                self.identity,
+            );
+            let _ = parent.sync_namespace();
+        }
+    }
+}
+
+fn write_envelope(
+    writer: &mut impl Write,
+    artifact_key: &str,
+    partition_payload_sha256: &str,
+    partition: &GraphPartition,
+) -> Result<(), NativeError> {
+    serde_json::to_writer_pretty(
+        writer,
+        &ArtifactEnvelopeRef {
+            format_version: ARTIFACT_FORMAT_VERSION,
+            artifact_key,
+            partition_payload_sha256,
+            partition,
+        },
+    )?;
+    Ok(())
+}
+
 struct AcceptedWriter<'a> {
     file: &'a mut File,
     hash: Sha256,
@@ -514,14 +757,11 @@ fn write_envelope_file_and_sync(
         len: 0,
     };
     let mut writer = BufWriter::with_capacity(ARTIFACT_IO_BUFFER_BYTES, accepted);
-    serde_json::to_writer_pretty(
+    write_envelope(
         &mut writer,
-        &ArtifactEnvelopeRef {
-            format_version: ARTIFACT_FORMAT_VERSION,
-            artifact_key,
-            partition_payload_sha256,
-            partition,
-        },
+        artifact_key,
+        partition_payload_sha256,
+        partition,
     )?;
     writer.flush()?;
     writer.get_mut().file.sync_all()?;
@@ -577,7 +817,9 @@ fn verify_created_shape(
     Ok(())
 }
 #[cfg(test)]
-thread_local! {static PRODUCER_HOOK:std::cell::RefCell<Option<Box<dyn FnMut(&str,&crate::storage::locks::RootedDirectory)>>> =std::cell::RefCell::new(None);}
+type ProducerHook = Box<dyn FnMut(&str, &crate::storage::locks::RootedDirectory)>;
+#[cfg(test)]
+thread_local! {static PRODUCER_HOOK:std::cell::RefCell<Option<ProducerHook>> =std::cell::RefCell::new(None);}
 #[cfg(test)]
 fn producer_hook(stage: &str, directory: &crate::storage::locks::RootedDirectory) {
     PRODUCER_HOOK.with(|hook| {
@@ -585,6 +827,48 @@ fn producer_hook(stage: &str, directory: &crate::storage::locks::RootedDirectory
             hook(stage, directory);
         }
     });
+}
+/// Fixture-only interruption after the real producer has durably prepared its
+/// payload and receipt. No test constructs authority or receipt bytes.
+#[cfg(test)]
+pub(crate) fn leave_prepared_temporary_for_test(
+    store: &ArtifactStore,
+    key: &str,
+    partition: &GraphPartition,
+) -> Result<(), NativeError> {
+    struct PreparedInterruption;
+    struct Reset;
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            PRODUCER_HOOK.with(|hook| {
+                hook.borrow_mut().take();
+            });
+        }
+    }
+    PRODUCER_HOOK.with(|hook| {
+        assert!(
+            hook.borrow().is_none(),
+            "producer fixture hooks cannot nest"
+        );
+        *hook.borrow_mut() = Some(Box::new(|stage, _| {
+            if stage == "prepared" {
+                std::panic::panic_any(PreparedInterruption);
+            }
+        }));
+    });
+    let reset = Reset;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        store.store_partition(key, partition)
+    }));
+    drop(reset);
+    match result {
+        Err(payload) if payload.is::<PreparedInterruption>() => Ok(()),
+        Err(payload) => std::panic::resume_unwind(payload),
+        Ok(Err(error)) => Err(error),
+        Ok(Ok(_)) => Err(NativeError::InvalidInput(
+            "producer_preparation_fault_not_reached".into(),
+        )),
+    }
 }
 fn cleanup_created(
     root: &crate::storage::locks::RootedDirectory,
@@ -908,6 +1192,57 @@ mod tests {
             baseline,
             ArtifactStore::key_for_request(&request, &snapshot, Some(&changed_profile)).unwrap()
         );
+    }
+
+    #[test]
+    fn transient_partition_loads_only_actual_created_file_and_preserves_replacement() {
+        let root = unique_temp_dir("codebase-graph-transient-partition");
+        fs::create_dir_all(&root).unwrap();
+        let key = "a".repeat(64);
+        let partition = sample_partition_for_key(&key);
+        let expected = ArtifactExpectations {
+            path: "src/lib.rs",
+            content_hash: "content-hash",
+            language: "rust",
+        };
+        let owner = TransientPartition::create(&root, &key, &partition).unwrap();
+        let created = owner.path.clone();
+        owner
+            .load(&expected, 16 * 1024 * 1024)
+            .unwrap()
+            .validate_raw_rows()
+            .unwrap();
+        assert!(owner.load(&expected, 1).is_err());
+        drop(owner);
+        assert!(!created.exists());
+        let owner = TransientPartition::create(&root, &key, &partition).unwrap();
+        let replaced = owner.path.clone();
+        let retained = root.join("retained-own-copy");
+        fs::rename(&replaced, &retained).unwrap();
+        fs::write(&replaced, b"foreign replacement must remain").unwrap();
+        let id = crate::storage::locks::path_identity(&replaced).unwrap();
+        assert!(owner.load(&expected, 16 * 1024 * 1024).is_err());
+        drop(owner);
+        assert_eq!(crate::storage::locks::path_identity(&replaced).unwrap(), id);
+        assert_eq!(
+            fs::read(&replaced).unwrap(),
+            b"foreign replacement must remain"
+        );
+        assert!(retained.is_file());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn transient_fallback_selects_only_explicit_canonical_payload_conflict() {
+        assert!(is_canonical_payload_conflict(&NativeError::InvalidInput(
+            "artifact_existing_payload_differs_or_unproven".into(),
+        )));
+        assert!(!is_canonical_payload_conflict(&NativeError::InvalidInput(
+            "artifact_publication_parent_changed".into(),
+        )));
+        assert!(!is_canonical_payload_conflict(&NativeError::Io(
+            std::io::ErrorKind::NotFound.into()
+        )));
     }
 
     #[test]
@@ -1313,6 +1648,11 @@ mod tests {
             maintenance_ownership::{initialize_fresh_reference_domain, ReferenceDomain},
         };
         let base = unique_temp_dir(label);
+        fs::create_dir_all(&base).unwrap();
+        // Darwin's temp_dir may spell /var through a symlink. Positive
+        // capability fixtures use the actual created root, as production gates
+        // intentionally reject unresolved alias components.
+        let base = fs::canonicalize(base).unwrap();
         let layout = ManagedLayout::new(base.join("storage"));
         let fresh = create_fresh_reference_root(layout.storage_root())
             .unwrap()
@@ -1348,6 +1688,34 @@ mod tests {
             observe_artifact_origin(&root, &directory, &payload, decode_key(key), &memory).unwrap();
         assert_eq!(memory.used(), floor);
         result
+    }
+    #[test]
+    fn dc_origin_parallel_parser_publications_both_retain_real_creation_receipts() {
+        use crate::storage::maintenance_origin::{OriginObservation, OriginPhase};
+        let (base, root) = tracked_origin_fixture("dc-origin-parallel");
+        let store = ArtifactStore::new(&root);
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+        let mut workers = Vec::new();
+        for key in ["a".repeat(64), "b".repeat(64)] {
+            let store = store.clone();
+            let barrier = barrier.clone();
+            workers.push(std::thread::spawn(move || {
+                let partition = sample_partition_for_key(&key);
+                barrier.wait();
+                assert_eq!(
+                    store.store_partition(&key, &partition).unwrap(),
+                    ArtifactWriteOutcome::Written
+                );
+                key
+            }));
+        }
+        for worker in workers {
+            let key = worker.join().unwrap();
+            assert!(
+                matches!(observed_origin(&root,&key),OriginObservation::Observed(facts) if facts.phase==OriginPhase::Published && facts.directory_created && facts.payload_created)
+            );
+        }
+        fs::remove_dir_all(base).unwrap();
     }
     #[test]
     fn dc_origin_actual_fresh_publication_reuse_bounded_receipt_and_old_load_no_attestation() {
@@ -1409,6 +1777,147 @@ mod tests {
         assert_eq!(fs::read(dir.join("foreign-neighbor")).unwrap(), b"keep");
         fs::remove_dir_all(base).unwrap();
     }
+    #[test]
+    fn dc_origin_missing_payload_is_republished_without_adopting_retained_directory() {
+        use crate::storage::maintenance_origin::OriginObservation;
+        let (base, root) = tracked_origin_fixture("dc-origin-republish-missing");
+        let store = ArtifactStore::new(&root);
+        let key = "b".repeat(64);
+        let partition = sample_partition_for_key(&key);
+        assert_eq!(
+            store.store_partition(&key, &partition).unwrap(),
+            ArtifactWriteOutcome::Written
+        );
+        let dir = root.join("bb").join(&key);
+        let receipt = dir.join(".entry-origin");
+        let payload = dir.join("partition.json");
+        let directory_id = crate::storage::locks::path_identity(&dir).unwrap();
+        let receipt_id = crate::storage::locks::path_identity(&receipt).unwrap();
+        let receipt_bytes = fs::read(&receipt).unwrap();
+        let OriginObservation::Observed(facts) = observed_origin(&root, &key) else {
+            panic!("actual producer must establish the original receipt");
+        };
+        assert_eq!(
+            crate::storage::locks::created_file_nonce(&File::open(&receipt).unwrap()).unwrap(),
+            Some(facts.operation_nonce)
+        );
+
+        // Keep the removed inode open so the fresh producer cannot receive its
+        // identity through immediate filesystem inode reuse.
+        let old_payload = File::open(&payload).unwrap();
+        let old_payload_id = crate::storage::locks::file_identity(&old_payload).unwrap();
+        fs::remove_file(&payload).unwrap();
+        let neighbor = dir.join("foreign-neighbor");
+        fs::write(&neighbor, b"keep at original path").unwrap();
+        let neighbor_id = crate::storage::locks::path_identity(&neighbor).unwrap();
+        assert_eq!(
+            store.store_partition(&key, &partition).unwrap(),
+            ArtifactWriteOutcome::Written
+        );
+        assert_eq!(
+            crate::storage::locks::path_identity(&dir).unwrap(),
+            directory_id
+        );
+        assert_eq!(
+            crate::storage::locks::path_identity(&receipt).unwrap(),
+            receipt_id
+        );
+        assert_eq!(fs::read(&receipt).unwrap(), receipt_bytes);
+        assert_eq!(
+            crate::storage::locks::path_identity(&neighbor).unwrap(),
+            neighbor_id
+        );
+        assert_eq!(fs::read(&neighbor).unwrap(), b"keep at original path");
+        assert_ne!(
+            crate::storage::locks::path_identity(&payload).unwrap(),
+            old_payload_id
+        );
+        assert!(matches!(
+            observed_origin(&root, &key),
+            OriginObservation::Unknown(_)
+        ));
+        assert!(store
+            .load_partition(
+                &key,
+                &ArtifactExpectations {
+                    path: "src/lib.rs",
+                    content_hash: "content-hash",
+                    language: "rust",
+                }
+            )
+            .unwrap()
+            .is_some());
+        drop(old_payload);
+        fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn dc_origin_missing_payload_refuses_unstamped_or_spoofed_receipt_birth() {
+        use crate::storage::locks::{file_identity, FileIdentity};
+        let (base, root) = tracked_origin_fixture("dc-origin-republish-spoof");
+        let store = ArtifactStore::new(&root);
+        let seed = "a".repeat(64);
+        store
+            .store_partition(&seed, &sample_partition_for_key(&seed))
+            .unwrap();
+        let seed_receipt = root.join("aa").join(&seed).join(".entry-origin");
+        let original = fs::read(&seed_receipt).unwrap();
+        for forged_marker in [false, true] {
+            let key = if forged_marker {
+                "c".repeat(64)
+            } else {
+                "b".repeat(64)
+            };
+            let dir = root.join(&key[..2]).join(&key);
+            fs::create_dir_all(&dir).unwrap();
+            let directory_id = crate::storage::locks::path_identity(&dir).unwrap();
+            let receipt_path = dir.join(".entry-origin");
+            let mut receipt = File::create(&receipt_path).unwrap();
+            let receipt_id = file_identity(&receipt).unwrap();
+            let mut spoofed = original.clone();
+            let put_identity = |out: &mut [u8], id: FileIdentity| {
+                let (volume, index) = id.fixed_words();
+                out[..8].copy_from_slice(&volume.to_le_bytes());
+                out[8..16].copy_from_slice(&index.to_le_bytes());
+            };
+            for image in spoofed.chunks_exact_mut(512) {
+                image[64..96].copy_from_slice(&decode_key(&key));
+                put_identity(&mut image[208..224], directory_id);
+                put_identity(&mut image[240..256], receipt_id);
+                let checksum = Sha256::digest(&image[..480]);
+                image[480..].copy_from_slice(&checksum);
+            }
+            receipt.write_all(&spoofed).unwrap();
+            if forged_marker {
+                // A marker exists, but the actual creator nonce does not match
+                // the operation copied into this otherwise rebound chain.
+                crate::storage::locks::set_created_file_nonce(&receipt, &[91; 32]).unwrap();
+            }
+            let neighbor = dir.join("foreign-neighbor");
+            fs::write(&neighbor, b"keep").unwrap();
+            let neighbor_id = crate::storage::locks::path_identity(&neighbor).unwrap();
+            assert!(store
+                .store_partition(&key, &sample_partition_for_key(&key))
+                .is_err());
+            assert!(!dir.join("partition.json").exists());
+            assert_eq!(
+                crate::storage::locks::path_identity(&dir).unwrap(),
+                directory_id
+            );
+            assert_eq!(
+                crate::storage::locks::path_identity(&receipt_path).unwrap(),
+                receipt_id
+            );
+            assert_eq!(fs::read(&receipt_path).unwrap(), spoofed);
+            assert_eq!(
+                crate::storage::locks::path_identity(&neighbor).unwrap(),
+                neighbor_id
+            );
+            assert_eq!(fs::read(&neighbor).unwrap(), b"keep");
+        }
+        fs::remove_dir_all(base).unwrap();
+    }
+
     #[test]
     fn dc_origin_unproven_empty_or_different_canonical_is_never_moved_or_overwritten() {
         let (base, root) = tracked_origin_fixture("dc-origin-unproven");

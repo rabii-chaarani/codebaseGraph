@@ -1,7 +1,9 @@
 use crate::error::NativeError;
 use crate::storage::atomic::write_json_atomically;
 use crate::storage::layout::managed_generation_id;
-use crate::storage::locks::{open_locked, try_open_locked_in_existing_parent, LockMode, RunLease};
+use crate::storage::locks::RunLease;
+#[cfg(test)]
+use crate::storage::locks::{try_open_locked_in_existing_parent, LockMode};
 use crate::storage::maintenance_ownership::{ReferenceDomain, ReferenceMutation};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -44,10 +46,39 @@ pub(crate) struct RunWorkspaceRecovery {
 pub(crate) struct RunWorkspace {
     root: PathBuf,
     run_id: String,
-    lease: Option<RunLease>,
+    lease: Option<std::sync::Arc<RunLease>>,
     finished: bool,
     cleanup_barrier: Option<PathBuf>,
     _reference_mutation: Option<ReferenceMutation<'static>>,
+    workspace_registration:
+        Option<std::sync::Arc<crate::storage::maintenance_controls::WorkspaceRegistration>>,
+}
+
+/// Retains the real parent owner lease through phase creation/execution. This
+/// cannot be fabricated from an addressed run directory or serialized facts.
+#[derive(Debug)]
+pub(crate) struct ParentRunScope {
+    owner: std::sync::Arc<RunLease>,
+    registration: std::sync::Arc<crate::storage::maintenance_controls::WorkspaceRegistration>,
+}
+impl ParentRunScope {
+    pub(crate) fn retain(&self) -> Self {
+        Self {
+            owner: std::sync::Arc::clone(&self.owner),
+            registration: std::sync::Arc::clone(&self.registration),
+        }
+    }
+    pub(crate) fn domain(&self) -> &ReferenceDomain {
+        self.registration.domain()
+    }
+    pub(super) fn owner(&self) -> &RunLease {
+        &self.owner
+    }
+    pub(super) fn registration(
+        &self,
+    ) -> &crate::storage::maintenance_controls::WorkspaceRegistration {
+        &self.registration
+    }
 }
 
 impl RunWorkspace {
@@ -80,21 +111,41 @@ impl RunWorkspace {
         base_generation_id: Option<String>,
     ) -> Result<Self, NativeError> {
         let mutation = domain.map(ReferenceMutation::begin_in_domain).transpose()?;
+        let startup = domain.and_then(|domain| {
+            crate::storage::locks::open_shared_coordination(&domain.workspace_startup_path()).ok()
+        });
         fs::create_dir_all(runs_root)?;
         let run_id = managed_generation_id();
         let root = runs_root.join(format!("run-{run_id}"));
-        fs::create_dir(&root)?;
-        let lease = open_locked(root.join("lease.lock"), LockMode::Exclusive)?;
+        let fresh = crate::storage::layout::create_fresh_reference_root(&root)?
+            .ok_or_else(|| NativeError::InvalidInput("run root already exists".into()))?;
+        let anchor = crate::storage::locks::RootedDirectory::open(&root, fresh.identity())?;
+        let lease = crate::storage::locks::create_new_coordination_in(
+            &anchor,
+            b"lease.lock",
+            &root.join("lease.lock"),
+        )?;
+        let workspace_registration = match (domain, mutation.as_ref(), startup.as_ref()) {
+            (Some(domain), Some(mutation), Some(_)) => {
+                crate::storage::maintenance_controls::WorkspaceRegistration::create(
+                    &fresh, domain, mutation, &lease, 1,
+                )
+                .ok()
+                .flatten()
+            }
+            _ => None,
+        };
         let this = Self {
             root,
             run_id,
-            lease: Some(lease),
+            lease: Some(std::sync::Arc::new(lease)),
             finished: false,
             cleanup_barrier: None,
             _reference_mutation: mutation,
+            workspace_registration: workspace_registration.map(std::sync::Arc::new),
         };
         if let Some(domain) = domain {
-            write_json_atomically(
+            this.write_metadata(
                 &this.root.join(".reference-scope.json"),
                 &RunReferenceScope {
                     version: 1,
@@ -136,7 +187,7 @@ impl RunWorkspace {
             std::env::current_dir()?.join(root)
         };
         self.cleanup_barrier = Some(root.clone());
-        write_json_atomically(&self.root.join("cleanup-barrier.json"), &root)
+        self.write_metadata(&self.root.join("cleanup-barrier.json"), &root)
     }
 
     pub(crate) fn reference_domain(root: &Path) -> Result<Option<ReferenceDomain>, NativeError> {
@@ -150,6 +201,13 @@ impl RunWorkspace {
         }
         ensure_persisted_cleanup_allowed(&self.root)?;
         Ok(())
+    }
+
+    pub(crate) fn phase_owner_scope(&self) -> Option<ParentRunScope> {
+        Some(ParentRunScope {
+            owner: std::sync::Arc::clone(self.lease.as_ref()?),
+            registration: std::sync::Arc::clone(self.workspace_registration.as_ref()?),
+        })
     }
 
     pub(crate) fn root(&self) -> &Path {
@@ -224,6 +282,20 @@ impl RunWorkspace {
         self.finish_inner(error)
     }
 
+    /// Publish the actual owner-terminal event and retain its registered root
+    /// for bounded collection. No path/receipt supplied by a caller is adopted.
+    #[cfg(test)]
+    pub(crate) fn retire_for_maintenance(mut self) -> Result<PathBuf, NativeError> {
+        if self.workspace_registration.is_none() {
+            return Err(NativeError::InvalidInput(
+                "workspace ownership is unverified".into(),
+            ));
+        }
+        self.finish_inner(None)?;
+        Ok(self.root.clone())
+    }
+
+    #[cfg(test)]
     pub(crate) fn cleanup_orphans(
         runs_root: impl AsRef<Path>,
     ) -> Result<RunWorkspaceRecovery, NativeError> {
@@ -286,6 +358,17 @@ impl RunWorkspace {
     }
 
     fn finish_inner(&mut self, primary_error: Option<String>) -> Result<(), NativeError> {
+        if self
+            .lease
+            .as_ref()
+            .is_some_and(|lease| std::sync::Arc::strong_count(lease) != 1)
+        {
+            self.finished = true;
+            drop(self.lease.take());
+            return Err(NativeError::InvalidInput(
+                "workspace still has live phase ownership".into(),
+            ));
+        }
         if let Err(error) = self.ensure_cleanup_allowed() {
             self.finished = true;
             let _ = self.mark_cleanup_pending(primary_error, &error);
@@ -295,8 +378,38 @@ impl RunWorkspace {
         if let Some(error) = primary_error.clone() {
             self.mark_phase(RunPhase::Failed, None, Some(error))?;
         }
+        if let (Some(registration), Some(owner), Some(mutation)) = (
+            &self.workspace_registration,
+            self.lease.as_deref(),
+            self._reference_mutation.as_ref(),
+        ) {
+            let journal = self.journal()?;
+            let disposition = if journal.phase == RunPhase::Published {
+                crate::storage::maintenance_controls::WorkspaceDisposition::PublishedConsumed
+            } else {
+                crate::storage::maintenance_controls::WorkspaceDisposition::AbortedNotPublished
+            };
+            if journal.phase == RunPhase::Publishing {
+                self.finished = true;
+                drop(self.lease.take());
+                return Err(NativeError::InvalidInput(
+                    "workspace publication requires recovery".into(),
+                ));
+            }
+            if let Err(error) = registration.terminal(owner, mutation, disposition) {
+                self.finished = true;
+                let _ = self.mark_cleanup_pending(primary_error, &error);
+                drop(self.lease.take());
+                return Err(error);
+            }
+        }
         self.finished = true;
         drop(self.lease.take());
+        if self.workspace_registration.is_some() {
+            // Automatic disposal belongs to the bounded terminal-workspace
+            // lane; producer completion only publishes closure and releases.
+            return Ok(());
+        }
         if let Err(cleanup_error) = remove_run_tree(&self.root) {
             self.mark_cleanup_pending(primary_error, &cleanup_error)?;
             return Err(cleanup_error);
@@ -317,7 +430,35 @@ impl RunWorkspace {
     }
 
     fn write_journal(&self, journal: RunJournal) -> Result<(), NativeError> {
-        write_json_atomically(&self.journal_path(), &journal)
+        if let (Some(registration), Some(owner), Some(mutation)) = (
+            &self.workspace_registration,
+            self.lease.as_deref(),
+            self._reference_mutation.as_ref(),
+        ) {
+            let _ = registration.source_change(
+                owner,
+                mutation,
+                journal.phase == RunPhase::Publishing,
+                journal.phase == RunPhase::Published,
+            );
+        }
+        self.write_metadata(&self.journal_path(), &journal)
+    }
+    fn write_metadata(&self, path: &Path, value: &impl Serialize) -> Result<(), NativeError> {
+        if let (Some(registration), Some(owner), Some(mutation)) = (
+            &self.workspace_registration,
+            self.lease.as_deref(),
+            self._reference_mutation.as_ref(),
+        ) {
+            let publication = crate::process_lifecycle::write_private_json_recorded(path, value)
+                .map_err(NativeError::InvalidInput)?;
+            if let Some(publication) = publication {
+                let _ = registration.record_metadata(owner, mutation, &publication);
+            }
+            crate::storage::atomic::sync_dir(&self.root)
+        } else {
+            write_json_atomically(path, value)
+        }
     }
 }
 
@@ -326,15 +467,9 @@ impl Drop for RunWorkspace {
         if self.finished {
             return;
         }
-        let _ = self.mark_phase(
-            RunPhase::CleanupPending,
-            None,
-            Some("workspace dropped without finish or abort".to_string()),
-        );
-        drop(self.lease.take());
-        if self.ensure_cleanup_allowed().is_ok() {
-            let _ = remove_run_tree(&self.root);
-        }
+        // Registered roots must pass the same startup/output/containment
+        // closure as explicit finish. Failed closure leaves the root intact.
+        let _ = self.finish_inner(Some("workspace dropped without finish or abort".into()));
     }
 }
 
@@ -396,6 +531,7 @@ pub(super) fn ensure_persisted_cleanup_allowed(root: &Path) -> Result<(), Native
     crate::storage::containment::ensure_registry_empty(&barrier).map_err(NativeError::InvalidInput)
 }
 
+#[cfg(test)]
 fn read_orphan_journal(path: &Path, name: &str) -> Result<RunJournal, NativeError> {
     let journal_path = path.join("journal.json");
     if !journal_path.exists() {

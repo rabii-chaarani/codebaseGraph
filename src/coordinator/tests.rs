@@ -1,6 +1,51 @@
 use super::*;
 
 #[test]
+fn managed_coordinator_acquisition_preserves_real_fresh_root_enrollment() {
+    use crate::storage::maintenance_ownership::{
+        observe_reference_epoch, EpochObservation, ReferenceDomain,
+    };
+    let root = fs::canonicalize(temp_dir("managed-first-acquisition")).unwrap();
+    let state = root.join(".codebaseGraph");
+    fs::create_dir(&state).unwrap();
+    let storage = root.join("fresh-managed-storage");
+    let config_path = state.join("config.json");
+    fs::write(
+        &config_path,
+        serde_json::to_vec(&serde_json::json!({
+            "schema_version": 2, "repo_root": root, "storage_root": storage
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let selector = RepoSelector {
+        repo_root: Some(root.clone()),
+        config_path: Some(config_path),
+        ..Default::default()
+    };
+    let paths = coordinator_control_paths(&selector).unwrap();
+    assert!(
+        !storage.exists(),
+        "path-only observation created the producer namespace"
+    );
+    assert!(paths.managed_initialization.is_some());
+    let client =
+        CoordinatorClient::connect_or_start(CoordinatorApiConfig::new(selector, None)).unwrap();
+    assert!(paths.lock.exists());
+    let domain = ReferenceDomain::managed(&ManagedLayout::new(&storage)).unwrap();
+    assert!(
+        matches!(
+            observe_reference_epoch(&domain).unwrap(),
+            EpochObservation::Verified(_)
+        ),
+        "coordinator lock erased genuine first-root creation before factory enrollment"
+    );
+    client.drain_owned_operation();
+    drop(client);
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn request_receive_failure_is_retryable_before_dispatch() {
     use std::net::Shutdown;
 
@@ -45,6 +90,8 @@ fn retryable_receive_failure_retries_the_same_owner() {
             control: CoordinatorControlPaths {
                 lock: root.join("coordinator.lock"),
                 state: root.join("coordinator.json"),
+                managed_initialization: None,
+                direct_initialization: None,
             },
             api_config: direct_config(&root),
             route: Mutex::new(CoordinatorRoute {
@@ -441,8 +488,8 @@ where
             &server_state,
             &server_stop,
             &server_dispatcher,
-            Ok,
-            execute,
+            |_, invocation| Ok((invocation, None)),
+            move |operation_id, invocation, context, _| execute(operation_id, invocation, context),
         );
     });
     test_client_with_owner(root, state, stop, dispatcher, server)
@@ -503,6 +550,8 @@ fn test_client_with_state(root: &Path, state: CoordinatorState) -> CoordinatorCl
             control: CoordinatorControlPaths {
                 lock: root.join("coordinator.lock"),
                 state: root.join("coordinator.json"),
+                managed_initialization: None,
+                direct_initialization: None,
             },
             api_config: direct_config(root),
             route: Mutex::new(CoordinatorRoute {
@@ -597,6 +646,7 @@ fn maintenance_test_job() -> ExecutionJob {
         operation_id: "health".into(),
         invocation: test_invocation(),
         context: ExecutionContext::with_timeout(Instant::now(), Duration::from_secs(60)),
+        legacy_confirmation: None,
         stream,
         _connection: connection,
     }
@@ -741,14 +791,19 @@ mod joined_maintenance_driver {
                 _not_send: Rc::new(()),
             }))
         }
+        fn requires_legacy_confirmation(&self, _: &Work) -> bool {
+            true
+        }
         fn mutate(
             &mut self,
             _: &Work,
             grant: &mut MutationGrant,
-            confirmation: bool,
+            confirmation: Option<
+                &crate::storage::maintenance_scheduler::LegacyQuiescenceConfirmation<'_>,
+            >,
         ) -> Result<AttemptOutcome, DriverError> {
             grant.take_entry().unwrap();
-            self.confirmations.send(confirmation).unwrap();
+            self.confirmations.send(confirmation.is_some()).unwrap();
             match self.mode {
                 0 => Ok(AttemptOutcome::Complete),
                 1 => Err(DriverError::Mutation),
@@ -767,6 +822,28 @@ mod joined_maintenance_driver {
 
     #[test]
     fn dc_joined_driver_releases_real_permit_before_slow_drop_on_success_error_and_panic() {
+        struct ReleaseGates {
+            prepare: Option<Sender<()>>,
+            dispose: Option<Sender<()>>,
+        }
+        impl ReleaseGates {
+            fn prepare(&mut self) {
+                if let Some(tx) = self.prepare.take() {
+                    let _ = tx.send(());
+                }
+            }
+            fn dispose(&mut self) {
+                if let Some(tx) = self.dispose.take() {
+                    let _ = tx.send(());
+                }
+            }
+        }
+        impl Drop for ReleaseGates {
+            fn drop(&mut self) {
+                self.prepare();
+                self.dispose();
+            }
+        }
         for mode in 0..3 {
             let dispatcher = Arc::new(ExecutionDispatcher::default());
             let (prepare_entered, prepared) = mpsc::channel();
@@ -774,7 +851,9 @@ mod joined_maintenance_driver {
             let (dispose_entered, disposing) = mpsc::channel();
             let (release_dispose, dispose_release) = mpsc::channel();
             let (confirmations, confirmation) = mpsc::channel();
-            let mut runtime = MaintenanceRuntime::start(
+            // Confirmation must be part of the preparation snapshot. A later
+            // true request cannot authorize work prepared without that source.
+            let mut runtime = MaintenanceRuntime::start_with_confirmation(
                 CleanupMemory::new(1024 * 1024).unwrap(),
                 TargetBinding([1; 32]),
                 dispatcher.clone(),
@@ -788,8 +867,16 @@ mod joined_maintenance_driver {
                         _not_send: Rc::new(()),
                     })
                 },
+                true,
+                None,
             )
             .unwrap();
+            // Declared after runtime: unwind opens both gates before runtime
+            // Drop joins a preparer or slow Work destructor.
+            let mut release = ReleaseGates {
+                prepare: Some(release_prepare),
+                dispose: Some(release_dispose),
+            };
             prepared.recv_timeout(Duration::from_secs(5)).unwrap();
             real_request_progresses(&dispatcher);
             assert_eq!(
@@ -809,7 +896,7 @@ mod joined_maintenance_driver {
                 runtime.handle().request(Trigger::Health, None),
                 RequestDisposition::Enqueued
             );
-            release_prepare.send(()).unwrap();
+            release.prepare();
             assert!(confirmation.recv_timeout(Duration::from_secs(5)).unwrap());
             disposing.recv_timeout(Duration::from_secs(5)).unwrap();
             assert!(!dispatcher.active());
@@ -821,7 +908,12 @@ mod joined_maintenance_driver {
                 runtime.stop_and_join();
                 joined_tx.send(()).unwrap();
             });
+            let stopping_deadline = Instant::now() + Duration::from_secs(5);
             while handle.snapshot().liveness == DriverLiveness::Running {
+                assert!(
+                    Instant::now() < stopping_deadline,
+                    "join did not publish stopping"
+                );
                 thread::yield_now();
             }
             assert_eq!(
@@ -829,7 +921,7 @@ mod joined_maintenance_driver {
                 RequestDisposition::Stopped
             );
             assert!(joined.try_recv().is_err());
-            release_dispose.send(()).unwrap();
+            release.dispose();
             joined.recv_timeout(Duration::from_secs(5)).unwrap();
             joiner.join().unwrap();
             assert_eq!(
@@ -841,6 +933,124 @@ mod joined_maintenance_driver {
                 }
             );
         }
+    }
+
+    struct AdvisoryFinishWork {
+        disposed: Arc<AtomicBool>,
+        _not_send: Rc<()>,
+    }
+    impl Drop for AdvisoryFinishWork {
+        fn drop(&mut self) {
+            self.disposed.store(true, Ordering::Release);
+        }
+    }
+    struct AdvisoryFinishDriver {
+        entered: Sender<()>,
+        release: Receiver<()>,
+        disposed: Arc<AtomicBool>,
+        dispatcher: Arc<ExecutionDispatcher>,
+        recovered: Arc<AtomicBool>,
+    }
+    impl MaintenanceDriver for AdvisoryFinishDriver {
+        type Work = AdvisoryFinishWork;
+        fn prepare(
+            &mut self,
+            _: TargetBinding,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<Option<Self::Work>, DriverError> {
+            Ok(Some(AdvisoryFinishWork {
+                disposed: Arc::clone(&self.disposed),
+                _not_send: Rc::new(()),
+            }))
+        }
+        fn mutate(
+            &mut self,
+            _: &Self::Work,
+            _: &mut MutationGrant,
+            _: Option<&crate::storage::maintenance_scheduler::LegacyQuiescenceConfirmation<'_>>,
+        ) -> Result<AttemptOutcome, DriverError> {
+            assert!(self.dispatcher.active());
+            Ok(AttemptOutcome::Complete)
+        }
+        fn finish(
+            &mut self,
+            _: &mut Self::Work,
+            outcome: AttemptOutcome,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<AttemptOutcome, DriverError> {
+            self.entered.send(()).unwrap();
+            self.release.recv().unwrap();
+            Ok(outcome)
+        }
+        fn after_disposal(
+            &mut self,
+            outcome: AttemptOutcome,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<AttemptOutcome, DriverError> {
+            assert!(
+                self.disposed.load(Ordering::Acquire),
+                "old prepared work survived into required recovery"
+            );
+            use crate::storage::maintenance_scheduler::MaintenanceAdmission;
+            let dispatcher = Arc::clone(&self.dispatcher);
+            let entered = dispatcher.run_recovery(&mut || {
+                assert!(
+                    dispatcher.active(),
+                    "required recovery bypassed actual execution admission"
+                );
+                assert!(dispatcher.try_submit(maintenance_test_job()).is_err());
+                self.recovered.store(true, Ordering::Release);
+                Ok(())
+            })?;
+            assert!(entered);
+            Ok(outcome)
+        }
+    }
+    #[test]
+    fn dc_joined_driver_advisory_finish_allows_real_requests_then_drops_work_before_recovery() {
+        let dispatcher = Arc::new(ExecutionDispatcher::default());
+        let (entered, enter_rx) = mpsc::channel();
+        let (release_tx, release) = mpsc::channel();
+        let disposed = Arc::new(AtomicBool::new(false));
+        let recovered = Arc::new(AtomicBool::new(false));
+        let driver_disposed = Arc::clone(&disposed);
+        let driver_recovered = Arc::clone(&recovered);
+        let driver_dispatcher = Arc::clone(&dispatcher);
+        let mut runtime = MaintenanceRuntime::start(
+            CleanupMemory::new(1024 * 1024).unwrap(),
+            TargetBinding([7; 32]),
+            Arc::clone(&dispatcher),
+            move |_| {
+                Ok(AdvisoryFinishDriver {
+                    entered,
+                    release,
+                    disposed: driver_disposed,
+                    dispatcher: driver_dispatcher,
+                    recovered: driver_recovered,
+                })
+            },
+        )
+        .unwrap();
+        enter_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert!(!dispatcher.active());
+        real_request_progresses(&dispatcher);
+        assert!(runtime.handle().snapshot().last_attempt.is_none());
+        assert!(!disposed.load(Ordering::Acquire));
+        let handle = runtime.handle();
+        let waiter = thread::spawn(move || handle.wait_for_first_attempt());
+        release_tx.send(()).unwrap();
+        let completed = waiter.join().unwrap();
+        assert_eq!(
+            completed.last_attempt.unwrap().outcome,
+            AttemptOutcome::Complete
+        );
+        assert!(disposed.load(Ordering::Acquire));
+        assert!(recovered.load(Ordering::Acquire));
+        runtime.stop_and_join();
+        assert!(!dispatcher.active());
     }
 
     #[test]
@@ -1242,6 +1452,8 @@ mod refresh_owned_join {
             let control = CoordinatorControlPaths {
                 lock: root.join("coordinator.lock"),
                 state: root.join("coordinator.json"),
+                managed_initialization: None,
+                direct_initialization: None,
             };
             let lease = try_open_locked(&control.lock, LockMode::Exclusive)
                 .unwrap()

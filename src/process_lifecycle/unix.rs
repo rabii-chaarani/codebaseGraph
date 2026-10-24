@@ -28,15 +28,25 @@ pub(super) struct Contained {
 impl Contained {
     pub fn spawn(spec: &SpawnSpec, d: &mut BuildDescriptorV2) -> Result<Self, String> {
         let path = d.lifecycle_dir.join("writers.fifo");
-        let cpath = CString::new(path.as_os_str().as_encoded_bytes()).map_err(err)?;
-        if unsafe { libc::mkfifo(cpath.as_ptr(), 0o600) } != 0 {
-            return Err(err(io::Error::last_os_error()));
-        }
-        let fifo = OpenOptions::new()
-            .read(true)
-            .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
-            .open(&path)
+        // The covered creator pins the genuinely new FIFO before any child
+        // can inherit it. Linux does not support user xattrs on FIFOs; the
+        // private hardlink preserves its identity until terminal disposal.
+        let created = crate::storage::maintenance_controls::WorkspaceCreatedFifo::create_new(&path)
             .map_err(err)?;
+        let fifo = if let Some(created) = created {
+            let _ = crate::storage::maintenance_origin::record_created_workspace_fifo(&created);
+            created.file().try_clone().map_err(err)?
+        } else {
+            let cpath = CString::new(path.as_os_str().as_encoded_bytes()).map_err(err)?;
+            if unsafe { libc::mkfifo(cpath.as_ptr(), 0o600) } != 0 {
+                return Err(err(io::Error::last_os_error()));
+            }
+            OpenOptions::new()
+                .read(true)
+                .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
+                .open(&path)
+                .map_err(err)?
+        };
         let metadata = fifo.metadata().map_err(err)?;
         d.proof = ContainmentProof::UnixFifo {
             path: path.clone(),
@@ -66,6 +76,7 @@ impl Contained {
             &Launch {
                 spec: spec.clone(),
                 descriptor: d.clone(),
+                workspace_startup: None,
             },
         )?;
         let mut command = Command::new(std::env::current_exe().map_err(err)?);

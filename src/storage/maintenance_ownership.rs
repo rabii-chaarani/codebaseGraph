@@ -1,11 +1,13 @@
 //! Ownership capabilities for maintenance. Inventory observations are never
 //! capabilities; every capability below retains the actual OS locks.
 use super::atomic::write_json_atomically;
+#[cfg(test)]
 use super::containment::{probe_descriptor, BuildDescriptorV2};
-use super::inventory::{
-    bound_roles_overlap, default_direct, observe_binding, real_path, same_physical_path,
-    DirectPair, MaintenanceTarget, ObservedBinding,
-};
+use super::inventory::real_path;
+#[cfg(test)]
+use super::inventory::{bound_roles_overlap, default_direct, observe_binding, ObservedBinding};
+#[cfg(test)]
+use super::inventory::{same_physical_path, DirectPair, MaintenanceTarget};
 use super::layout::{DirectLayout, ManagedLayout};
 use super::locks::{
     open_locked, open_shared_coordination, path_identity, try_open_existing_locked,
@@ -200,9 +202,26 @@ impl ReferenceEpoch {
     }
 }
 #[derive(Debug)]
+// Fixed inline protocol/lease state: boxing would add a separately accounted allocation.
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum EpochObservation {
     Verified(ReferenceEpoch),
-    Pending(String),
+    Pending(PendingEpochReason),
+}
+
+#[cfg(test)]
+type PendingEpochReason = String;
+#[cfg(not(test))]
+type PendingEpochReason = ();
+fn pending_epoch(_reason: &str) -> EpochObservation {
+    #[cfg(test)]
+    {
+        EpochObservation::Pending(_reason.into())
+    }
+    #[cfg(not(test))]
+    {
+        EpochObservation::Pending(())
+    }
 }
 
 fn encode_reference_epoch(
@@ -300,6 +319,69 @@ fn epoch_root_matches(
         && record.serial == path_identity(&root.join(REFERENCE_SERIAL_FILE))?)
 }
 
+/// Borrows actual Exclusive root ownership throughout genuine domain creation.
+/// Fixed identities are captured before invoking other creation factories; no
+/// factory needs to reopen the exclusively locked coordination header.
+pub(crate) struct RootCreationAuthority<'a> {
+    lease: &'a ArtifactUseLease,
+    nonce: [u8; 32],
+    cohort: FileIdentity,
+    binding: FileIdentity,
+}
+impl RootCreationAuthority<'_> {
+    pub(crate) fn root(&self) -> &Path {
+        &self.lease.root
+    }
+    pub(crate) fn root_identity(&self) -> FileIdentity {
+        self.lease.identity
+    }
+    pub(crate) fn coordination_identity(&self) -> Result<FileIdentity, NativeError> {
+        self.lease.lock.identity()
+    }
+    pub(crate) fn incarnation(&self) -> Result<[u8; 32], NativeError> {
+        Ok(self.nonce)
+    }
+    pub(crate) fn cohort_identity(&self) -> Result<FileIdentity, NativeError> {
+        Ok(self.cohort)
+    }
+    pub(crate) fn publication_binding_identity(&self) -> Result<FileIdentity, NativeError> {
+        Ok(self.binding)
+    }
+}
+
+/// Mutating entry points call this BEFORE any coordinator/worker/state lock
+/// can create a missing Managed root. Only actual create_dir success supplies
+/// birth authority; observing an existing directory never enrolls it.
+pub(crate) fn initialize_fresh_managed_domain(layout: &ManagedLayout) -> Result<bool, NativeError> {
+    let Some(fresh) = super::layout::create_fresh_reference_root(layout.storage_root())? else {
+        return Ok(false);
+    };
+    layout.ensure_roots()?;
+    let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive)?;
+    let domain = ReferenceDomain::managed(layout)?;
+    // Cleanup controls remain optional for primary creation. Partial files are
+    // finite Unknown and are never repaired/adopted on a later entry.
+    Ok(initialize_fresh_reference_domain(&domain, &fresh, &writer).unwrap_or(false))
+}
+
+/// Exact first mutating Direct boundary. Existing destinations never acquire
+/// coverage from a later fresh cache or from observing an empty directory.
+pub(crate) fn initialize_fresh_direct_domain(layout: &DirectLayout) -> Result<bool, NativeError> {
+    let Some(parent) = layout.db_path().parent() else {
+        return Ok(false);
+    };
+    if layout.manifest_path().parent() != Some(parent) {
+        return Ok(false);
+    }
+    let Some(fresh) = super::layout::create_fresh_reference_root(parent)? else {
+        return Ok(false);
+    };
+    ArtifactUseLease::ensure_root(&layout.artifact_root_path())?;
+    let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive)?;
+    let domain = ReferenceDomain::direct(layout)?;
+    Ok(initialize_fresh_reference_domain(&domain, &fresh, &writer).unwrap_or(false))
+}
+
 /// Seed only from a complete, newly-created reference domain and its actual
 /// exclusive writer. Ordinary observation/admission and old-domain producers
 /// have no creation API. A fresh cache beside an old domain is insufficient.
@@ -324,6 +406,58 @@ pub(crate) fn initialize_fresh_reference_domain(
     let Some(use_incarnation) = root_use.lock.coordination_incarnation()? else {
         return Ok(false);
     };
+    {
+        // Every supported startup uses this same stable inode, including an
+        // idle destination which has never needed a helper process. Admission
+        // remains noncreating; birth supplies the missing coordination file.
+        let destination = super::locks::RootedDirectory::open(fresh.path(), fresh.identity())?;
+        let worker = if let Some(pair) = &domain.raw_address {
+            DirectLayout::new(&pair[0], &pair[1]).worker_lock_path()
+        } else {
+            domain.destination_root.join("worker.lock")
+        };
+        let worker_name = worker
+            .file_name()
+            .ok_or_else(|| invalid("worker_coordination_name_missing"))?
+            .as_encoded_bytes();
+        match destination.create_new(worker_name) {
+            Ok(file) => file.sync_all()?,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                destination.open_readonly_file(worker_name)?;
+            }
+            Err(error) => return Err(error.into()),
+        }
+        destination.sync_namespace()?;
+        let creation = RootCreationAuthority {
+            lease: &root_use,
+            nonce: use_incarnation,
+            cohort: match path_identity(&domain.artifact_root.join(".use-cohort.json")) {
+                Ok(id) => id,
+                Err(_) => return Ok(false),
+            },
+            binding: match path_identity(&domain.artifact_root.join(".publication.binding")) {
+                Ok(id) => id,
+                Err(_) => return Ok(false),
+            },
+        };
+        if super::maintenance_workspace_gate::initialize_fresh_workspace_gate(
+            fresh, writer, &creation,
+        )
+        .is_err()
+        {
+            return Ok(false);
+        }
+        if domain.scope.kind == 1
+            && super::maintenance_generation_gate::initialize_fresh_generation_gate(
+                fresh, writer, &creation,
+            )
+            .is_err()
+        {
+            // Optional cleanup activation never adds a primary publication
+            // requirement. No covered epoch is published after failed birth.
+            return Ok(false);
+        }
+    }
     let mut incarnation = [0; 32];
     getrandom::fill(&mut incarnation)
         .map_err(|_| invalid("reference_epoch_entropy_unavailable"))?;
@@ -367,24 +501,12 @@ pub(crate) fn observe_reference_epoch(
     let activity =
         match try_open_existing_locked(&root.join(REFERENCE_ACTIVITY_FILE), LockMode::Exclusive) {
             Ok(Some(guard)) => guard,
-            Ok(None) => {
-                return Ok(EpochObservation::Pending(
-                    "reference_activity_in_use".into(),
-                ))
-            }
-            Err(_) => {
-                return Ok(EpochObservation::Pending(
-                    "reference_epoch_missing_or_unverifiable".into(),
-                ))
-            }
+            Ok(None) => return Ok(pending_epoch("reference_activity_in_use")),
+            Err(_) => return Ok(pending_epoch("reference_epoch_missing_or_unverifiable")),
         };
     let epoch = match read_reference_epoch(root) {
         Ok(epoch) => epoch,
-        Err(_) => {
-            return Ok(EpochObservation::Pending(
-                "reference_epoch_missing_or_unverifiable".into(),
-            ))
-        }
+        Err(_) => return Ok(pending_epoch("reference_epoch_missing_or_unverifiable")),
     };
     let verified = (|| -> Result<bool, NativeError> {
         Ok(activity.is_current()?
@@ -394,9 +516,7 @@ pub(crate) fn observe_reference_epoch(
             && epoch.record.covered)
     })();
     if !matches!(verified, Ok(true)) {
-        return Ok(EpochObservation::Pending(
-            "reference_domain_unverified".into(),
-        ));
+        return Ok(pending_epoch("reference_domain_unverified"));
     }
     Ok(EpochObservation::Verified(epoch))
 }
@@ -550,6 +670,7 @@ fn fixed_epoch_open(
 /// and serial handles through a BORROWED callback. No full Work/closure owner
 /// moves in or drops on error/panic; callers retain their writer/root guards.
 /// No production caller exists until full bounded admission is reviewed.
+#[cfg(test)]
 fn with_canonical_epoch_advance(
     frame: &CanonicalEpochFrame<'_>,
     writer: &WriterLease,
@@ -578,6 +699,7 @@ fn with_canonical_epoch_advance(
 }
 
 pub(super) enum EpochLock<'a> {
+    #[cfg(test)]
     Legacy(&'a LockedFile),
     Fixed(&'a super::locks::FixedLockedFile),
 }
@@ -588,6 +710,7 @@ impl EpochLock<'_> {
         mode: LockMode,
     ) -> Result<bool, super::locks::FixedControlError> {
         match self {
+            #[cfg(test)]
             Self::Legacy(lock) => lock.matches_fixed_current(stamp, mode),
             Self::Fixed(lock) => lock.matches_fixed_current(stamp, mode),
         }
@@ -597,11 +720,14 @@ impl EpochLock<'_> {
         header: &[u8; super::locks::COORDINATION_HEADER_BYTES],
     ) -> Result<bool, super::locks::FixedControlError> {
         match self {
+            #[cfg(test)]
             Self::Legacy(lock) => lock.matches_fixed_header(header),
             Self::Fixed(lock) => lock.matches_fixed_header(header),
         }
     }
 }
+// Keep independent borrowed authorities and caller-owned scratch explicit.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn with_canonical_epoch_handles(
     frame: &CanonicalEpochFrame<'_>,
     writer: EpochLock<'_>,
@@ -763,6 +889,7 @@ pub(super) fn with_canonical_epoch_handles(
 #[derive(Debug)]
 struct ReferenceActivity {
     guard: Option<LockedFile>,
+    #[cfg(test)]
     reason: Option<String>,
     producer_binding: Option<ArtifactRootProducerBinding>,
 }
@@ -775,10 +902,11 @@ struct ArtifactRootProducerBinding {
     cohort: FileIdentity,
 }
 impl ReferenceActivity {
-    fn untracked(reason: &str) -> Self {
+    fn untracked(_reason: &str) -> Self {
         Self {
             guard: None,
-            reason: Some(reason.into()),
+            #[cfg(test)]
+            reason: Some(_reason.into()),
             producer_binding: None,
         }
     }
@@ -829,6 +957,7 @@ impl ReferenceActivity {
         if !epoch.record.covered {
             return Ok(Some(Self {
                 guard: Some(activity),
+                #[cfg(test)]
                 reason: Some("reference_coverage_unverified".into()),
                 producer_binding: None,
             }));
@@ -854,6 +983,7 @@ impl ReferenceActivity {
         }
         Ok(Some(Self {
             guard: Some(activity),
+            #[cfg(test)]
             reason: mismatch.then(|| "reference_domain_mismatch".into()),
             producer_binding: (!mismatch).then_some(ArtifactRootProducerBinding {
                 root: epoch.record.root,
@@ -1070,15 +1200,20 @@ impl ReferenceMutation<'_> {
         Ok(Some(capability))
     }
 
+    #[cfg(test)]
     pub(crate) fn tracked(&self) -> bool {
         self.activity.reason.is_none()
     }
+    #[cfg(test)]
     pub(crate) fn pending_reason(&self) -> Option<&str> {
         self.activity.reason.as_deref()
     }
 }
 
 #[derive(Debug)]
+#[cfg(test)]
+// Fixed inline protocol/lease state: boxing would add a separately accounted allocation.
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum MaintenanceAdmission<'a> {
     Acquired(MaintenanceLease<'a>),
     Deferred(String),
@@ -1086,10 +1221,12 @@ pub(crate) enum MaintenanceAdmission<'a> {
 }
 
 #[derive(Debug)]
+#[cfg(test)]
 enum DestinationWriter<'a> {
     Owned(WriterLease),
     Borrowed(&'a WriterLease),
 }
+#[cfg(test)]
 impl DestinationWriter<'_> {
     fn lease(&self) -> &WriterLease {
         match self {
@@ -1104,6 +1241,7 @@ impl DestinationWriter<'_> {
 /// `artifact_cohort_verified` establishes root-only producer provenance. S3 owns
 /// confirmation policy and persistence, using `cohort_record` under this lease.
 #[derive(Debug)]
+#[cfg(test)]
 pub(crate) struct MaintenanceLease<'a> {
     writer: DestinationWriter<'a>,
     writer_path: PathBuf,
@@ -1115,6 +1253,7 @@ pub(crate) struct MaintenanceLease<'a> {
     target: MaintenanceTarget,
     binding: ObservedBinding,
 }
+#[cfg(test)]
 impl MaintenanceLease<'_> {
     /// Invalidation only. A future prepared transition must validate its old
     /// epoch under this authority BEFORE calling; this is not a deletion seal.
@@ -1165,6 +1304,7 @@ impl MaintenanceLease<'_> {
         self.artifact.cohort_verified()
     }
 
+    #[cfg(test)]
     pub(crate) fn cohort_verified(&self) -> Result<bool, NativeError> {
         self.revalidate()?;
         if self.artifact.lock.coordination_incarnation()?.is_none() {
@@ -1392,12 +1532,14 @@ impl MaintenanceLease<'_> {
 }
 
 #[derive(Debug)]
+#[cfg(test)]
 pub(crate) struct VerifiedPublicationCohort<'a> {
     _record: &'a PublicationCohortRecord,
     _artifact: &'a ArtifactUseLease,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct PublicationCohortRecord {
     version: u32,
     origin: PublicationCohortOrigin,
@@ -1414,11 +1556,13 @@ pub(crate) struct PublicationCohortRecord {
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 enum PublicationCohortOrigin {
     GuardedPublication,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 enum PublicationScope {
     Direct(DirectPair),
     ManagedGeneration {
@@ -1432,6 +1576,7 @@ enum PublicationScope {
 /// Direct file identities invalidate the record after replacement/publication;
 /// S3 owns the new publication's ACTIVE incarnation and subsequent eligibility.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct DestinationCohortRecord {
     version: u32,
     writer_path: PathBuf,
@@ -1449,6 +1594,7 @@ pub(crate) struct DestinationCohortRecord {
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 enum DestinationCohortOrigin {
     ControlledMigration,
 }
@@ -1514,6 +1660,7 @@ pub(crate) struct ArtifactUseLease {
     identity: FileIdentity,
     lock: LockedFile,
     reference_activity: Option<ReferenceActivity>,
+    legacy_source: Option<super::maintenance_legacy_guard::LegacySourceUseGuard>,
 }
 impl ArtifactUseLease {
     pub(crate) fn ensure_root(root: &Path) -> Result<(), NativeError> {
@@ -1533,6 +1680,7 @@ impl ArtifactUseLease {
                         identity,
                         lock,
                         reference_activity: None,
+                        legacy_source: None,
                     };
                     lease.write_guarded_creation_record()?;
                 }
@@ -1621,6 +1769,7 @@ impl ArtifactUseLease {
             identity,
             lock,
             reference_activity: None,
+            legacy_source: None,
         };
         lease.revalidate()?;
         // Only the process that created this incarnation can establish guarded
@@ -1636,6 +1785,8 @@ impl ArtifactUseLease {
                 return Err(invalid("artifact_coordination_incarnation_changed"));
             }
         }
+        lease.legacy_source =
+            super::maintenance_legacy_guard::before_artifact_producer(&lease.root)?;
         lease.reference_activity = ReferenceActivity::begin(&lease.root, None, false, &lease.lock)?;
         Ok(lease)
     }
@@ -1684,6 +1835,7 @@ impl ArtifactUseLease {
             identity,
             lock,
             reference_activity: None,
+            legacy_source: None,
         };
         lease.revalidate()?;
         Ok(Some(lease))
@@ -1702,6 +1854,7 @@ impl ArtifactUseLease {
             identity,
             lock,
             reference_activity: None,
+            legacy_source: None,
         };
         lease.revalidate()?;
         Ok(Some(lease))
@@ -1733,6 +1886,7 @@ impl ArtifactUseLease {
             origin,
         })
     }
+    #[cfg(test)]
     fn cohort_verified(&self) -> Result<bool, NativeError> {
         self.revalidate()?;
         let path = self.root.join(".use-cohort.json");
@@ -1777,11 +1931,18 @@ pub(crate) struct DatabaseUseLease {
     parent_identity: FileIdentity,
     family: Arc<LockedFile>,
     lock: Arc<LockedFile>,
+    parent_pin: fs::File,
+    legacy_source: Option<super::maintenance_legacy_guard::LegacyNativeUseGuard>,
 }
 impl DatabaseUseLease {
     pub(crate) fn acquire_shared(database: &Path) -> Result<Self, NativeError> {
+        let startup = super::maintenance_generation_gate::before_native_open(database)?;
+        let legacy_source = super::maintenance_legacy_guard::before_native_open(database)?;
         let (parent, path) = database_lock_path(database, true)?;
         let parent_identity = directory_identity(&parent)?;
+        let parent_pin =
+            super::locks::RootedDirectory::open_readonly_root(&parent, parent_identity)?
+                .pin_handle()?;
         let family = Arc::new(open_shared_coordination(
             &parent.join(".database-use-family.lock"),
         )?);
@@ -1792,11 +1953,20 @@ impl DatabaseUseLease {
             parent_identity,
             family,
             lock,
+            parent_pin,
+            legacy_source,
         };
         lease.revalidate()?;
+        super::maintenance_generation_gate::recheck_before_native(startup.as_ref(), database)?;
+        super::maintenance_legacy_guard::recheck_before_native(
+            lease.legacy_source.as_ref(),
+            database,
+        )?;
+        drop(startup);
         Ok(lease)
     }
 
+    #[cfg(test)]
     pub(crate) fn try_exclusive(database: &Path) -> Result<Option<Self>, NativeError> {
         Ok(Self::try_exclusive_many(&[database])?.and_then(|mut leases| leases.pop()))
     }
@@ -1804,6 +1974,7 @@ impl DatabaseUseLease {
     /// One acquisition group owns each physical parent and each basename guard
     /// once. This is explicit group authority, never process-wide reentrancy.
     /// All guards remain live until the final group member using them drops.
+    #[cfg(test)]
     pub(crate) fn try_exclusive_many(
         databases: &[&Path],
     ) -> Result<Option<Vec<Self>>, NativeError> {
@@ -1813,6 +1984,9 @@ impl DatabaseUseLease {
         for database in databases {
             let (parent, path) = database_lock_path(database, false)?;
             let parent_identity = directory_identity(&parent)?;
+            let parent_pin =
+                super::locks::RootedDirectory::open_readonly_root(&parent, parent_identity)?
+                    .pin_handle()?;
             let family = if let Some((_, guard)) = families
                 .iter()
                 .find(|(identity, _)| *identity == parent_identity)
@@ -1854,6 +2028,8 @@ impl DatabaseUseLease {
                 parent_identity,
                 family,
                 lock,
+                parent_pin,
+                legacy_source: None,
             };
             lease.revalidate()?;
             leases.push(lease);
@@ -1867,7 +2043,8 @@ impl DatabaseUseLease {
                 .parent()
                 .ok_or_else(|| invalid("database_parent_missing"))?,
         )?;
-        if directory_identity(&self.parent)? != self.parent_identity
+        if super::locks::file_identity(&self.parent_pin)? != self.parent_identity
+            || directory_identity(&self.parent)? != self.parent_identity
             || directory_identity(&addressed_parent)? != self.parent_identity
             || !self.family.is_current()?
             || !self.lock.is_current()?
@@ -1879,6 +2056,7 @@ impl DatabaseUseLease {
 
     /// Identity evidence, never a transferable deletion capability. S3 retains
     /// this exclusive lease while validating/detaching the corresponding file.
+    #[cfg(test)]
     pub(crate) fn exclusive_proof(&self) -> Result<DatabaseUseProof, NativeError> {
         self.revalidate()?;
         if self.family.mode() != LockMode::Exclusive || self.lock.mode() != LockMode::Exclusive {
@@ -1908,6 +2086,7 @@ impl DatabaseUseLease {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct DatabaseUseProof {
     resource: PathBuf,
     file: Option<FileIdentity>,
@@ -1978,6 +2157,7 @@ fn invalid(reason: impl Into<String>) -> NativeError {
 /// Pure, noncreating observation held through the inventory scans. The caller
 /// may release state.lock before traversal; writer/use ownership and repeated
 /// tree observations remain necessary and uncertainty stays partial.
+#[cfg(test)]
 pub(crate) fn observe_artifact_cohort(
     root: &Path,
 ) -> Result<Option<ArtifactUseLease>, NativeError> {
@@ -1991,6 +2171,7 @@ pub(crate) fn observe_artifact_cohort(
         identity,
         lock,
         reference_activity: None,
+        legacy_source: None,
     };
     if lease.cohort_verified()? {
         Ok(Some(lease))
@@ -1999,11 +2180,13 @@ pub(crate) fn observe_artifact_cohort(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn claim_maintenance(
     target: &MaintenanceTarget,
 ) -> Result<MaintenanceAdmission<'static>, NativeError> {
     claim(target, None)
 }
+#[cfg(test)]
 pub(crate) fn claim_maintenance_with_owned<'a>(
     target: &MaintenanceTarget,
     writer: &'a WriterLease,
@@ -2011,6 +2194,7 @@ pub(crate) fn claim_maintenance_with_owned<'a>(
     claim(target, Some(writer))
 }
 
+#[cfg(test)]
 fn claim<'a>(
     target: &MaintenanceTarget,
     owned: Option<&'a WriterLease>,
@@ -2196,6 +2380,7 @@ fn claim<'a>(
 /// Hold every existing lifecycle lease through detachment; no retirement or
 /// deletion is performed here. Missing lease beside startup/launch state is
 /// unknown, and existing v1/ambiguous guardian evidence is preserved unchanged.
+#[cfg(test)]
 fn guard_registry(root: &Path, guards: &mut Vec<LockedFile>) -> Result<(), String> {
     let metadata = match fs::symlink_metadata(root) {
         Ok(m) => m,
@@ -2280,6 +2465,7 @@ pub(crate) fn register_direct_pair(layout: &DirectLayout) -> Result<(), NativeEr
     }
     Ok(())
 }
+#[cfg(test)]
 fn overlapping_pairs(
     target: &MaintenanceTarget,
     pair: &DirectPair,
@@ -2325,6 +2511,7 @@ fn overlapping_pairs(
     }
     Ok(None)
 }
+#[cfg(test)]
 fn resources_overlap(a: &Path, b: &Path) -> bool {
     // Actual distinct physical files are positive evidence on a case-sensitive
     // filesystem. The conservative coordination-key fallback is for absent or
@@ -2423,6 +2610,217 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn dc_workspace_root_removal_restarts_after_partial_effects_and_failed_done() {
+        use crate::storage::maintenance_budget::{CleanupMemory, MutationGrant};
+        use crate::storage::run_workspace::RunWorkspace;
+        use crate::storage::{
+            maintenance_controls as control, maintenance_workspace_gate as removal,
+        };
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "root-removal-restart");
+        let run = RunWorkspace::create_scoped(layout.runs_root(), &domain, None).unwrap();
+        let root = run.retire_for_maintenance().unwrap();
+        // This unit isolates root-final transport after receipt collection. All
+        // these files were produced by this fixture; production drains them via
+        // the origin candidate/journal path, exercised by controller tests.
+        for entry in fs::read_dir(root.join(".workspace-origins")).unwrap() {
+            fs::remove_file(entry.unwrap().path()).unwrap();
+        }
+        let memory = CleanupMemory::new(8 * 1024 * 1024).unwrap();
+        let mut terminal = control::prepare_terminal_workspace(&root, &domain, &memory).unwrap();
+        let mut initial =
+            removal::prepare_workspace_root_removal(&root, &domain, Some(&terminal), &memory)
+                .unwrap();
+        let mut grant = MutationGrant::for_test(100, Duration::from_secs(2));
+        assert_eq!(
+            removal::begin_workspace_root_removal(&mut terminal, &mut initial, &mut grant).unwrap(),
+            removal::WorkspaceRemovalProgress::Pending
+        );
+        drop(initial);
+        drop(terminal);
+        let mut saw_actual_removal = false;
+        let mut failed_done = false;
+        for _ in 0..16 {
+            let mut next = removal::prepare_pending_workspace_root_removal(&domain, &memory)
+                .unwrap()
+                .expect("durable exact removing intent");
+            let mut grant = MutationGrant::for_test(100, Duration::from_secs(2));
+            let root_existed_before = root.exists();
+            let result = removal::advance_workspace_root_removal(
+                &mut next,
+                &mut grant,
+                0,
+                &mut |outcome, _| {
+                    match outcome {
+                        removal::WorkspaceRootOutcome::Removed(_) => assert!(
+                            root_existed_before,
+                            "actual-rmdir token fabricated after a prior invocation"
+                        ),
+                        removal::WorkspaceRootOutcome::RecoveredMissing(_) => assert!(
+                            !root_existed_before,
+                            "missing-root recovery claimed while root was present"
+                        ),
+                    }
+                    assert!(!root.exists());
+                    failed_done = true;
+                    Err(crate::storage::locks::FixedControlProblem::InvalidRecord.into())
+                },
+            );
+            // Actual namespace removal and delivery of its durable Done event
+            // can occupy different grants. Observe the former independently.
+            saw_actual_removal |= root_existed_before && !root.exists();
+            if failed_done {
+                assert!(result.is_err());
+                break;
+            }
+            assert_eq!(result.unwrap(), removal::WorkspaceRemovalProgress::Pending);
+        }
+        assert!(saw_actual_removal);
+        assert!(
+            failed_done,
+            "first legitimate completion callback was not exercised"
+        );
+        assert!(!root.exists());
+        // Failed durable completion keeps Removing. Recovery cannot invent the
+        // prior invocation's actual-rmdir event; it reports RecoveredMissing.
+        let mut pending = removal::prepare_pending_workspace_root_removal(&domain, &memory)
+            .unwrap()
+            .unwrap();
+        let mut called = false;
+        let mut grant = MutationGrant::for_test(100, Duration::from_secs(2));
+        assert_eq!(
+            removal::advance_workspace_root_removal(
+                &mut pending,
+                &mut grant,
+                0,
+                &mut |outcome, _| {
+                    assert!(matches!(
+                        outcome,
+                        removal::WorkspaceRootOutcome::RecoveredMissing(_)
+                    ));
+                    called = true;
+                    Ok(())
+                }
+            )
+            .unwrap(),
+            removal::WorkspaceRemovalProgress::Complete
+        );
+        assert!(called);
+        assert!(
+            removal::prepare_pending_workspace_root_removal(&domain, &memory)
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn dc_workspace_root_removal_unknown_sibling_never_starts_intent() {
+        use crate::storage::maintenance_budget::CleanupMemory;
+        use crate::storage::run_workspace::RunWorkspace;
+        use crate::storage::{
+            maintenance_controls as control, maintenance_workspace_gate as removal,
+        };
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "root-removal-unknown");
+        let run = RunWorkspace::create_scoped(layout.runs_root(), &domain, None).unwrap();
+        let root = run.retire_for_maintenance().unwrap();
+        for entry in fs::read_dir(root.join(".workspace-origins")).unwrap() {
+            fs::remove_file(entry.unwrap().path()).unwrap();
+        }
+        let memory = CleanupMemory::new(8 * 1024 * 1024).unwrap();
+        let terminal = control::prepare_terminal_workspace(&root, &domain, &memory).unwrap();
+        fs::write(root.join("foreign-owned"), b"preserve").unwrap();
+        assert!(
+            removal::prepare_workspace_root_removal(&root, &domain, Some(&terminal), &memory)
+                .is_err()
+        );
+        assert_eq!(fs::read(root.join("foreign-owned")).unwrap(), b"preserve");
+        assert!(
+            removal::prepare_pending_workspace_root_removal(&domain, &memory)
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn dc_s2_workspace_terminal_admission_preserves_local_source_with_unrelated_producer() {
+        use crate::storage::maintenance_budget::{CleanupMemory, MutationGrant};
+        use crate::storage::maintenance_controls as control;
+        use crate::storage::run_workspace::RunWorkspace;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "terminal-source");
+        let run = RunWorkspace::create_scoped(layout.runs_root(), &domain, None).unwrap();
+        let mut output =
+            control::WorkspaceOutputFile::create_new(&run.staging_root().join("owned.csv"))
+                .unwrap()
+                .expect("genuine registered output");
+        output.write_all(b"a,b\n1,2\n").unwrap();
+        let completed = output.finish().unwrap();
+        assert_eq!(completed.len(), 8);
+        assert_eq!(
+            completed.digest(),
+            <[u8; 32]>::from(Sha256::digest(b"a,b\n1,2\n"))
+        );
+        drop(completed);
+        let root = run.retire_for_maintenance().unwrap();
+        assert!(root.exists());
+        let memory = CleanupMemory::new(8 * 1024 * 1024).unwrap();
+        let mut prepared = control::prepare_terminal_workspace(&root, &domain, &memory).unwrap();
+        let source = prepared.source_epoch();
+        let unrelated = ReferenceMutation::begin_in_domain(&domain).unwrap();
+        let mut called = false;
+        let mut grant = MutationGrant::for_test(100, Duration::from_secs(2));
+        let advance =
+            control::with_terminal_workspace(&mut prepared, &mut grant, 0, &mut |lease, _| {
+                assert_eq!(lease.source_epoch(), source);
+                assert_eq!(lease.root_identity(), path_identity(&root).unwrap());
+                called = true;
+                Ok(())
+            })
+            .unwrap();
+        assert!(called);
+        assert_eq!(advance.after, advance.before + 1);
+        assert_eq!(prepared.source_epoch(), source);
+        drop(unrelated);
+        assert_eq!(observed(&domain).counter(), advance.after);
+    }
+
+    #[test]
+    fn dc_s2_workspace_live_output_prevents_terminal_and_preserves_root() {
+        use crate::storage::maintenance_controls::WorkspaceOutputFile;
+        use crate::storage::run_workspace::RunWorkspace;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "terminal-live-output");
+        let run = RunWorkspace::create_scoped(layout.runs_root(), &domain, None).unwrap();
+        let root = run.root().to_owned();
+        let output = WorkspaceOutputFile::create_new(&run.staging_root().join("live.csv"))
+            .unwrap()
+            .unwrap();
+        assert!(run.retire_for_maintenance().is_err());
+        assert!(root.exists());
+        drop(output);
+        assert!(root.exists());
+    }
+
+    #[test]
+    fn dc_s2_workspace_child_owns_startup_gate_and_late_start_refuses_closed() {
+        use crate::storage::maintenance_controls::WorkspaceStartupBinding;
+        use crate::storage::run_workspace::RunWorkspace;
+        let fixture = Fixture::new();
+        let (layout, domain) = tracked_domain(&fixture, "terminal-child-startup");
+        let run = RunWorkspace::create_scoped(layout.runs_root(), &domain, None).unwrap();
+        let binding = WorkspaceStartupBinding::discover(run.root())
+            .unwrap()
+            .unwrap();
+        let child = binding.acquire().unwrap();
+        child.recheck_building().unwrap();
+        drop(child);
+        let root = run.retire_for_maintenance().unwrap();
+        assert!(binding.acquire().is_err());
+        assert!(root.exists());
+    }
+
+    #[test]
     fn dc_s2_producer_capability_borrows_live_tracked_root_and_activity() {
         let fixture = Fixture::new();
         let (_layout, domain) = tracked_domain(&fixture, "producer-capability");
@@ -2471,8 +2869,10 @@ pub(crate) mod tests {
             fn check() {}
         }
         impl<T: ?Sized> AmbiguousIfClone<()> for T {}
-        impl<T: ?Sized + Clone> AmbiguousIfClone<u8> for T {}
+        impl<T: Clone> AmbiguousIfClone<u8> for T {}
         let _ = <ArtifactRootProducerCapability<'_> as AmbiguousIfClone<_>>::check;
+        // Consume this non-owning proof before releasing or checking its lender.
+        #[allow(clippy::drop_non_drop)]
         drop(capability);
         // Capability drop cannot release its lender's actual ownership.
         assert!(try_open_existing_locked(
@@ -2553,6 +2953,8 @@ pub(crate) mod tests {
             .unwrap();
         assert_eq!(capability.root_use.mode(), LockMode::Exclusive);
         assert!(capability.revalidate().unwrap());
+        // Consume this non-owning proof before releasing or checking its lender.
+        #[allow(clippy::drop_non_drop)]
         drop(capability);
         drop(mutation);
         // Borrowed mutation/capability never releases caller-owned root guard.
@@ -2643,6 +3045,8 @@ pub(crate) mod tests {
         drop(reopened);
         // Namespace lease drop cannot release the caller's root/activity guards.
         assert!(ArtifactUseLease::try_exclusive(&root).unwrap().is_none());
+        // Consume this non-owning proof before releasing or checking its lender.
+        #[allow(clippy::drop_non_drop)]
         drop(capability);
         drop(mutation);
         assert!(ArtifactUseLease::try_exclusive(&root).unwrap().is_some());
@@ -2911,6 +3315,9 @@ pub(crate) mod tests {
         assert!(layout.generation(&first).unwrap().root().exists());
         let before_removal = observed(&domain);
         drop(retained);
+        assert!(layout.generation(&first).unwrap().root().exists());
+        assert_eq!(observed(&domain), before_removal);
+        store.cleanup().unwrap();
         assert!(!layout.generation(&first).unwrap().root().exists());
         assert!(observed(&domain).counter() > before_removal.counter());
     }
@@ -3198,8 +3605,21 @@ pub(crate) mod tests {
             EpochObservation::Pending(_)
         ));
         run.finish().unwrap();
-        assert!(!path.exists());
+        assert!(
+            path.exists(),
+            "producer completion retains its terminal root for bounded collection"
+        );
         assert!(observed(&domain).counter() > old.counter());
+        assert_eq!(
+            RunWorkspace::cleanup_orphans(layout.runs_root())
+                .unwrap()
+                .deleted,
+            1
+        );
+        assert!(
+            !path.exists(),
+            "explicit strict compatibility cleanup still removes the terminal root"
+        );
         let module = module_path!().split_once("::").unwrap().1;
         let test_name =
             format!("{module}::dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate");
@@ -5227,23 +5647,6 @@ impl PreparedEpoch {
             coordination_header: self.header,
         }
     }
-    pub(super) fn fingerprint(&self) -> [u8; 32] {
-        let mut hash = Sha256::new();
-        hash.update(self.header);
-        hash.update(self.expected.record.incarnation);
-        for identity in [
-            self.expected.record.root,
-            self.expected.record.use_lock,
-            self.expected.record.scope.destination,
-            self.expected.record.scope.writer,
-        ] {
-            let (a, b) = identity.fixed_words();
-            hash.update(a.to_le_bytes());
-            hash.update(b.to_le_bytes());
-        }
-        hash.update(self.expected.record.scope.address);
-        hash.finalize().into()
-    }
 }
 
 impl PreparedEpoch {
@@ -5265,12 +5668,65 @@ impl PreparedEpoch {
     /// Invalidate CURRENT global E under Shared activity + Exclusive serial.
     /// Immutable local source E/A/G are deliberately not parameters to this
     /// primitive. It cannot relabel a local sealed source as global references.
+    #[cfg(test)]
     pub(super) fn with_local_invalidation(
         &self,
         read: &mut super::maintenance_budget::ReservedBytes,
         scratch: &mut super::locks::FixedControlScratch,
         grant: &mut super::maintenance_budget::MutationGrant,
         effect_entries: usize,
+        apply: &mut impl FnMut(
+            CanonicalEpochAdvance,
+            &mut super::maintenance_budget::MutationGrant,
+        ) -> Result<(), super::locks::FixedControlError>,
+    ) -> Result<CanonicalEpochAdvance, super::locks::FixedControlError> {
+        self.with_local_validated(
+            read,
+            scratch,
+            grant,
+            effect_entries,
+            &mut |_, _| Ok(()),
+            apply,
+        )
+    }
+    pub(super) fn with_local_validated(
+        &self,
+        read: &mut super::maintenance_budget::ReservedBytes,
+        scratch: &mut super::locks::FixedControlScratch,
+        grant: &mut super::maintenance_budget::MutationGrant,
+        effect_entries: usize,
+        validate: &mut impl FnMut(
+            &mut super::locks::FixedControlScratch,
+            &mut super::maintenance_budget::MutationGrant,
+        ) -> Result<(), super::locks::FixedControlError>,
+        apply: &mut impl FnMut(
+            CanonicalEpochAdvance,
+            &mut super::maintenance_budget::MutationGrant,
+        ) -> Result<(), super::locks::FixedControlError>,
+    ) -> Result<CanonicalEpochAdvance, super::locks::FixedControlError> {
+        self.with_local_validated_owned_root(
+            None,
+            read,
+            scratch,
+            grant,
+            effect_entries,
+            validate,
+            apply,
+        )
+    }
+    // Keep independent borrowed authorities and caller-owned scratch explicit.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn with_local_validated_owned_root(
+        &self,
+        borrowed_root: Option<&super::locks::FixedLockedFile>,
+        read: &mut super::maintenance_budget::ReservedBytes,
+        scratch: &mut super::locks::FixedControlScratch,
+        grant: &mut super::maintenance_budget::MutationGrant,
+        effect_entries: usize,
+        validate: &mut impl FnMut(
+            &mut super::locks::FixedControlScratch,
+            &mut super::maintenance_budget::MutationGrant,
+        ) -> Result<(), super::locks::FixedControlError>,
         apply: &mut impl FnMut(
             CanonicalEpochAdvance,
             &mut super::maintenance_budget::MutationGrant,
@@ -5283,9 +5739,22 @@ impl PreparedEpoch {
         grant.check()?;
         let frame = self.frame();
         let expected = &self.expected.record;
-        let root_file = fixed_epoch_open(frame.paths.root_use, Kind::File, false, scratch, grant)?;
-        let root_use = FixedLockedFile::try_lock(root_file, LockMode::Shared)?
+        let owned_root = if borrowed_root.is_none() {
+            let root_file =
+                fixed_epoch_open(frame.paths.root_use, Kind::File, false, scratch, grant)?;
+            Some(
+                FixedLockedFile::try_lock(root_file, LockMode::Shared)?
+                    .ok_or(Error::Invalid(Problem::Busy))?,
+            )
+        } else {
+            None
+        };
+        let root_use = borrowed_root
+            .or(owned_root.as_ref())
             .ok_or(Error::Invalid(Problem::Busy))?;
+        if borrowed_root.is_some() && root_use.mode() != LockMode::Exclusive {
+            return Err(Error::Invalid(Problem::Busy));
+        }
         if FixedFileStamp::capture(root_use.file(), Kind::File)?.identity() != expected.use_lock
             || !root_use.matches_fixed_header(&self.header)?
         {
@@ -5384,6 +5853,7 @@ impl PreparedEpoch {
         bytes[8..12].copy_from_slice(&((updated_end + suffix.len() - 12) as u32).to_le_bytes());
         let checksum = Sha256::digest(&bytes[..REFERENCE_EPOCH_SIZE - 32]);
         bytes[REFERENCE_EPOCH_SIZE - 32..].copy_from_slice(&checksum);
+        validate(scratch, grant)?;
         grant.take_entries(effect_entries.checked_add(2).ok_or(Error::Resource(
             super::maintenance_budget::ResourceLimit::ArithmeticOverflow,
         ))?)?;
@@ -5411,7 +5881,385 @@ impl PreparedEpoch {
         apply(advance, grant)?;
         drop(serial);
         drop(activity);
-        drop(root_use);
+        drop(owned_root);
         Ok(advance)
     }
 }
+
+impl PreparedEpoch {
+    pub(super) fn root_facts(&self) -> (FileIdentity, FileIdentity, [u8; 32], FileIdentity) {
+        (
+            self.expected.record.root,
+            self.expected.record.use_lock,
+            self.expected.record.use_incarnation,
+            self.expected.record.cohort,
+        )
+    }
+}
+
+pub(super) struct FreshWorkspacePublisher {
+    pub(super) anchor: super::locks::RootedDirectory,
+    pub(super) nonce: [u8; 32],
+    pub(super) owner: FileIdentity,
+    pub(super) parent_root: FileIdentity,
+    pub(super) parent_coordination: FileIdentity,
+    pub(super) parent_nonce: [u8; 32],
+    pub(super) parent_cohort: FileIdentity,
+    pub(super) publication_binding: FileIdentity,
+    pub(super) registry: FileIdentity,
+}
+/// Private genuine-creation hook. Kind1 is a scoped managed run, Kind2 is a
+/// registered worker workspace. Prefix/shape or a borrowed root-use bool cannot
+/// enter this factory; both the fresh physical root and live domain mutation
+/// are required. Optional proof failure leaves primary work untracked.
+pub(super) fn initialize_workspace_publisher(
+    fresh: &super::layout::FreshReferenceRoot,
+    domain: &ReferenceDomain,
+    mutation: &ReferenceMutation<'_>,
+    owner: &LockedFile,
+    kind: u8,
+) -> Result<Option<FreshWorkspacePublisher>, NativeError> {
+    let Some(parent) = mutation.artifact_root_producer_capability()? else {
+        return Ok(None);
+    };
+    if !parent.revalidate()? || parent.root() != domain.artifact_root() || !domain.revalidate()? {
+        return Ok(None);
+    }
+    let registry = match (kind, domain.scope.kind) {
+        (1, 1) => domain.reference_roots[1]
+            .clone()
+            .ok_or_else(|| invalid("run registry missing"))?,
+        (1, 2) => fresh
+            .path()
+            .parent()
+            .ok_or_else(|| invalid("run registry missing"))?
+            .to_owned(),
+        (3, 1) => domain.destination_root.join("phases"),
+        (3, 2) => {
+            let pair = domain
+                .raw_address
+                .as_ref()
+                .ok_or_else(|| invalid("direct addresses missing"))?;
+            DirectLayout::new(&pair[0], &pair[1]).phase_workspace_root()
+        }
+        (2, 1) => domain.destination_root.join("workers"),
+        (2, 2) => {
+            let pair = domain
+                .raw_address
+                .as_ref()
+                .ok_or_else(|| invalid("direct addresses missing"))?;
+            DirectLayout::new(&pair[0], &pair[1]).worker_workspace_root_path()
+        }
+        _ => return Ok(None),
+    };
+    let registry_id = directory_identity(&registry)?;
+    if fresh.path().parent().map(directory_identity).transpose()? != Some(registry_id)
+        || directory_identity(fresh.path())? != fresh.identity()
+        || !owner.verifies(&fresh.path().join("lease.lock"), LockMode::Exclusive)?
+    {
+        return Ok(None);
+    }
+    let anchor = super::locks::RootedDirectory::open(fresh.path(), fresh.identity())?;
+    let mut nonce = [0; 32];
+    getrandom::fill(&mut nonce).map_err(|_| invalid("workspace entropy unavailable"))?;
+    owner.initialize_creation_incarnation(nonce)?;
+    let creation = FreshPublicationRoot {
+        anchor: &anchor,
+        root_use: owner,
+        incarnation: nonce,
+    };
+    let mut scratch = super::maintenance_controls::PublicationFactoryScratch::new();
+    if super::maintenance_controls::initialize_creation_controls(
+        &creation,
+        &mut scratch,
+        &super::maintenance_controls::WorkspaceControl::building().encode(),
+    )
+    .is_err()
+    {
+        return Ok(None);
+    }
+    let publication_binding = super::locks::file_identity(
+        &anchor.open_readonly_file(super::maintenance_controls::BINDING_NAME)?,
+    )?;
+    Ok(Some(FreshWorkspacePublisher {
+        anchor,
+        nonce,
+        owner: owner.identity()?,
+        parent_root: parent.root_identity(),
+        parent_coordination: parent.coordination_identity(),
+        parent_nonce: parent.incarnation(),
+        parent_cohort: parent.cohort_identity(),
+        publication_binding,
+        registry: registry_id,
+    }))
+}
+impl ReferenceDomain {
+    pub(crate) fn workspace_startup_path(&self) -> PathBuf {
+        self.destination_root.join(".workspace-startup.lock")
+    }
+    pub(crate) fn workspace_registry(
+        &self,
+        kind: u8,
+        state_root: Option<&Path>,
+    ) -> Option<PathBuf> {
+        match (self.scope.kind, kind) {
+            (1, 1) => Some(self.destination_root.join("runs")),
+            (1, 2) => Some(self.destination_root.join("workers")),
+            (1, 3) => Some(self.destination_root.join("phases")),
+            (2, 1) => Some(
+                state_root
+                    .unwrap_or(&self.destination_root)
+                    .join("direct-runs"),
+            ),
+            (2, 2) | (2, 3) => self.raw_address.as_ref().map(|pair| {
+                let layout = DirectLayout::new(&pair[0], &pair[1]);
+                if kind == 2 {
+                    layout.worker_workspace_root_path()
+                } else {
+                    layout.phase_workspace_root()
+                }
+            }),
+            _ => None,
+        }
+    }
+}
+
+/// Storage-private sealed-by-visibility producer interface. Implementations
+/// borrow actual live owner/activity guards; serialized facts cannot implement
+/// this at any external producer API boundary.
+pub(super) trait PublicationRootAuthority {
+    fn root(&self) -> &Path;
+    fn root_identity(&self) -> FileIdentity;
+    fn coordination_identity(&self) -> FileIdentity;
+    fn incarnation(&self) -> [u8; 32];
+    fn cohort_identity(&self) -> FileIdentity;
+    fn revalidate(&self) -> Result<bool, NativeError>;
+}
+impl PublicationRootAuthority for ArtifactRootProducerCapability<'_> {
+    fn root(&self) -> &Path {
+        ArtifactRootProducerCapability::root(self)
+    }
+    fn root_identity(&self) -> FileIdentity {
+        ArtifactRootProducerCapability::root_identity(self)
+    }
+    fn coordination_identity(&self) -> FileIdentity {
+        ArtifactRootProducerCapability::coordination_identity(self)
+    }
+    fn incarnation(&self) -> [u8; 32] {
+        ArtifactRootProducerCapability::incarnation(self)
+    }
+    fn cohort_identity(&self) -> FileIdentity {
+        ArtifactRootProducerCapability::cohort_identity(self)
+    }
+    fn revalidate(&self) -> Result<bool, NativeError> {
+        ArtifactRootProducerCapability::revalidate(self)
+    }
+}
+
+impl PreparedEpoch {
+    fn advisory_current(
+        &self,
+        read: &mut super::maintenance_budget::ReservedBytes,
+        scratch: &mut super::locks::FixedControlScratch,
+    ) -> Result<bool, super::locks::FixedControlError> {
+        use super::locks::{
+            open_fixed_control, read_fixed_control, FixedControlKind as Kind, FixedFileStamp,
+            FixedLockedFile,
+        };
+        let frame = self.frame();
+        let expected = &self.expected.record;
+        let root_file = open_fixed_control(frame.paths.root_use, Kind::File, false, scratch)?;
+        let Some(root_use) = FixedLockedFile::try_lock(root_file, LockMode::Shared)? else {
+            return Ok(false);
+        };
+        let activity_file = open_fixed_control(frame.paths.activity, Kind::File, true, scratch)?;
+        let Some(activity) = FixedLockedFile::try_lock(activity_file, LockMode::Exclusive)? else {
+            return Ok(false);
+        };
+        if FixedFileStamp::capture(root_use.file(), Kind::File)?.identity() != expected.use_lock
+            || !root_use.matches_fixed_header(&self.header)?
+            || FixedFileStamp::capture(activity.file(), Kind::File)?.identity() != expected.activity
+        {
+            return Ok(false);
+        }
+        for (path, kind, id) in [
+            (frame.paths.root, Kind::Directory, expected.root),
+            (
+                frame.paths.destination,
+                Kind::Directory,
+                expected.scope.destination,
+            ),
+            (frame.paths.writer, Kind::File, expected.scope.writer),
+            (frame.paths.root_use, Kind::File, expected.use_lock),
+            (frame.paths.activity, Kind::File, expected.activity),
+        ] {
+            let file = open_fixed_control(path, kind, false, scratch)?;
+            if FixedFileStamp::capture(&file, kind)?.identity() != id {
+                return Ok(false);
+            }
+        }
+        for (path, id) in frame
+            .paths
+            .reference_roots
+            .into_iter()
+            .zip(expected.scope.reference_roots)
+        {
+            match (path, id) {
+                (Some(path), Some(id)) => {
+                    let file = open_fixed_control(path, Kind::Directory, false, scratch)?;
+                    if FixedFileStamp::capture(&file, Kind::Directory)?.identity() != id {
+                        return Ok(false);
+                    }
+                }
+                (None, None) => (),
+                _ => return Ok(false),
+            }
+        }
+        let cohort = open_fixed_control(frame.paths.cohort, Kind::File, false, scratch)?;
+        if frame.cohort.recheck(&cohort).is_err() {
+            return Ok(false);
+        }
+        let mut epoch = open_fixed_control(frame.paths.epoch, Kind::File, false, scratch)?;
+        let stamp = FixedFileStamp::capture(&epoch, Kind::File)?;
+        if stamp.identity() != self.expected.file || stamp.len() != REFERENCE_EPOCH_SIZE as u64 {
+            return Ok(false);
+        }
+        read_fixed_control(&mut epoch, &stamp, read)?;
+        Ok(read.as_slice()[..REFERENCE_EPOCH_SIZE]
+            == self.images.as_slice()[..REFERENCE_EPOCH_SIZE])
+    }
+}
+
+pub(crate) fn expected_reference_current(
+    domain: &ReferenceDomain,
+    expected: &ReferenceEpoch,
+    memory: &super::maintenance_budget::CleanupMemory,
+) -> Result<bool, super::locks::FixedControlError> {
+    use super::locks::{FixedControlError as Error, FixedControlScratch};
+    let mut scratch = FixedControlScratch::new(
+        memory
+            .reserve(FixedControlScratch::required_bytes())
+            .map_err(Error::Resource)?,
+    )?;
+    let mut read = memory
+        .reserve(REFERENCE_EPOCH_SIZE)
+        .map_err(Error::Resource)?
+        .bytes(REFERENCE_EPOCH_SIZE)
+        .map_err(Error::Resource)?;
+    let prepared = PreparedEpoch::prepare(domain, expected, memory, &mut read, &mut scratch)?;
+    prepared.advisory_current(&mut read, &mut scratch)
+}
+
+impl ReferenceEpoch {
+    /// Exact facts only; outer journal owns its checksum. Decoding cannot mint
+    /// authority and resume must compare this ORIGINAL E under actual guards.
+    pub(crate) fn encode_checkpoint(&self, out: &mut [u8; 512]) {
+        out.fill(0);
+        out[..8].copy_from_slice(b"CGECHK01");
+        out[8..12].copy_from_slice(&self.record.version.to_le_bytes());
+        out[12] = self.record.scope.kind;
+        out[13] = u8::from(self.record.covered);
+        out[14] = u8::from(self.record.scope.reference_roots[0].is_some());
+        out[15] = u8::from(self.record.scope.reference_roots[1].is_some());
+        out[16..24].copy_from_slice(&self.record.counter.to_le_bytes());
+        for (index, identity) in [
+            Some(self.file),
+            Some(self.record.root),
+            Some(self.record.use_lock),
+            Some(self.record.cohort),
+            Some(self.record.scope.destination),
+            Some(self.record.scope.writer),
+            Some(self.record.activity),
+            Some(self.record.serial),
+            self.record.scope.reference_roots[0],
+            self.record.scope.reference_roots[1],
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            if let Some(identity) = identity {
+                let (a, b) = identity.fixed_words();
+                out[24 + index * 16..32 + index * 16].copy_from_slice(&a.to_le_bytes());
+                out[32 + index * 16..40 + index * 16].copy_from_slice(&b.to_le_bytes());
+            }
+        }
+        out[184..216].copy_from_slice(&self.record.use_incarnation);
+        out[216..248].copy_from_slice(&self.record.incarnation);
+        out[248..280].copy_from_slice(&self.record.scope.address);
+    }
+    pub(crate) fn decode_checkpoint(
+        input: &[u8; 512],
+    ) -> Result<Self, super::locks::FixedControlError> {
+        use super::locks::{FixedControlError as Error, FixedControlProblem as Problem};
+        if &input[..8] != b"CGECHK01"
+            || u32::from_le_bytes(input[8..12].try_into().unwrap()) != 2
+            || !matches!(input[12], 1 | 2)
+            || input[13..16].iter().any(|b| *b > 1)
+            || input[280..].iter().any(|b| *b != 0)
+        {
+            return Err(Error::Invalid(Problem::InvalidRecord));
+        }
+        let identity = |index: usize| {
+            FileIdentity::from_fixed_words(
+                u64::from_le_bytes(input[24 + index * 16..32 + index * 16].try_into().unwrap()),
+                u64::from_le_bytes(input[32 + index * 16..40 + index * 16].try_into().unwrap()),
+            )
+        };
+        let mut roots = [None, None];
+        for (index, root) in roots.iter_mut().enumerate() {
+            if input[14 + index] == 1 {
+                *root = Some(identity(8 + index));
+            } else if input[152 + index * 16..168 + index * 16]
+                .iter()
+                .any(|b| *b != 0)
+            {
+                return Err(Error::Invalid(Problem::InvalidRecord));
+            }
+        }
+        Ok(Self {
+            file: identity(0),
+            record: ReferenceEpochRecord {
+                version: 2,
+                root: identity(1),
+                use_lock: identity(2),
+                use_incarnation: input[184..216].try_into().unwrap(),
+                cohort: identity(3),
+                scope: ReferenceScopeRecord {
+                    kind: input[12],
+                    destination: identity(4),
+                    writer: identity(5),
+                    address: input[248..280].try_into().unwrap(),
+                    reference_roots: roots,
+                },
+                incarnation: input[216..248].try_into().unwrap(),
+                activity: identity(6),
+                serial: identity(7),
+                counter: u64::from_le_bytes(input[16..24].try_into().unwrap()),
+                covered: input[13] == 1,
+            },
+        })
+    }
+}
+
+// Only the actual administrative enrollment kernel implements this sealed
+// borrowing interface. Foundations do not depend on orchestration modules.
+pub(super) mod administrative_coverage_seal {
+    pub trait Sealed {}
+}
+pub(crate) trait AdministrativeCoverageAuthority:
+    administrative_coverage_seal::Sealed
+{
+    fn directory(&self) -> &super::locks::RootedDirectory;
+    fn artifact_directory(&self) -> &super::locks::RootedDirectory;
+    fn writer_identity(&self) -> Result<FileIdentity, super::locks::FixedControlError>;
+    fn artifact_use_identity(&self) -> Result<FileIdentity, super::locks::FixedControlError>;
+    fn proposed_artifact_incarnation(&self) -> [u8; 32];
+    fn is_administrative(&self) -> bool;
+}
+#[path = "maintenance_legacy_coverage.rs"]
+mod legacy_coverage;
+pub(crate) use legacy_coverage::{prepare_legacy_coverage, PreparedLegacyCoverage};
+
+#[path = "maintenance_automatic_direct.rs"]
+mod automatic_direct;
+pub(crate) use automatic_direct::{prepare_automatic_direct, PreparedAutomaticDirect};

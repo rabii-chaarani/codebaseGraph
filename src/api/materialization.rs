@@ -11,9 +11,12 @@ use crate::protocol::{
     NativeSyntaxMaterializationResponse, MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
 };
 use crate::storage::direct::{DirectStore, DirectWriteSession};
-use crate::storage::layout::{DirectLayout, RepositoryLayout, DIRECT_DB_SIDECAR_SUFFIXES};
+use crate::storage::layout::{
+    DirectLayout, ManagedLayout, RepositoryLayout, DIRECT_DB_SIDECAR_SUFFIXES,
+};
 use crate::storage::managed::{
-    GraphStorage, ManagedJanitorReport, ManagedStore, ManagedWriteSession, StorageMode,
+    GraphStorage, ManagedJanitorReport, ManagedReadSnapshot, ManagedStore, ManagedWriteSession,
+    StorageMode,
 };
 use crate::storage::run_workspace::{RunPhase, RunWorkspace};
 use serde::{Deserialize, Serialize};
@@ -310,13 +313,14 @@ pub(crate) fn execute_materialization_request(
     }
     let started = Instant::now();
     let final_request = request;
-    let mut response =
-        match crate::db_writer::with_phase_workspace_root(execution.phase_workspace_root(), || {
-            crate::execute_materialization_pipeline(&final_request)
-        }) {
-            Ok(response) => response,
-            Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
-        };
+    let mut response = match crate::db_writer::with_phase_workspace_scope(
+        execution.phase_workspace_root(),
+        execution.phase_owner_scope(),
+        || crate::execute_materialization_pipeline(&final_request),
+    ) {
+        Ok(response) => response,
+        Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
+    };
     response.phase_timings.insert(
         "native_cli_seconds".to_string(),
         started.elapsed().as_secs_f64(),
@@ -405,6 +409,13 @@ enum StorageExecution {
 }
 
 impl StorageExecution {
+    fn phase_owner_scope(&self) -> Option<crate::storage::run_workspace::ParentRunScope> {
+        match self {
+            Self::Direct { workspace, .. } => workspace.phase_owner_scope(),
+            Self::Managed { session, .. } => session.phase_owner_scope(),
+        }
+    }
+
     fn phase_workspace_root(&self) -> PathBuf {
         match self {
             Self::Direct { session, .. } => session.phase_workspace_root(),
@@ -853,8 +864,15 @@ fn prepare_storage_execution(options: &MaterializeOptions) -> Result<StorageExec
         db_path: options.db.clone(),
         manifest_path: options.manifest.clone(),
     };
-    let mut runtime = crate::api::context::resolve_runtime(&selector)
-        .map_err(|error| format!("failed to resolve materialization storage target: {error}"))?;
+    let explicit_rebuild = options.intent == MaterializationIntent::ExplicitBuild
+        && options.mode == "full"
+        && !options.plan_only;
+    let mut runtime = if explicit_rebuild {
+        crate::api::context::resolve_runtime_for_rebuild(&selector)
+    } else {
+        crate::api::context::resolve_runtime(&selector)
+    }
+    .map_err(|error| format!("failed to resolve materialization storage target: {error}"))?;
     runtime.active_read = None;
     runtime.direct_read = None;
     let managed_storage_root = options.storage_root.clone().or_else(|| {
@@ -887,9 +905,12 @@ fn prepare_storage_execution(options: &MaterializeOptions) -> Result<StorageExec
             let artifact_root = layout.artifact_root_path();
             let store = DirectStore::new(layout.clone())
                 .map_err(|error| format!("failed to prepare direct storage target: {error}"))?;
-            let session = store
-                .begin_write()
-                .map_err(|error| format!("failed to create direct write session: {error}"))?;
+            let session = if explicit_rebuild {
+                store.begin_write_explicit_rebuild()
+            } else {
+                store.begin_write()
+            }
+            .map_err(|error| format!("failed to create direct write session: {error}"))?;
             let previous_manifest = if runtime.manifest_path.exists() {
                 Some(read_manifest(&runtime.manifest_path)?)
             } else {
@@ -1036,6 +1057,14 @@ fn finalize_materialization(
             response.active_generation = None;
             response.cleanup_pending = false;
             response.pending_runs = 0;
+            if let Some(error) = session.take_retirement_issue() {
+                response.cleanup_pending = true;
+                record_postpublication_cleanup_error(
+                    response,
+                    "direct_active_attestation_pending",
+                    error.to_string(),
+                );
+            }
             if !manifest_path.exists() {
                 return Err(format!(
                     "direct manifest publication did not produce {}",
@@ -1086,13 +1115,18 @@ fn finalize_materialization(
                     "managed publish activated {}, but reopened generation was {}",
                     published_generation, read.generation_id
                 );
-                drop(read);
+                release_managed_validation_snapshot(read, &session, &store, &published_generation);
                 return Err(append_managed_janitor_secondary(error, &mut janitor));
             }
             let published_manifest = match read_manifest(&read.manifest_path) {
                 Ok(manifest) => manifest,
                 Err(error) => {
-                    drop(read);
+                    release_managed_validation_snapshot(
+                        read,
+                        &session,
+                        &store,
+                        &published_generation,
+                    );
                     return Err(append_managed_janitor_secondary(error, &mut janitor));
                 }
             };
@@ -1103,7 +1137,7 @@ fn finalize_materialization(
                 &published_manifest,
                 response,
             ) {
-                drop(read);
+                release_managed_validation_snapshot(read, &session, &store, &published_generation);
                 return Err(append_managed_janitor_secondary(error, &mut janitor));
             }
             #[cfg(test)]
@@ -1115,7 +1149,12 @@ fn finalize_materialization(
             let reconciliation = match session.reconcile_typed() {
                 Ok(report) => report,
                 Err(error) => {
-                    drop(read);
+                    release_managed_validation_snapshot(
+                        read,
+                        &session,
+                        &store,
+                        &published_generation,
+                    );
                     return Err(append_managed_janitor_secondary(
                         format!("failed to reconcile managed storage cleanup: {error}"),
                         &mut janitor,
@@ -1131,20 +1170,33 @@ fn finalize_materialization(
             let recovery_complete = reconciliation.recovery.observation_complete;
             janitor.merge_latest(reconciliation.janitor);
             if let Err(error) = session.check_active_generation(&published_generation) {
-                drop(read);
+                release_managed_validation_snapshot(read, &session, &store, &published_generation);
                 return Err(append_managed_janitor_secondary(
                     error.to_string(),
                     &mut janitor,
                 ));
+            }
+            if recovery_complete {
+                let verified = NativeVerifiedGeneration {
+                    session: &session,
+                    store: &store,
+                    read: &read,
+                    published: &published_generation,
+                };
+                if let Err(error) =
+                    crate::storage::maintenance_generations::seal_verified_generation(&verified)
+                {
+                    janitor.record_generation_disposition_failure(error);
+                }
             }
             if !recovery_complete {
                 janitor.deferred_reason = Some("managed_recovery_deferred");
                 janitor.pending = true;
                 janitor.observation_complete = false;
             }
-            // GenerationLease::drop must see this writer still held, otherwise
-            // it could start an unreported best-effort cleanup opportunity.
-            drop(read);
+            // Release every generation/native-family reader before publishing
+            // completion and releasing the writer to the bounded controller.
+            release_managed_validation_snapshot(read, &session, &store, &published_generation);
             defer_artifact_maintenance(response);
             response.storage_format = "managed_v2".to_string();
             response.active_generation = Some(published_generation);
@@ -1157,6 +1209,53 @@ fn finalize_materialization(
         }
     }
     Ok(())
+}
+
+fn release_managed_validation_snapshot(
+    read: ManagedReadSnapshot,
+    session: &ManagedWriteSession,
+    store: &ManagedStore,
+    generation: &str,
+) {
+    drop(read);
+    #[cfg(test)]
+    POST_MANAGED_SNAPSHOT_DROP_HOOK.with(|hook| {
+        if let Some(hook) = hook.take() {
+            hook(session, store, generation);
+        }
+    });
+    #[cfg(not(test))]
+    let _ = (session, store, generation);
+}
+
+/// Only this module constructs this token, after actual native readback and
+/// required reconciliation/current-identity checks. Its borrows retain the
+/// genuine publishing session writer and the verified generation reader.
+pub(crate) struct NativeVerifiedGeneration<'a> {
+    session: &'a ManagedWriteSession,
+    store: &'a ManagedStore,
+    read: &'a ManagedReadSnapshot,
+    published: &'a str,
+}
+impl NativeVerifiedGeneration<'_> {
+    pub(crate) fn layout(&self) -> &ManagedLayout {
+        self.store.layout()
+    }
+    pub(crate) fn writer(&self) -> &crate::storage::locks::WriterLease {
+        self.session
+            .writer_lease()
+            .expect("verified publication retains its actual writer")
+    }
+    pub(crate) fn generation_id(&self) -> &str {
+        debug_assert_eq!(self.read.generation_id, self.published);
+        self.published
+    }
+    pub(crate) fn previous_generation_id(&self) -> Option<&str> {
+        self.session
+            .base_generation
+            .as_ref()
+            .map(|generation| generation.generation_id.as_str())
+    }
 }
 
 fn run_root_from_candidate(candidate_root: &Path) -> PathBuf {
@@ -1333,11 +1432,18 @@ fn record_managed_janitor_report(
 }
 
 #[cfg(test)]
+type ManagedTestHook = fn(&ManagedWriteSession, &ManagedStore);
+#[cfg(test)]
+type ManagedSnapshotTestHook = fn(&ManagedWriteSession, &ManagedStore, &str);
+
+#[cfg(test)]
 thread_local! {
     // Inject a real workspace cleanup failure only after commit/readback.
     static POST_DIRECT_CLEANUP_HOOK: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
-    static POST_MANAGED_VERIFICATION_HOOK: std::cell::Cell<Option<fn(&ManagedWriteSession, &ManagedStore)>> = const { std::cell::Cell::new(None) };
-    static POST_MANAGED_RECONCILE_HOOK: std::cell::Cell<Option<fn(&ManagedWriteSession, &ManagedStore)>> = const { std::cell::Cell::new(None) };
+    static POST_MANAGED_VERIFICATION_HOOK: std::cell::Cell<Option<ManagedTestHook>> = const { std::cell::Cell::new(None) };
+    static POST_MANAGED_RECONCILE_HOOK: std::cell::Cell<Option<ManagedTestHook>> = const { std::cell::Cell::new(None) };
+    static POST_MANAGED_SNAPSHOT_DROP_HOOK: std::cell::Cell<Option<ManagedSnapshotTestHook>> = const { std::cell::Cell::new(None) };
+    static MANAGED_SNAPSHOT_RELEASE_OBSERVED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
 fn cleanup_direct_candidate(session: &DirectWriteSession) -> Result<(), String> {
@@ -1831,13 +1937,15 @@ mod tests {
     }
 
     #[test]
-    fn prepublication_failures_clean_managed_and_direct_run_state() {
+    fn prepublication_failures_close_managed_runs_and_clean_legacy_direct_run_state() {
         for phase in ["parsing", "staging", "database", "candidate_validation"] {
             let root = unique_temp_dir(&format!("codebase-graph-cleanup-{phase}"));
             let managed_root = root.join("managed");
             let managed_store = GraphStorage::managed(&managed_root);
             let managed_session = managed_store.begin_write().unwrap();
-            fs::write(managed_session.candidate_db_path(), "partial-db").unwrap();
+            let managed_candidate = managed_session.candidate_db_path();
+            let managed_run = run_root_from_candidate(managed_session.candidate.paths().root());
+            fs::write(&managed_candidate, "partial-db").unwrap();
             let managed_error = StorageExecution::Managed {
                 artifact_root: managed_store.layout().artifacts_root(),
                 session: managed_session,
@@ -1846,10 +1954,29 @@ mod tests {
             }
             .abort_with_cleanup(format!("{phase} failed"));
             assert_eq!(managed_error, format!("{phase} failed"));
-            assert!(fs::read_dir(managed_store.layout().runs_root())
-                .unwrap()
-                .next()
-                .is_none());
+            // A registered owner publishes abort closure and leaves disposal
+            // to bounded collection. This manual, unreceipted payload conveys
+            // no deletion authority and must remain byte-for-byte intact.
+            assert!(managed_run.join(".workspace.binding").is_file());
+            let journal: crate::storage::run_workspace::RunJournal =
+                serde_json::from_slice(&fs::read(managed_run.join("journal.json")).unwrap())
+                    .unwrap();
+            assert_eq!(journal.phase, RunPhase::Failed);
+            assert_eq!(fs::read(&managed_candidate).unwrap(), b"partial-db");
+            let domain = crate::storage::maintenance_ownership::ReferenceDomain::managed(
+                managed_store.layout(),
+            )
+            .unwrap();
+            let memory = crate::storage::maintenance_budget::CleanupMemory::new(
+                crate::storage::maintenance::MAINTENANCE_MEMORY_BYTES,
+            )
+            .unwrap();
+            crate::storage::maintenance_controls::prepare_terminal_workspace_boxed(
+                &managed_run,
+                &domain,
+                &memory,
+            )
+            .unwrap();
 
             let direct_layout =
                 DirectLayout::new(root.join("graph.ldb"), root.join("manifest.json"));
@@ -2151,7 +2278,14 @@ mod tests {
         let runs = fs::read_dir(store.layout().runs_root())
             .unwrap()
             .map(|e| e.unwrap().path())
+            .filter(|path| {
+                let journal: crate::storage::run_workspace::RunJournal =
+                    serde_json::from_slice(&fs::read(path.join("journal.json")).unwrap()).unwrap();
+                journal.phase == RunPhase::Publishing
+            })
             .collect::<Vec<_>>();
+        // Genuine closed terminal workspaces may await bounded collection;
+        // exactly one actual Publishing transaction must retain this failure.
         assert_eq!(runs.len(), 1);
         let journal = fs::read(runs[0].join("journal.json")).unwrap();
         assert_eq!(
@@ -2167,14 +2301,36 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    fn assert_managed_snapshot_released_with_writer_owned(
+        session: &ManagedWriteSession,
+        store: &ManagedStore,
+        generation: &str,
+    ) {
+        use crate::storage::locks::{try_open_existing_locked, LockMode};
+        assert!(session.writer_lease().unwrap().is_current().unwrap());
+        assert!(
+            try_open_existing_locked(&store.layout().writer_lock_path(), LockMode::Exclusive)
+                .unwrap()
+                .is_none(),
+            "actual publishing writer was released early"
+        );
+        let paths = store.layout().generation(generation).unwrap();
+        let generation_lease =
+            try_open_existing_locked(&paths.lease_path(), LockMode::Exclusive).unwrap();
+        assert!(
+            generation_lease.is_some(),
+            "validation snapshot still owns its actual generation lease"
+        );
+        drop(generation_lease);
+        MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.set(true));
+    }
+
     #[test]
     fn managed_native_postreconcile_active_change_remains_primary() {
         let (root, options, _) = committed_artifact_fixture(true);
-        POST_MANAGED_VERIFICATION_HOOK.with(|hook| {
-            hook.set(Some(|_, _| {
-                crate::storage::managed::reset_best_effort_entries()
-            }))
-        });
+        MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.set(false));
+        POST_MANAGED_SNAPSHOT_DROP_HOOK
+            .with(|hook| hook.set(Some(assert_managed_snapshot_released_with_writer_owned)));
         POST_MANAGED_RECONCILE_HOOK.with(|hook| {
             hook.set(Some(|_, store| {
                 let _state = crate::storage::locks::open_locked(
@@ -2202,28 +2358,116 @@ mod tests {
         let error = execute_materialization(&options).unwrap_err();
         assert!(error.starts_with("managed publish activated"), "{error}");
         assert!(error.contains("unexpected-active"), "{error}");
-        assert_eq!(
-            crate::storage::managed::best_effort_entries(),
-            0,
-            "error-path snapshot outlived writer ownership"
+        assert!(
+            MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.get()),
+            "error-path snapshot release was not observed"
         );
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn bounded_measurement_counts_actual_native_graph_and_active_cache_without_following_foreign_link(
+    ) {
+        use crate::storage::maintenance_budget::CleanupMemory;
+        let (root, options, _) = committed_artifact_fixture(true);
+        let outside = unique_temp_dir("measure-outside");
+        fs::create_dir_all(&outside).unwrap();
+        let sentinel = outside.join("source-sentinel");
+        fs::write(&sentinel, b"foreign source must remain untouched").unwrap();
+        let state = root.join(".codebaseGraph");
+        let target = crate::storage::inventory::MaintenanceTarget {
+            repository_root: root.clone(),
+            state_root: state.clone(),
+            storage_root: options.storage_root.clone(),
+            direct_pair: None,
+            config_path: None,
+        };
+        let memory =
+            CleanupMemory::new(crate::storage::maintenance::MAINTENANCE_MEMORY_BYTES).unwrap();
+        let (_, _, _, _, _, deferred_before) =
+            crate::storage::maintenance::observe_bytes_for_test(&target, &memory, &|| false)
+                .unwrap();
+        std::os::unix::fs::symlink(&outside, state.join("foreign-link")).unwrap();
+        let foreign_json = state.join("caller-owned.json");
+        fs::write(&foreign_json, b"{\"caller\":\"preserve unknown state\"}").unwrap();
+        let store = GraphStorage::managed(options.storage_root.as_ref().unwrap());
+        let unknown_key = "f".repeat(64);
+        let unknown_root = store
+            .layout()
+            .artifacts_root()
+            .join("ff")
+            .join(&unknown_key);
+        fs::create_dir_all(&unknown_root).unwrap();
+        let unknown_payload = unknown_root.join("artifact.json");
+        fs::write(&unknown_payload, b"unreceipted caller payload").unwrap();
+        let pointer_before = fs::read(store.layout().active_pointer_path()).unwrap();
+
+        let floor = memory.used();
+        let (graph, cache, complete, references, unknown, deferred) =
+            crate::storage::maintenance::observe_bytes_for_test(&target, &memory, &|| false)
+                .unwrap();
+        assert!(graph.logical_bytes.is_some_and(|bytes| bytes > 0));
+        assert!(cache.logical_bytes.is_some_and(|bytes| bytes > 0));
+        // Skipping the foreign symlink/unregistered subtree leaves the whole
+        // unknown category unmeasurable; observed leaf bytes are not its total.
+        assert_eq!(unknown.logical_bytes, None);
+        assert_eq!(unknown.allocated_bytes, None);
+        // The producer may already have genuine deferred terminal work. Adding
+        // unknown caller state must not reclassify its bytes as deferred work.
+        assert_eq!(deferred.logical_bytes, deferred_before.logical_bytes);
+        assert_eq!(deferred.allocated_bytes, deferred_before.allocated_bytes);
+        assert_eq!(
+            fs::read(&unknown_payload).unwrap(),
+            b"unreceipted caller payload"
+        );
+        assert_eq!(
+            fs::read(&foreign_json).unwrap(),
+            b"{\"caller\":\"preserve unknown state\"}"
+        );
+        assert!(
+            references,
+            "actual active manifest references were not observed"
+        );
+        assert!(!complete, "foreign symlink uncertainty was hidden");
+        assert_eq!(memory.used(), floor, "advisory buffers escaped observation");
+        assert!(memory.peak() <= memory.limit());
+        assert_eq!(
+            fs::read(store.layout().active_pointer_path()).unwrap(),
+            pointer_before
+        );
+        assert_eq!(
+            fs::read(&sentinel).unwrap(),
+            b"foreign source must remain untouched"
+        );
+        let read = store.open_read().unwrap();
+        assert!(crate::api::graph_read::count_graph_nodes(&read.db_path).unwrap() > 0);
+        drop(read);
+        let tiny = CleanupMemory::new(4096).unwrap();
+        let tiny_floor = tiny.used();
+        assert!(
+            crate::storage::maintenance::observe_bytes_for_test(&target, &tiny, &|| false).is_err()
+        );
+        assert_eq!(tiny.used(), tiny_floor);
+        let (_, _, cancelled, _, _, _) =
+            crate::storage::maintenance::observe_bytes_for_test(&target, &memory, &|| true)
+                .unwrap();
+        assert!(!cancelled);
+        fs::remove_dir_all(root).unwrap();
+        fs::remove_dir_all(outside).unwrap();
     }
 
     #[test]
     fn managed_native_verification_snapshot_drops_before_writer_release() {
         let (root, options, _) = committed_artifact_fixture(true);
-        POST_MANAGED_VERIFICATION_HOOK.with(|hook| {
-            hook.set(Some(|_, _| {
-                crate::storage::managed::reset_best_effort_entries()
-            }))
-        });
+        MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.set(false));
+        POST_MANAGED_SNAPSHOT_DROP_HOOK
+            .with(|hook| hook.set(Some(assert_managed_snapshot_released_with_writer_owned)));
         fs::write(root.join("src/lib.rs"), "pub fn no_hidden_janitor() {}\n").unwrap();
         let (_, response) = execute_materialization(&options).unwrap();
-        assert_eq!(
-            crate::storage::managed::best_effort_entries(),
-            0,
-            "last-reader Drop started a hidden post-release cleanup"
+        assert!(
+            MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.get()),
+            "snapshot release was not observed before writer release"
         );
         assert_published_graph_readable(&options, &response);
         fs::remove_dir_all(root).unwrap();

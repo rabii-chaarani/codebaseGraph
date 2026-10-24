@@ -3,19 +3,26 @@
 //! authority. No filesystem operations occur in this module.
 use sha2::{Digest, Sha256};
 
+#[cfg(test)]
 pub(crate) const RECEIPT_BYTES: usize = 304;
+#[cfg(test)]
 pub(crate) const JOURNAL_BYTES: usize = 336;
+#[cfg(test)]
 pub(crate) const LEAF_BYTES: usize = 224;
+#[cfg(test)]
 pub(crate) const FRAMES_PER_SEGMENT: u64 = 16;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CodecIssue {
     Corrupt,
     Transition,
+    #[cfg(test)]
     Stale,
+    #[cfg(test)]
     Overflow,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
+#[cfg(test)]
 pub(crate) enum ReceiptPhase {
     Intent,
     CreationBound,
@@ -28,6 +35,7 @@ pub(crate) enum ReceiptPhase {
     RollbackIntent,
     Restored,
 }
+#[cfg(test)]
 impl ReceiptPhase {
     fn decode(b: u8) -> Result<Self, CodecIssue> {
         Ok(match b {
@@ -49,6 +57,7 @@ impl ReceiptPhase {
 /// Identity fields are opaque serialization facts awaiting actual guarded OS
 /// identity verification. usable_claim is a stored CLAIM, not LoaderUsable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct ReceiptFacts {
     pub(crate) scope: [u8; 32],
     pub(crate) directory: [u8; 32],
@@ -64,6 +73,7 @@ pub(crate) struct ReceiptFacts {
     pub(crate) usable_claim: bool,
 }
 #[derive(Debug, Clone, Copy)]
+#[cfg(test)]
 pub(crate) enum ReceiptEvent {
     BindCreated {
         directory: [u8; 32],
@@ -92,6 +102,7 @@ pub(crate) enum ReceiptEvent {
         directory: [u8; 32],
     },
 }
+#[cfg(test)]
 impl ReceiptFacts {
     pub(crate) fn reduce(mut self, event: ReceiptEvent) -> Result<Self, CodecIssue> {
         use ReceiptEvent::*;
@@ -198,6 +209,7 @@ impl ReceiptFacts {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
+#[cfg(test)]
 pub(crate) enum JournalPhase {
     Staging,
     Complete,
@@ -207,6 +219,7 @@ pub(crate) enum JournalPhase {
     Done,
     Invalidated,
 }
+#[cfg(test)]
 impl JournalPhase {
     fn decode(b: u8) -> Result<Self, CodecIssue> {
         Ok(match b {
@@ -222,6 +235,7 @@ impl JournalPhase {
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct JournalFacts {
     pub(crate) scope: [u8; 32],
     pub(crate) source_incarnation: [u8; 32],
@@ -238,6 +252,7 @@ pub(crate) struct JournalFacts {
     pub(crate) own_epoch_incremented: bool,
 }
 #[derive(Debug, Clone, Copy)]
+#[cfg(test)]
 pub(crate) enum JournalEvent {
     Append {
         ordinal: u64,
@@ -265,6 +280,7 @@ pub(crate) enum JournalEvent {
     },
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) enum ReplayDisposition {
     PreparationOnly,
     NeedsReprepare,
@@ -273,6 +289,7 @@ pub(crate) enum ReplayDisposition {
     Finished,
     Unknown,
 }
+#[cfg(test)]
 impl JournalFacts {
     pub(crate) fn reduce(mut self, event: JournalEvent) -> Result<Self, CodecIssue> {
         use JournalEvent::*;
@@ -430,6 +447,7 @@ impl JournalFacts {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct LeafFacts {
     pub(crate) ordinal: u64,
     pub(crate) address: [u8; 64],
@@ -438,6 +456,7 @@ pub(crate) struct LeafFacts {
     pub(crate) bytes_digest: [u8; 32],
     pub(crate) len: u64,
 }
+#[cfg(test)]
 impl LeafFacts {
     pub(crate) fn encode(&self) -> [u8; LEAF_BYTES] {
         let mut b = [0; LEAF_BYTES];
@@ -469,23 +488,181 @@ impl LeafFacts {
         self.ordinal / FRAMES_PER_SEGMENT
     }
 }
+#[cfg(test)]
 fn put(b: &mut [u8], o: usize, v: u64) {
     b[o..o + 8].copy_from_slice(&v.to_le_bytes());
 }
+#[cfg(test)]
 fn get(b: &[u8], o: usize) -> u64 {
     u64::from_le_bytes(b[o..o + 8].try_into().unwrap())
 }
+#[cfg(test)]
 fn seal(b: &mut [u8]) {
     let end = b.len() - 32;
     let digest = Sha256::digest(&b[..end]);
     b[end..].copy_from_slice(&digest);
 }
+#[cfg(test)]
 fn check(b: &[u8], magic: &[u8; 8]) -> Result<(), CodecIssue> {
     let end = b.len() - 32;
     if &b[..8] != magic || b[end..] != Sha256::digest(&b[..end])[..] {
         return Err(CodecIssue::Corrupt);
     }
     Ok(())
+}
+
+/// Runtime journal facts stored in the prebound publication stream and slot.
+/// The source epoch is immutable; slot generations are independent progress.
+pub(crate) const RETIREMENT_FRAME_BYTES: usize = 512;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub(crate) enum RetirementStage {
+    AppendIntent = 1,
+    FrameReady = 2,
+    Detached = 3,
+    PayloadGone = 4,
+    Done = 5,
+    ResetIntent = 6,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct RetirementLeaf {
+    pub(crate) stage: RetirementStage,
+    pub(crate) source_epoch: u64,
+    pub(crate) stage_generation: u64,
+    pub(crate) stream_offset: u64,
+    pub(crate) key: [u8; 32],
+    pub(crate) directory: super::locks::FileIdentity,
+    pub(crate) payload: super::locks::FileIdentity,
+    pub(crate) receipt: super::locks::FileIdentity,
+    pub(crate) scope: super::maintenance_admission::RootOriginBinding,
+    pub(crate) operation: [u8; 32],
+    pub(crate) byte_len: u64,
+    pub(crate) digest: [u8; 32],
+    pub(crate) directory_created: bool,
+    pub(crate) receipt_digest: [u8; 32],
+    pub(crate) source_kind: u8,
+    pub(crate) source_name: [u8; 134],
+}
+impl RetirementLeaf {
+    pub(crate) fn encode(&self) -> [u8; RETIREMENT_FRAME_BYTES] {
+        let mut b = [0; RETIREMENT_FRAME_BYTES];
+        b[..8].copy_from_slice(b"CGLEAF01");
+        b[8] = self.stage as u8;
+        b[16..24].copy_from_slice(&self.source_epoch.to_le_bytes());
+        b[24..32].copy_from_slice(&self.stage_generation.to_le_bytes());
+        b[32..40].copy_from_slice(&self.stream_offset.to_le_bytes());
+        b[40..72].copy_from_slice(&self.key);
+        for (i, id) in [
+            self.directory,
+            self.payload,
+            self.receipt,
+            self.scope.root,
+            self.scope.coordination,
+            self.scope.cohort,
+            self.scope.publication_binding,
+        ]
+        .iter()
+        .enumerate()
+        {
+            let (a, c) = id.fixed_words();
+            let o = 72 + i * 16;
+            b[o..o + 8].copy_from_slice(&a.to_le_bytes());
+            b[o + 8..o + 16].copy_from_slice(&c.to_le_bytes());
+        }
+        b[184..216].copy_from_slice(&self.scope.incarnation);
+        b[216..248].copy_from_slice(&self.operation);
+        b[248..256].copy_from_slice(&self.byte_len.to_le_bytes());
+        b[256..288].copy_from_slice(&self.digest);
+        b[288] = u8::from(self.directory_created);
+        b[289..321].copy_from_slice(&self.receipt_digest);
+        b[321] = self.source_kind;
+        b[322..456].copy_from_slice(&self.source_name);
+        let hash = Sha256::digest(&b[..480]);
+        b[480..].copy_from_slice(&hash);
+        b
+    }
+    pub(crate) fn decode(b: &[u8; RETIREMENT_FRAME_BYTES]) -> Result<Self, CodecIssue> {
+        if &b[..8] != b"CGLEAF01"
+            || b[9..16].iter().any(|x| *x != 0)
+            || b[456..480].iter().any(|x| *x != 0)
+            || b[321] > 1
+            || (b[321] == 0 && b[322..456].iter().any(|x| *x != 0))
+            || b[288] > 1
+            || b[480..] != Sha256::digest(&b[..480])[..]
+        {
+            return Err(CodecIssue::Corrupt);
+        }
+        let stage = match b[8] {
+            1 => RetirementStage::AppendIntent,
+            2 => RetirementStage::FrameReady,
+            3 => RetirementStage::Detached,
+            4 => RetirementStage::PayloadGone,
+            5 => RetirementStage::Done,
+            6 => RetirementStage::ResetIntent,
+            _ => return Err(CodecIssue::Corrupt),
+        };
+        let u = |o| u64::from_le_bytes(b[o..o + 8].try_into().unwrap());
+        let id = |o| super::locks::FileIdentity::from_fixed_words(u(o), u(o + 8));
+        if u(24) != (stage as u64) - 1 {
+            return Err(CodecIssue::Transition);
+        }
+        if b[321] == 1 {
+            let name = &b[322..456];
+            if &name[..5] != b".tmp-"
+                || name[69] != b'-'
+                || !name[5..69]
+                    .iter()
+                    .chain(name[70..].iter())
+                    .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(c))
+            {
+                return Err(CodecIssue::Corrupt);
+            }
+            let digits = b"0123456789abcdef";
+            for (i, key) in b[40..72].iter().enumerate() {
+                if name[5 + i * 2] != digits[(key >> 4) as usize]
+                    || name[6 + i * 2] != digits[(key & 15) as usize]
+                {
+                    return Err(CodecIssue::Corrupt);
+                }
+            }
+        }
+        Ok(Self {
+            stage,
+            source_epoch: u(16),
+            stage_generation: u(24),
+            stream_offset: u(32),
+            key: b[40..72].try_into().unwrap(),
+            directory: id(72),
+            payload: id(88),
+            receipt: id(104),
+            scope: super::maintenance_admission::RootOriginBinding {
+                root: id(120),
+                coordination: id(136),
+                cohort: id(152),
+                publication_binding: id(168),
+                incarnation: b[184..216].try_into().unwrap(),
+            },
+            operation: b[216..248].try_into().unwrap(),
+            byte_len: u(248),
+            digest: b[256..288].try_into().unwrap(),
+            directory_created: b[288] != 0,
+            receipt_digest: b[289..321].try_into().unwrap(),
+            source_kind: b[321],
+            source_name: b[322..456].try_into().unwrap(),
+        })
+    }
+    /// Lossless fixed native component. Random operation identity is checked
+    /// together with the exact expected physical leaf, never by name alone.
+    pub(crate) fn tombstone(&self) -> [u8; 73] {
+        let mut name = [0; 73];
+        name[..9].copy_from_slice(b".retired-");
+        let digits = b"0123456789abcdef";
+        for (i, b) in self.operation.iter().enumerate() {
+            name[9 + i * 2] = digits[(b >> 4) as usize];
+            name[10 + i * 2] = digits[(b & 15) as usize];
+        }
+        name
+    }
 }
 
 #[cfg(test)]
@@ -678,5 +855,226 @@ mod tests {
         let mut encoded = j.encode();
         encoded[248] ^= 1;
         assert_eq!(JournalFacts::decode(&encoded), Err(CodecIssue::Corrupt));
+    }
+}
+
+#[cfg(test)]
+mod runtime_retirement_tests {
+    use super::*;
+    fn leaf() -> RetirementLeaf {
+        let id = super::super::locks::FileIdentity::from_fixed_words(7, 11);
+        RetirementLeaf {
+            stage: RetirementStage::AppendIntent,
+            source_epoch: 91,
+            stage_generation: 0,
+            stream_offset: 0,
+            key: [0xab; 32],
+            directory: id,
+            payload: id,
+            receipt: id,
+            scope: super::super::maintenance_admission::RootOriginBinding {
+                root: id,
+                coordination: id,
+                cohort: id,
+                publication_binding: id,
+                incarnation: [8; 32],
+            },
+            operation: [9; 32],
+            byte_len: 1_000_000,
+            digest: [17; 32],
+            directory_created: true,
+            receipt_digest: [19; 32],
+            source_kind: 0,
+            source_name: [0; 134],
+        }
+    }
+    #[test]
+    fn runtime_leaf_frames_preserve_original_epoch_across_all_progress() {
+        let mut l = leaf();
+        for stage in [
+            RetirementStage::AppendIntent,
+            RetirementStage::FrameReady,
+            RetirementStage::Detached,
+            RetirementStage::PayloadGone,
+            RetirementStage::Done,
+            RetirementStage::ResetIntent,
+        ] {
+            l.stage = stage;
+            l.stage_generation = (stage as u64) - 1;
+            let decoded = RetirementLeaf::decode(&l.encode()).unwrap();
+            assert_eq!(decoded, l);
+            assert_eq!(decoded.source_epoch, 91);
+        }
+        l.stage_generation = 0;
+        assert_eq!(
+            RetirementLeaf::decode(&l.encode()),
+            Err(CodecIssue::Transition)
+        );
+    }
+    #[test]
+    fn runtime_leaf_temp_address_is_lossless_bound_and_strict() {
+        let mut l = leaf();
+        l.source_kind = 1;
+        l.source_name[..5].copy_from_slice(b".tmp-");
+        l.source_name[5..69].copy_from_slice("ab".repeat(32).as_bytes());
+        l.source_name[69] = b'-';
+        l.source_name[70..].fill(b'7');
+        assert_eq!(RetirementLeaf::decode(&l.encode()).unwrap(), l);
+        l.source_name[5] = b'c';
+        assert_eq!(
+            RetirementLeaf::decode(&l.encode()),
+            Err(CodecIssue::Corrupt)
+        );
+    }
+    #[test]
+    fn runtime_leaf_tombstone_and_corruption_never_alias_new_operation() {
+        let l = leaf();
+        let mut other = l;
+        other.operation[0] ^= 1;
+        assert_ne!(l.tombstone(), other.tombstone());
+        assert!(l.tombstone().starts_with(b".retired-"));
+        let mut bytes = l.encode();
+        bytes[72] ^= 1;
+        assert_eq!(RetirementLeaf::decode(&bytes), Err(CodecIssue::Corrupt));
+    }
+}
+
+/// Fixed restore intent facts. Construction/decoding grants no source or
+/// destination authority; the backup adapter must rejoin the actual association.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct BackupRestoreRecord {
+    pub(crate) stage: u8,
+    pub(crate) source_epoch: u64,
+    pub(crate) root: super::locks::FileIdentity,
+    pub(crate) shard: super::locks::FileIdentity,
+    pub(crate) source: super::locks::FileIdentity,
+    pub(crate) payload: super::locks::FixedFileStamp,
+    pub(crate) digest: [u8; 32],
+    pub(crate) destination: super::locks::FileIdentity,
+    pub(crate) operation: [u8; 32],
+    pub(crate) name: [u8; 128],
+    pub(crate) name_len: u8,
+}
+impl BackupRestoreRecord {
+    pub(crate) fn encode(&self) -> [u8; 512] {
+        use sha2::{Digest, Sha256};
+        let mut b = [0; 512];
+        b[..8].copy_from_slice(b"CGBKR001");
+        b[8] = self.stage;
+        b[16..24].copy_from_slice(&self.source_epoch.to_le_bytes());
+        for (at, id) in [
+            (24, self.root),
+            (40, self.shard),
+            (56, self.source),
+            (184, self.destination),
+        ] {
+            let (a, c) = id.fixed_words();
+            b[at..at + 8].copy_from_slice(&a.to_le_bytes());
+            b[at + 8..at + 16].copy_from_slice(&c.to_le_bytes());
+        }
+        self.payload
+            .encode_checkpoint((&mut b[72..152]).try_into().unwrap());
+        b[152..184].copy_from_slice(&self.digest);
+        b[200..232].copy_from_slice(&self.operation);
+        b[232] = self.name_len;
+        b[233..361].copy_from_slice(&self.name);
+        let hash = Sha256::digest(&b[..480]);
+        b[480..].copy_from_slice(&hash);
+        b
+    }
+    pub(crate) fn decode(b: &[u8; 512]) -> Result<Self, CodecIssue> {
+        use sha2::{Digest, Sha256};
+        let n = usize::from(b[232]);
+        if &b[..8] != b"CGBKR001"
+            || !(1..=4).contains(&b[8])
+            || b[9..16].iter().chain(b[361..480].iter()).any(|x| *x != 0)
+            || n == 0
+            || n > 128
+            || b[233 + n..361].iter().any(|x| *x != 0)
+            || super::maintenance_backup::BackupAddress::parse(&b[233..233 + n]).is_none()
+            || b[200..232].iter().all(|x| *x == 0)
+            || b[480..] != Sha256::digest(&b[..480])[..]
+        {
+            return Err(CodecIssue::Corrupt);
+        }
+        let id = |at| {
+            super::locks::FileIdentity::from_fixed_words(
+                u64::from_le_bytes(b[at..at + 8].try_into().unwrap()),
+                u64::from_le_bytes(b[at + 8..at + 16].try_into().unwrap()),
+            )
+        };
+        Ok(Self {
+            stage: b[8],
+            source_epoch: u64::from_le_bytes(b[16..24].try_into().unwrap()),
+            root: id(24),
+            shard: id(40),
+            source: id(56),
+            payload: super::locks::FixedFileStamp::decode_checkpoint(
+                b[72..152].try_into().unwrap(),
+            )
+            .map_err(|_| CodecIssue::Corrupt)?,
+            digest: b[152..184].try_into().unwrap(),
+            destination: id(184),
+            operation: b[200..232].try_into().unwrap(),
+            name: b[233..361].try_into().unwrap(),
+            name_len: b[232],
+        })
+    }
+}
+
+#[cfg(test)]
+mod backup_restore_tests {
+    use super::*;
+    #[test]
+    fn backup_restore_record_preserves_exact_identities_and_rejects_foreign_addresses() {
+        let path = std::env::temp_dir().join(format!(
+            "dc-backup-codec-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir(&path).unwrap();
+        let file = std::fs::File::create(path.join("partition.json")).unwrap();
+        let stamp = super::super::locks::FixedFileStamp::capture(
+            &file,
+            super::super::locks::FixedControlKind::File,
+        )
+        .unwrap();
+        let id = stamp.identity();
+        let mut name = [0; 128];
+        let address = format!(".replaced-{}-1", "a".repeat(64));
+        name[..address.len()].copy_from_slice(address.as_bytes());
+        let record = BackupRestoreRecord {
+            stage: 1,
+            source_epoch: 7,
+            root: id,
+            shard: id,
+            source: id,
+            payload: stamp,
+            digest: [3; 32],
+            destination: id,
+            operation: [4; 32],
+            name,
+            name_len: address.len() as u8,
+        };
+        assert_eq!(
+            BackupRestoreRecord::decode(&record.encode()).unwrap(),
+            record
+        );
+        for stage in [0, 5, 255] {
+            let mut invalid = record;
+            invalid.stage = stage;
+            assert!(BackupRestoreRecord::decode(&invalid.encode()).is_err());
+        }
+        let mut foreign = record;
+        foreign.name[0] = b'x';
+        assert!(BackupRestoreRecord::decode(&foreign.encode()).is_err());
+        let mut zero_operation = record;
+        zero_operation.operation = [0; 32];
+        assert!(BackupRestoreRecord::decode(&zero_operation.encode()).is_err());
+        drop(file);
+        std::fs::remove_dir_all(path).unwrap();
     }
 }

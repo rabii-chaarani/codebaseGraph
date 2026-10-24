@@ -5,18 +5,35 @@ pub(crate) mod inventory;
 pub(crate) mod layout;
 pub(crate) mod locks;
 pub(crate) mod maintenance;
+pub(crate) mod maintenance_admission;
+pub(crate) mod maintenance_backup;
 pub(crate) mod maintenance_budget;
+pub(crate) mod maintenance_candidate;
 pub(crate) mod maintenance_controls;
+pub(crate) mod maintenance_generation_engine;
+pub(crate) mod maintenance_generation_gate;
+pub(crate) mod maintenance_generations;
 pub(crate) mod maintenance_journal;
 pub(crate) mod maintenance_json;
+pub(crate) mod maintenance_legacy_association;
+pub(crate) mod maintenance_legacy_bootstrap;
+pub(crate) mod maintenance_legacy_engine;
+pub(crate) mod maintenance_legacy_generations_engine;
+pub(crate) mod maintenance_legacy_guard;
+pub(crate) mod maintenance_legacy_staging;
+pub(crate) mod maintenance_legacy_stream;
 pub(crate) mod maintenance_native_projection;
 pub(crate) mod maintenance_origin;
 pub(crate) mod maintenance_ownership;
+pub(crate) mod maintenance_projection;
+pub(crate) mod maintenance_references;
+pub(crate) mod maintenance_retirement;
 pub(crate) mod maintenance_scheduler;
 pub(crate) mod maintenance_validation;
+pub(crate) mod maintenance_workspace_gate;
 pub(crate) mod managed;
 pub(crate) mod run_workspace;
 
-pub(crate) mod maintenance_projection;
-
-pub(crate) mod maintenance_admission;
+#[cfg(all(test, debug_assertions))]
+#[path = "../../tests/support/storage_maintenance/collector.rs"]
+mod maintenance_collector_tests;

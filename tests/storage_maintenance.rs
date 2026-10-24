@@ -201,3 +201,74 @@ fn twenty_public_builds_match_clean_control_and_preserve_unchanged_artifact() {
         "churn changed reachable graph/search/context behavior"
     );
 }
+
+#[cfg(debug_assertions)]
+#[test]
+fn native_phase_owner_death_preserves_prior_graph_and_retries_without_source_edit() {
+    use fixture::{
+        process::FaultFixture,
+        workload::{self, BehaviorSnapshot, StableArtifact},
+    };
+    use std::time::Duration;
+
+    let mut fixture = FaultFixture::new().unwrap();
+    workload::install(fixture.root()).unwrap();
+    let before = BehaviorSnapshot::observe(fixture.root(), 0).unwrap();
+    let stable = StableArtifact::observe(fixture.root()).unwrap();
+    fixture.root().write_revision(1).unwrap();
+    let mut build = fixture.start_paused_build().unwrap();
+    let phase = build
+        .wait_for_native_phase(Duration::from_secs(20))
+        .unwrap();
+    phase.assert_candidate_present();
+    assert_eq!(
+        before,
+        BehaviorSnapshot::observe(fixture.root(), 0).unwrap()
+    );
+    fixture.assert_external_unchanged();
+    assert!(!build.interrupt_owner().unwrap().success());
+    drop(build);
+    fixture
+        .wait_for_recovery(&phase, Duration::from_secs(30))
+        .unwrap();
+    assert_eq!(
+        before,
+        BehaviorSnapshot::observe(fixture.root(), 0).unwrap()
+    );
+    fixture.assert_external_unchanged();
+    // No write_revision call follows the interruption: the pending source is
+    // retried exactly once after real lifecycle leases/proofs establish empty
+    // containment. Retained request bytes remain unchanged until this writer;
+    // finish_recovery still requires their actual disposal after publication.
+    let response = workload::materialize(fixture.root(), "full").unwrap();
+    stable.assert_reused(&StableArtifact::observe(fixture.root()).unwrap(), &response);
+    BehaviorSnapshot::observe(fixture.root(), 1).unwrap();
+    fixture.finish_recovery(&phase, &response).unwrap();
+}
+
+#[cfg(debug_assertions)]
+#[test]
+fn isolated_worker_first_creation_and_followup_keep_same_covered_publication_birth() {
+    use fixture::{
+        process::{CoveredEpochObservation, FaultFixture},
+        workload,
+    };
+    use std::time::Duration;
+    let mut fixture = FaultFixture::new().unwrap();
+    fixture.reset_closed_managed_storage().unwrap();
+    let mut mcp = fixture.start_mcp().unwrap();
+    let first = mcp.wait_for_revision(0, Duration::from_secs(90)).unwrap();
+    let first_coverage = CoveredEpochObservation::observe(fixture.root(), &first).unwrap();
+    fixture.root().write_revision(1).unwrap();
+    let followup = mcp.wait_for_revision(1, Duration::from_secs(90)).unwrap();
+    let followup_coverage = CoveredEpochObservation::observe(fixture.root(), &followup).unwrap();
+    followup_coverage.assert_same_birth_and_advanced_epoch(&first_coverage);
+    let reaped = mcp.close().unwrap();
+    fixture.root().write_revision(2).unwrap();
+    let later = workload::materialize(fixture.root(), "full").unwrap();
+    let health = fixture.public_health().unwrap();
+    let later_coverage = CoveredEpochObservation::observe(fixture.root(), &health).unwrap();
+    later_coverage.assert_same_birth_and_advanced_epoch(&followup_coverage);
+    workload::BehaviorSnapshot::observe(fixture.root(), 2).unwrap();
+    fixture.finish_worker_fixture(reaped, &later).unwrap();
+}

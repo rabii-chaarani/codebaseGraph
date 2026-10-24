@@ -27,9 +27,13 @@ pub(crate) enum NativeUnknown {
     Truncated,
     InvalidRange,
     Overflow,
+    #[cfg(test)]
     SourceChanged,
     Cancelled,
-    UnsupportedField { offset: u64, tag: u64 },
+    UnsupportedField {
+        offset: u64,
+        tag: u64,
+    },
 }
 impl From<ValidationIssue> for NativeUnknown {
     fn from(value: ValidationIssue) -> Self {
@@ -151,6 +155,20 @@ pub(crate) enum NativeCatalogEvent {
         table: u64,
         property: u32,
         column: u32,
+    },
+    RelationshipGroup {
+        table: u64,
+        source_multiplicity: u8,
+        target_multiplicity: u8,
+        direction: u8,
+    },
+    RelationshipEndpoint {
+        table: u64,
+        source: u64,
+        target: u64,
+        inner: u64,
+        source_flag: bool,
+        target_flag: bool,
     },
     Index {
         entry: u64,
@@ -659,18 +677,31 @@ pub(crate) fn trace_native_catalog43<S: ByteSource + ?Sized>(
                 if src > 1 || dst > 1 || direction > 2 {
                     return Err(reader.fail(79));
                 }
+                emit(NativeCatalogEvent::RelationshipGroup {
+                    table: id,
+                    source_multiplicity: src,
+                    target_multiplicity: dst,
+                    direction,
+                })?;
                 let storage = reader.text(memory)?;
                 if storage.start != storage.end || reader.flag()? {
                     return Err(reader.fail(80));
                 }
                 let infos = reader.u64()?;
                 for _ in 0..infos {
-                    let _source = reader.u64()?;
-                    let _target = reader.u64()?;
-                    let _inner_id = reader.u64()?;
-                    if reader.byte()? > 1 || reader.byte()? > 1 {
-                        return Err(reader.fail(81));
-                    }
+                    let source = reader.u64()?;
+                    let target = reader.u64()?;
+                    let inner = reader.u64()?;
+                    let source_flag = reader.flag()?;
+                    let target_flag = reader.flag()?;
+                    emit(NativeCatalogEvent::RelationshipEndpoint {
+                        table: id,
+                        source,
+                        target,
+                        inner,
+                        source_flag,
+                        target_flag,
+                    })?;
                 }
                 if reader.byte()? != 0 {
                     return Err(reader.fail(82));
@@ -1731,7 +1762,6 @@ pub(crate) fn scan_native_selected43<S: ByteSource + ?Sized>(
         }
         Ok(())
     })?;
-    drop(matcher);
     if maps
         .iter()
         .any(|m| m.table == u64::MAX || m.columns.contains(&u32::MAX))

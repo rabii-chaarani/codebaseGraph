@@ -261,7 +261,7 @@ pub fn unchanged_refresh(root: &FixtureRoot) -> Result<String, String> {
     Ok(events[0].into())
 }
 
-fn health(root: &FixtureRoot) -> Result<Value, String> {
+pub(super) fn health(root: &FixtureRoot) -> Result<Value, String> {
     execute(OperationRequest::Health(HealthRequest {
         repo: selector(root),
         confirm_legacy_quiescence: false,
@@ -615,8 +615,8 @@ mod tests {
         let mut other_incarnation = original.clone();
         other_incarnation["id"] = json!("clean-control-id");
         assert_eq!(
-            project_search(&[original.clone()]).unwrap(),
-            project_search(&[other_incarnation.clone()]).unwrap()
+            project_search(std::slice::from_ref(&original)).unwrap(),
+            project_search(std::slice::from_ref(&other_incarnation)).unwrap()
         );
         for (field, changed) in [
             ("rank_score", json!(0.2)),
@@ -627,7 +627,7 @@ mod tests {
             let mut changed_row = other_incarnation.clone();
             changed_row[field] = changed;
             assert_ne!(
-                project_search(&[original.clone()]).unwrap(),
+                project_search(std::slice::from_ref(&original)).unwrap(),
                 project_search(&[changed_row]).unwrap()
             );
         }

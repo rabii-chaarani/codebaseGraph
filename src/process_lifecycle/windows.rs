@@ -318,11 +318,7 @@ impl Contained {
         // Recovery must know the job identity before any contained child exists.
         write_json(&descriptor.lifecycle_dir.join("proof.json"), descriptor)?;
         let stdin = File::open("NUL").map_err(err)?;
-        let stderr = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&spec.stderr_path)
-            .map_err(err)?;
+        let stderr = open_private_append(&spec.stderr_path)?;
         let stdin = duplicate(stdin.as_raw_handle())?;
         let stdout = duplicate(std::io::stdout().as_raw_handle())?;
         let stderr = duplicate(stderr.as_raw_handle())?;

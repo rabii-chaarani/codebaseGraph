@@ -956,6 +956,7 @@ pub(crate) fn run_refresh_watch(
     let _refresh_lease = if config.once {
         None
     } else {
+        initialize_refresh_destination(&runtime)?;
         try_open_locked(refresh_lock_path(&runtime), LockMode::Exclusive)
             .map_err(|error| format!("failed to acquire refresh ownership: {error}"))?
             .ok_or_else(|| {
@@ -1439,6 +1440,24 @@ impl RefreshExecutionPlan {
     }
 }
 
+struct RefreshMaintenanceCompletion<'a>(&'a RefreshState);
+impl Drop for RefreshMaintenanceCompletion<'_> {
+    fn drop(&mut self) {
+        let maintenance = self
+            .0
+            .maintenance
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
+        if let Some(maintenance) = maintenance {
+            maintenance.request(
+                crate::storage::maintenance_scheduler::Trigger::Completion,
+                false,
+            );
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 struct RefreshServiceContext<'a> {
     state: &'a Arc<RefreshState>,
@@ -1462,6 +1481,9 @@ impl<'a> RefreshServiceContext<'a> {
     }
 
     fn refresh_batch(&self, backend: &'a str, batch: &WatchChangeBatch) -> Result<bool, String> {
+        // First local, last dropped: materialization workers, observer and all
+        // producer guards unwind before scheduling their completion opportunity.
+        let _maintenance_completion = RefreshMaintenanceCompletion(self.state);
         let mut observer = StateRefreshObserver::new(
             self.state,
             backend,
@@ -1735,6 +1757,13 @@ impl Default for RefreshStatus {
 pub(crate) struct RefreshState {
     status: Mutex<RefreshStatus>,
     cancellation: RefreshCancellation,
+    maintenance: Mutex<
+        Option<
+            crate::storage::maintenance::MaintenanceClient<
+                Arc<crate::coordinator::ExecutionDispatcher>,
+            >,
+        >,
+    >,
 }
 
 impl RefreshState {
@@ -1758,6 +1787,7 @@ impl RefreshState {
         Self {
             status: Mutex::new(status),
             cancellation,
+            maintenance: Mutex::new(None),
         }
     }
 
@@ -2346,12 +2376,30 @@ fn spawn_refresh_thread<F: FnOnce() + Send + 'static>(
         .spawn(body)
 }
 
+#[cfg(test)]
 pub(crate) fn start_refresh_service(
     selector: RepoSelector,
     config: RefreshServiceConfig,
     cancellation: RefreshCancellation,
 ) -> RefreshRuntime {
+    start_refresh_service_with_maintenance(selector, config, cancellation, None)
+}
+
+pub(crate) fn start_refresh_service_with_maintenance(
+    selector: RepoSelector,
+    config: RefreshServiceConfig,
+    cancellation: RefreshCancellation,
+    maintenance: Option<
+        crate::storage::maintenance::MaintenanceClient<
+            Arc<crate::coordinator::ExecutionDispatcher>,
+        >,
+    >,
+) -> RefreshRuntime {
     let state = Arc::new(RefreshState::with_cancellation(config, cancellation));
+    *state
+        .maintenance
+        .lock()
+        .unwrap_or_else(|error| error.into_inner()) = maintenance;
     spawn_refresh_task(state, move |state| {
         run_refresh_service(selector, config, state)
     })
@@ -2435,12 +2483,15 @@ fn run_refresh_service(
             return Ok(RefreshServiceExit::LegacyDisabled(error));
         }
         let lock_path = refresh_lock_path(&runtime);
-        let lease_result = try_open_locked(&lock_path, LockMode::Exclusive).map_err(|error| {
-            format!(
-                "failed to acquire refresh ownership {}: {error}",
-                lock_path.display()
-            )
-        });
+        let lease_result = initialize_refresh_destination(&runtime)
+            .map_err(crate::error::NativeError::InvalidInput)
+            .and_then(|()| try_open_locked(&lock_path, LockMode::Exclusive))
+            .map_err(|error| {
+                format!(
+                    "failed to acquire refresh ownership {}: {error}",
+                    lock_path.display()
+                )
+            });
         match lease_result {
             Err(error) => {
                 state.set_error("lock", error);
@@ -2504,6 +2555,24 @@ fn supervisor_wait(state: &Arc<RefreshState>, delay: Duration) -> Result<bool, S
         thread::sleep(Duration::from_millis(50).min(delay.saturating_sub(started.elapsed())));
     }
     Ok(false)
+}
+
+fn initialize_refresh_destination(
+    runtime: &crate::api::context::RepoRuntime,
+) -> Result<(), String> {
+    if let Some(root) = &runtime.storage_root {
+        crate::storage::maintenance_ownership::initialize_fresh_managed_domain(
+            &ManagedLayout::new(root),
+        )
+        .map_err(|error| format!("failed to initialize fresh refresh destination: {error}"))?;
+    } else {
+        crate::storage::maintenance_ownership::initialize_fresh_direct_domain(&DirectLayout::new(
+            &runtime.db_path,
+            &runtime.manifest_path,
+        ))
+        .map_err(|error| format!("failed to initialize fresh refresh destination: {error}"))?;
+    }
+    Ok(())
 }
 
 fn refresh_lock_path(runtime: &crate::api::context::RepoRuntime) -> PathBuf {

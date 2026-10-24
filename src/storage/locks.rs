@@ -3,6 +3,37 @@ use fs2::{lock_contended_error, FileExt};
 use std::fs::{self, File, OpenOptions};
 use std::path::{Path, PathBuf};
 
+/// Exact OS error compatibility for the declared Rust1.82 minimum.
+pub(crate) fn is_directory_not_empty(error: &std::io::Error) -> bool {
+    #[cfg(unix)]
+    {
+        error.raw_os_error() == Some(libc::ENOTEMPTY)
+    }
+    #[cfg(windows)]
+    {
+        error.raw_os_error() == Some(145)
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        let _ = error;
+        false
+    }
+}
+pub(crate) fn directory_not_empty_error() -> std::io::Error {
+    #[cfg(unix)]
+    {
+        std::io::Error::from_raw_os_error(libc::ENOTEMPTY)
+    }
+    #[cfg(windows)]
+    {
+        std::io::Error::from_raw_os_error(145)
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        std::io::Error::new(std::io::ErrorKind::Other, "directory not empty")
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LockMode {
     Shared,
@@ -524,6 +555,24 @@ pub(crate) enum FixedControlError {
     Resource(super::maintenance_budget::ResourceLimit),
     Grant(super::maintenance_budget::GrantExhausted),
 }
+impl std::fmt::Display for FixedControlError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Io(error) => std::fmt::Display::fmt(error, f),
+            Self::Invalid(problem) => write!(f, "invalid cleanup control: {problem:?}"),
+            Self::Resource(limit) => write!(f, "cleanup resource limit: {limit:?}"),
+            Self::Grant(limit) => write!(f, "cleanup mutation allowance: {limit:?}"),
+        }
+    }
+}
+impl std::error::Error for FixedControlError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Io(error) => Some(error),
+            _ => None,
+        }
+    }
+}
 impl From<std::io::Error> for FixedControlError {
     fn from(error: std::io::Error) -> Self {
         Self::Io(error)
@@ -861,7 +910,21 @@ impl FixedLockedFile {
                 mode,
                 _same_thread: std::marker::PhantomData,
             })),
-            Err(error) if is_lock_contended(&error) => Ok(None),
+            Err(error) if is_lock_contended(&error) => {
+                #[cfg(test)]
+                if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+                    eprintln!(
+                        "cleanup control lock contended: identity={:?} mode={}",
+                        file_identity(&file),
+                        if mode == LockMode::Exclusive {
+                            "exclusive"
+                        } else {
+                            "shared"
+                        }
+                    );
+                }
+                Ok(None)
+            }
             Err(error) => Err(error.into()),
         }
     }
@@ -881,6 +944,7 @@ impl LockedFile {
     /// Read through the ACTUAL lock-owning handle. Windows byte-range locks
     /// would reject reading the same file via a second handle while Exclusive.
     /// Expected bytes were encoded outside authority; no hashing occurs here.
+    #[cfg(test)]
     pub(crate) fn matches_fixed_header(
         &self,
         expected: &[u8; COORDINATION_HEADER_BYTES],
@@ -1154,6 +1218,30 @@ mod fixed_control_tests {
     }
 }
 
+/// Minted only by this module's successful mkfifoat event.
+#[cfg(unix)]
+pub(crate) struct CreatedContainmentFifo {
+    file: File,
+}
+#[cfg(unix)]
+impl CreatedContainmentFifo {
+    pub(crate) fn file(&self) -> &File {
+        &self.file
+    }
+}
+
+/// Minted only after the fresh FIFO hardlink and both namespace flushes.
+#[cfg(unix)]
+pub(crate) struct CreatedFifoPin {
+    file: File,
+}
+#[cfg(unix)]
+impl CreatedFifoPin {
+    pub(crate) fn identity(&self) -> Result<FileIdentity, NativeError> {
+        file_identity(&self.file)
+    }
+}
+
 /// Actual directory anchor for fixed-name creation. Relative native operations
 /// address this retained object even if a public ancestor/name is substituted.
 /// Opening/preparing the anchor belongs outside a cleanup execution permit.
@@ -1163,6 +1251,11 @@ pub(crate) struct RootedDirectory {
     _same_thread: std::marker::PhantomData<std::rc::Rc<()>>,
 }
 impl RootedDirectory {
+    /// Nonlocking pin of the same actual directory incarnation. Native-use
+    /// leases retain this handle without exporting namespace mutation authority.
+    pub(crate) fn pin_handle(&self) -> std::io::Result<File> {
+        self.directory.try_clone()
+    }
     pub(crate) fn open(path: &Path, expected: FileIdentity) -> std::io::Result<Self> {
         Self::open_root(path, expected, true)
     }
@@ -1305,6 +1398,7 @@ impl RootedDirectory {
                 libc::O_RDONLY
             } | libc::O_NOFOLLOW
                 | libc::O_CLOEXEC
+                | libc::O_NONBLOCK
                 | if create && !directory {
                     libc::O_CREAT | libc::O_EXCL
                 } else {
@@ -1345,8 +1439,9 @@ impl RootedDirectory {
                     },
                     Storage::FileSystem::{
                         DELETE, FILE_ADD_FILE, FILE_ADD_SUBDIRECTORY, FILE_ATTRIBUTE_NORMAL,
-                        FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE,
-                        FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_WRITE_ATTRIBUTES, SYNCHRONIZE,
+                        FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, FILE_READ_EA, FILE_SHARE_DELETE,
+                        FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_WRITE_ATTRIBUTES, FILE_WRITE_EA,
+                        SYNCHRONIZE,
                     },
                     System::IO::IO_STATUS_BLOCK,
                 },
@@ -1378,8 +1473,12 @@ impl RootedDirectory {
                     (if directory {
                         FILE_LIST_DIRECTORY
                             | FILE_READ_ATTRIBUTES
+                            | FILE_READ_EA
                             | if write {
-                                FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY | FILE_WRITE_ATTRIBUTES
+                                FILE_ADD_FILE
+                                    | FILE_ADD_SUBDIRECTORY
+                                    | FILE_WRITE_ATTRIBUTES
+                                    | FILE_WRITE_EA
                             } else {
                                 0
                             }
@@ -1488,6 +1587,19 @@ fn checked_relative_name(name: &[u8]) -> std::io::Result<[u8; 256]> {
     let mut native = [0; 256];
     native[..name.len()].copy_from_slice(name);
     Ok(native)
+}
+#[cfg(unix)]
+fn checked_fifo_name(name: &[u8]) -> std::io::Result<[u8; 256]> {
+    if name != b"writers.fifo"
+        && !(name.len() == 69
+            && &name[..5] == b"fifo-"
+            && name[5..]
+                .iter()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(b)))
+    {
+        return Err(std::io::ErrorKind::InvalidInput.into());
+    }
+    checked_relative_name(name)
 }
 impl RootedDirectory {
     /// Low-level entry operation only. Caller retains actual namespace ownership
@@ -1616,6 +1728,126 @@ impl RootedDirectory {
         }
         Ok(())
     }
+    /// The only hardlinked class admitted by cleanup: a real containment FIFO
+    /// and its private creation pin. Regular payloads still require one link.
+    #[cfg(unix)]
+    pub(crate) fn open_pinned_fifo(
+        &self,
+        name: &[u8],
+        expected: FileIdentity,
+        links: u64,
+    ) -> std::io::Result<File> {
+        use std::os::{
+            fd::{AsRawFd, FromRawFd},
+            unix::fs::{FileTypeExt, MetadataExt},
+        };
+        let native = checked_fifo_name(name)?;
+        if !matches!(links, 1 | 2) {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        // SAFETY: retained actual parent, one validated basename, nonblocking
+        // read prevents waiting for a writer and NOFOLLOW rejects substitution.
+        let fd = unsafe {
+            libc::openat(
+                self.directory.as_raw_fd(),
+                native.as_ptr().cast(),
+                libc::O_RDONLY | libc::O_NONBLOCK | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+            )
+        };
+        if fd < 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        // SAFETY: successful openat returned this uniquely owned descriptor.
+        let file = unsafe { File::from_raw_fd(fd) };
+        let metadata = file.metadata()?;
+        if !metadata.file_type().is_fifo()
+            || metadata.nlink() != links
+            || file_identity(&file).map_err(native_io)? != expected
+        {
+            return Err(std::io::ErrorKind::InvalidData.into());
+        }
+        Ok(file)
+    }
+    /// Creates the FIFO itself, so no existing-file observation can mint this
+    /// event. The retained reader keeps its inode alive until its pin is made.
+    #[cfg(unix)]
+    pub(crate) fn create_containment_fifo(&self) -> std::io::Result<CreatedContainmentFifo> {
+        use std::os::fd::{AsRawFd, FromRawFd};
+        let name = checked_fifo_name(b"writers.fifo")?;
+        // SAFETY: actual parent FD and validated NUL-terminated fixed basename.
+        if unsafe { libc::mkfifoat(self.directory.as_raw_fd(), name.as_ptr().cast(), 0o600) } != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        // SAFETY: retained actual parent FD and validated basename; nonblocking.
+        let fd = unsafe {
+            libc::openat(
+                self.directory.as_raw_fd(),
+                name.as_ptr().cast(),
+                libc::O_RDONLY | libc::O_NONBLOCK | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+            )
+        };
+        if fd < 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        // SAFETY: successful openat returned this uniquely owned descriptor.
+        let file = unsafe { File::from_raw_fd(fd) };
+        let id = file_identity(&file).map_err(native_io)?;
+        self.open_pinned_fifo(b"writers.fifo", id, 1)?;
+        Ok(CreatedContainmentFifo { file })
+    }
+    #[cfg(unix)]
+    pub(crate) fn pin_created_containment_fifo(
+        &self,
+        created: &CreatedContainmentFifo,
+        registry: &Self,
+        pin_name: &[u8],
+    ) -> std::io::Result<CreatedFifoPin> {
+        use std::os::fd::AsRawFd;
+        if pin_name == b"writers.fifo" {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        let pin = checked_fifo_name(pin_name)?;
+        let source = checked_fifo_name(b"writers.fifo")?;
+        let id = file_identity(created.file()).map_err(native_io)?;
+        self.open_pinned_fifo(b"writers.fifo", id, 1)?;
+        // SAFETY: retained source/registry FDs, validated one-component names;
+        // zero flags link only the existing entry and never replace a pin.
+        if unsafe {
+            libc::linkat(
+                self.directory.as_raw_fd(),
+                source.as_ptr().cast(),
+                registry.directory.as_raw_fd(),
+                pin.as_ptr().cast(),
+                0,
+            )
+        } != 0
+        {
+            return Err(std::io::Error::last_os_error());
+        }
+        self.open_pinned_fifo(b"writers.fifo", id, 2)?;
+        let file = registry.open_pinned_fifo(pin_name, id, 2)?;
+        self.sync_namespace()?;
+        registry.sync_namespace()?;
+        Ok(CreatedFifoPin { file })
+    }
+    /// Caller must retain actual terminal kernel/root-closed authority. This
+    /// performs only an exact special-class unlink; it confers no authority.
+    #[cfg(unix)]
+    pub(crate) fn unlink_pinned_fifo(
+        &self,
+        name: &[u8],
+        expected: FileIdentity,
+        links: u64,
+    ) -> std::io::Result<()> {
+        use std::os::fd::AsRawFd;
+        let native = checked_fifo_name(name)?;
+        let _pin = self.open_pinned_fifo(name, expected, links)?;
+        // SAFETY: actual retained parent FD and validated special FIFO basename.
+        if unsafe { libc::unlinkat(self.directory.as_raw_fd(), native.as_ptr().cast(), 0) } != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        Ok(())
+    }
     pub(crate) fn unlink_file(&self, name: &[u8], expected: FileIdentity) -> std::io::Result<()> {
         self.remove_entry(name, expected, false)
     }
@@ -1714,6 +1946,134 @@ mod rooted_directory_tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.root);
         }
+    }
+    #[cfg(any(target_os = "macos", target_os = "linux", windows))]
+    #[test]
+    fn dc_nonce_promotion_requires_the_exact_existing_creation_tag() {
+        let fixture = Fixture::new();
+        let root = fixture.anchor();
+        let mut file = root.create_new(b"source-state").unwrap();
+        std::io::Write::write_all(&mut file, b"unchanged source payload").unwrap();
+        let original = [17; 32];
+        let promoted = [29; 32];
+        assert!(replace_created_file_nonce(&file, &original, &promoted).is_err());
+        assert_eq!(created_file_nonce(&file).unwrap(), None);
+        set_created_file_nonce(&file, &original).unwrap();
+        assert!(replace_created_file_nonce(&file, &[18; 32], &promoted).is_err());
+        assert_eq!(created_file_nonce(&file).unwrap(), Some(original));
+        replace_created_file_nonce(&file, &original, &promoted).unwrap();
+        assert_eq!(created_file_nonce(&file).unwrap(), Some(promoted));
+        assert_eq!(
+            fs::read(fixture.root.join("source-state")).unwrap(),
+            b"unchanged source payload"
+        );
+        assert!(replace_created_file_nonce(&file, &original, &[31; 32]).is_err());
+        assert_eq!(created_file_nonce(&file).unwrap(), Some(promoted));
+    }
+    #[test]
+    fn dc_directory_hints_keep_verified_directories_and_reject_file_aliases() {
+        let fixture = Fixture::new();
+        let root = fixture.anchor();
+        for name in [b"first".as_slice(), b"second"] {
+            root.create_directory(name).unwrap();
+        }
+        for index in 0..64 {
+            root.create_new(format!("payload-{index}").as_bytes())
+                .unwrap();
+        }
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(fixture.root.join("first"), fixture.root.join("alias")).unwrap();
+        let mut scratch = [0; 4096];
+        let mut actual = std::collections::BTreeSet::new();
+        root.visit_directories(&mut scratch, &mut |name| {
+            if root.open_directory_readonly(name).is_ok() {
+                actual.insert(name.to_vec());
+            }
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(
+            actual,
+            std::collections::BTreeSet::from([b"first".to_vec(), b"second".to_vec()])
+        );
+        // Directory enumeration resets its actual anchor rather than consuming
+        // an external stream cursor or retaining a collection between calls.
+        let mut repeated = std::collections::BTreeSet::new();
+        root.visit_directories(&mut scratch, &mut |name| {
+            if root.open_directory_readonly(name).is_ok() {
+                repeated.insert(name.to_vec());
+            }
+            Ok(())
+        })
+        .unwrap();
+        assert_eq!(actual, repeated);
+    }
+    #[cfg(unix)]
+    #[test]
+    fn dc_fifo_creation_pin_blocks_inode_aba_and_rejects_aliases() {
+        use std::os::unix::fs::MetadataExt;
+        let f = Fixture::new();
+        let root = f.anchor();
+        let registry = root.create_directory(b"registry").unwrap();
+        let mut pin = [b'a'; 69];
+        pin[..5].copy_from_slice(b"fifo-");
+        let created = root.create_containment_fifo().unwrap();
+        let id = file_identity(created.file()).unwrap();
+        assert!(root.create_containment_fifo().is_err());
+        root.pin_created_containment_fifo(&created, &registry, &pin)
+            .unwrap();
+        assert_eq!(created.file().metadata().unwrap().nlink(), 2);
+        assert!(root.open_readonly_file(b"writers.fifo").is_err());
+        assert!(registry.open_pinned_fifo(b"payload", id, 2).is_err());
+        // A third foreign alias prevents any collector-class unlink.
+        fs::hard_link(f.root.join("writers.fifo"), f.root.join("foreign")).unwrap();
+        assert!(root.unlink_pinned_fifo(b"writers.fifo", id, 2).is_err());
+        fs::remove_file(f.root.join("foreign")).unwrap();
+        root.unlink_pinned_fifo(b"writers.fifo", id, 2).unwrap();
+        drop(created);
+        // Private pin survives public disappearance and keeps the old inode.
+        let old = registry.open_pinned_fifo(&pin, id, 1).unwrap();
+        let replacement = root.create_containment_fifo().unwrap();
+        assert_ne!(file_identity(replacement.file()).unwrap(), id);
+        assert!(root.unlink_pinned_fifo(b"writers.fifo", id, 1).is_err());
+        assert!(root
+            .open_pinned_fifo(
+                b"writers.fifo",
+                file_identity(replacement.file()).unwrap(),
+                1
+            )
+            .is_ok());
+        drop(old);
+        registry.unlink_pinned_fifo(&pin, id, 1).unwrap();
+        assert!(!f
+            .root
+            .join("registry")
+            .join(std::str::from_utf8(&pin).unwrap())
+            .exists());
+    }
+    #[cfg(unix)]
+    #[test]
+    fn dc_fifo_creation_pin_never_adopts_pin_collision_or_regular_file() {
+        let f = Fixture::new();
+        let root = f.anchor();
+        let registry = root.create_directory(b"registry").unwrap();
+        let mut pin = [b'b'; 69];
+        pin[..5].copy_from_slice(b"fifo-");
+        let collision = registry.create_new(&pin).unwrap();
+        let collision_id = file_identity(&collision).unwrap();
+        let created = root.create_containment_fifo().unwrap();
+        assert!(root
+            .pin_created_containment_fifo(&created, &registry, &pin)
+            .is_err());
+        assert_eq!(
+            file_identity(&registry.open_readonly_file(&pin).unwrap()).unwrap(),
+            collision_id
+        );
+        assert!(registry.open_pinned_fifo(&pin, collision_id, 1).is_err());
+        assert!(registry.unlink_pinned_fifo(&pin, collision_id, 1).is_err());
+        assert!(root
+            .open_pinned_fifo(b"writers.fifo", file_identity(created.file()).unwrap(), 1)
+            .is_ok());
     }
     #[test]
     fn dc_rooted_namespace_no_replace_and_exact_empty_removal_preserve_foreign_entries() {
@@ -1915,16 +2275,36 @@ impl RootedDirectory {
         bytes: &mut [u8; 4096],
         visit: &mut impl FnMut(&[u8]) -> std::io::Result<()>,
     ) -> std::io::Result<()> {
+        self.visit_entries_filtered(bytes, false, visit)
+    }
+    /// Advisory directory hints avoid opening every regular payload while
+    /// looking up a workspace parent. Callers still open and verify directories.
+    pub(crate) fn visit_directories(
+        &self,
+        bytes: &mut [u8; 4096],
+        visit: &mut impl FnMut(&[u8]) -> std::io::Result<()>,
+    ) -> std::io::Result<()> {
+        self.visit_entries_filtered(bytes, true, visit)
+    }
+    fn visit_entries_filtered(
+        &self,
+        bytes: &mut [u8; 4096],
+        directories_only: bool,
+        visit: &mut impl FnMut(&[u8]) -> std::io::Result<()>,
+    ) -> std::io::Result<()> {
         #[cfg(target_os = "macos")]
         {
             use std::os::fd::AsRawFd;
             let mut attributes: libc::attrlist = unsafe { std::mem::zeroed() };
             attributes.bitmapcount = libc::ATTR_BIT_MAP_COUNT;
             attributes.commonattr = libc::ATTR_CMN_NAME | libc::ATTR_CMN_RETURNED_ATTRS;
+            if directories_only {
+                attributes.commonattr |= libc::ATTR_CMN_OBJTYPE;
+            }
             // SAFETY: actual directory FD, bounded writable caller scratch and
             // initialized attrlist. No libc DIR allocation or path expansion.
             if unsafe { libc::lseek(self.directory.as_raw_fd(), 0, libc::SEEK_SET) } < 0 {
-                return Err(std::io::Error::last_os_error().into());
+                return Err(std::io::Error::last_os_error());
             }
             loop {
                 let count = unsafe {
@@ -1937,7 +2317,7 @@ impl RootedDirectory {
                     )
                 };
                 if count < 0 {
-                    return Err(std::io::Error::last_os_error().into());
+                    return Err(std::io::Error::last_os_error());
                 }
                 if count == 0 {
                     return Ok(());
@@ -1971,7 +2351,23 @@ impl RootedDirectory {
                         return Err(std::io::ErrorKind::InvalidData.into());
                     }
                     let name = &bytes[start..end - 1];
-                    if name != b"." && name != b".." {
+                    let returned =
+                        u32::from_ne_bytes(bytes[offset + 4..offset + 8].try_into().unwrap());
+                    let known_non_directory = if directories_only
+                        && returned & libc::ATTR_CMN_OBJTYPE != 0
+                    {
+                        if length < 36 {
+                            return Err(std::io::ErrorKind::InvalidData.into());
+                        }
+                        // Darwin vnode_type_t: VNON=0, VREG=1, VDIR=2. An
+                        // unavailable type falls back to the verified open.
+                        let kind =
+                            u32::from_ne_bytes(bytes[offset + 32..offset + 36].try_into().unwrap());
+                        kind != 0 && kind != 2
+                    } else {
+                        false
+                    };
+                    if name != b"." && name != b".." && !known_non_directory {
                         visit(name)?;
                     }
                     offset += length;
@@ -2017,7 +2413,11 @@ impl RootedDirectory {
                         .position(|x| *x == 0)
                         .ok_or(std::io::ErrorKind::InvalidData)?;
                     let name = &field[..end];
-                    if name != b"." && name != b".." {
+                    let kind = bytes[offset + 18];
+                    if name != b"."
+                        && name != b".."
+                        && (!directories_only || kind == libc::DT_UNKNOWN || kind == libc::DT_DIR)
+                    {
                         visit(name)?;
                     }
                     offset += length;
@@ -2026,6 +2426,7 @@ impl RootedDirectory {
         }
         #[cfg(windows)]
         {
+            let _ = directories_only;
             use std::os::windows::io::AsRawHandle;
             use windows_sys::{
                 Wdk::Storage::FileSystem::{FileNamesInformation, NtQueryDirectoryFile},
@@ -2205,5 +2606,380 @@ impl FixedFileStamp {
 impl RootedDirectory {
     pub(crate) fn metadata(&self) -> std::io::Result<std::fs::Metadata> {
         self.directory.metadata()
+    }
+}
+
+/// Genuine namespace creation, used by owned workspace factories. Existing
+/// coordination names are never adopted merely because their file is empty.
+pub(crate) fn create_new_coordination_in(
+    root: &RootedDirectory,
+    name: &[u8],
+    path: &Path,
+) -> Result<LockedFile, NativeError> {
+    if path.file_name().map(|n| n.as_encoded_bytes()) != Some(name)
+        || path.parent().map(path_identity).transpose()? != Some(root.identity())
+    {
+        return Err(NativeError::InvalidInput(
+            "fresh coordination parent mismatch".into(),
+        ));
+    }
+    let file = root.create_new(name)?;
+    FileExt::lock_exclusive(&file)?;
+    let lock = LockedFile {
+        path: path.to_owned(),
+        file: Some(file),
+        mode: LockMode::Exclusive,
+        companions: Vec::new(),
+    };
+    if !lock.is_current()? {
+        return Err(NativeError::InvalidInput(
+            "fresh coordination changed".into(),
+        ));
+    }
+    Ok(lock)
+}
+
+pub(crate) fn read_fixed_range(file: &File, offset: u64, bytes: &mut [u8]) -> std::io::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::FileExt;
+        file.read_exact_at(bytes, offset)
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::FileExt;
+        let mut done = 0;
+        while done < bytes.len() {
+            let n = file.seek_read(
+                &mut bytes[done..],
+                offset
+                    .checked_add(done as u64)
+                    .ok_or(std::io::ErrorKind::InvalidInput)?,
+            )?;
+            if n == 0 {
+                return Err(std::io::ErrorKind::UnexpectedEof.into());
+            }
+            done += n;
+        }
+        Ok(())
+    }
+    #[cfg(not(any(unix, windows)))]
+    Err(std::io::ErrorKind::Unsupported.into())
+}
+pub(crate) fn write_fixed_range(
+    file: &File,
+    offset: u64,
+    bytes: &[u8],
+    grant: &super::maintenance_budget::MutationGrant,
+) -> Result<(), FixedControlError> {
+    let mut done = 0;
+    while done < bytes.len() {
+        grant.check_time()?;
+        let at = offset
+            .checked_add(done as u64)
+            .ok_or(std::io::ErrorKind::InvalidInput)?;
+        #[cfg(unix)]
+        let n = {
+            use std::os::unix::fs::FileExt;
+            file.write_at(&bytes[done..], at)?
+        };
+        #[cfg(windows)]
+        let n = {
+            use std::os::windows::fs::FileExt;
+            file.seek_write(&bytes[done..], at)?
+        };
+        #[cfg(not(any(unix, windows)))]
+        return Err(std::io::ErrorKind::Unsupported.into());
+        if n == 0 {
+            return Err(std::io::ErrorKind::WriteZero.into());
+        }
+        done += n;
+    }
+    grant.check_time()?;
+    file.sync_all()?;
+    Ok(())
+}
+
+/// Creation-only physical file nonce. Metadata is outside primary CSV/JSON
+/// bytes, survives chmod, and prevents numeric inode ABA from adopting a new
+/// untagged file. Unsupported filesystems remain optional/untracked.
+pub(crate) fn set_created_file_nonce(file: &File, nonce: &[u8; 32]) -> std::io::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        use std::os::fd::AsRawFd;
+        let result = unsafe {
+            libc::fsetxattr(
+                file.as_raw_fd(),
+                c"com.codebasegraph.origin".as_ptr(),
+                nonce.as_ptr().cast(),
+                nonce.len(),
+                0,
+                libc::XATTR_CREATE,
+            )
+        };
+        if result != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        file.sync_all()?;
+        Ok(())
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::fd::AsRawFd;
+        let result = unsafe {
+            libc::fsetxattr(
+                file.as_raw_fd(),
+                c"user.codebasegraph.origin".as_ptr(),
+                nonce.as_ptr().cast(),
+                nonce.len(),
+                libc::XATTR_CREATE,
+            )
+        };
+        if result != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        file.sync_all()?;
+        Ok(())
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::AsRawHandle;
+        use windows_sys::{
+            Wdk::Storage::FileSystem::NtSetEaFile,
+            Win32::{Foundation::RtlNtStatusToDosError, System::IO::IO_STATUS_BLOCK},
+        };
+        const NAME: &[u8] = b"CODEBASEGRAPH.ORIGIN";
+        let mut bytes = [0u8; 64];
+        bytes[5] = NAME.len() as u8;
+        bytes[6..8].copy_from_slice(&32u16.to_le_bytes());
+        bytes[8..8 + NAME.len()].copy_from_slice(NAME);
+        bytes[9 + NAME.len()..41 + NAME.len()].copy_from_slice(nonce);
+        let mut io: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
+        let status = unsafe {
+            NtSetEaFile(
+                file.as_raw_handle(),
+                &mut io,
+                bytes.as_ptr().cast(),
+                (41 + NAME.len()) as u32,
+            )
+        };
+        if status < 0 {
+            return Err(std::io::Error::from_raw_os_error(
+                unsafe { RtlNtStatusToDosError(status) } as i32,
+            ));
+        }
+        file.sync_all()?;
+        Ok(())
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
+    Err(std::io::ErrorKind::Unsupported.into())
+}
+/// Replace only an existing, exactly matched creation nonce while the caller
+/// retains its actual source/owner exclusion. This never creates a missing tag.
+pub(crate) fn replace_created_file_nonce(
+    file: &File,
+    expected: &[u8; 32],
+    next: &[u8; 32],
+) -> std::io::Result<()> {
+    if created_file_nonce(file)? != Some(*expected) {
+        return Err(std::io::ErrorKind::InvalidData.into());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        use std::os::fd::AsRawFd;
+        let result = unsafe {
+            libc::fsetxattr(
+                file.as_raw_fd(),
+                c"com.codebasegraph.origin".as_ptr(),
+                next.as_ptr().cast(),
+                next.len(),
+                0,
+                libc::XATTR_REPLACE,
+            )
+        };
+        if result != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::fd::AsRawFd;
+        let result = unsafe {
+            libc::fsetxattr(
+                file.as_raw_fd(),
+                c"user.codebasegraph.origin".as_ptr(),
+                next.as_ptr().cast(),
+                next.len(),
+                libc::XATTR_REPLACE,
+            )
+        };
+        if result != 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+    }
+    #[cfg(windows)]
+    set_created_file_nonce(file, next)?;
+    #[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
+    return Err(std::io::ErrorKind::Unsupported.into());
+    if created_file_nonce(file)? != Some(*next) {
+        return Err(std::io::ErrorKind::InvalidData.into());
+    }
+    file.sync_all()
+}
+pub(crate) fn created_file_nonce(file: &File) -> std::io::Result<Option<[u8; 32]>> {
+    let mut nonce = [0u8; 32];
+    #[cfg(target_os = "macos")]
+    {
+        use std::os::fd::AsRawFd;
+        let count = unsafe {
+            libc::fgetxattr(
+                file.as_raw_fd(),
+                c"com.codebasegraph.origin".as_ptr(),
+                nonce.as_mut_ptr().cast(),
+                nonce.len(),
+                0,
+                0,
+            )
+        };
+        if count < 0 {
+            let error = std::io::Error::last_os_error();
+            if matches!(error.raw_os_error(), Some(libc::ENOATTR | libc::ENOTSUP)) {
+                return Ok(None);
+            }
+            return Err(error);
+        }
+        Ok((count == 32).then_some(nonce))
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::fd::AsRawFd;
+        let count = unsafe {
+            libc::fgetxattr(
+                file.as_raw_fd(),
+                c"user.codebasegraph.origin".as_ptr(),
+                nonce.as_mut_ptr().cast(),
+                nonce.len(),
+            )
+        };
+        if count < 0 {
+            let error = std::io::Error::last_os_error();
+            if matches!(error.raw_os_error(), Some(libc::ENODATA | libc::ENOTSUP)) {
+                return Ok(None);
+            }
+            return Err(error);
+        }
+        Ok((count == 32).then_some(nonce))
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::AsRawHandle;
+        use windows_sys::{
+            Wdk::Storage::FileSystem::NtQueryEaFile,
+            Win32::{
+                Foundation::{
+                    RtlNtStatusToDosError, STATUS_EAS_NOT_SUPPORTED, STATUS_NONEXISTENT_EA_ENTRY,
+                    STATUS_NO_EAS_ON_FILE,
+                },
+                System::IO::IO_STATUS_BLOCK,
+            },
+        };
+        const NAME: &[u8] = b"CODEBASEGRAPH.ORIGIN";
+        let mut query = [0u8; 32];
+        query[4] = NAME.len() as u8;
+        query[5..5 + NAME.len()].copy_from_slice(NAME);
+        let mut bytes = [0u8; 128];
+        let mut io: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
+        let status = unsafe {
+            NtQueryEaFile(
+                file.as_raw_handle(),
+                &mut io,
+                bytes.as_mut_ptr().cast(),
+                bytes.len() as u32,
+                true,
+                query.as_ptr().cast(),
+                (6 + NAME.len()) as u32,
+                std::ptr::null(),
+                true,
+            )
+        };
+        if [
+            STATUS_NO_EAS_ON_FILE,
+            STATUS_NONEXISTENT_EA_ENTRY,
+            STATUS_EAS_NOT_SUPPORTED,
+        ]
+        .contains(&status)
+        {
+            return Ok(None);
+        }
+        if status < 0 {
+            return Err(std::io::Error::from_raw_os_error(
+                unsafe { RtlNtStatusToDosError(status) } as i32,
+            ));
+        }
+        let name_len = bytes[5] as usize;
+        let value_len = u16::from_le_bytes(bytes[6..8].try_into().unwrap()) as usize;
+        if io.Information < 8 + name_len + 1 + value_len
+            || name_len != NAME.len()
+            || value_len != 32
+            || bytes[8..8 + name_len] != *NAME
+        {
+            return Ok(None);
+        }
+        nonce.copy_from_slice(&bytes[9 + name_len..41 + name_len]);
+        Ok(Some(nonce))
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
+    Ok(None)
+}
+
+impl FixedFileStamp {
+    pub(crate) fn encode_checkpoint(&self, out: &mut [u8; 80]) {
+        out.fill(0);
+        out[..8].copy_from_slice(&1u64.to_le_bytes());
+        let (a, b) = self.identity.fixed_words();
+        out[8..16].copy_from_slice(&a.to_le_bytes());
+        out[16..24].copy_from_slice(&b.to_le_bytes());
+        out[24] = match self.kind {
+            FixedControlKind::File => 0,
+            FixedControlKind::Directory => 1,
+        };
+        out[32..40].copy_from_slice(&self.len.to_le_bytes());
+        out[40..48].copy_from_slice(&self.links.to_le_bytes());
+        for (index, value) in self.modified.into_iter().chain(self.changed).enumerate() {
+            out[48 + index * 8..56 + index * 8].copy_from_slice(&value.to_le_bytes());
+        }
+    }
+    pub(crate) fn decode_checkpoint(input: &[u8; 80]) -> Result<Self, FixedControlError> {
+        if u64::from_le_bytes(input[..8].try_into().unwrap()) != 1
+            || input[25..32].iter().any(|b| *b != 0)
+        {
+            return Err(FixedControlProblem::InvalidRecord.into());
+        }
+        let kind = match input[24] {
+            0 => FixedControlKind::File,
+            1 => FixedControlKind::Directory,
+            _ => return Err(FixedControlProblem::InvalidRecord.into()),
+        };
+        let links = u64::from_le_bytes(input[40..48].try_into().unwrap());
+        if kind == FixedControlKind::File && links != 1 {
+            return Err(FixedControlProblem::Aliased.into());
+        }
+        let time = |offset| i64::from_le_bytes(input[offset..offset + 8].try_into().unwrap());
+        Ok(Self {
+            identity: FileIdentity::from_fixed_words(
+                u64::from_le_bytes(input[8..16].try_into().unwrap()),
+                u64::from_le_bytes(input[16..24].try_into().unwrap()),
+            ),
+            kind,
+            len: u64::from_le_bytes(input[32..40].try_into().unwrap()),
+            links,
+            modified: [time(48), time(56)],
+            changed: [time(64), time(72)],
+        })
+    }
+}
+impl From<FixedControlProblem> for FixedControlError {
+    fn from(problem: FixedControlProblem) -> Self {
+        Self::Invalid(problem)
     }
 }

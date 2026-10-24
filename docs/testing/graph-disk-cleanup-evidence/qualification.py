@@ -1,4 +1,4 @@
-"""Fresh, narrow DC-S5 execution capture; never promotes aggregate/platform gates.
+"""Fresh DC-S5 suite execution capture; never promotes aggregate/platform gates.
 
 Requires Python 3.9+. Run `python3 qualification.py capture --repository REPO --output NEW_DIRECTORY`
 only while holding the coordinator's Cargo target lease. `verify DIRECTORY`
@@ -14,18 +14,32 @@ import platform
 import subprocess
 import xml.etree.ElementTree as ET
 
-SCHEMA = 2
+SCHEMA = 3
 BINARY = "codebase-graph::storage_maintenance"
 EXPECTED = {
     "health_preserves_legacy_fields_and_marks_unobserved_maintenance_unknown",
     "nonboolean_quiescence_confirmation_is_rejected_before_repository_effects",
     "repeated_health_entries_preserve_source_and_foreign_sentinels",
 }
-LIMITATIONS = [
+LEGACY_LIMITATIONS = [
     "Narrow external storage_maintenance execution only; no collector qualification.",
     "Native Windows/Linux, MSRV, full suite and aggregate closure remain pending.",
     "Source identity covers repository build inputs; dependency provenance uses Cargo.lock and metadata.",
 ]
+LIMITATIONS = [
+    "Captured storage_maintenance suite execution only; acceptance remains criterion-specific.",
+    "Native Windows/Linux, MSRV, workspace full suite and aggregate closure remain pending.",
+    "Source identity covers repository build inputs; dependency provenance uses Cargo.lock and metadata.",
+]
+WORKLOAD_CASES = {
+    "twenty_public_builds_match_clean_control_and_preserve_unchanged_artifact",
+    "fixture::workload::tests::schedule_covers_twenty_updates_and_each_required_interruption_boundary",
+    "fixture::workload::tests::independent_control_matches_twenty_source_updates_without_rewriting_stable_input",
+    "fixture::workload::tests::search_oracle_omits_only_incarnation_ids_and_keeps_rank_spans_and_content",
+    "fixture::workload::tests::oracle_rejects_missing_response_fields_and_preserves_context_multiplicity",
+}
+PROCESS_CASE = "native_phase_owner_death_preserves_prior_graph_and_retries_without_source_edit"
+
 
 
 def require(condition, message):
@@ -55,7 +69,7 @@ def source_manifest(repository):
     names = subprocess.check_output([
         "git", "ls-files", "-z", "--cached", "--others", "--exclude-standard",
     ], cwd=repository).decode().split("\0")
-    roots = {"src", "tests", "crates", "vendor", "assets", ".cargo"}
+    roots = {"src", "tests", "crates", "vendor", "assets", ".cargo", ".config"}
     singles = {"Cargo.toml", "Cargo.lock", "build.rs", "rust-toolchain", "rust-toolchain.toml"}
     result = {}
     for name in sorted(set(names) - {""}):
@@ -88,11 +102,11 @@ def binary_paths(metadata):
     return sorted(paths)
 
 
-def junit_result(path):
+def junit_result(path, case_names=None):
     xml = ET.parse(path).getroot()
     cases = xml.findall(".//testcase")
     identities = [(case.get("classname"), case.get("name")) for case in cases]
-    expected = {(BINARY, name) for name in EXPECTED}
+    expected = {(BINARY, name) for name in (EXPECTED if case_names is None else case_names)}
     require(len(identities) == len(expected) and set(identities) == expected,
             "unexpected, missing or duplicate external testcase")
     require(all(not any(case.find(tag) is not None for tag in ("failure", "error", "skipped", "rerunFailure", "rerunError"))
@@ -103,8 +117,9 @@ def junit_result(path):
 def verify(output):
     output = Path(output)
     record = read_json(output / "capture.json")
-    require(record["schema"] == SCHEMA, "unsupported capture schema")
-    require(record["scope"] == "narrow_external_contract", "capture scope cannot claim qualification")
+    schema = record["schema"]
+    require(schema in (1, 2, SCHEMA), "unsupported capture schema")
+    require(record["scope"] == ("storage_maintenance_suite" if schema == SCHEMA else "narrow_external_contract"), "capture scope cannot claim qualification")
     require(record["qualification"] == {"aggregate": "pending", "windows": "pending", "linux": "pending"},
             "narrow capture cannot promote qualification gates")
     for name, digest in record["artifacts"].items():
@@ -116,9 +131,11 @@ def verify(output):
     required = {"source-before.json", "source-after-build.json", "source-after-execution.json",
                 "binary-before.json", "binary-after.json", "binary-list.stdout", "binary-list.stderr",
                 "cargo-metadata.stdout", "cargo-metadata.stderr", "execution.stdout", "execution.stderr",
-                "junit.xml", "nextest.toml", "capture-driver.py", "rustc.stdout", "rustc.stderr", "cargo.stdout", "cargo.stderr", "root-build.stdout", "root-build.stderr",
-                "wrapper-build.stdout", "wrapper-build.stderr", "root-wrapper.rs", "root-wrapper.exe",
-                "compile-proof.json", "build-environment.json", "root-rustc.stdout", "root-rustc.stderr"}
+                "junit.xml", "nextest.toml", "capture-driver.py", "rustc.stdout", "rustc.stderr", "cargo.stdout", "cargo.stderr"}
+    if schema >= 2:
+        required.update({"root-build.stdout", "root-build.stderr", "wrapper-build.stdout", "wrapper-build.stderr", "root-wrapper.rs", "root-wrapper.exe", "compile-proof.json", "build-environment.json", "root-rustc.stdout", "root-rustc.stderr"})
+    if schema == SCHEMA:
+        required.update({"inventory.stdout", "inventory.stderr"})
     require(set(record["artifacts"]) == required, "incomplete capture artifact set")
     sources = [read_json(output / name) for name in (
         "source-before.json", "source-after-build.json", "source-after-execution.json")]
@@ -129,17 +146,29 @@ def verify(output):
     require(before and before == after and set(before) == set(binary_paths(metadata)), "binary identity mismatch")
     require(metadata["rust-build-meta"]["base-output-directories"] == ["debug"], "capture did not use debug build")
     commands = record["commands"]
-    require(set(commands) == {"rustc", "cargo", "cargo-metadata", "wrapper-build", "root-build", "root-rustc", "binary-list", "execution"}, "missing command provenance")
+    expected_commands = {"rustc", "cargo", "cargo-metadata", "binary-list", "execution"}
+    if schema >= 2:
+        expected_commands.update({"wrapper-build", "root-build", "root-rustc"})
+    if schema == SCHEMA:
+        expected_commands.add("inventory")
+    require(set(commands) == expected_commands, "missing command provenance")
     require(all(command["exit_code"] == 0 for command in commands.values()), "captured command failed")
     for label, argv in [("rustc", ["rustc", "-vV"]), ("cargo", ["cargo", "-V"]),
                         ("cargo-metadata", ["cargo", "metadata", "--offline", "--locked", "--format-version", "1"])]:
         require(commands[label]["argv"] == argv, "unexpected " + label + " command")
     require(commands["binary-list"]["argv"] == ["cargo", "nextest", "list", "--offline", "--locked", "--test", "storage_maintenance", "--list-type", "binaries-only", "--message-format", "json"], "unexpected compile command")
     require(commands["execution"]["argv"] == execution_command(Path(record["output"])), "unexpected execution command")
-    validate_compile_proof(record, output)
-    result = junit_result(output / "junit.xml")
+    if schema >= 2:
+        validate_compile_proof(record, output)
+    if schema == SCHEMA:
+        require(commands["inventory"]["argv"] == inventory_command(Path(record["output"])), "unexpected inventory command")
+        names = inventory_cases(read_json(output / "inventory.stdout"), metadata, sources[0])
+        require(record["expected_case_names"] == sorted(names), "recorded inventory identity mismatch")
+    else:
+        names = EXPECTED
+    result = junit_result(output / "junit.xml", names)
     require(result["run_id"] and result == record["result"], "JUnit result/run identity mismatch")
-    require(record["limitations"] == LIMITATIONS, "qualification limitations changed")
+    require(record["limitations"] == (LIMITATIONS if schema == SCHEMA else LEGACY_LIMITATIONS), "qualification limitations changed")
     return record
 
 
@@ -147,6 +176,32 @@ def execution_command(output):
     return ["cargo", "nextest", "run", "--binaries-metadata", str(output / "binary-list.stdout"),
             "--cargo-metadata", str(output / "cargo-metadata.stdout"), "--config-file", str(output / "nextest.toml"),
             "--profile", "cleanup-s5-capture", "--test-threads", "1"]
+
+
+
+def inventory_command(output):
+    return ["cargo", "nextest", "list", "--binaries-metadata", str(output / "binary-list.stdout"),
+            "--cargo-metadata", str(output / "cargo-metadata.stdout"), "--config-file", str(output / "nextest.toml"),
+            "--profile", "cleanup-s5-capture", "--message-format", "json"]
+
+
+def inventory_cases(inventory, binaries, sources):
+    require(inventory["rust-build-meta"] == binaries["rust-build-meta"], "inventory build identity mismatch")
+    suites = inventory["rust-suites"]
+    require(set(suites) == {BINARY}, "inventory selected unexpected test suites")
+    suite = suites[BINARY]
+    binary = binaries["rust-binaries"][BINARY]
+    require(suite["binary-path"] == binary["binary-path"] and suite["package-id"] == binary["package-id"], "inventory binary/package identity mismatch")
+    cases = suite["testcases"]
+    require(inventory["test-count"] == len(cases), "inventory count does not match named cases")
+    require(all(case["ignored"] is False and case["filter-match"]["status"] == "matches" for case in cases.values()), "ignored or filtered required test in inventory")
+    required = set(EXPECTED)
+    if "tests/support/storage_maintenance/workload.rs" in sources:
+        required.update(WORKLOAD_CASES)
+    if "tests/support/storage_maintenance/process.rs" in sources:
+        required.add(PROCESS_CASE)
+    require(required <= cases.keys(), "required fixture test cases were not registered")
+    return set(cases)
 
 
 def capture(repository, output):
@@ -190,15 +245,18 @@ def capture(repository, output):
     commands["root-rustc"] = run([next(iter(compilers)), "-vV"], repository, output, "root-rustc", environment)
     require(commands["root-rustc"]["exit_code"] == 0, "actual root rustc identity failed")
     write_json(output / "binary-before.json", {path: sha256(path) for path in paths})
+    commands["inventory"] = run(inventory_command(output), repository, output, "inventory", environment)
+    require(commands["inventory"]["exit_code"] == 0, "test inventory failed; raw output retained")
+    names = inventory_cases(read_json(output / "inventory.stdout"), read_json(output / "binary-list.stdout"), read_json(output / "source-before.json"))
     commands["execution"] = run(execution_command(output), repository, output, "execution", environment)
     write_json(output / "binary-after.json", {path: sha256(path) for path in paths})
     write_json(output / "source-after-execution.json", source_manifest(repository))
     require(commands["execution"]["exit_code"] == 0, "execution failed; raw output retained")
     record = {
-        "schema": SCHEMA, "scope": "narrow_external_contract", "head": head,
+        "schema": SCHEMA, "scope": "storage_maintenance_suite", "head": head,
         "repository": str(repository), "output": str(output), "host": platform.platform(),
         "qualification": {"aggregate": "pending", "windows": "pending", "linux": "pending"},
-        "commands": commands, "compile_proof": proof, "result": junit_result(output / "junit.xml"), "limitations": LIMITATIONS,
+        "commands": commands, "compile_proof": proof, "expected_case_names": sorted(names), "result": junit_result(output / "junit.xml", names), "limitations": LIMITATIONS,
         "artifacts": {path.name: sha256(path) for path in sorted(output.iterdir()) if path.is_file()},
     }
     write_json(output / "capture.json", record)
@@ -381,7 +439,10 @@ def main():
     command.add_argument("output")
     args = parser.parse_args()
     record = capture(args.repository, args.output) if args.action == "capture" else verify(args.output)
-    print("Verified %d narrow external cases; aggregate/platform gates remain pending." % record["result"]["passed"])
+    if record["schema"] < SCHEMA:
+        print("Historical %d-case capture integrity verified for its recorded scope; no new suite qualification." % record["result"]["passed"])
+    else:
+        print("Verified all %d registered storage_maintenance cases; aggregate/platform gates remain pending." % record["result"]["passed"])
 
 
 if __name__ == "__main__":

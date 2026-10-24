@@ -85,6 +85,33 @@ fn execute_scanned_materialization(
     // proportional to the number of source files.
     let mut progress_events = BTreeMap::new();
     let mut planned_entries = BTreeMap::new();
+    let transient_plan_bytes = crate::artifact_store::TransientPartition::plan_bytes(
+        &request.staging_dir,
+        materialization_paths.iter().map(String::as_str),
+    );
+    let total_limit = request.rust_memory_limit_bytes()?;
+    let artifact_memory_limit = total_limit
+        .checked_sub(transient_plan_bytes)
+        .ok_or_else(|| {
+            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
+                "transient_artifact_plan",
+                total_limit,
+                transient_plan_bytes,
+                0,
+            ))
+        })?;
+    let mut transient_partitions = Vec::new();
+    transient_partitions
+        .try_reserve_exact(materialization_total)
+        .map_err(|_| {
+            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
+                "transient_artifact_plan",
+                total_limit,
+                transient_plan_bytes,
+                0,
+            ))
+        })?;
+    transient_partitions.resize_with(materialization_total, || None);
     let mut parsed_paths = BTreeSet::new();
     let mut artifacts_reused = 0usize;
     let mut artifacts_rebuilt = 0usize;
@@ -114,6 +141,9 @@ fn execute_scanned_materialization(
                     },
                 );
             }
+            if let Some(transient) = result.transient {
+                transient_partitions[index] = Some(transient);
+            }
             planned_entries.insert(
                 result.partition.entry.path.clone(),
                 result.partition.entry.compact(),
@@ -134,17 +164,29 @@ fn execute_scanned_materialization(
         diff,
     } = scan;
     diagnostics.extend(parse_diagnostics);
-    let artifact_memory_limit = request.rust_memory_limit_bytes()?;
     let mut materialized_entries = BTreeMap::new();
     let mut rebuilt_entries = BTreeMap::new();
     for (index, path) in materialization_paths.iter().enumerate() {
-        let partition = load_planned_partition(
-            &supported,
-            path,
-            &planned_entries,
-            &artifact_store,
-            artifact_memory_limit,
-        )?;
+        let transient = transient_partitions[index].take();
+        let partition = if let Some(transient) = transient.as_ref() {
+            let snapshot = &supported[path];
+            transient.load(
+                &ArtifactExpectations {
+                    path,
+                    content_hash: &snapshot.content_hash,
+                    language: snapshot.language.as_deref().unwrap_or_default(),
+                },
+                artifact_memory_limit,
+            )?
+        } else {
+            load_planned_partition(
+                &supported,
+                path,
+                &planned_entries,
+                &artifact_store,
+                artifact_memory_limit,
+            )?
+        };
         let compact_entry = partition.entry.clone().compact();
         materialized_entries.insert(path.clone(), compact_entry.clone());
         if parsed_paths.contains(path) {
@@ -152,6 +194,7 @@ fn execute_scanned_materialization(
         }
         let staging_started = Instant::now();
         staging_accumulator.add_partition(&partition);
+        drop(transient);
         staging_seconds += elapsed_seconds(staging_started);
         if request.progress {
             progress_events.insert(
@@ -548,6 +591,11 @@ mod tests {
             .join(&corrupt_key)
             .join("partition.json");
         fs::write(&corrupt_path, "{not-json").unwrap();
+        let corrupt_identity = crate::storage::locks::path_identity(&corrupt_path).unwrap();
+        let foreign_neighbor = corrupt_path.parent().unwrap().join("foreign-neighbor");
+        fs::write(&foreign_neighbor, b"preserve foreign cache sibling").unwrap();
+        let foreign_identity = crate::storage::locks::path_identity(&foreign_neighbor).unwrap();
+
         let corrupt_previous = manifest_from_response(&response);
 
         let corrupt_state = root.join("state-corrupt");
@@ -560,6 +608,30 @@ mod tests {
         ))
         .unwrap();
         assert!(corrupt_response.artifacts_rebuilt >= 1);
+        assert_eq!(fs::read(&corrupt_path).unwrap(), b"{not-json");
+        assert_eq!(
+            crate::storage::locks::path_identity(&corrupt_path).unwrap(),
+            corrupt_identity
+        );
+        assert_eq!(
+            fs::read(&foreign_neighbor).unwrap(),
+            b"preserve foreign cache sibling"
+        );
+        assert_eq!(
+            crate::storage::locks::path_identity(&foreign_neighbor).unwrap(),
+            foreign_identity
+        );
+        assert!(corrupt_response
+            .diagnostics
+            .iter()
+            .any(|message| message.contains("artifact cache publication conflict")));
+        assert!(!fs::read_dir(corrupt_state.join("staging"))
+            .unwrap()
+            .filter_map(Result::ok)
+            .any(|entry| entry
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".partition-fallback-")));
 
         let _ = fs::remove_dir_all(root);
     }

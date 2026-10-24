@@ -1,5 +1,5 @@
 use crate::api::catalog::{filter_catalog, load_catalog, supported_syntax_languages};
-use crate::api::context::{resolve_runtime, RepoRuntime};
+use crate::api::context::{resolve_runtime, resolve_runtime_for_rebuild, RepoRuntime};
 use crate::api::contracts::{
     ApiError, ContextRequest, HealthRequest, MaterializationRequest, OperationInvocation,
     OperationRequest, OperationResponse, OutputFormat, QueryRequest, SearchRequest,
@@ -36,6 +36,32 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+/// Declared before execution resources so unwind requests maintenance only
+/// after the producer/read stack has released them. Normal completion disarms
+/// this fixed handle before projecting its newly queued state.
+struct MaintenanceCompletion<'a> {
+    client: Option<
+        &'a crate::storage::maintenance::MaintenanceClient<
+            Arc<crate::coordinator::ExecutionDispatcher>,
+        >,
+    >,
+}
+impl MaintenanceCompletion<'_> {
+    fn request(&mut self) {
+        if let Some(client) = self.client.take() {
+            client.request(
+                crate::storage::maintenance_scheduler::Trigger::Completion,
+                false,
+            );
+        }
+    }
+}
+impl Drop for MaintenanceCompletion<'_> {
+    fn drop(&mut self) {
+        self.request();
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct OperationDescriptor {
     pub id: &'static str,
@@ -70,6 +96,12 @@ pub(crate) struct RegisteredOperation {
 pub struct ApiCore {
     refresh: Option<Arc<RefreshState>>,
     isolate_materialization: bool,
+    maintenance: Option<
+        crate::storage::maintenance::MaintenanceClient<
+            Arc<crate::coordinator::ExecutionDispatcher>,
+        >,
+    >,
+    maintenance_unavailable: Option<crate::storage::maintenance_scheduler::DriverError>,
 }
 
 impl ApiCore {
@@ -77,10 +109,30 @@ impl ApiCore {
         Self::default()
     }
 
+    #[cfg(test)]
     pub(crate) fn for_coordinator(refresh: Option<Arc<RefreshState>>) -> Self {
         Self {
             refresh,
             isolate_materialization: true,
+            maintenance: None,
+            maintenance_unavailable: None,
+        }
+    }
+
+    pub(crate) fn for_coordinator_with_maintenance(
+        refresh: Option<Arc<RefreshState>>,
+        maintenance: Option<
+            crate::storage::maintenance::MaintenanceClient<
+                Arc<crate::coordinator::ExecutionDispatcher>,
+            >,
+        >,
+        unavailable: Option<crate::storage::maintenance_scheduler::DriverError>,
+    ) -> Self {
+        Self {
+            refresh,
+            isolate_materialization: true,
+            maintenance,
+            maintenance_unavailable: unavailable,
         }
     }
 
@@ -222,6 +274,162 @@ impl ApiCore {
     }
 
     pub fn execute(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError> {
+        self.execute_with_legacy_confirmation(request, None)
+    }
+    fn execute_with_legacy_confirmation(
+        &self,
+        request: &OperationRequest,
+        handled_confirmation: Option<bool>,
+    ) -> Result<OperationResponse, ApiError> {
+        use crate::storage::maintenance_scheduler::Trigger;
+        let confirmation =
+            matches!(request, OperationRequest::Health(health) if health.confirm_legacy_quiescence);
+        let confirmation_unbound = if let Some(bound) = handled_confirmation {
+            confirmation && !bound
+        } else if let Some(maintenance) = &self.maintenance {
+            if matches!(request, OperationRequest::Health(_)) {
+                let disposition = maintenance.request(Trigger::Health, confirmation);
+                confirmation
+                    && disposition
+                        != crate::storage::maintenance_scheduler::RequestDisposition::Enqueued
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+        // execute_inner owns all read/producer/runtime resources. Its return
+        // or unwind releases them before a completion opportunity is requested.
+        let mut completion = MaintenanceCompletion {
+            client: self.maintenance.as_ref(),
+        };
+        let mut result = self.execute_inner(request);
+        completion.request();
+        let trigger = Trigger::Completion;
+        let mut summary = if let Some(maintenance) = &self.maintenance {
+            Some(maintenance.projection())
+        } else if self.isolate_materialization {
+            self.maintenance_unavailable
+                .map(crate::storage::maintenance::MaintenanceProjection::unavailable)
+        } else {
+            self.transient_maintenance(request, trigger, confirmation)
+        };
+        if confirmation_unbound {
+            if let Some(projection) = summary.as_mut() {
+                projection.summary.pending = true;
+                projection
+                    .summary
+                    .reasons
+                    .push("legacy_confirmation_not_bound".into());
+                projection
+                    .summary
+                    .reasons
+                    .push("legacy_source_capture_busy_or_unavailable".into());
+            }
+        }
+        if let (Ok(response), Some(projection)) = (&mut result, summary.as_ref()) {
+            if matches!(
+                request,
+                OperationRequest::Health(_)
+                    | OperationRequest::Materialize(_)
+                    | OperationRequest::Refresh(_)
+            ) {
+                if let Some(payload) = response.payload.as_object_mut() {
+                    let mut projected = serde_json::to_value(&projection.summary)
+                        .expect("fixed maintenance summary");
+                    // The native operation may already own a secondary janitor
+                    // error after verified publication. Preserve those actual
+                    // errors by moving caller-output values, without cloning
+                    // their possibly long filesystem messages into the worker
+                    // cache or its bounded projection. Current measurements and
+                    // attempt state still come from the real controller.
+                    if let Some(mut previous) = payload.remove("maintenance") {
+                        let has_errors = previous
+                            .get("errors")
+                            .and_then(serde_json::Value::as_array)
+                            .is_some_and(|errors| !errors.is_empty());
+                        if has_errors {
+                            if let (Some(previous), Some(projected)) =
+                                (previous.as_object_mut(), projected.as_object_mut())
+                            {
+                                for field in ["errors", "reasons"] {
+                                    if let Some(serde_json::Value::Array(mut values)) =
+                                        previous.remove(field)
+                                    {
+                                        if field == "reasons" {
+                                            values.retain(|value| value.as_str() != Some("artifact_collection_requires_owned_maintenance"));
+                                        }
+                                        if let Some(serde_json::Value::Array(current)) =
+                                            projected.get_mut(field)
+                                        {
+                                            values.append(current);
+                                            *current = values;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    payload.insert("maintenance".into(), projected);
+                }
+            }
+        }
+        result.map(|response| present_operation_response(response, request.output_format()))
+    }
+
+    fn transient_maintenance(
+        &self,
+        request: &OperationRequest,
+        trigger: crate::storage::maintenance_scheduler::Trigger,
+        confirmation: bool,
+    ) -> Option<crate::storage::maintenance::MaintenanceProjection> {
+        let selector = request.repo_selector()?;
+        let identity = crate::api::context::RepositoryIdentity::capture(selector).ok()?;
+        let unavailable = || {
+            Some(
+                crate::storage::maintenance::MaintenanceProjection::unavailable(
+                    crate::storage::maintenance_scheduler::DriverError::ResourceLimit,
+                ),
+            )
+        };
+        let memory = match crate::storage::maintenance_budget::CleanupMemory::new(
+            crate::storage::maintenance::MAINTENANCE_MEMORY_BYTES,
+        ) {
+            Ok(memory) => memory,
+            Err(_) => return unavailable(),
+        };
+        let target = match identity.maintenance_target(&memory) {
+            Ok(target) => target,
+            Err(_) => return unavailable(),
+        };
+        let dispatcher = Arc::new(crate::coordinator::ExecutionDispatcher::default());
+        match crate::storage::maintenance::start_controller(target, memory, dispatcher, false) {
+            Ok((mut runtime, maintenance)) => {
+                let bound = if confirmation {
+                    maintenance.confirm_and_wait()
+                } else {
+                    maintenance.request(trigger, false);
+                    maintenance.wait_for_first_attempt();
+                    true
+                };
+                runtime.stop_and_join();
+                let mut projection = maintenance.projection();
+                if !bound {
+                    projection.summary.pending = true;
+                    projection
+                        .summary
+                        .reasons
+                        .push("legacy_confirmation_not_bound".into());
+                }
+                Some(projection)
+            }
+            Err(error) => {
+                Some(crate::storage::maintenance::MaintenanceProjection::unavailable(error))
+            }
+        }
+    }
+
+    fn execute_inner(&self, request: &OperationRequest) -> Result<OperationResponse, ApiError> {
         let mut request = normalize_request(request);
         if let (Some(refresh), OperationRequest::Health(health)) = (&self.refresh, &mut request) {
             if health.refresh_status.is_none() {
@@ -239,7 +447,13 @@ impl ApiCore {
             })?;
         let mut runtime = request
             .repo_selector()
-            .map(resolve_runtime)
+            .map(|selector| {
+                if matches!(&request, OperationRequest::Materialize(materialize) if materialize.mode == "full") {
+                    resolve_runtime_for_rebuild(selector)
+                } else {
+                    resolve_runtime(selector)
+                }
+            })
             .transpose()
             .map_err(|error| ApiError::new("runtime_resolution_failed", error))?;
         if operation_requires_graph_write(&request) {
@@ -273,10 +487,32 @@ impl ApiCore {
         } else {
             dispatch_operation(&request, &operation, runtime.as_ref())?
         };
-        Ok(present_operation_response(
-            response,
-            request.output_format(),
-        ))
+        Ok(response)
+    }
+
+    pub(crate) fn prepare_legacy_confirmation_request(
+        &self,
+        operation_id: &str,
+        invocation: &OperationInvocation,
+    ) -> Result<Option<bool>, ApiError> {
+        let request = prepare_operation_request(operation_id, invocation)?;
+        if !matches!(request, OperationRequest::Health(ref health) if health.confirm_legacy_quiescence)
+        {
+            return Ok(None);
+        }
+        Ok(Some(self.maintenance.as_ref().is_some_and(|maintenance| {
+            maintenance.request(crate::storage::maintenance_scheduler::Trigger::Health, true)
+                == crate::storage::maintenance_scheduler::RequestDisposition::Enqueued
+        })))
+    }
+    pub(crate) fn execute_invocation_with_legacy_confirmation(
+        &self,
+        operation_id: &str,
+        invocation: &OperationInvocation,
+        handled: Option<bool>,
+    ) -> Result<OperationResponse, ApiError> {
+        let request = prepare_operation_request(operation_id, invocation)?;
+        self.execute_with_legacy_confirmation(&request, handled)
     }
 
     pub(crate) fn execute_invocation(

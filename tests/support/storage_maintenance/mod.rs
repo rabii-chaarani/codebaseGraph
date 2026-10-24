@@ -1,6 +1,8 @@
 //! Isolated fixture inputs and independent filesystem observations for DC-S5.
 //! This module is consumed once the production maintenance surfaces are available.
 
+#[cfg(debug_assertions)]
+pub mod process;
 pub mod workload;
 
 use std::collections::BTreeMap;
@@ -22,7 +24,7 @@ impl FixtureRoot {
         for _ in 0..100 {
             let sequence = FIXTURE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
             let path = std::env::temp_dir().join(format!(
-                "cgraph-s5-{label}-{}-{sequence}",
+                "cgraph-s5-{label}-{}-{sequence:016x}",
                 std::process::id()
             ));
             match fs::create_dir(&path) {

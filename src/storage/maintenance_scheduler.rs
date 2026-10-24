@@ -1,6 +1,9 @@
 //! Joined advisory-driver foundation. This module performs no storage collection.
 //! Drivers must reserve every dynamic allocation from the supplied lifetime account.
-use super::maintenance_budget::{CleanupMemory, MemoryReservation, MutationGrant, ResourceLimit};
+use super::maintenance_admission::{LegacyConfirmationSource, PreparedLegacyConfirmationSource};
+use super::maintenance_budget::{
+    CleanupMemory, MemoryBox, MemoryReservation, MutationGrant, ResourceLimit,
+};
 use std::alloc::Layout;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::{Arc, Condvar, Mutex};
@@ -21,6 +24,27 @@ const THREAD_STARTUP_ALLOWANCE: usize = 4096;
 /// Equality must include the installation and physical destination incarnation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct TargetBinding(pub(crate) [u8; 32]);
+
+/// A borrowed, one-use operator demand captured only by the post-permit
+/// mailbox gate. Neither a bool nor stored options can construct this token.
+/// Source/version evidence remains in the separately rechecked preparation.
+pub(crate) struct LegacyQuiescenceConfirmation<'a> {
+    binding: &'a TargetBinding,
+    generation: &'a u64,
+    source: Option<LegacyConfirmationSource>,
+    _same_thread: std::marker::PhantomData<std::rc::Rc<()>>,
+}
+impl LegacyQuiescenceConfirmation<'_> {
+    pub(crate) fn binding_digest(&self) -> [u8; 32] {
+        self.binding.0
+    }
+    pub(crate) fn generation(&self) -> u64 {
+        *self.generation
+    }
+    pub(crate) fn source(&self) -> Option<&LegacyConfirmationSource> {
+        self.source.as_ref()
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum DriverError {
@@ -91,6 +115,16 @@ pub(crate) trait MaintenanceAdmission: Send + Sync + 'static {
     type Permit;
     fn try_acquire(&self) -> Option<Self::Permit>;
     fn stop_admission(&self);
+
+    // Integration fixtures exercise the post-disposal dispatcher seam;
+    // shipping recovery remains in the actual producer/read entry points.
+    #[cfg(test)]
+    fn run_recovery(
+        &self,
+        _operation: &mut dyn FnMut() -> Result<(), DriverError>,
+    ) -> Result<bool, DriverError> {
+        Ok(false)
+    }
 }
 
 /// Constructed on the dedicated thread; neither Driver nor Work need Send/Sync.
@@ -101,18 +135,51 @@ pub(crate) trait MaintenanceAdmission: Send + Sync + 'static {
 /// mutate, and only fixed, bounded hot frames may be consumed by inner callbacks.
 pub(crate) trait MaintenanceDriver {
     type Work;
+    fn desired_binding(&self) -> Option<TargetBinding> {
+        None
+    }
+    /// Fixed status publication only, after all work/disposal/recovery ends.
+    fn completed(&mut self, _outcome: AttemptOutcome) {}
     fn prepare(
         &mut self,
         binding: TargetBinding,
         cancellation: &Cancellation<'_>,
         memory: &CleanupMemory,
     ) -> Result<Option<Self::Work>, DriverError>;
+    fn requires_legacy_confirmation(&self, _work: &Self::Work) -> bool {
+        false
+    }
+    fn source_payloads_parked(&self) -> bool {
+        false
+    }
     fn mutate(
         &mut self,
         work: &Self::Work,
         grant: &mut MutationGrant,
-        confirmation: bool,
+        confirmation: Option<&LegacyQuiescenceConfirmation<'_>>,
     ) -> Result<AttemptOutcome, DriverError>;
+    /// One advisory validation/disposal continuation, after the real permit and
+    /// every storage authority have been released. Bulk Work remains owned by
+    /// the driver loop throughout this call and its eventual destruction.
+    fn finish(
+        &mut self,
+        _work: &mut Self::Work,
+        outcome: AttemptOutcome,
+        _cancellation: &Cancellation<'_>,
+        _memory: &CleanupMemory,
+    ) -> Result<AttemptOutcome, DriverError> {
+        Ok(outcome)
+    }
+    /// Follow-up producer recovery starts only after every prepared payload and
+    /// its source handles have been disposed outside the collector permit.
+    fn after_disposal(
+        &mut self,
+        outcome: AttemptOutcome,
+        _cancellation: &Cancellation<'_>,
+        _memory: &CleanupMemory,
+    ) -> Result<AttemptOutcome, DriverError> {
+        Ok(outcome)
+    }
 }
 
 /// Pure coalescing clock state. New requests never slide an existing due time.
@@ -156,6 +223,10 @@ struct Control {
     binding: TargetBinding,
     generation: u64,
     confirmation: bool,
+    confirmation_source: Option<MemoryBox<PreparedLegacyConfirmationSource>>,
+    claimed_source: Option<MemoryBox<PreparedLegacyConfirmationSource>>,
+    capturing_source: bool,
+    source_payloads_parked: bool,
     stopping: bool,
     scheduler: MaintenanceScheduler,
     snapshot: DriverSnapshot,
@@ -173,10 +244,23 @@ struct Shared<A> {
 
 pub(crate) struct Cancellation<'a> {
     check: &'a dyn Fn() -> bool,
+    legacy_interest: &'a dyn Fn() -> bool,
+    legacy_metadata: &'a dyn Fn() -> Option<(u64, Option<LegacyConfirmationSource>)>,
 }
 impl Cancellation<'_> {
     pub(crate) fn is_cancelled(&self) -> bool {
         (self.check)()
+    }
+    /// Advisory scheduling interest only; this cannot authorize enrollment.
+    pub(crate) fn legacy_confirmation_pending(&self) -> bool {
+        (self.legacy_interest)()
+    }
+    /// Advisory bytes for off-permit preparation. Only the actual claimed
+    /// non-Send token can authorize the matching mutation later.
+    pub(crate) fn legacy_confirmation_metadata(
+        &self,
+    ) -> Option<(u64, Option<LegacyConfirmationSource>)> {
+        (self.legacy_metadata)()
     }
 }
 
@@ -191,7 +275,49 @@ impl<A> Clone for MaintenanceHandle<A> {
         }
     }
 }
+/// A fixed reservation prevents two request threads from opening duplicate
+/// source pins. The worker cannot begin another preparation until it is dropped.
+pub(crate) struct SourceCapture<A> {
+    shared: Arc<Shared<A>>,
+}
+impl<A> Drop for SourceCapture<A> {
+    fn drop(&mut self) {
+        self.shared
+            .control
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .capturing_source = false;
+        self.shared.wake.notify_all();
+    }
+}
 impl<A> MaintenanceHandle<A> {
+    pub(crate) fn begin_source_capture(&self) -> Option<SourceCapture<A>> {
+        let previous = {
+            let mut control = self
+                .shared
+                .control
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            if control.stopping
+                || control.snapshot.liveness == DriverLiveness::Failed
+                || control.snapshot.running
+                || control.source_payloads_parked
+                || control.claimed_source.is_some()
+                || control.capturing_source
+            {
+                return None;
+            }
+            control.capturing_source = true;
+            control.confirmation = false;
+            control.confirmation_source.take()
+        };
+        // This request owns no execution authority. Old pins are gone BEFORE
+        // the replacement request opens its source pair.
+        drop(previous);
+        Some(SourceCapture {
+            shared: Arc::clone(&self.shared),
+        })
+    }
     pub(crate) fn snapshot(&self) -> DriverSnapshot {
         self.shared
             .control
@@ -199,6 +325,40 @@ impl<A> MaintenanceHandle<A> {
             .unwrap_or_else(|e| e.into_inner())
             .snapshot
     }
+    /// A transient owner may wait for its startup opportunity without polling
+    /// or imposing a deadline on preparation, validation or disposal. The
+    /// returned attempt is published only after bulk work has been dropped.
+    /// Rebinding returns the new snapshot so its owner can discard old demand;
+    /// stopping waits for actual worker disposal and terminal publication.
+    pub(crate) fn wait_for_first_attempt(&self) -> DriverSnapshot {
+        let mut control = self
+            .shared
+            .control
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let binding = control.binding;
+        let generation = control.generation;
+        loop {
+            if control.binding != binding
+                || control.generation != generation
+                || matches!(
+                    control.snapshot.liveness,
+                    DriverLiveness::Stopped | DriverLiveness::Failed
+                )
+                || control.snapshot.last_attempt.is_some_and(|attempt| {
+                    attempt.binding == binding && attempt.generation == generation
+                })
+            {
+                return control.snapshot;
+            }
+            control = self
+                .shared
+                .wake
+                .wait(control)
+                .unwrap_or_else(|e| e.into_inner());
+        }
+    }
+
     /// Confirmation: busy/preparation-error retains the exact current demand;
     /// the post-permit gate takes it once, including callback error/panic or an
     /// expired grant. Rebind/stop/failure discard it. A new in-flight demand stays
@@ -207,6 +367,14 @@ impl<A> MaintenanceHandle<A> {
         &self,
         trigger: Trigger,
         confirmation: Option<TargetBinding>,
+    ) -> RequestDisposition {
+        self.request_with_source(trigger, confirmation, None)
+    }
+    pub(crate) fn request_with_source(
+        &self,
+        trigger: Trigger,
+        confirmation: Option<TargetBinding>,
+        source: Option<MemoryBox<PreparedLegacyConfirmationSource>>,
     ) -> RequestDisposition {
         let mut control = self
             .shared
@@ -222,6 +390,9 @@ impl<A> MaintenanceHandle<A> {
         if confirmation.is_some_and(|binding| binding != control.binding) {
             return RequestDisposition::UnboundConfirmation;
         }
+        if confirmation.is_some() {
+            control.confirmation_source = source;
+        }
         control.confirmation |= confirmation.is_some();
         control.scheduler.request(trigger);
         control.snapshot.requested = true;
@@ -229,6 +400,64 @@ impl<A> MaintenanceHandle<A> {
         self.shared.wake.notify_one();
         RequestDisposition::Enqueued
     }
+    pub(crate) fn request_and_wait(
+        &self,
+        trigger: Trigger,
+        confirmation: Option<TargetBinding>,
+    ) -> DriverSnapshot {
+        self.request_and_wait_with_source(trigger, confirmation, None)
+    }
+    pub(crate) fn request_and_wait_with_source(
+        &self,
+        trigger: Trigger,
+        confirmation: Option<TargetBinding>,
+        source: Option<MemoryBox<PreparedLegacyConfirmationSource>>,
+    ) -> DriverSnapshot {
+        let mut control = self
+            .shared
+            .control
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if control.stopping
+            || control.snapshot.liveness == DriverLiveness::Failed
+            || confirmation.is_some_and(|binding| binding != control.binding)
+        {
+            return control.snapshot;
+        }
+        if confirmation.is_some() {
+            control.confirmation_source = source;
+        }
+        control.confirmation |= confirmation.is_some();
+        control.scheduler.request(trigger);
+        control.snapshot.requested = true;
+        control.snapshot.pending = true;
+        let binding = control.binding;
+        let generation = control.generation;
+        let sequence = control.scheduler.sequence;
+        self.shared.wake.notify_all();
+        loop {
+            if control.binding != binding
+                || control.generation != generation
+                || matches!(
+                    control.snapshot.liveness,
+                    DriverLiveness::Stopped | DriverLiveness::Failed
+                )
+                || control.snapshot.last_attempt.is_some_and(|attempt| {
+                    attempt.binding == binding
+                        && attempt.generation == generation
+                        && attempt.request_sequence >= sequence
+                })
+            {
+                return control.snapshot;
+            }
+            control = self
+                .shared
+                .wake
+                .wait(control)
+                .unwrap_or_else(|e| e.into_inner());
+        }
+    }
+
     pub(crate) fn rebind(&self, binding: TargetBinding) -> RequestDisposition {
         let mut control = self
             .shared
@@ -251,6 +480,7 @@ impl<A> MaintenanceHandle<A> {
             control.binding = binding;
             control.generation = generation;
             control.confirmation = false;
+            control.confirmation_source = None;
             control.snapshot.binding = binding;
             control.snapshot.generation = generation;
             // Old evidence keeps its old binding/generation; never relabel it.
@@ -291,12 +521,51 @@ impl<A: MaintenanceAdmission> MaintenanceRuntime<A> {
         Self::start_with_interval(memory, binding, admission, factory, DEFAULT_INTERVAL)
     }
 
+    pub(crate) fn start_with_confirmation<D, F>(
+        memory: CleanupMemory,
+        binding: TargetBinding,
+        admission: A,
+        factory: F,
+        confirmation: bool,
+        source: Option<MemoryBox<PreparedLegacyConfirmationSource>>,
+    ) -> Result<Self, StartError>
+    where
+        D: MaintenanceDriver,
+        F: FnOnce(&CleanupMemory) -> Result<D, DriverError> + Send + 'static,
+    {
+        Self::start_with_options(
+            memory,
+            binding,
+            admission,
+            factory,
+            DEFAULT_INTERVAL,
+            confirmation,
+            source,
+        )
+    }
+
     fn start_with_interval<D, F>(
         memory: CleanupMemory,
         binding: TargetBinding,
         admission: A,
         factory: F,
         interval: Duration,
+    ) -> Result<Self, StartError>
+    where
+        D: MaintenanceDriver,
+        F: FnOnce(&CleanupMemory) -> Result<D, DriverError> + Send + 'static,
+    {
+        Self::start_with_options(memory, binding, admission, factory, interval, false, None)
+    }
+
+    fn start_with_options<D, F>(
+        memory: CleanupMemory,
+        binding: TargetBinding,
+        admission: A,
+        factory: F,
+        interval: Duration,
+        initial_confirmation: bool,
+        initial_source: Option<MemoryBox<PreparedLegacyConfirmationSource>>,
     ) -> Result<Self, StartError>
     where
         D: MaintenanceDriver,
@@ -334,7 +603,11 @@ impl<A: MaintenanceAdmission> MaintenanceRuntime<A> {
             control: Mutex::new(Control {
                 binding,
                 generation: 0,
-                confirmation: false,
+                confirmation: initial_confirmation,
+                confirmation_source: initial_source,
+                claimed_source: None,
+                capturing_source: false,
+                source_payloads_parked: false,
                 stopping: false,
                 scheduler: MaintenanceScheduler::new(interval),
                 snapshot: DriverSnapshot {
@@ -359,22 +632,24 @@ impl<A: MaintenanceAdmission> MaintenanceRuntime<A> {
             // Declared first: runs last during normal return or unwinding,
             // after driver/factory/work and caught panic-payload destruction.
             let _exit = WorkerExit { shared: &worker };
-            let result = catch_unwind(AssertUnwindSafe(|| match factory(&worker.memory) {
-                Ok(mut driver) => {
-                    let execution = catch_unwind(AssertUnwindSafe(|| {
-                        run_driver(&worker, &mut driver);
-                    }));
-                    if execution.is_err() {
-                        fail_worker(&worker, DriverError::Panicked);
+            let result = catch_unwind(AssertUnwindSafe(|| {
+                match prepare_driver_boxed(factory, &worker.memory) {
+                    Ok(mut driver) => {
+                        let execution = catch_unwind(AssertUnwindSafe(|| {
+                            run_driver(&worker, &mut *driver);
+                        }));
+                        if execution.is_err() {
+                            fail_worker(&worker, DriverError::Panicked);
+                        }
+                        // Catch execution separately so driver destruction is
+                        // not itself performed during an existing unwind.
+                        drop(execution);
+                        // Driver destruction can block or panic. Remain Stopping
+                        // until it, factory captures and all Work are disposed.
+                        drop(driver);
                     }
-                    // Catch execution separately so driver destruction is
-                    // not itself performed during an existing unwind.
-                    drop(execution);
-                    // Driver destruction can block or panic. Remain Stopping
-                    // until it, factory captures and all Work are disposed.
-                    drop(driver);
+                    Err(error) => fail_worker(&worker, error),
                 }
-                Err(error) => fail_worker(&worker, error),
             }));
             if result.is_err() {
                 fail_worker(&worker, DriverError::Panicked);
@@ -404,6 +679,7 @@ impl<A: MaintenanceAdmission> MaintenanceRuntime<A> {
             .unwrap_or_else(|e| e.into_inner());
         control.stopping = true;
         control.confirmation = false;
+        control.confirmation_source = None;
         if control.snapshot.liveness == DriverLiveness::Running {
             control.snapshot.liveness = DriverLiveness::Stopping;
         }
@@ -455,6 +731,8 @@ impl<A> Drop for WorkerExit<'_, A> {
             .unwrap_or_else(|e| e.into_inner());
         control.stopping = true;
         control.confirmation = false;
+        control.confirmation_source = None;
+        control.claimed_source = None;
         control.snapshot.running = false;
         if thread::panicking() {
             control.snapshot.failure = Some(DriverError::Panicked);
@@ -473,6 +751,8 @@ fn fail_worker<A>(shared: &Shared<A>, error: DriverError) {
     let mut control = shared.control.lock().unwrap_or_else(|e| e.into_inner());
     control.stopping = true;
     control.confirmation = false;
+    control.confirmation_source = None;
+    control.claimed_source = None;
     control.snapshot.running = false;
     control.snapshot.pending = true;
     // Failure and completed-attempt evidence are separate. A later prepare or
@@ -480,6 +760,20 @@ fn fail_worker<A>(shared: &Shared<A>, error: DriverError) {
     control.snapshot.liveness = DriverLiveness::Stopping;
     control.snapshot.failure = Some(error);
     shared.wake.notify_all();
+}
+
+/// The startup reservation already includes the exact D heap layout. Keep
+/// construction on a separate frame so D is not copied above every work call.
+#[inline(never)]
+fn prepare_driver_boxed<D, F>(
+    factory: Box<F>,
+    memory: &CleanupMemory,
+) -> Result<Box<D>, DriverError>
+where
+    D: MaintenanceDriver,
+    F: FnOnce(&CleanupMemory) -> Result<D, DriverError>,
+{
+    factory(memory).map(Box::new)
 }
 
 fn run_driver<A: MaintenanceAdmission, D: MaintenanceDriver>(shared: &Shared<A>, driver: &mut D) {
@@ -491,6 +785,13 @@ fn run_driver<A: MaintenanceAdmission, D: MaintenanceDriver>(shared: &Shared<A>,
                 if control.stopping {
                     control.snapshot.running = false;
                     return;
+                }
+                if control.capturing_source {
+                    control = shared
+                        .wake
+                        .wait(control)
+                        .unwrap_or_else(|error| error.into_inner());
+                    continue;
                 }
                 let now = origin.elapsed();
                 if let Some((triggers, sequence)) = control.scheduler.begin(now) {
@@ -509,9 +810,37 @@ fn run_driver<A: MaintenanceAdmission, D: MaintenanceDriver>(shared: &Shared<A>,
             let control = shared.control.lock().unwrap_or_else(|e| e.into_inner());
             control.stopping || control.generation != generation
         };
+        let legacy_interest = || {
+            let control = shared.control.lock().unwrap_or_else(|e| e.into_inner());
+            !control.stopping
+                && control.generation == generation
+                && control.binding == binding
+                && control.confirmation
+        };
+        let legacy_metadata = || {
+            let control = shared.control.lock().unwrap_or_else(|e| e.into_inner());
+            if !control.stopping
+                && control.generation == generation
+                && control.binding == binding
+                && control.confirmation
+            {
+                Some((
+                    generation,
+                    control
+                        .confirmation_source
+                        .as_ref()
+                        .map(|owner| owner.facts()),
+                ))
+            } else {
+                None
+            }
+        };
         let cancellation = Cancellation {
             check: &is_cancelled,
+            legacy_interest: &legacy_interest,
+            legacy_metadata: &legacy_metadata,
         };
+        let prepared_legacy_metadata = legacy_metadata();
         let prepared = driver.prepare(binding, &cancellation, &shared.memory);
         let mut panicked = false;
         let outcome = match prepared {
@@ -519,9 +848,10 @@ fn run_driver<A: MaintenanceAdmission, D: MaintenanceDriver>(shared: &Shared<A>,
             Err(error) => AttemptOutcome::Failed(error),
             Ok(None) if cancellation.is_cancelled() => AttemptOutcome::Cancelled,
             Ok(None) => AttemptOutcome::Complete,
-            Ok(Some(work)) => {
+            Ok(Some(mut work)) => {
                 // Bulk work lives OUTSIDE this scope and the caught callback.
                 // Every success/error/unwind drops permit before work disposal.
+                let requires_confirmation = driver.requires_legacy_confirmation(&work);
                 let result = {
                     let mut grant = MutationGrant::start();
                     match shared.admission.try_acquire() {
@@ -530,20 +860,48 @@ fn run_driver<A: MaintenanceAdmission, D: MaintenanceDriver>(shared: &Shared<A>,
                             let confirmation = {
                                 let mut control =
                                     shared.control.lock().unwrap_or_else(|e| e.into_inner());
+                                let current_legacy_metadata = control.confirmation.then(|| {
+                                    (
+                                        generation,
+                                        control
+                                            .confirmation_source
+                                            .as_ref()
+                                            .map(|owner| owner.facts()),
+                                    )
+                                });
                                 if control.stopping
                                     || control.generation != generation
                                     || control.binding != binding
+                                    || (requires_confirmation
+                                        && control.confirmation
+                                        && current_legacy_metadata != prepared_legacy_metadata)
                                 {
                                     None
                                 } else {
-                                    Some(std::mem::take(&mut control.confirmation))
+                                    let confirmed = requires_confirmation
+                                        && control.claimed_source.is_none()
+                                        && std::mem::take(&mut control.confirmation);
+                                    let source = if confirmed {
+                                        control.claimed_source = control.confirmation_source.take();
+                                        control.claimed_source.as_ref().map(|owner| owner.facts())
+                                    } else {
+                                        None
+                                    };
+                                    Some((confirmed, source))
                                 }
                             };
                             match confirmation {
                                 None => Ok(Ok(AttemptOutcome::Deferred)),
-                                Some(confirmation) if grant.check().is_ok() => {
+                                Some((confirmed, source)) if grant.check().is_ok() => {
+                                    let confirmation =
+                                        confirmed.then_some(LegacyQuiescenceConfirmation {
+                                            binding: &binding,
+                                            generation: &generation,
+                                            source,
+                                            _same_thread: std::marker::PhantomData,
+                                        });
                                     catch_unwind(AssertUnwindSafe(|| {
-                                        driver.mutate(&work, &mut grant, confirmation)
+                                        driver.mutate(&work, &mut grant, confirmation.as_ref())
                                     }))
                                 }
                                 Some(_) => Ok(Ok(AttemptOutcome::Deferred)),
@@ -552,20 +910,61 @@ fn run_driver<A: MaintenanceAdmission, D: MaintenanceDriver>(shared: &Shared<A>,
                     }
                 };
                 // No permit or S2 authority is live here, even on panic/Err.
-                drop(work);
-                match result {
+                // The request's payload pins were parked in a separate fixed
+                // slot through the callback; dispose them before source replay.
+                let source = shared
+                    .control
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner())
+                    .claimed_source
+                    .take();
+                drop(source);
+                let outcome = match result {
                     Ok(Ok(outcome)) => outcome,
                     Ok(Err(error)) => AttemptOutcome::Failed(error),
                     Err(_) => {
                         panicked = true;
                         AttemptOutcome::Failed(DriverError::Panicked)
                     }
+                };
+                let outcome = if panicked {
+                    outcome
+                } else {
+                    match catch_unwind(AssertUnwindSafe(|| {
+                        driver.finish(&mut work, outcome, &cancellation, &shared.memory)
+                    })) {
+                        Ok(Ok(outcome)) => outcome,
+                        Ok(Err(error)) => AttemptOutcome::Failed(error),
+                        Err(_) => {
+                            panicked = true;
+                            AttemptOutcome::Failed(DriverError::Panicked)
+                        }
+                    }
+                };
+                drop(work);
+                if panicked {
+                    outcome
+                } else {
+                    match catch_unwind(AssertUnwindSafe(|| {
+                        driver.after_disposal(outcome, &cancellation, &shared.memory)
+                    })) {
+                        Ok(Ok(outcome)) => outcome,
+                        Ok(Err(error)) => AttemptOutcome::Failed(error),
+                        Err(_) => {
+                            panicked = true;
+                            AttemptOutcome::Failed(DriverError::Panicked)
+                        }
+                    }
                 }
             }
         };
+        driver.completed(outcome);
+        let desired_binding = driver.desired_binding();
+        let source_payloads_parked = driver.source_payloads_parked();
         {
             let mut control = shared.control.lock().unwrap_or_else(|e| e.into_inner());
             control.snapshot.running = false;
+            control.source_payloads_parked = source_payloads_parked;
             if control.generation == generation {
                 control.snapshot.last_attempt = Some(AttemptRecord {
                     binding,
@@ -575,8 +974,33 @@ fn run_driver<A: MaintenanceAdmission, D: MaintenanceDriver>(shared: &Shared<A>,
                     outcome,
                 });
             }
-            control.scheduler.complete(origin.elapsed(), outcome);
+            let completed_at = origin.elapsed();
+            control.scheduler.complete(completed_at, outcome);
+            if let Some(binding) = desired_binding
+                .filter(|binding| control.generation == generation && *binding != control.binding)
+            {
+                if let Some(generation) = control.generation.checked_add(1) {
+                    control.binding = binding;
+                    control.generation = generation;
+                    control.confirmation = false;
+                    control.confirmation_source = None;
+                    control.snapshot.binding = binding;
+                    control.snapshot.generation = generation;
+                    control.scheduler.request(Trigger::Startup);
+                    // Resolving a placeholder binding completed preparation,
+                    // not this new target's promised startup pass. Only this
+                    // worker-owned handoff bypasses the old target's cooldown.
+                    control.scheduler.next_due = completed_at;
+                } else {
+                    control.stopping = true;
+                    control.snapshot.failure = Some(DriverError::Preparation);
+                }
+            }
+            if control.confirmation {
+                control.scheduler.pending |= Trigger::Continuation as u8;
+            }
             control.snapshot.pending = control.scheduler.pending != 0;
+            shared.wake.notify_all();
         }
         if panicked {
             fail_worker(shared, DriverError::Panicked);
@@ -585,9 +1009,222 @@ fn run_driver<A: MaintenanceAdmission, D: MaintenanceDriver>(shared: &Shared<A>,
     }
 }
 
+/// Integration-test adapter: preparation stays offslot on the joined worker;
+/// the callback receives a token only after real enqueue, admission and claim.
+/// Callers qualifying dispatcher behavior supply the actual ExecutionDispatcher.
+#[cfg(test)]
+pub(crate) fn with_claimed_legacy_confirmation<A, W, P, C>(
+    source_target: Option<&super::inventory::MaintenanceTarget>,
+    admission: A,
+    prepare: P,
+    callback: C,
+) -> DriverSnapshot
+where
+    A: MaintenanceAdmission,
+    W: 'static,
+    P: FnMut(
+            &CleanupMemory,
+            Option<(u64, Option<LegacyConfirmationSource>)>,
+            Option<W>,
+        ) -> Result<(TargetBinding, W), DriverError>
+        + Send
+        + 'static,
+    C: for<'claim> FnMut(
+            &W,
+            Option<&LegacyQuiescenceConfirmation<'claim>>,
+            &mut MutationGrant,
+        ) -> Result<AttemptOutcome, DriverError>
+        + Send
+        + 'static,
+{
+    struct ConfirmedDriver<W, P, C> {
+        prepare: P,
+        callback: C,
+        binding: Option<TargetBinding>,
+        parked: Option<W>,
+        continuing: bool,
+        complete: bool,
+    }
+    impl<W, P, C> MaintenanceDriver for ConfirmedDriver<W, P, C>
+    where
+        P: FnMut(
+            &CleanupMemory,
+            Option<(u64, Option<LegacyConfirmationSource>)>,
+            Option<W>,
+        ) -> Result<(TargetBinding, W), DriverError>,
+        C: for<'claim> FnMut(
+            &W,
+            Option<&LegacyQuiescenceConfirmation<'claim>>,
+            &mut MutationGrant,
+        ) -> Result<AttemptOutcome, DriverError>,
+    {
+        type Work = Option<W>;
+        fn desired_binding(&self) -> Option<TargetBinding> {
+            self.binding
+        }
+        fn prepare(
+            &mut self,
+            binding: TargetBinding,
+            cancellation: &Cancellation<'_>,
+            memory: &CleanupMemory,
+        ) -> Result<Option<Self::Work>, DriverError> {
+            if self.complete {
+                return Ok(None);
+            }
+            let request = cancellation.legacy_confirmation_metadata();
+            let (actual, work) = (self.prepare)(memory, request, self.parked.take())?;
+            self.binding = Some(actual);
+            // The first observation establishes the genuine target binding.
+            // No absent advisory request can be promoted into a claimed token.
+            if actual != binding || (request.is_none() && !self.continuing) {
+                drop(work);
+                return Ok(None);
+            }
+            Ok(Some(Some(work)))
+        }
+        fn requires_legacy_confirmation(&self, _: &Self::Work) -> bool {
+            !self.continuing
+        }
+        fn mutate(
+            &mut self,
+            work: &Self::Work,
+            grant: &mut MutationGrant,
+            confirmation: Option<&LegacyQuiescenceConfirmation<'_>>,
+        ) -> Result<AttemptOutcome, DriverError> {
+            if !self.continuing && confirmation.is_none() {
+                return Ok(AttemptOutcome::Deferred);
+            }
+            (self.callback)(
+                work.as_ref().ok_or(DriverError::Preparation)?,
+                confirmation,
+                grant,
+            )
+        }
+        fn finish(
+            &mut self,
+            work: &mut Self::Work,
+            outcome: AttemptOutcome,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<AttemptOutcome, DriverError> {
+            if matches!(outcome, AttemptOutcome::Pending | AttemptOutcome::Deferred) {
+                self.parked = work.take();
+            }
+            if outcome == AttemptOutcome::Pending {
+                self.continuing = true;
+            }
+            self.complete = outcome == AttemptOutcome::Complete;
+            Ok(outcome)
+        }
+    }
+    let memory = CleanupMemory::new(8 * 1024 * 1024).unwrap();
+    let source = source_target.map(|target| {
+        let source =
+            super::maintenance_admission::prepare_legacy_confirmation_source(target, &memory)
+                .unwrap();
+        MemoryBox::new(source, &memory).unwrap()
+    });
+    let mut runtime = MaintenanceRuntime::start_with_interval(
+        memory,
+        TargetBinding([0; 32]),
+        admission,
+        move |_| {
+            Ok(ConfirmedDriver::<W, P, C> {
+                prepare,
+                callback,
+                binding: None,
+                parked: None,
+                continuing: false,
+                complete: false,
+            })
+        },
+        Duration::from_millis(1),
+    )
+    .unwrap();
+    let handle = runtime.handle();
+    let prepared = handle.wait_for_first_attempt();
+    let mut attempted =
+        handle.request_and_wait_with_source(Trigger::Health, Some(prepared.binding), source);
+    // These are fresh dispatcher callbacks, with no replacement TRUE request.
+    // The real accepted source capsule alone authorizes each continuation.
+    for _ in 0..64 {
+        if attempted.last_attempt.is_some_and(|attempt| {
+            attempt.binding == attempted.binding
+                && attempt.generation == attempted.generation
+                && matches!(
+                    attempt.outcome,
+                    AttemptOutcome::Failed(_) | AttemptOutcome::Cancelled
+                )
+        }) || (attempted.last_attempt.is_some_and(|attempt| {
+            attempt.binding == attempted.binding
+                && attempt.generation == attempted.generation
+                && attempt.outcome == AttemptOutcome::Complete
+        }) && !attempted.pending)
+        {
+            break;
+        }
+        attempted = handle.request_and_wait(Trigger::Continuation, None);
+    }
+    runtime.stop_and_join();
+    attempted
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn queued_confirmation_keeps_request_time_source_after_pair_replacement() {
+        let root = std::env::temp_dir().join(format!(
+            "confirmation-source-version-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let state = root.join(".codebaseGraph");
+        std::fs::create_dir_all(&state).unwrap();
+        let target = super::super::inventory::MaintenanceTarget {
+            repository_root: root.clone(),
+            state_root: state.clone(),
+            storage_root: None,
+            direct_pair: None,
+            config_path: None,
+        };
+        let pair = super::super::inventory::default_direct(&target);
+        std::fs::write(&pair.database, b"old database incarnation").unwrap();
+        std::fs::write(&pair.manifest, b"old manifest incarnation").unwrap();
+        let request_target = target.clone();
+        let current_target = target.clone();
+        let prepare_pair = pair.clone();
+        let snapshot = with_claimed_legacy_confirmation(
+            Some(&request_target),
+            Arc::new(crate::coordinator::ExecutionDispatcher::default()),
+            move |memory,_,_:Option<super::super::maintenance_admission::LegacyConfirmationSource>| {
+                // A real new pair is published AFTER the operator source pins
+                // were captured, before that queued demand can be claimed.
+                let database = prepare_pair.database.with_extension("replacement");
+                let manifest = prepare_pair.manifest.with_extension("replacement");
+                std::fs::write(&database, b"fresh database incarnation").unwrap();
+                std::fs::write(&manifest, b"fresh manifest incarnation").unwrap();
+                std::fs::rename(database, &prepare_pair.database).unwrap();
+                std::fs::rename(manifest, &prepare_pair.manifest).unwrap();
+                let current=super::super::maintenance_admission::capture_legacy_confirmation_source(&current_target,memory).unwrap();
+                Ok((TargetBinding([73;32]),current))
+            },
+            move |current,token,_| {
+                let token=token.expect("the dispatcher must claim the actual queued request");
+                assert!(token.source().is_some());assert_ne!(token.source(),Some(current));
+                Ok(AttemptOutcome::Complete)
+            },
+        );
+        assert_eq!(
+            snapshot.last_attempt.unwrap().outcome,
+            AttemptOutcome::Complete
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn dc_scheduler_sustained_requests_do_not_slide_due_or_lose_inflight_demand() {
@@ -640,6 +1277,76 @@ mod tests {
         }
         fn stop_admission(&self) {}
     }
+    struct StartupBindingDriver {
+        desired: TargetBinding,
+        prepares: usize,
+        callbacks: std::sync::mpsc::Sender<(TargetBinding, usize)>,
+    }
+    impl MaintenanceDriver for StartupBindingDriver {
+        type Work = TargetBinding;
+        fn desired_binding(&self) -> Option<TargetBinding> {
+            Some(self.desired)
+        }
+        fn prepare(
+            &mut self,
+            binding: TargetBinding,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<Option<TargetBinding>, DriverError> {
+            self.prepares += 1;
+            if self.prepares == 1 {
+                self.desired = TargetBinding([82; 32]);
+                return Ok(None);
+            }
+            Ok(Some(binding))
+        }
+        fn mutate(
+            &mut self,
+            work: &TargetBinding,
+            _: &mut MutationGrant,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
+        ) -> Result<AttemptOutcome, DriverError> {
+            self.callbacks.send((*work, self.prepares)).unwrap();
+            Ok(AttemptOutcome::Complete)
+        }
+    }
+
+    #[test]
+    fn dc_driver_resolved_startup_binding_runs_actual_dispatcher_without_default_cooldown() {
+        let (callbacks, received) = std::sync::mpsc::channel();
+        // Use the actual 60-second runtime interval and dispatcher. The first
+        // callback resolves binding only; the second must enter real admission
+        // promptly, while ordinary subsequent Health requests remain paced.
+        let mut runtime = MaintenanceRuntime::start(
+            CleanupMemory::new(1024 * 1024).unwrap(),
+            TargetBinding([0; 32]),
+            Arc::new(crate::coordinator::ExecutionDispatcher::default()),
+            move |_| {
+                Ok(StartupBindingDriver {
+                    desired: TargetBinding([0; 32]),
+                    prepares: 0,
+                    callbacks,
+                })
+            },
+        )
+        .unwrap();
+        let callback = received.recv_timeout(Duration::from_secs(3));
+        let health = if callback.is_ok() {
+            runtime.handle().request(Trigger::Health, None);
+            Some(received.recv_timeout(Duration::from_millis(100)))
+        } else {
+            None
+        };
+        // Stop before asserting so a failed handoff never leaves a worker
+        // sleeping through the default cooldown or blocks cleanup on failure.
+        runtime.stop_and_join();
+        assert_eq!(callback.unwrap(), (TargetBinding([82; 32]), 2));
+        assert!(matches!(
+            health,
+            Some(Err(std::sync::mpsc::RecvTimeoutError::Timeout))
+        ));
+    }
+
     struct PausedDriver {
         entered: std::sync::mpsc::Sender<()>,
         release: std::sync::mpsc::Receiver<()>,
@@ -662,7 +1369,7 @@ mod tests {
             &mut self,
             _: &(),
             _: &mut MutationGrant,
-            _: bool,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
         ) -> Result<AttemptOutcome, DriverError> {
             unreachable!()
         }
@@ -708,6 +1415,80 @@ mod tests {
         assert!(memory.peak() <= memory.limit());
     }
 
+    struct CompletionWork {
+        disposing: std::sync::mpsc::Sender<()>,
+        release: std::sync::mpsc::Receiver<()>,
+    }
+    impl Drop for CompletionWork {
+        fn drop(&mut self) {
+            self.disposing.send(()).unwrap();
+            self.release.recv().unwrap();
+        }
+    }
+    struct CompletionDriver(Option<CompletionWork>);
+    impl MaintenanceDriver for CompletionDriver {
+        type Work = CompletionWork;
+        fn prepare(
+            &mut self,
+            _: TargetBinding,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<Option<CompletionWork>, DriverError> {
+            Ok(self.0.take())
+        }
+        fn mutate(
+            &mut self,
+            _: &CompletionWork,
+            _: &mut MutationGrant,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
+        ) -> Result<AttemptOutcome, DriverError> {
+            Ok(AttemptOutcome::Complete)
+        }
+    }
+
+    #[test]
+    fn dc_driver_transient_wait_observes_completed_disposal_and_factory_failure() {
+        let (disposing, disposing_rx) = std::sync::mpsc::channel();
+        let (release_tx, release) = std::sync::mpsc::channel();
+        let mut runtime = MaintenanceRuntime::start(
+            CleanupMemory::new(1024 * 1024).unwrap(),
+            TargetBinding([1; 32]),
+            NoAdmission,
+            move |_| {
+                Ok(CompletionDriver(Some(CompletionWork {
+                    disposing,
+                    release,
+                })))
+            },
+        )
+        .unwrap();
+        disposing_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        let handle = runtime.handle();
+        assert!(handle.snapshot().last_attempt.is_none());
+        let waiter = thread::spawn(move || handle.wait_for_first_attempt());
+        release_tx.send(()).unwrap();
+        let snapshot = waiter.join().unwrap();
+        assert_eq!(
+            snapshot.last_attempt.unwrap().outcome,
+            AttemptOutcome::Complete
+        );
+        assert!(!snapshot.running);
+        runtime.stop_and_join();
+
+        let mut failed = MaintenanceRuntime::start::<CompletionDriver, _>(
+            CleanupMemory::new(1024 * 1024).unwrap(),
+            TargetBinding([2; 32]),
+            NoAdmission,
+            |_| Err(DriverError::Panicked),
+        )
+        .unwrap();
+        let snapshot = failed.handle().wait_for_first_attempt();
+        assert_eq!(snapshot.liveness, DriverLiveness::Failed);
+        assert_eq!(snapshot.failure, Some(DriverError::Panicked));
+        assert!(snapshot.last_attempt.is_none());
+        failed.stop_and_join();
+    }
+
     struct ConfirmDriver {
         prepared: std::sync::mpsc::Sender<()>,
         prepare_release: std::sync::mpsc::Receiver<()>,
@@ -723,17 +1504,28 @@ mod tests {
             _: &CleanupMemory,
         ) -> Result<Option<()>, DriverError> {
             self.prepared.send(()).unwrap();
-            self.prepare_release.recv().unwrap();
+            self.prepare_release
+                .recv_timeout(Duration::from_secs(5))
+                .unwrap();
             Ok(Some(()))
+        }
+        fn requires_legacy_confirmation(&self, _: &()) -> bool {
+            true
         }
         fn mutate(
             &mut self,
             _: &(),
             _: &mut MutationGrant,
-            confirmation: bool,
+            confirmation: Option<&LegacyQuiescenceConfirmation<'_>>,
         ) -> Result<AttemptOutcome, DriverError> {
-            self.mutated.send(confirmation).unwrap();
-            self.mutate_release.recv().unwrap();
+            if let Some(confirmation) = confirmation {
+                assert_eq!(confirmation.binding_digest(), [1; 32]);
+                assert_eq!(confirmation.generation(), 0);
+            }
+            self.mutated.send(confirmation.is_some()).unwrap();
+            self.mutate_release
+                .recv_timeout(Duration::from_secs(5))
+                .unwrap();
             Ok(AttemptOutcome::Complete)
         }
     }
@@ -762,6 +1554,20 @@ mod tests {
         let handle = runtime.handle();
         prepare_rx.recv_timeout(Duration::from_secs(5)).unwrap();
         handle.request(Trigger::Health, Some(TargetBinding([1; 32])));
+        prepare_tx.send(()).unwrap();
+        // A new confirmation arrived after preparation captured its source
+        // version. Preserve it for fresh preparation instead of claiming stale
+        // work; the deferred callback must not consume that demand.
+        prepare_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_eq!(
+            handle.snapshot().last_attempt.unwrap().outcome,
+            AttemptOutcome::Deferred
+        );
+        assert!(handle.snapshot().pending);
+        assert!(matches!(
+            mutate_rx.try_recv(),
+            Err(std::sync::mpsc::TryRecvError::Empty)
+        ));
         prepare_tx.send(()).unwrap();
         assert!(mutate_rx.recv_timeout(Duration::from_secs(5)).unwrap());
         // Gate already took the first demand. New true belongs to the next gate.
@@ -808,7 +1614,7 @@ mod spawn_failure_test {
             &mut self,
             _: &(),
             _: &mut MutationGrant,
-            _: bool,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
         ) -> Result<AttemptOutcome, DriverError> {
             unreachable!()
         }
@@ -866,7 +1672,7 @@ mod independent_review_probes {
             &mut self,
             _: &(),
             _: &mut MutationGrant,
-            _: bool,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
         ) -> Result<AttemptOutcome, DriverError> {
             unreachable!()
         }
@@ -937,7 +1743,7 @@ mod independent_review_probes {
             &mut self,
             _: &(),
             _: &mut MutationGrant,
-            _: bool,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
         ) -> Result<AttemptOutcome, DriverError> {
             unreachable!()
         }
@@ -1002,7 +1808,7 @@ mod independent_review_probes {
             &mut self,
             _: &(),
             _: &mut MutationGrant,
-            _: bool,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
         ) -> Result<AttemptOutcome, DriverError> {
             unreachable!()
         }
@@ -1062,148 +1868,252 @@ mod independent_review_probes {
 }
 
 #[cfg(test)]
-mod allocation_boundary_test {
+pub(crate) mod allocation_boundary_test {
+    // Execute the actual integrated scheduler in an isolated child of this
+    // very test binary, with the same allocator and source-ticket types. This
+    // keeps unrelated parallel tests outside the allocation observation.
     #[test]
     fn dc_driver_real_requested_allocations_fit_tight_ceiling_and_aligned_factory() {
-        use std::{fs, path::Path, process::Command};
-        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let source = PROBE
-            .replace(
-                "@BUDGET@",
-                &format!("{:?}", root.join("src/storage/maintenance_budget.rs")),
-            )
-            .replace(
-                "@SCHEDULER@",
-                &format!("{:?}", root.join("src/storage/maintenance_scheduler.rs")),
-            );
+        const CHILD: &str = "CODEBASE_GRAPH_ALLOCATION_PROBE_CHILD";
+        if std::env::var_os(CHILD).is_some() {
+            run_probe();
+            return;
+        }
+        let binary = std::env::current_exe().unwrap();
         let output =
             std::env::temp_dir().join(format!("cleanup-driver-allocation-{}", std::process::id()));
-        fs::create_dir(&output).unwrap();
-        let input = output.join("probe.rs");
-        let binary = output.join(format!("probe{}", std::env::consts::EXE_SUFFIX));
-        fs::write(&input, source).unwrap();
-        let compile = Command::new("rustc")
-            .arg("--edition=2021")
-            .arg(&input)
-            .arg("-o")
-            .arg(&binary)
+        std::fs::create_dir(&output).unwrap();
+        std::fs::write(
+            output.join("binary-path.txt"),
+            binary.as_os_str().as_encoded_bytes(),
+        )
+        .unwrap();
+        let run = std::process::Command::new(&binary)
+            .args([
+                "--exact",
+                "storage::maintenance_scheduler::allocation_boundary_test::dc_driver_real_requested_allocations_fit_tight_ceiling_and_aligned_factory",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env(CHILD, "1")
             .output()
             .unwrap();
-        fs::write(output.join("compile.log"), &compile.stderr).unwrap();
-        assert!(
-            compile.status.success(),
-            "{}",
-            String::from_utf8_lossy(&compile.stderr)
-        );
-        let run = Command::new(&binary).output().unwrap();
-        fs::write(output.join("probe.stdout"), &run.stdout).unwrap();
-        fs::write(output.join("probe.stderr"), &run.stderr).unwrap();
+        std::fs::write(output.join("probe.stdout"), &run.stdout).unwrap();
+        std::fs::write(output.join("probe.stderr"), &run.stderr).unwrap();
         assert!(
             run.status.success(),
             "{}",
             String::from_utf8_lossy(&run.stderr)
         );
-        println!(
-            "allocation probe: {}\n{}",
-            output.display(),
-            String::from_utf8_lossy(&run.stdout)
+        let stdout = String::from_utf8_lossy(&run.stdout);
+        assert!(stdout.contains("1 passed; 0 failed"), "{stdout}");
+        assert_eq!(
+            stdout
+                .matches("one-byte-under rejected before allocation")
+                .count(),
+            2,
+            "{stdout}"
         );
+        println!("allocation probe: {}\n{stdout}", output.display());
+    }
+    use super::*;
+    use std::alloc::{GlobalAlloc, Layout};
+    use std::cell::UnsafeCell;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    #[derive(Copy, Clone)]
+    struct Entry {
+        ptr: usize,
+        size: usize,
+        live: bool,
+    }
+    const EMPTY: Entry = Entry {
+        ptr: 0,
+        size: 0,
+        live: false,
+    };
+    struct Record(UnsafeCell<[Entry; 128]>);
+    unsafe impl Sync for Record {}
+    static RECORD: Record = Record(UnsafeCell::new([EMPTY; 128]));
+    static LOCK: AtomicBool = AtomicBool::new(false);
+    static TRACK: AtomicBool = AtomicBool::new(false);
+    static LIVE: AtomicUsize = AtomicUsize::new(0);
+    static PEAK: AtomicUsize = AtomicUsize::new(0);
+    static COUNT: AtomicUsize = AtomicUsize::new(0);
+    static PREPARED: AtomicBool = AtomicBool::new(false);
+    fn lock() {
+        while LOCK
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
+            std::hint::spin_loop();
+        }
+    }
+    unsafe fn note_alloc(p: *mut u8, l: Layout) {
+        if p.is_null() || !TRACK.load(Ordering::Relaxed) {
+            return;
+        }
+        lock();
+        let i = COUNT.fetch_add(1, Ordering::Relaxed);
+        if i < 128 {
+            (*RECORD.0.get())[i] = Entry {
+                ptr: p as usize,
+                size: l.size(),
+                live: true,
+            };
+        }
+        let live = LIVE.fetch_add(l.size(), Ordering::Relaxed) + l.size();
+        PEAK.fetch_max(live, Ordering::Relaxed);
+        LOCK.store(false, Ordering::Release);
+    }
+    unsafe fn note_dealloc(p: *mut u8) {
+        if !TRACK.load(Ordering::Relaxed) && LIVE.load(Ordering::Relaxed) == 0 {
+            return;
+        }
+        lock();
+        for e in (*RECORD.0.get()).iter_mut() {
+            if e.live && e.ptr == p as usize {
+                e.live = false;
+                LIVE.fetch_sub(e.size, Ordering::Relaxed);
+                break;
+            }
+        }
+        LOCK.store(false, Ordering::Release);
+    }
+    pub(crate) struct Allocator;
+    unsafe impl GlobalAlloc for Allocator {
+        unsafe fn alloc(&self, l: Layout) -> *mut u8 {
+            let p = mimalloc::MiMalloc.alloc(l);
+            note_alloc(p, l);
+            p
+        }
+        unsafe fn alloc_zeroed(&self, l: Layout) -> *mut u8 {
+            let p = mimalloc::MiMalloc.alloc_zeroed(l);
+            note_alloc(p, l);
+            p
+        }
+        unsafe fn dealloc(&self, p: *mut u8, l: Layout) {
+            note_dealloc(p);
+            mimalloc::MiMalloc.dealloc(p, l);
+        }
+        unsafe fn realloc(&self, p: *mut u8, l: Layout, n: usize) -> *mut u8 {
+            let q = mimalloc::MiMalloc.realloc(p, l, n);
+            if !q.is_null() {
+                note_dealloc(p);
+                note_alloc(q, Layout::from_size_align_unchecked(n, l.align()));
+            }
+            q
+        }
+    }
+    struct Admission;
+    impl MaintenanceAdmission for Admission {
+        type Permit = ();
+        fn try_acquire(&self) -> Option<()> {
+            Some(())
+        }
+        fn stop_admission(&self) {}
+    }
+    struct Driver;
+    impl MaintenanceDriver for Driver {
+        type Work = ();
+        fn prepare(
+            &mut self,
+            _: TargetBinding,
+            _: &Cancellation<'_>,
+            _: &CleanupMemory,
+        ) -> Result<Option<()>, DriverError> {
+            PREPARED.store(true, Ordering::Release);
+            Ok(None)
+        }
+        fn mutate(
+            &mut self,
+            _: &(),
+            _: &mut MutationGrant,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
+        ) -> Result<AttemptOutcome, DriverError> {
+            unreachable!()
+        }
     }
 
-    const PROBE: &str = r####"#[path=@BUDGET@] mod maintenance_budget;
-#[path=@SCHEDULER@] mod maintenance_scheduler;
-use std::alloc::{GlobalAlloc,Layout,System};
-use std::cell::UnsafeCell;
-use std::sync::atomic::{AtomicBool,AtomicUsize,Ordering};
-use maintenance_budget::{CleanupMemory,MutationGrant};
-use maintenance_scheduler::*;
-#[derive(Copy,Clone)] struct Entry { ptr:usize, size:usize, align:usize, live:bool }
-const EMPTY:Entry=Entry{ptr:0,size:0,align:0,live:false};
-struct Record(UnsafeCell<[Entry;128]>);
-unsafe impl Sync for Record {}
-static RECORD:Record=Record(UnsafeCell::new([EMPTY;128]));
-static LOCK:AtomicBool=AtomicBool::new(false);
-static TRACK:AtomicBool=AtomicBool::new(false);
-static LIVE:AtomicUsize=AtomicUsize::new(0);
-static PEAK:AtomicUsize=AtomicUsize::new(0);
-static COUNT:AtomicUsize=AtomicUsize::new(0);
-static PREPARED:AtomicBool=AtomicBool::new(false);
-fn lock(){while LOCK.compare_exchange(false,true,Ordering::Acquire,Ordering::Relaxed).is_err(){std::hint::spin_loop();}}
-unsafe fn note_alloc(p:*mut u8,l:Layout){
- if p.is_null()||!TRACK.load(Ordering::Relaxed){return}
- lock(); let i=COUNT.fetch_add(1,Ordering::Relaxed);
- if i<128 {(*RECORD.0.get())[i]=Entry{ptr:p as usize,size:l.size(),align:l.align(),live:true};}
- let live=LIVE.fetch_add(l.size(),Ordering::Relaxed)+l.size(); PEAK.fetch_max(live,Ordering::Relaxed);
- LOCK.store(false,Ordering::Release);
-}
-unsafe fn note_dealloc(p:*mut u8){
- lock();for e in (*RECORD.0.get()).iter_mut(){if e.live&&e.ptr==p as usize {e.live=false;LIVE.fetch_sub(e.size,Ordering::Relaxed);break;}}
- LOCK.store(false,Ordering::Release);
-}
-struct Allocator;
-unsafe impl GlobalAlloc for Allocator {
- unsafe fn alloc(&self,l:Layout)->*mut u8{let p=System.alloc(l);note_alloc(p,l);p}
- unsafe fn alloc_zeroed(&self,l:Layout)->*mut u8{let p=System.alloc_zeroed(l);note_alloc(p,l);p}
- unsafe fn dealloc(&self,p:*mut u8,l:Layout){note_dealloc(p);System.dealloc(p,l);}
- unsafe fn realloc(&self,p:*mut u8,l:Layout,n:usize)->*mut u8 {let q=System.realloc(p,l,n);if !q.is_null(){note_dealloc(p);note_alloc(q,Layout::from_size_align_unchecked(n,l.align()));}q}
-}
-#[global_allocator] static ALLOC:Allocator=Allocator;
-struct Admission;
-impl MaintenanceAdmission for Admission {type Permit=();fn try_acquire(&self)->Option<()>{Some(())}fn stop_admission(&self){}}
-struct Driver;
-impl MaintenanceDriver for Driver {
- type Work=();
- fn prepare(&mut self,_:TargetBinding,_:&Cancellation<'_>,_:&CleanupMemory)->Result<Option<()>,DriverError>{PREPARED.store(true,Ordering::Release);Ok(None)}
- fn mutate(&mut self,_:&(),_:&mut MutationGrant,_:bool)->Result<AttemptOutcome,DriverError>{unreachable!()}
-}
-
-fn reset() {
- assert_eq!(LIVE.load(Ordering::Relaxed), 0);
- lock(); unsafe { *RECORD.0.get() = [EMPTY;128]; } LOCK.store(false,Ordering::Release);
- COUNT.store(0,Ordering::Relaxed); PEAK.store(0,Ordering::Relaxed);
- PREPARED.store(false,Ordering::Release);
-}
-fn measure<F>(limit:usize, factory:F)->(usize,usize,usize)
-where F:Copy+FnOnce(&CleanupMemory)->Result<Driver,DriverError>+Send+'static {
- reset();
- let memory=CleanupMemory::new(limit).unwrap(); let floor=memory.used();
- TRACK.store(true,Ordering::Relaxed);
- let mut runtime=MaintenanceRuntime::start(memory.clone(),TargetBinding([1;32]),Admission,factory).unwrap();
- while !PREPARED.load(Ordering::Acquire){std::thread::yield_now();}
- let charge=memory.used()-floor;
- runtime.stop_and_join(); drop(runtime);
- TRACK.store(false,Ordering::Relaxed);
- let peak=PEAK.load(Ordering::Relaxed);
- assert!(COUNT.load(Ordering::Relaxed)<128,"allocation recorder overflow");
- assert_eq!(LIVE.load(Ordering::Relaxed),0);
- assert!(peak+262144<=charge,"unreserved requested allocation: heap={peak}, stack=262144, charge={charge}");
- (floor,charge,peak)
-}
-fn check<F>(factory:F)
-where F:Copy+FnOnce(&CleanupMemory)->Result<Driver,DriverError>+Send+'static {
- let (floor,charge,peak)=measure(1024*1024,factory);
- let (_,tight,tight_peak)=measure(floor+charge,factory);
- assert_eq!(tight,charge);
- reset(); let memory=CleanupMemory::new(floor+charge-1).unwrap();
- TRACK.store(true,Ordering::Relaxed);
- let rejected=MaintenanceRuntime::start(memory.clone(),TargetBinding([1;32]),Admission,factory);
- TRACK.store(false,Ordering::Relaxed);
- assert!(matches!(rejected,Err(StartError::ResourceLimit(_))));
- assert_eq!(COUNT.load(Ordering::Relaxed),0,"tight rejection allocated before reserve");
- assert_eq!(memory.used(),floor);
- println!("charge={charge} heap_peak={peak} tight_peak={tight_peak} stack=262144; exact ceiling passed, one-byte-under rejected before allocation");
-}
-#[derive(Clone,Copy)]
-#[repr(align(4096))]
-struct Aligned([u8;1]);
-impl Aligned { fn value(self)->u8 { self.0[0] } }
-fn main(){
- let _caller_thread=std::thread::current();
- check(|_|Ok(Driver));
- let captured=Aligned([7]);
- check(move |_| {assert_eq!(captured.value(),7);Ok(Driver)});
-}
-"####;
+    fn reset() {
+        assert_eq!(LIVE.load(Ordering::Relaxed), 0);
+        lock();
+        unsafe {
+            *RECORD.0.get() = [EMPTY; 128];
+        }
+        LOCK.store(false, Ordering::Release);
+        COUNT.store(0, Ordering::Relaxed);
+        PEAK.store(0, Ordering::Relaxed);
+        PREPARED.store(false, Ordering::Release);
+    }
+    fn measure<F>(limit: usize, factory: F) -> (usize, usize, usize)
+    where
+        F: Copy + FnOnce(&CleanupMemory) -> Result<Driver, DriverError> + Send + 'static,
+    {
+        reset();
+        let memory = CleanupMemory::new(limit).unwrap();
+        let floor = memory.used();
+        TRACK.store(true, Ordering::Relaxed);
+        let mut runtime =
+            MaintenanceRuntime::start(memory.clone(), TargetBinding([1; 32]), Admission, factory)
+                .unwrap();
+        while !PREPARED.load(Ordering::Acquire) {
+            std::thread::yield_now();
+        }
+        let charge = memory.used() - floor;
+        runtime.stop_and_join();
+        drop(runtime);
+        TRACK.store(false, Ordering::Relaxed);
+        let peak = PEAK.load(Ordering::Relaxed);
+        assert!(
+            COUNT.load(Ordering::Relaxed) < 128,
+            "allocation recorder overflow"
+        );
+        assert_eq!(LIVE.load(Ordering::Relaxed), 0);
+        assert!(
+            peak + 262144 <= charge,
+            "unreserved requested allocation: heap={peak}, stack=262144, charge={charge}"
+        );
+        (floor, charge, peak)
+    }
+    fn check<F>(factory: F)
+    where
+        F: Copy + FnOnce(&CleanupMemory) -> Result<Driver, DriverError> + Send + 'static,
+    {
+        let (floor, charge, peak) = measure(1024 * 1024, factory);
+        let (_, tight, tight_peak) = measure(floor + charge, factory);
+        assert_eq!(tight, charge);
+        reset();
+        let memory = CleanupMemory::new(floor + charge - 1).unwrap();
+        TRACK.store(true, Ordering::Relaxed);
+        let rejected =
+            MaintenanceRuntime::start(memory.clone(), TargetBinding([1; 32]), Admission, factory);
+        TRACK.store(false, Ordering::Relaxed);
+        assert!(matches!(rejected, Err(StartError::ResourceLimit(_))));
+        assert_eq!(
+            COUNT.load(Ordering::Relaxed),
+            0,
+            "tight rejection allocated before reserve"
+        );
+        assert_eq!(memory.used(), floor);
+        println!("charge={charge} heap_peak={peak} tight_peak={tight_peak} stack=262144; exact ceiling passed, one-byte-under rejected before allocation");
+    }
+    #[derive(Clone, Copy)]
+    #[repr(align(4096))]
+    struct Aligned([u8; 1]);
+    impl Aligned {
+        fn value(self) -> u8 {
+            self.0[0]
+        }
+    }
+    fn run_probe() {
+        let _caller_thread = std::thread::current();
+        check(|_| Ok(Driver));
+        let captured = Aligned([7]);
+        check(move |_| {
+            assert_eq!(captured.value(), 7);
+            Ok(Driver)
+        });
+    }
 }
 
 #[cfg(test)]
@@ -1232,7 +2142,7 @@ mod panic_payload_probe {
             &mut self,
             _: &(),
             _: &mut MutationGrant,
-            _: bool,
+            _: Option<&LegacyQuiescenceConfirmation<'_>>,
         ) -> Result<AttemptOutcome, DriverError> {
             unreachable!()
         }

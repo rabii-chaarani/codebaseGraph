@@ -1059,19 +1059,21 @@ mod maintenance_summary_tests {
 
     #[test]
     fn running_attempt_does_not_require_fabricated_metrics() {
-        let mut summary = MaintenanceSummary::default();
-        summary.running = true;
-        summary.observed_at_unix_ms = Some(100);
-        summary.observation_age_ms = Some(200);
-        summary.last_attempt = Some(MaintenanceAttempt {
-            started_at_unix_ms: 300,
-            finished_at_unix_ms: None,
-            status: None,
-            attempted_entries: None,
-            deleted_entries: None,
-            reclaimed_allocated_bytes: None,
-            continuation_phase: None,
-        });
+        let summary = MaintenanceSummary {
+            running: true,
+            observed_at_unix_ms: Some(100),
+            observation_age_ms: Some(200),
+            last_attempt: Some(MaintenanceAttempt {
+                started_at_unix_ms: 300,
+                finished_at_unix_ms: None,
+                status: None,
+                attempted_entries: None,
+                deleted_entries: None,
+                reclaimed_allocated_bytes: None,
+                continuation_phase: None,
+            }),
+            ..MaintenanceSummary::default()
+        };
         let value = serde_json::to_value(&summary).unwrap();
         for field in [
             "finished_at_unix_ms",
@@ -1092,21 +1094,35 @@ mod maintenance_summary_tests {
 
     #[test]
     fn partial_measurements_and_deferred_outcomes_round_trip_without_zero_fill() {
-        let mut summary = MaintenanceSummary::default();
-        summary.inventory_status = Some(MaintenanceInventoryStatus::Partial);
-        summary.bytes.by_category.active_cache.logical_bytes = Some(4096);
-        summary.bytes.deferred.logical_bytes = Some(8192);
-        summary.reasons = vec!["writer_in_use".into()];
-        summary.errors = vec!["fixture permission failure".into()];
-        summary.last_attempt = Some(MaintenanceAttempt {
-            started_at_unix_ms: 100,
-            finished_at_unix_ms: Some(200),
-            status: Some(MaintenanceAttemptStatus::Deferred),
-            attempted_entries: Some(1),
-            deleted_entries: Some(0),
-            reclaimed_allocated_bytes: None,
-            continuation_phase: Some("validation_pending".into()),
-        });
+        let summary = MaintenanceSummary {
+            inventory_status: Some(MaintenanceInventoryStatus::Partial),
+            bytes: MaintenanceBytes {
+                by_category: MaintenanceCategoryBytes {
+                    active_cache: MaintenanceByteBucket {
+                        logical_bytes: Some(4096),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                deferred: MaintenanceByteBucket {
+                    logical_bytes: Some(8192),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            reasons: vec!["writer_in_use".into()],
+            errors: vec!["fixture permission failure".into()],
+            last_attempt: Some(MaintenanceAttempt {
+                started_at_unix_ms: 100,
+                finished_at_unix_ms: Some(200),
+                status: Some(MaintenanceAttemptStatus::Deferred),
+                attempted_entries: Some(1),
+                deleted_entries: Some(0),
+                reclaimed_allocated_bytes: None,
+                continuation_phase: Some("validation_pending".into()),
+            }),
+            ..MaintenanceSummary::default()
+        };
         let value = serde_json::to_value(&summary).unwrap();
         assert_eq!(value["inventory_status"], "partial");
         assert_eq!(value["last_attempt"]["status"], "deferred");

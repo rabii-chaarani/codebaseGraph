@@ -63,9 +63,15 @@ class QualificationProtocolTests(unittest.TestCase):
         Q.write_json(self.output / "build-environment.json", {
             "RUSTC_WORKSPACE_WRAPPER": str(self.output / "root-wrapper.exe"), "CGRAPH_QUALIFICATION_EVENTS": str(self.output / "rustc-events"),
             "CARGO_PROFILE_TEST_DEBUG_ASSERTIONS": "true", "CARGO_PROFILE_DEV_DEBUG_ASSERTIONS": "true"})
+        Q.write_json(self.output / "inventory.stdout", {
+            "rust-build-meta": metadata["rust-build-meta"], "test-count": len(Q.EXPECTED),
+            "rust-suites": {Q.BINARY: {"binary-path": "/synthetic/target/debug/deps/storage_maintenance-test", "package-id": "synthetic-root",
+                "testcases": {name: {"ignored": False, "filter-match": {"status": "matches"}} for name in Q.EXPECTED}}}})
+        (self.output / "inventory.stderr").write_text("synthetic protocol inventory\n")
         self.record = {
-            "schema": Q.SCHEMA, "scope": "narrow_external_contract", "output": str(self.output), "repository": str(repository),
+            "schema": Q.SCHEMA, "scope": "storage_maintenance_suite", "output": str(self.output), "repository": str(repository),
             "compile_proof": {"events": events, "cargo_messages": messages, "outputs": outputs},
+            "expected_case_names": sorted(Q.EXPECTED),
             "qualification": {"aggregate": "pending", "windows": "pending", "linux": "pending"},
             "limitations": Q.LIMITATIONS,
             "commands": {label: {"argv": argv, "exit_code": 0} for label, argv in [
@@ -75,6 +81,7 @@ class QualificationProtocolTests(unittest.TestCase):
                 ("wrapper-build", ["rustc", "--edition=2021", str(self.output / "root-wrapper.rs"), "-o", str(self.output / "root-wrapper.exe")]),
                 ("root-build", Q.root_build_command()),
                 ("root-rustc", ["/synthetic/rustc", "-vV"]),
+                ("inventory", Q.inventory_command(self.output)),
                 ("execution", Q.execution_command(self.output)),
             ]},
             "result": Q.junit_result(self.output / "junit.xml"),
@@ -218,6 +225,76 @@ class QualificationProtocolTests(unittest.TestCase):
         with patch.dict(os.environ, {"RUSTFLAGS": "-C debug-assertions=off"}):
             with self.assertRaisesRegex(ValueError, "unsupported ambient compiler override"):
                 Q.build_environment(self.output)
+
+    def test_current_suite_inventory_cannot_hide_filtered_or_ignored_cases(self):
+        original = Q.read_json(self.output / "inventory.stdout")
+        for field in ["ignored", "filter-match"]:
+            inventory = json.loads(json.dumps(original))
+            case = next(iter(inventory["rust-suites"][Q.BINARY]["testcases"].values()))
+            case[field] = True if field == "ignored" else {"status": "mismatch"}
+            Q.write_json(self.output / "inventory.stdout", inventory)
+            self.seal()
+            self.rejected("ignored or filtered")
+
+    def test_added_registered_case_must_execute_in_junit(self):
+        inventory = Q.read_json(self.output / "inventory.stdout")
+        inventory["test-count"] += 1
+        inventory["rust-suites"][Q.BINARY]["testcases"]["new_real_case"] = {"ignored": False, "filter-match": {"status": "matches"}}
+        Q.write_json(self.output / "inventory.stdout", inventory)
+        self.record["expected_case_names"].append("new_real_case")
+        self.record["expected_case_names"].sort()
+        self.seal()
+        self.rejected("testcase")
+
+    def test_source_workload_cannot_pass_only_the_three_historical_cases(self):
+        for name in ["source-before.json", "source-after-build.json", "source-after-execution.json"]:
+            source = Q.read_json(self.output / name)
+            source["tests/support/storage_maintenance/workload.rs"] = "e" * 64
+            Q.write_json(self.output / name, source)
+        self.seal()
+        self.rejected("required fixture test cases")
+
+    def test_inventory_binary_package_and_named_identity_must_match(self):
+        inventory = Q.read_json(self.output / "inventory.stdout")
+        inventory["rust-suites"][Q.BINARY]["package-id"] = "foreign"
+        Q.write_json(self.output / "inventory.stdout", inventory)
+        self.seal()
+        self.rejected("binary/package identity")
+
+    def test_source_bound_eight_and_nine_case_inventories_are_accepted_exactly(self):
+        names = set(Q.EXPECTED) | Q.WORKLOAD_CASES
+        for include_process in [False, True]:
+            if include_process:
+                names.add(Q.PROCESS_CASE)
+            for name in ["source-before.json", "source-after-build.json", "source-after-execution.json"]:
+                source = Q.read_json(self.output / name)
+                source["tests/support/storage_maintenance/workload.rs"] = "e" * 64
+                if include_process:
+                    source["tests/support/storage_maintenance/process.rs"] = "f" * 64
+                Q.write_json(self.output / name, source)
+            inventory = Q.read_json(self.output / "inventory.stdout")
+            inventory["test-count"] = len(names)
+            inventory["rust-suites"][Q.BINARY]["testcases"] = {name: {"ignored": False, "filter-match": {"status": "matches"}} for name in names}
+            Q.write_json(self.output / "inventory.stdout", inventory)
+            xml = '<testsuites uuid="synthetic-expanded-suite"><testsuite>' + ''.join('<testcase classname="%s" name="%s"/>' % (Q.BINARY, name) for name in sorted(names)) + '</testsuite></testsuites>'
+            (self.output / "junit.xml").write_text(xml)
+            self.record["expected_case_names"] = sorted(names)
+            self.record["result"] = Q.junit_result(self.output / "junit.xml", names)
+            self.seal()
+            self.assertEqual(Q.verify(self.output)["result"]["passed"], 9 if include_process else 8)
+
+    def test_historical_schema_two_keeps_its_exact_three_case_scope(self):
+        self.record["schema"] = 2
+        self.record["scope"] = "narrow_external_contract"
+        self.record["limitations"] = Q.LEGACY_LIMITATIONS
+        del self.record["commands"]["inventory"]
+        for name in ["inventory.stdout", "inventory.stderr"]:
+            (self.output / name).unlink()
+        self.seal()
+        historical = Q.verify(self.output)
+        self.assertEqual(historical["result"]["passed"], 3)
+        self.assertEqual(historical["schema"], 2)
+        self.assertEqual(historical["scope"], "narrow_external_contract")
 
     def test_real_subprocess_exit_and_output_are_captured(self):
         result = Q.run([sys.executable, "-c", "import sys; print('actual output'); sys.stderr.write('actual error'); sys.exit(7)"], self.output, self.output, "probe")

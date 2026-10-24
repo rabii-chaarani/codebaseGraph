@@ -14,7 +14,8 @@ pub use access::{
 };
 pub use extensions::preseed_ladybug_extensions;
 pub(crate) use phase::{
-    execute_phase_file, register_phase_worker_executable, with_phase_workspace_root,
+    execute_phase_file, phase_has_parent_workspace, register_phase_worker_executable,
+    with_phase_workspace_scope,
 };
 pub use request::{LadybugWriteMetrics, LadybugWriteRequest};
 pub(crate) use rss::sample_process_rss;

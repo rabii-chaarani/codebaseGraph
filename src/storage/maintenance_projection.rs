@@ -368,6 +368,214 @@ pub(crate) fn project_config(
     })
 }
 
+/// Fully resolved advisory selectors, never authority. Every owned native path
+/// is covered by this shared-account envelope before any path allocation.
+pub(crate) struct BoundConfiguration {
+    pub(crate) storage: std::path::PathBuf,
+    pub(crate) direct: Option<super::inventory::DirectPair>,
+    pub(crate) config_path: std::path::PathBuf,
+    pub(crate) config_stamp: Option<FixedFileStamp>,
+    pub(crate) repository: super::locks::FileIdentity,
+    pub(crate) state: super::locks::FileIdentity,
+    _paths: MemoryReservation,
+}
+
+pub(crate) fn project_binding(
+    target: &super::inventory::MaintenanceTarget,
+    memory: &CleanupMemory,
+) -> Result<BoundConfiguration, ProjectionFailure> {
+    use super::inventory::{default_direct, real_path, same_physical_path};
+    use super::locks::{open_fixed_control, path_identity, FixedControlScratch};
+    use std::path::{Component, Path, PathBuf};
+    #[cfg(unix)]
+    const PATH_BYTES: usize = libc::PATH_MAX as usize;
+    #[cfg(windows)]
+    const PATH_BYTES: usize = 131072;
+    #[cfg(not(any(unix, windows)))]
+    const PATH_BYTES: usize = 4096;
+    for path in [
+        Some(&target.repository_root),
+        Some(&target.state_root),
+        target.storage_root.as_ref(),
+        target.config_path.as_ref(),
+        target.direct_pair.as_ref().map(|p| &p.database),
+        target.direct_pair.as_ref().map(|p| &p.manifest),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        #[cfg(windows)]
+        {
+            use std::os::windows::ffi::OsStrExt;
+            if path.as_os_str().encode_wide().count() >= 32768 {
+                return Err(ProjectionFailure::InvalidString);
+            }
+        }
+        #[cfg(not(windows))]
+        if path.as_os_str().as_encoded_bytes().len() >= PATH_BYTES {
+            return Err(ProjectionFailure::InvalidString);
+        }
+    }
+    // Native paths have a fixed addressing domain. This envelope covers all
+    // simultaneously retained selector clones, joins and decoded path images;
+    // strings themselves are separately reserved exactly before decoding.
+    let paths = memory.reserve(24 * PATH_BYTES + std::mem::size_of::<BoundConfiguration>())?;
+    if !target.repository_root.is_absolute() || !real_path(&target.repository_root) {
+        return Err(ProjectionFailure::InvalidObject);
+    }
+    let conventional = target.repository_root.join(".codebaseGraph");
+    if target.state_root != conventional || !real_path(&conventional) {
+        return Err(ProjectionFailure::InvalidObject);
+    }
+    let default_config = conventional.join("config.json");
+    let config_path = target
+        .config_path
+        .as_ref()
+        .unwrap_or(&default_config)
+        .clone();
+    let mut scratch =
+        FixedControlScratch::new(memory.reserve(FixedControlScratch::required_bytes())?)
+            .map_err(|_| ProjectionFailure::Changed)?;
+    let file = match open_fixed_control(&config_path, FixedControlKind::File, false, &mut scratch) {
+        Ok(file) => Some(file),
+        Err(super::locks::FixedControlError::Io(error))
+            if error.kind() == io::ErrorKind::NotFound && target.config_path.is_none() =>
+        {
+            None
+        }
+        _ => return Err(ProjectionFailure::Changed),
+    };
+    let mut managed = false;
+    let mut storage = conventional.join("storage");
+    let mut configured = default_direct(target);
+    let mut config_stamp = None;
+    if let Some(file) = file {
+        let projection = project_config(&file, memory)?;
+        config_stamp = Some(*projection.source());
+        let path = |field: ConfigField| -> Result<Option<PathBuf>, ProjectionFailure> {
+            let Some(bytes) = projection.string(&file, field, memory)? else {
+                return Ok(None);
+            };
+            let string = std::str::from_utf8(bytes.as_slice())
+                .map_err(|_| ProjectionFailure::InvalidString)?;
+            if string.len() >= PATH_BYTES || string.as_bytes().contains(&0) {
+                return Err(ProjectionFailure::InvalidString);
+            }
+            let value = Path::new(string);
+            let result = if value.is_absolute() {
+                value.to_owned()
+            } else {
+                config_path
+                    .parent()
+                    .ok_or(ProjectionFailure::InvalidString)?
+                    .join(value)
+            };
+            if result.as_os_str().as_encoded_bytes().len() >= PATH_BYTES {
+                return Err(ProjectionFailure::InvalidString);
+            }
+            Ok(Some(result))
+        };
+        match path(ConfigField::Repository)? {
+            Some(repository)
+                if real_path(&repository)
+                    && same_physical_path(&repository, &target.repository_root) => {}
+            None if config_path == default_config => (),
+            _ => return Err(ProjectionFailure::InvalidObject),
+        }
+        match projection.field(ConfigField::SchemaVersion) {
+            ScalarProjection::Missing | ScalarProjection::Null => (),
+            ScalarProjection::Number { unsigned: Some(1) } => (),
+            ScalarProjection::Number {
+                unsigned: Some(2 | 3),
+            } => managed = true,
+            _ => return Err(ProjectionFailure::InvalidNumber),
+        }
+        if managed {
+            if let Some(value) = path(ConfigField::Storage)? {
+                if !real_path(&value) {
+                    return Err(ProjectionFailure::Changed);
+                }
+                storage = value;
+            }
+        }
+        if let Some(value) = path(ConfigField::Database)? {
+            configured.database = value;
+        }
+        if let Some(value) = path(ConfigField::Manifest)? {
+            configured.manifest = value;
+        }
+        let current = open_fixed_control(&config_path, FixedControlKind::File, false, &mut scratch)
+            .map_err(|_| ProjectionFailure::Changed)?;
+        projection
+            .source()
+            .recheck(&current)
+            .map_err(|_| ProjectionFailure::Changed)?;
+    }
+    let selected_storage = target.storage_root.as_ref().unwrap_or(&storage);
+    if selected_storage != &storage
+        && !(real_path(&storage)
+            && real_path(selected_storage)
+            && same_physical_path(selected_storage, &storage))
+    {
+        return Err(ProjectionFailure::InvalidObject);
+    }
+    // Selecting an ancestor of repository/state could collect its own controls.
+    for protected in [&target.repository_root, &conventional] {
+        if protected
+            .ancestors()
+            .any(|p| same_physical_path(p, selected_storage))
+        {
+            return Err(ProjectionFailure::InvalidObject);
+        }
+    }
+    let direct = target
+        .direct_pair
+        .clone()
+        .or_else(|| (!managed).then_some(configured.clone()));
+    if let Some(pair) = &direct {
+        let local = pair.database.starts_with(&conventional)
+            && pair.manifest.starts_with(&conventional)
+            && !pair
+                .database
+                .components()
+                .chain(pair.manifest.components())
+                .any(|c| matches!(c, Component::ParentDir));
+        if (!local && (config_stamp.is_none() || pair != &configured))
+            || pair.database == pair.manifest
+        {
+            return Err(ProjectionFailure::InvalidObject);
+        }
+    }
+    if super::inventory::bound_roles_overlap_paths(target, selected_storage, direct.as_ref()) {
+        return Err(ProjectionFailure::InvalidObject);
+    }
+    Ok(BoundConfiguration {
+        storage: selected_storage.clone(),
+        direct,
+        config_path,
+        config_stamp,
+        repository: path_identity(&target.repository_root)
+            .map_err(|_| ProjectionFailure::Changed)?,
+        state: path_identity(&target.state_root).map_err(|_| ProjectionFailure::Changed)?,
+        _paths: paths,
+    })
+}
+
+impl BoundConfiguration {
+    pub(super) fn duplicate(&self, memory: &CleanupMemory) -> Result<Self, ResourceLimit> {
+        let paths = memory.reserve(self._paths.remaining())?;
+        Ok(Self {
+            storage: self.storage.clone(),
+            direct: self.direct.clone(),
+            config_path: self.config_path.clone(),
+            config_stamp: self.config_stamp,
+            repository: self.repository,
+            state: self.state,
+            _paths: paths,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -556,177 +764,4 @@ mod tests {
             Err(ProjectionFailure::Changed)
         ));
     }
-}
-
-/// Fully resolved advisory selectors, never authority. Every owned native path
-/// is covered by this shared-account envelope before any path allocation.
-pub(crate) struct BoundConfiguration {
-    pub(crate) storage: std::path::PathBuf,
-    pub(crate) direct: Option<super::inventory::DirectPair>,
-    pub(crate) config_path: std::path::PathBuf,
-    pub(crate) config_stamp: Option<FixedFileStamp>,
-    pub(crate) repository: super::locks::FileIdentity,
-    pub(crate) state: super::locks::FileIdentity,
-    _paths: MemoryReservation,
-}
-
-pub(crate) fn project_binding(
-    target: &super::inventory::MaintenanceTarget,
-    memory: &CleanupMemory,
-) -> Result<BoundConfiguration, ProjectionFailure> {
-    use super::inventory::{default_direct, real_path, same_physical_path};
-    use super::locks::{open_fixed_control, path_identity, FixedControlScratch};
-    use std::path::{Component, Path, PathBuf};
-    #[cfg(unix)]
-    const PATH_BYTES: usize = libc::PATH_MAX as usize;
-    #[cfg(windows)]
-    const PATH_BYTES: usize = 131072;
-    #[cfg(not(any(unix, windows)))]
-    const PATH_BYTES: usize = 4096;
-    // Native paths have a fixed addressing domain. This envelope covers all
-    // simultaneously retained selector clones, joins and decoded path images;
-    // strings themselves are separately reserved exactly before decoding.
-    let paths = memory.reserve(24 * PATH_BYTES + std::mem::size_of::<BoundConfiguration>())?;
-    if !target.repository_root.is_absolute() || !real_path(&target.repository_root) {
-        return Err(ProjectionFailure::InvalidObject);
-    }
-    let conventional = target.repository_root.join(".codebaseGraph");
-    if target.state_root != conventional || !real_path(&conventional) {
-        return Err(ProjectionFailure::InvalidObject);
-    }
-    let default_config = conventional.join("config.json");
-    let config_path = target
-        .config_path
-        .as_ref()
-        .unwrap_or(&default_config)
-        .clone();
-    let mut scratch =
-        FixedControlScratch::new(memory.reserve(FixedControlScratch::required_bytes())?)
-            .map_err(|_| ProjectionFailure::Changed)?;
-    let file = match open_fixed_control(&config_path, FixedControlKind::File, false, &mut scratch) {
-        Ok(file) => Some(file),
-        Err(super::locks::FixedControlError::Io(error))
-            if error.kind() == io::ErrorKind::NotFound && target.config_path.is_none() =>
-        {
-            None
-        }
-        _ => return Err(ProjectionFailure::Changed),
-    };
-    let mut managed = false;
-    let mut storage = conventional.join("storage");
-    let mut configured = default_direct(target);
-    let mut config_stamp = None;
-    if let Some(file) = file {
-        let projection = project_config(&file, memory)?;
-        config_stamp = Some(*projection.source());
-        let path = |field: ConfigField| -> Result<Option<PathBuf>, ProjectionFailure> {
-            let Some(bytes) = projection.string(&file, field, memory)? else {
-                return Ok(None);
-            };
-            let string = std::str::from_utf8(bytes.as_slice())
-                .map_err(|_| ProjectionFailure::InvalidString)?;
-            if string.len() >= PATH_BYTES || string.as_bytes().contains(&0) {
-                return Err(ProjectionFailure::InvalidString);
-            }
-            let value = Path::new(string);
-            let result = if value.is_absolute() {
-                value.to_owned()
-            } else {
-                config_path
-                    .parent()
-                    .ok_or(ProjectionFailure::InvalidString)?
-                    .join(value)
-            };
-            if result.as_os_str().as_encoded_bytes().len() >= PATH_BYTES {
-                return Err(ProjectionFailure::InvalidString);
-            }
-            Ok(Some(result))
-        };
-        match path(ConfigField::Repository)? {
-            Some(repository)
-                if real_path(&repository)
-                    && same_physical_path(&repository, &target.repository_root) =>
-            {
-                ()
-            }
-            None if config_path == default_config => (),
-            _ => return Err(ProjectionFailure::InvalidObject),
-        }
-        match projection.field(ConfigField::SchemaVersion) {
-            ScalarProjection::Missing | ScalarProjection::Null => (),
-            ScalarProjection::Number { unsigned: Some(1) } => (),
-            ScalarProjection::Number {
-                unsigned: Some(2 | 3),
-            } => managed = true,
-            _ => return Err(ProjectionFailure::InvalidNumber),
-        }
-        if managed {
-            if let Some(value) = path(ConfigField::Storage)? {
-                if !real_path(&value) {
-                    return Err(ProjectionFailure::Changed);
-                }
-                storage = value;
-            }
-        }
-        if let Some(value) = path(ConfigField::Database)? {
-            configured.database = value;
-        }
-        if let Some(value) = path(ConfigField::Manifest)? {
-            configured.manifest = value;
-        }
-        let current = open_fixed_control(&config_path, FixedControlKind::File, false, &mut scratch)
-            .map_err(|_| ProjectionFailure::Changed)?;
-        projection
-            .source()
-            .recheck(&current)
-            .map_err(|_| ProjectionFailure::Changed)?;
-    }
-    let selected_storage = target.storage_root.as_ref().unwrap_or(&storage);
-    if selected_storage != &storage
-        && !(real_path(&storage)
-            && real_path(selected_storage)
-            && same_physical_path(selected_storage, &storage))
-    {
-        return Err(ProjectionFailure::InvalidObject);
-    }
-    // Selecting an ancestor of repository/state could collect its own controls.
-    for protected in [&target.repository_root, &conventional] {
-        if protected
-            .ancestors()
-            .any(|p| same_physical_path(p, selected_storage))
-        {
-            return Err(ProjectionFailure::InvalidObject);
-        }
-    }
-    let direct = target
-        .direct_pair
-        .clone()
-        .or_else(|| (!managed).then_some(configured.clone()));
-    if let Some(pair) = &direct {
-        let local = pair.database.starts_with(&conventional)
-            && pair.manifest.starts_with(&conventional)
-            && !pair
-                .database
-                .components()
-                .chain(pair.manifest.components())
-                .any(|c| matches!(c, Component::ParentDir));
-        if (!local && (config_stamp.is_none() || pair != &configured))
-            || pair.database == pair.manifest
-        {
-            return Err(ProjectionFailure::InvalidObject);
-        }
-    }
-    if super::inventory::bound_roles_overlap_paths(target, selected_storage, direct.as_ref()) {
-        return Err(ProjectionFailure::InvalidObject);
-    }
-    Ok(BoundConfiguration {
-        storage: selected_storage.clone(),
-        direct,
-        config_path,
-        config_stamp,
-        repository: path_identity(&target.repository_root)
-            .map_err(|_| ProjectionFailure::Changed)?,
-        state: path_identity(&target.state_root).map_err(|_| ProjectionFailure::Changed)?,
-        _paths: paths,
-    })
 }

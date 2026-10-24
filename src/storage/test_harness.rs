@@ -1,6 +1,15 @@
 #[path = "../error.rs"]
 #[allow(dead_code)]
 mod error;
+#[path = "../process_lifecycle/mod.rs"]
+#[allow(dead_code)]
+mod process_lifecycle;
+#[path = "../db_writer/rss.rs"]
+#[allow(dead_code)]
+mod process_rss;
+mod db_writer {
+    pub(crate) use crate::process_rss::sample_process_rss;
+}
 // This deliberately small protocol-only crate exercises storage foundations.
 // Higher-layer maintenance tests run in the full library with ArtifactStore.
 #[path = "."]
@@ -18,12 +27,28 @@ mod storage {
     pub(crate) mod layout;
     #[path = "locks.rs"]
     pub(crate) mod locks;
+    #[path = "maintenance_admission.rs"]
+    pub(crate) mod maintenance_admission;
     #[path = "maintenance_budget.rs"]
     pub(crate) mod maintenance_budget;
     #[path = "maintenance_controls.rs"]
     pub(crate) mod maintenance_controls;
+    #[path = "maintenance_generation_gate.rs"]
+    pub(crate) mod maintenance_generation_gate;
+    #[path = "maintenance_json.rs"]
+    pub(crate) mod maintenance_json;
+    #[path = "maintenance_legacy_guard.rs"]
+    pub(crate) mod maintenance_legacy_guard;
+    #[path = "maintenance_origin.rs"]
+    pub(crate) mod maintenance_origin;
     #[path = "maintenance_ownership.rs"]
     pub(crate) mod maintenance_ownership;
+    #[path = "maintenance_projection.rs"]
+    pub(crate) mod maintenance_projection;
+    #[path = "maintenance_retirement.rs"]
+    pub(crate) mod maintenance_retirement;
+    #[path = "maintenance_workspace_gate.rs"]
+    pub(crate) mod maintenance_workspace_gate;
     #[path = "managed.rs"]
     pub(crate) mod managed;
     #[path = "run_workspace.rs"]
@@ -449,6 +474,12 @@ fn managed_last_reader_drop_triggers_best_effort_retirement_cleanup() {
 
     drop(reader);
 
+    // Ordinary reader destruction releases ownership only. The bounded
+    // controller owns automatic retirement; this historical compatibility
+    // fixture invokes the explicit strict adapter to verify the old sweep.
+    assert!(store.layout().generation(&first).unwrap().root().exists());
+    let cleanup = store.cleanup().unwrap();
+    assert!(cleanup.retired_generations_deleted > 0);
     assert!(!store.layout().generation(&first).unwrap().root().exists());
 }
 
@@ -982,8 +1013,11 @@ fn direct_prepared_recovery_preserves_expected_sidecars_on_validation_failure() 
                 "checksum mismatch"
             }
         };
-        // A stray unjournaled candidate must not become part of the committed bundle.
-        fs::write(direct_sidecar(&layout.db_candidate_path(), "wal"), b"stray").unwrap();
+        // A stray unjournaled candidate has no replay/deletion ownership. Keep
+        // its exact inode/bytes outside the committed bundle across recovery.
+        let stray = direct_sidecar(&layout.db_candidate_path(), "wal");
+        fs::write(&stray, b"stray").unwrap();
+        let stray_identity = storage::locks::path_identity(&stray).unwrap();
         for _ in 0..3 {
             let error = store.begin_read().unwrap_err();
             assert!(
@@ -996,6 +1030,11 @@ fn direct_prepared_recovery_preserves_expected_sidecars_on_validation_failure() 
                 b"search.lexicon.bin"
             );
             assert!(!direct_sidecar(layout.db_path(), "wal").exists());
+            assert_eq!(fs::read(&stray).unwrap(), b"stray");
+            assert_eq!(
+                storage::locks::path_identity(&stray).unwrap(),
+                stray_identity
+            );
             assert!(layout.journal_path().exists());
             assert!(!layout.manifest_path().exists());
         }
@@ -1007,7 +1046,13 @@ fn direct_prepared_recovery_preserves_expected_sidecars_on_validation_failure() 
         fs::write(damaged, b"search.postings.bin").unwrap();
         drop(store.begin_read().unwrap());
         assert!(!layout.journal_path().exists());
-        assert!(!direct_sidecar(&layout.db_candidate_path(), "wal").exists());
+        assert_eq!(fs::read(&stray).unwrap(), b"stray");
+        assert_eq!(
+            storage::locks::path_identity(&stray).unwrap(),
+            stray_identity
+        );
+        assert!(!direct_sidecar(layout.db_path(), "wal").exists());
+        assert!(store.candidate_cleanup_pending());
         fs::remove_dir_all(root).unwrap();
     }
 }
@@ -1805,4 +1850,28 @@ fn private_lifecycle_receipt_accepts_ancestor_alias_but_rejects_foreign_or_symli
     descriptor.lifecycle_dir = root.join("missing");
     write_json_atomically(&lifecycle.join("proof.json"), &descriptor).unwrap();
     assert!(!probe_lifecycle(&lifecycle).unwrap());
+}
+
+#[test]
+fn final_containment_verification_requires_prior_retirement_without_writing() {
+    use fs2::FileExt;
+    let root = temp_dir("containment_final_readonly");
+    let lifecycle = unknown_phase_registry(&root);
+    prove_phase_empty(&lifecycle);
+    let marker = lifecycle.join("retired");
+    assert!(!marker.exists());
+    assert!(storage::containment::ensure_retired_registry_empty(&root).is_err());
+    assert!(!marker.exists(), "final verification created a marker");
+    storage::containment::ensure_registry_empty(&root).unwrap();
+    let bytes = fs::read(&marker).unwrap();
+    storage::containment::ensure_retired_registry_empty(&root).unwrap();
+    assert_eq!(fs::read(&marker).unwrap(), bytes);
+    let lease = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(lifecycle.join("lease"))
+        .unwrap();
+    lease.try_lock_exclusive().unwrap();
+    assert!(storage::containment::ensure_retired_registry_empty(&root).is_err());
+    assert_eq!(fs::read(&marker).unwrap(), bytes);
 }

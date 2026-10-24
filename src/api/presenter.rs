@@ -136,20 +136,22 @@ mod maintenance_tests {
 
     #[test]
     fn maintenance_block_preserves_nulls_and_complete_structured_summary() {
-        let mut summary = MaintenanceSummary::default();
-        summary.inventory_status = Some(MaintenanceInventoryStatus::Busy);
-        summary.reasons = vec!["writer_in_use".into()];
-        summary.errors = vec!["fixture permission failure".into()];
-        summary.running = true;
-        summary.last_attempt = Some(MaintenanceAttempt {
-            started_at_unix_ms: 42,
-            finished_at_unix_ms: None,
-            status: None,
-            attempted_entries: None,
-            deleted_entries: None,
-            reclaimed_allocated_bytes: None,
-            continuation_phase: None,
-        });
+        let summary = MaintenanceSummary {
+            inventory_status: Some(MaintenanceInventoryStatus::Busy),
+            reasons: vec!["writer_in_use".into()],
+            errors: vec!["fixture permission failure".into()],
+            running: true,
+            last_attempt: Some(MaintenanceAttempt {
+                started_at_unix_ms: 42,
+                finished_at_unix_ms: None,
+                status: None,
+                attempted_entries: None,
+                deleted_entries: None,
+                reclaimed_allocated_bytes: None,
+                continuation_phase: None,
+            }),
+            ..MaintenanceSummary::default()
+        };
         let payload =
             serde_json::json!({"ok": true, "cleanup_pending": false, "maintenance": summary});
         let block = present_operation_response(

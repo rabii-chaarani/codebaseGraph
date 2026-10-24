@@ -5,6 +5,7 @@ use super::maintenance_json::{JsonFailure, JsonToken, MaintenanceJsonReader, Tok
 use sha2::{Digest, Sha256};
 use std::cell::Cell;
 use std::cmp::Ordering;
+#[cfg(test)]
 use std::fs::File;
 use std::io::{self, Read};
 
@@ -72,11 +73,13 @@ impl ByteSource for [u8] {
 /// seek_read moves the native cursor; Unix read_at does not. Never borrow a
 /// producer's sequential-writing handle here. File/type/stamp authority remains
 /// the caller's later noncreating S2 preparation, not this length observation.
+#[cfg(test)]
 pub(crate) struct BorrowedFileSource<'a> {
     file: &'a File,
     length: u64,
     _floor: MemoryReservation,
 }
+#[cfg(test)]
 impl<'a> BorrowedFileSource<'a> {
     pub(crate) fn new(file: &'a mut File, memory: &CleanupMemory) -> Result<Self, ValidationIssue> {
         let floor = std::mem::size_of::<Self>()
@@ -95,6 +98,7 @@ impl<'a> BorrowedFileSource<'a> {
         })
     }
 }
+#[cfg(test)]
 impl ByteSource for BorrowedFileSource<'_> {
     fn len(&self) -> u64 {
         self.length
@@ -406,6 +410,43 @@ pub(crate) enum KeyEncoding {
     NativeUtf8,
     JsonDecoded,
 }
+/// Exact complete-key comparison for independently encoded/bound sources.
+/// Ordering is returned only after both entire encodings validate.
+pub(crate) fn compare_encoded_keys<A: ByteSource + ?Sized, B: ByteSource + ?Sized>(
+    left: &A,
+    left_span: Span,
+    left_encoding: KeyEncoding,
+    right: &B,
+    right_span: Span,
+    right_encoding: KeyEncoding,
+    memory: &CleanupMemory,
+) -> Result<Ordering, ValidationIssue> {
+    let floor = std::mem::size_of::<NativeUtf8<'_, A>>()
+        .checked_add(std::mem::size_of::<Decoded<'_, A>>())
+        .and_then(|n| n.checked_add(std::mem::size_of::<NativeUtf8<'_, B>>()))
+        .and_then(|n| n.checked_add(std::mem::size_of::<Decoded<'_, B>>()))
+        .and_then(|n| n.checked_add(128))
+        .ok_or(ValidationIssue::Overflow)?;
+    let _reservation = memory.reserve(floor)?;
+    match (left_encoding, right_encoding) {
+        (KeyEncoding::NativeUtf8, KeyEncoding::NativeUtf8) => compare_complete(
+            NativeUtf8::new(left, left_span)?,
+            NativeUtf8::new(right, right_span)?,
+        ),
+        (KeyEncoding::NativeUtf8, KeyEncoding::JsonDecoded) => compare_complete(
+            NativeUtf8::new(left, left_span)?,
+            Decoded::new(right, right_span)?,
+        ),
+        (KeyEncoding::JsonDecoded, KeyEncoding::NativeUtf8) => compare_complete(
+            Decoded::new(left, left_span)?,
+            NativeUtf8::new(right, right_span)?,
+        ),
+        (KeyEncoding::JsonDecoded, KeyEncoding::JsonDecoded) => compare_complete(
+            Decoded::new(left, left_span)?,
+            Decoded::new(right, right_span)?,
+        ),
+    }
+}
 /// Domain separation and decoded bytes are shared across encodings. A digest
 /// is an accelerator only; callers still compare complete exact key streams.
 pub(crate) fn key_stream_hash<S: ByteSource + ?Sized>(
@@ -434,6 +475,90 @@ pub(crate) fn key_stream_hash<S: ByteSource + ?Sized>(
         KeyEncoding::JsonDecoded => hash(Decoded::new(source, span)?, domain),
     }
 }
+/// Decode into caller-owned fixed storage. Oversized keys are fully validated
+/// before Schema is returned; no truncated prefix can become a key witness.
+pub(crate) fn copy_decoded_key<S: ByteSource + ?Sized>(
+    source: &S,
+    span: Span,
+    encoding: KeyEncoding,
+    out: &mut [u8],
+    memory: &CleanupMemory,
+) -> Result<usize, ValidationIssue> {
+    let floor = std::mem::size_of::<NativeUtf8<'_, S>>()
+        .checked_add(std::mem::size_of::<Decoded<'_, S>>())
+        .and_then(|n| n.checked_add(128))
+        .ok_or(ValidationIssue::Overflow)?;
+    let _reservation = memory.reserve(floor)?;
+    fn copy(mut reader: impl KeyBytes, out: &mut [u8]) -> Result<usize, ValidationIssue> {
+        let mut length = 0usize;
+        while let Some(byte) = reader.next_key_byte()? {
+            if length < out.len() {
+                out[length] = byte;
+            }
+            length = length.checked_add(1).ok_or(ValidationIssue::Overflow)?;
+        }
+        if length > out.len() {
+            Err(ValidationIssue::Schema)
+        } else {
+            Ok(length)
+        }
+    }
+    match encoding {
+        KeyEncoding::NativeUtf8 => copy(NativeUtf8::new(source, span)?, out),
+        KeyEncoding::JsonDecoded => copy(Decoded::new(source, span)?, out),
+    }
+}
+/// Complete SHA1 of the strict decoded stream. Graph stable IDs use the first
+/// ten digest bytes; the returned twenty bytes are never equality authority.
+pub(crate) fn key_sha1_prefix20<S: ByteSource + ?Sized>(
+    source: &S,
+    span: Span,
+    encoding: KeyEncoding,
+    memory: &CleanupMemory,
+) -> Result<[u8; 20], ValidationIssue> {
+    let floor = std::mem::size_of::<NativeUtf8<'_, S>>()
+        .checked_add(std::mem::size_of::<Decoded<'_, S>>())
+        .and_then(|n| n.checked_add(768))
+        .ok_or(ValidationIssue::Overflow)?;
+    let _reservation = memory.reserve(floor)?;
+    fn hash(mut input: impl KeyBytes) -> Result<[u8; 20], ValidationIssue> {
+        let mut state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+        let mut block = [0; 64];
+        let mut used = 0usize;
+        let mut len = 0u64;
+        while let Some(byte) = input.next_key_byte()? {
+            block[used] = byte;
+            used += 1;
+            len = len.checked_add(1).ok_or(ValidationIssue::Overflow)?;
+            if used == 64 {
+                sha1_block(&mut state, &block);
+                used = 0;
+            }
+        }
+        let bits = len.checked_mul(8).ok_or(ValidationIssue::Overflow)?;
+        block[used] = 0x80;
+        used += 1;
+        if used > 56 {
+            block[used..].fill(0);
+            sha1_block(&mut state, &block);
+            block.fill(0);
+        } else {
+            block[used..56].fill(0);
+        }
+        block[56..].copy_from_slice(&bits.to_be_bytes());
+        sha1_block(&mut state, &block);
+        let mut digest = [0; 20];
+        for (i, word) in state.iter().enumerate() {
+            digest[i * 4..i * 4 + 4].copy_from_slice(&word.to_be_bytes());
+        }
+        Ok(digest)
+    }
+    match encoding {
+        KeyEncoding::NativeUtf8 => hash(NativeUtf8::new(source, span)?),
+        KeyEncoding::JsonDecoded => hash(Decoded::new(source, span)?),
+    }
+}
+
 /// Exact decoded bytes across independently bound sources. Digest equality is
 /// never substituted for equality; long strings stream through fixed buffers.
 pub(crate) fn compare_decoded_spans<A: ByteSource + ?Sized, B: ByteSource + ?Sized>(
@@ -3111,5 +3236,146 @@ mod witness_large_tests {
         let result = join_selected_witnesses(&replay, &memory, 1).unwrap();
         assert_eq!(result.collision_batches, 33);
         assert!(result.passes <= 70);
+    }
+}
+
+#[cfg(test)]
+mod projected_key_tests {
+    use super::*;
+    #[test]
+    fn sha1_decoded_native_and_json_match_actual_stable_id_digest() {
+        let memory = CleanupMemory::new(32768).unwrap();
+        let expected = [
+            0xa9, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e, 0x25, 0x71, 0x78, 0x50,
+            0xc2, 0x6c, 0x9c, 0xd0, 0xd8, 0x9d,
+        ];
+        assert_eq!(
+            key_sha1_prefix20(
+                &b"abc"[..],
+                Span { start: 0, end: 3 },
+                KeyEncoding::NativeUtf8,
+                &memory
+            )
+            .unwrap(),
+            expected
+        );
+        let quoted = br#""a\u0062c""#;
+        assert_eq!(
+            key_sha1_prefix20(
+                &quoted[..],
+                Span {
+                    start: 0,
+                    end: quoted.len() as u64
+                },
+                KeyEncoding::JsonDecoded,
+                &memory
+            )
+            .unwrap(),
+            expected
+        );
+    }
+    #[test]
+    fn projected_key_never_truncates_or_skips_invalid_suffix() {
+        let memory = CleanupMemory::new(32768).unwrap();
+        let json = br#""a\u0062c""#;
+        let mut out = [0; 3];
+        assert_eq!(
+            copy_decoded_key(
+                &json[..],
+                Span {
+                    start: 0,
+                    end: json.len() as u64
+                },
+                KeyEncoding::JsonDecoded,
+                &mut out,
+                &memory
+            )
+            .unwrap(),
+            3
+        );
+        assert_eq!(&out, b"abc");
+        let mut tiny = [0; 1];
+        assert_eq!(
+            copy_decoded_key(
+                &json[..],
+                Span {
+                    start: 0,
+                    end: json.len() as u64
+                },
+                KeyEncoding::JsonDecoded,
+                &mut tiny,
+                &memory
+            ),
+            Err(ValidationIssue::Schema)
+        );
+        let bad = b"\"ab\xff\"";
+        assert_eq!(
+            copy_decoded_key(
+                &bad[..],
+                Span {
+                    start: 0,
+                    end: bad.len() as u64
+                },
+                KeyEncoding::JsonDecoded,
+                &mut tiny,
+                &memory
+            ),
+            Err(ValidationIssue::NonProducer)
+        );
+    }
+}
+
+#[cfg(test)]
+mod encoded_key_comparison_tests {
+    use super::*;
+    #[test]
+    fn encoded_keys_compare_all_modes_and_finish_invalid_suffixes() {
+        let memory = CleanupMemory::new(32768).unwrap();
+        for (left, le) in [
+            (&b"abc"[..], KeyEncoding::NativeUtf8),
+            (&br#""a\u0062c""#[..], KeyEncoding::JsonDecoded),
+        ] {
+            for (right, re) in [
+                (&b"abc"[..], KeyEncoding::NativeUtf8),
+                (&br#""abc""#[..], KeyEncoding::JsonDecoded),
+            ] {
+                assert_eq!(
+                    compare_encoded_keys(
+                        left,
+                        Span {
+                            start: 0,
+                            end: left.len() as u64
+                        },
+                        le,
+                        right,
+                        Span {
+                            start: 0,
+                            end: right.len() as u64
+                        },
+                        re,
+                        &memory
+                    )
+                    .unwrap(),
+                    Ordering::Equal
+                );
+            }
+        }
+        let bad = &b"a\xff"[..];
+        let right = &b"b"[..];
+        assert_eq!(
+            compare_encoded_keys(
+                bad,
+                Span {
+                    start: 0,
+                    end: bad.len() as u64
+                },
+                KeyEncoding::NativeUtf8,
+                right,
+                Span { start: 0, end: 1 },
+                KeyEncoding::NativeUtf8,
+                &memory
+            ),
+            Err(ValidationIssue::NonProducer)
+        );
     }
 }

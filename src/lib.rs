@@ -1,5 +1,11 @@
+#[cfg(not(test))]
 #[global_allocator]
 static GLOBAL_ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
+#[cfg(test)]
+#[global_allocator]
+static GLOBAL_ALLOCATOR: storage::maintenance_scheduler::allocation_boundary_test::Allocator =
+    storage::maintenance_scheduler::allocation_boundary_test::Allocator;
 
 pub mod adapters;
 pub mod agent_hooks;
