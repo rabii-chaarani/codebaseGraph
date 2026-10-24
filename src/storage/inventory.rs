@@ -811,7 +811,7 @@ fn inspect_with_hook(target: &MaintenanceTarget, between_scans: impl FnOnce()) -
                     }
                 }
                 Err(e) => {
-                    busy |= e.kind() == std::io::ErrorKind::WouldBlock;
+                    busy |= super::locks::is_lock_contended(&e);
                     result.issues.push(format!(
                         "observation_lock_unavailable {}: {e}",
                         path.display()

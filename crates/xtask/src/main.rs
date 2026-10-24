@@ -13,6 +13,7 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use yaml_serde::Value as YamlValue;
 
+mod native_tests;
 mod release;
 
 const CONFIRMATIONS: &[&str] = &["release-environment", "private-vulnerability-reporting"];
@@ -160,27 +161,7 @@ fn validate_crate_size(bytes: u64) -> Result<(), String> {
 }
 
 fn native_test(args: Vec<String>) -> Result<(), String> {
-    let options = parse_options(&args, &["--target"])?;
-    let target = NativeTarget::parse(required_option(&options, "--target")?)?;
-    ensure_native_host(target)?;
-    let executable = capture_native_test_cli(target)?;
-    let captured_hash = sha256_file(&executable)?;
-    println!(
-        "native-test CLI compiler artifact: {} sha256={captured_hash}",
-        executable.display()
-    );
-    let mut command = Command::new("cargo");
-    command.args(native_test_command(target));
-    command.env("CARGO_BIN_EXE_codebase-graph", &executable);
-    let result = run_command(&mut command, "native test");
-    let unchanged = sha256_file(&executable).is_ok_and(|hash| hash == captured_hash);
-    if !unchanged {
-        return Err(format!(
-            "captured native-test CLI changed during execution: {}",
-            executable.display()
-        ));
-    }
-    result
+    native_tests::run(args)
 }
 
 fn native_test_capture_command(target: NativeTarget) -> Vec<&'static str> {
@@ -283,11 +264,12 @@ fn capture_native_test_cli(target: NativeTarget) -> Result<PathBuf, String> {
 
 fn native_test_command(target: NativeTarget) -> Vec<&'static str> {
     let mut args = vec!["test", "--workspace", "--locked"];
+    if target != NativeTarget::LinuxX86_64 {
+        args.extend(["--profile", "native-tests"]);
+    }
     if target.uses_windows_extensions() {
         // Keep optimized fault-test binaries separate from shipped artifacts.
         args.extend([
-            "--profile",
-            "native-tests",
             "--features",
             "codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions",
         ]);
@@ -1094,8 +1076,14 @@ fn check_workflows(issues: &mut Vec<String>) {
             concat!("p", "ip", "-audit"),
             "scripts/",
         ];
+        // The bounded, opt-in native crash diagnostic is intentional. Keep the
+        // tooling ban for every other script reference.
+        let policy_text = text.replace(
+            ".github/scripts/linux_stack_trace.py",
+            "linux-stack-diagnostic",
+        );
         for forbidden in workflow_forbidden {
-            if text.contains(forbidden) {
+            if policy_text.contains(forbidden) {
                 issues.push(format!(
                     "FAIL: workflow-python-tooling-present: {workflow} contains {forbidden}."
                 ));
@@ -1200,6 +1188,16 @@ fn check_workflow_policy(
             "FAIL: workflow-native-permissions: native workflow must use contents: read."
                 .to_string(),
         );
+    }
+    if yaml_path(native, &["jobs", "tests", "if"]).and_then(YamlValue::as_str) != Some("inputs.run-tests")
+        || yaml_path(native, &["jobs", "tests", "strategy", "fail-fast"]).and_then(YamlValue::as_bool) != Some(false)
+        || yaml_path(native, &["jobs", "tests", "strategy", "matrix", "cohort"]).and_then(YamlValue::as_str)
+            != Some("${{ fromJSON(inputs.target == 'macos-arm64' && '[\"unit\",\"generation\",\"integration\"]' || '[\"all\"]') }}")
+        || yaml_path(native, &["jobs", "native", "needs"]).and_then(YamlValue::as_str) != Some("tests")
+        || yaml_path(native, &["jobs", "native", "if"]).and_then(YamlValue::as_str)
+            != Some("${{ always() && !cancelled() && (!inputs.run-tests || needs.tests.result == 'success') }}")
+    {
+        issues.push("FAIL: native-test-gate: require all three macOS cohorts and successful tests before artifact production; retain build-only callers.".into());
     }
 
     if yaml_path(release, &["on", "push"]).is_some() {
@@ -2389,7 +2387,10 @@ mod tests {
             let unix = native_test_command(target);
             assert!(!unix.contains(&"--features"));
             assert!(!unix.contains(&"--release"));
-            assert!(!unix.contains(&"--profile"));
+            assert_eq!(
+                unix.contains(&"--profile"),
+                target != NativeTarget::LinuxX86_64
+            );
         }
     }
 
@@ -2555,10 +2556,26 @@ mod tests {
     }
 
     fn valid_native_workflow() -> YamlValue {
-        yaml_serde::from_str(
-            "on:\n  workflow_call:\n    inputs:\n      target: {}\n      source-sha: {}\n      run-tests: {}\n      upload-artifact: {}\n      artifact-retention-days: {}\njobs:\n  native:\n    permissions: {contents: read}\n",
-        )
-        .unwrap()
+        yaml_serde::from_str(include_str!("../../../.github/workflows/native.yml")).unwrap()
+    }
+
+    #[test]
+    fn native_test_failure_cannot_authorize_artifact_production() {
+        for replacement in ["${{ always() }}", "${{ !inputs.run-tests }}"] {
+            let mut native = valid_native_workflow();
+            native["jobs"]["native"]["if"] = YamlValue::String(replacement.into());
+            let mut issues = Vec::new();
+            check_workflow_policy(
+                &valid_ci_workflow(),
+                &native,
+                &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+                &mut issues,
+            );
+            assert!(
+                issues.iter().any(|i| i.contains("native-test-gate")),
+                "{issues:?}"
+            );
+        }
     }
 
     fn valid_release_workflow_text() -> String {

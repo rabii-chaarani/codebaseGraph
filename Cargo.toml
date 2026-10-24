@@ -29,6 +29,8 @@ resolver = "2"
 [profile.native-tests]
 inherits = "release"
 debug-assertions = true
+overflow-checks = true
+panic = "unwind"
 
 [lib]
 name = "codebase_graph"

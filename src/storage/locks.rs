@@ -326,7 +326,7 @@ fn try_open_locked_inner(
     }
 }
 
-fn is_lock_contended(error: &std::io::Error) -> bool {
+pub(crate) fn is_lock_contended(error: &std::io::Error) -> bool {
     let expected = lock_contended_error();
     error.kind() == std::io::ErrorKind::WouldBlock
         || (error.raw_os_error().is_some() && error.raw_os_error() == expected.raw_os_error())
@@ -1592,17 +1592,43 @@ impl RootedDirectory {
         }
         #[cfg(windows)]
         {
-            use std::os::windows::io::AsRawHandle;
+            use std::os::windows::io::{AsRawHandle, FromRawHandle};
             use windows_sys::{
                 Wdk::Storage::FileSystem::NtFlushBuffersFileEx,
-                Win32::{Foundation::RtlNtStatusToDosError, System::IO::IO_STATUS_BLOCK},
+                Win32::{
+                    Foundation::{RtlNtStatusToDosError, INVALID_HANDLE_VALUE},
+                    Storage::FileSystem::{
+                        ReOpenFile, FILE_ADD_FILE, FILE_FLAG_BACKUP_SEMANTICS,
+                        FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_DELETE, FILE_SHARE_READ,
+                        FILE_SHARE_WRITE, SYNCHRONIZE,
+                    },
+                    System::IO::IO_STATUS_BLOCK,
+                },
             };
+            // Flush requires write access even when the directory was pinned
+            // for observation. Reopen the exact object, never its pathname.
+            let handle = unsafe {
+                ReOpenFile(
+                    self.directory.as_raw_handle(),
+                    FILE_ADD_FILE | SYNCHRONIZE,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                )
+            };
+            if handle == INVALID_HANDLE_VALUE {
+                return Err(std::io::Error::last_os_error());
+            }
+            // SAFETY: ReOpenFile returned one owned handle to the pinned object.
+            let writable = unsafe { File::from_raw_handle(handle) };
+            if file_identity(&writable).map_err(native_io)? != self.identity {
+                return Err(std::io::ErrorKind::InvalidInput.into());
+            }
             let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
             // SAFETY: live actual directory handle and initialized output. A
             // denied/unsupported filesystem flush fails closed for attestation.
             let result = unsafe {
                 NtFlushBuffersFileEx(
-                    self.directory.as_raw_handle(),
+                    writable.as_raw_handle(),
                     0,
                     std::ptr::null(),
                     0,
@@ -2007,6 +2033,16 @@ mod rooted_directory_tests {
                 .len(),
             0
         );
+    }
+    #[test]
+    fn namespace_flush_accepts_an_existing_readonly_directory_anchor() {
+        let fixture = Fixture::new();
+        let id = path_identity(&fixture.root).unwrap();
+        let root = RootedDirectory::open_readonly_root(&fixture.root, id).unwrap();
+        let file = root.create_new(b"durable-entry").unwrap();
+        file.sync_all().unwrap();
+        root.sync_namespace().unwrap();
+        assert_eq!(root.identity(), id);
     }
     struct Fixture {
         root: PathBuf,

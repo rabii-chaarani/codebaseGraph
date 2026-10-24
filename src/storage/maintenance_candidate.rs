@@ -65,6 +65,10 @@ pub(crate) fn candidate_reason(bit: u8) -> Option<&'static str> {
     })
 }
 fn io(error: std::io::Error) -> CandidateError {
+    #[cfg(test)]
+    if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+        eprintln!("cleanup candidate filesystem error: {error:?}");
+    }
     CandidateError::Io(error.kind())
 }
 fn evidence(error: crate::error::NativeError) -> CandidateError {

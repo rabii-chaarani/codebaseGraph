@@ -1044,7 +1044,7 @@ fn with_legacy_enrollment_inner<R>(
             .observation
             .as_ref()
             .ok_or_else(|| invalid(Problem::Changed))?
-            .verify(&root, gate.file(), &state)?;
+            .verify(&root, gate.file(), owner.file(), &state)?;
         if observed.binding != binding {
             return Err(invalid(Problem::Changed));
         }
@@ -1776,7 +1776,7 @@ fn with_legacy_staging_enrollment_inner<R>(
             .observation
             .as_ref()
             .ok_or_else(|| invalid(Problem::Changed))?
-            .verify(&root, gate.file(), &state)?;
+            .verify(&root, gate.file(), owner.file(), &state)?;
         if o.binding != expected
             || o.record.member != staging.identity()
             || o.record.database.is_some()
@@ -3195,9 +3195,8 @@ impl LegacySourceOwner {
         } else {
             OWNER
         };
-        let named_owner = root.open_readonly_file(owner_name)?;
+        let named_owner = root.open_metadata_file(owner_name)?;
         if FixedFileStamp::capture(&named_owner, Kind::File)?.identity() != self.binding.owner
-            || raw_coordination(&named_owner)? != self.owner_header
             || FixedFileStamp::capture(&self.gate_pin, Kind::File)?.identity() != self.binding.gate
         {
             return Err(invalid(Problem::Changed));
@@ -3392,6 +3391,7 @@ impl PreparedSourceObservation {
         &self,
         root: &RootedDirectory,
         gate: &File,
+        owner: &File,
         state: &File,
     ) -> Result<&super::maintenance_legacy_guard::Observation, FixedControlError> {
         self.observed.state_stamp.recheck(state)?;
@@ -3402,8 +3402,9 @@ impl PreparedSourceObservation {
                 != self.observed.binding.gate
             || FixedFileStamp::capture(&self.owner, Kind::File)?.identity()
                 != self.observed.binding.owner
+            || FixedFileStamp::capture(owner, Kind::File)?.identity() != self.observed.binding.owner
             || raw_coordination(gate)? != self.gate_header
-            || raw_coordination(&self.owner)? != self.owner_header
+            || raw_coordination(owner)? != self.owner_header
         {
             return Err(invalid(Problem::Changed));
         }

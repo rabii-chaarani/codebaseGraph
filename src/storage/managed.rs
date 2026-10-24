@@ -168,6 +168,10 @@ impl ManagedJanitorReport {
         self.pending |= pending;
     }
     pub(crate) fn record_generation_disposition_failure(&mut self, error: NativeError) {
+        #[cfg(test)]
+        if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+            eprintln!("generation disposition failed: {error:?}");
+        }
         self.issue(ManagedJanitorStage::GenerationDisposition, error, true);
     }
 

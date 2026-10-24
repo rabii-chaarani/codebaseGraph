@@ -406,6 +406,7 @@ impl Transport {
     fn run(
         &mut self,
         root: &RootedDirectory,
+        selector: &std::fs::File,
         start: usize,
         end: usize,
         grant: &mut super::maintenance_budget::MutationGrant,
@@ -419,18 +420,24 @@ impl Transport {
                 2 => (DATA[1], self.binding.data[1]),
                 _ => return Err(fixed_invalid()),
             };
-            let file = root.open_existing(name)?;
-            if locks::file_identity(&file).map_err(fixed_native)? != id {
+            let opened;
+            let file = if step.file == 0 {
+                selector
+            } else {
+                opened = root.open_existing(name)?;
+                &opened
+            };
+            if locks::file_identity(file).map_err(fixed_native)? != id {
                 return Err(fixed_invalid());
             }
             locks::write_fixed_range(
-                &file,
+                file,
                 step.offset,
                 &self.bytes.as_slice()[step.start..step.start + step.len],
                 grant,
             )?;
             let mut verify = [0; c::SELECTOR_BYTES];
-            locks::read_fixed_range(&file, step.offset, &mut verify[..step.len])?;
+            locks::read_fixed_range(file, step.offset, &mut verify[..step.len])?;
             if verify[..step.len] != self.bytes.as_slice()[step.start..step.start + step.len] {
                 return Err(fixed_invalid());
             }
@@ -880,7 +887,9 @@ pub(crate) fn begin_workspace_root_removal(
         }
         prepared.usable = false;
         let remove_end = prepared.transport.remove_end;
-        prepared.transport.run(&parent, 0, remove_end, grant)
+        prepared
+            .transport
+            .run(&parent, _selector.file(), 0, remove_end, grant)
     })?;
     Ok(WorkspaceRemovalProgress::Pending)
 }
@@ -1050,7 +1059,7 @@ pub(crate) fn advance_workspace_root_removal(
                 return Err(fixed_invalid());
             }
             let recovery_end = transport.recovery_end;
-            transport.run(&parent_controls, 0, recovery_end, grant)?;
+            transport.run(&parent_controls, _selector.file(), 0, recovery_end, grant)?;
             left -= recovery;
             let mut removed = None;
             if let Some(root) = &root {
@@ -1113,7 +1122,13 @@ pub(crate) fn advance_workspace_root_removal(
             }
             let reset_start = transport.recovery_end;
             let reset_end = transport.count;
-            transport.run(&parent_controls, reset_start, reset_end, grant)?;
+            transport.run(
+                &parent_controls,
+                _selector.file(),
+                reset_start,
+                reset_end,
+                grant,
+            )?;
             progress = WorkspaceRemovalProgress::Complete;
             Ok(())
         },

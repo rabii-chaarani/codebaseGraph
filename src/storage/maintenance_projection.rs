@@ -72,6 +72,7 @@ impl ConfigField {
 pub(crate) struct ConfigProjection {
     fields: [ScalarProjection; 5],
     source: FixedFileStamp,
+    fingerprint: [u8; 32],
     // Includes this fixed retained result, numeric parser and string decoder
     // stack scratch; scanner retains its separate floor in the SAME account.
     _floor: MemoryReservation,
@@ -92,11 +93,36 @@ impl ConfigProjection {
         match self.field(field) {
             ScalarProjection::Missing | ScalarProjection::Null => Ok(None),
             ScalarProjection::String(span) => {
-                decode_projected_string(file, &self.source, span, memory).map(Some)
+                if fingerprint(file, memory)? != self.fingerprint {
+                    return Err(ProjectionFailure::Changed);
+                }
+                let decoded = decode_projected_string(file, &self.source, span, memory)?;
+                if fingerprint(file, memory)? != self.fingerprint {
+                    return Err(ProjectionFailure::Changed);
+                }
+                Ok(Some(decoded))
             }
             _ => Err(ProjectionFailure::InvalidString),
         }
     }
+}
+
+// Preparation only: bounded content evidence also detects same-length edits
+// while Windows has not yet published updated timestamps to existing handles.
+fn fingerprint(file: &File, memory: &CleanupMemory) -> Result<[u8; 32], ProjectionFailure> {
+    use sha2::{Digest, Sha256};
+    let _floor = memory.reserve(8192 + std::mem::size_of::<Sha256>())?;
+    let mut input = SpanReader::new(file, 0, file.metadata()?.len())?;
+    let mut hash = Sha256::new();
+    let mut buffer = [0; 8192];
+    loop {
+        let read = input.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        hash.update(&buffer[..read]);
+    }
+    Ok(hash.finalize().into())
 }
 
 /// Positional reads do not disturb the scanner's read-ahead/cursor. Duplicated
@@ -327,6 +353,7 @@ pub(crate) fn project_config(
     }
     let source = FixedFileStamp::capture(file, FixedControlKind::File)
         .map_err(|_| ProjectionFailure::Changed)?;
+    let fingerprint = fingerprint(file, memory)?;
     let end = file.metadata()?.len();
     let mut scanner = MaintenanceJsonReader::new(SpanReader::new(file, 0, end)?, memory)?;
     let mut fields = [ScalarProjection::Missing; 5];
@@ -392,9 +419,13 @@ pub(crate) fn project_config(
     source
         .recheck(file)
         .map_err(|_| ProjectionFailure::Changed)?;
+    if self::fingerprint(file, memory)? != fingerprint {
+        return Err(ProjectionFailure::Changed);
+    }
     Ok(ConfigProjection {
         fields,
         source,
+        fingerprint,
         _floor: floor,
     })
 }
@@ -855,6 +886,25 @@ mod tests {
         let bytes = format!("{{\"ignored\":{}0{}}}", "[".repeat(140), "]".repeat(140));
         assert!(serde_json::from_str::<serde_json::Value>(&bytes).is_err());
         assert!(projected(bytes.as_bytes()).is_err());
+    }
+    #[test]
+    fn projection_rejects_changed_content_when_the_metadata_stamp_matches() {
+        let (fixture, mut projection, memory) =
+            projected(br#"{"repo_root":"old","ignored":"one"}"#).unwrap();
+        fs::write(&fixture.path, br#"{"repo_root":"old","ignored":"two"}"#).unwrap();
+        let mut file = fixture.file();
+        use std::io::{Seek, SeekFrom};
+        file.seek(SeekFrom::Start(2)).unwrap();
+        // Isolate the content check from timestamp resolution and publication.
+        projection.source = FixedFileStamp::capture(&file, FixedControlKind::File).unwrap();
+        projection.source.recheck(&file).unwrap();
+        let before = memory.used();
+        assert!(matches!(
+            projection.string(&file, ConfigField::Repository, &memory),
+            Err(ProjectionFailure::Changed)
+        ));
+        assert_eq!(memory.used(), before);
+        assert_eq!(file.stream_position().unwrap(), 2);
     }
     #[test]
     fn dc_projection_rechecks_current_source_before_decoding_and_does_not_move_file_cursor() {
