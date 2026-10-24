@@ -65,7 +65,9 @@ jobs:
             sudo apt-get update -qq
             sudo apt-get install --yes gdb
           fi
-          python3 .github/scripts/linux_stack_trace.py --output diagnostics/linux-stack --timeout-seconds 180
+          python3 .github/scripts/linux_stack_trace.py --output diagnostics/linux-stack \
+            --case storage::maintenance_collector_tests::dc_s5_artifact_use_lease_defers_obsolete_key_until_release \
+            --timeout-seconds 240
 
       - name: Upload Linux stack diagnostics
         if: always() && inputs.run-tests && inputs.target == 'linux-x86_64' && steps.linux_stack_trace.outcome != 'skipped'

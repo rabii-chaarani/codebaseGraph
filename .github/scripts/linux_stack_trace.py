@@ -7,13 +7,14 @@ import os
 from pathlib import Path
 import platform
 import resource
+import re
 import shutil
 import signal
 import subprocess
 import time
 
 
-CASE = "adapters::cli::tests::dispatch_materialize::git_diff_plan_scopes_to_changed_paths"
+DEFAULT_CASE = "adapters::cli::tests::dispatch_materialize::git_diff_plan_scopes_to_changed_paths"
 CAPTURE = r'''
 import gdb, json, re
 record = {"threads": [], "stop": gdb.execute("info program", to_string=True)}
@@ -67,13 +68,16 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--case", default=DEFAULT_CASE, help="Exact Rust test name, verified against the existing binary inventory")
     parser.add_argument("--timeout-seconds", type=int, default=180)
     args = parser.parse_args()
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*", args.case):
+        parser.error("case must be an exact Rust test path")
     if not 1 <= args.timeout_seconds <= 300:
         parser.error("timeout must be between 1 and 300 seconds")
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    summary = {"platform": platform.platform(), "case": CASE,
+    summary = {"platform": platform.platform(), "case": args.case,
                "source_sha": os.environ.get("SOURCE_SHA"), "no_build": True,
                "stack_rlimit_unchanged": list(resource.getrlimit(resource.RLIMIT_STACK))}
     write_json(output / "summary.json", summary)
@@ -111,7 +115,7 @@ def main():
         try:
             listed = subprocess.run([str(candidate.resolve()), "--list", "--format", "terse"],
                                     env=env, capture_output=True, text=True, timeout=15)
-            contains_case = CASE + ": test" in listed.stdout.splitlines()
+            contains_case = args.case + ": test" in listed.stdout.splitlines()
             inventory.append({"path": str(candidate), "exit_code": listed.returncode,
                               "contains_exact_case": contains_case})
             if listed.returncode == 0 and contains_case:
@@ -122,7 +126,7 @@ def main():
             inventory.append({"path": str(candidate), "inventory_timeout": True})
     write_json(output / "binary-inventory.json", inventory)
     if selected is None:
-        summary["unavailable"] = "No existing executable contains the exact library test"
+        summary["unavailable"] = "No existing executable contains the requested exact library test"
         write_json(output / "summary.json", summary)
         return
     summary["binary"] = str(selected)
@@ -143,7 +147,7 @@ def main():
     command_file = output / "commands.gdb"
     command_file.write_text("\n".join(commands) + "\n")
     command = ["gdb", "-q", "-nx", "-nh", "--batch", "-x", str(command_file), "--args",
-               str(selected), CASE, "--exact", "--nocapture", "--test-threads=1"]
+               str(selected), args.case, "--exact", "--nocapture", "--test-threads=1"]
     summary["command"] = command
     write_json(output / "summary.json", summary)
     # Diagnostic output only: prohibit large core files, leaving the debuggee's
