@@ -49,6 +49,9 @@ jobs:
         id: platform_tests
         if: inputs.run-tests && inputs.target == 'linux-x86_64'
         shell: bash
+        # Logging only: retain ordinary assertion details if a later test aborts.
+        env:
+          RUST_TEST_NOCAPTURE: "1"
         run: |
           set -o pipefail
           mkdir -p diagnostics/linux-stack
