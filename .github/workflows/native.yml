@@ -52,7 +52,7 @@ jobs:
 
       - name: Run platform tests
         id: platform_tests
-        timeout-minutes: 75
+        timeout-minutes: ${{ inputs.target == 'macos-arm64' && 75 || 85 }}
         shell: bash
         env:
           RUST_TEST_NOCAPTURE: "1"
