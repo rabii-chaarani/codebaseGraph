@@ -289,5 +289,24 @@
     "growth_since_previous_bytes": 888,
     "source_readiness": "Association final no-opt ASM and main/unit private Clippy zero diagnostics with stable source hashes confirmed before archive.",
     "qualification_scope": "Archive cap only; no runtime/native qualification inferred."
+  },
+  "after_staging_scope_frame_fix": {
+    "archive": "/private/tmp/cgraph-package-size-private-after-staging-scope/package/codebase-graph-3.0.4.crate",
+    "bytes": 10481968,
+    "limit_bytes": 10485760,
+    "headroom_bytes": 3792,
+    "sha256": "a8ccb888849e9c941501a2aa55c5f391fde6e4018977925ff79f7223182fe5e7",
+    "member_count": 209,
+    "member_names_unchanged": true,
+    "changed_members_since_after_source_observation": [
+      "codebase-graph-3.0.4/.cargo_vcs_info.json",
+      "codebase-graph-3.0.4/src/storage/maintenance_legacy_bootstrap.rs",
+      "codebase-graph-3.0.4/src/storage/maintenance_legacy_engine.rs"
+    ],
+    "previous_result": "/private/tmp/cgraph-package-size-private-256/after-source-observation-package-result.json",
+    "initial_recompression_proof": "/private/tmp/cgraph-package-size-private-256/selected-verified-assets.json",
+    "growth_since_previous_bytes": 412,
+    "source_readiness": "Association final no-opt ASM and main/unit private Clippy zero diagnostics with stable source hashes confirmed before archive.",
+    "qualification_scope": "Archive cap only; no runtime/native qualification inferred."
   }
 }

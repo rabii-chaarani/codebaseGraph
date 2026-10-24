@@ -1453,7 +1453,7 @@ pub(crate) struct PreparedLegacyStagingScope {
     staging_stamp: FixedFileStamp,
     cohort_scope: [u8; 32],
     repository: FileIdentity,
-    binding: PreparedTargetBinding,
+    binding: super::maintenance_budget::MemoryBox<PreparedTargetBinding>,
     nonce: [u8; 32],
     owner_nonce: [u8; 32],
     coordination: [[u8; locks::COORDINATION_HEADER_BYTES]; 3],
@@ -1466,7 +1466,7 @@ pub(crate) struct PreparedLegacyStagingScope {
         >,
     >,
     job: [u8; 32],
-    scratch: FixedControlScratch,
+    scratch: super::maintenance_budget::MemoryBox<FixedControlScratch>,
     _floor: MemoryReservation,
 }
 pub(crate) struct LegacyStagingEnrollmentAuthority<'a> {
@@ -1483,12 +1483,37 @@ impl LegacyStagingEnrollmentAuthority<'_> {
         self.version
     }
 }
+// Preserve standalone value callers; joined-worker staging uses the charged
+// core directly so no raw scope Result/value is copied above source observation.
+#[allow(dead_code)]
 pub(crate) fn prepare_legacy_staging_scope(
     target: &MaintenanceTarget,
     binding: &PreparedTargetBinding,
     staging_root: &Path,
     memory: &CleanupMemory,
 ) -> Result<PreparedLegacyStagingScope, FixedControlError> {
+    prepare_legacy_staging_scope_boxed(target, binding, staging_root, memory)
+        .map(super::maintenance_budget::MemoryBox::into_inner)
+}
+
+#[inline(never)]
+fn staging_binding_boxed(
+    binding: &PreparedTargetBinding,
+    memory: &CleanupMemory,
+) -> Result<super::maintenance_budget::MemoryBox<PreparedTargetBinding>, FixedControlError> {
+    let binding = binding.duplicate(memory)?;
+    super::maintenance_budget::MemoryBox::new(binding, memory).map_err(FixedControlError::Resource)
+}
+
+/// Identical independent staging-source preparation behind its charged owner;
+/// parent/admin observations supply no origin or payload deletion authority.
+#[inline(never)]
+pub(crate) fn prepare_legacy_staging_scope_boxed(
+    target: &MaintenanceTarget,
+    binding: &PreparedTargetBinding,
+    staging_root: &Path,
+    memory: &CleanupMemory,
+) -> Result<super::maintenance_budget::MemoryBox<PreparedLegacyStagingScope>, FixedControlError> {
     let charge = std::mem::size_of::<PreparedLegacyStagingScope>()
         .checked_add(32768)
         .and_then(|v| {
@@ -1512,11 +1537,7 @@ pub(crate) fn prepare_legacy_staging_scope(
     {
         return Err(invalid(Problem::InvalidRecord));
     }
-    let mut scratch = FixedControlScratch::new(
-        memory
-            .reserve(FixedControlScratch::required_bytes())
-            .map_err(FixedControlError::Resource)?,
-    )?;
+    let mut scratch = source_observation_scratch_boxed(memory)?;
     let root = locks::open_fixed_control(&target.state_root, Kind::Directory, false, &mut scratch)?;
     let staging = locks::open_fixed_control(staging_root, Kind::Directory, false, &mut scratch)?;
     let repository = locks::open_fixed_control(
@@ -1558,26 +1579,30 @@ pub(crate) fn prepare_legacy_staging_scope(
         locks::encode_coordination_incarnation(job),
     ];
     let observation = PreparedSourceObservation::read(&target.state_root, &paths, memory)?;
-    Ok(PreparedLegacyStagingScope {
-        coordination,
-        publication: None,
-        cohort_scope,
-        root: target.state_root.clone(),
-        staging: staging_root.to_owned(),
-        enrollment_waiting: false,
-        birth: None,
-        observation,
-        paths,
-        root_stamp: FixedFileStamp::capture(&root, Kind::Directory)?,
-        staging_stamp: FixedFileStamp::capture(&staging, Kind::Directory)?,
-        repository: FixedFileStamp::capture(&repository, Kind::Directory)?.identity(),
-        binding: binding.duplicate(memory)?,
-        nonce,
-        owner_nonce,
-        job,
-        scratch,
-        _floor: floor,
-    })
+    super::maintenance_budget::MemoryBox::new(
+        PreparedLegacyStagingScope {
+            coordination,
+            publication: None,
+            cohort_scope,
+            root: target.state_root.clone(),
+            staging: staging_root.to_owned(),
+            enrollment_waiting: false,
+            birth: None,
+            observation,
+            paths,
+            root_stamp: FixedFileStamp::capture(&root, Kind::Directory)?,
+            staging_stamp: FixedFileStamp::capture(&staging, Kind::Directory)?,
+            repository: FixedFileStamp::capture(&repository, Kind::Directory)?.identity(),
+            binding: staging_binding_boxed(binding, memory)?,
+            nonce,
+            owner_nonce,
+            job,
+            scratch,
+            _floor: floor,
+        },
+        memory,
+    )
+    .map_err(FixedControlError::Resource)
 }
 fn with_legacy_staging_enrollment_inner<R>(
     prepared: &mut PreparedLegacyStagingScope,
@@ -4212,6 +4237,20 @@ mod retained_source_observation_layout_tests {
             let _: super::super::maintenance_budget::MemoryBox<
                 super::super::maintenance_legacy_guard::Observation,
             > = observation.observed;
+        };
+    }
+}
+
+#[cfg(test)]
+mod staging_scope_layout_tests {
+    use super::*;
+    #[test]
+    fn prepared_staging_scope_keeps_binding_and_scratch_images_boxed() {
+        assert!(std::mem::size_of::<PreparedLegacyStagingScope>() <= 2048);
+        let _: fn(PreparedLegacyStagingScope) = |scope| {
+            let _: super::super::maintenance_budget::MemoryBox<PreparedTargetBinding> =
+                scope.binding;
+            let _: super::super::maintenance_budget::MemoryBox<FixedControlScratch> = scope.scratch;
         };
     }
 }

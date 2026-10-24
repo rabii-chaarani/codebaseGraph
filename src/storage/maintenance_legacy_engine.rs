@@ -730,8 +730,7 @@ fn boxed_staging_source_scope(
     path: &std::path::Path,
     memory: &CleanupMemory,
 ) -> Result<MemoryBox<source::PreparedLegacyStagingScope>, FixedControlError> {
-    let scope = source::prepare_legacy_staging_scope(target, binding, path, memory)?;
-    MemoryBox::new(scope, memory).map_err(FixedControlError::Resource)
+    source::prepare_legacy_staging_scope_boxed(target, binding, path, memory)
 }
 
 #[allow(clippy::too_many_arguments)]
