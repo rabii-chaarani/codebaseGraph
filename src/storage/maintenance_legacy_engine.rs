@@ -705,11 +705,7 @@ pub(crate) fn staging_metadata(
     scope: &super::maintenance_admission::RootOriginBinding,
     memory: &CleanupMemory,
 ) -> Result<MemoryBox<super::maintenance_admission::PreparedPrivateMetadata>, FixedControlError> {
-    MemoryBox::new(
-        super::maintenance_admission::prepare_private_metadata(target, scope, memory)?,
-        memory,
-    )
-    .map_err(FixedControlError::Resource)
+    super::maintenance_admission::prepare_private_metadata_boxed(target, scope, memory)
 }
 
 #[inline(never)]
@@ -1077,8 +1073,29 @@ fn prepare_staging_projection(
     memory: &CleanupMemory,
     cancel: &dyn Fn() -> bool,
 ) -> Result<Option<MemoryBox<LegacyWork>>, FixedControlError> {
+    let action = prepare_staging_projection_action(
+        target, &mut job, &metadata, &header, original, memory, cancel,
+    )?;
+    // Keep the exact captured metadata that authenticated the projection.
+    // The eventual guarded mutation rechecks these stamps and slot images;
+    // no fresh metadata can relabel an action from an older source prefix.
+    let step = stream::prepare_stream_step_from_metadata(metadata, &scope, action, memory)?;
+    staging_work(job, StagingAction::Stream(step), memory)
+}
+
+#[inline(never)]
+#[allow(clippy::too_many_arguments)]
+fn prepare_staging_projection_action(
+    target: &MaintenanceTarget,
+    job: &mut StagingJob,
+    metadata: &super::maintenance_admission::PreparedPrivateMetadata,
+    header: &stream::LegacyStreamHeader,
+    original: LegacyClosedVersion,
+    memory: &CleanupMemory,
+    cancel: &dyn Fn() -> bool,
+) -> Result<stream::LegacyStreamAction, FixedControlError> {
     let replay =
-        stream::LegacyStreamReplay::new(&metadata, &original, original.context_digest(), memory)?;
+        stream::LegacyStreamReplay::new(metadata, &original, original.context_digest(), memory)?;
     if job.projection.is_none() {
         if let Ok(bytes) = replay.checkpoint() {
             let checkpoint = staging::StagingProjectionCheckpoint::decode(
@@ -1165,17 +1182,12 @@ fn prepare_staging_projection(
         } else {
             stream::LegacyStreamAction::BeginAppend(frame)
         };
-        drop(metadata);
-        return staging_work(
-            job,
-            StagingAction::Stream(staging_step(target, &scope, action, memory)?),
-            memory,
-        );
+        return Ok(action);
     }
     if job.pending.is_none() {
         let StagingJob {
             projection, root, ..
-        } = &mut *job;
+        } = job;
         let pending = projection
             .as_mut()
             .ok_or_else(invalid)?
@@ -1233,12 +1245,7 @@ fn prepare_staging_projection(
     } else {
         stream::LegacyStreamAction::BeginAppend(frame)
     };
-    drop(metadata);
-    staging_work(
-        job,
-        StagingAction::Stream(staging_step(target, &scope, action, memory)?),
-        memory,
-    )
+    Ok(action)
 }
 
 /// Authenticate the complete immutable certificate set and row-chain before

@@ -584,12 +584,15 @@ pub(crate) fn prepare_legacy_stream_step(
 // Metadata preparation completes before the header/action construction frame
 // exists. The authenticated metadata stays charged and keeps the same handles.
 #[inline(never)]
-fn prepare_stream_step_from_metadata(
+pub(super) fn prepare_stream_step_from_metadata(
     metadata: super::maintenance_budget::MemoryBox<PreparedPrivateMetadata>,
     scope: &RootOriginBinding,
     action: LegacyStreamAction,
     memory: &CleanupMemory,
 ) -> Result<super::maintenance_budget::MemoryBox<PreparedLegacyStreamStep>, FixedControlError> {
+    if metadata.origin_scope() != *scope {
+        return Err(invalid());
+    }
     let floor = memory
         .reserve(std::mem::size_of::<PreparedLegacyStreamStep>() + HEADER_BYTES * 3 + 8192)
         .map_err(FixedControlError::Resource)?;
@@ -1863,8 +1866,7 @@ fn boxed_source_metadata(
     scope: &RootOriginBinding,
     memory: &CleanupMemory,
 ) -> Result<super::maintenance_budget::MemoryBox<PreparedPrivateMetadata>, FixedControlError> {
-    let prepared = admission::prepare_private_metadata(target, scope, memory)?;
-    super::maintenance_budget::MemoryBox::new(prepared, memory).map_err(FixedControlError::Resource)
+    admission::prepare_private_metadata_boxed(target, scope, memory)
 }
 #[inline(never)]
 fn boxed_association_step(

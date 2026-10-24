@@ -7,7 +7,9 @@ use super::locks::{
     FixedControlProblem as Problem, FixedControlScratch, FixedFileStamp, FixedLockedFile, LockMode,
     RootedDirectory,
 };
-use super::maintenance_budget::{CleanupMemory, MemoryReservation, MutationGrant, ReservedBytes};
+use super::maintenance_budget::{
+    CleanupMemory, MemoryBox, MemoryReservation, MutationGrant, ReservedBytes,
+};
 use super::maintenance_ownership::{
     self as ownership, CanonicalEpochAdvance, EpochLock, PreparedEpoch, ReferenceDomain,
     ReferenceEpoch,
@@ -457,6 +459,17 @@ pub(crate) fn observe_maintenance_binding(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn private_metadata_owner_keeps_preparation_images_in_charged_boxes() {
+        // The former inline scratch/epoch/config owner exceeded this fixed
+        // boundary; the shipping boxed factory must keep its result compact.
+        assert!(std::mem::size_of::<super::PreparedPrivateMetadata>() <= 2048);
+        let _boxed_fields = |value: &super::PreparedPrivateMetadata| {
+            let _: &super::MemoryBox<super::FixedControlScratch> = &value.scratch;
+            let _: &super::MemoryBox<super::PreparedEpoch> = &value._epoch;
+            let _: &super::MemoryBox<super::BoundConfiguration> = &value._binding;
+        };
+    }
     use super::super::layout::{create_fresh_reference_root, managed_generation_id};
     use super::super::locks::{open_locked, try_open_existing_locked};
     use super::super::maintenance_ownership::{
@@ -1633,11 +1646,11 @@ pub(crate) struct PreparedPrivateMetadata {
     stream_file: std::fs::File,
     images: ReservedBytes,
     read: ReservedBytes,
-    scratch: FixedControlScratch,
+    scratch: MemoryBox<FixedControlScratch>,
     committed: Option<super::maintenance_controls::CommitFact>,
     recovery: super::maintenance_controls::RecoveryStep,
-    _epoch: PreparedEpoch,
-    _binding: BoundConfiguration,
+    _epoch: MemoryBox<PreparedEpoch>,
+    _binding: MemoryBox<BoundConfiguration>,
     _floor: MemoryReservation,
 }
 impl PreparedPrivateMetadata {
@@ -1662,13 +1675,55 @@ impl PreparedPrivateMetadata {
     }
 }
 
+/// Compatibility value API; shipping stream callers retain the charged owner.
+#[inline(never)]
 pub(crate) fn prepare_private_metadata(
     target: &MaintenanceTarget,
     origin: &RootOriginBinding,
     memory: &CleanupMemory,
 ) -> Result<PreparedPrivateMetadata, AdmissionError> {
-    use super::maintenance_controls as c;
+    prepare_private_metadata_boxed(target, origin, memory).map(MemoryBox::into_inner)
+}
+
+// Isolate fallible by-value constructors from the retained metadata frame.
+#[inline(never)]
+fn private_metadata_binding(
+    memory: &CleanupMemory,
+    target: &MaintenanceTarget,
+) -> Result<MemoryBox<BoundConfiguration>, AdmissionError> {
     let binding = project_binding(target, memory).map_err(projection)?;
+    MemoryBox::new(binding, memory).map_err(AdmissionError::Resource)
+}
+#[inline(never)]
+fn private_metadata_scratch(
+    memory: &CleanupMemory,
+) -> Result<MemoryBox<FixedControlScratch>, AdmissionError> {
+    let scratch = FixedControlScratch::new(
+        memory
+            .reserve(FixedControlScratch::required_bytes())
+            .map_err(AdmissionError::Resource)?,
+    )?;
+    MemoryBox::new(scratch, memory).map_err(AdmissionError::Resource)
+}
+#[inline(never)]
+fn private_metadata_epoch(
+    domain: &ReferenceDomain,
+    memory: &CleanupMemory,
+    read: &mut ReservedBytes,
+    scratch: &mut FixedControlScratch,
+) -> Result<MemoryBox<PreparedEpoch>, AdmissionError> {
+    let epoch = PreparedEpoch::prepare_local(domain, memory, read, scratch)?;
+    MemoryBox::new(epoch, memory).map_err(AdmissionError::Resource)
+}
+
+#[inline(never)]
+pub(crate) fn prepare_private_metadata_boxed(
+    target: &MaintenanceTarget,
+    origin: &RootOriginBinding,
+    memory: &CleanupMemory,
+) -> Result<MemoryBox<PreparedPrivateMetadata>, AdmissionError> {
+    use super::maintenance_controls as c;
+    let binding = private_metadata_binding(memory, target)?;
     let floor = memory
         .reserve(256 * 1024 + std::mem::size_of::<PreparedPrivateMetadata>())
         .map_err(AdmissionError::Resource)?;
@@ -1678,17 +1733,13 @@ pub(crate) fn prepare_private_metadata(
         ReferenceDomain::managed(&ManagedLayout::new(&binding.storage))
     }
     .map_err(|_| invalid(Problem::InvalidRecord))?;
-    let mut scratch = FixedControlScratch::new(
-        memory
-            .reserve(FixedControlScratch::required_bytes())
-            .map_err(AdmissionError::Resource)?,
-    )?;
+    let mut scratch = private_metadata_scratch(memory)?;
     let mut read = memory
         .reserve(4096)
         .map_err(AdmissionError::Resource)?
         .bytes(4096)
         .map_err(AdmissionError::Resource)?;
-    let epoch = PreparedEpoch::prepare_local(&domain, memory, &mut read, &mut scratch)?;
+    let epoch = private_metadata_epoch(&domain, memory, &mut read, &mut scratch)?;
     let facts = epoch.root_facts();
     if facts
         != (
@@ -1815,27 +1866,31 @@ pub(crate) fn prepare_private_metadata(
     }
     let stream_file = open_fixed_control(&stream.path, Kind::File, true, &mut scratch)?;
     stream.stamp.unwrap().recheck(&stream_file)?;
-    Ok(PreparedPrivateMetadata {
-        origin: *origin,
-        coordination_header: super::locks::encode_coordination_incarnation(origin.incarnation),
-        root,
-        root_use,
-        cohort,
-        binding: binding_entry,
-        selector,
-        data,
-        data_files,
-        stream,
-        stream_file,
-        images,
-        read,
-        scratch,
-        committed,
-        recovery,
-        _epoch: epoch,
-        _binding: binding,
-        _floor: floor,
-    })
+    MemoryBox::new(
+        PreparedPrivateMetadata {
+            origin: *origin,
+            coordination_header: super::locks::encode_coordination_incarnation(origin.incarnation),
+            root,
+            root_use,
+            cohort,
+            binding: binding_entry,
+            selector,
+            data,
+            data_files,
+            stream,
+            stream_file,
+            images,
+            read,
+            scratch,
+            committed,
+            recovery,
+            _epoch: epoch,
+            _binding: binding,
+            _floor: floor,
+        },
+        memory,
+    )
+    .map_err(AdmissionError::Resource)
 }
 
 /// Only the prebound metadata stream/slots are reachable through this facade.
