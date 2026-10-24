@@ -2310,14 +2310,13 @@ fn boxed_workspace_removal(
     memory: &CleanupMemory,
 ) -> Result<MemoryBox<super::maintenance_workspace_gate::PreparedWorkspaceRemoval>, CandidateError>
 {
-    let value = super::maintenance_workspace_gate::prepare_workspace_root_removal(
+    super::maintenance_workspace_gate::prepare_workspace_root_removal_boxed(
         path,
         domain,
         Some(terminal),
         memory,
     )
-    .map_err(admission)?;
-    MemoryBox::new(value, memory).map_err(|_| CandidateError::ResourceLimit)
+    .map_err(admission)
 }
 #[inline(never)]
 fn prepare_terminal_candidate(

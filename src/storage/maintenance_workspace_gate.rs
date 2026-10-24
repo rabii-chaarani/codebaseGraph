@@ -3,6 +3,7 @@
 use super::locks::{
     self, FileIdentity, FixedControlError, FixedControlProblem, LockMode, RootedDirectory,
 };
+use super::maintenance_budget::MemoryBox;
 use super::maintenance_controls as c;
 use super::maintenance_ownership::{ReferenceDomain, RootCreationAuthority};
 use crate::error::NativeError;
@@ -445,14 +446,14 @@ pub(crate) struct PreparedWorkspaceRemoval {
     gate: PathBuf,
     gate_stamp: locks::FixedFileStamp,
     spec: RemovalSpec,
-    transport: Transport,
+    transport: MemoryBox<Transport>,
     initial: bool,
     usable: bool,
     observed: [Option<locks::FixedFileStamp>; 16],
     present_now: u16,
     root_was_present: bool,
-    epoch: super::maintenance_admission::PreparedScopedInvalidation,
-    scratch: locks::FixedControlScratch,
+    epoch: MemoryBox<super::maintenance_admission::PreparedScopedInvalidation>,
+    scratch: MemoryBox<locks::FixedControlScratch>,
     visit: super::maintenance_budget::ReservedBytes,
     _root_pin: Option<std::fs::File>,
     _parent_pin: std::fs::File,
@@ -510,15 +511,60 @@ fn known_names(
     })?;
     Ok(())
 }
+#[inline(never)]
+fn boxed_removal_scratch(
+    memory: &super::maintenance_budget::CleanupMemory,
+) -> Result<MemoryBox<locks::FixedControlScratch>, FixedControlError> {
+    let scratch = locks::FixedControlScratch::new(
+        memory
+            .reserve(locks::FixedControlScratch::required_bytes())
+            .map_err(FixedControlError::Resource)?,
+    )?;
+    MemoryBox::new(scratch, memory).map_err(FixedControlError::Resource)
+}
+#[inline(never)]
+fn boxed_removal_epoch(
+    domain: &ReferenceDomain,
+    memory: &super::maintenance_budget::CleanupMemory,
+) -> Result<MemoryBox<super::maintenance_admission::PreparedScopedInvalidation>, FixedControlError>
+{
+    let epoch = super::maintenance_admission::prepare_scoped_invalidation(domain, memory)?;
+    MemoryBox::new(epoch, memory).map_err(FixedControlError::Resource)
+}
+#[inline(never)]
+fn boxed_removal_transport(
+    parent: &RootedDirectory,
+    reference: (FileIdentity, FileIdentity, [u8; 32], FileIdentity),
+    gate: FileIdentity,
+    memory: &super::maintenance_budget::CleanupMemory,
+) -> Result<MemoryBox<Transport>, FixedControlError> {
+    let transport = Transport::prepare(parent, reference, gate, memory)?;
+    MemoryBox::new(transport, memory).map_err(FixedControlError::Resource)
+}
+
 /// The optional terminal argument is required to create a NEW removal intent.
 /// Replay accepts only the already-durable exact parent intent. Neither path
 /// adopts a directory from its name, numeric identity, or an Empty observation.
+// Retain the existing value API for standalone callers; joined-worker paths use the charged factory.
+#[allow(dead_code)]
 pub(crate) fn prepare_workspace_root_removal(
     root: &Path,
     domain: &ReferenceDomain,
     terminal: Option<&c::PreparedTerminalWorkspace>,
     memory: &super::maintenance_budget::CleanupMemory,
 ) -> Result<PreparedWorkspaceRemoval, FixedControlError> {
+    prepare_workspace_root_removal_boxed(root, domain, terminal, memory).map(MemoryBox::into_inner)
+}
+
+/// The same exact source/intent preparation, returned behind its charged owner
+/// before the caller enters another bounded stage on the joined worker.
+#[inline(never)]
+pub(crate) fn prepare_workspace_root_removal_boxed(
+    root: &Path,
+    domain: &ReferenceDomain,
+    terminal: Option<&c::PreparedTerminalWorkspace>,
+    memory: &super::maintenance_budget::CleanupMemory,
+) -> Result<MemoryBox<PreparedWorkspaceRemoval>, FixedControlError> {
     let path_bytes = root
         .as_os_str()
         .as_encoded_bytes()
@@ -533,17 +579,13 @@ pub(crate) fn prepare_workspace_root_removal(
     let reservation = memory
         .reserve(path_bytes)
         .map_err(FixedControlError::Resource)?;
-    let mut scratch = locks::FixedControlScratch::new(
-        memory
-            .reserve(locks::FixedControlScratch::required_bytes())
-            .map_err(FixedControlError::Resource)?,
-    )?;
+    let mut scratch = boxed_removal_scratch(memory)?;
     let mut visit = memory
         .reserve(4096)
         .map_err(FixedControlError::Resource)?
         .bytes(4096)
         .map_err(FixedControlError::Resource)?;
-    let epoch = super::maintenance_admission::prepare_scoped_invalidation(domain, memory)?;
+    let epoch = boxed_removal_epoch(domain, memory)?;
     let reference = epoch.root_facts();
     let parent_root = domain.artifact_root().to_owned();
     let parent_controls = RootedDirectory::open_readonly_root(&parent_root, reference.0)?;
@@ -556,7 +598,7 @@ pub(crate) fn prepare_workspace_root_removal(
         return Err(fixed_invalid());
     }
     let mut transport =
-        Transport::prepare(&parent_controls, reference, gate_stamp.identity(), memory)?;
+        boxed_removal_transport(&parent_controls, reference, gate_stamp.identity(), memory)?;
     let parent = root.parent().ok_or_else(fixed_invalid)?.to_owned();
     let parent_id = locks::path_identity(&parent).map_err(fixed_native)?;
     let parent_directory = RootedDirectory::open_readonly_root(&parent, parent_id)?;
@@ -701,29 +743,33 @@ pub(crate) fn prepare_workspace_root_removal(
         transport.remove_end = transport.recovery_end;
         transport.plan(RemovalState::Idle)?;
     }
-    Ok(PreparedWorkspaceRemoval {
-        root: root.to_owned(),
-        parent,
-        parent_root,
-        gate,
-        gate_stamp,
-        spec,
-        transport,
-        initial,
-        usable: true,
-        observed,
-        present_now,
-        root_was_present: root_directory.is_some(),
-        epoch,
-        scratch,
-        visit,
-        _root_pin: root_directory
-            .as_ref()
-            .map(|d| d.pin_handle())
-            .transpose()?,
-        _parent_pin: parent_directory.pin_handle()?,
-        _memory: reservation,
-    })
+    MemoryBox::new(
+        PreparedWorkspaceRemoval {
+            root: root.to_owned(),
+            parent,
+            parent_root,
+            gate,
+            gate_stamp,
+            spec,
+            transport,
+            initial,
+            usable: true,
+            observed,
+            present_now,
+            root_was_present: root_directory.is_some(),
+            epoch,
+            scratch,
+            visit,
+            _root_pin: root_directory
+                .as_ref()
+                .map(|d| d.pin_handle())
+                .transpose()?,
+            _parent_pin: parent_directory.pin_handle()?,
+            _memory: reservation,
+        },
+        memory,
+    )
+    .map_err(FixedControlError::Resource)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -833,9 +879,8 @@ pub(crate) fn begin_workspace_root_removal(
             return Err(fixed_invalid());
         }
         prepared.usable = false;
-        prepared
-            .transport
-            .run(&parent, 0, prepared.transport.remove_end, grant)
+        let remove_end = prepared.transport.remove_end;
+        prepared.transport.run(&parent, 0, remove_end, grant)
     })?;
     Ok(WorkspaceRemovalProgress::Pending)
 }
@@ -1004,7 +1049,8 @@ pub(crate) fn advance_workspace_root_removal(
             if recovery > left {
                 return Err(fixed_invalid());
             }
-            transport.run(&parent_controls, 0, transport.recovery_end, grant)?;
+            let recovery_end = transport.recovery_end;
+            transport.run(&parent_controls, 0, recovery_end, grant)?;
             left -= recovery;
             let mut removed = None;
             if let Some(root) = &root {
@@ -1065,12 +1111,9 @@ pub(crate) fn advance_workspace_root_removal(
                 };
                 done(&WorkspaceRootOutcome::RecoveredMissing(&missing), grant)?;
             }
-            transport.run(
-                &parent_controls,
-                transport.recovery_end,
-                transport.count,
-                grant,
-            )?;
+            let reset_start = transport.recovery_end;
+            let reset_end = transport.count;
+            transport.run(&parent_controls, reset_start, reset_end, grant)?;
             progress = WorkspaceRemovalProgress::Complete;
             Ok(())
         },
@@ -1115,10 +1158,7 @@ fn prepare_pending_workspace_root_removal_in(
     let Some(path) = pending_workspace_path(domain, state_root, memory)? else {
         return Ok(None);
     };
-    let prepared = prepare_workspace_root_removal(&path, domain, None, memory)?;
-    super::maintenance_budget::MemoryBox::new(prepared, memory)
-        .map(Some)
-        .map_err(FixedControlError::Resource)
+    prepare_workspace_root_removal_boxed(&path, domain, None, memory).map(Some)
 }
 #[inline(never)]
 fn pending_workspace_path(
@@ -1171,4 +1211,21 @@ fn pending_workspace_path(
     drop(root);
     drop(reservation);
     Ok(Some(path))
+}
+
+#[cfg(test)]
+mod preparation_layout_tests {
+    use super::*;
+    #[test]
+    fn workspace_removal_keeps_large_images_out_of_fixed_owner_layout() {
+        // This absolute envelope bound rejects the original large inline owner.
+        // Relative sizes of the independent protocol images are not a contract.
+        assert!(std::mem::size_of::<PreparedWorkspaceRemoval>() <= 4096);
+        let _: fn(PreparedWorkspaceRemoval) = |prepared| {
+            let _: MemoryBox<super::super::maintenance_admission::PreparedScopedInvalidation> =
+                prepared.epoch;
+            let _: MemoryBox<locks::FixedControlScratch> = prepared.scratch;
+            let _: MemoryBox<Transport> = prepared.transport;
+        };
+    }
 }
