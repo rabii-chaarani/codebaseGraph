@@ -2084,6 +2084,7 @@ mod rooted_directory_tests {
     #[cfg(windows)]
     #[test]
     fn metadata_nonce_remains_readable_under_an_exclusive_owner() {
+        use std::io::Write;
         let fixture = Fixture::new();
         let root = fixture.anchor();
         let mut file = root.create_new(b"owner").unwrap();
