@@ -54,6 +54,8 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     let mut owner_min_rss = u64::MAX;
     let mut owner_max_rss = 0_u64;
     let mut worker_peak_rss = 0_u64;
+    // Pin metadata during quiescence checks.
+    let mut artifact_observation = None;
     while !active_path.exists() && Instant::now() < deadline {
         maximum_workers = maximum_workers.max(directory_count(&workers_root));
         if let Ok(rss) = sample_process_rss(first_pid) {
@@ -65,6 +67,13 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
                 worker_peak_rss = worker_peak_rss.max(rss);
             }
         }
+        if artifact_observation.is_none() {
+            if let Ok(file) = fs::File::open(storage.join("artifacts/.use.lock")) {
+                if fs2::FileExt::try_lock_shared(&file).is_ok() {
+                    artifact_observation = Some(file);
+                }
+            }
+        }
         std::thread::sleep(Duration::from_millis(25));
     }
     maximum_workers = maximum_workers.max(directory_count(&workers_root));
@@ -74,6 +83,10 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     );
     assert_eq!(maximum_workers, 1, "did not observe exactly one worker");
     assert!(worker_peak_rss > 0, "did not sample the isolated worker");
+    assert!(
+        artifact_observation.is_some(),
+        "artifact observation lease was not acquired"
+    );
     assert!(
         worker_peak_rss <= 768 * 1024 * 1024,
         "worker RSS exceeded 768 MiB: {worker_peak_rss}"
@@ -778,5 +791,5 @@ fn temp_repo() -> PathBuf {
         sequence
     ));
     fs::create_dir_all(&path).unwrap();
-    path
+    fs::canonicalize(path).unwrap()
 }

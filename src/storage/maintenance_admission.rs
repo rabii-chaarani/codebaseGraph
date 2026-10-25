@@ -1113,8 +1113,7 @@ mod tests {
         drop(producer);
         f.unlocked();
         let mut prepared = f.prepared();
-        // Preparation outlives the production window; admission gets a fresh
-        // fixture grant so scheduler/filesystem latency cannot mask the logic.
+        // Outlive the production window, then start a fresh fixture grant.
         std::thread::sleep(std::time::Duration::from_millis(110));
         assert!(with_prepared_canonical(
             &mut prepared,

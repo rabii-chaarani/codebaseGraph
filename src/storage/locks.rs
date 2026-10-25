@@ -1596,6 +1596,49 @@ impl RootedDirectory {
         }
         Ok(file)
     }
+    #[cfg(windows)]
+    fn reopen_pinned_directory(&self, access: u32) -> std::io::Result<File> {
+        use std::os::windows::io::{AsRawHandle, FromRawHandle};
+        use windows_sys::Win32::{
+            Foundation::INVALID_HANDLE_VALUE,
+            Storage::FileSystem::{
+                FileIdType, OpenFileById, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
+                FILE_ID_DESCRIPTOR, FILE_ID_DESCRIPTOR_0, FILE_SHARE_DELETE, FILE_SHARE_READ,
+                FILE_SHARE_WRITE,
+            },
+        };
+        let id = FILE_ID_DESCRIPTOR {
+            dwSize: std::mem::size_of::<FILE_ID_DESCRIPTOR>() as u32,
+            Type: FileIdType,
+            Anonymous: FILE_ID_DESCRIPTOR_0 {
+                FileId: self.identity.index as i64,
+            },
+        };
+        // SAFETY: the live pin prevents ID reuse; its own volume supplies
+        // the hint. The descriptor is fixed-size and fully initialized.
+        let handle = unsafe {
+            OpenFileById(
+                self.directory.as_raw_handle(),
+                &id,
+                access,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                std::ptr::null(),
+                FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            )
+        };
+        if handle == INVALID_HANDLE_VALUE {
+            let error = std::io::Error::last_os_error();
+            #[cfg(test)]
+            eprintln!("namespace reopen failed: {error:?}");
+            return Err(error);
+        }
+        // SAFETY: successful OpenFileById returned one owned handle.
+        let reopened = unsafe { File::from_raw_handle(handle) };
+        if file_identity(&reopened).map_err(native_io)? != self.identity {
+            return Err(std::io::ErrorKind::InvalidInput.into());
+        }
+        Ok(reopened)
+    }
     pub(crate) fn sync_namespace(&self) -> std::io::Result<()> {
         #[cfg(not(windows))]
         {
@@ -1603,51 +1646,18 @@ impl RootedDirectory {
         }
         #[cfg(windows)]
         {
-            use std::os::windows::io::{AsRawHandle, FromRawHandle};
+            use std::os::windows::io::AsRawHandle;
             use windows_sys::{
                 Wdk::Storage::FileSystem::NtFlushBuffersFileEx,
                 Win32::{
-                    Foundation::{RtlNtStatusToDosError, GENERIC_WRITE, INVALID_HANDLE_VALUE},
-                    Storage::FileSystem::{
-                        FileIdType, OpenFileById, FILE_FLAG_BACKUP_SEMANTICS,
-                        FILE_FLAG_OPEN_REPARSE_POINT, FILE_ID_DESCRIPTOR, FILE_ID_DESCRIPTOR_0,
-                        FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
-                    },
+                    Foundation::{RtlNtStatusToDosError, GENERIC_WRITE},
+                    Storage::FileSystem::FILE_READ_ATTRIBUTES,
                     System::IO::IO_STATUS_BLOCK,
                 },
             };
             // Flush requires write access even when the directory was pinned
             // for observation. Reopen the exact object, never its pathname.
-            let id = FILE_ID_DESCRIPTOR {
-                dwSize: std::mem::size_of::<FILE_ID_DESCRIPTOR>() as u32,
-                Type: FileIdType,
-                Anonymous: FILE_ID_DESCRIPTOR_0 {
-                    FileId: self.identity.index as i64,
-                },
-            };
-            // SAFETY: the live pin prevents ID reuse; its own volume supplies
-            // the hint. The descriptor is fixed-size and fully initialized.
-            let handle = unsafe {
-                OpenFileById(
-                    self.directory.as_raw_handle(),
-                    &id,
-                    GENERIC_WRITE | FILE_READ_ATTRIBUTES,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                    std::ptr::null(),
-                    FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
-                )
-            };
-            if handle == INVALID_HANDLE_VALUE {
-                let error = std::io::Error::last_os_error();
-                #[cfg(test)]
-                eprintln!("namespace reopen failed: {error:?}");
-                return Err(error);
-            }
-            // SAFETY: successful OpenFileById returned one owned handle.
-            let writable = unsafe { File::from_raw_handle(handle) };
-            if file_identity(&writable).map_err(native_io)? != self.identity {
-                return Err(std::io::ErrorKind::InvalidInput.into());
-            }
+            let writable = self.reopen_pinned_directory(GENERIC_WRITE | FILE_READ_ATTRIBUTES)?;
             let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
             // SAFETY: live actual directory handle and initialized output. A
             // denied/unsupported filesystem flush fails closed for attestation.
@@ -2080,6 +2090,29 @@ mod rooted_directory_tests {
         file.sync_all().unwrap();
         root.sync_namespace().unwrap();
         assert_eq!(root.identity(), id);
+    }
+    #[cfg(windows)]
+    #[test]
+    fn nested_directory_scans_do_not_consume_the_outer_cursor() {
+        let fixture = Fixture::new();
+        let root = fixture.anchor();
+        for name in [b"one".as_slice(), b"two", b"three"] {
+            drop(root.create_new(name).unwrap());
+        }
+        let mut outer = Vec::new();
+        root.visit_entries(&mut [0; 4096], &mut |name| {
+            let mut inner = 0;
+            root.visit_entries(&mut [0; 4096], &mut |_| {
+                inner += 1;
+                Ok(())
+            })?;
+            assert_eq!(inner, 3);
+            outer.push(name.to_vec());
+            Ok(())
+        })
+        .unwrap();
+        outer.sort();
+        assert_eq!(outer, [b"one".to_vec(), b"three".to_vec(), b"two".to_vec()]);
     }
     #[cfg(windows)]
     #[test]
@@ -2636,10 +2669,18 @@ impl RootedDirectory {
             let padding = bytes.as_ptr().align_offset(8);
             let bytes = &mut bytes[padding..];
             use std::os::windows::io::AsRawHandle;
+            use windows_sys::Win32::Storage::FileSystem::{
+                FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, SYNCHRONIZE,
+            };
             use windows_sys::{
                 Wdk::Storage::FileSystem::{FileNamesInformation, NtQueryDirectoryFile},
                 Win32::{Foundation::STATUS_NO_MORE_FILES, System::IO::IO_STATUS_BLOCK},
             };
+            // Reentrant scans need distinct kernel cursors; duplicating a
+            // handle would still share the outer enumeration's file object.
+            let directory = self.reopen_pinned_directory(
+                FILE_LIST_DIRECTORY | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+            )?;
             let mut first = true;
             loop {
                 let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
@@ -2647,7 +2688,7 @@ impl RootedDirectory {
                 // FILE_NAMES_INFORMATION buffer; request one entry per call.
                 let result = unsafe {
                     NtQueryDirectoryFile(
-                        self.directory.as_raw_handle(),
+                        directory.as_raw_handle(),
                         std::ptr::null_mut(),
                         None,
                         std::ptr::null(),
