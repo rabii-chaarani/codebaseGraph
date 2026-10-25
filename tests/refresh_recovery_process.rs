@@ -343,24 +343,61 @@ fn install(root: &Path) -> PathBuf {
         "install failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let build = Command::new(binary())
-        .current_dir(root)
-        .args([
-            "build",
-            "--repo-root",
-            root.to_str().unwrap(),
-            "--mode",
-            "full",
-            "--json",
-        ])
-        .output()
-        .unwrap();
-    assert!(
-        build.status.success(),
-        "initial build failed: {}",
-        String::from_utf8_lossy(&build.stderr)
-    );
+    for attempt in 0..3 {
+        let build = Command::new(binary())
+            .current_dir(root)
+            .args([
+                "build",
+                "--repo-root",
+                root.to_str().unwrap(),
+                "--mode",
+                "full",
+                "--json",
+            ])
+            .output()
+            .unwrap();
+        if build.status.success() {
+            break;
+        }
+        let error = String::from_utf8_lossy(&build.stderr);
+        if attempt < 2 && retryable_initial_build_failure(&error) {
+            eprintln!(
+                "retrying pre-injection fixture build after authenticated empty cleanup: {error}"
+            );
+            thread::sleep(Duration::from_millis(250));
+            continue;
+        }
+        panic!("initial build failed: {error}");
+    }
     root.join(".codebaseGraph/config.json")
+}
+
+// Setup only: never turn an injected fault or unproven containment into a retry.
+fn retryable_initial_build_failure(error: &str) -> bool {
+    error.contains("failed to start guarded Ladybug phase")
+        && error.contains("Resource temporarily unavailable (os error 35)")
+        && error.contains("cleanup: Ok(ExitOutcome")
+        && error.contains("containment_empty: true")
+        && error.contains("supervision_error: None")
+        && !error.contains("containment_unknown")
+}
+
+#[test]
+fn initial_build_retry_requires_exact_transient_and_empty_cleanup() {
+    let error="failed to start guarded Ladybug phase: Resource temporarily unavailable (os error 35); cleanup: Ok(ExitOutcome { containment_empty: true, supervision_error: None })";
+    assert!(retryable_initial_build_failure(error));
+    for invalid in [
+        error.replace("containment_empty: true", "containment_empty: false"),
+        error.replace(
+            "supervision_error: None",
+            "supervision_error: Some(unknown)",
+        ),
+        error.replace("os error 35", "os error 5"),
+        error.replace("cleanup: Ok", "cleanup: Err"),
+        format!("{error}; containment_unknown"),
+    ] {
+        assert!(!retryable_initial_build_failure(&invalid), "{invalid}");
+    }
 }
 
 struct ConfigSettings<'a> {

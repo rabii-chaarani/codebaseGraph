@@ -1,0 +1,128 @@
+[
+  {
+    "id": 121138549985,
+    "name": "cargo clippy",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550037,
+    "name": "cargo publish dry-run",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550046,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550048,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550073,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 4)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550078,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 3)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550088,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550095,
+    "name": "cargo fmt",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550141,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550146,
+    "name": "cargo audit",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550179,
+    "name": "native (macos-arm64) / native tests (macos-arm64, integration)",
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  {
+    "id": 121138550324,
+    "name": "native (macos-arm64) / native tests (macos-arm64, generation)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550355,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550372,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550381,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550406,
+    "name": "native (macos-arm64) / native tests (macos-arm64, unit)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550413,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550441,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121138550494,
+    "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 2)",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  {
+    "id": 121147837128,
+    "name": "native (macos-arm64) / native artifact (${{ inputs.target }})",
+    "status": "completed",
+    "conclusion": "skipped"
+  },
+  {
+    "id": 121150195940,
+    "name": "native (windows-x86_64) / native artifact (windows-x86_64)",
+    "status": "in_progress",
+    "conclusion": null
+  }
+]
