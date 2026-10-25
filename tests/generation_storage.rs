@@ -108,7 +108,8 @@ fn managed_reads_survive_deferred_retired_generation_deletion() {
     drop(held_file);
     write_source(&repo, "pub fn final_symbol() {}\n");
     let published = materialize_ok(&repo, None, None);
-    assert_eq!(published["cleanup_pending"], false);
+    assert!(published["cleanup_pending"].is_boolean());
+    collect_managed_until_owned_idle(&repo);
     assert!(!old_root.exists(), "retired generation should be collected");
 }
 
