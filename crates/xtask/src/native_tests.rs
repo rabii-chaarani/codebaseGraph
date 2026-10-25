@@ -102,6 +102,29 @@ fn inventory(metadata: &Value) -> Result<Vec<Value>, String> {
     Ok(inventory)
 }
 
+fn windows_preflight(base: &[String]) -> Vec<String> {
+    let mut regressions = base.to_vec();
+    regressions.extend(
+        [
+            "--lib",
+            "--",
+            "storage::locks::",
+            "maintenance_legacy_bootstrap::",
+            "dc_workspace_root_removal_restarts",
+            "managed_read_recovery_does_not_recreate",
+            "dc_generation_actual_",
+            "dc_generation_engine_actual_",
+            "maintenance_projection::tests::",
+            "busy_writer_is_reported",
+            "dc_s2_current_v2_receipt",
+            "dc_s5_canonical_only_real_producer_spare_key",
+            "dc_s5_artifact_use_lease_defers_obsolete_key_until_release",
+        ]
+        .map(str::to_owned),
+    );
+    regressions
+}
+
 fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<Vec<String>> {
     let base: Vec<String> = native_test_command(target)
         .into_iter()
@@ -110,25 +133,7 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
     if selected == Cohort::All {
         let mut commands = Vec::new();
         if target == NativeTarget::WindowsX86_64 {
-            let mut regressions = base.clone();
-            regressions.extend(
-                [
-                    "--lib",
-                    "--",
-                    "storage::locks::",
-                    "maintenance_legacy_bootstrap::",
-                    "dc_workspace_root_removal_restarts",
-                    "managed_read_recovery_does_not_recreate",
-                    "dc_generation_actual_",
-                    "dc_generation_engine_actual_",
-                    "maintenance_projection::tests::",
-                    "busy_writer_is_reported",
-                    "dc_s2_current_v2_receipt",
-                    "dc_s5_canonical_only_real_producer_spare_key",
-                ]
-                .map(str::to_owned),
-            );
-            commands.push(regressions);
+            commands.push(windows_preflight(&base));
         }
         let mut complete = base;
         complete.push("--no-fail-fast".into());
@@ -137,6 +142,9 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
     }
     let mut commands = Vec::new();
     if selected == Cohort::Unit {
+        if target == NativeTarget::WindowsX86_64 {
+            commands.push(windows_preflight(&base));
+        }
         let mut command = base.clone();
         command.extend(["--lib", "--bins", "--examples"].map(str::to_owned));
         commands.push(command);
@@ -157,6 +165,10 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
                 .filter(|s| *s != "--workspace")
                 .cloned()
                 .collect();
+            if target == NativeTarget::WindowsX86_64 {
+                let features = command.iter().position(|s| s == "--features").unwrap() + 1;
+                command[features] = format!("{package}/bundled-windows-extensions");
+            }
             command.extend(["--package".into(), package]);
             for test in tests {
                 command.extend(["--test".into(), test]);
@@ -259,7 +271,10 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
         save(&report)?;
         if let Err(error) = result {
             failures.push(error);
-            if target == NativeTarget::WindowsX86_64 && selected == Cohort::All && index == 0 {
+            if target == NativeTarget::WindowsX86_64
+                && matches!(selected, Cohort::All | Cohort::Unit)
+                && index == 0
+            {
                 break;
             }
         }
@@ -307,6 +322,16 @@ mod tests {
         assert!(commands[1].contains(&"--workspace".into()));
         assert!(!commands[1].contains(&"--".into()));
         assert!(commands[1].contains(&"--no-fail-fast".into()));
+        let unit = super::commands(NativeTarget::WindowsX86_64, Cohort::Unit, &[]);
+        assert_eq!(unit.len(), 2);
+        assert!(unit[1].contains(&"--lib".into()));
+        let inventory = vec![
+            json!({"package":"codebase-graph","target":"generation_storage","kind":"test","cohort":"generation"}),
+        ];
+        let generation =
+            super::commands(NativeTarget::WindowsX86_64, Cohort::Generation, &inventory);
+        assert!(generation[0].contains(&"codebase-graph/bundled-windows-extensions".into()));
+        assert!(!generation[0].iter().any(|s| s.contains("k-wiki/bundled")));
     }
     #[test]
     fn partitions_every_test_target_and_keeps_new_integration_targets() {

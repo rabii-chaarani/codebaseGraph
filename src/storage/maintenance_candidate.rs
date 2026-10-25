@@ -2330,7 +2330,13 @@ fn boxed_workspace_removal(
         Some(terminal),
         memory,
     )
-    .map_err(admission)
+    .map_err(|error| {
+        #[cfg(test)]
+        if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+            eprintln!("workspace preparation failed: {error:?}");
+        }
+        admission(error)
+    })
 }
 #[inline(never)]
 fn prepare_terminal_candidate(

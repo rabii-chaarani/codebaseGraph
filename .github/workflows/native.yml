@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cohort: ${{ fromJSON(inputs.target == 'macos-arm64' && '["unit","generation","integration"]' || '["all"]') }}
+        cohort: ${{ fromJSON((inputs.target == 'macos-arm64' || inputs.target == 'windows-x86_64') && '["unit","generation","integration"]' || '["all"]') }}
     runs-on: ${{ fromJSON('{"linux-x86_64":"ubuntu-latest","macos-arm64":"macos-latest","macos-x86_64":"macos-15-intel","windows-x86_64":"windows-2022"}')[inputs.target] }}
     timeout-minutes: 90
     permissions:

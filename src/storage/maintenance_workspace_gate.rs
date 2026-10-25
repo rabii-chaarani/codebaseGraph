@@ -36,7 +36,15 @@ const NAMES: [&[u8]; 16] = [
 fn invalid() -> NativeError {
     NativeError::InvalidInput("workspace_removal_unverified".into())
 }
+#[track_caller]
 fn fixed_invalid() -> FixedControlError {
+    #[cfg(test)]
+    if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+        eprintln!(
+            "workspace removal rejected at {}",
+            std::panic::Location::caller()
+        );
+    }
     FixedControlError::Invalid(FixedControlProblem::InvalidRecord)
 }
 fn fixed_native(error: NativeError) -> FixedControlError {

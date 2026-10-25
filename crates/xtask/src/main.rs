@@ -1192,7 +1192,7 @@ fn check_workflow_policy(
     if yaml_path(native, &["jobs", "tests", "if"]).and_then(YamlValue::as_str) != Some("inputs.run-tests")
         || yaml_path(native, &["jobs", "tests", "strategy", "fail-fast"]).and_then(YamlValue::as_bool) != Some(false)
         || yaml_path(native, &["jobs", "tests", "strategy", "matrix", "cohort"]).and_then(YamlValue::as_str)
-            != Some("${{ fromJSON(inputs.target == 'macos-arm64' && '[\"unit\",\"generation\",\"integration\"]' || '[\"all\"]') }}")
+            != Some("${{ fromJSON((inputs.target == 'macos-arm64' || inputs.target == 'windows-x86_64') && '[\"unit\",\"generation\",\"integration\"]' || '[\"all\"]') }}")
         || yaml_path(native, &["jobs", "native", "needs"]).and_then(YamlValue::as_str) != Some("tests")
         || yaml_path(native, &["jobs", "native", "if"]).and_then(YamlValue::as_str)
             != Some("${{ always() && !cancelled() && (!inputs.run-tests || needs.tests.result == 'success') }}")

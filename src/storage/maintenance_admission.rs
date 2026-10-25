@@ -1105,7 +1105,7 @@ mod tests {
         let producer = ReferenceMutation::begin_in_domain(&f.domain).unwrap();
         assert!(with_prepared_canonical(
             &mut prepared,
-            &mut MutationGrant::start(),
+            &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
             0,
             &mut |_, _| panic!("live callback")
         )
@@ -1113,10 +1113,12 @@ mod tests {
         drop(producer);
         f.unlocked();
         let mut prepared = f.prepared();
+        // Preparation outlives the production window; admission gets a fresh
+        // fixture grant so scheduler/filesystem latency cannot mask the logic.
         std::thread::sleep(std::time::Duration::from_millis(110));
         assert!(with_prepared_canonical(
             &mut prepared,
-            &mut MutationGrant::start(),
+            &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
             0,
             &mut |_, _| Ok(())
         )
