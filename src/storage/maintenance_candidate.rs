@@ -719,6 +719,20 @@ fn prepare_role_work(
             )
         }
     };
+    // A role must not interpret its old payload while an authenticated slot
+    // transaction still needs completion. This only replays the exact owned
+    // intent through the existing metadata facade; it grants no payload effect.
+    if let Some(update) = super::maintenance_admission::prepare_metadata_recovery(&metadata, memory)
+        .map_err(admission)?
+    {
+        deferred(report, 7);
+        return Ok(Some(Work::Metadata {
+            prepared: metadata,
+            update: MemoryBox::new(update, memory).map_err(|_| CandidateError::ResourceLimit)?,
+            append: None,
+            reset: None,
+        }));
+    }
     let Some(payload) = metadata.payload() else {
         return prepare_artifact_candidate(target, domain, expected, None, memory, cancel, report);
     };
@@ -1955,6 +1969,80 @@ mod fault {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn candidate_recovers_interrupted_role_control_before_parsing_legacy_payload() {
+        use super::super::maintenance_admission::{
+            prepare_metadata_control, prepare_private_metadata, prepare_target_binding,
+            tests::Fixture, with_private_metadata, METADATA_WRITE_CUT,
+        };
+        use super::super::maintenance_candidate::{
+            self as candidate, CandidatePreparationState, CandidateReport,
+        };
+        for cut in 1..=2 {
+            let mut f = Fixture::new();
+            f.target.storage_root = Some(f.layout.storage_root().to_owned());
+            let origin = f.prepared().origin_scope();
+            let old = b"CGLEG001 original role control";
+            let intended = b"CGLEG001 intended role control";
+            let mut metadata = prepare_private_metadata(&f.target, &origin, &f.memory).unwrap();
+            let initial =
+                prepare_metadata_control(&origin, metadata.committed().unwrap(), old, &f.memory)
+                    .unwrap();
+            with_private_metadata(
+                &mut metadata,
+                &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                initial.effects(),
+                &mut |mutation, grant| mutation.publish_control(&initial, grant),
+            )
+            .unwrap();
+            drop(metadata);
+            let mut metadata = prepare_private_metadata(&f.target, &origin, &f.memory).unwrap();
+            let update = prepare_metadata_control(
+                &origin,
+                metadata.committed().unwrap(),
+                intended,
+                &f.memory,
+            )
+            .unwrap();
+            METADATA_WRITE_CUT.with(|value| *value.borrow_mut() = Some(cut));
+            let interrupted = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let _ = with_private_metadata(
+                    &mut metadata,
+                    &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                    update.effects(),
+                    &mut |mutation, grant| mutation.publish_control(&update, grant),
+                );
+            }));
+            assert!(interrupted.is_err());
+            drop(metadata);
+            f.unlocked();
+            let binding = prepare_target_binding(&f.target, &f.memory).unwrap();
+            let mut state = CandidatePreparationState::default();
+            let mut report = CandidateReport::default();
+            let prepared = candidate::prepare_candidate_with_state(
+                &f.target,
+                &binding,
+                &mut state,
+                &f.memory,
+                &|| false,
+                &mut report,
+            )
+            .unwrap()
+            .expect("interrupted role metadata requires a recovery candidate");
+            candidate::advance_candidate(
+                prepared.borrow_hot_frame(),
+                &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                None,
+            )
+            .unwrap();
+            drop(prepared);
+            let recovered = prepare_private_metadata(&f.target, &origin, &f.memory).unwrap();
+            assert_eq!(recovered.committed(), Some(update.next()));
+            assert_eq!(recovered.payload(), Some(intended.as_slice()));
+            assert_eq!(f.epoch().counter(), 0);
+        }
+    }
+
     #[test]
     fn prepared_candidate_crossings_keep_large_state_indirect() {
         assert!(std::mem::size_of::<PreparedCandidate>() < 2048);

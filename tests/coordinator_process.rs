@@ -205,6 +205,27 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
         .iter()
         .any(|client| client.pid() == replacement_pid));
 
+    // Exclude new births before deliberately killing the remaining owners.
+    // A best-effort snapshot after kill could omit a still-closing Windows
+    // directory and later misclassify its retained owner-loss evidence as new.
+    let snapshot_deadline = Instant::now() + Duration::from_secs(30);
+    let (_snapshot_worker, _snapshot_writer) = loop {
+        let locks = (|| {
+            let worker = observation_lock(&storage.join("worker.lock"))?;
+            let writer = observation_lock(&storage.join("writer.lock"))?;
+            Ok::<_, String>((worker, writer))
+        })();
+        match locks {
+            Ok(locks) => break locks,
+            Err(reason) => {
+                assert!(
+                    Instant::now() < snapshot_deadline,
+                    "preexisting-root snapshot stayed busy: {reason}"
+                );
+                std::thread::sleep(Duration::from_millis(25));
+            }
+        }
+    };
     clients.kill_all();
     let active_before = active_generation_id(&active_path);
     // Preserve the exact preexisting incarnations from deliberate owner death;
@@ -213,11 +234,14 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     for category in ["runs", "workers"] {
         for entry in fs::read_dir(storage.join(category)).unwrap() {
             let path = entry.unwrap().path();
-            if let Ok(identity) = physical_directory_identity(&path) {
-                preexisting.insert(path, identity);
-            }
+            let identity = physical_directory_identity(&path).unwrap_or_else(|error| {
+                panic!("cannot capture preexisting {}: {error}", path.display())
+            });
+            preexisting.insert(path, identity);
         }
     }
+    drop(_snapshot_writer);
+    drop(_snapshot_worker);
     write_config(&repo, &storage, 129, 1, 1);
     fs::write(
         repo.join("src/lib.rs"),
@@ -469,16 +493,24 @@ fn physical_directory_identity(path: &Path) -> Result<(u64, u64), String> {
     {
         use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
         use windows_sys::Win32::Storage::FileSystem::{
-            GetFileInformationByHandle, BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS,
+            GetFileInformationByHandle, BY_HANDLE_FILE_INFORMATION, FILE_ATTRIBUTE_DIRECTORY,
+            FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
+            FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
         };
         let file = fs::OpenOptions::new()
-            .read(true)
-            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS)
+            .access_mode(FILE_READ_ATTRIBUTES)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
             .open(path)
             .map_err(|error| error.to_string())?;
         let mut information: BY_HANDLE_FILE_INFORMATION = unsafe { std::mem::zeroed() };
         if unsafe { GetFileInformationByHandle(file.as_raw_handle() as _, &mut information) } == 0 {
             return Err(std::io::Error::last_os_error().to_string());
+        }
+        if information.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY == 0
+            || information.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT != 0
+        {
+            return Err("workspace is not a real directory".into());
         }
         Ok((
             u64::from(information.dwVolumeSerialNumber),
@@ -494,21 +526,23 @@ fn physical_directory_identity(path: &Path) -> Result<(u64, u64), String> {
 /// Observation only: real worker/writer/owner leases exclude concurrent births
 /// and mutations while test assertions inspect committed terminal control facts.
 /// These bytes are never used to authorize cleanup or adopt unknown payloads.
+fn observation_lock(path: &Path) -> Result<fs::File, String> {
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(path)
+        .map_err(|error| format!("{}: {error}", path.display()))?;
+    fs2::FileExt::try_lock_exclusive(&file)
+        .map_err(|error| format!("busy {}: {error}", path.display()))?;
+    Ok(file)
+}
+
 fn registered_work_is_terminal_at_quiescence(
     storage: &Path,
     preexisting: &std::collections::BTreeMap<PathBuf, (u64, u64)>,
 ) -> Result<Vec<PathBuf>, String> {
     use sha2::{Digest, Sha256};
-    let lock = |path: &Path| -> Result<fs::File, String> {
-        let file = fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(path)
-            .map_err(|error| format!("{}: {error}", path.display()))?;
-        fs2::FileExt::try_lock_exclusive(&file)
-            .map_err(|error| format!("busy {}: {error}", path.display()))?;
-        Ok(file)
-    };
+    let lock = observation_lock;
     let _worker = lock(&storage.join("worker.lock"))?;
     let _writer = lock(&storage.join("writer.lock"))?;
     if active_worker_pid(&storage.join("worker.json")).is_some() {

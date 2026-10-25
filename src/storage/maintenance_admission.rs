@@ -479,7 +479,7 @@ pub(crate) fn observe_maintenance_binding(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     #[test]
     fn private_metadata_owner_keeps_preparation_images_in_charged_boxes() {
         // The former inline scratch/epoch/config owner exceeded this fixed
@@ -499,15 +499,15 @@ mod tests {
     };
     use super::*;
     use std::fs;
-    struct Fixture {
+    pub(crate) struct Fixture {
         root: PathBuf,
-        target: MaintenanceTarget,
-        layout: ManagedLayout,
-        domain: ReferenceDomain,
-        memory: CleanupMemory,
+        pub(crate) target: MaintenanceTarget,
+        pub(crate) layout: ManagedLayout,
+        pub(crate) domain: ReferenceDomain,
+        pub(crate) memory: CleanupMemory,
     }
     impl Fixture {
-        fn new() -> Self {
+        pub(crate) fn new() -> Self {
             let root = std::env::temp_dir().join(format!("admit-{}", managed_generation_id()));
             fs::create_dir(&root).unwrap();
             let root = fs::canonicalize(root).unwrap();
@@ -546,16 +546,16 @@ mod tests {
                 memory: CleanupMemory::new(8 * 1024 * 1024).unwrap(),
             }
         }
-        fn epoch(&self) -> ReferenceEpoch {
+        pub(crate) fn epoch(&self) -> ReferenceEpoch {
             match observe_reference_epoch(&self.domain).unwrap() {
                 EpochObservation::Verified(epoch) => epoch,
                 other => panic!("{other:?}"),
             }
         }
-        fn prepared(&self) -> PreparedCanonical {
+        pub(crate) fn prepared(&self) -> PreparedCanonical {
             prepare_canonical(&self.target, &self.domain, &self.epoch(), &self.memory).unwrap()
         }
-        fn unlocked(&self) {
+        pub(crate) fn unlocked(&self) {
             for path in [
                 self.layout.writer_lock_path(),
                 self.layout.worker_lock_path(),
@@ -2397,7 +2397,7 @@ impl PrivateMetadataMutation<'_> {
 }
 
 #[cfg(test)]
-thread_local! {static METADATA_WRITE_CUT:std::cell::RefCell<Option<usize>>=const {std::cell::RefCell::new(None)};}
+thread_local! {pub(crate) static METADATA_WRITE_CUT:std::cell::RefCell<Option<usize>>=const {std::cell::RefCell::new(None)};}
 
 /// Global invalidation component for independently proven scoped roles. It
 /// grants NO generation/workspace/payload ownership itself. The role module

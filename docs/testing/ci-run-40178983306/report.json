@@ -1,0 +1,40 @@
+{
+  "source_commit": "2eb7d458e708a62589978e2a6ac9bd28b2d55e91",
+  "tested_merge": "e266c72cf4cb4077e50b9d93c1a81140af1529ca",
+  "run_id": 40178983306,
+  "supported_targets": [
+    "macos-arm64",
+    "windows-x86_64"
+  ],
+  "macos": {
+    "unit": "passed",
+    "generation": "passed",
+    "integration": "passed",
+    "release_artifact": "passed"
+  },
+  "windows": {
+    "generation_groups": "all four passed, including ten-update convergence",
+    "unit_groups": "groups 2/3/4 passed; group 1 failed copied-orphan staging after grant expiration",
+    "integration_groups": "groups 1/3/4 passed; group 2 failed twenty-client coordinator terminal-state fixture",
+    "twenty_updates": "all twenty revisions published/drained/reused and final oracle checks passed",
+    "integration_main_batch_seconds_before": 3975.309,
+    "integration_main_batch_seconds_runner_temp": 322.752
+  },
+  "root_cause": {
+    "legacy_control": "A 100 ms grant expired during a durable metadata transaction; dispatch interpreted role payload before completing the authenticated pending intent. Subsequent legacy stream steps required committed metadata and rejected it forever.",
+    "coordinator_fixture": "Preexisting-root capture silently skipped identity errors and raced owner/birth shutdown. Capture now holds actual worker/writer leases, requires all identities, and uses metadata-only no-follow Windows directory handles."
+  },
+  "repair": {
+    "control_recovery": "Perform existing authenticated metadata recovery before role dispatch; only exact intended slot/commit bytes are replayed through existing ownership guards.",
+    "regression": "Actual dispatcher recovery with both durable slot-write cuts; failed before fix, passed after.",
+    "constraints": "No production ceiling, stack, mutation-grant, durability or ownership-check reductions."
+  },
+  "local_validation": {
+    "coordinator_process": "passed, 36.01 seconds, resource and containment assertions retained",
+    "new_recovery_regression": "passed both durable cut points",
+    "clippy_workspace_all_targets_all_features_warnings_denied": "passed",
+    "format": "passed",
+    "native_storage_group": "4 passed, 337.60 seconds; durable metadata cuts, interrupted role dispatch, copied orphan and reader lease"
+  },
+  "native_follow_up": "pending"
+}
