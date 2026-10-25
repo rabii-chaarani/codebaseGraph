@@ -1596,29 +1596,43 @@ impl RootedDirectory {
             use windows_sys::{
                 Wdk::Storage::FileSystem::NtFlushBuffersFileEx,
                 Win32::{
-                    Foundation::{RtlNtStatusToDosError, INVALID_HANDLE_VALUE},
+                    Foundation::{RtlNtStatusToDosError, GENERIC_WRITE, INVALID_HANDLE_VALUE},
                     Storage::FileSystem::{
-                        ReOpenFile, FILE_ADD_FILE, FILE_FLAG_BACKUP_SEMANTICS,
-                        FILE_FLAG_OPEN_REPARSE_POINT, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE,
-                        FILE_SHARE_READ, FILE_SHARE_WRITE, SYNCHRONIZE,
+                        FileIdType, OpenFileById, FILE_FLAG_BACKUP_SEMANTICS,
+                        FILE_FLAG_OPEN_REPARSE_POINT, FILE_ID_DESCRIPTOR, FILE_ID_DESCRIPTOR_0,
+                        FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
                     },
                     System::IO::IO_STATUS_BLOCK,
                 },
             };
             // Flush requires write access even when the directory was pinned
             // for observation. Reopen the exact object, never its pathname.
+            let id = FILE_ID_DESCRIPTOR {
+                dwSize: std::mem::size_of::<FILE_ID_DESCRIPTOR>() as u32,
+                Type: FileIdType,
+                Anonymous: FILE_ID_DESCRIPTOR_0 {
+                    FileId: self.identity.index as i64,
+                },
+            };
+            // SAFETY: the live pin prevents ID reuse; its own volume supplies
+            // the hint. The descriptor is fixed-size and fully initialized.
             let handle = unsafe {
-                ReOpenFile(
+                OpenFileById(
                     self.directory.as_raw_handle(),
-                    FILE_ADD_FILE | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+                    &id,
+                    GENERIC_WRITE | FILE_READ_ATTRIBUTES,
                     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    std::ptr::null(),
                     FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
                 )
             };
             if handle == INVALID_HANDLE_VALUE {
-                return Err(std::io::Error::last_os_error());
+                let error = std::io::Error::last_os_error();
+                #[cfg(test)]
+                eprintln!("namespace reopen failed: {error:?}");
+                return Err(error);
             }
-            // SAFETY: ReOpenFile returned one owned handle to the pinned object.
+            // SAFETY: successful OpenFileById returned one owned handle.
             let writable = unsafe { File::from_raw_handle(handle) };
             if file_identity(&writable).map_err(native_io)? != self.identity {
                 return Err(std::io::ErrorKind::InvalidInput.into());
@@ -1636,6 +1650,8 @@ impl RootedDirectory {
                 )
             };
             if result < 0 {
+                #[cfg(test)]
+                eprintln!("namespace flush failed: {result:#x}");
                 Err(std::io::Error::from_raw_os_error(
                     unsafe { RtlNtStatusToDosError(result) } as i32,
                 ))

@@ -2647,6 +2647,7 @@ mod tests {
         let lock = File::open(fixture.target.state_root.join("storage/writer.lock")).unwrap();
         FileExt::try_lock_exclusive(&lock).unwrap();
         let inventory = inspect_storage(&fixture.target);
+        drop(lock);
         assert_eq!(inventory.status, InventoryStatus::Busy);
         assert_eq!(before, tree(&fixture.root));
     }

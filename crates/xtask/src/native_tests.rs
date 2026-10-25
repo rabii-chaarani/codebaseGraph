@@ -1,6 +1,36 @@
 use super::*;
 use std::time::Instant;
 
+struct CapturedCli {
+    directory: PathBuf,
+    executable: PathBuf,
+}
+impl CapturedCli {
+    fn copy(source: &Path, name: &str) -> Result<Self, String> {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| e.to_string())?
+            .as_nanos();
+        let directory =
+            env::temp_dir().join(format!("native-test-cli-{}-{nanos}", std::process::id()));
+        fs::create_dir(&directory).map_err(|e| e.to_string())?;
+        let captured = Self {
+            executable: directory.join(name),
+            directory,
+        };
+        fs::copy(source, &captured.executable).map_err(|e| e.to_string())?;
+        if sha256_file(source)? != sha256_file(&captured.executable)? {
+            return Err("captured native CLI copy differs from the compiler artifact".into());
+        }
+        Ok(captured)
+    }
+}
+impl Drop for CapturedCli {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.directory);
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Cohort {
     All,
@@ -161,14 +191,16 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
     let inventory = inventory(&metadata)?;
     let commands = commands(target, selected, &inventory);
     let started = Instant::now();
-    let executable = capture_native_test_cli(target)?;
-    let hash = sha256_file(&executable)?;
+    let compiler_artifact = capture_native_test_cli(target)?;
+    let captured = CapturedCli::copy(&compiler_artifact, target.binary_names().0)?;
+    let executable = captured.executable.as_path();
+    let hash = sha256_file(executable)?;
     println!(
         "native-test CLI compiler artifact: {} sha256={hash}",
         executable.display()
     );
     let mut report = json!({"source_sha":env::var("SOURCE_SHA").ok(),"target":target.as_str(),
-        "cohort":selected.name(),"cli":executable,"cli_sha256":hash,"inventory":inventory,
+        "cohort":selected.name(),"cli":executable,"compiler_artifact":compiler_artifact,"cli_sha256":hash,"inventory":inventory,
         "commands":commands,"executions":[],"capture_seconds":started.elapsed().as_secs_f64()});
     let save = |report: &Value| {
         fs::write(
@@ -191,7 +223,7 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
             }
             let listing = listing
                 .args(extra)
-                .env("CARGO_BIN_EXE_codebase-graph", &executable)
+                .env("CARGO_BIN_EXE_codebase-graph", executable)
                 .output()
                 .map_err(|e| e.to_string())?;
             fs::write(output.join(format!("{index}-{label}.txt")), &listing.stdout)
@@ -212,7 +244,7 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
         let result = run_command(
             Command::new("cargo")
                 .args(args)
-                .env("CARGO_BIN_EXE_codebase-graph", &executable),
+                .env("CARGO_BIN_EXE_codebase-graph", executable),
             "native test",
         );
         let seconds = now.elapsed().as_secs_f64();
@@ -233,7 +265,7 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
         }
     }
     report["total_seconds"] = json!(started.elapsed().as_secs_f64());
-    report["cli_unchanged"] = json!(sha256_file(&executable).is_ok_and(|h| h == hash));
+    report["cli_unchanged"] = json!(sha256_file(executable).is_ok_and(|h| h == hash));
     save(&report)?;
     if report["cli_unchanged"] != true {
         return Err("captured native-test CLI changed during execution".into());
@@ -248,6 +280,22 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn captured_cli_survives_cargo_replacing_its_output() {
+        let root = unique_temp_dir("native-cli-copy-test").unwrap();
+        let source = root.join("original");
+        fs::write(&source, b"compiler artifact").unwrap();
+        let captured = CapturedCli::copy(&source, "captured").unwrap();
+        let directory = captured.directory.clone();
+        fs::write(source, b"later Cargo output").unwrap();
+        assert_eq!(
+            fs::read(&captured.executable).unwrap(),
+            b"compiler artifact"
+        );
+        drop(captured);
+        assert!(!directory.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn windows_regressions_precede_the_complete_unfiltered_suite() {
         let commands = commands(NativeTarget::WindowsX86_64, Cohort::All, &[]);

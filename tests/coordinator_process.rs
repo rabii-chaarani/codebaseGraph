@@ -8,6 +8,12 @@ use std::time::{Duration, Instant};
 
 static TEST_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
+fn binary() -> PathBuf {
+    std::env::var_os("CARGO_BIN_EXE_codebase-graph")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_BIN_EXE_codebase-graph")))
+}
+
 #[test]
 fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     let repo = temp_repo();
@@ -278,7 +284,7 @@ fn http_server_plus_coordinator_stays_below_idle_rss_gate() {
     let storage = state.join("storage");
     fs::create_dir_all(&state).unwrap();
     write_config_with_policy(&repo, &storage, "off", 768, 384, 32);
-    let mut child = Command::new(env!("CARGO_BIN_EXE_codebase-graph"))
+    let mut child = Command::new(binary())
         .arg("mcp")
         .arg("http")
         .arg("--repo-root")
@@ -350,7 +356,7 @@ struct McpClient {
 
 impl McpClient {
     fn start(repo: &Path, index: usize) -> Self {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_codebase-graph"))
+        let mut child = Command::new(binary())
             .arg("mcp")
             .arg("start")
             .arg("--repo-root")

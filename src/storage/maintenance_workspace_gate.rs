@@ -422,6 +422,11 @@ impl Transport {
             };
             let opened;
             let file = if step.file == 0 {
+                if locks::file_identity(&root.open_metadata_file(name)?).map_err(fixed_native)?
+                    != id
+                {
+                    return Err(fixed_invalid());
+                }
                 selector
             } else {
                 opened = root.open_existing(name)?;
@@ -1231,6 +1236,76 @@ fn pending_workspace_path(
 #[cfg(test)]
 mod preparation_layout_tests {
     use super::*;
+    #[cfg(unix)]
+    #[test]
+    fn selector_replacement_does_not_write_through_the_detached_owner() {
+        use super::super::maintenance_budget::{CleanupMemory, MutationGrant};
+        let path = std::env::temp_dir().join(format!(
+            "removal-selector-{}",
+            super::super::layout::managed_generation_id()
+        ));
+        std::fs::create_dir(&path).unwrap();
+        let root = RootedDirectory::open(&path, locks::path_identity(&path).unwrap()).unwrap();
+        let mut selector = root.create_new(SELECTOR).unwrap();
+        selector.write_all(b"old").unwrap();
+        let stamp =
+            locks::FixedFileStamp::capture(&selector, locks::FixedControlKind::File).unwrap();
+        let owner = locks::FixedLockedFile::try_lock(selector, LockMode::Exclusive)
+            .unwrap()
+            .unwrap();
+        root.rename_file_no_replace(SELECTOR, &root, b"detached", stamp.identity())
+            .unwrap();
+        root.create_new(SELECTOR)
+            .unwrap()
+            .write_all(b"new")
+            .unwrap();
+        let memory = CleanupMemory::new(32768).unwrap();
+        let mut bytes = memory.reserve(1).unwrap().bytes(1).unwrap();
+        bytes.as_mut_slice()[0] = 42;
+        // Isolate current-name validation under an actual owned lock; this
+        // transport test neither fabricates publication proof nor deletes data.
+        let mut transport = Transport {
+            binding: c::PublisherBinding {
+                root: root.identity(),
+                coordination: stamp.identity(),
+                data: [stamp.identity(); 2],
+                selector: stamp.identity(),
+                stream: None,
+                incarnation: [1; 32],
+            },
+            source: [stamp; 4],
+            commit: c::CommitFact {
+                generation: 1,
+                active: 0,
+                slot_digest: [0; 32],
+            },
+            state: RemovalState::Idle,
+            steps: std::array::from_fn(|i| {
+                (i == 0).then_some(WriteStep {
+                    file: 0,
+                    offset: 0,
+                    start: 0,
+                    len: 1,
+                })
+            }),
+            count: 1,
+            recovery_end: 0,
+            remove_end: 0,
+            bytes,
+        };
+        let mut grant = MutationGrant::for_test(100, std::time::Duration::from_secs(2));
+        assert!(transport
+            .run(&root, owner.file(), 0, 1, &mut grant)
+            .is_err());
+        assert_eq!(std::fs::read(path.join("detached")).unwrap(), b"old");
+        assert_eq!(
+            std::fs::read(path.join(std::str::from_utf8(SELECTOR).unwrap())).unwrap(),
+            b"new"
+        );
+        drop(owner);
+        drop(root);
+        std::fs::remove_dir_all(path).unwrap();
+    }
     #[test]
     fn workspace_removal_keeps_large_images_out_of_fixed_owner_layout() {
         // This absolute envelope bound rejects the original large inline owner.

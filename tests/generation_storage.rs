@@ -341,8 +341,10 @@ fn collect_managed_until_owned_idle(repo: &Path) {
             + expected.len()
             + fs::read_dir(storage.join("generations")).unwrap().count());
     let mut last = serde_json::Value::Null;
+    let binary = std::env::var_os("CARGO_BIN_EXE_codebase-graph")
+        .unwrap_or_else(|| env!("CARGO_BIN_EXE_codebase-graph").into());
     for _ in 0..attempts {
-        let output = Command::new(env!("CARGO_BIN_EXE_codebase-graph"))
+        let output = Command::new(&binary)
             .args(["check-health", "--repo-root"])
             .arg(repo)
             .arg("--json")
