@@ -1,0 +1,28 @@
+{
+  "source_commit": "0dd460a45a0a914de77fa617a89bd6a734fc4a0e",
+  "run_id": 40145493998,
+  "windows_preflight": {
+    "passed": 17,
+    "failed": 8,
+    "full_suite_executed": false,
+    "passed_repairs": [
+      "directory flushing",
+      "generation publication and retirement",
+      "configuration fingerprints",
+      "contention classification",
+      "guardian fixture"
+    ],
+    "remaining": [
+      "native buffer alignment",
+      "live legacy owner observation and recovery",
+      "pinned workspace namespace removal"
+    ]
+  },
+  "follow_up_local_checks": {
+    "legacy_owner_cases_passed": 8,
+    "schema_oracle_passed": 1,
+    "clippy": "passed",
+    "msvc_platform_primitives_cross_check": "passed; compile-only"
+  },
+  "pending": "Hosted native qualification required after follow-up changes"
+}

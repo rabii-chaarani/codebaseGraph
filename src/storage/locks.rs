@@ -101,6 +101,9 @@ impl LockedFile {
 // (device,inode) pairs can be recycled once all descriptors to a removed empty
 // lock close; those numeric pairs alone do not identify a file's creation.
 pub(crate) const COORDINATION_HEADER_BYTES: usize = 72;
+#[cfg(windows)]
+#[repr(align(8))]
+struct NativeIoBytes<const N: usize>([u8; N]);
 const COORDINATION_HEADER_MAGIC: &[u8; 8] = b"CGCOOR02";
 pub(crate) fn encode_coordination_incarnation(
     incarnation: [u8; 32],
@@ -226,8 +229,16 @@ pub(crate) fn read_coordination_incarnation(file: &File) -> Result<Option<[u8; 3
         return Ok(None);
     }
     let mut bytes = [0; COORDINATION_HEADER_BYTES];
-    if !read_coordination_header(file, &mut bytes)? {
-        return Ok(None);
+    match read_coordination_header(file, &mut bytes) {
+        Ok(true) => {}
+        Ok(false) => return Ok(None),
+        #[cfg(windows)]
+        Err(error) if error.raw_os_error() == Some(33) => {
+            // A live owner excludes data reads on another handle. Its durable
+            // birth nonce is also available as metadata without weakening locks.
+            return Ok(created_file_nonce(file)?);
+        }
+        Err(error) => return Err(error.into()),
     }
     Ok(decode_coordination_incarnation(&bytes))
 }
@@ -1987,22 +1998,32 @@ impl RootedDirectory {
             use std::os::windows::io::AsRawHandle;
             use windows_sys::{
                 Wdk::Storage::FileSystem::{
-                    FileDispositionInformation, NtSetInformationFile, FILE_DISPOSITION_INFORMATION,
+                    FileDispositionInformationEx, NtSetInformationFile,
+                    FILE_DISPOSITION_INFORMATION_EX,
                 },
-                Win32::{Foundation::RtlNtStatusToDosError, System::IO::IO_STATUS_BLOCK},
+                Win32::{
+                    Foundation::RtlNtStatusToDosError,
+                    Storage::FileSystem::{
+                        FILE_DISPOSITION_FLAG_DELETE, FILE_DISPOSITION_FLAG_POSIX_SEMANTICS,
+                    },
+                    System::IO::IO_STATUS_BLOCK,
+                },
             };
             let _ = native;
-            let disposition = FILE_DISPOSITION_INFORMATION { DeleteFile: true };
+            let disposition = FILE_DISPOSITION_INFORMATION_EX {
+                Flags: FILE_DISPOSITION_FLAG_DELETE | FILE_DISPOSITION_FLAG_POSIX_SEMANTICS,
+            };
             let mut status: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
             // SAFETY: DELETE access was acquired on this exact native object;
-            // classic disposition retains native sharing/empty-directory rules.
+            // POSIX disposition removes the name now, while retaining native
+            // DELETE sharing and empty-directory checks, even with our own pin.
             let result = unsafe {
                 NtSetInformationFile(
                     file.as_raw_handle(),
                     &mut status,
-                    (&disposition as *const FILE_DISPOSITION_INFORMATION).cast(),
-                    std::mem::size_of::<FILE_DISPOSITION_INFORMATION>() as u32,
-                    FileDispositionInformation,
+                    (&disposition as *const FILE_DISPOSITION_INFORMATION_EX).cast(),
+                    std::mem::size_of::<FILE_DISPOSITION_INFORMATION_EX>() as u32,
+                    FileDispositionInformationEx,
                 )
             };
             if result < 0 {
@@ -2059,6 +2080,54 @@ mod rooted_directory_tests {
         file.sync_all().unwrap();
         root.sync_namespace().unwrap();
         assert_eq!(root.identity(), id);
+    }
+    #[cfg(windows)]
+    #[test]
+    fn metadata_nonce_remains_readable_under_an_exclusive_owner() {
+        let fixture = Fixture::new();
+        let root = fixture.anchor();
+        let mut file = root.create_new(b"owner").unwrap();
+        file.write_all(&encode_coordination_incarnation([7; 32]))
+            .unwrap();
+        set_created_file_nonce(&file, &[7; 32]).unwrap();
+        let owner = FixedLockedFile::try_lock(file, LockMode::Exclusive)
+            .unwrap()
+            .unwrap();
+        let reader = root.open_readonly_file(b"owner").unwrap();
+        let error = std::os::windows::fs::FileExt::seek_read(&reader, &mut [0; 1], 0).unwrap_err();
+        assert_eq!(error.raw_os_error(), Some(33));
+        assert_eq!(
+            read_coordination_incarnation(&reader).unwrap(),
+            Some([7; 32])
+        );
+        assert!(FileExt::try_lock_shared(&reader).is_err());
+        assert_eq!(owner.mode(), LockMode::Exclusive);
+    }
+    #[cfg(windows)]
+    #[test]
+    fn directory_queries_align_nested_byte_scratch_and_remove_pinned_empty_names() {
+        let fixture = Fixture::new();
+        let root = fixture.anchor();
+        let child = root.create_directory(b"owned-empty").unwrap();
+        let mut backing = [0; 4104];
+        let offset = backing.as_ptr().align_offset(8) + 1;
+        let scratch = (&mut backing[offset..offset + 4096]).try_into().unwrap();
+        let mut seen = false;
+        root.visit_entries(scratch, &mut |name| {
+            seen |= name == b"owned-empty";
+            Ok(())
+        })
+        .unwrap();
+        assert!(seen);
+        root.remove_empty_directory(b"owned-empty", child.identity())
+            .unwrap();
+        assert_eq!(
+            root.open_directory_readonly(b"owned-empty")
+                .err()
+                .unwrap()
+                .kind(),
+            std::io::ErrorKind::NotFound
+        );
     }
     struct Fixture {
         root: PathBuf,
@@ -2561,6 +2630,10 @@ impl RootedDirectory {
         #[cfg(windows)]
         {
             let _ = directories_only;
+            // Native directory queries require aligned output. Caller scratch
+            // may be a byte field within a larger prepared object.
+            let padding = bytes.as_ptr().align_offset(8);
+            let bytes = &mut bytes[padding..];
             use std::os::windows::io::AsRawHandle;
             use windows_sys::{
                 Wdk::Storage::FileSystem::{FileNamesInformation, NtQueryDirectoryFile},
@@ -2883,7 +2956,8 @@ pub(crate) fn set_created_file_nonce(file: &File, nonce: &[u8; 32]) -> std::io::
             Win32::{Foundation::RtlNtStatusToDosError, System::IO::IO_STATUS_BLOCK},
         };
         const NAME: &[u8] = b"CODEBASEGRAPH.ORIGIN";
-        let mut bytes = [0u8; 64];
+        let mut aligned = NativeIoBytes([0u8; 64]);
+        let bytes = &mut aligned.0;
         bytes[5] = NAME.len() as u8;
         bytes[6..8].copy_from_slice(&32u16.to_le_bytes());
         bytes[8..8 + NAME.len()].copy_from_slice(NAME);
@@ -3018,10 +3092,12 @@ pub(crate) fn created_file_nonce(file: &File) -> std::io::Result<Option<[u8; 32]
             },
         };
         const NAME: &[u8] = b"CODEBASEGRAPH.ORIGIN";
-        let mut query = [0u8; 32];
+        let mut aligned_query = NativeIoBytes([0u8; 32]);
+        let query = &mut aligned_query.0;
         query[4] = NAME.len() as u8;
         query[5..5 + NAME.len()].copy_from_slice(NAME);
-        let mut bytes = [0u8; 128];
+        let mut aligned_bytes = NativeIoBytes([0u8; 128]);
+        let bytes = &mut aligned_bytes.0;
         let mut io: IO_STATUS_BLOCK = unsafe { std::mem::zeroed() };
         let status = unsafe {
             NtQueryEaFile(

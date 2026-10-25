@@ -333,13 +333,15 @@ pub(super) fn observe_files_named(
     state: &File,
     owner_name: &[u8],
 ) -> Result<Observation, FixedControlError> {
-    observe_source_snapshot(root, gate, state, owner_name, false)
+    let owner = root.open_readonly_file(owner_name)?;
+    observe_source_snapshot(root, gate, state, owner_name, &owner, false)
 }
 fn observe_source_snapshot(
     root: &RootedDirectory,
     gate: &File,
     state: &File,
     owner_name: &[u8],
+    owner: &File,
     allow_pending: bool,
 ) -> Result<Observation, FixedControlError> {
     let gate_stamp = FixedFileStamp::capture(gate, Kind::File)?;
@@ -359,10 +361,11 @@ fn observe_source_snapshot(
     {
         return Err(invalid(Problem::Changed));
     }
-    let owner = root.open_readonly_file(owner_name)?;
-    let owner_stamp = FixedFileStamp::capture(&owner, Kind::File)?;
+    let named_owner = root.open_metadata_file(owner_name)?;
+    let owner_stamp = FixedFileStamp::capture(owner, Kind::File)?;
     if owner_stamp.identity() != binding.owner
-        || locks::read_coordination_incarnation(&owner)
+        || FixedFileStamp::capture(&named_owner, Kind::File)?.identity() != binding.owner
+        || locks::read_coordination_incarnation(owner)
             .map_err(|_| invalid(Problem::InvalidRecord))?
             != Some(binding.owner_nonce)
     {
@@ -1300,6 +1303,7 @@ pub(super) fn prepare_source_observation(
     gate: &File,
     state: &File,
     owner_name: &[u8],
+    owner: &File,
     memory: &CleanupMemory,
 ) -> Result<
     (
@@ -1309,7 +1313,8 @@ pub(super) fn prepare_source_observation(
     FixedControlError,
 > {
     let data =
-        prepare_source_observation_boxed(root, gate, state, owner_name, memory)?.into_inner();
+        prepare_source_observation_with_owner_boxed(root, gate, state, owner_name, owner, memory)?
+            .into_inner();
     Ok((data.observed.into_inner(), data.recovery))
 }
 
@@ -1325,9 +1330,10 @@ fn source_snapshot_boxed(
     gate: &File,
     state: &File,
     owner_name: &[u8],
+    owner: &File,
     memory: &CleanupMemory,
 ) -> Result<super::maintenance_budget::MemoryBox<Observation>, FixedControlError> {
-    let observed = observe_source_snapshot(root, gate, state, owner_name, true)?;
+    let observed = observe_source_snapshot(root, gate, state, owner_name, owner, true)?;
     super::maintenance_budget::MemoryBox::new(observed, memory).map_err(FixedControlError::Resource)
 }
 #[inline(never)]
@@ -1339,13 +1345,25 @@ pub(super) fn prepare_source_observation_boxed(
     memory: &CleanupMemory,
 ) -> Result<super::maintenance_budget::MemoryBox<PreparedSourceObservationData>, FixedControlError>
 {
+    let owner = root.open_readonly_file(owner_name)?;
+    prepare_source_observation_with_owner_boxed(root, gate, state, owner_name, &owner, memory)
+}
+pub(super) fn prepare_source_observation_with_owner_boxed(
+    root: &RootedDirectory,
+    gate: &File,
+    state: &File,
+    owner_name: &[u8],
+    owner: &File,
+    memory: &CleanupMemory,
+) -> Result<super::maintenance_budget::MemoryBox<PreparedSourceObservationData>, FixedControlError>
+{
     let floor = memory
         .reserve(std::mem::size_of::<PreparedSourceRecovery>() * 2 + 16384)
         .map_err(FixedControlError::Resource)?;
-    let observed = source_snapshot_boxed(root, gate, state, owner_name, memory)?;
+    let observed = source_snapshot_boxed(root, gate, state, owner_name, owner, memory)?;
     let recovery = if observed.pending {
         Some(prepare_pending_source_recovery(
-            root, gate, state, owner_name, &observed, floor, memory,
+            gate, state, owner, &observed, floor, memory,
         )?)
     } else {
         None
@@ -1361,10 +1379,9 @@ pub(super) fn prepare_source_observation_boxed(
 // they cannot multiply the stack above immutable source decoding.
 #[inline(never)]
 fn prepare_pending_source_recovery(
-    root: &RootedDirectory,
     gate: &File,
     state: &File,
-    owner_name: &[u8],
+    owner: &File,
     before: &Observation,
     floor: super::maintenance_budget::MemoryReservation,
     memory: &CleanupMemory,
@@ -1383,11 +1400,10 @@ fn prepare_pending_source_recovery(
     let mut commit_image = [0; codec::COMMIT_BYTES];
     codec::encode_commit(&mut commit_image, &before.binding.nonce, commit)
         .map_err(|_| invalid(Problem::InvalidRecord))?;
-    let owner = root.open_readonly_file(owner_name)?;
     let mut gate_header = [0; locks::COORDINATION_HEADER_BYTES];
     let mut owner_header = [0; locks::COORDINATION_HEADER_BYTES];
     locks::read_fixed_range(gate, 0, &mut gate_header)?;
-    locks::read_fixed_range(&owner, 0, &mut owner_header)?;
+    locks::read_fixed_range(owner, 0, &mut owner_header)?;
     before.state_stamp.recheck(state)?;
     let prepared = super::maintenance_budget::MemoryBox::new(
         PreparedSourceRecovery {
@@ -1462,14 +1478,14 @@ fn recognized_source_binding(
         let mut bytes = [0; BINDING_BYTES];
         locks::read_fixed_range(state, 0, &mut bytes)?;
         let binding = Binding::decode(&bytes)?;
-        let owner = root.open_readonly_file(owner_name)?;
+        // Recognition only vetoes primary access on uncertain publication;
+        // source facts and effects still require the validated owner header.
+        let owner = root.open_metadata_file(owner_name)?;
         Ok(binding.root == root.identity()
             && binding.gate == FixedFileStamp::capture(gate, Kind::File)?.identity()
             && binding.state == FixedFileStamp::capture(state, Kind::File)?.identity()
             && binding.owner == FixedFileStamp::capture(&owner, Kind::File)?.identity()
-            && locks::read_coordination_incarnation(gate).ok().flatten() == Some(binding.nonce)
-            && locks::read_coordination_incarnation(&owner).ok().flatten()
-                == Some(binding.owner_nonce))
+            && locks::read_coordination_incarnation(gate).ok().flatten() == Some(binding.nonce))
     };
     check().unwrap_or(false)
 }

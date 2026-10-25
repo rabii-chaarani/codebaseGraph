@@ -836,7 +836,12 @@ fn continue_staging_work(
     memory: &CleanupMemory,
     cancel: &dyn Fn() -> bool,
 ) -> Result<Option<MemoryBox<LegacyWork>>, FixedControlError> {
-    if job.scope.refresh_publication_recovery(memory)? {
+    let recovering = {
+        let job = &mut *job;
+        job.scope
+            .refresh_publication_recovery(memory, job.owner.as_ref())?
+    };
+    if recovering {
         return staging_work(job, StagingAction::Recover, memory);
     }
     if job.owner.is_none() {

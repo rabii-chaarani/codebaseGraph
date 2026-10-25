@@ -1,0 +1,21 @@
+{
+  "schema_whitespace_only": {
+    "path": "assets/graph_schema.json",
+    "before_sha256": "244fbce950f51ed5db6b52fa8aadb418fdd96d73bc475b4a1a0d1fb66e34d3bd",
+    "after_sha256": "b85a8d549c24c7193cf03d66c1e687148ec3602286bc9172e2e60c7f60ac3124",
+    "identical_json_values": true,
+    "raw_json_token_lexemes_preserved": true
+  },
+  "extension": {
+    "path": "assets/ladybug-extensions/0.19.0/osx_amd64/fts/libfts.lbug_extension.xz",
+    "before_bytes": 342516,
+    "after_bytes": 342164,
+    "before_sha256": "a9d60bfae1e6121eeb8ea0f610a9c8177e3f439956eeab39127822dfd2fa4016",
+    "after_sha256": "b5e476a440a893c365863b7349c0c308faecacf426809d799ccca0d5dbd10d0b",
+    "decoded_sha256": "5eac6f37333e29b25c6393cad6bbc3542c59a72e77e03b17caf6a5c0183ff7fa",
+    "decoded_bytes": 1560888,
+    "actual_lzma_rs_decoder_equality": true,
+    "dictionary_bytes": 1572864,
+    "integrity_check": "CRC64"
+  }
+}

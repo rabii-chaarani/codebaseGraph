@@ -477,7 +477,7 @@ fn select_job(
         }
     };
     let mut scope = scope_box(target, binding, mode, &storage, &member, &artifact, memory)?;
-    let mut recovering = scope.refresh_publication_recovery(memory)?;
+    let mut recovering = scope.refresh_publication_recovery(memory, None)?;
     let mut version = if recovering {
         None
     } else {
@@ -496,7 +496,7 @@ fn select_job(
                 {
                     artifact = actual;
                     scope = scope_box(target, binding, mode, &storage, &member, &artifact, memory)?;
-                    recovering = scope.refresh_publication_recovery(memory)?;
+                    recovering = scope.refresh_publication_recovery(memory, None)?;
                 }
             }
         }
@@ -636,7 +636,12 @@ fn prepare_job(
     memory: &CleanupMemory,
     cancel: &dyn Fn() -> bool,
 ) -> Result<Option<MemoryBox<LegacyNativeWork>>, FixedControlError> {
-    if job.scope.refresh_publication_recovery(memory)? {
+    let recovering = {
+        let job = &mut *job;
+        job.scope
+            .refresh_publication_recovery(memory, job.owner.as_ref())?
+    };
+    if recovering {
         return work(job, Action::Recover, memory);
     }
     if job.owner.is_none() {

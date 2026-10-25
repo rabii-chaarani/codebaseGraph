@@ -130,7 +130,9 @@ fn recover_after_cut(allowance: usize) {
                         )
                         .is_ok());
 
-                        *recovering = scope.refresh_publication_recovery(memory).unwrap();
+                        *recovering = scope
+                            .refresh_publication_recovery(memory, owner.as_ref())
+                            .unwrap();
                         assert!(*recovering, "durable own intent must be recognized");
                     }
                 } else if let Some(owner) = owner.as_ref() {

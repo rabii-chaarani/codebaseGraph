@@ -115,7 +115,7 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
                 [
                     "--lib",
                     "--",
-                    "namespace_flush_accepts",
+                    "storage::locks::",
                     "maintenance_legacy_bootstrap::",
                     "dc_workspace_root_removal_restarts",
                     "managed_read_recovery_does_not_recreate",

@@ -107,7 +107,7 @@ pub(crate) fn prepare_legacy_scope(
     let mut prepared = prepare_legacy_scope_layout(target, binding, scope, freeze_cache, memory)?;
     prepare_legacy_scope_source(&mut prepared, target, memory)?;
     prepared.observation =
-        PreparedSourceObservation::read(&prepared.root, &prepared.paths, memory)?;
+        PreparedSourceObservation::read(&prepared.root, &prepared.paths, None, memory)?;
     Ok(prepared)
 }
 
@@ -552,6 +552,20 @@ fn init_coordination(
     }
     write_range(file, 0, image, grant)
 }
+fn init_owner_coordination(
+    file: &File,
+    image: &[u8; locks::COORDINATION_HEADER_BYTES],
+    grant: &mut MutationGrant,
+) -> Result<(), FixedControlError> {
+    init_coordination(file, image, grant)?;
+    #[cfg(windows)]
+    {
+        grant.take_entries(2)?;
+        locks::set_created_file_nonce(file, image[8..40].try_into().unwrap())?;
+        grant.check()?;
+    }
+    Ok(())
+}
 
 pub(crate) struct LegacySourceOwner {
     state_stamp: FixedFileStamp,
@@ -828,7 +842,7 @@ fn with_legacy_enrollment_inner<R>(
     }
     let (owner, new_owner) = lock_entry(&prepared.paths[2], owner_entry, &root, scratch, grant)?;
     if new_owner {
-        init_coordination(owner.file(), &prepared.coordination[1], grant)?;
+        init_owner_coordination(owner.file(), &prepared.coordination[1], grant)?;
     }
     if raw_coordination(gate.file())? != prepared.coordination[0]
         || raw_coordination(owner.file())? != prepared.coordination[1]
@@ -1578,7 +1592,7 @@ pub(crate) fn prepare_legacy_staging_scope_boxed(
         locks::encode_coordination_incarnation(owner_nonce),
         locks::encode_coordination_incarnation(job),
     ];
-    let observation = PreparedSourceObservation::read(&target.state_root, &paths, memory)?;
+    let observation = PreparedSourceObservation::read(&target.state_root, &paths, None, memory)?;
     super::maintenance_budget::MemoryBox::new(
         PreparedLegacyStagingScope {
             coordination,
@@ -1681,7 +1695,7 @@ fn with_legacy_staging_enrollment_inner<R>(
         grant,
     )?;
     if created {
-        init_coordination(owner.file(), &prepared.coordination[1], grant)?;
+        init_owner_coordination(owner.file(), &prepared.coordination[1], grant)?;
     }
     if raw_coordination(owner.file())? != prepared.coordination[1] {
         return Err(invalid(Problem::Changed));
@@ -1994,6 +2008,7 @@ fn reopen_owner(
             .file_name()
             .map(|n| n.as_encoded_bytes())
             .ok_or_else(|| invalid(Problem::InvalidRecord))?,
+        owner.file(),
         memory,
     )?;
     let result = LegacySourceOwner {
@@ -3316,6 +3331,7 @@ impl PreparedSourceObservation {
     fn read(
         root_path: &Path,
         paths: &[PathBuf; 3],
+        held_owner: Option<&File>,
         memory: &CleanupMemory,
     ) -> Result<Option<super::maintenance_budget::MemoryBox<Self>>, FixedControlError> {
         let floor = memory
@@ -3341,36 +3357,45 @@ impl PreparedSourceObservation {
                 .ok_or_else(|| invalid(Problem::InvalidRecord))?
                 .as_encoded_bytes(),
         )?;
-        let owner = root.open_readonly_file(
+        let owner = root.open_metadata_file(
             paths[2]
                 .file_name()
                 .ok_or_else(|| invalid(Problem::InvalidRecord))?
                 .as_encoded_bytes(),
         )?;
-        let data = match super::maintenance_legacy_guard::prepare_source_observation_boxed(
-            &root,
-            &gate,
-            &state,
-            paths[2].file_name().unwrap().as_encoded_bytes(),
-            memory,
-        ) {
-            Ok(o) => o,
-            Err(FixedControlError::Invalid(Problem::Busy)) => {
-                if let Some(capsule) =
-                    super::maintenance_legacy_guard::read_creation_capsule(&root, &state)?
-                {
-                    if locks::created_file_nonce(&state)? == Some(capsule.permission.job) {
-                        return Ok(None);
-                    }
-                }
-                return Err(invalid(Problem::Busy));
-            }
-            Err(_) => return Ok(None),
+        let opened;
+        let owner_file = if let Some(held) = held_owner {
+            held
+        } else {
+            opened = root.open_readonly_file(paths[2].file_name().unwrap().as_encoded_bytes())?;
+            &opened
         };
+        let data =
+            match super::maintenance_legacy_guard::prepare_source_observation_with_owner_boxed(
+                &root,
+                &gate,
+                &state,
+                paths[2].file_name().unwrap().as_encoded_bytes(),
+                owner_file,
+                memory,
+            ) {
+                Ok(o) => o,
+                Err(FixedControlError::Invalid(Problem::Busy)) => {
+                    if let Some(capsule) =
+                        super::maintenance_legacy_guard::read_creation_capsule(&root, &state)?
+                    {
+                        if locks::created_file_nonce(&state)? == Some(capsule.permission.job) {
+                            return Ok(None);
+                        }
+                    }
+                    return Err(invalid(Problem::Busy));
+                }
+                Err(_) => return Ok(None),
+            };
         let super::maintenance_legacy_guard::PreparedSourceObservationData { observed, recovery } =
             data.into_inner();
         let gate_header = raw_coordination(&gate)?;
-        let owner_header = raw_coordination(&owner)?;
+        let owner_header = raw_coordination(owner_file)?;
         super::maintenance_budget::MemoryBox::new(
             Self {
                 observed,
@@ -3697,7 +3722,7 @@ impl PreparedLegacyScope {
         if self.kind == LegacyScopeKind::ManagedGeneration {
             self.enrollment_runs = Some(prepare_empty_runs(&self.root, memory)?);
         }
-        self.observation = PreparedSourceObservation::read(&self.root, &self.paths, memory)?;
+        self.observation = PreparedSourceObservation::read(&self.root, &self.paths, None, memory)?;
         for (i, path) in [
             (6, &self.writer),
             (7, &self.family),
@@ -3909,7 +3934,7 @@ impl PreparedLegacyStagingScope {
         request: Option<(u8, u64)>,
         memory: &CleanupMemory,
     ) -> Result<(), FixedControlError> {
-        self.observation = PreparedSourceObservation::read(&self.root, &self.paths, memory)?;
+        self.observation = PreparedSourceObservation::read(&self.root, &self.paths, None, memory)?;
         if let Some(observation) = self.observation.as_ref() {
             if !matches!(
                 observation.observed.record.phase,
@@ -4051,8 +4076,14 @@ impl PreparedLegacyScope {
     pub(crate) fn refresh_publication_recovery(
         &mut self,
         memory: &CleanupMemory,
+        owner: Option<&LegacySourceOwner>,
     ) -> Result<bool, FixedControlError> {
-        self.observation = PreparedSourceObservation::read(&self.root, &self.paths, memory)?;
+        self.observation = PreparedSourceObservation::read(
+            &self.root,
+            &self.paths,
+            owner.map(|o| o.owner.file()),
+            memory,
+        )?;
         Ok(self.publication_recovery_pending())
     }
     pub(crate) fn recover_publication(
@@ -4121,8 +4152,14 @@ impl PreparedLegacyStagingScope {
     pub(crate) fn refresh_publication_recovery(
         &mut self,
         memory: &CleanupMemory,
+        owner: Option<&LegacySourceOwner>,
     ) -> Result<bool, FixedControlError> {
-        self.observation = PreparedSourceObservation::read(&self.root, &self.paths, memory)?;
+        self.observation = PreparedSourceObservation::read(
+            &self.root,
+            &self.paths,
+            owner.map(|o| o.owner.file()),
+            memory,
+        )?;
         Ok(self.publication_recovery_pending())
     }
     pub(crate) fn recover_publication(
