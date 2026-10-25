@@ -42,6 +42,9 @@ This is illustrative compact block output; exact matches depend on the graph.
 
 ## Quick start
 
+Supported platforms are macOS on Apple Silicon (ARM64) and Windows x86_64.
+Linux and Intel macOS are no longer supported.
+
 Install from crates.io with Cargo (Rust 1.82 or newer) from the repository you
 want to index:
 

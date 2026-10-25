@@ -62,6 +62,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+case "$(uname -s):$(uname -m)" in
+  Darwin:arm64|Darwin:aarch64) ;;
+  *) echo 'Supported platforms: macOS ARM64 (install.sh) and Windows x86_64 (install.ps1).' >&2; exit 1 ;;
+esac
+
 source_dir="$(CDPATH='' cd -- "$source_dir" && pwd)"
 checksums_path="${source_dir}/checksums.txt"
 [[ -f "$checksums_path" ]] || { echo "missing checksums.txt in ${source_dir}" >&2; exit 1; }

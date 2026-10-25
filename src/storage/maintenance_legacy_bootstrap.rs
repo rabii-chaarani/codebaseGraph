@@ -695,9 +695,17 @@ impl LegacySourceOwner {
         let gate_file = root.open_readonly_file(gate_name)?;
         let state = root.open_readonly_file(state_name)?;
         let _ = owner_name;
-        let matches = self
-            .matches_current_files(&root, &gate_file, &state)
-            .is_ok()
+        let current = self.matches_current_files(&root, &gate_file, &state);
+        #[cfg(test)]
+        if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+            if let Err(error) = &current {
+                eprintln!(
+                    "legacy source owner validation failed at {}: {error:?}",
+                    self.state_path.display()
+                );
+            }
+        }
+        let matches = current.is_ok()
             && gate.identity().map_err(|_| invalid(Problem::Changed))? == self.binding.gate;
         Ok(matches)
     }
@@ -3201,8 +3209,21 @@ impl LegacySourceOwner {
         gate: &File,
         state: &File,
     ) -> Result<(), FixedControlError> {
-        self.state_stamp.recheck(state)?;
-        self.state_stamp.recheck(&self.state_pin)?;
+        for (name, file) in [("named state", state), ("retained state", &self.state_pin)] {
+            if let Err(error) = self.state_stamp.recheck(file) {
+                #[cfg(test)]
+                if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+                    eprintln!(
+                        "legacy {name} stamp failed at {}: expected {:?}, actual {:?}: {error:?}",
+                        self.state_path.display(),
+                        self.state_stamp,
+                        FixedFileStamp::capture(file, Kind::File)
+                    );
+                }
+                let _ = name;
+                return Err(error);
+            }
+        }
         let owner_name = if self.staging {
             STAGING_OWNER
         } else if self.binding.kind == LegacyScopeKind::ManagedAdministration {

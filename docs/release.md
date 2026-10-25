@@ -2,7 +2,7 @@
 
 Release-please manages version pull requests and changelogs. Publication is bound to the successful `main` CI run
 for the exact release-PR merge commit. Subsequent merges do not invalidate that release while its commit remains
-on `main`. The workflow validates all four retained native artifacts before creating its tag and GitHub Release,
+on `main`. The workflow validates both retained native artifacts before creating its tag and GitHub Release,
 then publishes the crate from the same source SHA. Release-please itself always runs with tag creation disabled.
 
 Failed CI, ordinary commits, ambiguous release PRs, and commits removed from main history cannot authorize publication.
@@ -34,7 +34,7 @@ asset and crate publication. Never copy a local CLI login token into repository 
 Pull requests targeting `main` and pushes to `main` run:
 
 - `cargo fmt --check`
-- platform-aligned workspace tests on Linux, macOS ARM, and Windows
+- platform-aligned workspace tests on macOS ARM64 and Windows x86_64
 - `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
 - Rust advisory scanning with `cargo audit`
 - `cargo publish --dry-run --locked`
@@ -42,10 +42,15 @@ Pull requests targeting `main` and pushes to `main` run:
 - `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
   unpublished wiki binary uses the in-tree codebase-graph registrar, while the preceding root
   package check verifies that publishable shared API in isolation.
-- Release-ready package builds on Linux x86_64, macOS ARM/x86_64, and Windows x86_64. Pull requests build and smoke
-  them without retention; `main` retains all four artifacts for 90 days.
+- Release-ready package builds on macOS ARM64 and Windows x86_64. Pull requests build and smoke
+  them without retention; `main` retains both artifacts for 90 days.
 - A stable `required` aggregate check that succeeds only when every mandatory job succeeds. Repository rules should
   require this check after it has appeared on `main` once.
+
+macOS ARM64 runs unit, generation-storage, and remaining integration/doctest cohorts independently. Windows uses four
+serial groups for unit tests and four for integration tests; generation-storage runs once. Groups are discovered from
+Cargo's test inventories, with complete and selected inventories retained in diagnostic artifacts. Each runner executes
+tests serially, and a target's release artifact is built only after all its test groups succeed.
 
 ## Release Flow
 
@@ -54,7 +59,7 @@ Pull requests targeting `main` and pushes to `main` run:
 3. Release verifies the run's repository, workflow path, event, branch, status, SHA, and exact trusted release PR identity.
    The merge SHA must still be in main history; it need not be the latest main commit.
 4. Immutable metadata must agree across the root package, wiki package/dependency, release manifest, and changelog.
-   Production checks and all four native artifacts are validated before any tag or release is created.
+   Production checks and both native artifacts are validated before any tag or release is created.
 5. The single publisher creates only `vX.Y.Z` at that SHA, uploads the validated archives, and publishes the crate.
    Existing matching tags/releases can be resumed. Conflicting tags fail without being moved. Delayed older versions
    do not replace newer versions as GitHub's latest release.
@@ -135,7 +140,7 @@ Dispatch `Release` on `main` with exactly one target:
 archive/checksum/provenance set without creating tags, releases, labels, proposals, or publishing crates. After checking
 the successful dry-run, dispatch the same target with `dry-run: false` to publish.
 
-For existing-tag recovery, `artifact-source: rebuild-if-missing` rebuilds **all four** targets with the shared native
+For existing-tag recovery, `artifact-source: rebuild-if-missing` rebuilds **both** targets with the shared native
 workflow if any retained artifact is unavailable. It never mixes promoted and rebuilt artifacts. Automatic and CI-run
 recovery never substitute a run or rebuild missing artifacts.
 
@@ -164,4 +169,4 @@ conda-forge:
 2. Verify the Rust toolchain requirements are available on conda-forge.
 3. Copy `conda-forge/recipe/meta.yaml` into a new `recipes/codebase-graph/` directory in a fork of `conda-forge/staged-recipes`.
 4. Replace `version` and `sha256` placeholders with release-specific values.
-5. Open the staged-recipes pull request and let conda-forge CI validate Linux, macOS, and Windows builds.
+5. Open the staged-recipes pull request and let conda-forge CI validate macOS ARM64 and Windows x86_64 builds.

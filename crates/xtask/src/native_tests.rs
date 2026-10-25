@@ -1,6 +1,9 @@
 use super::*;
 use std::time::Instant;
 
+mod shards;
+use shards::Shard;
+
 struct CapturedCli {
     directory: PathBuf,
     executable: PathBuf,
@@ -119,6 +122,7 @@ fn windows_preflight(base: &[String]) -> Vec<String> {
             "dc_s2_current_v2_receipt",
             "dc_s5_canonical_only_real_producer_spare_key",
             "dc_s5_artifact_use_lease_defers_obsolete_key_until_release",
+            "dc_s5_real_copied_orphan_staging_requires_confirmation_then_retires_without_source_edit",
         ]
         .map(str::to_owned),
     );
@@ -173,6 +177,18 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
             for test in tests {
                 command.extend(["--test".into(), test]);
             }
+            if target == NativeTarget::WindowsX86_64 && selected == Cohort::Generation {
+                let mut regression = command.clone();
+                regression.extend(
+                    [
+                        "--",
+                        "--exact",
+                        "managed_reads_survive_deferred_retired_generation_deletion",
+                    ]
+                    .map(str::to_owned),
+                );
+                commands.push(regression);
+            }
             commands.push(command);
         }
         if selected == Cohort::Integration {
@@ -185,12 +201,25 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
 }
 
 pub(super) fn run(args: Vec<String>) -> Result<(), String> {
-    let options = parse_options(&args, &["--target", "--cohort"])?;
+    let options = parse_options(&args, &["--target", "--cohort", "--shard"])?;
     let target = NativeTarget::parse(required_option(&options, "--target")?)?;
     let selected = Cohort::parse(options.get("--cohort").map(String::as_str).unwrap_or("all"))?;
+    let shard = options
+        .get("--shard")
+        .map(|s| Shard::parse(s))
+        .transpose()?;
+    if shard.is_some() && !matches!(selected, Cohort::Unit | Cohort::Integration) {
+        return Err("--shard requires the unit or integration cohort".into());
+    }
     ensure_native_host(target)?;
-    let output =
-        PathBuf::from("diagnostics/tests").join(format!("{}-{}", target.as_str(), selected.name()));
+    let suffix = shard
+        .map(|s| format!("-{}of{}", s.part, s.total))
+        .unwrap_or_default();
+    let output = PathBuf::from("diagnostics/tests").join(format!(
+        "{}-{}{suffix}",
+        target.as_str(),
+        selected.name()
+    ));
     fs::create_dir_all(&output).map_err(|e| e.to_string())?;
     let metadata = Command::new("cargo")
         .args(["metadata", "--no-deps", "--locked", "--format-version", "1"])
@@ -201,7 +230,7 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
     }
     let metadata: Value = serde_json::from_slice(&metadata.stdout).map_err(|e| e.to_string())?;
     let inventory = inventory(&metadata)?;
-    let commands = commands(target, selected, &inventory);
+    let unsharded = commands(target, selected, &inventory);
     let started = Instant::now();
     let compiler_artifact = capture_native_test_cli(target)?;
     let captured = CapturedCli::copy(&compiler_artifact, target.binary_names().0)?;
@@ -211,8 +240,45 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
         "native-test CLI compiler artifact: {} sha256={hash}",
         executable.display()
     );
+    let commands = if let Some(shard) = shard {
+        let mut planned = Vec::new();
+        for (index, args) in unsharded.iter().enumerate() {
+            // Keep the existing focused preflight once, and all doctests once.
+            if args.iter().any(|a| a == "--" || a == "--doc") {
+                if shard.part == 1 {
+                    planned.push(args.clone());
+                }
+                continue;
+            }
+            let listed = list_tests(args, &["--list"], executable)?;
+            fs::write(
+                output.join(format!("source-{index}-inventory.txt")),
+                &listed,
+            )
+            .map_err(|e| e.to_string())?;
+            fs::write(
+                output.join(format!("source-{index}-ignored.txt")),
+                list_tests(args, &["--list", "--ignored"], executable)?,
+            )
+            .map_err(|e| e.to_string())?;
+            let listing = std::str::from_utf8(&listed).map_err(|e| e.to_string())?;
+            let (cases, chunks) = shard.commands(args, listing)?;
+            fs::write(
+                output.join(format!("source-{index}-selection.json")),
+                serde_json::to_vec_pretty(&json!({"part":shard.part,"total":shard.total,
+                    "selected_cases":cases,"commands":chunks}))
+                .unwrap(),
+            )
+            .map_err(|e| e.to_string())?;
+            planned.extend(chunks);
+        }
+        planned
+    } else {
+        unsharded.clone()
+    };
     let mut report = json!({"source_sha":env::var("SOURCE_SHA").ok(),"target":target.as_str(),
         "cohort":selected.name(),"cli":executable,"compiler_artifact":compiler_artifact,"cli_sha256":hash,"inventory":inventory,
+        "shard":shard.map(|s| json!({"part":s.part,"total":s.total})),"unsharded_commands":unsharded,
         "commands":commands,"executions":[],"capture_seconds":started.elapsed().as_secs_f64()});
     let save = |report: &Value| {
         fs::write(
@@ -228,24 +294,11 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
             ("inventory", vec!["--list"]),
             ("ignored", vec!["--list", "--ignored"]),
         ] {
-            let mut listing = Command::new("cargo");
-            listing.args(args);
-            if !args.iter().any(|arg| arg == "--") {
-                listing.arg("--");
-            }
-            let listing = listing
-                .args(extra)
-                .env("CARGO_BIN_EXE_codebase-graph", executable)
-                .output()
-                .map_err(|e| e.to_string())?;
-            fs::write(output.join(format!("{index}-{label}.txt")), &listing.stdout)
-                .map_err(|e| e.to_string())?;
-            if !listing.status.success() {
-                return Err(format!(
-                    "native test listing failed: {}",
-                    String::from_utf8_lossy(&listing.stderr)
-                ));
-            }
+            fs::write(
+                output.join(format!("{index}-{label}.txt")),
+                list_tests(args, &extra, executable)?,
+            )
+            .map_err(|e| e.to_string())?;
         }
         println!(
             "native test command {}: cargo {}",
@@ -272,8 +325,9 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
         if let Err(error) = result {
             failures.push(error);
             if target == NativeTarget::WindowsX86_64
-                && matches!(selected, Cohort::All | Cohort::Unit)
+                && matches!(selected, Cohort::All | Cohort::Unit | Cohort::Generation)
                 && index == 0
+                && unsharded.first() == Some(args)
             {
                 break;
             }
@@ -290,6 +344,26 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
     } else {
         Err(failures.join("\n"))
     }
+}
+
+fn list_tests(args: &[String], extra: &[&str], executable: &Path) -> Result<Vec<u8>, String> {
+    let mut command = Command::new("cargo");
+    command.args(args);
+    if !args.iter().any(|a| a == "--") {
+        command.arg("--");
+    }
+    let listing = command
+        .args(extra)
+        .env("CARGO_BIN_EXE_codebase-graph", executable)
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !listing.status.success() {
+        return Err(format!(
+            "native test listing failed: {}",
+            String::from_utf8_lossy(&listing.stderr)
+        ));
+    }
+    Ok(listing.stdout)
 }
 
 #[cfg(test)]

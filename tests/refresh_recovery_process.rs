@@ -793,6 +793,10 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
     )
     .unwrap();
     let config = install(&root);
+    // Periodic reconciliation deliberately marks another epoch dirty. Allow
+    // Windows enough idle time to observe settlement after native loading.
+    // Keep this cadence identical before and after restoring only the limits.
+    let reconcile_interval_ms = if cfg!(windows) { 5_000 } else { 100 };
 
     // The source edit is made before the daemon starts.  The initial graph is
     // therefore the only valid generation available while the tiny budget is
@@ -810,7 +814,7 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
         ConfigSettings {
             policy: "leader",
             backend: "poll",
-            interval_ms: 100,
+            interval_ms: reconcile_interval_ms,
             worker_memory_mib: 2,
             rust_memory_mib: 1,
             spill_chunk_mib: 1,
@@ -872,7 +876,7 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
         ConfigSettings {
             policy: "leader",
             backend: "poll",
-            interval_ms: 100,
+            interval_ms: reconcile_interval_ms,
             worker_memory_mib: 768,
             rust_memory_mib: 384,
             spill_chunk_mib: 32,
@@ -880,10 +884,11 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
             exclude: &[],
         },
     );
-    // Native process suites run concurrently in CI. Keep the recovery bound
-    // independent of the short retry cadence and allow the large source to
-    // finish loading while other fixtures are building.
-    let deadline = Instant::now() + Duration::from_secs(90);
+    // This asserts eventual recovery, independently of production retry and
+    // mutation deadlines. Native Windows loading and durable publication of
+    // the 4 MiB source need more headroom than this fixture's polling cadence.
+    let recovery_seconds = if cfg!(windows) { 240 } else { 90 };
+    let deadline = Instant::now() + Duration::from_secs(recovery_seconds);
     let mut recovered = None;
     let mut last_health = Value::Null;
     while Instant::now() < deadline {
@@ -911,7 +916,10 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
     let (recovered, latest_paths) = recovered.unwrap_or_else(|| {
         panic!("refresh should recover without another source edit: {last_health}")
     });
-    assert_eq!(recovered["refresh"]["reconcile_interval_ms"], 100);
+    assert_eq!(
+        recovered["refresh"]["reconcile_interval_ms"],
+        reconcile_interval_ms
+    );
     assert!(latest_paths.iter().any(|path| path == "latest.py"));
 
     drop(session);

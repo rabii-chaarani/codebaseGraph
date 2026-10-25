@@ -14,7 +14,15 @@ use super::maintenance_ownership::{ReferenceDomain, ReferenceEpoch};
 use super::maintenance_scheduler::LegacyQuiescenceConfirmation;
 use std::io::Read;
 use std::path::PathBuf;
+#[track_caller]
 fn invalid() -> FixedControlError {
+    #[cfg(test)]
+    if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+        eprintln!(
+            "legacy preparation invalid at {}",
+            std::panic::Location::caller()
+        );
+    }
     FixedControlError::Invalid(FixedControlProblem::InvalidRecord)
 }
 #[derive(Default)]
@@ -526,11 +534,23 @@ struct StagingWork {
     result: MemoryBox<Option<stream::CommittedLegacyStreamStep>>,
 }
 fn staging_error(error: staging::StagingIssue) -> FixedControlError {
+    #[cfg(test)]
+    if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+        eprintln!("legacy staging validation rejected: {error:?}");
+    }
     match error {
         staging::StagingIssue::Resource(e) => FixedControlError::Resource(e),
         staging::StagingIssue::Io(kind) => FixedControlError::Io(std::io::Error::from(kind)),
         _ => invalid(),
     }
+}
+fn staging_trace(operation: &str, error: FixedControlError) -> FixedControlError {
+    #[cfg(test)]
+    if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+        eprintln!("legacy staging {operation}: {error:?}");
+    }
+    let _ = operation;
+    error
 }
 impl StagingWork {
     fn advance(
@@ -776,16 +796,19 @@ fn prepare_staging_job(
         Err(_) => return Err(invalid()),
     };
     let root = RootedDirectory::open_readonly_root(&path, identity)?;
-    let mut source_scope = boxed_staging_source_scope(target, binding, &path, memory)?;
-    source_scope.prepare_enrollment_in_cohort(cohort, memory)?;
-    let actual = source::observe_legacy_staging_source_version(&mut source_scope, memory)?;
+    let mut source_scope = boxed_staging_source_scope(target, binding, &path, memory)
+        .map_err(|e| staging_trace("scope preparation", e))?;
+    source_scope
+        .prepare_enrollment_in_cohort(cohort, memory)
+        .map_err(|e| staging_trace("cohort enrollment preparation", e))?;
+    let actual = source::observe_legacy_staging_source_version(&mut source_scope, memory)
+        .map_err(|e| staging_trace("source version observation", e))?;
     let owner = match actual {
         Some(_) if source_scope.publication_recovery_pending() => None,
-        Some(actual) => Some(source::reopen_legacy_staging_owner(
-            &mut source_scope,
-            &actual,
-            memory,
-        )?),
+        Some(actual) => Some(
+            source::reopen_legacy_staging_owner(&mut source_scope, &actual, memory)
+                .map_err(|e| staging_trace("owner reopen", e))?,
+        ),
         None => None,
     };
     if owner.is_none() {
@@ -839,7 +862,8 @@ fn continue_staging_work(
     let recovering = {
         let job = &mut *job;
         job.scope
-            .refresh_publication_recovery(memory, job.owner.as_ref())?
+            .refresh_publication_recovery(memory, job.owner.as_ref())
+            .map_err(|e| staging_trace("publication recovery preparation", e))?
     };
     if recovering {
         return staging_work(job, StagingAction::Recover, memory);
@@ -849,7 +873,7 @@ fn continue_staging_work(
         return staging_work(job, StagingAction::Enroll(cohort), memory);
     }
     if !job.owner.as_ref().ok_or_else(invalid)?.is_current(memory)? {
-        return Err(invalid());
+        return Err(staging_trace("retained owner changed", invalid()));
     }
     let original = job.original.ok_or_else(invalid)?;
     if let Some(header) = header.as_ref() {
@@ -969,7 +993,8 @@ fn prepare_sealed_staging_work(
 ) -> Result<Option<MemoryBox<LegacyWork>>, FixedControlError> {
     let replay =
         stream::LegacyStreamReplay::new(&metadata, &original, original.context_digest(), memory)?;
-    authenticate_staging_membership(&replay, &seal, &original, &job.root, memory, cancel)?;
+    authenticate_staging_membership(&replay, &seal, &original, &job.root, memory, cancel)
+        .map_err(|e| staging_trace("sealed membership authentication", e))?;
     if !header.done() {
         drop(metadata);
         return staging_work(

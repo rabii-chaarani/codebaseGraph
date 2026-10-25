@@ -80,6 +80,10 @@ fn evidence(error: crate::error::NativeError) -> CandidateError {
     }
 }
 fn admission(error: locks::FixedControlError) -> CandidateError {
+    #[cfg(test)]
+    if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+        eprintln!("cleanup admission rejected: {error:?}");
+    }
     match error {
         locks::FixedControlError::Io(error) => io(error),
         locks::FixedControlError::Resource(_) => CandidateError::ResourceLimit,

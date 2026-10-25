@@ -73,57 +73,12 @@ fn ladybug_home_dir() -> Result<PathBuf, NativeError> {
 }
 
 fn ladybug_platform() -> Option<&'static str> {
-    if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        Some("linux_amd64")
-    } else if cfg!(all(target_os = "linux", target_arch = "aarch64")) {
-        Some("linux_arm64")
-    } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
-        Some("osx_amd64")
-    } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+    if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
         Some("osx_arm64")
     } else if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
         Some("win_amd64")
     } else {
         None
-    }
-}
-
-#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
-    match extension {
-        "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/linux_amd64/json/libjson.lbug_extension.xz"
-        )),
-        "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/linux_amd64/fts/libfts.lbug_extension.xz"
-        )),
-        _ => None,
-    }
-}
-
-#[cfg(all(target_os = "linux", target_arch = "aarch64"))]
-fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
-    match extension {
-        "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/linux_arm64/json/libjson.lbug_extension.xz"
-        )),
-        "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/linux_arm64/fts/libfts.lbug_extension.xz"
-        )),
-        _ => None,
-    }
-}
-
-#[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
-    match extension {
-        "json" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/osx_amd64/json/libjson.lbug_extension.xz"
-        )),
-        "fts" => Some(include_bytes!(
-            "../../assets/ladybug-extensions/0.19.0/osx_amd64/fts/libfts.lbug_extension.xz"
-        )),
-        _ => None,
     }
 }
 
@@ -158,9 +113,6 @@ fn bundled_extension_xz(extension: &str) -> Option<&'static [u8]> {
 }
 
 #[cfg(not(any(
-    all(target_os = "linux", target_arch = "x86_64"),
-    all(target_os = "linux", target_arch = "aarch64"),
-    all(target_os = "macos", target_arch = "x86_64"),
     all(target_os = "macos", target_arch = "aarch64"),
     all(
         target_os = "windows",
