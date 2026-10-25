@@ -49,6 +49,10 @@ struct ManualBuild {
     stderr: PathBuf,
 }
 
+fn publication_wait_timeout() -> Duration {
+    Duration::from_secs(if cfg!(windows) { 240 } else { 90 })
+}
+
 impl ManualBuild {
     fn start(root: &Path) -> Self {
         let stdout = root.join("manual-build.stdout");
@@ -105,7 +109,9 @@ impl ManualBuild {
     }
 
     fn wait_for_success(&mut self) {
-        let deadline = Instant::now() + Duration::from_secs(90);
+        // This verifies successful publication, not a production latency bound.
+        let timeout = publication_wait_timeout();
+        let deadline = Instant::now() + timeout;
         while Instant::now() < deadline {
             if let Some(status) = self.poll() {
                 self.assert_success(status);
@@ -114,7 +120,8 @@ impl ManualBuild {
             thread::sleep(Duration::from_millis(25));
         }
         panic!(
-            "manual build did not finish within 90 seconds: {}",
+            "manual build did not finish within {} seconds: {}",
+            timeout.as_secs(),
             self.diagnostics()
         );
     }

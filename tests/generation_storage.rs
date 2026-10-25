@@ -244,6 +244,7 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
     let storage_root = repo.join(".codebaseGraph").join("storage");
 
     for index in 0..10 {
+        eprintln!("generation churn publishing revision {} of 10", index + 1);
         write_source(
             &repo,
             &format!("pub fn churned() -> usize {{ {} }}\n", index + 1),
@@ -252,6 +253,7 @@ fn managed_materialization_survives_ten_updates_without_generation_leaks() {
         assert_eq!(payload["storage_format"], "managed_v2");
     }
 
+    eprintln!("generation churn collecting after ten updates");
     collect_managed_until_owned_idle(&repo);
     let generations_root = storage_root.join("generations");
     let generation_count = fs::read_dir(&generations_root)
@@ -344,7 +346,7 @@ fn collect_managed_until_owned_idle(repo: &Path) {
     let mut last = serde_json::Value::Null;
     let binary = std::env::var_os("CARGO_BIN_EXE_codebase-graph")
         .unwrap_or_else(|| env!("CARGO_BIN_EXE_codebase-graph").into());
-    for _ in 0..attempts {
+    for attempt in 0..attempts {
         let output = Command::new(&binary)
             .args(["check-health", "--repo-root"])
             .arg(repo)
@@ -360,6 +362,12 @@ fn collect_managed_until_owned_idle(repo: &Path) {
         assert_eq!(last["graph_readable"], true);
         assert_eq!(active_generation_id(&storage), active);
         let maintenance = &last["maintenance"];
+        if attempt % 64 == 0 {
+            eprintln!(
+                "generation cleanup attempt {attempt}/{attempts}: {}",
+                maintenance["last_attempt"]
+            );
+        }
         assert!(
             maintenance["errors"].as_array().unwrap().is_empty(),
             "{last}"

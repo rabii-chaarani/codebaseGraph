@@ -123,6 +123,7 @@ fn windows_preflight(base: &[String]) -> Vec<String> {
             "dc_s5_canonical_only_real_producer_spare_key",
             "dc_s5_artifact_use_lease_defers_obsolete_key_until_release",
             "dc_s5_real_copied_orphan_staging_requires_confirmation_then_retires_without_source_edit",
+            "dc_s5_real_reader_lease_protects_predecessor_until_release",
         ]
         .map(str::to_owned),
     );
@@ -177,18 +178,6 @@ fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<
             for test in tests {
                 command.extend(["--test".into(), test]);
             }
-            if target == NativeTarget::WindowsX86_64 && selected == Cohort::Generation {
-                let mut regression = command.clone();
-                regression.extend(
-                    [
-                        "--",
-                        "--exact",
-                        "managed_reads_survive_deferred_retired_generation_deletion",
-                    ]
-                    .map(str::to_owned),
-                );
-                commands.push(regression);
-            }
             commands.push(command);
         }
         if selected == Cohort::Integration {
@@ -208,8 +197,8 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
         .get("--shard")
         .map(|s| Shard::parse(s))
         .transpose()?;
-    if shard.is_some() && !matches!(selected, Cohort::Unit | Cohort::Integration) {
-        return Err("--shard requires the unit or integration cohort".into());
+    if shard.is_some() && selected == Cohort::All {
+        return Err("--shard requires the unit, generation or integration cohort".into());
     }
     ensure_native_host(target)?;
     let suffix = shard
@@ -325,7 +314,7 @@ pub(super) fn run(args: Vec<String>) -> Result<(), String> {
         if let Err(error) = result {
             failures.push(error);
             if target == NativeTarget::WindowsX86_64
-                && matches!(selected, Cohort::All | Cohort::Unit | Cohort::Generation)
+                && matches!(selected, Cohort::All | Cohort::Unit)
                 && index == 0
                 && unsharded.first() == Some(args)
             {

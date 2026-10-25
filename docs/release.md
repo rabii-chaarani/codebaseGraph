@@ -48,7 +48,7 @@ Pull requests targeting `main` and pushes to `main` run:
   require this check after it has appeared on `main` once.
 
 macOS ARM64 runs unit, generation-storage, and remaining integration/doctest cohorts independently. Windows uses four
-serial groups for unit tests and four for integration tests; generation-storage runs once. Groups are discovered from
+serial groups per cohort, including generation-storage, so each case runs once. Groups are discovered from
 Cargo's test inventories, with complete and selected inventories retained in diagnostic artifacts. Each runner executes
 tests serially, and a target's release artifact is built only after all its test groups succeed.
 

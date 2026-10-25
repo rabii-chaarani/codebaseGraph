@@ -29,20 +29,13 @@ env:
 
 jobs:
   tests:
-    name: native tests (${{ inputs.target }}, ${{ matrix.cohort }}${{ matrix.shard > 0 && matrix.cohort != 'generation' && format(', shard {0}', matrix.shard) || '' }})
+    name: native tests (${{ inputs.target }}, ${{ matrix.cohort }}${{ matrix.shard > 0 && format(', shard {0}', matrix.shard) || '' }})
     if: inputs.run-tests
     strategy:
       fail-fast: false
       matrix:
         cohort: [unit, generation, integration]
         shard: ${{ fromJSON(inputs.target == 'windows-x86_64' && '[1,2,3,4]' || '[0]') }}
-        exclude:
-          - cohort: generation
-            shard: 2
-          - cohort: generation
-            shard: 3
-          - cohort: generation
-            shard: 4
     runs-on: ${{ fromJSON('{"macos-arm64":"macos-latest","windows-x86_64":"windows-2022"}')[inputs.target] }}
     timeout-minutes: 90
     permissions:
@@ -66,6 +59,8 @@ jobs:
           RUST_TEST_NOCAPTURE: "1"
           RUST_TEST_THREADS: "1"
           SOURCE_SHA: ${{ inputs.source-sha }}
+          TMP: ${{ runner.temp }}
+          TEMP: ${{ runner.temp }}
         run: |
           set -o pipefail
           mkdir -p diagnostics
@@ -73,9 +68,7 @@ jobs:
           shard_args=()
           if [[ '${{ inputs.target }}' == 'windows-x86_64' ]]; then
             export CGRAPH_CLEANUP_TRACE=1
-            if [[ '${{ matrix.cohort }}' != 'generation' ]]; then
-              shard_args=(--shard '${{ matrix.shard }}/4')
-            fi
+            shard_args=(--shard '${{ matrix.shard }}/4')
           fi
           cargo run -p xtask -- native-test --target "${{ inputs.target }}" --cohort "${{ matrix.cohort }}" "${shard_args[@]}" 2>&1 | tee diagnostics/platform-test.log
 

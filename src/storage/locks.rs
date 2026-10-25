@@ -733,8 +733,17 @@ impl FixedFileStamp {
             Ok(stamp)
         }
     }
+    #[track_caller]
     pub(crate) fn recheck(&self, file: &File) -> Result<(), FixedControlError> {
-        if Self::capture(file, self.kind)? != *self {
+        let actual = Self::capture(file, self.kind)?;
+        if actual != *self {
+            #[cfg(test)]
+            if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+                eprintln!(
+                    "cleanup stamp changed at {}: expected {self:?}, actual {actual:?}",
+                    std::panic::Location::caller()
+                );
+            }
             return Err(FixedControlError::Invalid(FixedControlProblem::Changed));
         }
         Ok(())

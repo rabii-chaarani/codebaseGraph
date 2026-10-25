@@ -1485,6 +1485,10 @@ pub(crate) fn advance_candidate(
             &mut |mutation, grant| mutation.publish_control(update, grant),
         );
         if let Err(error) = result {
+            #[cfg(test)]
+            if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+                eprintln!("cleanup scheduling mutation rejected: {error:?}");
+            }
             match error {
                 locks::FixedControlError::Resource(_) => return Err(CandidateError::ResourceLimit),
                 locks::FixedControlError::Io(_) => deferred(&mut report, 12),
@@ -1503,6 +1507,21 @@ pub(crate) fn advance_candidate(
     let selected = match &mut **work {
         Work::Scheduled { inner, .. } => &mut **inner,
         other => other,
+    };
+    #[cfg(test)]
+    let operation = match &*selected {
+        Work::Scheduled { .. } => "nested schedule",
+        Work::Legacy(_) => "legacy",
+        Work::Generation(_) => "generation",
+        Work::Backup(_) => "backup",
+        Work::Terminal(_) => "terminal workspace",
+        Work::WorkspaceRoot { .. } => "workspace root",
+        Work::Metadata { .. } => "private metadata",
+        Work::Leaf { action, .. } => match action {
+            LeafAction::Detach => "artifact detach",
+            LeafAction::UnlinkPayload => "artifact payload unlink",
+            LeafAction::UnlinkReceipt => "artifact receipt unlink",
+        },
     };
     let result = match selected {
         Work::Scheduled { .. } => Err(locks::FixedControlError::Invalid(
@@ -1729,6 +1748,12 @@ pub(crate) fn advance_candidate(
             result.map(|_| ())
         }
     };
+    #[cfg(test)]
+    if std::env::var_os("CGRAPH_CLEANUP_TRACE").is_some() {
+        if let Err(error) = &result {
+            eprintln!("cleanup {operation} mutation rejected: {error:?}");
+        }
+    }
     match result {
         Ok(()) => {}
         Err(locks::FixedControlError::Grant(_))

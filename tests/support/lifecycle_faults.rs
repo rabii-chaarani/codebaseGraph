@@ -910,7 +910,7 @@ fn manual_publication_waits_for_failed_phase_tree_to_exit() {
     let mut manual = ManualBuild::start(&fixture.root);
     terminate(worker);
 
-    let deadline = Instant::now() + Duration::from_secs(90);
+    let deadline = Instant::now() + publication_wait_timeout();
     let mut released = false;
     let mut published = false;
     let mut manual_finished = false;

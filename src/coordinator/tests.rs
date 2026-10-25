@@ -381,18 +381,11 @@ fn elapsed_receive_deadline_is_not_extended_by_trickled_frame_bytes() {
 
 #[test]
 fn expired_request_received_as_trickled_bytes_never_dispatches() {
-    let calls = Arc::new(AtomicU64::new(0));
-    let execute_calls = Arc::clone(&calls);
-    let root = temp_dir("expired-before-dispatch");
-    let client = test_client(&root, move |operation_id, invocation, _context| {
-        execute_calls.fetch_add(1, Ordering::Relaxed);
-        Ok(test_response(operation_id, invocation))
-    });
-    let state = client.endpoint().unwrap();
-    let route_state = client.inner.route.lock().unwrap().state.clone().unwrap();
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let state = test_state(listener.local_addr().unwrap());
     let request = CoordinatorRequest {
         version: COORDINATOR_PROTOCOL_VERSION,
-        token: route_state.token,
+        token: state.token.clone(),
         timeout_ms: Some(50),
         command: CoordinatorCommand::Execute {
             operation_id: "health".to_string(),
@@ -401,17 +394,45 @@ fn expired_request_received_as_trickled_bytes_never_dispatches() {
     };
     let mut payload = serde_json::to_vec(&request).unwrap();
     payload.push(b'\n');
-    let mut stream = TcpStream::connect(state).unwrap();
+    let mut stream = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (mut accepted, _) = listener.accept().unwrap();
+    // Start the budget at the actual accept, as the shipping server does.
+    // Sleeping after connect allowed a delayed server to accept AFTER the
+    // trickle delay and legitimately receive a still-live request.
+    let accepted_at = Instant::now();
+    let dispatcher = Arc::new(ExecutionDispatcher::default());
+    let server_dispatcher = Arc::clone(&dispatcher);
+    let registry = Arc::new(ConnectionRegistry::default());
+    let connection = registry.register(&accepted).unwrap();
+    let server = thread::spawn(move || {
+        handle_connection_dispatch(
+            &mut accepted,
+            accepted_at,
+            &state,
+            &server_dispatcher,
+            connection,
+            Arc::new(|_: &str, invocation: OperationInvocation| Ok((invocation, None))),
+        );
+    });
     let split = payload.len() / 2;
     stream.write_all(&payload[..split]).unwrap();
     thread::sleep(Duration::from_millis(80));
     stream.write_all(&payload[split..]).unwrap();
+    server.join().unwrap();
+    // Inspect the actual dispatcher before an executor could consume a job.
+    // An expired request must leave both its slot and queue untouched.
+    let dispatch = dispatcher.state.lock().unwrap();
+    assert!(!dispatch.active);
+    assert!(
+        dispatch.job.is_none(),
+        "expired request entered the execution queue"
+    );
+    drop(dispatch);
     let reply: CoordinatorReply = read_frame(&mut stream).unwrap();
     let CoordinatorReply::Failure(error) = reply else {
         panic!("expired request unexpectedly returned a graph result");
     };
     assert_eq!(error.code, "deadline_exceeded");
-    assert_eq!(calls.load(Ordering::Relaxed), 0);
 }
 
 #[test]
