@@ -109,13 +109,15 @@
     },
     {
       "name": "retainedcancellation",
-      "result": "running",
-      "log": "cancellation-after-removal.log"
+      "result": "1/1pass",
+      "log": "cancellation-after-removal.log",
+      "sha256": "595f4da7ecdc8b069c30e20a3d31f519994a8664f334d8d25e3910ec1617962e"
     },
     {
       "name": "retainedunknowncontainment",
-      "result": "running",
-      "log": "unknown-containment-after-removal.log"
+      "result": "1/1pass",
+      "log": "unknown-containment-after-removal.log",
+      "sha256": "73df3335b47dd81684811c71b8547846cd37f628fc0e930f5aa10ca7c17d8ceb"
     }
   ],
   "failed_attempts": [
@@ -146,7 +148,6 @@
     }
   ],
   "pending": [
-    "retainedcancellationandunknowncontainmentprocessruns",
     "newcommitfullmacOSandWindowsCI",
     "aggregatefullsuite/platformqualification notclaimed"
   ],
