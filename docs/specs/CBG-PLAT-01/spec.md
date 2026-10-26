@@ -2,11 +2,11 @@
 
 ## 1. Identity, status and authority
 
-- **Revision:** 0.6, proposed implementation scope with **D01–D04 policies approved** (including D03a/D03b). **Work ID:** `CBG-PLAT-01`.
+- **Revision:** 0.7, proposed implementation scope with **D01–D04 and D05a policies approved** (including D03a/D03b). **Work ID:** `CBG-PLAT-01`.
 - **Canonical Git path:** `docs/specs/CBG-PLAT-01/spec.md`. Supporting review evidence: [review-evidence.md](review-evidence.md) and [evidence/](evidence/).
 - **Delivery:** CodebaseGraph Linear workspace (`https://linear.app/codebasegraph`), existing **Maintenance** project `P-COD-2` (`https://linear.app/codebasegraph/project/maintenance-33932479ebd0`), team `COD`. This user-selected destination supersedes older project-routing advice. No new project is created.
 - **Baseline:** [PR #153](https://github.com/rabii-chaarani/codebaseGraph/pull/153), reviewed HEAD `862a8f88d485d5bd257ebd9456c194156fd4ee94`, version3.0.4. This evidence is not the prior checkout6aa5ba8 review. Revalidate changed source before implementation.
-- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). The user also selected **D03a option A: explicit config path → client-specific override → native Windows user-profile directory**, ignoring HOME for the Windows default and failing clearly rather than falling back to CWD; see [D03a](decisions/d03a-windows-user-directory.md). The user then selected **D03b option B: native .exe clients plus .cmd/.bat shims through a dedicated Windows invocation adapter**, with tested argument handling, no generic shell-command evaluation and clear rejection of unsupported/unsafe inputs; see [D03b](decisions/d03b-windows-client-command-invocation.md). The explicit correction “no i meant B” supersedes the preceding A. The user also selected **D04 option A: retain and accurately report the Windows Direct-read Exclusive lock**, without a new unlock/relock transition or concurrent-reader guarantee; see [D04](decisions/d04-windows-direct-exclusive-mode.md). These approve the selected policies only, not the entire specification or implementation start. D05, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening settled decisions.
+- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). The user also selected **D03a option A: explicit config path → client-specific override → native Windows user-profile directory**, ignoring HOME for the Windows default and failing clearly rather than falling back to CWD; see [D03a](decisions/d03a-windows-user-directory.md). The user then selected **D03b option B: native .exe clients plus .cmd/.bat shims through a dedicated Windows invocation adapter**, with tested argument handling, no generic shell-command evaluation and clear rejection of unsupported/unsafe inputs; see [D03b](decisions/d03b-windows-client-command-invocation.md). The explicit correction “no i meant B” supersedes the preceding A. The user also selected **D04 option A: retain and accurately report the Windows Direct-read Exclusive lock**, without a new unlock/relock transition or concurrent-reader guarantee; see [D04](decisions/d04-windows-direct-exclusive-mode.md). The user also selected **D05a option A: target macOS 13.3+ on Apple Silicon**, requiring execution on the declared minimum and a current macOS release before claiming support; see [D05a](decisions/d05a-macos-supported-minimum.md). These approve the selected policies only, not the entire specification or implementation start. D05b Windows baseline, D05c PowerShell baseline, D05d Cargo source-install policy, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening settled decisions.
 - **Closure owner:** repository maintainer/user; no automatic aggregate closure delegated. Assignees/dates/estimates remain unset. Draft requirements below are proposed, not approved acceptance changes.
 - **State separation:** proposed → exact-scope approved → implemented → native-platform qualified → maintainer closed. Linear Backlog, attached/configured tests, commits and percentages are not evidence of later states.
 
@@ -33,7 +33,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Outcome:** Publish/pin the proposed specification and review evidence; resolve applicable decisions and obtain explicit exact-scope approval for selected dependent slices, while recording deferral of unrelated decisions.
 
-**Problem/evidence:** Planning and D01/D02 distribution, D03a/D03b Windows discovery/invocation, and D04 truthful Windows Exclusive lock policies are approved. D05 remains unresolved. No current message authorizes implementation, merge, deployment or service restart.
+**Problem/evidence:** Planning, D01–D04 policies and D05a macOS 13.3+ Apple Silicon target policy are approved. D05b–D05d remain unresolved. Minimum/current macOS execution has not been established by this policy decision. No current message authorizes implementation, merge, deployment or service restart.
 
 **Requirements / criteria:** R01, R02, R03, R04, R05, R06, R07, R08, R09, R10 → A00.
 
@@ -55,7 +55,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [docs/specs/CBG-COPY-01/resource-ceilings-approval.md:1–10](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/docs/specs/CBG-COPY-01/resource-ceilings-approval.md#L1-L10)
 - [README.md:45–65](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/README.md#L45-L65)
 
-**Dependencies:** none; planning/approval only. **Open decisions:** D05. **Resolved:** D01, D02, D03a, D03b and D04 policies approved; no implementation start authorized. No task depends on a guessed implementation date.
+**Dependencies:** none; planning/approval only. **Open decisions:** D05b, D05c, D05d. **Resolved:** D01, D02, D03a, D03b, D04 and D05a policies approved; no implementation start authorized. No task depends on a guessed implementation date.
 
 ### S01 — Isolate macOS directory enumeration cursors for nested cleanup scans
 
@@ -128,18 +128,18 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 - Follow approved D02 option A for macOS ARM64 prebuilt releases: bundle compatible redistributable OpenSSL dylibs with relative install names/runtime paths, licenses and checksums. Users must not install Homebrew or OpenSSL separately. Do not switch to static linking or external prerequisites without a new user decision.
 - Retain exact-artifact checksums/provenance and inspect final release imports, not only a debug build.
-- Document the approved ARM64/minimum-OS dependency policy; do not restore intentionally removed Intel/Linux targets.
+- Target macOS 13.3+ on Apple Silicon under approved D05a. Execute the actual final archive on the declared minimum and a current macOS release before claiming support; an extension deployment target or current-host green build alone is insufficient. Do not restore intentionally removed Intel/Linux targets.
 
 **Acceptance (proposed):**
 
 <a id="a05"></a>
-- **A05** — Given the approved clean consumer baseline without Homebrew or a separately installed OpenSSL, the final installed ARM64 archive --help, graph/JSON/FTS build and reopen, k-wiki and MCP operate using the bundled compatible OpenSSL dylibs and relative runtime paths. No producer-specific absolute Homebrew path may be required.
+- **A05** — Given clean Apple Silicon consumer environments on macOS 13.3 and a current macOS release without Homebrew or a separately installed OpenSSL, the final installed ARM64 archive --help, graph/JSON/FTS build and reopen, k-wiki and MCP operate using the bundled compatible OpenSSL dylibs and relative runtime paths. Record the exact current release/build tested. No producer-specific absolute Homebrew path may be required; a 13.3 deployment target alone is not execution evidence.
 <a id="a06"></a>
 - **A06** — Final release archive otool dependency/install-name/rpath evidence confirms relative resolution of the bundled OpenSSL dylibs; licenses/checksums cover them. Given a missing, corrupt or incompatible bundled library, fail clearly without reporting readiness or qualification. A redistribution/compatibility blocker must be reported, not converted silently into a Homebrew prerequisite.
 
-**Architectural context:** Release Gate resp-255–resp-258, resp-16/resp-17; Graph Store resp-113. D02 dylib-bundling policy is approved; implementation authorization, D05 consumer/minimum-OS baseline and applicable architectural reconciliation remain pending. Do not change process containment.
+**Architectural context:** Release Gate resp-255–resp-258, resp-16/resp-17; Graph Store resp-113. D02 dylib-bundling and D05a macOS 13.3+ Apple Silicon target policies are approved; implementation authorization, actual minimum/current release qualification and applicable architectural reconciliation remain pending. D05d source-install recipe remains separate. Do not change process containment.
 
-**Planned verification:** Build the actual ARM64 release archive, inspect Mach-O imports/install names/rpaths, then execute the installed archive on a clean approved macOS consumer baseline without Homebrew/OpenSSL and with missing/corrupt bundled-library negative cases.
+**Planned verification:** Build the actual ARM64 release archive, inspect Mach-O imports/install names/rpaths and minimum-OS compatibility of every shipped native component, then execute it on clean Apple Silicon macOS 13.3 and a current macOS release without Homebrew/OpenSSL. Include missing/corrupt bundled-library negative cases and record real OS/build results, not only deployment-target metadata.
 
 **Source orientation at the reviewed SHA:**
 - [build.rs:10–26](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/build.rs#L10-L26)
@@ -147,7 +147,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [crates/xtask/src/main.rs:596–607](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/crates/xtask/src/main.rs#L596-L607)
 - [README.md:45–65](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/README.md#L45-L65)
 
-**Dependencies:** S00. **Open decisions:** D05 and implementation authorization. **Resolved:** D02 macOS prebuilt OpenSSL dylib bundling. No task depends on a guessed implementation date.
+**Dependencies:** S00. **Open decisions:** implementation authorization; D05d only for a separately included Cargo source-install scope. **Resolved:** D02 macOS prebuilt OpenSSL dylib bundling and D05a macOS 13.3+ Apple Silicon target. Native minimum/current execution remains pending. No task depends on a guessed implementation date.
 
 ### S04 — Use explicit Windows user-directory and executable discovery policy
 
@@ -328,7 +328,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - Preserve serial discovered inventories, bounded Windows sharding, captured CLI hashes, ignored-case accounting and fail-closed artifact gates.
 - Run native Mac ARM64 and Windows x64 checks on the selected corrected revision; bind head/synthetic merge, binary hashes, archive hashes and environment.
 - Execute real installation/upgrade/failure paths and installed CLI/MCP/JSON/FTS/reopen under approved clean-consumer and prerequisite policies. Reconcile stale four-target release documentation with the two-target scope; this qualification does not duplicate or close the broader DC-S5 cleanup/rollout programme.
-- Resolve D05 and document the actual tested OS/PowerShell floors and source-install feature recipe; do not restore removed platforms or workload ceilings.
+- Follow approved D05a macOS 13.3+ Apple Silicon target and require actual final-archive execution on the minimum and a current macOS release before claiming support. Resolve D05b Windows, D05c PowerShell and D05d source-install recipe separately; document exact tested versions and do not restore removed platforms or workload ceilings.
 
 **Acceptance (proposed):**
 
@@ -364,7 +364,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 | A00 | S00 / R01–R10 | Audit immutable spec/review links and explicit human approval | This proposal is not approved; planning only. |
 | A01–A02 | R01 / S01 | Exact rooted helper multi-batch nested test; production receipt-selection case; cancellation/namespace tests | Mac exact-source helper baseline200/outer85/inner200 fails. No complete collector-starvation/data-loss repro. Fixed native runs required. |
 | A03–A04 | R02 / S02 | Final PE imports + installed clean Windows JSON/FTS/CLI/MCP and failure cases | Current asset imports inspected; no clean Windows missing-DLL execution. D01 bundling policy approved; D05/implementation and actual native qualification pending. |
-| A05–A06 | R03 / S03 | Final release Mach-O/rpaths + clean approved ARM64 install/reopen/failure | Fresh debug CLI imports inspected only; no final release/clean consumer run. D02 dylib-bundling policy approved; D05/implementation and actual native qualification pending. |
+| A05–A06 | R03 / S03 | Final release Mach-O/rpaths + clean approved ARM64 install/reopen/failure | Fresh debug CLI imports inspected only; no final release/clean consumer run. D02 bundling and D05a macOS 13.3+ target policies approved; implementation and actual minimum/current native qualification pending. |
 | A07–A08 | R04 / S04 | Process-level native Windows env/PATH/override cases and Mac regression | Fresh CLI portable-logic reproduction points user scope to dot with HOME absent. Not Windows execution. D03a/D03b policies approved; implementation and native qualification pending. |
 | A09 | R05 / S05 | Native PowerShell valid-checksum/nonzero executable preflight/destination preservation | Source semantics only; pwsh unavailable locally. D05 pending. |
 | A10 | R06 / S06 | Exact watch-help and adjacent behavior tests on both native targets | Fresh Mac failure; hosted Mac+Win failure. Fixed run pending. |
@@ -425,10 +425,30 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### D05 — Supported consumer qualification matrix and Cargo-install recipe
 
-- Affected: S02, S03, S05, S10.
-- Recommendation/options: Name tested macOS ARM64/Windows x64 OS and PowerShell baselines; honor macOS13.3 native extension floor and explicitly select/document source-install bundled-feature behavior.
-- Tradeoff/start constraint: No platform expansion, implicit minimum-OS guarantee, resource-ceiling restoration, blanket timeout increase or weakened test gate.
-- Status: unanswered/proposed. No implementation approval recorded.
+- Affected: S02, S03, S05, S10. Split target policy from actual qualification and from unrelated installation choices.
+- No platform expansion, implicit passing support claim, workload-ceiling restoration, blanket timeout increase or weakened test gate is approved.
+
+#### D05a — macOS minimum and qualification (approved)
+
+- **Decision: A — target macOS 13.3+ on Apple Silicon (ARM64).** Require tests of the final installed archive on macOS 13.3 and a current macOS release before claiming support.
+- The current native extensions' 13.3 minimum is build metadata, not evidence that 13.3 was tested. Record exact native OS/builds, binaries and archive hashes in qualification; missing minimum-environment access leaves qualification pending rather than silently raising the floor or accepting current-host CI as proof.
+- User decision: **“A”**, answering the preceding D05a A/B question (target macOS 13.3+ versus macOS 14+). See [decision/approval record](decisions/d05a-macos-supported-minimum.md).
+- **Status: target/qualification policy approved only.** No actual minimum/current execution, implementation start, release approval, merge, deployment or service restart is claimed.
+
+#### D05b — Windows consumer baseline (open)
+
+- Choose the supported Windows x86_64 client OS baseline and require native desktop consumer execution, not just a Windows Server CI build host.
+- **Status: unanswered/proposed.** No Windows version floor is selected by D05a.
+
+#### D05c — PowerShell baseline (open)
+
+- Choose the Windows PowerShell/PowerShell hosts claimed for installer and client-invocation qualification; verify their native exit/argument behavior.
+- **Status: unanswered/proposed.** D03b shim support does not choose PowerShell versions.
+
+#### D05d — Cargo source-install recipe (open)
+
+- Select/document source-build prerequisites and Windows bundled-extension feature behavior separately from approved prebuilt-runtime bundling.
+- **Status: unanswered/proposed.** Do not claim plain Cargo install reproduces the qualified native archive recipe until its policy and actual checks agree.
 
 ## 8. Handoff, dependencies and closure
 
@@ -440,4 +460,4 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### Planning authorization record
 
-Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md), [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md), and [D03a Windows native-profile directory precedence](decisions/d03a-windows-user-directory.md). The later D03b answer was explicitly corrected to **“no i meant B”**, selecting [native .exe plus .cmd/.bat client shims](decisions/d03b-windows-client-command-invocation.md) through a dedicated safe Windows adapter. The subsequent **“A”** selects [D04 truthful retained Windows Exclusive mode](decisions/d04-windows-direct-exclusive-mode.md). These policy decisions do not approve implementation of the whole spec; D05 remains open. No product constants or implementation source changed by this planning/decision work.
+Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md), [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md), and [D03a Windows native-profile directory precedence](decisions/d03a-windows-user-directory.md). The later D03b answer was explicitly corrected to **“no i meant B”**, selecting [native .exe plus .cmd/.bat client shims](decisions/d03b-windows-client-command-invocation.md) through a dedicated safe Windows adapter. The subsequent **“A”** selects [D04 truthful retained Windows Exclusive mode](decisions/d04-windows-direct-exclusive-mode.md). The subsequent **“A”** selects [D05a macOS 13.3+ Apple Silicon with minimum/current qualification](decisions/d05a-macos-supported-minimum.md). These policy decisions do not approve implementation of the whole spec; D05b–D05d remain open. No product constants or implementation source changed by this planning/decision work.
