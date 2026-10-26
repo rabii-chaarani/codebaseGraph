@@ -2,11 +2,11 @@
 
 ## 1. Identity, status and authority
 
-- **Revision:** 0.4, proposed implementation scope with **D01, D02 and D03a policies approved**. **Work ID:** `CBG-PLAT-01`.
+- **Revision:** 0.5, proposed implementation scope with **D01, D02, D03a and D03b policies approved**. **Work ID:** `CBG-PLAT-01`.
 - **Canonical Git path:** `docs/specs/CBG-PLAT-01/spec.md`. Supporting review evidence: [review-evidence.md](review-evidence.md) and [evidence/](evidence/).
 - **Delivery:** CodebaseGraph Linear workspace (`https://linear.app/codebasegraph`), existing **Maintenance** project `P-COD-2` (`https://linear.app/codebasegraph/project/maintenance-33932479ebd0`), team `COD`. This user-selected destination supersedes older project-routing advice. No new project is created.
 - **Baseline:** [PR #153](https://github.com/rabii-chaarani/codebaseGraph/pull/153), reviewed HEAD `862a8f88d485d5bd257ebd9456c194156fd4ee94`, version3.0.4. This evidence is not the prior checkout6aa5ba8 review. Revalidate changed source before implementation.
-- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). The user also selected **D03a option A: explicit config path → client-specific override → native Windows user-profile directory**, ignoring HOME for the Windows default and failing clearly rather than falling back to CWD; see [D03a](decisions/d03a-windows-user-directory.md). These approve the selected policies only, not the entire specification or implementation start. D03b executable/batch handling, D04, D05, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening settled decisions.
+- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). The user also selected **D03a option A: explicit config path → client-specific override → native Windows user-profile directory**, ignoring HOME for the Windows default and failing clearly rather than falling back to CWD; see [D03a](decisions/d03a-windows-user-directory.md). The user then selected **D03b option B: native .exe clients plus .cmd/.bat shims through a dedicated Windows invocation adapter**, with tested argument handling, no generic shell-command evaluation and clear rejection of unsupported/unsafe inputs; see [D03b](decisions/d03b-windows-client-command-invocation.md). The explicit correction “no i meant B” supersedes the preceding A. These approve the selected policies only, not the entire specification or implementation start. D04, D05, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening settled decisions.
 - **Closure owner:** repository maintainer/user; no automatic aggregate closure delegated. Assignees/dates/estimates remain unset. Draft requirements below are proposed, not approved acceptance changes.
 - **State separation:** proposed → exact-scope approved → implemented → native-platform qualified → maintainer closed. Linear Backlog, attached/configured tests, commits and percentages are not evidence of later states.
 
@@ -33,7 +33,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Outcome:** Publish/pin the proposed specification and review evidence; resolve applicable decisions and obtain explicit exact-scope approval for selected dependent slices, while recording deferral of unrelated decisions.
 
-**Problem/evidence:** Planning and D01/D02 distribution policies plus D03a Windows user-directory policy are approved. D03b executable/batch handling, D04 and D05 remain unresolved. No current message authorizes implementation, merge, deployment or service restart.
+**Problem/evidence:** Planning and D01/D02 distribution plus D03a/D03b Windows discovery/invocation policies are approved. D04 and D05 remain unresolved. No current message authorizes implementation, merge, deployment or service restart.
 
 **Requirements / criteria:** R01, R02, R03, R04, R05, R06, R07, R08, R09, R10 → A00.
 
@@ -55,7 +55,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [docs/specs/CBG-COPY-01/resource-ceilings-approval.md:1–10](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/docs/specs/CBG-COPY-01/resource-ceilings-approval.md#L1-L10)
 - [README.md:45–65](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/README.md#L45-L65)
 
-**Dependencies:** none; planning/approval only. **Open decisions:** D03b, D04, D05. **Resolved:** D01, D02 and D03a policies approved; no implementation start authorized. No task depends on a guessed implementation date.
+**Dependencies:** none; planning/approval only. **Open decisions:** D04, D05. **Resolved:** D01, D02, D03a and D03b policies approved; no implementation start authorized. No task depends on a guessed implementation date.
 
 ### S01 — Isolate macOS directory enumeration cursors for nested cleanup scans
 
@@ -158,7 +158,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 **Requirements / criteria:** R04 → A07, A08.
 
 - Follow approved D03a Windows user-scope precedence: explicit config-path option, then client-specific override such as CODEX_HOME, then the native Windows user-profile directory. Ignore Unix-style HOME for the default Windows location; if no valid user directory can be found, fail clearly rather than fall back to CWD/repository. Preserve project scope and explicit config paths.
-- Resolve D03b for Windows executable suffix discovery and invocation: distinguish native .exe from batch/.cmd execution, with an explicitly approved safe command policy rather than blindly invoking a shell.
+- Follow approved D03b option B: discover/invoke native .exe clients and supported .cmd/.bat client shims through a dedicated Windows invocation adapter. Keep native and batch argument handling distinct and tested; no generic shell-command evaluation or blind shell fallback. Unsupported or unsafe inputs fail clearly rather than executing ambiguously.
 - Consolidate shared discovery semantics across registration/verification; do not change Ladybug cache home unless its native contract agrees.
 
 **Acceptance (proposed):**
@@ -166,11 +166,11 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 <a id="a07"></a>
 - **A07** — Given real Windows user-scope install/dry-run, explicit config-path options take precedence over client-specific overrides, which take precedence over native Windows user-profile resolution. With HOME absent or pointing elsewhere, default resolution uses the native profile, never HOME/CWD/repository by fallback. When no valid directory can be found, fail clearly. Preserve project-scope and explicit-path behavior; verify with conflicting HOME/profile/override inputs.
 <a id="a08"></a>
-- **A08** — Given only a supported suffixed client on PATH, discovery and invocation/verification agree; spaced paths, arguments and explicit overrides round-trip. Given missing home, missing client or unsafe batch-command inputs, return the approved explicit result without corrupting unrelated config or silently selecting another user/project target.
+- **A08** — Given a native .exe client or .cmd/.bat client shim on Windows PATH, discovery and actual invocation/verification agree. A dedicated Windows adapter preserves spaced paths, arguments and explicit overrides for both command kinds, without generic shell-command evaluation. Test controlled shim argument capture and metacharacter/quoting boundaries; unsupported or unsafe inputs fail clearly rather than execute ambiguously. Missing home/client must not corrupt unrelated config or silently select another user/project target.
 
-**Architectural context:** Repository Lifecycle Service node-136: resp-25/resp-30/resp-31. D03a directory policy is approved; D03b executable policy, implementation authorization and applicable reconciliation remain pending. No new platform framework; do not change macOS or native Ladybug cache-home contracts incidentally.
+**Architectural context:** Repository Lifecycle Service node-136: resp-25/resp-30/resp-31. D03a directory and D03b native-plus-batch invocation policies are approved; implementation authorization and applicable reconciliation remain pending. Use a narrow Windows adapter, not a general shell framework; do not change macOS or native Ladybug cache-home contracts incidentally.
 
-**Planned verification:** Native Windows process-level tests with isolated HOME/USERPROFILE/PATH/CODEX_HOME and fixtures for .exe, batch shims only if allowed by D03, spaces, absent discovery and unchanged macOS/project/explicit-path cases.
+**Planned verification:** Native Windows process-level tests with isolated HOME/USERPROFILE/PATH/CODEX_HOME; controlled .exe, .cmd and .bat clients capturing exact arguments; spaced paths, quoting/metacharacter boundaries, rejected unsafe inputs, absent discovery and unchanged macOS/project/explicit-path cases. Check discovery, registration and verification use the same command-kind policy.
 
 **Source orientation at the reviewed SHA:**
 - [src/api/lifecycle.rs:3312–3347](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/src/api/lifecycle.rs#L3312-L3347)
@@ -179,7 +179,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [src/adapters/mcp/daemon.rs:1838–1843](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/src/adapters/mcp/daemon.rs#L1838-L1843)
 - [.cargo/config.toml:1–3](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/.cargo/config.toml#L1-L3)
 
-**Dependencies:** S00. **Open decisions:** D03b and implementation authorization. **Resolved:** D03a Windows user-directory precedence. No task depends on a guessed implementation date.
+**Dependencies:** S00. **Open decisions:** implementation authorization. **Resolved:** D03a Windows user-directory precedence and D03b option B native-plus-batch client invocation. No task depends on a guessed implementation date.
 
 ### S05 — Reject failing native probes in the PowerShell installer
 
@@ -365,7 +365,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 | A01–A02 | R01 / S01 | Exact rooted helper multi-batch nested test; production receipt-selection case; cancellation/namespace tests | Mac exact-source helper baseline200/outer85/inner200 fails. No complete collector-starvation/data-loss repro. Fixed native runs required. |
 | A03–A04 | R02 / S02 | Final PE imports + installed clean Windows JSON/FTS/CLI/MCP and failure cases | Current asset imports inspected; no clean Windows missing-DLL execution. D01 bundling policy approved; D05/implementation and actual native qualification pending. |
 | A05–A06 | R03 / S03 | Final release Mach-O/rpaths + clean approved ARM64 install/reopen/failure | Fresh debug CLI imports inspected only; no final release/clean consumer run. D02 dylib-bundling policy approved; D05/implementation and actual native qualification pending. |
-| A07–A08 | R04 / S04 | Process-level native Windows env/PATH/override cases and Mac regression | Fresh CLI portable-logic reproduction points user scope to dot with HOME absent. Not Windows execution. D03a directory policy approved; D03b/implementation and native qualification pending. |
+| A07–A08 | R04 / S04 | Process-level native Windows env/PATH/override cases and Mac regression | Fresh CLI portable-logic reproduction points user scope to dot with HOME absent. Not Windows execution. D03a/D03b policies approved; implementation and native qualification pending. |
 | A09 | R05 / S05 | Native PowerShell valid-checksum/nonzero executable preflight/destination preservation | Source semantics only; pwsh unavailable locally. D05 pending. |
 | A10 | R06 / S06 | Exact watch-help and adjacent behavior tests on both native targets | Fresh Mac failure; hosted Mac+Win failure. Fixed run pending. |
 | A11 | R07 / S07 | Production-rendered path fixture + native Windows/Mac metadata/COPY tests | Mac passes; Windows unit shard1 fails raw path fixture. No production loading defect inferred. |
@@ -408,11 +408,12 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 - User decision: **“A”**, answering the immediately preceding D03a A/B question (native Windows profile default versus HOME-first). See [decision/approval record](decisions/d03a-windows-user-directory.md).
 - **Status: directory policy approved only.** Native profile-resolution mechanism and validation are implementation details, not selected APIs/dependencies. No incidental change to macOS or Ladybug's native cache-home contract is approved. No implementation start authorized.
 
-#### D03b — Executable suffix and batch-command handling (open)
+#### D03b — Executable suffix and batch-command handling (approved)
 
-- Decide supported Windows executable suffix resolution and whether/how .cmd/.bat client shims are invoked safely. Native executable discovery must agree with actual invocation/verification.
-- Preserve arguments and spaced paths; do not introduce generic shell evaluation or unsafe metacharacter handling as a fallback.
-- **Status: unanswered/proposed.** D03a does not implicitly approve executable or batch-script policy. Resolve D03b separately before implementing the full S04 scope.
+- **Decision: B — native .exe clients plus .cmd/.bat client shims.** Support common Windows client installation methods through a dedicated Windows invocation adapter with separate, tested native/batch argument handling.
+- Discovery, actual invocation and verification must agree. Preserve spaced executable/script paths and arguments; do not introduce generic shell-command evaluation or blind shell fallback. Unsupported or unsafe inputs fail clearly. Supporting shims does not authorize evaluating arbitrary command strings.
+- User decision: initially “A”, immediately corrected to **“no i meant B”**. The correction is the effective choice and supersedes A; no native-only decision was committed. See [decision/approval record](decisions/d03b-windows-client-command-invocation.md).
+- **Status: command policy approved only.** Exact adapter implementation, compatibility details and tests require validation during authorized implementation. No new dependency, general shell framework, implementation start, merge, deployment or service restart is approved.
 
 ### D04 — Direct read lock-mode contract
 
@@ -438,4 +439,4 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### Planning authorization record
 
-Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md), [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md), and [D03a Windows native-profile directory precedence](decisions/d03a-windows-user-directory.md). These policy decisions do not approve implementation of the whole spec; D03b command handling remains open. No product constants or implementation source changed by this planning/decision work.
+Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md), [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md), and [D03a Windows native-profile directory precedence](decisions/d03a-windows-user-directory.md). The later D03b answer was explicitly corrected to **“no i meant B”**, selecting [native .exe plus .cmd/.bat client shims](decisions/d03b-windows-client-command-invocation.md) through a dedicated safe Windows adapter. These policy decisions do not approve implementation of the whole spec; D04/D05 remain open. No product constants or implementation source changed by this planning/decision work.
