@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="50" failures="0" errors="0" uuid="f58f802c-25fd-401e-b79e-ec18806a307f" timestamp="2026-10-26T09:42:27.060+09:30" time="95.603">
+    <testsuite name="codebase-graph" tests="50" disabled="0" errors="0" failures="0">
+        <testcase name="storage::maintenance::tests::dc_cursor_codec_corruption_and_recreated_root" classname="codebase-graph" timestamp="2026-10-26T09:42:27.060+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_cursor_full_generation_address_and_short_adapter" classname="codebase-graph" timestamp="2026-10-26T09:42:27.081+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_cursor_restart_blocked_first_and_category_rotation" classname="codebase-graph" timestamp="2026-10-26T09:42:27.097+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_cursor_wrap_and_all_categories" classname="codebase-graph" timestamp="2026-10-26T09:42:27.121+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_measurement_foreign_json_is_unknown_not_retained_coordination" classname="codebase-graph" timestamp="2026-10-26T09:42:27.138+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::maintenance::tests::dc_measurement_untraversed_subtree_has_unknown_sizes" classname="codebase-graph" timestamp="2026-10-26T09:42:27.159+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance::tests::direct_confirmation_ingress_does_not_pin_legacy_source_or_block_recovery" classname="codebase-graph" timestamp="2026-10-26T09:42:27.178+09:30" time="60.230">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::candidate_reason_codes_are_fixed_and_reports_do_not_invent_measurements" classname="codebase-graph" timestamp="2026-10-26T09:43:27.408+09:30" time="0.023">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::candidate_recovers_interrupted_role_control_before_parsing_legacy_payload" classname="codebase-graph" timestamp="2026-10-26T09:43:27.430+09:30" time="0.252">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::managed_confirmation_remains_pending_until_legacy_enrollment" classname="codebase-graph" timestamp="2026-10-26T09:43:27.683+09:30" time="0.112">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::prepared_candidate_crossings_keep_large_state_indirect" classname="codebase-graph" timestamp="2026-10-26T09:43:27.795+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::maintenance_candidate::tests::retirement_control_roundtrip_does_not_certify_whole_pass" classname="codebase-graph" timestamp="2026-10-26T09:43:27.816+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_fixed_certificate_rejects_reserved_and_torn_frames" classname="codebase-graph" timestamp="2026-10-26T09:43:27.833+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_streaming_native_schema_matches_current_assets" classname="codebase-graph" timestamp="2026-10-26T09:43:27.856+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_actual_native_association_restart_and_backup_keep_three_payload_fds" classname="codebase-graph" timestamp="2026-10-26T09:43:27.874+09:30" time="4.175">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_cache_change_after_certification_invalidates_final_join" classname="codebase-graph" timestamp="2026-10-26T09:43:32.049+09:30" time="3.482">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_database_catalog_and_source_root_substitution_are_unknown" classname="codebase-graph" timestamp="2026-10-26T09:43:35.531+09:30" time="6.898">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_durable_checkpoint_resumes_after_one_payload_without_relabeling_epoch" classname="codebase-graph" timestamp="2026-10-26T09:43:42.429+09:30" time="3.470">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_manifest_and_cache_substitution_never_mint_association" classname="codebase-graph" timestamp="2026-10-26T09:43:45.899+09:30" time="3.298">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_original_epoch_cancellation_and_cap_fail_closed" classname="codebase-graph" timestamp="2026-10-26T09:43:49.197+09:30" time="3.414">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_association::tests::dc_legacy_real_public_producer_without_receipts_has_complete_native_association" classname="codebase-graph" timestamp="2026-10-26T09:43:52.611+09:30" time="3.357">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::cohort_preparation_layout_tests::accepted_administrative_cohort_keeps_binding_image_out_of_fixed_owner_layout" classname="codebase-graph" timestamp="2026-10-26T09:43:55.968+09:30" time="0.020">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::retained_source_observation_layout_tests::retained_source_observer_keeps_snapshot_image_out_of_fixed_owner_layout" classname="codebase-graph" timestamp="2026-10-26T09:43:55.988+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_commit_recovers_without_another_confirmation" classname="codebase-graph" timestamp="2026-10-26T09:43:56.006+09:30" time="0.119">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_intent_recovers_without_another_confirmation" classname="codebase-graph" timestamp="2026-10-26T09:43:56.125+09:30" time="0.100">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_slot_recovers_without_another_confirmation" classname="codebase-graph" timestamp="2026-10-26T09:43:56.225+09:30" time="0.103">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::staging_scope_layout_tests::prepared_staging_scope_keeps_binding_and_scratch_images_boxed" classname="codebase-graph" timestamp="2026-10-26T09:43:56.328+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_closes_and_aborts_only_staging_scope" classname="codebase-graph" timestamp="2026-10-26T09:43:56.347+09:30" time="0.098">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_enrolls_and_explicit_rebuild_invalidates_original_owner" classname="codebase-graph" timestamp="2026-10-26T09:43:56.445+09:30" time="0.105">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries" classname="codebase-graph" timestamp="2026-10-26T09:43:56.550+09:30" time="0.045">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::source_observation_layout_tests::prepared_source_observation_keeps_snapshot_and_recovery_images_boxed" classname="codebase-graph" timestamp="2026-10-26T09:43:56.595+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_closed_record_refuses_new_actual_producer" classname="codebase-graph" timestamp="2026-10-26T09:43:56.613+09:30" time="0.032">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_custom_root_is_not_enrolled_or_created" classname="codebase-graph" timestamp="2026-10-26T09:43:56.645+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_guard::tests::dc_legacy_staging_retains_actual_shared_gate_through_arc_result_lifetime" classname="codebase-graph" timestamp="2026-10-26T09:43:56.663+09:30" time="0.022">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_staging::tests::dc_staging_actual_public_copy_json_csv_profiles_and_streamed_certificates" classname="codebase-graph" timestamp="2026-10-26T09:43:56.685+09:30" time="5.587">
+        </testcase>
+        <testcase name="storage::maintenance_legacy_staging::tests::dc_staging_filenames_select_only_exact_known_profiles" classname="codebase-graph" timestamp="2026-10-26T09:44:02.271+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::allocation_boundary_test::dc_driver_real_requested_allocations_fit_tight_ceiling_and_aligned_factory" classname="codebase-graph" timestamp="2026-10-26T09:44:02.290+09:30" time="0.029">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::independent_review_probes::dc_driver_destructor_panic_preserves_success_and_runtime_drop_can_join_while_unwinding" classname="codebase-graph" timestamp="2026-10-26T09:44:02.319+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::independent_review_probes::dc_driver_factory_panic_records_failure_without_inventing_attempt" classname="codebase-graph" timestamp="2026-10-26T09:44:02.336+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::independent_review_probes::independent_outer_panic_preserves_prior_success" classname="codebase-graph" timestamp="2026-10-26T09:44:02.354+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::independent_review_probes::independent_stopping_lasts_until_driver_disposal_finishes" classname="codebase-graph" timestamp="2026-10-26T09:44:02.373+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::panic_payload_probe::independent_panicking_factory_payload_publishes_terminal_failure" classname="codebase-graph" timestamp="2026-10-26T09:44:02.390+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::spawn_failure_test::dc_driver_spawn_failure_releases_all_startup_reservations_without_factory" classname="codebase-graph" timestamp="2026-10-26T09:44:02.407+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::dc_driver_confirmation_arriving_inflight_survives_prior_completion" classname="codebase-graph" timestamp="2026-10-26T09:44:02.425+09:30" time="0.021">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::dc_driver_one_account_covers_rebind_snapshots_and_retained_handle_lifetime" classname="codebase-graph" timestamp="2026-10-26T09:44:02.446+09:30" time="0.019">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::dc_driver_resolved_startup_binding_runs_actual_dispatcher_without_default_cooldown" classname="codebase-graph" timestamp="2026-10-26T09:44:02.465+09:30" time="0.123">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::dc_driver_transient_wait_observes_completed_disposal_and_factory_failure" classname="codebase-graph" timestamp="2026-10-26T09:44:02.587+09:30" time="0.018">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::dc_scheduler_idle_busy_error_and_continuation_are_paced" classname="codebase-graph" timestamp="2026-10-26T09:44:02.606+09:30" time="0.017">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::dc_scheduler_sustained_requests_do_not_slide_due_or_lose_inflight_demand" classname="codebase-graph" timestamp="2026-10-26T09:44:02.623+09:30" time="0.016">
+        </testcase>
+        <testcase name="storage::maintenance_scheduler::tests::queued_confirmation_keeps_request_time_source_after_pair_replacement" classname="codebase-graph" timestamp="2026-10-26T09:44:02.639+09:30" time="0.023">
+        </testcase>
+    </testsuite>
+</testsuites>

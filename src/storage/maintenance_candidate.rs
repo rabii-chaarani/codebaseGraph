@@ -2044,6 +2044,30 @@ mod tests {
     }
 
     #[test]
+    fn managed_confirmation_remains_pending_until_legacy_enrollment() {
+        use super::super::maintenance_admission::{prepare_target_binding, tests::Fixture};
+        let mut f = Fixture::new();
+        f.target.storage_root = Some(f.layout.storage_root().to_owned());
+        let binding = prepare_target_binding(&f.target, &f.memory).unwrap();
+        let mut state = CandidatePreparationState::default();
+        state.set_legacy_interest(true);
+        let mut report = CandidateReport::default();
+        assert!(prepare_candidate_with_state(
+            &f.target,
+            &binding,
+            &mut state,
+            &f.memory,
+            &|| false,
+            &mut report,
+        )
+        .unwrap()
+        .is_none());
+        assert!(state.legacy_interest);
+        assert!(report.pending && report.deferred);
+        assert_ne!(report.reasons & (1 << 3), 0);
+    }
+
+    #[test]
     fn prepared_candidate_crossings_keep_large_state_indirect() {
         assert!(std::mem::size_of::<PreparedCandidate>() < 2048);
         assert!(std::mem::size_of::<Work>() < 4096);

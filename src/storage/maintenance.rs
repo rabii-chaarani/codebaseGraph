@@ -183,6 +183,104 @@ impl FairSelection {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn direct_confirmation_ingress_does_not_pin_legacy_source_or_block_recovery() {
+        use super::super::inventory::DirectPair;
+        use super::super::layout::DirectLayout;
+        use super::super::maintenance_admission::{
+            prepare_canonical, prepare_metadata_control, prepare_private_metadata, tests::Fixture,
+            with_private_metadata, METADATA_WRITE_CUT,
+        };
+        use super::super::maintenance_ownership::{self, EpochObservation, ReferenceDomain};
+        #[derive(Clone)]
+        struct Admission;
+        impl MaintenanceAdmission for Admission {
+            type Permit = ();
+            fn try_acquire(&self) -> Option<()> {
+                Some(())
+            }
+            fn stop_admission(&self) {}
+        }
+        let mut f = Fixture::new();
+        // These real legacy payloads would be pinned by request capture even
+        // though the selected destination is an unrelated modern Direct pair.
+        let legacy = super::super::inventory::default_direct(&f.target);
+        std::fs::write(&legacy.database, b"legacy database").unwrap();
+        std::fs::write(&legacy.manifest, b"legacy manifest").unwrap();
+        let pair = DirectPair {
+            database: f.target.state_root.join("direct").join("graph.ldb"),
+            manifest: f.target.state_root.join("direct").join("manifest.json"),
+        };
+        let layout = DirectLayout::new(&pair.database, &pair.manifest);
+        let store = super::super::direct::DirectStore::new(layout.clone()).unwrap();
+        drop(store.begin_write().unwrap());
+        f.target.direct_pair = Some(pair);
+        let domain = ReferenceDomain::direct(&layout).unwrap();
+        let EpochObservation::Verified(epoch) =
+            maintenance_ownership::observe_reference_epoch(&domain).unwrap()
+        else {
+            panic!("fresh Direct destination must have a tracked epoch");
+        };
+        let origin = prepare_canonical(&f.target, &domain, &epoch, &f.memory)
+            .unwrap()
+            .origin_scope();
+        let interrupt = || {
+            let mut metadata = prepare_private_metadata(&f.target, &origin, &f.memory).unwrap();
+            let mut cursor = MaintenanceCursor::new(origin.incarnation);
+            cursor.advance_empty(WorkCategory::Canonical);
+            let control = cursor.encode();
+            let update = prepare_metadata_control(
+                &origin,
+                metadata.committed().unwrap(),
+                &control,
+                &f.memory,
+            )
+            .unwrap();
+            METADATA_WRITE_CUT.with(|value| *value.borrow_mut() = Some(1));
+            assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let _ = with_private_metadata(
+                    &mut metadata,
+                    &mut MutationGrant::for_test(100, std::time::Duration::from_secs(10)),
+                    update.effects(),
+                    &mut |mutation, grant| mutation.publish_control(&update, grant),
+                );
+            }))
+            .is_err());
+            update.next()
+        };
+        let initial_commit = interrupt();
+        let target = AccountedMaintenanceTarget::copy_from(&f.target, &f.memory).unwrap();
+        assert!(!target.accepts_legacy_confirmation());
+        let (mut runtime, client) =
+            start_controller(target, f.memory.clone(), Admission, true).unwrap();
+        client.wait_for_first_attempt();
+        assert_eq!(
+            prepare_private_metadata(&f.target, &origin, &f.memory)
+                .unwrap()
+                .committed(),
+            Some(initial_commit)
+        );
+        let next_commit = interrupt();
+        assert_eq!(
+            client.request(Trigger::Health, true),
+            RequestDisposition::Enqueued
+        );
+        assert_eq!(
+            client.request(Trigger::Health, false),
+            RequestDisposition::Enqueued
+        );
+        assert!(client.confirm_and_wait());
+        assert_eq!(
+            prepare_private_metadata(&f.target, &origin, &f.memory)
+                .unwrap()
+                .committed(),
+            Some(next_commit)
+        );
+        runtime.stop_and_join();
+        assert_eq!(std::fs::read(&legacy.database).unwrap(), b"legacy database");
+        assert_eq!(std::fs::read(&legacy.manifest).unwrap(), b"legacy manifest");
+    }
+
     fn address(number: u64) -> CursorAddress {
         let mut bytes = [0; ADDRESS_BYTES];
         bytes[..8].copy_from_slice(&number.to_be_bytes());
@@ -511,6 +609,9 @@ impl AccountedMaintenanceTarget {
     pub(crate) fn target(&self) -> &MaintenanceTarget {
         &self.target
     }
+    fn accepts_legacy_confirmation(&self) -> bool {
+        self.target.direct_pair.is_none()
+    }
 }
 
 pub(crate) struct MaintenanceController<A> {
@@ -759,6 +860,7 @@ impl<A> std::fmt::Debug for MaintenanceClient<A> {
 }
 impl<A> MaintenanceClient<A> {
     pub(crate) fn request(&self, trigger: Trigger, confirm: bool) -> RequestDisposition {
+        let confirm = confirm && self.target.accepts_legacy_confirmation();
         let Some(binding) = self.observer.snapshot().binding else {
             return if confirm {
                 RequestDisposition::UnboundConfirmation
@@ -814,6 +916,15 @@ impl<A> MaintenanceClient<A> {
         // pass. Wait for that pass and its payload disposal before reserving
         // request-time source pins; ordinary busy/parked checks still apply.
         self.wait_for_first_attempt();
+        if !self.target.accepts_legacy_confirmation() {
+            let binding = self.observer.snapshot().binding;
+            let snapshot = self.handle.request_and_wait(Trigger::Health, None);
+            return binding == Some(snapshot.binding)
+                && !matches!(
+                    snapshot.liveness,
+                    DriverLiveness::Failed | DriverLiveness::Stopped
+                );
+        }
         if let Some(binding) = self.observer.snapshot().binding {
             let Some(capture) = self.handle.begin_source_capture() else {
                 return false;
@@ -1093,7 +1204,10 @@ pub(crate) fn start_controller<A: MaintenanceAdmission + Clone>(
 ) -> Result<(MaintenanceRuntime<A>, MaintenanceClient<A>), DriverError> {
     let binding =
         super::maintenance_admission::observe_maintenance_binding(target.target(), &memory).ok();
-    let initial_source = if confirmation && binding.is_some() {
+    let initial_source = if confirmation
+        && target.accepts_legacy_confirmation()
+        && binding.is_some()
+    {
         super::maintenance_admission::prepare_legacy_confirmation_source(target.target(), &memory)
             .ok()
             .and_then(|source| super::maintenance_budget::MemoryBox::new(source, &memory).ok())

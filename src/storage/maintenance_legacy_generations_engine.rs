@@ -345,6 +345,54 @@ pub(crate) fn prepare_root_cohort_boxed(
 ) -> Result<Option<MemoryBox<AcceptedLegacyRootCohort>>, FixedControlError> {
     source::observe_accepted_root_cohort_boxed(target, binding, memory)
 }
+// Advisory selection runs off-permit and retains only the smallest eligible
+// name. The selected source still needs the full enrollment and mutation proofs.
+fn select_generation_name(
+    generations: &RootedDirectory,
+    root: FileIdentity,
+    current: &[u8],
+    active_source: Option<LegacyClosedVersion>,
+    name: &mut [u8; 128],
+    len: &mut usize,
+    cancel: &dyn Fn() -> bool,
+) -> Result<(), std::io::Error> {
+    let mut scratch = [0; 4096];
+    generations.visit_entries(&mut scratch, &mut |entry| {
+        if cancel() {
+            return Err(std::io::ErrorKind::Interrupted.into());
+        }
+        if !entry.starts_with(b"gen-")
+            || entry.len() > 128
+            || !super::maintenance_generation_gate::component(entry)
+        {
+            return Ok(());
+        }
+        if entry[4..] == *current {
+            return Ok(());
+        }
+        let dir = match generations.open_directory_readonly(entry) {
+            Ok(d) => d,
+            Err(_) => return Ok(()),
+        };
+        if active_source
+            .is_some_and(|s| s.root_identity() != root || s.member_identity() != dir.identity())
+        {
+            return Ok(());
+        }
+        match dir.open_readonly_file(b".generation-origin") {
+            Ok(_) => return Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
+        if *len == 0 || entry < &name[..*len] {
+            name.fill(0);
+            name[..entry.len()].copy_from_slice(entry);
+            *len = entry.len();
+        }
+        Ok(())
+    })?;
+    Ok(())
+}
 #[inline(never)]
 fn select_job(
     target: &MaintenanceTarget,
@@ -353,6 +401,7 @@ fn select_job(
     metadata: &PreparedPrivateMetadata,
     cohort: Option<MemoryBox<AcceptedLegacyRootCohort>>,
     memory: &CleanupMemory,
+    cancel: &dyn Fn() -> bool,
 ) -> Result<Option<MemoryBox<Job>>, FixedControlError> {
     if cohort.is_none() && mode == LegacyNativeScope::ManagedGeneration {
         return Ok(None);
@@ -399,44 +448,15 @@ fn select_job(
             }
             let generations = root.open_directory_readonly(b"generations")?;
             if len == 0 {
-                let mut scratch = [0; 4096];
-                let mut count = 0;
-                generations.visit_entries(&mut scratch, &mut |entry| {
-                    count += 1;
-                    if count > 100 {
-                        return Err(std::io::ErrorKind::WouldBlock.into());
-                    }
-                    if !entry.starts_with(b"gen-")
-                        || entry.len() > 128
-                        || !super::maintenance_generation_gate::component(entry)
-                    {
-                        return Ok(());
-                    }
-                    if entry[4..] == current.0[..usize::from(current.1)] {
-                        return Ok(());
-                    }
-                    let dir = match generations.open_directory_readonly(entry) {
-                        Ok(d) => d,
-                        Err(_) => return Ok(()),
-                    };
-                    if active_source.is_some_and(|s| {
-                        s.root_identity() != root.identity()
-                            || s.member_identity() != dir.identity()
-                    }) {
-                        return Ok(());
-                    }
-                    match dir.open_readonly_file(b".generation-origin") {
-                        Ok(_) => return Ok(()),
-                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-                        Err(e) => return Err(e),
-                    }
-                    if len == 0 || entry < &name[..len] {
-                        name.fill(0);
-                        name[..entry.len()].copy_from_slice(entry);
-                        len = entry.len();
-                    }
-                    Ok(())
-                })?;
+                select_generation_name(
+                    &generations,
+                    root.identity(),
+                    &current.0[..usize::from(current.1)],
+                    active_source,
+                    &mut name,
+                    &mut len,
+                    cancel,
+                )?;
             }
             if len == 0 || name[4..len] == current.0[..usize::from(current.1)] {
                 return Ok(None);
@@ -614,7 +634,8 @@ pub(crate) fn prepare_work(
         } else {
             None
         };
-        let Some(job) = select_job(target, binding, mode, &metadata, cohort, memory)? else {
+        let Some(job) = select_job(target, binding, mode, &metadata, cohort, memory, cancel)?
+        else {
             return Ok(None);
         };
         job
@@ -2242,4 +2263,83 @@ pub(crate) fn finish_work(
         state.job = Some(job);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_generation_advisory_scan_exceeds_one_hundred_entries() {
+        let mut nonce = [0; 16];
+        getrandom::fill(&mut nonce).unwrap();
+        let path = std::env::temp_dir().canonicalize().unwrap().join(format!(
+            "legacy-selection-{:032x}",
+            u128::from_le_bytes(nonce)
+        ));
+        std::fs::create_dir(&path).unwrap();
+        let active = path.join("gen-000-active");
+        std::fs::create_dir(&active).unwrap();
+        std::fs::write(active.join("graph.ldb"), b"active native graph").unwrap();
+        let modern = path.join("gen-001-modern");
+        std::fs::create_dir(&modern).unwrap();
+        std::fs::write(modern.join(".generation-origin"), b"unknown origin bytes").unwrap();
+        let unknown = path.join("unknown-state");
+        std::fs::create_dir(&unknown).unwrap();
+        std::fs::write(unknown.join("proof"), b"retain unknown state").unwrap();
+        for index in 0..150 {
+            std::fs::create_dir(path.join(format!("gen-legacy-{index:03}"))).unwrap();
+        }
+        let root = RootedDirectory::open_readonly_root(&path, locks::path_identity(&path).unwrap())
+            .unwrap();
+        for _ in 0..2 {
+            let mut name = [0; 128];
+            let mut len = 0;
+            select_generation_name(
+                &root,
+                root.identity(),
+                b"000-active",
+                None,
+                &mut name,
+                &mut len,
+                &|| false,
+            )
+            .unwrap();
+            assert_eq!(&name[..len], b"gen-legacy-000");
+        }
+        assert_eq!(
+            std::fs::read(active.join("graph.ldb")).unwrap(),
+            b"active native graph"
+        );
+        assert_eq!(
+            std::fs::read(modern.join(".generation-origin")).unwrap(),
+            b"unknown origin bytes"
+        );
+        assert_eq!(
+            std::fs::read(unknown.join("proof")).unwrap(),
+            b"retain unknown state"
+        );
+        assert_eq!(std::fs::read_dir(&path).unwrap().count(), 153);
+        let visited = std::cell::Cell::new(0);
+        let mut name = [0; 128];
+        let mut len = 0;
+        let error = select_generation_name(
+            &root,
+            root.identity(),
+            b"000-active",
+            None,
+            &mut name,
+            &mut len,
+            &|| {
+                visited.set(visited.get() + 1);
+                visited.get() == 4
+            },
+        )
+        .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::Interrupted);
+        assert_eq!(visited.get(), 4);
+        assert_eq!(std::fs::read_dir(&path).unwrap().count(), 153);
+        drop(root);
+        std::fs::remove_dir_all(path).unwrap();
+    }
 }
