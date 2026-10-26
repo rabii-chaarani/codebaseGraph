@@ -898,6 +898,7 @@ fn truncate_utf8_tail(text: &str, limit: usize) -> &str {
     &text[start..]
 }
 
+#[cfg(target_os = "macos")]
 impl LadybugWritePhase {
     fn trace_label(&self) -> String {
         let label = match self {
