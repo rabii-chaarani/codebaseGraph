@@ -1195,6 +1195,52 @@ mod output_tests {
     }
 
     #[test]
+    fn final_output_limits_include_json_framing_and_csv_header() {
+        let root = temp_root("exact-output-boundaries");
+        let json_row = OutputRow {
+            id: "naïve,\"line\n".to_string(),
+        };
+        let json_row_bytes = serde_json::to_vec(&json_row).unwrap().len();
+        let json_limit = json_row_bytes + 3;
+        let mut json = JsonTableSink::new(&root, json_limit, json_limit, SpillMetrics::default());
+        json.push("Symbol", &json_row).unwrap();
+        let (statements, rows) = json.finish().unwrap();
+        assert_eq!(rows, 1);
+        assert_eq!(statements.len(), 1);
+        assert_eq!(
+            fs::read(root.join("symbol.json")).unwrap().len(),
+            json_limit
+        );
+
+        let connector = ConnectorRecord {
+            relation: "Contains".to_string(),
+            side: EndpointSide::Source,
+            from_type: "File".to_string(),
+            to_type: "Contains".to_string(),
+            from_id: "naïve,\"source\n".to_string(),
+            to_id: "edge:one".to_string(),
+            role: "source".to_string(),
+        };
+        let encoded = encode_output_bounded(usize::MAX, "test", |writer| {
+            write_csv_field(writer, &connector.from_id)?;
+            writer.write_all(b",")?;
+            write_csv_field(writer, &connector.to_id)?;
+            writer.write_all(b",")?;
+            write_csv_field(writer, &connector.role)?;
+            writer.write_all(b"\r\n")
+        })
+        .unwrap();
+        let csv_limit = CONNECTOR_HEADER.len() + encoded.len();
+        let mut csv = ConnectorSink::new(&root, csv_limit, csv_limit, SpillMetrics::default());
+        csv.push(&connector).unwrap();
+        let (statements, rows) = csv.finish().unwrap();
+        assert_eq!(rows, 1);
+        assert_eq!(statements.len(), 1);
+        let csv_path = root.join("from_contains__file__contains.csv");
+        assert_eq!(fs::read(csv_path).unwrap().len(), csv_limit);
+    }
+
+    #[test]
     fn final_outputs_reject_single_rows_larger_than_the_chunk() {
         let root = temp_root("oversized-output");
         let row = OutputRow {

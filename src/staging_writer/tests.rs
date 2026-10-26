@@ -309,6 +309,11 @@ fn small_budget_forces_spill_without_changing_deterministic_output() {
     assert_eq!(bounded_result.connector_rows, 800);
     assert!(bounded_result.spill_bytes > 0);
     assert!(bounded_result.high_water_bytes > 0);
+    for entry in fs::read_dir(&bounded_dir).unwrap().filter_map(Result::ok) {
+        if entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            assert!(entry.metadata().unwrap().len() <= 8_192);
+        }
+    }
     assert_eq!(
         unique_statement_tables(&bounded_result.copy_statements),
         unique_statement_tables(&default_result.copy_statements)

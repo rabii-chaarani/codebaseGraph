@@ -13,10 +13,6 @@ use std::fs;
 use std::path::Path;
 use std::time::Instant;
 
-// Ladybug's bundled JSON reader does not consolidate a list or glob of JSON
-// files, so production currently loads one complete table document at a time.
-const COPY_FILE_CHUNK_BYTES: usize = usize::MAX;
-
 #[cfg(test)]
 thread_local! {
     static OPERATION_FINISHED_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> = const { std::cell::RefCell::new(None) };
@@ -71,7 +67,7 @@ fn execute_scanned_materialization(
     let mut staging_accumulator = staging_writer::StagingAccumulator::with_limits(
         &request.staging_dir,
         spill_chunk_bytes,
-        COPY_FILE_CHUNK_BYTES,
+        spill_chunk_bytes,
     )?;
     let materialization_paths = scan.supported.keys().cloned().collect::<Vec<_>>();
     let materialization_total = materialization_paths.len();

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="72" failures="0" errors="0" uuid="4ff3a83c-a871-4204-814d-b1d9bc5bca69" timestamp="2026-10-26T16:25:24.330+09:30" time="55.630">
+    <testsuite name="codebase-graph" tests="72" disabled="0" errors="0" failures="0">
+        <testcase name="db_writer::extensions::tests::bundled_extension_archives_decompress_before_cache_seed" classname="codebase-graph" timestamp="2026-10-26T16:25:24.332+09:30" time="0.328">
+        </testcase>
+        <testcase name="db_writer::extensions::tests::supports_prebuilt_and_source_built_ladybug_extension_cache_versions" classname="codebase-graph" timestamp="2026-10-26T16:25:24.660+09:30" time="0.020">
+        </testcase>
+        <testcase name="db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes" classname="codebase-graph" timestamp="2026-10-26T16:25:24.681+09:30" time="0.023">
+        </testcase>
+        <testcase name="db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit" classname="codebase-graph" timestamp="2026-10-26T16:25:24.704+09:30" time="0.018">
+        </testcase>
+        <testcase name="db_writer::phase::tests::error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily" classname="codebase-graph" timestamp="2026-10-26T16:25:24.722+09:30" time="0.020">
+        </testcase>
+        <testcase name="db_writer::phase::tests::isolated_error_keeps_context_inside_the_cap" classname="codebase-graph" timestamp="2026-10-26T16:25:24.743+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_protocol_requires_v2_containment_contract" classname="codebase-graph" timestamp="2026-10-26T16:25:24.761+09:30" time="0.017">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error" classname="codebase-graph" timestamp="2026-10-26T16:25:24.779+09:30" time="0.088">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts" classname="codebase-graph" timestamp="2026-10-26T16:25:24.867+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_request_v2_preserves_native_resource_settings" classname="codebase-graph" timestamp="2026-10-26T16:25:24.886+09:30" time="0.018">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader" classname="codebase-graph" timestamp="2026-10-26T16:25:24.905+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory" classname="codebase-graph" timestamp="2026-10-26T16:25:24.924+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path" classname="codebase-graph" timestamp="2026-10-26T16:25:24.943+09:30" time="0.021">
+        </testcase>
+        <testcase name="db_writer::rss::tests::allocator_pressure_relief_is_safe_at_phase_boundaries" classname="codebase-graph" timestamp="2026-10-26T16:25:24.964+09:30" time="0.017">
+        </testcase>
+        <testcase name="db_writer::rss::tests::sampler_reports_current_process_memory_charge" classname="codebase-graph" timestamp="2026-10-26T16:25:24.981+09:30" time="0.018">
+        </testcase>
+        <testcase name="db_writer::schema::tests::classifies_fts_indexes_after_copy_without_reordering_each_phase" classname="codebase-graph" timestamp="2026-10-26T16:25:25.000+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::schema::tests::disabled_fts_filters_provided_extension_and_index_statements" classname="codebase-graph" timestamp="2026-10-26T16:25:25.019+09:30" time="0.017">
+        </testcase>
+        <testcase name="db_writer::schema::tests::extension_setup_is_always_pre_copy" classname="codebase-graph" timestamp="2026-10-26T16:25:25.036+09:30" time="0.016">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_failed_native_open_releases_exclusion" classname="codebase-graph" timestamp="2026-10-26T16:25:25.052+09:30" time="0.018">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_move_and_connection_retain_physical_family" classname="codebase-graph" timestamp="2026-10-26T16:25:25.070+09:30" time="0.117">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_native_path_rejects_full_non_utf8_before_effects" classname="codebase-graph" timestamp="2026-10-26T16:25:25.187+09:30" time="0.022">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_native_path_rejects_transforms_before_filesystem_effects" classname="codebase-graph" timestamp="2026-10-26T16:25:25.210+09:30" time="0.018">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_readonly_rejects_parent_without_coordination_write_access" classname="codebase-graph" timestamp="2026-10-26T16:25:25.228+09:30" time="0.065">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_rejects_symlink_and_hardlink_resources_before_open" classname="codebase-graph" timestamp="2026-10-26T16:25:25.292+09:30" time="0.067">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_relative_native_open_uses_one_absolute_guarded_resource" classname="codebase-graph" timestamp="2026-10-26T16:25:25.359+09:30" time="0.078">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_symlink_parent_traversal_cannot_bind_another_native_resource" classname="codebase-graph" timestamp="2026-10-26T16:25:25.437+09:30" time="0.019">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_unicode_alias_retains_physical_parent_exclusion" classname="codebase-graph" timestamp="2026-10-26T16:25:25.456+09:30" time="0.103">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_unwind_closes_native_handle_and_releases_exclusion" classname="codebase-graph" timestamp="2026-10-26T16:25:25.559+09:30" time="0.117">
+        </testcase>
+        <testcase name="db_writer::tests::guarded_database_windows_encoding_policy_checks_the_complete_native_path" classname="codebase-graph" timestamp="2026-10-26T16:25:25.676+09:30" time="0.020">
+        </testcase>
+        <testcase name="db_writer::tests::native_writer_loads_json_staging_through_ladybug_copy" classname="codebase-graph" timestamp="2026-10-26T16:25:25.697+09:30" time="0.803">
+        </testcase>
+        <testcase name="db_writer::tests::native_writer_loads_multiple_chunks_into_one_primary_key_table" classname="codebase-graph" timestamp="2026-10-26T16:25:26.499+09:30" time="0.207">
+        </testcase>
+        <testcase name="db_writer::tests::transient_database_error_detection_matches_ladybug_lock_failures" classname="codebase-graph" timestamp="2026-10-26T16:25:26.706+09:30" time="0.020">
+        </testcase>
+        <testcase name="db_writer::tests::transient_database_retry_replays_operation_until_success" classname="codebase-graph" timestamp="2026-10-26T16:25:26.727+09:30" time="0.129">
+        </testcase>
+        <testcase name="db_writer::write::tests::isolated_phase_schedule_stops_after_first_error_without_replay" classname="codebase-graph" timestamp="2026-10-26T16:25:26.855+09:30" time="0.236">
+        </testcase>
+        <testcase name="db_writer::write::tests::query_errors_are_not_suppressed_by_duplicate_ddl_wording" classname="codebase-graph" timestamp="2026-10-26T16:25:27.092+09:30" time="0.085">
+        </testcase>
+        <testcase name="execution::run::tests::artifact_reuse_preserves_materialization_output" classname="codebase-graph" timestamp="2026-10-26T16:25:27.177+09:30" time="6.376">
+        </testcase>
+        <testcase name="execution::run::tests::cached_and_clean_builds_stage_identical_rows" classname="codebase-graph" timestamp="2026-10-26T16:52:10.172+09:30" time="9.333">
+        </testcase>
+        <testcase name="execution::run::tests::dc_s2_public_pipeline_keeps_use_guards_through_final_result_assembly" classname="codebase-graph" timestamp="2026-10-26T16:52:19.512+09:30" time="2.754">
+        </testcase>
+        <testcase name="execution::run::tests::dc_s2_pure_planning_does_not_create_use_coordination_files" classname="codebase-graph" timestamp="2026-10-26T16:52:22.268+09:30" time="0.027">
+        </testcase>
+        <testcase name="execution::run::tests::deleted_files_are_excluded_from_materialized_entries" classname="codebase-graph" timestamp="2026-10-26T16:52:22.295+09:30" time="5.705">
+        </testcase>
+        <testcase name="execution::run::tests::digest_only_build_changes_can_reuse_all_raw_artifacts" classname="codebase-graph" timestamp="2026-10-26T16:52:28.003+09:30" time="6.175">
+        </testcase>
+        <testcase name="execution::run::tests::graph_summary_counts_unique_ids_once" classname="codebase-graph" timestamp="2026-10-26T16:52:34.179+09:30" time="0.025">
+        </testcase>
+        <testcase name="execution::run::tests::missing_or_corrupt_unchanged_artifacts_rebuild_from_scanned_sources" classname="codebase-graph" timestamp="2026-10-26T16:52:34.204+09:30" time="9.160">
+        </testcase>
+        <testcase name="execution::run::tests::scanned_payload_completes_materialization_after_source_removal" classname="codebase-graph" timestamp="2026-10-26T16:52:43.366+09:30" time="2.763">
+        </testcase>
+        <testcase name="execution::run::tests::unchanged_partitions_reuse_artifacts_without_reparsing" classname="codebase-graph" timestamp="2026-10-26T16:52:46.130+09:30" time="6.135">
+        </testcase>
+        <testcase name="search_index::tests::builder_consumes_all_staging_chunks_in_sequence" classname="codebase-graph" timestamp="2026-10-26T16:52:52.266+09:30" time="0.028">
+        </testcase>
+        <testcase name="search_index::tests::checksum_validation_rejects_corrupt_postings" classname="codebase-graph" timestamp="2026-10-26T16:52:52.294+09:30" time="0.025">
+        </testcase>
+        <testcase name="search_index::tests::occurrence_sorting_stays_within_the_configured_chunk" classname="codebase-graph" timestamp="2026-10-26T16:52:52.320+09:30" time="0.046">
+        </testcase>
+        <testcase name="search_index::tests::sidecar_build_and_search_use_deterministic_bm25_ties" classname="codebase-graph" timestamp="2026-10-26T16:52:52.365+09:30" time="0.026">
+        </testcase>
+        <testcase name="search_index::tests::tokenizer_indexes_unicode_identifiers_case_insensitively" classname="codebase-graph" timestamp="2026-10-26T16:52:52.391+09:30" time="0.023">
+        </testcase>
+        <testcase name="staging_writer::accumulator::output_tests::final_output_limits_include_json_framing_and_csv_header" classname="codebase-graph" timestamp="2026-10-26T16:52:52.414+09:30" time="0.021">
+        </testcase>
+        <testcase name="staging_writer::accumulator::output_tests::final_outputs_reject_single_rows_larger_than_the_chunk" classname="codebase-graph" timestamp="2026-10-26T16:52:52.435+09:30" time="0.019">
+        </testcase>
+        <testcase name="staging_writer::accumulator::output_tests::json_output_rotates_at_the_byte_limit" classname="codebase-graph" timestamp="2026-10-26T16:52:52.454+09:30" time="0.019">
+        </testcase>
+        <testcase name="staging_writer::accumulator::output_tests::legacy_staging_gate_survives_finish_and_result_clones_until_loader_owner_drops" classname="codebase-graph" timestamp="2026-10-26T16:52:52.473+09:30" time="0.033">
+        </testcase>
+        <testcase name="staging_writer::accumulator::output_tests::registered_spool_drop_preserves_unreceipted_injected_child_for_terminal_collection" classname="codebase-graph" timestamp="2026-10-26T16:52:52.506+09:30" time="0.505">
+        </testcase>
+        <testcase name="staging_writer::accumulator::output_tests::unregistered_preexisting_output_preserves_plain_write_behavior_without_adoption" classname="codebase-graph" timestamp="2026-10-26T16:52:53.011+09:30" time="0.022">
+        </testcase>
+        <testcase name="staging_writer::spill::tests::dropping_final_stream_removes_owned_run_files" classname="codebase-graph" timestamp="2026-10-26T16:52:53.033+09:30" time="0.021">
+        </testcase>
+        <testcase name="staging_writer::spill::tests::metrics_preserve_concurrent_charges_and_written_totals" classname="codebase-graph" timestamp="2026-10-26T16:52:53.054+09:30" time="0.019">
+        </testcase>
+        <testcase name="staging_writer::spill::tests::metrics_saturate_without_overflow_or_underflow" classname="codebase-graph" timestamp="2026-10-26T16:52:53.073+09:30" time="0.017">
+        </testcase>
+        <testcase name="staging_writer::spill::tests::metrics_track_aggregate_live_buffers_and_release_on_drop" classname="codebase-graph" timestamp="2026-10-26T16:52:53.090+09:30" time="0.018">
+        </testcase>
+        <testcase name="staging_writer::spill::tests::multi_level_merge_removes_consumed_runs_and_stays_heap_bounded" classname="codebase-graph" timestamp="2026-10-26T16:52:53.108+09:30" time="0.068">
+        </testcase>
+        <testcase name="staging_writer::tests::connector_generation_allows_target_in_later_partition" classname="codebase-graph" timestamp="2026-10-26T16:52:53.176+09:30" time="0.029">
+        </testcase>
+        <testcase name="staging_writer::tests::connector_generation_requires_existing_endpoints" classname="codebase-graph" timestamp="2026-10-26T16:52:53.205+09:30" time="0.026">
+        </testcase>
+        <testcase name="staging_writer::tests::copy_path_normalizes_windows_separators_for_ladybug" classname="codebase-graph" timestamp="2026-10-26T16:52:53.231+09:30" time="0.017">
+        </testcase>
+        <testcase name="staging_writer::tests::copy_path_strips_windows_extended_prefix_for_ladybug" classname="codebase-graph" timestamp="2026-10-26T16:52:53.249+09:30" time="0.017">
+        </testcase>
+        <testcase name="staging_writer::tests::csv_field_streaming_escapes_quotes_without_building_a_second_string" classname="codebase-graph" timestamp="2026-10-26T16:52:53.266+09:30" time="0.017">
+        </testcase>
+        <testcase name="staging_writer::tests::deterministic_output_sorts_rows_connectors_and_copy_statements" classname="codebase-graph" timestamp="2026-10-26T16:52:53.282+09:30" time="0.030">
+        </testcase>
+        <testcase name="staging_writer::tests::duplicate_typed_rows_keep_first_non_empty_fields" classname="codebase-graph" timestamp="2026-10-26T16:52:53.312+09:30" time="0.027">
+        </testcase>
+        <testcase name="staging_writer::tests::single_record_larger_than_budget_fails_structurally" classname="codebase-graph" timestamp="2026-10-26T16:52:53.339+09:30" time="0.025">
+        </testcase>
+        <testcase name="staging_writer::tests::small_budget_forces_spill_without_changing_deterministic_output" classname="codebase-graph" timestamp="2026-10-26T16:52:53.363+09:30" time="3.170">
+        </testcase>
+        <testcase name="staging_writer::tests::writes_grammar_provenance_and_ordered_syntax_child_rows" classname="codebase-graph" timestamp="2026-10-26T16:54:52.677+09:30" time="0.033">
+        </testcase>
+        <testcase name="staging_writer::tests::writes_typed_rows_and_connectors_without_bulk_protocol" classname="codebase-graph" timestamp="2026-10-26T16:54:52.710+09:30" time="0.028">
+        </testcase>
+    </testsuite>
+</testsuites>
