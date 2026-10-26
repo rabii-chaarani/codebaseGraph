@@ -2,11 +2,11 @@
 
 ## 1. Identity, status and authority
 
-- **Revision:** 0.5, proposed implementation scope with **D01, D02, D03a and D03b policies approved**. **Work ID:** `CBG-PLAT-01`.
+- **Revision:** 0.6, proposed implementation scope with **D01–D04 policies approved** (including D03a/D03b). **Work ID:** `CBG-PLAT-01`.
 - **Canonical Git path:** `docs/specs/CBG-PLAT-01/spec.md`. Supporting review evidence: [review-evidence.md](review-evidence.md) and [evidence/](evidence/).
 - **Delivery:** CodebaseGraph Linear workspace (`https://linear.app/codebasegraph`), existing **Maintenance** project `P-COD-2` (`https://linear.app/codebasegraph/project/maintenance-33932479ebd0`), team `COD`. This user-selected destination supersedes older project-routing advice. No new project is created.
 - **Baseline:** [PR #153](https://github.com/rabii-chaarani/codebaseGraph/pull/153), reviewed HEAD `862a8f88d485d5bd257ebd9456c194156fd4ee94`, version3.0.4. This evidence is not the prior checkout6aa5ba8 review. Revalidate changed source before implementation.
-- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). The user also selected **D03a option A: explicit config path → client-specific override → native Windows user-profile directory**, ignoring HOME for the Windows default and failing clearly rather than falling back to CWD; see [D03a](decisions/d03a-windows-user-directory.md). The user then selected **D03b option B: native .exe clients plus .cmd/.bat shims through a dedicated Windows invocation adapter**, with tested argument handling, no generic shell-command evaluation and clear rejection of unsupported/unsafe inputs; see [D03b](decisions/d03b-windows-client-command-invocation.md). The explicit correction “no i meant B” supersedes the preceding A. These approve the selected policies only, not the entire specification or implementation start. D04, D05, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening settled decisions.
+- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). The user also selected **D03a option A: explicit config path → client-specific override → native Windows user-profile directory**, ignoring HOME for the Windows default and failing clearly rather than falling back to CWD; see [D03a](decisions/d03a-windows-user-directory.md). The user then selected **D03b option B: native .exe clients plus .cmd/.bat shims through a dedicated Windows invocation adapter**, with tested argument handling, no generic shell-command evaluation and clear rejection of unsupported/unsafe inputs; see [D03b](decisions/d03b-windows-client-command-invocation.md). The explicit correction “no i meant B” supersedes the preceding A. The user also selected **D04 option A: retain and accurately report the Windows Direct-read Exclusive lock**, without a new unlock/relock transition or concurrent-reader guarantee; see [D04](decisions/d04-windows-direct-exclusive-mode.md). These approve the selected policies only, not the entire specification or implementation start. D05, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening settled decisions.
 - **Closure owner:** repository maintainer/user; no automatic aggregate closure delegated. Assignees/dates/estimates remain unset. Draft requirements below are proposed, not approved acceptance changes.
 - **State separation:** proposed → exact-scope approved → implemented → native-platform qualified → maintainer closed. Linear Backlog, attached/configured tests, commits and percentages are not evidence of later states.
 
@@ -33,7 +33,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Outcome:** Publish/pin the proposed specification and review evidence; resolve applicable decisions and obtain explicit exact-scope approval for selected dependent slices, while recording deferral of unrelated decisions.
 
-**Problem/evidence:** Planning and D01/D02 distribution plus D03a/D03b Windows discovery/invocation policies are approved. D04 and D05 remain unresolved. No current message authorizes implementation, merge, deployment or service restart.
+**Problem/evidence:** Planning and D01/D02 distribution, D03a/D03b Windows discovery/invocation, and D04 truthful Windows Exclusive lock policies are approved. D05 remains unresolved. No current message authorizes implementation, merge, deployment or service restart.
 
 **Requirements / criteria:** R01, R02, R03, R04, R05, R06, R07, R08, R09, R10 → A00.
 
@@ -55,7 +55,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [docs/specs/CBG-COPY-01/resource-ceilings-approval.md:1–10](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/docs/specs/CBG-COPY-01/resource-ceilings-approval.md#L1-L10)
 - [README.md:45–65](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/README.md#L45-L65)
 
-**Dependencies:** none; planning/approval only. **Open decisions:** D04, D05. **Resolved:** D01, D02, D03a and D03b policies approved; no implementation start authorized. No task depends on a guessed implementation date.
+**Dependencies:** none; planning/approval only. **Open decisions:** D05. **Resolved:** D01, D02, D03a, D03b and D04 policies approved; no implementation start authorized. No task depends on a guessed implementation date.
 
 ### S01 — Isolate macOS directory enumeration cursors for nested cleanup scans
 
@@ -297,25 +297,25 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Requirements / criteria:** R09 → A13.
 
-- Resolve D04: intentionally retain/report Exclusive, or implement a real Windows release/reacquire-and-revalidate transition consistent with publication safety.
+- Follow approved D04 option A for Windows Direct reads: retain the existing Exclusive lock and report/verify Exclusive truthfully. Do not add a Shared layer, an unlock/relock transition or a new concurrent-reader guarantee; preserve publication/recovery exclusion.
 - Do not simply unlock before lock_shared across protected recovery state; an unvalidated gap can create a race.
 - Do not reuse the fresh-creation helper without proving its preconditions apply to committed reads.
 
 **Acceptance (proposed):**
 
 <a id="a13"></a>
-- **A13** — Given the approved mode policy, a second native Windows handle observes the expected Shared/Exclusive contention behavior and mode/verifies reports the truth. Native Windows and Mac Direct read/replay/writer exclusion regressions pass, including transition contention and failure; no permanent lock leak or new concurrent-reader guarantee is implied.
+- **A13** — Given an admitted Windows Direct read, its held OS lock and mode/verifies agree on Exclusive, and second-handle Shared/Exclusive attempts contend until release. No unlock/relock gap or redundant Shared lock layer is introduced. Native Windows and Mac Direct read/replay/writer-exclusion regressions pass; preserve current macOS behavior and release semantics. No new concurrent-reader guarantee or permanent-lock-leak claim is implied.
 
-**Architectural context:** Graph Store resp-109. Existing invariant clarification; a changed concurrent-reader guarantee requires explicit contract review, not an incidental compatibility shim.
+**Architectural context:** Graph Store resp-109. D04 approves truthful retention of Windows Exclusive ownership only. Implementation authorization and applicable reconciliation remain pending; a new concurrent-reader guarantee or macOS lock-policy change is outside this decision.
 
-**Planned verification:** Native Windows second-handle lock-mode test plus affected Direct committed-read/recovery/writer-exclusion tests; check pinned fs2 semantics and failure/revalidation paths.
+**Planned verification:** Native Windows second-handle Shared/Exclusive contention, truthful mode/verifies and release tests, plus affected Direct committed-read/recovery/writer-exclusion tests on both platforms. Verify no new unlock/relock gap and unchanged macOS behavior.
 
 **Source orientation at the reviewed SHA:**
 - [src/storage/locks.rs:87–96](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/src/storage/locks.rs#L87-L96)
 - [src/storage/locks.rs:174–197](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/src/storage/locks.rs#L174-L197)
 - [src/storage/direct.rs:206–229](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/src/storage/direct.rs#L206-L229)
 
-**Dependencies:** S00. **Open decisions:** D04. No task depends on a guessed implementation date.
+**Dependencies:** S00. **Open decisions:** implementation authorization. **Resolved:** D04 option A, retain/report Windows Exclusive. No task depends on a guessed implementation date.
 
 ### S10 — Qualify the corrected native revision and installed consumer archives
 
@@ -370,7 +370,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 | A10 | R06 / S06 | Exact watch-help and adjacent behavior tests on both native targets | Fresh Mac failure; hosted Mac+Win failure. Fixed run pending. |
 | A11 | R07 / S07 | Production-rendered path fixture + native Windows/Mac metadata/COPY tests | Mac passes; Windows unit shard1 fails raw path fixture. No production loading defect inferred. |
 | A12 | R08 / S08 | Windows owned contention/release/timeout/noncontention cases + actual epoch publication case | Windows integration shard2 failed OS33; product classifier already handles raw fs2 errors. Lock duration not established. |
-| A13 | R09 / S09 | Native Windows second-handle Shared/Exclusive behavior + Direct read/replay/exclusion | Static fs2 semantics; no Windows local execution. Existing admission already exclusive on both OSes. D04 pending. |
+| A13 | R09 / S09 | Native Windows second-handle Shared/Exclusive behavior + Direct read/replay/exclusion | Static fs2 semantics; no Windows local execution. D04 retain/report Windows Exclusive approved; implementation and native qualification pending. |
 | A14–A15 | R10 / S10 | All required native cohorts/artifact jobs + exact installed clean-consumer success/failure; maintainer sign-off | Current CI40330652083 failed; both artifacts skipped. 145 selected local Mac passes are not qualification/closure. |
 
 Actual verification record: [review-evidence.md](review-evidence.md). SHA-bound failed CI tested a synthetic merge; only CHANGELOG differs from reviewed implementation. Later passing evidence must identify full source/merge SHA, native OS/toolchain, CLI/archive hashes, exact command/method, result and limits. Mark planned/ignored/unexecuted cases explicitly. Ingest JUnit into Scryer only where existing claims require it, after actual execution.
@@ -417,10 +417,11 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### D04 — Direct read lock-mode contract
 
-- Affected: S09.
-- Recommendation/options: Prefer the smallest truthful mode behavior consistent with current exclusive admission; if true downgrade is required, specify revalidation around the Windows gap.
-- Tradeoff/start constraint: Keeping/reporting Exclusive changes advertised mode; release/reacquire can race. No new concurrent-reader guarantee is approved by this backlog.
-- Status: unanswered/proposed. No implementation approval recorded.
+- Affected: S09/COD-60; disposition/qualification S10/COD-61.
+- **Decision: A — retain the existing Windows Direct-read Exclusive lock and report it accurately.** Do not add an unlock/relock transition, a redundant Shared lock layer or a new concurrent-reader guarantee.
+- Preserve publication/recovery exclusion and current macOS behavior. The narrower honest-mode fix does not approve a cross-platform read-concurrency redesign or changes to fresh-creation transition semantics.
+- User decision: **“A”**, answering the immediately preceding D04 question offering truthful retained Exclusive versus genuine release/reacquire/revalidated Shared. See [decision/approval record](decisions/d04-windows-direct-exclusive-mode.md).
+- **Status: lock policy approved only.** Exact code/visibility/name changes and native tests remain to be verified during authorized implementation. No implementation start, merge, deployment or service restart is authorized. S09 remains preexisting low-priority debt, not a cause of current CI failures.
 
 ### D05 — Supported consumer qualification matrix and Cargo-install recipe
 
@@ -439,4 +440,4 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### Planning authorization record
 
-Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md), [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md), and [D03a Windows native-profile directory precedence](decisions/d03a-windows-user-directory.md). The later D03b answer was explicitly corrected to **“no i meant B”**, selecting [native .exe plus .cmd/.bat client shims](decisions/d03b-windows-client-command-invocation.md) through a dedicated safe Windows adapter. These policy decisions do not approve implementation of the whole spec; D04/D05 remain open. No product constants or implementation source changed by this planning/decision work.
+Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md), [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md), and [D03a Windows native-profile directory precedence](decisions/d03a-windows-user-directory.md). The later D03b answer was explicitly corrected to **“no i meant B”**, selecting [native .exe plus .cmd/.bat client shims](decisions/d03b-windows-client-command-invocation.md) through a dedicated safe Windows adapter. The subsequent **“A”** selects [D04 truthful retained Windows Exclusive mode](decisions/d04-windows-direct-exclusive-mode.md). These policy decisions do not approve implementation of the whole spec; D05 remains open. No product constants or implementation source changed by this planning/decision work.
