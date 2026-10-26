@@ -1,0 +1,8 @@
+{
+  "action": "dry_run",
+  "method": "file_adapter",
+  "scope": "user",
+  "path": "./.codex/config.toml",
+  "native_error": "codex executable not found",
+  "target_locality": "shared"
+}

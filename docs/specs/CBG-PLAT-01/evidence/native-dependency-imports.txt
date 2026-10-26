@@ -1,0 +1,63 @@
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/osx_arm64-fts.lbug_extension:  Mach-O 64-bit dynamically linked shared library arm64
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/osx_arm64-json.lbug_extension: Mach-O 64-bit dynamically linked shared library arm64
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/win_amd64-fts.lbug_extension:  PE32+ executable (DLL) (GUI) x86-64, for MS Windows
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/win_amd64-json.lbug_extension: PE32+ executable (DLL) (GUI) x86-64, for MS Windows
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/osx_arm64-fts.lbug_extension:
+	@rpath/libfts.lbug_extension (compatibility version 0.0.0, current version 0.0.0)
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/osx_arm64-json.lbug_extension:
+	@rpath/libjson.lbug_extension (compatibility version 0.0.0, current version 0.0.0)
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/osx_arm64-fts.lbug_extension:
+         name @rpath/libfts.lbug_extension (offset 24)
+      cmd LC_BUILD_VERSION
+    minos 13.3
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/osx_arm64-json.lbug_extension:
+         name @rpath/libjson.lbug_extension (offset 24)
+      cmd LC_BUILD_VERSION
+    minos 13.3
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/win_amd64-fts.lbug_extension:	file format coff-x86-64
+TLS directory:
+The Import Tables:
+    DLL Name: libssl-3-x64.dll
+    DLL Name: libcrypto-3-x64.dll
+    DLL Name: KERNEL32.dll
+    DLL Name: MSVCP140.dll
+    DLL Name: WS2_32.dll
+    DLL Name: CRYPT32.dll
+    DLL Name: VCRUNTIME140.dll
+    DLL Name: VCRUNTIME140_1.dll
+    DLL Name: api-ms-win-crt-runtime-l1-1-0.dll
+    DLL Name: api-ms-win-crt-heap-l1-1-0.dll
+    DLL Name: api-ms-win-crt-math-l1-1-0.dll
+    DLL Name: api-ms-win-crt-locale-l1-1-0.dll
+    DLL Name: api-ms-win-crt-string-l1-1-0.dll
+    DLL Name: api-ms-win-crt-convert-l1-1-0.dll
+    DLL Name: api-ms-win-crt-stdio-l1-1-0.dll
+    DLL Name: api-ms-win-crt-filesystem-l1-1-0.dll
+    DLL Name: api-ms-win-crt-time-l1-1-0.dll
+    DLL Name: api-ms-win-crt-environment-l1-1-0.dll
+    DLL Name: api-ms-win-crt-utility-l1-1-0.dll
+Export Table:
+ DLL name: libfts.lbug_extension
+/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/win_amd64-json.lbug_extension:	file format coff-x86-64
+TLS directory:
+The Import Tables:
+    DLL Name: libssl-3-x64.dll
+    DLL Name: libcrypto-3-x64.dll
+    DLL Name: KERNEL32.dll
+    DLL Name: MSVCP140.dll
+    DLL Name: WS2_32.dll
+    DLL Name: CRYPT32.dll
+    DLL Name: VCRUNTIME140.dll
+    DLL Name: VCRUNTIME140_1.dll
+    DLL Name: api-ms-win-crt-runtime-l1-1-0.dll
+    DLL Name: api-ms-win-crt-math-l1-1-0.dll
+    DLL Name: api-ms-win-crt-heap-l1-1-0.dll
+    DLL Name: api-ms-win-crt-locale-l1-1-0.dll
+    DLL Name: api-ms-win-crt-string-l1-1-0.dll
+    DLL Name: api-ms-win-crt-stdio-l1-1-0.dll
+    DLL Name: api-ms-win-crt-convert-l1-1-0.dll
+    DLL Name: api-ms-win-crt-environment-l1-1-0.dll
+    DLL Name: api-ms-win-crt-filesystem-l1-1-0.dll
+    DLL Name: api-ms-win-crt-utility-l1-1-0.dll
+Export Table:
+ DLL name: libjson.lbug_extension

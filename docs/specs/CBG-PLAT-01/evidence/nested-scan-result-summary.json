@@ -1,0 +1,10 @@
+{
+  "source_head": "862a8f88d485d5bd257ebd9456c194156fd4ee94",
+  "fixture": "filesystem-current-source-probes.rs",
+  "log": "filesystem-current-source-probes-run.log",
+  "baseline": 200,
+  "outer": 85,
+  "minimum_inner": 200,
+  "outcome": "failed invariant; nested scan consumes outer cursor; macOS ARM64 native",
+  "production_full_cleanup_reproduction": false
+}
