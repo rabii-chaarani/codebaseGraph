@@ -4,7 +4,7 @@
 - Milestone: `CBG-PLAT-01 — PR #153 platform maintenance`, ID `ff37f4fc-4072-439a-8691-9c15dc739ddd`.
 - Proposed canonical specification: [rev0.1 at full commit 33360340379f878e93324e0829a1bb6f33eafc9d](https://github.com/rabii-chaarani/codebaseGraph/blob/33360340379f878e93324e0829a1bb6f33eafc9d/docs/specs/CBG-PLAT-01/spec.md). No approved specification SHA or implementation sign-off is recorded.
 - Draft docs-only publication: [PR155](https://github.com/rabii-chaarani/codebaseGraph/pull/155), stacked on PR153. No product source/constants changed.
-- User initially authorized spec/backlog creation, then explicitly selected **D01 optionA: bundled runtimes for Windows prebuilt releases**; see [decision record](decisions/d01-windows-runtime-bundling.md). No implementation start is authorized. D02–D05 remain unresolved; Cargo source-install policy stays open. All issues remain Backlog with no dates, estimates or assignees invented.
+- User initially authorized spec/backlog creation, then separately selected **D01 option A: bundled Windows prebuilt runtimes** ([record](decisions/d01-windows-runtime-bundling.md)) and **D02 option A: bundled macOS prebuilt OpenSSL dylibs with relative runtime paths** ([record](decisions/d02-macos-openssl-bundling.md)); no Homebrew prerequisite. No implementation start is authorized. D03–D05 remain unresolved; Cargo source-install policy stays open. All issues remain Backlog with no dates, estimates or assignees invented.
 
 | Work item | Linear | Outcome | Depends on |
 |---|---|---|---|

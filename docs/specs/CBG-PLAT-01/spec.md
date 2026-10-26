@@ -2,11 +2,11 @@
 
 ## 1. Identity, status and authority
 
-- **Revision:** 0.2, proposed implementation scope with **D01 policy approved**. **Work ID:** `CBG-PLAT-01`.
+- **Revision:** 0.3, proposed implementation scope with **D01 and D02 policies approved**. **Work ID:** `CBG-PLAT-01`.
 - **Canonical Git path:** `docs/specs/CBG-PLAT-01/spec.md`. Supporting review evidence: [review-evidence.md](review-evidence.md) and [evidence/](evidence/).
 - **Delivery:** CodebaseGraph Linear workspace (`https://linear.app/codebasegraph`), existing **Maintenance** project `P-COD-2` (`https://linear.app/codebasegraph/project/maintenance-33932479ebd0`), team `COD`. This user-selected destination supersedes older project-routing advice. No new project is created.
 - **Baseline:** [PR #153](https://github.com/rabii-chaarani/codebaseGraph/pull/153), reviewed HEAD `862a8f88d485d5bd257ebd9456c194156fd4ee94`, version3.0.4. This evidence is not the prior checkout6aa5ba8 review. Revalidate changed source before implementation.
-- **Approval:** the initial user request authorized planning/specification publication and issue creation. In the later D01 question, the user selected **A: bundle the required runtime libraries for Windows prebuilt releases**, including compatible redistributable libraries, licenses, checksums and controlled DLL loading, without manual OpenSSL/Visual C++ runtime installation. See [D01 decision record](decisions/d01-windows-runtime-bundling.md). This approves **D01 policy only**, not the whole specification or implementation start. D02–D05, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening D01.
+- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). These approve the two distribution policies only, not the entire specification or implementation start. D03–D05, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening D01/D02.
 - **Closure owner:** repository maintainer/user; no automatic aggregate closure delegated. Assignees/dates/estimates remain unset. Draft requirements below are proposed, not approved acceptance changes.
 - **State separation:** proposed → exact-scope approved → implemented → native-platform qualified → maintainer closed. Linear Backlog, attached/configured tests, commits and percentages are not evidence of later states.
 
@@ -33,7 +33,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Outcome:** Publish/pin the proposed specification and review evidence; resolve applicable decisions and obtain explicit exact-scope approval for selected dependent slices, while recording deferral of unrelated decisions.
 
-**Problem/evidence:** Planning is authorized and D01 Windows prebuilt runtime bundling policy is approved. D02–D05 remain unresolved. No current message authorizes implementation, merge, deployment or service restart.
+**Problem/evidence:** Planning is authorized; D01 Windows prebuilt runtime bundling and D02 macOS prebuilt OpenSSL dylib bundling policies are approved. D03–D05 remain unresolved. No current message authorizes implementation, merge, deployment or service restart.
 
 **Requirements / criteria:** R01, R02, R03, R04, R05, R06, R07, R08, R09, R10 → A00.
 
@@ -55,7 +55,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [docs/specs/CBG-COPY-01/resource-ceilings-approval.md:1–10](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/docs/specs/CBG-COPY-01/resource-ceilings-approval.md#L1-L10)
 - [README.md:45–65](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/README.md#L45-L65)
 
-**Dependencies:** none; planning/approval only. **Open decisions:** D02, D03, D04, D05. **Resolved:** D01 policy approved; no implementation start authorized. No task depends on a guessed implementation date.
+**Dependencies:** none; planning/approval only. **Open decisions:** D03, D04, D05. **Resolved:** D01 and D02 policies approved; no implementation start authorized. No task depends on a guessed implementation date.
 
 ### S01 — Isolate macOS directory enumeration cursors for nested cleanup scans
 
@@ -126,20 +126,20 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Requirements / criteria:** R03 → A05, A06.
 
-- Resolve D02: static linking, verified relocatable bundled dylibs/rpaths, or explicit supported prerequisite contract.
+- Follow approved D02 option A for macOS ARM64 prebuilt releases: bundle compatible redistributable OpenSSL dylibs with relative install names/runtime paths, licenses and checksums. Users must not install Homebrew or OpenSSL separately. Do not switch to static linking or external prerequisites without a new user decision.
 - Retain exact-artifact checksums/provenance and inspect final release imports, not only a debug build.
 - Document the approved ARM64/minimum-OS dependency policy; do not restore intentionally removed Intel/Linux targets.
 
 **Acceptance (proposed):**
 
 <a id="a05"></a>
-- **A05** — Given the approved consumer baseline, final installed ARM64 archive --help, graph/JSON/FTS build and reopen, k-wiki and MCP operate without undeclared producer-path dependencies.
+- **A05** — Given the approved clean consumer baseline without Homebrew or a separately installed OpenSSL, the final installed ARM64 archive --help, graph/JSON/FTS build and reopen, k-wiki and MCP operate using the bundled compatible OpenSSL dylibs and relative runtime paths. No producer-specific absolute Homebrew path may be required.
 <a id="a06"></a>
-- **A06** — Given external prerequisites are the approved policy, installation checks and documents their supported version/location and fails clearly when absent. Final archive otool dependency/install-name/rpath evidence matches the approved policy; licenses/checksums cover any bundled dylibs.
+- **A06** — Final release archive otool dependency/install-name/rpath evidence confirms relative resolution of the bundled OpenSSL dylibs; licenses/checksums cover them. Given a missing, corrupt or incompatible bundled library, fail clearly without reporting readiness or qualification. A redistribution/compatibility blocker must be reported, not converted silently into a Homebrew prerequisite.
 
-**Architectural context:** Release Gate resp-255–resp-258, resp-16/resp-17; Graph Store resp-113. Change only approved native distribution policy, not process containment.
+**Architectural context:** Release Gate resp-255–resp-258, resp-16/resp-17; Graph Store resp-113. D02 dylib-bundling policy is approved; implementation authorization, D05 consumer/minimum-OS baseline and applicable architectural reconciliation remain pending. Do not change process containment.
 
-**Planned verification:** Build the actual ARM64 release archive, inspect Mach-O imports/rpaths, then execute installed archive on a clean approved macOS consumer baseline and prerequisite-failure cases.
+**Planned verification:** Build the actual ARM64 release archive, inspect Mach-O imports/install names/rpaths, then execute the installed archive on a clean approved macOS consumer baseline without Homebrew/OpenSSL and with missing/corrupt bundled-library negative cases.
 
 **Source orientation at the reviewed SHA:**
 - [build.rs:10–26](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/build.rs#L10-L26)
@@ -147,7 +147,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [crates/xtask/src/main.rs:596–607](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/crates/xtask/src/main.rs#L596-L607)
 - [README.md:45–65](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/README.md#L45-L65)
 
-**Dependencies:** S00. **Open decisions:** D02, D05. No task depends on a guessed implementation date.
+**Dependencies:** S00. **Open decisions:** D05 and implementation authorization. **Resolved:** D02 macOS prebuilt OpenSSL dylib bundling. No task depends on a guessed implementation date.
 
 ### S04 — Use explicit Windows user-directory and executable discovery policy
 
@@ -364,7 +364,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 | A00 | S00 / R01–R10 | Audit immutable spec/review links and explicit human approval | This proposal is not approved; planning only. |
 | A01–A02 | R01 / S01 | Exact rooted helper multi-batch nested test; production receipt-selection case; cancellation/namespace tests | Mac exact-source helper baseline200/outer85/inner200 fails. No complete collector-starvation/data-loss repro. Fixed native runs required. |
 | A03–A04 | R02 / S02 | Final PE imports + installed clean Windows JSON/FTS/CLI/MCP and failure cases | Current asset imports inspected; no clean Windows missing-DLL execution. D01 bundling policy approved; D05/implementation and actual native qualification pending. |
-| A05–A06 | R03 / S03 | Final release Mach-O/rpaths + clean approved ARM64 install/reopen/failure | Fresh debug CLI imports inspected only; no final release/clean consumer run. D02/D05 pending. |
+| A05–A06 | R03 / S03 | Final release Mach-O/rpaths + clean approved ARM64 install/reopen/failure | Fresh debug CLI imports inspected only; no final release/clean consumer run. D02 dylib-bundling policy approved; D05/implementation and actual native qualification pending. |
 | A07–A08 | R04 / S04 | Process-level native Windows env/PATH/override cases and Mac regression | Fresh CLI portable-logic reproduction points user scope to dot with HOME absent. Not Windows execution. D03 pending. |
 | A09 | R05 / S05 | Native PowerShell valid-checksum/nonzero executable preflight/destination preservation | Source semantics only; pwsh unavailable locally. D05 pending. |
 | A10 | R06 / S06 | Exact watch-help and adjacent behavior tests on both native targets | Fresh Mac failure; hosted Mac+Win failure. Fixed run pending. |
@@ -390,10 +390,12 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### D02 — macOS OpenSSL delivery
 
-- Affected: S03, S10.
-- Recommendation/options: Choose static linkage or verified relative dylib/rpath packaging where feasible. Alternative: explicitly supported Homebrew prerequisite.
-- Tradeoff/start constraint: A debug import list is not a release qualification. No undeclared producer-prefix dependency may be called portable.
-- Status: unanswered/proposed. No implementation approval recorded.
+- Affected: S03, S10; Linear COD-54 and COD-61.
+- **Decision: A — bundle OpenSSL dylibs with macOS ARM64 prebuilt releases.** Users must not need Homebrew or a separate OpenSSL installation.
+- Package compatible redistributable libraries with relative install names/runtime paths, licenses and checksums. This retains dynamic linking while removing the producer-specific Homebrew requirement.
+- Exact library versions, archive layout, install-name/rpath tooling and release maintenance remain implementation details to validate within this policy. No static-linking redesign or external-prerequisite fallback was selected.
+- User decision: **“A”**, answering the immediately preceding D02 A/B/C question (bundled dylibs/static linking/Homebrew prerequisites). See [decision/approval record](decisions/d02-macos-openssl-bundling.md).
+- **Status: policy approved.** Not approval of all R03/A05–A06 implementation, the rest of this specification, merge, deployment or service restart. D05 consumer/OS qualification baseline remains open.
 
 ### D03 — Windows discovery precedence and command kinds
 
@@ -426,4 +428,4 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### Planning authorization record
 
-Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. The later explicit answer **“A”** selects D01 Windows prebuilt runtime bundling, as recorded in [D01](decisions/d01-windows-runtime-bundling.md). Neither request approves implementation of the whole spec. No product constants or implementation source changed by this planning/decision work.
+Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md) and [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md). These policy decisions do not approve implementation of the whole spec. No product constants or implementation source changed by this planning/decision work.
