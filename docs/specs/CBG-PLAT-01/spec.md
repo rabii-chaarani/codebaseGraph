@@ -2,11 +2,11 @@
 
 ## 1. Identity, status and authority
 
-- **Revision:** proposed 0.1. **Work ID:** `CBG-PLAT-01`.
+- **Revision:** 0.2, proposed implementation scope with **D01 policy approved**. **Work ID:** `CBG-PLAT-01`.
 - **Canonical Git path:** `docs/specs/CBG-PLAT-01/spec.md`. Supporting review evidence: [review-evidence.md](review-evidence.md) and [evidence/](evidence/).
 - **Delivery:** CodebaseGraph Linear workspace (`https://linear.app/codebasegraph`), existing **Maintenance** project `P-COD-2` (`https://linear.app/codebasegraph/project/maintenance-33932479ebd0`), team `COD`. This user-selected destination supersedes older project-routing advice. No new project is created.
 - **Baseline:** [PR #153](https://github.com/rabii-chaarani/codebaseGraph/pull/153), reviewed HEAD `862a8f88d485d5bd257ebd9456c194156fd4ee94`, version3.0.4. This evidence is not the prior checkout6aa5ba8 review. Revalidate changed source before implementation.
-- **Approval:** the user requested “Create issues in Linear using the spec workflow. Create the issues in Maintenance project in CodebaseGraph Workspace.” This authorizes planning/specification publication and issue creation only. **Implementation, dependency policies, scope changes, merge, deployment and service restarts are not approved.** No approved full specification SHA exists yet; a docs commit/PR is not approval. S00 records explicit future approval of the actual committed revision/scope.
+- **Approval:** the initial user request authorized planning/specification publication and issue creation. In the later D01 question, the user selected **A: bundle the required runtime libraries for Windows prebuilt releases**, including compatible redistributable libraries, licenses, checksums and controlled DLL loading, without manual OpenSSL/Visual C++ runtime installation. See [D01 decision record](decisions/d01-windows-runtime-bundling.md). This approves **D01 policy only**, not the whole specification or implementation start. D02–D05, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening D01.
 - **Closure owner:** repository maintainer/user; no automatic aggregate closure delegated. Assignees/dates/estimates remain unset. Draft requirements below are proposed, not approved acceptance changes.
 - **State separation:** proposed → exact-scope approved → implemented → native-platform qualified → maintainer closed. Linear Backlog, attached/configured tests, commits and percentages are not evidence of later states.
 
@@ -33,7 +33,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Outcome:** Publish/pin the proposed specification and review evidence; resolve applicable decisions and obtain explicit exact-scope approval for selected dependent slices, while recording deferral of unrelated decisions.
 
-**Problem/evidence:** The user approved creating issues/spec planning only. No current message approves implementation or chooses runtime dependency, discovery, lock or supported-environment policy.
+**Problem/evidence:** Planning is authorized and D01 Windows prebuilt runtime bundling policy is approved. D02–D05 remain unresolved. No current message authorizes implementation, merge, deployment or service restart.
 
 **Requirements / criteria:** R01, R02, R03, R04, R05, R06, R07, R08, R09, R10 → A00.
 
@@ -55,7 +55,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [docs/specs/CBG-COPY-01/resource-ceilings-approval.md:1–10](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/docs/specs/CBG-COPY-01/resource-ceilings-approval.md#L1-L10)
 - [README.md:45–65](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/README.md#L45-L65)
 
-**Dependencies:** none; planning/approval only. **Open decisions:** D01, D02, D03, D04, D05. No task depends on a guessed implementation date.
+**Dependencies:** none; planning/approval only. **Open decisions:** D02, D03, D04, D05. **Resolved:** D01 policy approved; no implementation start authorized. No task depends on a guessed implementation date.
 
 ### S01 — Isolate macOS directory enumeration cursors for nested cleanup scans
 
@@ -95,18 +95,18 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Requirements / criteria:** R02 → A03, A04.
 
-- Resolve D01: approved app-local compatible libraries with loader policy/licenses/checksums, or explicit supported external prerequisites with checking; do not silently choose.
+- Implement the approved D01 policy for Windows prebuilt releases: bundle compatible redistributable non-system runtime libraries required by the shipped binaries and JSON/FTS extensions, including OpenSSL/VC runtime dependencies as applicable. Users must not install those runtimes separately. Include licenses, checksums and application-controlled DLL loading; do not substitute external prerequisites without a new user decision.
 - Keep NativeTarget/archive provenance as the single packaging authority; include all intentionally shipped sidecars in inventory and integrity verification.
 - Keep DLL resolution application-controlled; do not widen global PATH or load arbitrary caller-writable libraries as a fallback.
 
 **Acceptance (proposed):**
 
 <a id="a03"></a>
-- **A03** — Given an approved clean Windows baseline without developer OpenSSL/VC PATH entries, the exact installed archive either supplies or verifies all declared native dependencies before reporting ready.
+- **A03** — Given an approved clean Windows baseline without developer OpenSSL/VC PATH entries or separately installed required OpenSSL/VC runtimes, the exact installed prebuilt archive supplies its required compatible redistributable non-system native libraries and operates without manual runtime installation before reporting ready. The bundling policy is approved by D01; the exact consumer baseline remains D05.
 <a id="a04"></a>
-- **A04** — Given real setup and queries, LOAD json, LOAD fts, graph build/reopen/search and k-wiki/MCP smoke succeed through installed binaries. Given a missing/incompatible declared prerequisite or sidecar, fail clearly without replacing a working installation or reporting qualification; include imports, archive hashes, licenses and loader policy in evidence.
+- **A04** — Given real setup and queries, LOAD json, LOAD fts, graph build/reopen/search and k-wiki/MCP smoke succeed through installed binaries with bundled runtimes. Given a missing/incompatible bundled sidecar, fail clearly without replacing a working installation or reporting qualification; include imports, archive hashes, licenses and application-controlled loader policy in evidence. A packaging/licensing incompatibility blocks release; it does not authorize switching to manual prerequisite installation.
 
-**Architectural context:** Graph Store resp-113; Release Gate resp-255, resp-256, resp-257, resp-258 and resp-16/resp-17. Runtime packaging policy is not yet approved; review any affected intent before coding.
+**Architectural context:** Graph Store resp-113; Release Gate resp-255, resp-256, resp-257, resp-258 and resp-16/resp-17. D01 Windows prebuilt bundling policy is approved; implementation authorization, D05 baseline/source-install policy and applicable architectural reconciliation remain pending before coding.
 
 **Planned verification:** Inspect PE imports of exact final archive components and execute clean-consumer native Windows installation/JSON/FTS/reopen/CLI/MCP cases, including missing-dependency failure.
 
@@ -116,7 +116,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [crates/xtask/src/main.rs:596–607](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/crates/xtask/src/main.rs#L596-L607)
 - [release/install/install.ps1:76–89](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/release/install/install.ps1#L76-L89)
 
-**Dependencies:** S00. **Open decisions:** D01, D05. No task depends on a guessed implementation date.
+**Dependencies:** S00. **Open decisions:** D05 and implementation authorization. **Resolved:** D01 Windows prebuilt runtime bundling. No task depends on a guessed implementation date.
 
 ### S03 — Remove undeclared Homebrew-path assumptions from macOS distribution
 
@@ -363,7 +363,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 |---|---|---|---|
 | A00 | S00 / R01–R10 | Audit immutable spec/review links and explicit human approval | This proposal is not approved; planning only. |
 | A01–A02 | R01 / S01 | Exact rooted helper multi-batch nested test; production receipt-selection case; cancellation/namespace tests | Mac exact-source helper baseline200/outer85/inner200 fails. No complete collector-starvation/data-loss repro. Fixed native runs required. |
-| A03–A04 | R02 / S02 | Final PE imports + installed clean Windows JSON/FTS/CLI/MCP and failure cases | Current asset imports inspected; no clean Windows missing-DLL execution. D01/D05 pending. |
+| A03–A04 | R02 / S02 | Final PE imports + installed clean Windows JSON/FTS/CLI/MCP and failure cases | Current asset imports inspected; no clean Windows missing-DLL execution. D01 bundling policy approved; D05/implementation and actual native qualification pending. |
 | A05–A06 | R03 / S03 | Final release Mach-O/rpaths + clean approved ARM64 install/reopen/failure | Fresh debug CLI imports inspected only; no final release/clean consumer run. D02/D05 pending. |
 | A07–A08 | R04 / S04 | Process-level native Windows env/PATH/override cases and Mac regression | Fresh CLI portable-logic reproduction points user scope to dot with HOME absent. Not Windows execution. D03 pending. |
 | A09 | R05 / S05 | Native PowerShell valid-checksum/nonzero executable preflight/destination preservation | Source semantics only; pwsh unavailable locally. D05 pending. |
@@ -381,10 +381,12 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### D01 — Windows native dependency delivery
 
-- Affected: S02, S10.
-- Recommendation/options: Prefer a verified app-local distribution/loader contract if license and dependency compatibility checks allow it. Alternative: explicit supported prerequisites checked before setup.
-- Tradeoff/start constraint: Do not select app-local DLL placement, global PATH changes or implicit downloads without approval. Missing-library failure must be clear; exact final imports and load tests are required.
-- Status: unanswered/proposed. No implementation approval recorded.
+- Affected: S02, S10; Linear COD-53 and COD-61.
+- **Decision: A — bundle required runtimes with Windows prebuilt releases.** Users must not separately install OpenSSL or the required Visual C++ runtime to use the prebuilt archive.
+- Include compatible redistributable required non-system libraries, their licenses, checksums and an application-controlled DLL-loading policy. Preserve the existing security constraints: no global PATH widening or arbitrary caller-writable DLL fallback.
+- Exact compatible versions, app-local layout and secure loading mechanism are implementation details to validate within this policy, not already approved code. If licensing/ABI/redistribution is infeasible, report a blocker rather than silently switch to option B.
+- User decision: **“A”**, answering the immediately preceding explicit D01 A-versus-B question in this conversation. See [decision/approval record](decisions/d01-windows-runtime-bundling.md).
+- **Status: policy approved.** Not approval of all R02/A03–A04 implementation, the rest of this specification, merge, deployment or service restart. D05 Cargo source-install recipe and consumer/OS qualification baseline remain open.
 
 ### D02 — macOS OpenSSL delivery
 
@@ -424,4 +426,4 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### Planning authorization record
 
-User request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. This is the sole new authorization recorded here; it is not a fabricated exact-revision sign-off. No product constants or implementation source changed by this planning work.
+Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. The later explicit answer **“A”** selects D01 Windows prebuilt runtime bundling, as recorded in [D01](decisions/d01-windows-runtime-bundling.md). Neither request approves implementation of the whole spec. No product constants or implementation source changed by this planning/decision work.
