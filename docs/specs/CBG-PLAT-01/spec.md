@@ -2,11 +2,11 @@
 
 ## 1. Identity, status and authority
 
-- **Revision:** 0.7, proposed implementation scope with **D01–D04 and D05a policies approved** (including D03a/D03b). **Work ID:** `CBG-PLAT-01`.
+- **Revision:** 0.8, proposed implementation scope with **D01–D04 and D05a/D05b policies approved** (including D03a/D03b). **Work ID:** `CBG-PLAT-01`.
 - **Canonical Git path:** `docs/specs/CBG-PLAT-01/spec.md`. Supporting review evidence: [review-evidence.md](review-evidence.md) and [evidence/](evidence/).
 - **Delivery:** CodebaseGraph Linear workspace (`https://linear.app/codebasegraph`), existing **Maintenance** project `P-COD-2` (`https://linear.app/codebasegraph/project/maintenance-33932479ebd0`), team `COD`. This user-selected destination supersedes older project-routing advice. No new project is created.
 - **Baseline:** [PR #153](https://github.com/rabii-chaarani/codebaseGraph/pull/153), reviewed HEAD `862a8f88d485d5bd257ebd9456c194156fd4ee94`, version3.0.4. This evidence is not the prior checkout6aa5ba8 review. Revalidate changed source before implementation.
-- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). The user also selected **D03a option A: explicit config path → client-specific override → native Windows user-profile directory**, ignoring HOME for the Windows default and failing clearly rather than falling back to CWD; see [D03a](decisions/d03a-windows-user-directory.md). The user then selected **D03b option B: native .exe clients plus .cmd/.bat shims through a dedicated Windows invocation adapter**, with tested argument handling, no generic shell-command evaluation and clear rejection of unsupported/unsafe inputs; see [D03b](decisions/d03b-windows-client-command-invocation.md). The explicit correction “no i meant B” supersedes the preceding A. The user also selected **D04 option A: retain and accurately report the Windows Direct-read Exclusive lock**, without a new unlock/relock transition or concurrent-reader guarantee; see [D04](decisions/d04-windows-direct-exclusive-mode.md). The user also selected **D05a option A: target macOS 13.3+ on Apple Silicon**, requiring execution on the declared minimum and a current macOS release before claiming support; see [D05a](decisions/d05a-macos-supported-minimum.md). These approve the selected policies only, not the entire specification or implementation start. D05b Windows baseline, D05c PowerShell baseline, D05d Cargo source-install policy, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening settled decisions.
+- **Approval:** the initial user request authorized planning/specification publication and issue creation. The user later selected **D01 option A: bundle required Windows prebuilt runtime libraries**, with licenses, checksums and controlled DLL loading, and **D02 option A: bundle OpenSSL dylibs for macOS prebuilt releases**, with relative runtime paths, licenses and checksums; no Homebrew prerequisite. See [D01](decisions/d01-windows-runtime-bundling.md) and [D02](decisions/d02-macos-openssl-bundling.md). The user also selected **D03a option A: explicit config path → client-specific override → native Windows user-profile directory**, ignoring HOME for the Windows default and failing clearly rather than falling back to CWD; see [D03a](decisions/d03a-windows-user-directory.md). The user then selected **D03b option B: native .exe clients plus .cmd/.bat shims through a dedicated Windows invocation adapter**, with tested argument handling, no generic shell-command evaluation and clear rejection of unsupported/unsafe inputs; see [D03b](decisions/d03b-windows-client-command-invocation.md). The explicit correction “no i meant B” supersedes the preceding A. The user also selected **D04 option A: retain and accurately report the Windows Direct-read Exclusive lock**, without a new unlock/relock transition or concurrent-reader guarantee; see [D04](decisions/d04-windows-direct-exclusive-mode.md). The user also selected **D05a option A: target macOS 13.3+ on Apple Silicon**, requiring execution on the declared minimum and a current macOS release before claiming support; see [D05a](decisions/d05a-macos-supported-minimum.md). The user also selected **D05b option A: Microsoft-supported Windows 11 x86_64 client releases**, requiring actual desktop installation/runtime qualification rather than Windows Server CI alone; see [D05b](decisions/d05b-windows-consumer-baseline.md). These approve the selected policies only, not the entire specification or implementation start. D05c PowerShell baseline, D05d Cargo source-install policy, implementation authorization, merge, deployment and service restarts remain unapproved. S00 records applicable exact-scope approvals without reopening settled decisions.
 - **Closure owner:** repository maintainer/user; no automatic aggregate closure delegated. Assignees/dates/estimates remain unset. Draft requirements below are proposed, not approved acceptance changes.
 - **State separation:** proposed → exact-scope approved → implemented → native-platform qualified → maintainer closed. Linear Backlog, attached/configured tests, commits and percentages are not evidence of later states.
 
@@ -33,7 +33,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Outcome:** Publish/pin the proposed specification and review evidence; resolve applicable decisions and obtain explicit exact-scope approval for selected dependent slices, while recording deferral of unrelated decisions.
 
-**Problem/evidence:** Planning, D01–D04 policies and D05a macOS 13.3+ Apple Silicon target policy are approved. D05b–D05d remain unresolved. Minimum/current macOS execution has not been established by this policy decision. No current message authorizes implementation, merge, deployment or service restart.
+**Problem/evidence:** Planning, D01–D04 policies, D05a macOS 13.3+ Apple Silicon and D05b Microsoft-supported Windows 11 x86_64 consumer policies are approved. D05c/D05d remain unresolved. Actual native/consumer qualification is not established by selecting these policies. No current message authorizes implementation, merge, deployment or service restart.
 
 **Requirements / criteria:** R01, R02, R03, R04, R05, R06, R07, R08, R09, R10 → A00.
 
@@ -55,7 +55,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [docs/specs/CBG-COPY-01/resource-ceilings-approval.md:1–10](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/docs/specs/CBG-COPY-01/resource-ceilings-approval.md#L1-L10)
 - [README.md:45–65](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/README.md#L45-L65)
 
-**Dependencies:** none; planning/approval only. **Open decisions:** D05b, D05c, D05d. **Resolved:** D01, D02, D03a, D03b, D04 and D05a policies approved; no implementation start authorized. No task depends on a guessed implementation date.
+**Dependencies:** none; planning/approval only. **Open decisions:** D05c, D05d. **Resolved:** D01, D02, D03a, D03b, D04, D05a and D05b policies approved; no implementation start authorized. No task depends on a guessed implementation date.
 
 ### S01 — Isolate macOS directory enumeration cursors for nested cleanup scans
 
@@ -102,13 +102,13 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 **Acceptance (proposed):**
 
 <a id="a03"></a>
-- **A03** — Given an approved clean Windows baseline without developer OpenSSL/VC PATH entries or separately installed required OpenSSL/VC runtimes, the exact installed prebuilt archive supplies its required compatible redistributable non-system native libraries and operates without manual runtime installation before reporting ready. The bundling policy is approved by D01; the exact consumer baseline remains D05.
+- **A03** — Given a clean Microsoft-supported Windows 11 x86_64 desktop consumer environment without developer OpenSSL/VC PATH entries or separately installed required OpenSSL/VC runtimes, the exact installed prebuilt archive supplies its compatible redistributable required non-system libraries and operates without manual runtime installation before reporting ready. D01 approves bundling and D05b approves the Windows 11 consumer scope; record actual tested edition/release/build. Windows Server CI alone is not desktop qualification.
 <a id="a04"></a>
 - **A04** — Given real setup and queries, LOAD json, LOAD fts, graph build/reopen/search and k-wiki/MCP smoke succeed through installed binaries with bundled runtimes. Given a missing/incompatible bundled sidecar, fail clearly without replacing a working installation or reporting qualification; include imports, archive hashes, licenses and application-controlled loader policy in evidence. A packaging/licensing incompatibility blocks release; it does not authorize switching to manual prerequisite installation.
 
-**Architectural context:** Graph Store resp-113; Release Gate resp-255, resp-256, resp-257, resp-258 and resp-16/resp-17. D01 Windows prebuilt bundling policy is approved; implementation authorization, D05 baseline/source-install policy and applicable architectural reconciliation remain pending before coding.
+**Architectural context:** Graph Store resp-113; Release Gate resp-255, resp-256, resp-257, resp-258 and resp-16/resp-17. D01 bundling and D05b Windows 11 x86_64 consumer policies are approved. D05c installer shell, D05d source-install policy, implementation authorization and applicable reconciliation remain pending; native desktop qualification is not supplied by this decision.
 
-**Planned verification:** Inspect PE imports of exact final archive components and execute clean-consumer native Windows installation/JSON/FTS/reopen/CLI/MCP cases, including missing-dependency failure.
+**Planned verification:** Inspect exact final archive PE imports and execute clean Microsoft-supported Windows 11 x86_64 desktop installation/JSON/FTS/reopen/CLI/MCP cases, including missing-dependency failure. Record native client edition/release/build and exact artifacts. Retain Server CI as build/test evidence only, not a substitute for desktop consumer execution.
 
 **Source orientation at the reviewed SHA:**
 - [src/db_writer/extensions.rs:98–110](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/src/db_writer/extensions.rs#L98-L110)
@@ -116,7 +116,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - [crates/xtask/src/main.rs:596–607](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/crates/xtask/src/main.rs#L596-L607)
 - [release/install/install.ps1:76–89](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/release/install/install.ps1#L76-L89)
 
-**Dependencies:** S00. **Open decisions:** D05 and implementation authorization. **Resolved:** D01 Windows prebuilt runtime bundling. No task depends on a guessed implementation date.
+**Dependencies:** S00. **Open decisions:** D05c, D05d and implementation authorization. **Resolved:** D01 runtime bundling and D05b Windows 11 x86_64 client scope. No task depends on a guessed implementation date.
 
 ### S03 — Remove undeclared Homebrew-path assumptions from macOS distribution
 
@@ -200,13 +200,13 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 
 **Architectural context:** Release Gate resp-16, resp-256; existing installer validation behavior restoration, no invented model claim required.
 
-**Planned verification:** Native Windows installer tests using checksum-valid controlled executables with success/nonzero exits, DryRun, real destination-preservation and checksum-failure paths.
+**Planned verification:** Native Windows 11 x86_64 desktop installer tests under the separately approved D05c shell hosts, using checksum-valid controlled executables with success/nonzero exits, DryRun, destination preservation and checksum-failure paths. Server CI alone does not establish desktop installer qualification.
 
 **Source orientation at the reviewed SHA:**
 - [release/install/install.ps1:27–47](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/release/install/install.ps1#L27-L47)
 - [release/install/install.ps1:76–89](https://github.com/rabii-chaarani/codebaseGraph/blob/862a8f88d485d5bd257ebd9456c194156fd4ee94/release/install/install.ps1#L76-L89)
 
-**Dependencies:** S00. **Open decisions:** D05. No task depends on a guessed implementation date.
+**Dependencies:** S00. **Open decisions:** D05c and implementation authorization. **Resolved:** D05b Windows 11 x86_64 consumer scope. No task depends on a guessed implementation date.
 
 ### S06 — Restore watch help documentation of the parallel default
 
@@ -328,7 +328,7 @@ All issue titles are prefixed `CBG-PLAT-01/Sxx`. S00 is the exact-scope contract
 - Preserve serial discovered inventories, bounded Windows sharding, captured CLI hashes, ignored-case accounting and fail-closed artifact gates.
 - Run native Mac ARM64 and Windows x64 checks on the selected corrected revision; bind head/synthetic merge, binary hashes, archive hashes and environment.
 - Execute real installation/upgrade/failure paths and installed CLI/MCP/JSON/FTS/reopen under approved clean-consumer and prerequisite policies. Reconcile stale four-target release documentation with the two-target scope; this qualification does not duplicate or close the broader DC-S5 cleanup/rollout programme.
-- Follow approved D05a macOS 13.3+ Apple Silicon target and require actual final-archive execution on the minimum and a current macOS release before claiming support. Resolve D05b Windows, D05c PowerShell and D05d source-install recipe separately; document exact tested versions and do not restore removed platforms or workload ceilings.
+- Follow approved D05a macOS 13.3+ Apple Silicon minimum/current-release qualification and D05b Microsoft-supported Windows 11 x86_64 client scope. Require actual final installed archive desktop execution; Server CI is build evidence, not Windows consumer qualification. Resolve D05c PowerShell and D05d source-install recipe separately; record exact tested versions without restoring removed platforms or workload ceilings.
 
 **Acceptance (proposed):**
 
@@ -435,10 +435,12 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 - User decision: **“A”**, answering the preceding D05a A/B question (target macOS 13.3+ versus macOS 14+). See [decision/approval record](decisions/d05a-macos-supported-minimum.md).
 - **Status: target/qualification policy approved only.** No actual minimum/current execution, implementation start, release approval, merge, deployment or service restart is claimed.
 
-#### D05b — Windows consumer baseline (open)
+#### D05b — Windows consumer baseline (approved)
 
-- Choose the supported Windows x86_64 client OS baseline and require native desktop consumer execution, not just a Windows Server CI build host.
-- **Status: unanswered/proposed.** No Windows version floor is selected by D05a.
+- **Decision: A — Microsoft-supported Windows 11 x86_64 client releases.** Require actual desktop installation and runtime qualification of the final installed archive; record the tested edition/release/build and artifact identity.
+- Windows Server CI remains useful native build/test evidence but cannot by itself establish Windows desktop consumer qualification. No Windows 10, Windows ARM64 or Windows Server consumer support is added by this choice.
+- User decision: **“A”**, answering the preceding D05b A/B question (Windows 11 only versus Windows 10 and11). See [decision/approval record](decisions/d05b-windows-consumer-baseline.md).
+- **Status: consumer target/qualification policy approved only.** No desktop execution, implementation start or release approval is claimed. D05c shell hosts and D05d source-install recipe remain separate.
 
 #### D05c — PowerShell baseline (open)
 
@@ -460,4 +462,4 @@ Owner for D01–D05 is the repository maintainer/user. Recommendations are optio
 
 ### Planning authorization record
 
-Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md), [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md), and [D03a Windows native-profile directory precedence](decisions/d03a-windows-user-directory.md). The later D03b answer was explicitly corrected to **“no i meant B”**, selecting [native .exe plus .cmd/.bat client shims](decisions/d03b-windows-client-command-invocation.md) through a dedicated safe Windows adapter. The subsequent **“A”** selects [D04 truthful retained Windows Exclusive mode](decisions/d04-windows-direct-exclusive-mode.md). The subsequent **“A”** selects [D05a macOS 13.3+ Apple Silicon with minimum/current qualification](decisions/d05a-macos-supported-minimum.md). These policy decisions do not approve implementation of the whole spec; D05b–D05d remain open. No product constants or implementation source changed by this planning/decision work.
+Initial user request in this conversation, 2026-10-26: create the issues using the spec workflow in **Maintenance**, **CodebaseGraph workspace**. Later separate explicit answers **“A”** selected [D01 Windows runtime bundling](decisions/d01-windows-runtime-bundling.md), [D02 macOS OpenSSL dylib bundling](decisions/d02-macos-openssl-bundling.md), and [D03a Windows native-profile directory precedence](decisions/d03a-windows-user-directory.md). The later D03b answer was explicitly corrected to **“no i meant B”**, selecting [native .exe plus .cmd/.bat client shims](decisions/d03b-windows-client-command-invocation.md) through a dedicated safe Windows adapter. The subsequent **“A”** selects [D04 truthful retained Windows Exclusive mode](decisions/d04-windows-direct-exclusive-mode.md). The subsequent **“A”** selects [D05a macOS 13.3+ Apple Silicon with minimum/current qualification](decisions/d05a-macos-supported-minimum.md). The subsequent **“A”** selects [D05b Microsoft-supported Windows 11 x86_64 desktop consumer scope](decisions/d05b-windows-consumer-baseline.md). These policy decisions do not approve implementation of the whole spec; D05c/D05d remain open. No product constants or implementation source changed by this planning/decision work.
