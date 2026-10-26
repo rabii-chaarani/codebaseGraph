@@ -1007,8 +1007,6 @@ mod tests {
         )];
         write_database(LadybugWriteRequest {
             db_path: db_path.to_string_lossy().to_string(),
-            worker_memory_bytes: 768 * 1024 * 1024,
-            buffer_pool_bytes: 256 * 1024 * 1024,
             max_num_threads: 1,
             defer_hash_indexes: false,
             include_fts: true,

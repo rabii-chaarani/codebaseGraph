@@ -419,8 +419,6 @@ fn configured_repo() -> (PathBuf, PathBuf, Value) {
             backend: "poll",
             // Leave an observable quiescent window after completed recovery.
             interval_ms: 5_000,
-            worker_memory_mib: 512,
-            rust_memory_mib: 384,
             spill_chunk_mib: 32,
             max_parallelism: 1,
             exclude: &[],
@@ -469,7 +467,7 @@ fn verified_abandoned_guardian_is_terminated_before_automatic_refresh() {
         serde_json::to_vec(&json!({"descriptor":descriptor,"spec":{
         "program":binary(),"args":vec![std::ffi::OsString::from("__codebase_graph_internal"),std::ffi::OsString::from("not-started")],
             "workspace":workspace,"stderr_path":workspace.join("stderr.log"),"stdout":"Null",
-            "memory_limit_bytes":null,"parent_rss_pid":null
+            "parent_rss_pid":null
         }}))
         .unwrap(),
     )
@@ -747,8 +745,6 @@ impl Fixture {
                 policy: "leader",
                 backend: "poll",
                 interval_ms: 100,
-                worker_memory_mib: 512,
-                rust_memory_mib: 384,
                 spill_chunk_mib: 32,
                 max_parallelism: 1,
                 exclude: &[],
@@ -975,38 +971,27 @@ fn authenticated_cancellation_cleans_loader_and_retries_pending_edit() {
 }
 
 #[test]
-fn real_loader_memory_failure_cleans_containment_and_retries_pending_edit() {
+fn loader_allocation_is_observed_without_resource_budget_cancellation() {
     let mut fixture = Fixture::new(false);
-    // The native loader owns the allocation. Its ordinary RSS sampler must
-    // detect this while the loader remains inside its ready barrier.
-    fs::write(
-        fixture
-            .barrier
-            .join(format!("ALLOCATE_BYTES-{}", fixture.phase_pid)),
-        (512_u64 * 1024 * 1024).to_string(),
-    )
-    .unwrap();
-    let mut last_health = Value::Null;
+    let allocation = fixture
+        .barrier
+        .join(format!("ALLOCATE_BYTES-{}", fixture.phase_pid));
+    fs::write(&allocation, (8_u64 * 1024 * 1024).to_string()).unwrap();
+    let ready = fixture
+        .barrier
+        .join(format!("phase-{}.memory.json", fixture.phase_pid));
     wait_until(
-        "native loader allocation did not report a memory budget failure",
-        || {
-            last_health = fixture.session.health();
-            last_health["refresh"]["pending"] == true
-                && last_health["refresh"]["last_error"]
-                    .as_str()
-                    .is_some_and(|error| error.contains("memory_budget_exceeded"))
-        },
+        "native loader did not acknowledge its fixture-owned allocation",
+        || ready.is_file(),
     );
-    wait_until("memory failure left the loader alive", || {
-        !alive(fixture.phase_pid)
-    });
+    assert!(alive(fixture.phase_pid));
     fixture.unchanged();
-    fs::remove_file(
-        fixture
-            .barrier
-            .join(format!("ALLOCATE_BYTES-{}", fixture.phase_pid)),
-    )
-    .unwrap();
+    let health = fixture.session.health();
+    assert!(!health["refresh"]["last_error"]
+        .as_str()
+        .unwrap_or("")
+        .contains("memory_budget_exceeded"));
+    fs::remove_file(allocation).unwrap();
     fixture.verify_recovery();
 }
 

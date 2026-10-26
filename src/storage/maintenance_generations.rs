@@ -366,7 +366,6 @@ pub(crate) enum GenerationError {
 fn generation_error(error: NativeError) -> GenerationError {
     match error {
         NativeError::Io(error) => GenerationError::Io(error.kind()),
-        NativeError::MemoryBudgetExceeded(_) => GenerationError::ResourceLimit,
         _ => GenerationError::Unknown,
     }
 }

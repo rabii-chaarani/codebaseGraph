@@ -14,15 +14,12 @@ pub(crate) fn write_graph_rows(
     } else {
         request.schema_statements.clone()
     };
-    let buffer_pool_bytes = request.database_buffer_pool_bytes()?;
     // Ladybug COPY uses additional native working memory per execution thread.
     // Materialization parallelism is bounded separately; keep the database phase
     // single-threaded so the configured buffer pool remains the dominant allocation.
     let max_num_threads = 1;
     write_database_with_metrics(LadybugWriteRequest {
         db_path: request.db_path.clone(),
-        worker_memory_bytes: request.worker_memory_mib.saturating_mul(1024 * 1024),
-        buffer_pool_bytes,
         max_num_threads,
         defer_hash_indexes: true,
         include_fts: use_ladybug_fts,

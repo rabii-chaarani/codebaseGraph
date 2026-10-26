@@ -37,7 +37,6 @@ pub(crate) struct ExitOutcome {
     pub code: Option<i32>,
     pub signal: Option<i32>,
     pub high_water_bytes: u64,
-    pub budget_reason: Option<String>,
     pub cancelled: bool,
     pub containment_empty: bool,
     #[serde(default)]
@@ -45,9 +44,6 @@ pub(crate) struct ExitOutcome {
 }
 impl fmt::Display for ExitOutcome {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(reason) = &self.budget_reason {
-            return write!(f, "{reason}");
-        }
         if let Some(reason) = &self.supervision_error {
             return write!(f, "{reason}");
         }

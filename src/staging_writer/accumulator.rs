@@ -6,10 +6,10 @@ use super::merge::{merge_edge_value, merge_node_value};
 use super::result::StagingResult;
 use super::rows::{edge_fields, node_fields, EdgeStagedRow, NodeStagedRow};
 use super::spill::{
-    encode_bounded, encode_output_bounded, RecordFileReader, RecordFileWriter, SortedSpool,
-    SpillMetrics, SpillRecord,
+    encode_output, encode_record, RecordFileReader, RecordFileWriter, SortedSpool, SpillMetrics,
+    SpillRecord,
 };
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use crate::error::NativeError;
 use crate::partition_builder::GraphPartition;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -194,18 +194,8 @@ impl StagingAccumulator {
         let run_root = self.run_workspace.path();
         let merged_edges_path = run_root.join("merged-edges.bin");
         let node_types_path = run_root.join("node-types.bin");
-        let mut merged_edges = RecordFileWriter::create(
-            &merged_edges_path,
-            self.chunk_limit,
-            "staging_edges",
-            self.metrics.clone(),
-        )?;
-        let mut node_types = RecordFileWriter::create(
-            &node_types_path,
-            self.chunk_limit,
-            "staging_node_types",
-            self.metrics.clone(),
-        )?;
+        let mut merged_edges = RecordFileWriter::create(&merged_edges_path, self.metrics.clone())?;
+        let mut node_types = RecordFileWriter::create(&node_types_path, self.metrics.clone())?;
         let mut endpoints = SortedSpool::new(
             run_root,
             "endpoints",
@@ -214,7 +204,6 @@ impl StagingAccumulator {
         )?;
         let mut nodes = JsonTableSink::new(
             &self.staging_dir,
-            self.chunk_limit,
             self.output_chunk_limit,
             self.metrics.clone(),
         );
@@ -322,7 +311,6 @@ impl StagingAccumulator {
         let mut merged_edge_reader = RecordFileReader::<MergedEdge>::open(&merged_edges_path)?;
         let mut edges = JsonTableSink::new(
             &self.staging_dir,
-            self.chunk_limit,
             self.output_chunk_limit,
             self.metrics.clone(),
         );
@@ -398,7 +386,6 @@ impl StagingAccumulator {
 
         let mut connector_sink = ConnectorSink::new(
             &self.staging_dir,
-            self.chunk_limit,
             self.output_chunk_limit,
             self.metrics.clone(),
         );
@@ -434,14 +421,10 @@ impl StagingAccumulator {
 
     fn take_source_order(&mut self) -> Result<u64, NativeError> {
         let order = self.next_source_order;
-        self.next_source_order = self.next_source_order.checked_add(1).ok_or_else(|| {
-            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-                "staging_order",
-                u64::MAX,
-                u64::MAX,
-                0,
-            ))
-        })?;
+        self.next_source_order = self
+            .next_source_order
+            .checked_add(1)
+            .ok_or_else(|| NativeError::InvalidInput("staging source order overflow".into()))?;
         Ok(order)
     }
 
@@ -702,7 +685,6 @@ impl SpillRecord for ConnectorRecord {
 
 struct JsonTableSink {
     staging_dir: PathBuf,
-    record_limit: usize,
     chunk_limit: usize,
     metrics: SpillMetrics,
     current_table: Option<String>,
@@ -715,15 +697,9 @@ struct JsonTableSink {
 }
 
 impl JsonTableSink {
-    fn new(
-        staging_dir: &Path,
-        record_limit: usize,
-        chunk_limit: usize,
-        metrics: SpillMetrics,
-    ) -> Self {
+    fn new(staging_dir: &Path, chunk_limit: usize, metrics: SpillMetrics) -> Self {
         Self {
             staging_dir: staging_dir.to_path_buf(),
-            record_limit,
             chunk_limit,
             metrics,
             current_table: None,
@@ -737,18 +713,8 @@ impl JsonTableSink {
     }
 
     fn push<T: Serialize>(&mut self, table: &str, row: &T) -> Result<(), NativeError> {
-        let encoded = encode_bounded(row, self.record_limit, "staging_json_output")?;
+        let encoded = encode_record(row)?;
         let _charge = self.metrics.charge(encoded.capacity());
-        let single_row_bytes = encoded.len().checked_add(3).ok_or_else(|| {
-            output_budget_error("staging_json_output", self.record_limit, usize::MAX)
-        })?;
-        if single_row_bytes > self.record_limit {
-            return Err(output_budget_error(
-                "staging_json_output",
-                self.record_limit,
-                single_row_bytes,
-            ));
-        }
         if self.current_table.as_deref() != Some(table) {
             self.close_chunk()?;
             self.current_table = Some(table.to_string());
@@ -761,9 +727,7 @@ impl JsonTableSink {
             .checked_add(separator_bytes)
             .and_then(|bytes| bytes.checked_add(encoded.len()))
             .and_then(|bytes| bytes.checked_add(2))
-            .ok_or_else(|| {
-                output_budget_error("staging_json_output", self.chunk_limit, usize::MAX)
-            })?;
+            .ok_or_else(|| NativeError::InvalidInput("staging JSON size overflow".into()))?;
         if !self.first_row && projected_bytes > self.chunk_limit {
             self.close_chunk()?;
             self.chunk_index = self.chunk_index.checked_add(1).ok_or_else(|| {
@@ -832,7 +796,6 @@ impl JsonTableSink {
 
 struct ConnectorSink {
     staging_dir: PathBuf,
-    record_limit: usize,
     chunk_limit: usize,
     metrics: SpillMetrics,
     current_group: Option<(String, EndpointSide, String, String)>,
@@ -845,15 +808,9 @@ struct ConnectorSink {
 }
 
 impl ConnectorSink {
-    fn new(
-        staging_dir: &Path,
-        record_limit: usize,
-        chunk_limit: usize,
-        metrics: SpillMetrics,
-    ) -> Self {
+    fn new(staging_dir: &Path, chunk_limit: usize, metrics: SpillMetrics) -> Self {
         Self {
             staging_dir: staging_dir.to_path_buf(),
-            record_limit,
             chunk_limit,
             metrics,
             current_group: None,
@@ -879,35 +836,19 @@ impl ConnectorSink {
             self.chunk_index = 0;
             self.open_chunk()?;
         }
-        let encoded =
-            encode_output_bounded(self.record_limit, "staging_connector_output", |writer| {
-                write_csv_field(writer, &connector.from_id)?;
-                writer.write_all(b",")?;
-                write_csv_field(writer, &connector.to_id)?;
-                writer.write_all(b",")?;
-                write_csv_field(writer, &connector.role)?;
-                writer.write_all(b"\r\n")
-            })?;
+        let encoded = encode_output(|writer| {
+            write_csv_field(writer, &connector.from_id)?;
+            writer.write_all(b",")?;
+            write_csv_field(writer, &connector.to_id)?;
+            writer.write_all(b",")?;
+            write_csv_field(writer, &connector.role)?;
+            writer.write_all(b"\r\n")
+        })?;
         let _charge = self.metrics.charge(encoded.capacity());
-        let single_row_bytes = CONNECTOR_HEADER
-            .len()
-            .checked_add(encoded.len())
-            .ok_or_else(|| {
-                output_budget_error("staging_connector_output", self.record_limit, usize::MAX)
-            })?;
-        if single_row_bytes > self.record_limit {
-            return Err(output_budget_error(
-                "staging_connector_output",
-                self.record_limit,
-                single_row_bytes,
-            ));
-        }
         let projected_bytes = self
             .current_bytes
             .checked_add(encoded.len())
-            .ok_or_else(|| {
-                output_budget_error("staging_connector_output", self.chunk_limit, usize::MAX)
-            })?;
+            .ok_or_else(|| NativeError::InvalidInput("staging connector size overflow".into()))?;
         if self.rows_in_chunk > 0 && projected_bytes > self.chunk_limit {
             self.close_chunk()?;
             self.chunk_index = self.chunk_index.checked_add(1).ok_or_else(|| {
@@ -988,15 +929,6 @@ fn chunked_output_path(root: &Path, stem: &str, extension: &str, index: usize) -
     } else {
         root.join(format!("{stem}__{index:06}.{extension}"))
     }
-}
-
-fn output_budget_error(phase: &str, limit: usize, accounted: usize) -> NativeError {
-    NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-        phase,
-        u64::try_from(limit).unwrap_or(u64::MAX),
-        u64::try_from(accounted).unwrap_or(u64::MAX),
-        0,
-    ))
 }
 
 struct RunWorkspace {
@@ -1085,7 +1017,7 @@ mod output_tests {
     use serde::Serialize;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    #[derive(Serialize)]
+    #[derive(Serialize, serde::Deserialize)]
     struct OutputRow {
         id: String,
     }
@@ -1175,7 +1107,7 @@ mod output_tests {
         };
         let encoded_len = serde_json::to_vec(&row).unwrap().len();
         let chunk_limit = encoded_len + 3;
-        let mut sink = JsonTableSink::new(&root, chunk_limit, chunk_limit, SpillMetrics::default());
+        let mut sink = JsonTableSink::new(&root, chunk_limit, SpillMetrics::default());
 
         sink.push("Symbol", &row).unwrap();
         sink.push("Symbol", &row).unwrap();
@@ -1202,7 +1134,7 @@ mod output_tests {
         };
         let json_row_bytes = serde_json::to_vec(&json_row).unwrap().len();
         let json_limit = json_row_bytes + 3;
-        let mut json = JsonTableSink::new(&root, json_limit, json_limit, SpillMetrics::default());
+        let mut json = JsonTableSink::new(&root, json_limit, SpillMetrics::default());
         json.push("Symbol", &json_row).unwrap();
         let (statements, rows) = json.finish().unwrap();
         assert_eq!(rows, 1);
@@ -1221,7 +1153,7 @@ mod output_tests {
             to_id: "edge:one".to_string(),
             role: "source".to_string(),
         };
-        let encoded = encode_output_bounded(usize::MAX, "test", |writer| {
+        let encoded = encode_output(|writer| {
             write_csv_field(writer, &connector.from_id)?;
             writer.write_all(b",")?;
             write_csv_field(writer, &connector.to_id)?;
@@ -1231,7 +1163,7 @@ mod output_tests {
         })
         .unwrap();
         let csv_limit = CONNECTOR_HEADER.len() + encoded.len();
-        let mut csv = ConnectorSink::new(&root, csv_limit, csv_limit, SpillMetrics::default());
+        let mut csv = ConnectorSink::new(&root, csv_limit, SpillMetrics::default());
         csv.push(&connector).unwrap();
         let (statements, rows) = csv.finish().unwrap();
         assert_eq!(rows, 1);
@@ -1241,42 +1173,46 @@ mod output_tests {
     }
 
     #[test]
-    fn final_outputs_reject_single_rows_larger_than_the_chunk() {
+    fn oversized_rows_use_individual_chunks_without_rejection() {
         let root = temp_root("oversized-output");
         let row = OutputRow {
-            id: "x".repeat(128),
+            id: "x".repeat(512),
         };
-        let encoded_len = serde_json::to_vec(&row).unwrap().len();
-        let mut json = JsonTableSink::new(
-            &root,
-            encoded_len + 2,
-            encoded_len + 2,
-            SpillMetrics::default(),
-        );
-        let error = json.push("Symbol", &row).unwrap_err();
-        assert_budget_error(error, "staging_json_output", encoded_len + 2);
-
+        let mut json = JsonTableSink::new(&root, 64, SpillMetrics::default());
+        json.push("Symbol", &row).unwrap();
+        json.push("Symbol", &row).unwrap();
+        let (statements, rows) = json.finish().unwrap();
+        assert_eq!(rows, 2);
+        assert_eq!(statements.len(), 2);
+        for file in ["symbol.json", "symbol__000001.json"] {
+            let decoded: Vec<OutputRow> =
+                serde_json::from_slice(&fs::read(root.join(file)).unwrap()).unwrap();
+            assert_eq!(decoded.len(), 1);
+            assert_eq!(decoded[0].id, row.id);
+        }
         let connector = ConnectorRecord {
-            relation: "Contains".to_string(),
+            relation: "Contains".into(),
             side: EndpointSide::Source,
-            from_type: "File".to_string(),
-            to_type: "Contains".to_string(),
-            from_id: "source".repeat(64),
-            to_id: "edge:one".to_string(),
-            role: "source".to_string(),
+            from_type: "File".into(),
+            to_type: "Contains".into(),
+            from_id: "naïve,\"source\n".repeat(64),
+            to_id: "edge:one".into(),
+            role: "source".into(),
         };
-        let mut connector_sink = ConnectorSink::new(&root, 64, 64, SpillMetrics::default());
-        let error = connector_sink.push(&connector).unwrap_err();
-        assert_budget_error(error, "staging_connector_output", 64);
-    }
-
-    fn assert_budget_error(error: NativeError, phase: &str, limit: usize) {
-        let NativeError::MemoryBudgetExceeded(error) = error else {
-            panic!("expected structured memory budget error");
-        };
-        assert_eq!(error.phase, phase);
-        assert_eq!(error.limit_bytes, limit as u64);
-        assert!(error.accounted_bytes > error.limit_bytes);
+        let mut csv = ConnectorSink::new(&root, 64, SpillMetrics::default());
+        csv.push(&connector).unwrap();
+        csv.push(&connector).unwrap();
+        let (statements, rows) = csv.finish().unwrap();
+        assert_eq!(rows, 2);
+        assert_eq!(statements.len(), 2);
+        for file in [
+            "from_contains__file__contains.csv",
+            "from_contains__file__contains__000001.csv",
+        ] {
+            let contents = fs::read(root.join(file)).unwrap();
+            assert!(contents.starts_with(CONNECTOR_HEADER));
+            assert!(contents.len() > 64);
+        }
     }
 
     fn temp_root(name: &str) -> PathBuf {

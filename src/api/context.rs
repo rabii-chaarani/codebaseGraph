@@ -284,22 +284,12 @@ impl RepoPaths {
 }
 
 pub(crate) const INSTALL_CONFIG_SCHEMA_VERSION: u64 = 3;
-pub(crate) const DEFAULT_WORKER_MEMORY_MIB: u64 = 768;
-pub(crate) const DEFAULT_RUST_MEMORY_MIB: u64 = 384;
 pub(crate) const DEFAULT_SPILL_CHUNK_MIB: u64 = 32;
 pub(crate) const DEFAULT_MAX_PARALLELISM: usize = 2;
 pub(crate) const DEFAULT_RECONCILE_INTERVAL_MS: u64 = 30_000;
 
 const fn default_true() -> bool {
     true
-}
-
-const fn default_worker_memory_mib() -> u64 {
-    DEFAULT_WORKER_MEMORY_MIB
-}
-
-const fn default_rust_memory_mib() -> u64 {
-    DEFAULT_RUST_MEMORY_MIB
 }
 
 const fn default_spill_chunk_mib() -> u64 {
@@ -322,10 +312,6 @@ pub(crate) struct GraphInstallMaterializationConfig {
     pub exclude: Vec<String>,
     #[serde(default = "default_true")]
     pub include_fts: bool,
-    #[serde(default = "default_worker_memory_mib")]
-    pub worker_memory_mib: u64,
-    #[serde(default = "default_rust_memory_mib")]
-    pub rust_memory_mib: u64,
     #[serde(default = "default_spill_chunk_mib")]
     pub spill_chunk_mib: u64,
     #[serde(default = "default_max_parallelism")]
@@ -338,8 +324,6 @@ impl Default for GraphInstallMaterializationConfig {
             include: Vec::new(),
             exclude: Vec::new(),
             include_fts: true,
-            worker_memory_mib: DEFAULT_WORKER_MEMORY_MIB,
-            rust_memory_mib: DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: DEFAULT_SPILL_CHUNK_MIB,
             max_parallelism: DEFAULT_MAX_PARALLELISM,
         }
@@ -1057,8 +1041,7 @@ mod tests {
     use super::{
         bind_repo_selector, read_install_config, resolve_runtime, GraphRefreshBackend,
         GraphRefreshPolicy, RepoPaths, RepositoryIdentity, DEFAULT_MAX_PARALLELISM,
-        DEFAULT_RECONCILE_INTERVAL_MS, DEFAULT_RUST_MEMORY_MIB, DEFAULT_SPILL_CHUNK_MIB,
-        DEFAULT_WORKER_MEMORY_MIB,
+        DEFAULT_RECONCILE_INTERVAL_MS, DEFAULT_SPILL_CHUNK_MIB,
     };
     use crate::api::contracts::RepoSelector;
     use crate::storage::atomic::write_json_atomically;
@@ -1601,8 +1584,6 @@ mod tests {
                     exclude_patterns: vec![],
                     candidate_paths: vec![],
                     parallel: false,
-                    worker_memory_mib: None,
-                    rust_memory_mib: None,
                     spill_chunk_mib: None,
                     max_parallelism: None,
                     progress: false,
@@ -1794,7 +1775,9 @@ mod tests {
                 "mcp": {},
                 "materialization": {
                     "semantic_enrichment": true,
-                    "semantic_provider_mode": "remote"
+                    "semantic_provider_mode": "remote",
+                    "worker_memory_mib": 0,
+                    "rust_memory_mib": 0
                 },
             }))
             .unwrap(),
@@ -1815,14 +1798,8 @@ mod tests {
         let materialization_json = serde_json::to_value(&config.materialization).unwrap();
         assert!(materialization_json.get("semantic_enrichment").is_none());
         assert!(materialization_json.get("semantic_provider_mode").is_none());
-        assert_eq!(
-            config.materialization.worker_memory_mib,
-            DEFAULT_WORKER_MEMORY_MIB
-        );
-        assert_eq!(
-            config.materialization.rust_memory_mib,
-            DEFAULT_RUST_MEMORY_MIB
-        );
+        assert!(materialization_json.get("worker_memory_mib").is_none());
+        assert!(materialization_json.get("rust_memory_mib").is_none());
         assert_eq!(
             config.materialization.spill_chunk_mib,
             DEFAULT_SPILL_CHUNK_MIB

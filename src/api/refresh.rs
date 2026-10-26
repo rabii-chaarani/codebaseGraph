@@ -50,8 +50,6 @@ const REFRESH_ELECTION_INTERVAL: Duration = Duration::from_secs(1);
 pub(crate) struct RefreshServiceConfig {
     pub(crate) policy: GraphRefreshPolicy,
     pub(crate) include_fts: bool,
-    pub(crate) worker_memory_mib: u64,
-    pub(crate) rust_memory_mib: u64,
     pub(crate) spill_chunk_mib: u64,
     pub(crate) max_parallelism: usize,
     pub(crate) backend: GraphRefreshBackend,
@@ -67,8 +65,6 @@ pub(crate) struct RefreshServiceConfig {
 pub(crate) struct RefreshConfigOverrides {
     pub(crate) policy: bool,
     pub(crate) include_fts: bool,
-    pub(crate) worker_memory_mib: bool,
-    pub(crate) rust_memory_mib: bool,
     pub(crate) spill_chunk_mib: bool,
     pub(crate) max_parallelism: bool,
     pub(crate) backend: bool,
@@ -80,8 +76,6 @@ impl Default for RefreshServiceConfig {
         Self {
             policy: GraphRefreshPolicy::Leader,
             include_fts: true,
-            worker_memory_mib: crate::api::context::DEFAULT_WORKER_MEMORY_MIB,
-            rust_memory_mib: crate::api::context::DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: crate::api::context::DEFAULT_SPILL_CHUNK_MIB,
             max_parallelism: crate::api::context::DEFAULT_MAX_PARALLELISM,
             backend: GraphRefreshBackend::Auto,
@@ -1696,8 +1690,6 @@ pub(crate) struct RefreshStatus {
     pub(crate) overflow_count: usize,
     pub(crate) deduplicated_refresh_count: usize,
     pub(crate) last_noop_reason: Option<String>,
-    pub(crate) worker_memory_mib: u64,
-    pub(crate) rust_memory_mib: u64,
     pub(crate) spill_chunk_mib: u64,
     pub(crate) max_parallelism: usize,
     pub(crate) phase_high_water_marks: BTreeMap<String, u64>,
@@ -1741,8 +1733,6 @@ impl Default for RefreshStatus {
             overflow_count: 0,
             deduplicated_refresh_count: 0,
             last_noop_reason: None,
-            worker_memory_mib: crate::api::context::DEFAULT_WORKER_MEMORY_MIB,
-            rust_memory_mib: crate::api::context::DEFAULT_RUST_MEMORY_MIB,
             spill_chunk_mib: crate::api::context::DEFAULT_SPILL_CHUNK_MIB,
             max_parallelism: crate::api::context::DEFAULT_MAX_PARALLELISM,
             phase_high_water_marks: BTreeMap::new(),
@@ -1774,8 +1764,6 @@ impl RefreshState {
 
     fn with_cancellation(config: RefreshServiceConfig, cancellation: RefreshCancellation) -> Self {
         let status = RefreshStatus {
-            worker_memory_mib: config.worker_memory_mib,
-            rust_memory_mib: config.rust_memory_mib,
             spill_chunk_mib: config.spill_chunk_mib,
             max_parallelism: config.max_parallelism,
             reconcile_interval_ms: config
@@ -1826,8 +1814,6 @@ impl RefreshState {
                 overflow_count: 0,
                 deduplicated_refresh_count: 0,
                 last_noop_reason: None,
-                worker_memory_mib: 0,
-                rust_memory_mib: 0,
                 spill_chunk_mib: 0,
                 max_parallelism: 0,
                 phase_high_water_marks: BTreeMap::new(),
@@ -1870,9 +1856,7 @@ impl RefreshState {
             "overflow_count": status.overflow_count,
             "deduplicated_refresh_count": status.deduplicated_refresh_count,
             "last_noop_reason": status.last_noop_reason,
-            "memory_limits": {
-                "worker_memory_mib": status.worker_memory_mib,
-                "rust_memory_mib": status.rust_memory_mib,
+            "execution_settings": {
                 "spill_chunk_mib": status.spill_chunk_mib,
                 "max_parallelism": status.max_parallelism,
             },
@@ -1917,10 +1901,8 @@ impl RefreshState {
         }
     }
 
-    pub(crate) fn set_materialization_limits(&self, config: RefreshServiceConfig) {
+    pub(crate) fn set_execution_settings(&self, config: RefreshServiceConfig) {
         if let Ok(mut status) = self.status.lock() {
-            status.worker_memory_mib = config.worker_memory_mib;
-            status.rust_memory_mib = config.rust_memory_mib;
             status.spill_chunk_mib = config.spill_chunk_mib;
             status.max_parallelism = config.max_parallelism;
         }
@@ -2470,7 +2452,7 @@ fn run_refresh_service(
             }
         };
         state.set_reconcile_interval(effective_config.reconcile_interval);
-        state.set_materialization_limits(effective_config);
+        state.set_execution_settings(effective_config);
         if effective_config.policy == GraphRefreshPolicy::Off {
             let delay = Duration::from_secs(5);
             state.mark_policy_disabled_until(unix_ms().saturating_add(delay.as_millis()));
@@ -2606,7 +2588,7 @@ fn run_refresh_leader(
 ) -> Result<(), String> {
     let config = resolve_service_config(&runtime, config)?;
     state.set_reconcile_interval(config.reconcile_interval);
-    state.set_materialization_limits(config);
+    state.set_execution_settings(config);
     let materialize_options = MaterializeOptions {
         source_root: Some(runtime.repo_root.clone()),
         config: runtime.config_path.clone(),
@@ -2616,8 +2598,6 @@ fn run_refresh_leader(
         mode: "changed".to_string(),
         include_fts: config.include_fts,
         use_git: false,
-        worker_memory_mib: Some(config.worker_memory_mib),
-        rust_memory_mib: Some(config.rust_memory_mib),
         spill_chunk_mib: Some(config.spill_chunk_mib),
         max_parallelism: Some(config.max_parallelism),
         intent: MaterializationIntent::Refresh,
@@ -2741,12 +2721,6 @@ fn resolve_service_config(
     }
     if !overrides.include_fts {
         configured.include_fts = install.materialization.include_fts;
-    }
-    if !overrides.worker_memory_mib {
-        configured.worker_memory_mib = install.materialization.worker_memory_mib;
-    }
-    if !overrides.rust_memory_mib {
-        configured.rust_memory_mib = install.materialization.rust_memory_mib;
     }
     if !overrides.spill_chunk_mib {
         configured.spill_chunk_mib = install.materialization.spill_chunk_mib;
@@ -2943,8 +2917,6 @@ mod tests {
         let state = RefreshState::with_config(RefreshServiceConfig {
             policy: GraphRefreshPolicy::Leader,
             include_fts: false,
-            worker_memory_mib: 640,
-            rust_memory_mib: 320,
             spill_chunk_mib: 16,
             max_parallelism: 1,
             backend: GraphRefreshBackend::Auto,
@@ -2954,10 +2926,8 @@ mod tests {
 
         let status = state.as_json();
         assert_eq!(status["worker_pid"], serde_json::Value::Null);
-        assert_eq!(status["memory_limits"]["worker_memory_mib"], 640);
-        assert_eq!(status["memory_limits"]["rust_memory_mib"], 320);
-        assert_eq!(status["memory_limits"]["spill_chunk_mib"], 16);
-        assert_eq!(status["memory_limits"]["max_parallelism"], 1);
+        assert_eq!(status["execution_settings"]["spill_chunk_mib"], 16);
+        assert_eq!(status["execution_settings"]["max_parallelism"], 1);
         assert_eq!(status["phase_high_water_marks"], serde_json::json!({}));
         assert_eq!(status["spill_bytes"], 0);
         assert_eq!(status["task_alive"], true);

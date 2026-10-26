@@ -2853,7 +2853,7 @@ mod tests {
             let database = root.join("graph.ldb");
             let manifest = root.join("manifest.json");
             let mutation = ReferenceMutation::begin_in_domain(&domain).unwrap();
-            let request:NativeSyntaxMaterializationRequest=serde_json::from_value(serde_json::json!({"source_root":root,"repository_label":root.file_name().unwrap().to_str().unwrap(),"mode":"full","parser_version":"legacy-association-test","manifest_schema_version":5,"ontology":"code_ontology_v1","profiles":[],"excluded_parts":[],"artifact_root":layout.artifacts_root(),"db_path":database,"include_fts":false,"staging_dir":root.join("native-staging"),"parallel":false,"worker_memory_mib":768,"rust_memory_mib":384,"spill_chunk_mib":1,"max_parallelism":1,"atomic_rebuild":false})).unwrap();
+            let request:NativeSyntaxMaterializationRequest=serde_json::from_value(serde_json::json!({"source_root":root,"repository_label":root.file_name().unwrap().to_str().unwrap(),"mode":"full","parser_version":"legacy-association-test","manifest_schema_version":5,"ontology":"code_ontology_v1","profiles":[],"excluded_parts":[],"artifact_root":layout.artifacts_root(),"db_path":database,"include_fts":false,"staging_dir":root.join("native-staging"),"parallel":false,"spill_chunk_mib":1,"max_parallelism":1,"atomic_rebuild":false})).unwrap();
             let response = crate::execute_materialization_pipeline(&request).unwrap();
             let files = response
                 .materialized_entries

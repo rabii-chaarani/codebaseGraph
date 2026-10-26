@@ -1,4 +1,4 @@
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use crate::error::NativeError;
 use crate::partition_builder::GraphPartition;
 use crate::protocol::{
     LanguageProfile, NativeSyntaxMaterializationRequest, OntologySchema, SourceSnapshot,
@@ -18,7 +18,6 @@ const ENVELOPE_FILE_NAME: &str = "partition.json";
 const ARTIFACT_KEY_BYTES: usize = 32;
 const ARTIFACT_KEY_HEX_LEN: usize = ARTIFACT_KEY_BYTES * 2;
 const ARTIFACT_IO_BUFFER_BYTES: usize = 64 * 1024;
-const ARTIFACT_DECODE_EXPANSION_FACTOR: u64 = 2;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ArtifactWriteOutcome {
@@ -396,20 +395,10 @@ impl ArtifactStore {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn load_partition(
         &self,
         artifact_key: &str,
         expected: &ArtifactExpectations<'_>,
-    ) -> Result<Option<GraphPartition>, NativeError> {
-        self.load_partition_with_budget(artifact_key, expected, u64::MAX)
-    }
-
-    pub(crate) fn load_partition_with_budget(
-        &self,
-        artifact_key: &str,
-        expected: &ArtifactExpectations<'_>,
-        memory_limit_bytes: u64,
     ) -> Result<Option<GraphPartition>, NativeError> {
         if validate_artifact_key(artifact_key).is_err() {
             return Ok(None);
@@ -432,7 +421,7 @@ impl ArtifactStore {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
             Err(error) => return Err(error.into()),
         };
-        load_partition_file(file, artifact_key, expected, memory_limit_bytes)
+        load_partition_file(file, artifact_key, expected)
     }
 
     pub(crate) fn list_keys(&self) -> Result<Vec<String>, NativeError> {
@@ -520,15 +509,8 @@ fn load_partition_file(
     file: File,
     artifact_key: &str,
     expected: &ArtifactExpectations<'_>,
-    memory_limit_bytes: u64,
 ) -> Result<Option<GraphPartition>, NativeError> {
     let file_bytes = file.metadata()?.len();
-    let accounted_bytes = artifact_decode_accounted_bytes(file_bytes);
-    if accounted_bytes > memory_limit_bytes {
-        return Err(NativeError::MemoryBudgetExceeded(
-            MemoryBudgetExceeded::new("artifact_load", memory_limit_bytes, accounted_bytes, 0),
-        ));
-    }
     let mut reader = BufReader::with_capacity(ARTIFACT_IO_BUFFER_BYTES, file);
     let envelope: ArtifactEnvelope =
         match serde_json::from_reader(&mut reader.by_ref().take(file_bytes)) {
@@ -564,7 +546,7 @@ fn load_partition_file(
 }
 
 // Only this specific primary publication conflict permits a pipeline-local
-// rebuild copy. IO, source changes, budget failures and other guards propagate.
+// rebuild copy. IO, source changes and other guards propagate.
 pub(crate) fn is_canonical_payload_conflict(error: &NativeError) -> bool {
     matches!(error, NativeError::InvalidInput(reason)
         if reason == "artifact_existing_payload_differs_or_unproven")
@@ -691,10 +673,9 @@ impl TransientPartition {
     pub(crate) fn load(
         &self,
         expected: &ArtifactExpectations<'_>,
-        memory_limit_bytes: u64,
     ) -> Result<GraphPartition, NativeError> {
         let file = self.open_created()?;
-        let partition = load_partition_file(file, &self.key, expected, memory_limit_bytes)?
+        let partition = load_partition_file(file, &self.key, expected)?
             .ok_or_else(|| NativeError::InvalidInput("transient_artifact_invalid".into()))?;
         drop(self.open_created()?);
         Ok(partition)
@@ -932,13 +913,6 @@ fn partition_payload_sha256(partition: &GraphPartition) -> Result<String, Native
     Ok(writer.finish())
 }
 
-fn artifact_decode_accounted_bytes(file_bytes: u64) -> u64 {
-    file_bytes
-        .checked_mul(ARTIFACT_DECODE_EXPANSION_FACTOR)
-        .and_then(|bytes| bytes.checked_add(ARTIFACT_IO_BUFFER_BYTES as u64))
-        .unwrap_or(u64::MAX)
-}
-
 fn ensure_artifact_root(root: &std::path::Path) -> Result<(), NativeError> {
     if !root.exists() {
         return Ok(());
@@ -1048,8 +1022,6 @@ mod tests {
             atomic_rebuild: false,
             strict: false,
             parallel: true,
-            worker_memory_mib: 768,
-            rust_memory_mib: 384,
             spill_chunk_mib: 32,
             max_parallelism: 2,
             progress: false,
@@ -1218,12 +1190,8 @@ mod tests {
         };
         let owner = TransientPartition::create(&root, &key, &partition).unwrap();
         let created = owner.path.clone();
-        owner
-            .load(&expected, 16 * 1024 * 1024)
-            .unwrap()
-            .validate_raw_rows()
-            .unwrap();
-        assert!(owner.load(&expected, 1).is_err());
+        owner.load(&expected).unwrap().validate_raw_rows().unwrap();
+        assert!(owner.load(&expected).is_ok());
         drop(owner);
         assert!(!created.exists());
         let owner = TransientPartition::create(&root, &key, &partition).unwrap();
@@ -1232,7 +1200,7 @@ mod tests {
         fs::rename(&replaced, &retained).unwrap();
         fs::write(&replaced, b"foreign replacement must remain").unwrap();
         let id = crate::storage::locks::path_identity(&replaced).unwrap();
-        assert!(owner.load(&expected, 16 * 1024 * 1024).is_err());
+        assert!(owner.load(&expected).is_err());
         drop(owner);
         assert_eq!(crate::storage::locks::path_identity(&replaced).unwrap(), id);
         assert_eq!(
@@ -1269,14 +1237,13 @@ mod tests {
         let first = store.store_partition(&key, &partition).unwrap();
         let second = store.store_partition(&key, &partition).unwrap();
         let loaded = store
-            .load_partition_with_budget(
+            .load_partition(
                 &key,
                 &ArtifactExpectations {
                     path: "src/lib.rs",
                     content_hash: "content-hash",
                     language: "rust",
                 },
-                16 * 1024 * 1024,
             )
             .unwrap()
             .unwrap();
@@ -1298,54 +1265,6 @@ mod tests {
         assert_eq!(
             partition_payload_sha256(&partition).unwrap(),
             legacy_checksum
-        );
-    }
-
-    #[test]
-    fn oversized_artifact_is_rejected_before_deserialization() {
-        let root = unique_temp_dir("codebase-graph-artifacts-budget");
-        let store = ArtifactStore::new(&root);
-        let key = "d".repeat(64);
-        let artifact_dir = root.join(&key[..2]).join(&key);
-        let mutation =
-            crate::storage::maintenance_ownership::ReferenceMutation::begin_producing(&root)
-                .unwrap();
-        drop(mutation);
-        fs::create_dir_all(&artifact_dir).unwrap();
-        File::create(artifact_dir.join(ENVELOPE_FILE_NAME))
-            .unwrap()
-            .set_len(2 * 1024 * 1024)
-            .unwrap();
-
-        let error = store
-            .load_partition_with_budget(
-                &key,
-                &ArtifactExpectations {
-                    path: "src/lib.rs",
-                    content_hash: "content-hash",
-                    language: "rust",
-                },
-                1024 * 1024,
-            )
-            .unwrap_err();
-
-        let NativeError::MemoryBudgetExceeded(error) = error else {
-            panic!("oversized artifact should fail with a structured memory budget error");
-        };
-        assert_eq!(error.phase, "artifact_load");
-        assert_eq!(error.limit_bytes, 1024 * 1024);
-        assert!(error.accounted_bytes > error.limit_bytes);
-        assert_eq!(error.observed_rss_bytes, 0);
-        let _ = fs::remove_dir_all(root);
-    }
-
-    #[test]
-    fn reference_sized_artifact_fits_the_default_per_worker_budget() {
-        let reference_artifact_bytes = 77 * 1024 * 1024;
-        let per_worker_budget_bytes = 192 * 1024 * 1024;
-
-        assert!(
-            artifact_decode_accounted_bytes(reference_artifact_bytes) <= per_worker_budget_bytes
         );
     }
 

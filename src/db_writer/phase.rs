@@ -1,6 +1,6 @@
 use super::rss::sample_process_rss;
-use super::{connect_ladybug_database, open_ladybug_database_with_limits};
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use super::{connect_ladybug_database, open_ladybug_database_with_threads};
+use crate::error::NativeError;
 use crate::process_lifecycle::{self, OutputMode, PreparedChild, SpawnSpec};
 use lbug::Connection;
 use serde::{Deserialize, Serialize};
@@ -14,8 +14,6 @@ use std::sync::OnceLock;
 
 const PHASE_PROTOCOL_VERSION: u64 = 2;
 const MAX_CHILD_ERROR_BYTES: usize = 64 * 1024;
-const MEMORY_HEADROOM_BYTES: u64 = 16 * 1024 * 1024;
-const RSS_SAMPLE_INTERVAL: std::time::Duration = std::time::Duration::from_millis(25);
 static PHASE_WORKER_EXECUTABLE: OnceLock<PathBuf> = OnceLock::new();
 static PHASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
@@ -64,8 +62,6 @@ pub(crate) fn with_phase_workspace_scope<T>(
 pub(super) struct LadybugWritePhaseRequest {
     version: u64,
     db_path: PathBuf,
-    worker_memory_bytes: u64,
-    buffer_pool_bytes: u64,
     max_num_threads: u64,
     phase: LadybugWritePhase,
 }
@@ -94,16 +90,12 @@ pub(super) enum LadybugWritePhase {
 impl LadybugWritePhaseRequest {
     pub(super) fn new(
         db_path: impl Into<PathBuf>,
-        worker_memory_bytes: u64,
-        buffer_pool_bytes: u64,
         max_num_threads: u64,
         phase: LadybugWritePhase,
     ) -> Self {
         Self {
             version: PHASE_PROTOCOL_VERSION,
             db_path: db_path.into(),
-            worker_memory_bytes,
-            buffer_pool_bytes,
             max_num_threads,
             phase,
         }
@@ -205,9 +197,6 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
         }
     };
     let mut high_water_bytes = 0_u64;
-    let kill_threshold = request
-        .worker_memory_bytes
-        .saturating_sub(MEMORY_HEADROOM_BYTES);
     let status = loop {
         match child.try_wait() {
             Ok(Some(status)) => break status,
@@ -215,34 +204,17 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             Err(error) => {
                 let _ = child.kill();
                 let _ = child.wait();
-                // The wrapper may have a surviving native child. The outer
-                // build must return this error so its guardian cleans the tree.
                 return Err(NativeError::Database(format!(
                     "failed to supervise Ladybug phase: {error}; retain {} until build containment is empty",
                     request_path.display()
                 )));
             }
         }
-        let child_rss = sample_process_rss(child.id()).unwrap_or(0);
-        let parent_rss = sample_process_rss(std::process::id()).unwrap_or(0);
-        let observed = child_rss.saturating_add(parent_rss);
+        let observed = sample_process_rss(child.id())
+            .unwrap_or(0)
+            .saturating_add(sample_process_rss(std::process::id()).unwrap_or(0));
         high_water_bytes = high_water_bytes.max(observed);
-        if observed > kill_threshold {
-            let _ = child.kill();
-            let _ = child.wait();
-            // Retain artifacts until the root guardian proves the whole build
-            // empty; killing a timing wrapper alone cannot prove that.
-            return Err(NativeError::MemoryBudgetExceeded(
-                MemoryBudgetExceeded::new(
-                    phase_memory_label(request),
-                    request.worker_memory_bytes,
-                    observed,
-                    observed,
-                )
-                .with_process_rss(parent_rss, child_rss),
-            ));
-        }
-        std::thread::sleep(RSS_SAMPLE_INTERVAL);
+        std::thread::sleep(std::time::Duration::from_millis(25));
     };
     if !status.success() {
         let stderr = read_error_tail(&stderr_path).unwrap_or_default();
@@ -254,14 +226,6 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
     }
     cleanup_phase_files(&request_path, &stderr_path);
     Ok(high_water_bytes)
-}
-
-fn phase_memory_label(request: &LadybugWritePhaseRequest) -> String {
-    format!(
-        "ladybug_{}_pool_{}_mib",
-        request.phase.trace_label(),
-        request.buffer_pool_bytes / (1024 * 1024)
-    )
 }
 
 fn run_guarded_phase(
@@ -279,8 +243,6 @@ fn run_guarded_phase(
         workspace: workspace.clone(),
         stderr_path: stderr_path.to_path_buf(),
         stdout: OutputMode::Null,
-        memory_limit_bytes: Some(request.worker_memory_bytes),
-        memory_phase: Some(phase_memory_label(request)),
         parent_rss_pid: Some(std::process::id()),
     };
     let mut child = PreparedChild::prepare(spec).map_err(NativeError::Database)?;
@@ -320,16 +282,6 @@ fn run_guarded_phase(
             "{outcome}; retain {} until containment is proven empty",
             workspace.display()
         )));
-    }
-    if let Some(reason) = &outcome.budget_reason {
-        cleanup_phase_files(request_path, stderr_path);
-        cleanup_phase_workspace(&workspace);
-        let failure: MemoryBudgetExceeded = serde_json::from_str(reason).map_err(|error| {
-            NativeError::Database(format!(
-                "invalid guardian memory failure: {error}: {reason}"
-            ))
-        })?;
-        return Err(NativeError::MemoryBudgetExceeded(failure));
     }
     if !outcome.success {
         let stderr = read_error_tail(stderr_path).unwrap_or_default();
@@ -552,7 +504,7 @@ fn wait_for_test_phase_barrier(request_path: &Path) -> Result<(), String> {
                 directory.join("CONTINUE").display()
             ));
         }
-        std::thread::sleep(RSS_SAMPLE_INTERVAL);
+        std::thread::sleep(std::time::Duration::from_millis(25));
     }
     Ok(())
 }
@@ -599,12 +551,8 @@ fn allocate_test_phase_memory(directory: &Path, pid: u32) -> Result<Option<Vec<u
 }
 
 fn execute_phase(request: &LadybugWritePhaseRequest) -> Result<(), NativeError> {
-    let database = open_ladybug_database_with_limits(
-        &request.db_path,
-        false,
-        request.buffer_pool_bytes,
-        request.max_num_threads,
-    )?;
+    let database =
+        open_ladybug_database_with_threads(&request.db_path, false, request.max_num_threads)?;
     let connection = connect_ladybug_database(&database)?;
     match &request.phase {
         LadybugWritePhase::Schema {
@@ -913,8 +861,8 @@ fn isolated_phase_error(
         LadybugWritePhase::PostCopy { .. } => ("post-copy", String::new()),
     };
     let context = format!(
-        "isolated Ladybug write phase exited with {status}: phase={phase} db={db_path} buffer_pool_bytes={} worker_memory_bytes={} max_num_threads={}{target}; ",
-        request.buffer_pool_bytes, request.worker_memory_bytes, request.max_num_threads,
+        "isolated Ladybug write phase exited with {status}: phase={phase} db={db_path} max_num_threads={}{target}; ",
+        request.max_num_threads,
     );
     let marker = "[stderr truncated] ";
     let payload = child_error.strip_prefix(marker).unwrap_or(child_error);
@@ -984,8 +932,7 @@ mod tests {
         ));
         fs::create_dir_all(&root).unwrap();
         let path = root.join("db.lbug");
-        let database =
-            open_ladybug_database_with_limits(&path, false, 128 * 1024 * 1024, 1).unwrap();
+        let database = open_ladybug_database_with_threads(&path, false, 1).unwrap();
         let connection = connect_ladybug_database(&database).unwrap();
         run_schema_query(
             &connection,
@@ -1045,8 +992,6 @@ mod tests {
         let registry = root.join("stable").join("phases");
         let request = LadybugWritePhaseRequest::new(
             root.join("run/candidate/db"),
-            1024,
-            128,
             2,
             LadybugWritePhase::Index {
                 table: "Function".into(),
@@ -1169,8 +1114,6 @@ mod tests {
         let statement = "COPY `Thing` FROM 'rows.json'";
         let request = LadybugWritePhaseRequest::new(
             "candidate/db",
-            768 * 1024 * 1024,
-            384 * 1024 * 1024,
             1,
             LadybugWritePhase::Copy {
                 index: 0,
@@ -1209,8 +1152,6 @@ mod tests {
     fn isolated_error_keeps_context_inside_the_cap() {
         let request = LadybugWritePhaseRequest::new(
             "candidate/db",
-            1024,
-            128,
             2,
             LadybugWritePhase::Copy {
                 index: 7,
@@ -1222,8 +1163,6 @@ mod tests {
         let message = isolated_phase_error(&request, "exit status: 1", &"é".repeat(40_000));
         assert!(message.len() <= MAX_CHILD_ERROR_BYTES);
         assert!(message.contains("copy=8/10 target=`DocumentationSource`"));
-        assert!(message.contains("buffer_pool_bytes=128"));
-        assert!(message.contains("worker_memory_bytes=1024"));
         assert!(message.contains("max_num_threads=2"));
         assert!(std::str::from_utf8(message.as_bytes()).is_ok());
     }
@@ -1248,11 +1187,9 @@ mod tests {
     }
 
     #[test]
-    fn phase_request_v2_preserves_native_resource_settings() {
+    fn phase_request_v2_preserves_thread_setting() {
         let request = LadybugWritePhaseRequest::new(
             "candidate/db",
-            1024 * 1024 * 1024,
-            128 * 1024 * 1024,
             3,
             LadybugWritePhase::Copy {
                 index: 2,
@@ -1264,13 +1201,7 @@ mod tests {
         let roundtrip: LadybugWritePhaseRequest =
             serde_json::from_slice(&serde_json::to_vec(&request).unwrap()).unwrap();
         assert_eq!(roundtrip.version, 2);
-        assert_eq!(roundtrip.worker_memory_bytes, request.worker_memory_bytes);
-        assert_eq!(roundtrip.buffer_pool_bytes, request.buffer_pool_bytes);
         assert_eq!(roundtrip.max_num_threads, 3);
-        assert_eq!(
-            phase_memory_label(&roundtrip),
-            "ladybug__Function__pool_128_mib"
-        );
         assert!(matches!(
             roundtrip.phase,
             LadybugWritePhase::Copy {

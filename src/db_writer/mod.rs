@@ -9,7 +9,7 @@ mod write;
 pub(crate) use access::open_ladybug_database_with_config;
 pub use access::{
     connect_ladybug_database, is_transient_database_error, open_ladybug_database,
-    open_ladybug_database_with_limits, retry_transient_database, GuardedDatabase,
+    open_ladybug_database_with_threads, retry_transient_database, GuardedDatabase,
     READ_RETRY_POLICY, WRITE_RETRY_POLICY,
 };
 pub use extensions::preseed_ladybug_extensions;

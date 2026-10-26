@@ -140,8 +140,6 @@ fn materialize_selected(
         exclude_patterns: Vec::new(),
         candidate_paths: Vec::new(),
         parallel: false,
-        worker_memory_mib: None,
-        rust_memory_mib: None,
         spill_chunk_mib: None,
         max_parallelism: Some(1),
         progress: false,
@@ -2027,8 +2025,6 @@ fn dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root() {
         workspace: run_root.clone(),
         stderr_path: run_root.join("containment.stderr"),
         stdout: OutputMode::Null,
-        memory_limit_bytes: None,
-        memory_phase: None,
         parent_rss_pid: None,
     })
     .unwrap();

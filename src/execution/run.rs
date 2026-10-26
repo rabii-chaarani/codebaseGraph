@@ -1,7 +1,7 @@
 use super::parallel::build_execution_plan;
 use super::timing::elapsed_seconds;
 use crate::artifact_store::{ArtifactExpectations, ArtifactStore};
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use crate::error::NativeError;
 use crate::partition_builder::GraphPartition;
 use crate::protocol::{
     GraphSummary, ManifestEntry, NativeSyntaxMaterializationRequest,
@@ -57,12 +57,9 @@ fn execute_scanned_materialization(
         .ok()
         .and_then(|mib| mib.checked_mul(1024 * 1024))
         .ok_or_else(|| {
-            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-                "staging_spill_configuration",
-                request.rust_memory_limit_bytes().unwrap_or(u64::MAX),
-                u64::MAX,
-                0,
-            ))
+            NativeError::InvalidInput(
+                "spill chunk size cannot be represented on this platform".into(),
+            )
         })?;
     let mut staging_accumulator = staging_writer::StagingAccumulator::with_limits(
         &request.staging_dir,
@@ -81,31 +78,13 @@ fn execute_scanned_materialization(
     // proportional to the number of source files.
     let mut progress_events = BTreeMap::new();
     let mut planned_entries = BTreeMap::new();
-    let transient_plan_bytes = crate::artifact_store::TransientPartition::plan_bytes(
-        &request.staging_dir,
-        materialization_paths.iter().map(String::as_str),
-    );
-    let total_limit = request.rust_memory_limit_bytes()?;
-    let artifact_memory_limit = total_limit
-        .checked_sub(transient_plan_bytes)
-        .ok_or_else(|| {
-            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-                "transient_artifact_plan",
-                total_limit,
-                transient_plan_bytes,
-                0,
-            ))
-        })?;
     let mut transient_partitions = Vec::new();
     transient_partitions
         .try_reserve_exact(materialization_total)
-        .map_err(|_| {
-            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-                "transient_artifact_plan",
-                total_limit,
-                transient_plan_bytes,
-                0,
-            ))
+        .map_err(|error| {
+            NativeError::Io(std::io::Error::other(format!(
+                "failed to reserve transient artifact slots: {error}"
+            )))
         })?;
     transient_partitions.resize_with(materialization_total, || None);
     let mut parsed_paths = BTreeSet::new();
@@ -166,22 +145,13 @@ fn execute_scanned_materialization(
         let transient = transient_partitions[index].take();
         let partition = if let Some(transient) = transient.as_ref() {
             let snapshot = &supported[path];
-            transient.load(
-                &ArtifactExpectations {
-                    path,
-                    content_hash: &snapshot.content_hash,
-                    language: snapshot.language.as_deref().unwrap_or_default(),
-                },
-                artifact_memory_limit,
-            )?
-        } else {
-            load_planned_partition(
-                &supported,
+            transient.load(&ArtifactExpectations {
                 path,
-                &planned_entries,
-                &artifact_store,
-                artifact_memory_limit,
-            )?
+                content_hash: &snapshot.content_hash,
+                language: snapshot.language.as_deref().unwrap_or_default(),
+            })?
+        } else {
+            load_planned_partition(&supported, path, &planned_entries, &artifact_store)?
         };
         let compact_entry = partition.entry.clone().compact();
         materialized_entries.insert(path.clone(), compact_entry.clone());
@@ -294,7 +264,6 @@ fn load_planned_partition(
     path: &str,
     planned_entries: &BTreeMap<String, ManifestEntry>,
     artifact_store: &ArtifactStore,
-    memory_limit_bytes: u64,
 ) -> Result<GraphPartition, NativeError> {
     let snapshot = supported.get(path).ok_or_else(|| {
         NativeError::InvalidInput(format!(
@@ -312,14 +281,13 @@ fn load_planned_partition(
         ))
     })?;
     artifact_store
-        .load_partition_with_budget(
+        .load_partition(
             artifact_key,
             &ArtifactExpectations {
                 path,
                 content_hash: &snapshot.content_hash,
                 language: snapshot.language.as_deref().unwrap_or_default(),
             },
-            memory_limit_bytes,
         )?
         .ok_or_else(|| {
             NativeError::InvalidInput(format!(
@@ -911,8 +879,6 @@ mod tests {
             atomic_rebuild: false,
             strict: true,
             parallel: false,
-            worker_memory_mib: 768,
-            rust_memory_mib: 384,
             spill_chunk_mib: 32,
             max_parallelism: 2,
             progress: false,

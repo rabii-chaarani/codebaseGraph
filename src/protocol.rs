@@ -10,17 +10,6 @@ pub(crate) const GRAPH_BUILD_DIGEST_FORMAT_VERSION: u64 = 5;
 pub(crate) const PROFILE_COMPATIBILITY_VERSION: u64 = 2;
 pub(crate) const MATERIALIZATION_MANIFEST_SCHEMA_VERSION: u64 = 5;
 pub(crate) const SEARCH_BACKEND_FORMAT_VERSION: u64 = 1;
-const MAX_DATABASE_BUFFER_POOL_BYTES: u64 = 384 * 1024 * 1024;
-const MIN_DATABASE_BUFFER_POOL_BYTES: u64 = 128 * 1024 * 1024;
-
-const fn default_worker_memory_mib() -> u64 {
-    crate::api::context::DEFAULT_WORKER_MEMORY_MIB
-}
-
-const fn default_rust_memory_mib() -> u64 {
-    crate::api::context::DEFAULT_RUST_MEMORY_MIB
-}
-
 const fn default_spill_chunk_mib() -> u64 {
     crate::api::context::DEFAULT_SPILL_CHUNK_MIB
 }
@@ -63,10 +52,6 @@ pub struct NativeSyntaxMaterializationRequest {
     pub strict: bool,
     #[serde(default = "default_parallel")]
     pub parallel: bool,
-    #[serde(default = "default_worker_memory_mib")]
-    pub worker_memory_mib: u64,
-    #[serde(default = "default_rust_memory_mib")]
-    pub rust_memory_mib: u64,
     #[serde(default = "default_spill_chunk_mib")]
     pub spill_chunk_mib: u64,
     #[serde(default = "default_max_parallelism")]
@@ -156,62 +141,12 @@ impl NativeSyntaxMaterializationRequest {
         Ok(hex_lower(Sha256::digest(payload).as_ref()))
     }
 
-    pub(crate) fn rust_memory_limit_bytes(&self) -> Result<u64, NativeError> {
-        self.rust_memory_mib
-            .checked_mul(1024 * 1024)
-            .ok_or_else(|| {
-                NativeError::InvalidInput(
-                    "rust_memory_mib is too large to convert to bytes".to_string(),
-                )
-            })
-    }
-
-    pub(crate) fn database_buffer_pool_bytes(&self) -> Result<u64, NativeError> {
-        let worker_bytes = self
-            .worker_memory_mib
-            .checked_mul(1024 * 1024)
-            .ok_or_else(|| {
-                NativeError::InvalidInput(
-                    "worker_memory_mib is too large to convert to bytes".to_string(),
-                )
-            })?;
-        let rust_bytes = self.rust_memory_limit_bytes()?;
-        let available = worker_bytes.checked_sub(rust_bytes).ok_or_else(|| {
-            NativeError::InvalidInput(
-                "worker_memory_mib must exceed rust_memory_mib for database writes".to_string(),
-            )
-        })?;
-        if available < MIN_DATABASE_BUFFER_POOL_BYTES {
+    pub(crate) fn validate_execution_options(&self) -> Result<(), NativeError> {
+        if self.spill_chunk_mib == 0 || self.max_parallelism == 0 {
             return Err(NativeError::InvalidInput(
-                "worker_memory_mib must reserve at least 128 MiB beyond rust_memory_mib for database writes"
-                    .to_string(),
+                "spill_chunk_mib and max_parallelism must be positive".to_string(),
             ));
         }
-        Ok(available.min(MAX_DATABASE_BUFFER_POOL_BYTES))
-    }
-
-    pub(crate) fn validate_resource_limits(&self) -> Result<(), NativeError> {
-        if self.worker_memory_mib == 0
-            || self.rust_memory_mib == 0
-            || self.spill_chunk_mib == 0
-            || self.max_parallelism == 0
-        {
-            return Err(NativeError::InvalidInput(
-                "materialization memory limits and max_parallelism must be positive".to_string(),
-            ));
-        }
-        if self.rust_memory_mib > self.worker_memory_mib {
-            return Err(NativeError::InvalidInput(
-                "rust_memory_mib must not exceed worker_memory_mib".to_string(),
-            ));
-        }
-        self.database_buffer_pool_bytes()?;
-        if self.spill_chunk_mib > self.rust_memory_mib {
-            return Err(NativeError::InvalidInput(
-                "spill_chunk_mib must not exceed rust_memory_mib".to_string(),
-            ));
-        }
-        self.rust_memory_limit_bytes()?;
         Ok(())
     }
 }
@@ -691,14 +626,8 @@ mod tests {
             serde_json::from_str(&request_json("")).unwrap();
 
         assert!(request.parallel);
-        assert_eq!(request.worker_memory_mib, 768);
-        assert_eq!(request.rust_memory_mib, 384);
         assert_eq!(request.spill_chunk_mib, 32);
         assert_eq!(request.max_parallelism, 2);
-        assert_eq!(
-            request.database_buffer_pool_bytes().unwrap(),
-            384 * 1024 * 1024
-        );
         assert_eq!(
             request.resolved_artifact_root(),
             PathBuf::from("/repo/.codebaseGraph/artifacts")
@@ -714,27 +643,11 @@ mod tests {
     }
 
     #[test]
-    fn native_materialization_request_rejects_inconsistent_resource_limits() {
+    fn native_materialization_request_validates_positive_execution_options() {
         let mut request: NativeSyntaxMaterializationRequest =
             serde_json::from_str(&request_json("")).unwrap();
-        request.rust_memory_mib = request.worker_memory_mib + 1;
-
-        let error = request.validate_resource_limits().unwrap_err();
-
-        assert!(error
-            .to_string()
-            .contains("rust_memory_mib must not exceed worker_memory_mib"));
-    }
-
-    #[test]
-    fn native_materialization_request_reserves_worker_memory_for_database_writes() {
-        let mut request: NativeSyntaxMaterializationRequest =
-            serde_json::from_str(&request_json("")).unwrap();
-        request.worker_memory_mib = request.rust_memory_mib;
-
-        let error = request.validate_resource_limits().unwrap_err();
-
-        assert!(error.to_string().contains("must reserve at least 128 MiB"));
+        request.spill_chunk_mib = 0;
+        assert!(request.validate_execution_options().is_err());
     }
 
     #[test]

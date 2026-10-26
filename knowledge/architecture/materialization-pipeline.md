@@ -48,7 +48,7 @@ The Source Scanner hashes file metadata before retaining content. Required sourc
 
 ### 4. Reuse or build raw partitions
 
-The Execution Planner computes an artifact key from repository identity, relative path, content hash, language, parser/profile/ontology versions, and artifact schema version. A fixed-size worker pool reserves memory fallibly, emits partitions in stable order, persists each raw artifact, and releases it. A source or artifact that cannot fit the working budget returns a structured `memory_budget_exceeded` failure.
+The Execution Planner computes an artifact key from repository identity, relative path, content hash, language, parser/profile/ontology versions, and artifact schema version. A fixed-size worker pool reserves memory fallibly, emits partitions in stable order, persists each raw artifact, and releases it. Source, partition and artifact estimates do not impose application memory ceilings. Fallible allocation, I/O and native-engine failures still propagate normally.
 
 ### 5. Assemble deterministic candidate rows
 
@@ -62,13 +62,13 @@ New generations build a generation-owned `disk_bm25_v1` sidecar from externally 
 
 ### 7. Build and validate the database
 
-Ladybug work is ordered into pre-COPY schema, sequential per-file COPY, primary-key hash indexes, and post-COPY statements. The complete MCP build runs in the Materialization Worker, and Ladybug phases run in nested short-lived children. Existing supervision and containment own the configured worker ceiling. Each mutating phase executes once with the already calculated request buffer pool; a reported mutation or checkpoint error makes the candidate ineligible for publication. Do not replay an uncertain statement, suppress a native error based on existing-object wording, or create a compensating index and continue. The storage owner abandons the candidate while preserving the published graph; an independent later build creates a fresh candidate. Automatic whole-candidate retries are a separate, unimplemented policy.
+Ladybug work is ordered into pre-COPY schema, sequential per-file COPY, primary-key hash indexes, and post-COPY statements. The complete MCP build runs in the Materialization Worker, and Ladybug phases run in nested short-lived children. Supervision and containment preserve cancellation, owner-loss teardown and execution ownership without an application RSS ceiling. Ladybug selects its buffer pool through native defaults. Each mutating phase executes once; a reported mutation or checkpoint error makes the candidate ineligible for publication. Do not replay an uncertain statement, suppress a native error based on existing-object wording, or create a compensating index and continue. The storage owner abandons the candidate while preserving the published graph; an independent later build creates a fresh candidate. Automatic whole-candidate retries are a separate, unimplemented policy.
 
-Final JSON and connector CSV files use the existing configured spill-byte bound, including framing and headers. Each file has its own COPY statement; JSON list/glob consolidation is not assumed. A repeated primary-key node table receives its hash index after the first successful chunk and before the next chunk. A single framed row that cannot fit fails with the structured budget error. File bounds reduce each reader input; they do not bound all native table/index memory or the retained COPY-statement list independently of graph size. Native errors keep bounded diagnostic input and phase context; cleanup errors remain secondary.
+Final JSON and connector CSV files use the existing spill-byte setting as a rotation target, including framing and headers. Each file has its own COPY statement; JSON list/glob consolidation is not assumed. A repeated primary-key node table receives its hash index after the first successful chunk and before the next chunk. A valid single row larger than the target occupies its own chunk rather than being rejected. Spill/merge uses bounded fan-in and an execution window; these optimizations do not enforce a total memory/disk ceiling. Physical allocation, format and corruption limits remain. Native errors keep bounded diagnostic input and phase context; cleanup errors remain secondary.
 
-Scope and approval are recorded in [CBG-COPY-01](../../docs/specs/CBG-COPY-01/spec.md) and its [approval record](../../docs/specs/CBG-COPY-01/approval.md). Local execution evidence is separate from native-platform and rollout qualification.
+Scope and approval are recorded in [CBG-COPY-01](../../docs/specs/CBG-COPY-01/spec.md) and its [approval record](../../docs/specs/CBG-COPY-01/approval.md). The [resource-ceiling amendment](../../docs/specs/CBG-COPY-01/resource-ceilings-amendment.md) removes workload enforcement and worker/Rust budget options while retaining spill/concurrency tuning and safety bounds. Local execution evidence is separate from native-platform and rollout qualification.
 
-On macOS, supervision adds each process's current physical footprint from `proc_pid_rusage(...).ri_phys_footprint`. The cumulative `ri_resident_size` field is not a live measurement, while adding raw current RSS from parent and child double-counts their clean shared runtime mappings. Rust graph construction uses mimalloc and forces collection at the Ladybug boundary after dropping scan/planner state; platform-allocator relief covers foreign allocations. Structured budget failures include the parent/child memory split and active pool size.
+On macOS, supervision adds each process's current physical footprint from `proc_pid_rusage(...).ri_phys_footprint`. The cumulative `ri_resident_size` field is not a live measurement, while adding raw current RSS from parent and child double-counts their clean shared runtime mappings. Rust graph construction uses mimalloc and forces collection at the Ladybug boundary after dropping scan/planner state; platform-allocator relief covers foreign allocations. Resource samples remain observations, not triggers for application budget termination.
 
 Managed mode writes the database, compact manifest v5, metadata, sidecar siblings, and readiness marker into a fresh candidate. The database is closed, reopened read-only, and checked before publication. Existing v4 generations remain readable; their next write performs one bounded full rebuild.
 
@@ -86,7 +86,7 @@ The run journal records publication and explicit workspace cleanup. Artifact gar
 
 | Contract | Purpose |
 | --- | --- |
-| Materialization input | Source root, storage target, refresh intent, memory limits, configuration, active manifest, and execution options. |
+| Materialization input | Source root, storage target, refresh intent, batching/concurrency tuning, configuration, active manifest, and execution options. |
 | Source snapshot and manifest diff | Verified source snapshot plus rebuild, delete, reuse, and ignored decisions. |
 | Artifact key and raw partition | Durable parse output with every invalidation dimension encoded in its identity. |
 | Compact manifest v5 entry | Path, content hash, language, partition ID, artifact key, row counts, and timestamp. |

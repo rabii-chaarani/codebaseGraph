@@ -554,8 +554,6 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: true,
-                worker_memory_mib: None,
-                rust_memory_mib: None,
                 spill_chunk_mib: None,
                 max_parallelism: None,
                 progress: false,

@@ -29,7 +29,6 @@ pub const READ_RETRY_POLICY: RetryPolicy =
     RetryPolicy::new(3, Duration::from_millis(40), Duration::from_millis(160));
 pub const WRITE_RETRY_POLICY: RetryPolicy =
     RetryPolicy::new(8, Duration::from_millis(100), Duration::from_millis(1_000));
-const DEFAULT_READ_BUFFER_POOL_BYTES: u64 = 128 * 1024 * 1024;
 const DEFAULT_READ_THREADS: u64 = 2;
 
 pub fn is_transient_database_error(message: &str) -> bool {
@@ -116,23 +115,16 @@ pub fn open_ladybug_database(
     db_path: &Path,
     read_only: bool,
 ) -> Result<GuardedDatabase, NativeError> {
-    open_ladybug_database_with_limits(
-        db_path,
-        read_only,
-        DEFAULT_READ_BUFFER_POOL_BYTES,
-        DEFAULT_READ_THREADS,
-    )
+    open_ladybug_database_with_threads(db_path, read_only, DEFAULT_READ_THREADS)
 }
 
-pub fn open_ladybug_database_with_limits(
+pub fn open_ladybug_database_with_threads(
     db_path: &Path,
     read_only: bool,
-    buffer_pool_bytes: u64,
     max_num_threads: u64,
 ) -> Result<GuardedDatabase, NativeError> {
     let config = SystemConfig::default()
         .read_only(read_only)
-        .buffer_pool_size(buffer_pool_bytes)
         .max_num_threads(max_num_threads);
     open_ladybug_database_with_config(db_path, config)
 }

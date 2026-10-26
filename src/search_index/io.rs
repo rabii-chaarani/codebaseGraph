@@ -57,14 +57,11 @@ pub(super) fn read_u64(reader: &mut impl Read) -> Result<u64, NativeError> {
 pub(super) fn write_document(
     writer: &mut (impl Write + Seek),
     document: &SearchDocument,
-    chunk_limit: usize,
 ) -> Result<u64, NativeError> {
     let encoded = serde_json::to_vec(document)?;
-    if encoded.capacity() > chunk_limit || encoded.len() > u32::MAX as usize {
-        return Err(super::memory_budget_error(
-            "search_documents",
-            chunk_limit,
-            encoded.capacity(),
+    if encoded.len() > super::model::MAX_DOCUMENT_RECORD_BYTES {
+        return Err(NativeError::InvalidInput(
+            "search document exceeds sidecar read-format length".into(),
         ));
     }
     let offset = writer.stream_position()?;
@@ -86,8 +83,10 @@ pub(super) fn read_document_at(
         )));
     }
     let mut encoded = Vec::new();
-    encoded.try_reserve_exact(length).map_err(|_| {
-        super::memory_budget_error("search_read_document", max_record_bytes, length)
+    encoded.try_reserve_exact(length).map_err(|error| {
+        NativeError::Io(io::Error::other(format!(
+            "search document allocation failed: {error}"
+        )))
     })?;
     encoded.resize(length, 0);
     file.read_exact(&mut encoded)?;
@@ -158,9 +157,11 @@ pub(super) fn read_lexicon_entry(
         )));
     }
     let mut bytes = Vec::new();
-    bytes
-        .try_reserve_exact(length)
-        .map_err(|_| super::memory_budget_error("search_lexicon_read", max_term_bytes, length))?;
+    bytes.try_reserve_exact(length).map_err(|error| {
+        NativeError::Io(io::Error::other(format!(
+            "search lexicon allocation failed: {error}"
+        )))
+    })?;
     bytes.resize(length, 0);
     reader.read_exact(&mut bytes)?;
     let term = String::from_utf8(bytes).map_err(|error| {

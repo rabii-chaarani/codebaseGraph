@@ -1,4 +1,4 @@
-use crate::api::context::{resolve_runtime, RepoRuntime, DEFAULT_WORKER_MEMORY_MIB};
+use crate::api::context::{resolve_runtime, RepoRuntime};
 use crate::api::{
     execute_candidate_materialization, execute_materialization, read_manifest, MaterializeOptions,
     RepoSelector,
@@ -30,7 +30,6 @@ const WORKER_STATE_VERSION: u64 = 2;
 const MAX_PROGRESS_FRAME_BYTES: usize = 64 * 1024;
 const MAX_CHILD_ERROR_BYTES: usize = 64 * 1024;
 const SUPERVISOR_CHECK_INTERVAL: Duration = Duration::from_millis(50);
-const MIB: u64 = 1024 * 1024;
 const MATERIALIZATION_CANCELLED_ERROR: &str = r#"{"error":"materialization_cancelled"}"#;
 static WORKER_EXECUTABLE: OnceLock<PathBuf> = OnceLock::new();
 static WORKER_SEQUENCE: AtomicU64 = AtomicU64::new(0);
@@ -181,17 +180,6 @@ fn execute_isolated_worker(
         return Err(error);
     }
 
-    let memory_limit = match options
-        .worker_memory_mib
-        .unwrap_or(DEFAULT_WORKER_MEMORY_MIB)
-        .checked_mul(MIB)
-    {
-        Some(limit) => limit,
-        None => {
-            finish_empty_worker_workspace(worker_owner, &workspace);
-            return Err("materialization worker memory limit overflowed".into());
-        }
-    };
     let mut child = match PreparedChild::prepare(SpawnSpec {
         program: executable.to_path_buf(),
         guardian_executable: Some(executable.to_path_buf()),
@@ -204,8 +192,6 @@ fn execute_isolated_worker(
         workspace: workspace.clone(),
         stderr_path: stderr_path.clone(),
         stdout: OutputMode::Pipe,
-        memory_limit_bytes: Some(memory_limit),
-        memory_phase: Some("materialization_worker".into()),
         parent_rss_pid: None,
     }) {
         Ok(child) => child,
@@ -290,9 +276,6 @@ fn execute_isolated_worker(
     }
     let outcome = if result_path.exists() {
         read_worker_result(&result_path, &build_id).and_then(|result| result.outcome)
-    } else if let Some(error) = &supervision.budget_reason {
-        reconcile_completed_publication(options, before_publication, &build_id)
-            .or(Err(error.clone()))
     } else if supervision.success {
         reconcile_completed_publication(options, before_publication, &build_id)
     } else {
@@ -903,11 +886,10 @@ fn cleanup_worker_workspace(path: &Path) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::error::{MemoryBudgetExceeded, NativeError};
 
     #[test]
     fn empty_worker_cancellation_and_setup_failure_publish_terminal_owner() {
-        for cancel in [true, false] {
+        {
             let root = std::env::temp_dir().canonicalize().unwrap().join(format!(
                 "cgraph-worker-terminal-{}-{}",
                 std::process::id(),
@@ -917,7 +899,6 @@ mod tests {
             let storage = root.join("storage");
             let options = MaterializeOptions {
                 storage_root: Some(storage.clone()),
-                worker_memory_mib: Some(u64::MAX),
                 ..MaterializeOptions::default()
             };
             let polls = AtomicU64::new(0);
@@ -925,19 +906,12 @@ mod tests {
                 &options,
                 None,
                 |_| {},
-                || cancel && polls.fetch_add(1, Ordering::SeqCst) >= 3,
+                || polls.fetch_add(1, Ordering::SeqCst) >= 3,
                 false,
                 &root.join("never-spawned"),
             );
             let error = result.unwrap_err();
-            assert_eq!(
-                error,
-                if cancel {
-                    materialization_cancelled_error()
-                } else {
-                    "materialization worker memory limit overflowed".to_string()
-                }
-            );
+            assert_eq!(error, materialization_cancelled_error());
             let workspaces = fs::read_dir(storage.join("workers"))
                 .unwrap()
                 .map(|entry| entry.unwrap().path())
@@ -1051,19 +1025,6 @@ mod tests {
         assert!(started.elapsed() < Duration::from_secs(1));
         drop(held);
         let _ = fs::remove_dir_all(root);
-    }
-
-    #[test]
-    fn memory_failure_is_structured() {
-        let error = NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-            "materialization_worker",
-            768 * MIB,
-            769 * MIB,
-            769 * MIB,
-        ));
-        let value: serde_json::Value = serde_json::from_str(&error.to_string()).unwrap();
-        assert_eq!(value["error"], serde_json::json!("memory_budget_exceeded"));
-        assert_eq!(value["phase"], serde_json::json!("materialization_worker"));
     }
 
     #[test]

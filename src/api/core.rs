@@ -1279,14 +1279,6 @@ fn materialization_operation_response(
 }
 
 fn materialization_api_error(message: String) -> ApiError {
-    let Ok(details) = serde_json::from_str::<serde_json::Value>(&message) else {
-        return ApiError::new("materialization_failed", message);
-    };
-    if details.get("error").and_then(serde_json::Value::as_str) == Some("memory_budget_exceeded") {
-        return ApiError::new("memory_budget_exceeded", message)
-            .with_details(details)
-            .retryable(false);
-    }
     ApiError::new("materialization_failed", message)
 }
 
@@ -1394,7 +1386,7 @@ fn materialization_payload(
 
 #[cfg(test)]
 mod tests {
-    use super::{materialization_api_error, refresh_health_payload};
+    use super::refresh_health_payload;
     use crate::api::contracts::{
         MaterializationRequest, McpInstallRequest, OperationInvocation, OperationRequest,
         OutputFormat, RepoSelector, RepositoryLifecycleRequest,
@@ -1416,24 +1408,6 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ))
-    }
-
-    #[test]
-    fn materialization_memory_failure_preserves_structured_details() {
-        let error = materialization_api_error(
-            serde_json::json!({
-                "error": "memory_budget_exceeded",
-                "phase": "staging",
-                "limit_bytes": 1024,
-                "accounted_bytes": 2048,
-                "observed_rss_bytes": 1536,
-            })
-            .to_string(),
-        );
-
-        assert_eq!(error.code, "memory_budget_exceeded");
-        assert!(!error.retryable);
-        assert_eq!(error.details.unwrap()["phase"], "staging");
     }
 
     fn write_legacy_install_config(root: &PathBuf) {
@@ -1612,8 +1586,6 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: false,
-                worker_memory_mib: None,
-                rust_memory_mib: None,
                 spill_chunk_mib: None,
                 max_parallelism: None,
                 progress: false,
@@ -1636,8 +1608,6 @@ mod tests {
                 exclude_patterns: Vec::new(),
                 candidate_paths: Vec::new(),
                 parallel: false,
-                worker_memory_mib: None,
-                rust_memory_mib: None,
                 spill_chunk_mib: None,
                 max_parallelism: None,
                 progress: false,

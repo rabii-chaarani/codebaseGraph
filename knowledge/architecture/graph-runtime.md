@@ -23,7 +23,7 @@ The Graph Runtime is the product executable and embeddable library. It exposes o
 | Public boundary | Public API Contracts, Public API Facade, Unified API Core, Catalog Provider, Response Presenter | Define stable requests and responses, register operations once, dispatch them, and present typed or compact block output. |
 | Runtime preparation | Request Normalizer, Repository Runtime Resolver | Apply canonical defaults, reject invalid requests, resolve schema-v1 versus storage-v2 state, and select Managed or Direct storage mode. |
 | Application services | Graph Read Service, Materialization API, Materialization Worker, Repository Lifecycle Service, Repository Refresh Service | Execute graph reads, isolated generation builds, installation lifecycle, and refresh behavior independently of transport. |
-| Build pipeline | Source Scanner, Execution Planner, Graph Writer, Search Index Builder, Database Phase Runner | Revalidate inputs, reuse or rebuild raw partitions, externally merge deterministic rows, build disk-backed search, and load a candidate within hard memory limits. |
+| Build pipeline | Source Scanner, Execution Planner, Graph Writer, Search Index Builder, Database Phase Runner | Revalidate inputs, reuse or rebuild raw partitions, externally merge deterministic rows, build disk-backed search, and load a fresh candidate using streaming and batching optimizations without application workload ceilings. |
 | Persistence | Graph Store | Own immutable generation publication, read leases, abandoned-run recovery, retirement, direct-mode recovery, and partition artifacts. |
 
 ## Dependency direction

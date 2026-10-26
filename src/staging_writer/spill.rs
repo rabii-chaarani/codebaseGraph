@@ -1,5 +1,5 @@
 use super::files::{create_staging_directory, finish_output, StagingOutputFile};
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use crate::error::NativeError;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::cmp::Ordering;
@@ -118,7 +118,6 @@ struct BufferedRecord<K> {
 #[derive(Clone, Debug)]
 struct RunDescriptor {
     path: PathBuf,
-    max_heap_record_bytes: usize,
 }
 
 pub(super) struct SortedSpool<T: SpillRecord> {
@@ -129,7 +128,6 @@ pub(super) struct SortedSpool<T: SpillRecord> {
     buffered_bytes: usize,
     runs: Vec<RunDescriptor>,
     next_run: usize,
-    max_buffered_heap_record_bytes: usize,
     metrics: SpillMetrics,
     marker: PhantomData<T>,
 }
@@ -142,7 +140,9 @@ impl<T: SpillRecord> SortedSpool<T> {
         metrics: SpillMetrics,
     ) -> Result<Self, NativeError> {
         if chunk_limit == 0 {
-            return Err(memory_budget_error(prefix, 0, 1));
+            return Err(NativeError::InvalidInput(
+                "spill chunk target must be positive".into(),
+            ));
         }
         Ok(Self {
             root: root.to_path_buf(),
@@ -152,40 +152,24 @@ impl<T: SpillRecord> SortedSpool<T> {
             buffered_bytes: 0,
             runs: Vec::new(),
             next_run: 0,
-            max_buffered_heap_record_bytes: 0,
             metrics,
             marker: PhantomData,
         })
     }
 
     pub(super) fn push(&mut self, record: &T) -> Result<(), NativeError> {
-        let encoded = encode_bounded(record, self.chunk_limit, &self.prefix)?;
+        let encoded = encode_record(record)?;
         let key = record.sort_key();
         let record_bytes = encoded
             .capacity()
             .checked_add(T::key_bytes(&key))
             .and_then(|bytes| bytes.checked_add(LENGTH_PREFIX_BYTES))
             .and_then(|bytes| bytes.checked_add(std::mem::size_of::<BufferedRecord<T::Key>>()))
-            .ok_or_else(|| memory_budget_error(&self.prefix, self.chunk_limit, usize::MAX))?;
-        if record_bytes > self.chunk_limit {
-            return Err(memory_budget_error(
-                &self.prefix,
-                self.chunk_limit,
-                record_bytes,
-            ));
-        }
+            .ok_or_else(|| NativeError::InvalidInput("spill record size overflow".into()))?;
         let next_bytes = self
             .buffered_bytes
             .checked_add(record_bytes)
-            .ok_or_else(|| memory_budget_error(&self.prefix, self.chunk_limit, usize::MAX))?;
-        let heap_record_bytes = heap_item_bytes::<T>(&key, &encoded)?;
-        if heap_record_bytes > self.chunk_limit {
-            return Err(memory_budget_error(
-                &format!("{}_merge", self.prefix),
-                self.chunk_limit,
-                heap_record_bytes,
-            ));
-        }
+            .ok_or_else(|| NativeError::InvalidInput("spill record size overflow".into()))?;
         self.metrics.add_live(record_bytes);
         if !self.buffered.is_empty() && next_bytes > self.chunk_limit {
             if let Err(error) = self.flush() {
@@ -195,35 +179,28 @@ impl<T: SpillRecord> SortedSpool<T> {
         }
         if self.buffered.try_reserve_exact(1).is_err() {
             self.metrics.release_live(record_bytes);
-            return Err(memory_budget_error(
-                &self.prefix,
-                self.chunk_limit,
-                self.buffered_bytes,
-            ));
+            return Err(NativeError::Io(io::Error::other(
+                "spill buffer allocation failed",
+            )));
         }
         self.buffered.push(BufferedRecord { key, encoded });
         self.buffered_bytes = self
             .buffered_bytes
             .checked_add(record_bytes)
-            .ok_or_else(|| memory_budget_error(&self.prefix, self.chunk_limit, usize::MAX))?;
-        self.max_buffered_heap_record_bytes =
-            self.max_buffered_heap_record_bytes.max(heap_record_bytes);
+            .ok_or_else(|| NativeError::InvalidInput("spill record size overflow".into()))?;
+        if self.buffered_bytes >= self.chunk_limit {
+            self.flush()?;
+        }
         Ok(())
     }
 
     pub(super) fn finish(mut self) -> Result<SortedStream<T>, NativeError> {
         self.flush()?;
         let mut runs = std::mem::take(&mut self.runs);
-        while !runs_fit_budget(&runs, self.chunk_limit) {
+        while runs.len() > MAX_MERGE_FAN_IN {
             runs = self.merge_level(runs)?;
         }
-        SortedStream::open(
-            &runs,
-            self.chunk_limit,
-            self.metrics.clone(),
-            &format!("{}_merge", self.prefix),
-            true,
-        )
+        SortedStream::open(&runs, self.metrics.clone(), true)
     }
 
     fn flush(&mut self) -> Result<(), NativeError> {
@@ -239,76 +216,23 @@ impl<T: SpillRecord> SortedSpool<T> {
             write_encoded(&mut writer, &record.encoded, &self.metrics)?;
         }
         finish_output(writer)?;
-        self.runs.push(RunDescriptor {
-            path,
-            max_heap_record_bytes: self.max_buffered_heap_record_bytes,
-        });
+        self.runs.push(RunDescriptor { path });
         let released_bytes = self.buffered_bytes;
         self.buffered = Vec::new();
         self.buffered_bytes = 0;
-        self.max_buffered_heap_record_bytes = 0;
         self.metrics.release_live(released_bytes);
         Ok(())
     }
 
-    fn merge_level(
-        &mut self,
-        mut runs: Vec<RunDescriptor>,
-    ) -> Result<Vec<RunDescriptor>, NativeError> {
-        runs.sort_by(|left, right| {
-            right
-                .max_heap_record_bytes
-                .cmp(&left.max_heap_record_bytes)
-                .then_with(|| left.path.cmp(&right.path))
-        });
-        let original_count = runs.len();
-        let mut groups: Vec<Vec<RunDescriptor>> = Vec::new();
-        for run in runs {
-            let mut selected = None;
-            for (index, group) in groups.iter().enumerate() {
-                let group_bytes = group.iter().fold(0_usize, |total, descriptor| {
-                    total.saturating_add(descriptor.max_heap_record_bytes)
-                });
-                if group.len() < MAX_MERGE_FAN_IN
-                    && group_bytes.saturating_add(run.max_heap_record_bytes) <= self.chunk_limit
-                {
-                    selected = Some(index);
-                    break;
-                }
-            }
-            if let Some(index) = selected {
-                groups[index].push(run);
-            } else {
-                groups.push(vec![run]);
-            }
-        }
-
+    fn merge_level(&mut self, runs: Vec<RunDescriptor>) -> Result<Vec<RunDescriptor>, NativeError> {
         let mut merged = Vec::new();
-        merged
-            .try_reserve_exact(groups.len())
-            .map_err(|_| memory_budget_error(&self.prefix, self.chunk_limit, groups.len()))?;
-        for group in groups {
+        for group in runs.chunks(MAX_MERGE_FAN_IN) {
             if group.len() == 1 {
-                merged.extend(group);
-                continue;
+                merged.push(group[0].clone());
+            } else {
+                let output = self.next_path("merge");
+                merged.push(merge_run_group::<T>(group, &output, &self.metrics)?);
             }
-            let output = self.next_path("merge");
-            let descriptor = merge_run_group::<T>(
-                &group,
-                &output,
-                self.chunk_limit,
-                &format!("{}_merge", self.prefix),
-                &self.metrics,
-            )?;
-            merged.push(descriptor);
-        }
-        if merged.len() >= original_count {
-            let accounted = smallest_pair_bytes(&merged).unwrap_or(usize::MAX);
-            return Err(memory_budget_error(
-                &format!("{}_merge", self.prefix),
-                self.chunk_limit,
-                accounted,
-            ));
         }
         Ok(merged)
     }
@@ -336,42 +260,31 @@ pub(super) struct SortedStream<T: SpillRecord> {
     heap_bytes: usize,
     outstanding_bytes: usize,
     pending_reader: Option<usize>,
-    heap_budget: usize,
     metrics: SpillMetrics,
-    phase: String,
     input_paths: Vec<PathBuf>,
     cleanup_when_exhausted: bool,
 }
 
 pub(super) struct RecordFileWriter<T: Serialize> {
     writer: BufWriter<StagingOutputFile>,
-    record_limit: usize,
-    phase: String,
     metrics: SpillMetrics,
     marker: PhantomData<T>,
 }
 
 impl<T: Serialize> RecordFileWriter<T> {
-    pub(super) fn create(
-        path: &Path,
-        record_limit: usize,
-        phase: &str,
-        metrics: SpillMetrics,
-    ) -> Result<Self, NativeError> {
+    pub(super) fn create(path: &Path, metrics: SpillMetrics) -> Result<Self, NativeError> {
         if let Some(parent) = path.parent() {
             create_staging_directory(parent)?;
         }
         Ok(Self {
             writer: BufWriter::new(StagingOutputFile::create(path)?),
-            record_limit,
-            phase: phase.to_string(),
             metrics,
             marker: PhantomData,
         })
     }
 
     pub(super) fn push(&mut self, record: &T) -> Result<(), NativeError> {
-        let encoded = encode_bounded(record, self.record_limit, &self.phase)?;
+        let encoded = encode_record(record)?;
         write_encoded(&mut self.writer, &encoded, &self.metrics)
     }
 
@@ -404,16 +317,14 @@ impl<T: DeserializeOwned> RecordFileReader<T> {
 impl<T: SpillRecord> SortedStream<T> {
     fn open(
         descriptors: &[RunDescriptor],
-        heap_budget: usize,
         metrics: SpillMetrics,
-        phase: &str,
         cleanup_when_exhausted: bool,
     ) -> Result<Self, NativeError> {
         let mut live_charge = LiveChargeGuard::new(metrics.clone());
         let mut readers = Vec::new();
         readers
             .try_reserve_exact(descriptors.len())
-            .map_err(|_| memory_budget_error(phase, heap_budget, descriptors.len()))?;
+            .map_err(|_| NativeError::Io(io::Error::other("merge reader allocation failed")))?;
         let mut heap = BinaryHeap::new();
         let mut heap_bytes = 0_usize;
         for (reader_index, descriptor) in descriptors.iter().enumerate() {
@@ -424,12 +335,10 @@ impl<T: SpillRecord> SortedStream<T> {
                 let accounted_bytes = heap_item_bytes::<T>(&key, &encoded)?;
                 let next_heap_bytes = heap_bytes
                     .checked_add(accounted_bytes)
-                    .ok_or_else(|| memory_budget_error(phase, heap_budget, usize::MAX))?;
-                if next_heap_bytes > heap_budget {
-                    return Err(memory_budget_error(phase, heap_budget, next_heap_bytes));
-                }
-                heap.try_reserve(1)
-                    .map_err(|_| memory_budget_error(phase, heap_budget, next_heap_bytes))?;
+                    .ok_or_else(|| NativeError::InvalidInput("merge accounting overflow".into()))?;
+                heap.try_reserve(1).map_err(|_| {
+                    NativeError::Io(io::Error::other("merge heap allocation failed"))
+                })?;
                 metrics.add_live(accounted_bytes);
                 live_charge.add(accounted_bytes);
                 heap.push(HeapItem {
@@ -450,9 +359,7 @@ impl<T: SpillRecord> SortedStream<T> {
             heap_bytes,
             outstanding_bytes: 0,
             pending_reader: None,
-            heap_budget,
             metrics,
-            phase: phase.to_string(),
             input_paths: descriptors
                 .iter()
                 .map(|descriptor| descriptor.path.clone())
@@ -475,21 +382,12 @@ impl<T: SpillRecord> SortedStream<T> {
                 let record = serde_json::from_slice::<T>(&encoded)?;
                 let key = record.sort_key();
                 let accounted_bytes = heap_item_bytes::<T>(&key, &encoded)?;
-                let next_heap_bytes =
-                    self.heap_bytes
-                        .checked_add(accounted_bytes)
-                        .ok_or_else(|| {
-                            memory_budget_error(&self.phase, self.heap_budget, usize::MAX)
-                        })?;
-                if next_heap_bytes > self.heap_budget {
-                    return Err(memory_budget_error(
-                        &self.phase,
-                        self.heap_budget,
-                        next_heap_bytes,
-                    ));
-                }
+                let next_heap_bytes = self
+                    .heap_bytes
+                    .checked_add(accounted_bytes)
+                    .ok_or_else(|| NativeError::InvalidInput("merge accounting overflow".into()))?;
                 self.heap.try_reserve(1).map_err(|_| {
-                    memory_budget_error(&self.phase, self.heap_budget, next_heap_bytes)
+                    NativeError::Io(io::Error::other("merge heap allocation failed"))
                 })?;
                 self.metrics.add_live(accounted_bytes);
                 self.heap.push(HeapItem {
@@ -627,7 +525,7 @@ impl RunReader {
         let mut encoded = Vec::new();
         encoded
             .try_reserve_exact(length)
-            .map_err(|_| memory_budget_error("run_record", length, length))?;
+            .map_err(|_| NativeError::Io(io::Error::other("spill record allocation failed")))?;
         encoded.resize(length, 0);
         self.reader.read_exact(&mut encoded)?;
         Ok(Some(encoded))
@@ -637,16 +535,9 @@ impl RunReader {
 fn merge_run_group<T: SpillRecord>(
     inputs: &[RunDescriptor],
     output: &Path,
-    heap_budget: usize,
-    phase: &str,
     metrics: &SpillMetrics,
 ) -> Result<RunDescriptor, NativeError> {
-    let max_heap_record_bytes = inputs
-        .iter()
-        .map(|input| input.max_heap_record_bytes)
-        .max()
-        .unwrap_or_default();
-    let mut stream = SortedStream::<T>::open(inputs, heap_budget, metrics.clone(), phase, false)?;
+    let mut stream = SortedStream::<T>::open(inputs, metrics.clone(), false)?;
     let mut writer = BufWriter::new(StagingOutputFile::create(output)?);
     while let Some(item) = stream.next_encoded()? {
         write_encoded(&mut writer, &item.encoded, metrics)?;
@@ -658,30 +549,7 @@ fn merge_run_group<T: SpillRecord>(
     }
     Ok(RunDescriptor {
         path: output.to_path_buf(),
-        max_heap_record_bytes,
     })
-}
-
-fn runs_fit_budget(runs: &[RunDescriptor], heap_budget: usize) -> bool {
-    runs.len() <= MAX_MERGE_FAN_IN
-        && runs
-            .iter()
-            .try_fold(0_usize, |total, run| {
-                total.checked_add(run.max_heap_record_bytes)
-            })
-            .is_some_and(|bytes| bytes <= heap_budget)
-}
-
-fn smallest_pair_bytes(runs: &[RunDescriptor]) -> Option<usize> {
-    let mut sizes = runs
-        .iter()
-        .map(|run| run.max_heap_record_bytes)
-        .collect::<Vec<_>>();
-    sizes.sort_unstable();
-    sizes
-        .first()
-        .zip(sizes.get(1))
-        .map(|(left, right)| left.saturating_add(*right))
 }
 
 fn heap_item_bytes<T: SpillRecord>(key: &T::Key, encoded: &[u8]) -> Result<usize, NativeError> {
@@ -690,7 +558,7 @@ fn heap_item_bytes<T: SpillRecord>(key: &T::Key, encoded: &[u8]) -> Result<usize
         .checked_mul(2)
         .and_then(|bytes| bytes.checked_add(T::key_bytes(key)))
         .and_then(|bytes| bytes.checked_add(std::mem::size_of::<HeapItem<T>>()))
-        .ok_or_else(|| memory_budget_error("merge_heap", usize::MAX, usize::MAX))
+        .ok_or_else(|| NativeError::InvalidInput("merge record size overflow".into()))
 }
 
 fn write_encoded(
@@ -698,75 +566,39 @@ fn write_encoded(
     encoded: &[u8],
     metrics: &SpillMetrics,
 ) -> Result<(), NativeError> {
-    let length = u32::try_from(encoded.len())
-        .map_err(|_| memory_budget_error("spill_record", u32::MAX as usize, encoded.len()))?;
+    let length = u32::try_from(encoded.len()).map_err(|_| {
+        NativeError::InvalidInput("spill record exceeds u32 encoding length".into())
+    })?;
     writer.write_all(&length.to_le_bytes())?;
     writer.write_all(encoded)?;
     metrics.add_written((LENGTH_PREFIX_BYTES + encoded.len()) as u64);
     Ok(())
 }
 
-pub(super) fn encode_bounded<T: Serialize>(
-    value: &T,
-    limit: usize,
-    phase: &str,
-) -> Result<Vec<u8>, NativeError> {
-    let mut writer = FallibleBuffer::new(limit);
-    let result = serde_json::to_writer(&mut writer, value);
-    if writer.exceeded {
-        return Err(memory_budget_error(phase, limit, writer.attempted));
-    }
-    result?;
+pub(super) fn encode_record<T: Serialize>(value: &T) -> Result<Vec<u8>, NativeError> {
+    let mut writer = FallibleBuffer::default();
+    serde_json::to_writer(&mut writer, value)?;
     Ok(writer.bytes)
 }
 
-pub(super) fn encode_output_bounded(
-    limit: usize,
-    phase: &str,
+pub(super) fn encode_output(
     encode: impl FnOnce(&mut dyn Write) -> io::Result<()>,
 ) -> Result<Vec<u8>, NativeError> {
-    let mut writer = FallibleBuffer::new(limit);
-    let result = encode(&mut writer);
-    if writer.exceeded {
-        return Err(memory_budget_error(phase, limit, writer.attempted));
-    }
-    result?;
+    let mut writer = FallibleBuffer::default();
+    encode(&mut writer)?;
     Ok(writer.bytes)
 }
 
+#[derive(Default)]
 struct FallibleBuffer {
     bytes: Vec<u8>,
-    limit: usize,
-    attempted: usize,
-    exceeded: bool,
-}
-
-impl FallibleBuffer {
-    fn new(limit: usize) -> Self {
-        Self {
-            bytes: Vec::new(),
-            limit,
-            attempted: 0,
-            exceeded: false,
-        }
-    }
 }
 
 impl Write for FallibleBuffer {
     fn write(&mut self, source: &[u8]) -> io::Result<usize> {
-        let Some(next) = self.bytes.len().checked_add(source.len()) else {
-            self.exceeded = true;
-            self.attempted = usize::MAX;
-            return Err(io::Error::other("staging record size overflow"));
-        };
-        self.attempted = next;
-        if next > self.limit {
-            self.exceeded = true;
-            return Err(io::Error::other("staging record exceeds memory budget"));
-        }
         self.bytes
-            .try_reserve_exact(source.len())
-            .map_err(|_| io::Error::other("staging record allocation failed"))?;
+            .try_reserve(source.len())
+            .map_err(|_| io::Error::other("record allocation failed"))?;
         self.bytes.extend_from_slice(source);
         Ok(source.len())
     }
@@ -774,15 +606,6 @@ impl Write for FallibleBuffer {
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
-}
-
-fn memory_budget_error(phase: &str, limit: usize, accounted: usize) -> NativeError {
-    NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-        phase,
-        u64::try_from(limit).unwrap_or(u64::MAX),
-        u64::try_from(accounted).unwrap_or(u64::MAX),
-        0,
-    ))
 }
 
 #[cfg(test)]
@@ -917,7 +740,72 @@ mod tests {
         assert_eq!(run_file_count(&root), 0);
         assert_eq!(metrics.current_bytes(), 0);
         let (_, high_water) = metrics.snapshot();
-        assert!(high_water <= chunk_limit.saturating_mul(2));
+        assert!(high_water > 0);
+        assert!(high_water <= chunk_limit.saturating_mul(MAX_MERGE_FAN_IN));
+    }
+
+    #[test]
+    fn jumbo_records_merge_across_multiple_levels_without_a_budget() {
+        let root = temp_root("jumbo-merge");
+        let metrics = SpillMetrics::default();
+        let mut spool =
+            SortedSpool::<TestRecord>::new(&root, "jumbo", 64, metrics.clone()).unwrap();
+        let count = (MAX_MERGE_FAN_IN * MAX_MERGE_FAN_IN + 3) as u32;
+        for key in (0..count).rev() {
+            spool
+                .push(&TestRecord {
+                    key,
+                    payload: "jumbo".repeat(80),
+                })
+                .unwrap();
+        }
+        assert_eq!(run_file_count(&root), count as usize);
+        let mut stream = spool.finish().unwrap();
+        assert!(run_file_count(&root) <= MAX_MERGE_FAN_IN);
+        for key in 0..count {
+            let record = stream.next().unwrap().unwrap();
+            assert_eq!(record.key, key);
+            assert_eq!(record.payload, "jumbo".repeat(80));
+        }
+        assert!(stream.next().unwrap().is_none());
+        assert_eq!(run_file_count(&root), 0);
+        assert_eq!(metrics.current_bytes(), 0);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn mixed_small_and_jumbo_records_keep_sorted_values() {
+        let root = temp_root("mixed-jumbo");
+        let mut spool =
+            SortedSpool::<TestRecord>::new(&root, "mixed", 256, SpillMetrics::default()).unwrap();
+        for key in (0..75).rev() {
+            spool
+                .push(&TestRecord {
+                    key,
+                    payload: if key % 3 == 0 {
+                        "large".repeat(400)
+                    } else {
+                        "small".into()
+                    },
+                })
+                .unwrap();
+        }
+        let mut stream = spool.finish().unwrap();
+        for key in 0..75 {
+            let row = stream.next().unwrap().unwrap();
+            assert_eq!(row.key, key);
+            assert_eq!(
+                row.payload,
+                if key % 3 == 0 {
+                    "large".repeat(400)
+                } else {
+                    "small".into()
+                }
+            );
+        }
+        assert!(stream.next().unwrap().is_none());
+        assert_eq!(run_file_count(&root), 0);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

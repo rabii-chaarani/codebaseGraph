@@ -181,8 +181,6 @@ pub fn materialize(
         exclude_patterns: Vec::new(),
         candidate_paths: Vec::new(),
         parallel: false,
-        worker_memory_mib: None,
-        rust_memory_mib: None,
         spill_chunk_mib: None,
         max_parallelism: Some(1),
         progress: false,

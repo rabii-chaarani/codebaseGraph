@@ -24,8 +24,6 @@ fn native_writer_loads_json_staging_through_ladybug_copy() {
 
     let result = write_database(LadybugWriteRequest {
         db_path: db_path.to_string_lossy().to_string(),
-        worker_memory_bytes: 768 * 1024 * 1024,
-        buffer_pool_bytes: 128 * 1024 * 1024,
         max_num_threads: 1,
         defer_hash_indexes: true,
         include_fts: false,
@@ -65,8 +63,6 @@ fn native_writer_loads_multiple_chunks_into_one_primary_key_table() {
 
     let result = write_database(LadybugWriteRequest {
         db_path: db_path.to_string_lossy().to_string(),
-        worker_memory_bytes: 768 * 1024 * 1024,
-        buffer_pool_bytes: 128 * 1024 * 1024,
         max_num_threads: 1,
         defer_hash_indexes: true,
         include_fts: false,

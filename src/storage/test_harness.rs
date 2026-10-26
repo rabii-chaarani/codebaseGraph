@@ -1441,7 +1441,6 @@ fn prove_phase_empty(lifecycle: &std::path::Path) {
             code: None,
             signal: None,
             high_water_bytes: 0,
-            budget_reason: None,
             cancelled: true,
             containment_empty: true,
             supervision_error: None,

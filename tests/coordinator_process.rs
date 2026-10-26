@@ -28,7 +28,7 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     fs::create_dir_all(&state).unwrap();
     // Keep the periodic reconciliation fallback inside the generation-change
     // deadline when auto backend selection falls back to polling.
-    write_config_with_policy_and_interval(&repo, &storage, "leader", 768, 384, 32, Some(1_000));
+    write_config_with_policy_and_interval(&repo, &storage, "leader", 32, Some(1_000));
 
     let mut clients = ClientGroup::default();
     for index in 0..20 {
@@ -242,42 +242,18 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     }
     drop(_snapshot_writer);
     drop(_snapshot_worker);
-    write_config(&repo, &storage, 129, 1, 1);
+    write_config(&repo, &storage, 1);
     fs::write(
         repo.join("src/lib.rs"),
-        format!(
-            "/*{}*/\npub fn coordinated_graph() -> bool {{ false }}\n",
-            "x".repeat(2 * 1024 * 1024)
-        ),
+        "pub fn coordinated_graph_without_resource_ceiling() -> bool { false }\n",
     )
     .unwrap();
     clients.push(McpClient::start(&repo, 20));
-    let deadline = Instant::now() + Duration::from_secs(30);
-    let mut last_error = String::new();
-    while Instant::now() < deadline {
-        let health = clients.clients[20].call(
-            20_000,
-            "tools/call",
-            json!({
-                "name": "graph_health",
-                "arguments": {"include_structured_content": true}
-            }),
-        );
-        last_error = health["result"]["structuredContent"]["refresh"]["last_error"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
-        if last_error.contains("memory_budget_exceeded") {
-            break;
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    }
-    assert!(
-        last_error.contains("memory_budget_exceeded"),
-        "expected a structured memory failure, got {last_error:?}"
-    );
-    assert_eq!(active_generation_id(&active_path), active_before);
-    // Auto refresh can retry after failure. Observe a real quiescent owner,
+    let updated =
+        wait_for_active_generation_change(&active_path, &active_before, Duration::from_secs(90));
+    assert_ne!(updated, active_before);
+    let active_before = updated;
+    // Observe a real quiescent owner after the replacement build,
     // then verify retained registered roots are terminal rather than live;
     // their directory count is no longer synchronous disposal evidence.
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -320,7 +296,7 @@ fn http_server_plus_coordinator_stays_below_idle_rss_gate() {
     let state = repo.join(".codebaseGraph");
     let storage = state.join("storage");
     fs::create_dir_all(&state).unwrap();
-    write_config_with_policy(&repo, &storage, "off", 768, 384, 32);
+    write_config_with_policy(&repo, &storage, "off", 32);
     let mut child = Command::new(binary())
         .arg("mcp")
         .arg("http")
@@ -769,27 +745,18 @@ fn sample_process_rss(_pid: u32) -> std::io::Result<u64> {
     ))
 }
 
-fn write_config(repo: &Path, storage: &Path, worker: u64, rust: u64, spill: u64) {
-    write_config_with_policy(repo, storage, "leader", worker, rust, spill);
+fn write_config(repo: &Path, storage: &Path, spill: u64) {
+    write_config_with_policy(repo, storage, "leader", spill);
 }
 
-fn write_config_with_policy(
-    repo: &Path,
-    storage: &Path,
-    policy: &str,
-    worker: u64,
-    rust: u64,
-    spill: u64,
-) {
-    write_config_with_policy_and_interval(repo, storage, policy, worker, rust, spill, None);
+fn write_config_with_policy(repo: &Path, storage: &Path, policy: &str, spill: u64) {
+    write_config_with_policy_and_interval(repo, storage, policy, spill, None);
 }
 
 fn write_config_with_policy_and_interval(
     repo: &Path,
     storage: &Path,
     policy: &str,
-    worker: u64,
-    rust: u64,
     spill: u64,
     reconcile_interval_ms: Option<u64>,
 ) {
@@ -806,8 +773,6 @@ fn write_config_with_policy_and_interval(
             "refresh": refresh,
             "materialization": {
                 "include_fts": true,
-                "worker_memory_mib": worker,
-                "rust_memory_mib": rust,
                 "spill_chunk_mib": spill,
                 "max_parallelism": 2
             }

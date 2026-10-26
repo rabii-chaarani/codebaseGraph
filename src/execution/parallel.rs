@@ -1,6 +1,6 @@
 use super::timing::elapsed_seconds;
 use crate::artifact_store::{ArtifactExpectations, ArtifactStore};
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use crate::error::NativeError;
 use crate::hash;
 use crate::parser;
 use crate::partition_builder;
@@ -48,12 +48,10 @@ pub(super) fn build_execution_plan(
     let mut stats = ExecutionPlanStats::default();
     if worker_count > 1 {
         let mut result_slots = Vec::new();
-        result_slots.try_reserve(worker_count).map_err(|_| {
-            memory_budget_error(
-                "execution_plan",
-                request.rust_memory_limit_bytes().unwrap_or(u64::MAX),
-                request.rust_memory_limit_bytes().unwrap_or(u64::MAX),
-            )
+        result_slots.try_reserve(worker_count).map_err(|error| {
+            NativeError::Io(std::io::Error::other(format!(
+                "failed to reserve parallel result window: {error}"
+            )))
         })?;
         result_slots.resize_with(worker_count, || None);
         let (job_tx, job_rx) = mpsc::sync_channel::<usize>(worker_count);
@@ -86,8 +84,6 @@ pub(super) fn build_execution_plan(
                                 scan,
                                 &rebuild_paths[index],
                                 &artifact_store,
-                                worker_count,
-                                transient_plan_bytes,
                             ),
                         );
                         if result_tx.send(result).is_err() {
@@ -127,8 +123,7 @@ pub(super) fn build_execution_plan(
                         result
                             .accounted_bytes
                             .saturating_mul(worker_count as u64)
-                            .saturating_add(transient_plan_bytes)
-                            .min(request.rust_memory_limit_bytes().unwrap_or(u64::MAX)),
+                            .saturating_add(transient_plan_bytes),
                     );
                     consume(next_consume, result)?;
                     next_consume += 1;
@@ -157,13 +152,7 @@ pub(super) fn build_execution_plan(
     }
 
     for (index, path) in rebuild_paths.iter().enumerate() {
-        let result = build_partition_for_path_with_workers(
-            scan,
-            path,
-            artifact_store,
-            1,
-            transient_plan_bytes,
-        )?;
+        let result = build_partition_for_path_with_workers(scan, path, artifact_store)?;
         stats.high_water_bytes = stats
             .high_water_bytes
             .max(result.accounted_bytes.saturating_add(transient_plan_bytes));
@@ -184,8 +173,6 @@ fn build_partition_for_path_with_workers(
     scan: &scan::SourceScan,
     path: &str,
     artifact_store: &ArtifactStore,
-    worker_count: usize,
-    transient_plan_bytes: u64,
 ) -> Result<PartitionBuildResult, NativeError> {
     let Some(snapshot) = scan.supported.get(path) else {
         return Err(NativeError::InvalidInput(format!(
@@ -223,8 +210,6 @@ fn build_partition_for_path_with_workers(
         profile,
         previous_entry,
         artifact_store,
-        worker_count,
-        transient_plan_bytes,
     )
 }
 
@@ -234,31 +219,19 @@ fn build_partition_for_snapshot(
     profile: &LanguageProfile,
     previous_entry: Option<&crate::protocol::ManifestEntry>,
     artifact_store: &ArtifactStore,
-    worker_count: usize,
-    transient_plan_bytes: u64,
 ) -> Result<PartitionBuildResult, NativeError> {
-    let total_limit = request.rust_memory_limit_bytes()?;
-    let per_worker_limit = total_limit
-        .checked_sub(transient_plan_bytes)
-        .ok_or_else(|| {
-            memory_budget_error("transient_artifact_plan", total_limit, transient_plan_bytes)
-        })?
-        .checked_div(worker_count.max(1) as u64)
-        .unwrap_or(0);
     let artifact_key = ArtifactStore::key_for_request(request, snapshot, Some(profile))?;
     if previous_entry.and_then(|entry| entry.artifact_key.as_deref()) == Some(artifact_key.as_str())
     {
-        if let Some(partition) = artifact_store.load_partition_with_budget(
+        if let Some(partition) = artifact_store.load_partition(
             &artifact_key,
             &ArtifactExpectations {
                 path: &snapshot.path,
                 content_hash: &snapshot.content_hash,
                 language: snapshot.language.as_deref().unwrap_or_default(),
             },
-            per_worker_limit,
         )? {
-            let accounted_bytes =
-                ensure_partition_fits(&partition, snapshot.byte_len, per_worker_limit)?;
+            let accounted_bytes = partition_accounted_bytes(&partition, snapshot.byte_len);
             return Ok(PartitionBuildResult {
                 partition,
                 diagnostics: Vec::new(),
@@ -273,7 +246,7 @@ fn build_partition_for_snapshot(
     let snapshot = scan::spool_snapshot_for_build(request, snapshot)?;
     let parse_started = Instant::now();
     let mut parse_snapshot = snapshot.clone();
-    parse_snapshot.source = Some(read_snapshotted_source(&snapshot, per_worker_limit)?);
+    parse_snapshot.source = Some(read_snapshotted_source(&snapshot)?);
     let parse = parser::parse_file(&parse_snapshot, profile)?;
     drop(parse_snapshot);
     let parse_seconds = elapsed_seconds(parse_started);
@@ -281,7 +254,7 @@ fn build_partition_for_snapshot(
     let graph_build_started = Instant::now();
     let mut partition = partition_builder::build_partition(request, &snapshot, parse)?;
     partition.set_artifact_key(artifact_key.clone());
-    let accounted_bytes = ensure_partition_fits(&partition, snapshot.byte_len, per_worker_limit)?;
+    let accounted_bytes = partition_accounted_bytes(&partition, snapshot.byte_len);
     let graph_build_seconds = elapsed_seconds(graph_build_started);
     let transient = match artifact_store.store_partition(&artifact_key, &partition) {
         Ok(_) => None,
@@ -309,26 +282,19 @@ fn build_partition_for_snapshot(
     })
 }
 
-fn read_snapshotted_source(
-    snapshot: &SourceSnapshot,
-    per_worker_limit: u64,
-) -> Result<String, NativeError> {
-    let accounted_bytes = snapshot
-        .byte_len
-        .saturating_mul(PARSE_WORKING_BYTES_PER_SOURCE_BYTE);
-    if accounted_bytes > per_worker_limit {
-        return Err(memory_budget_error(
-            "source_parse",
-            per_worker_limit,
-            accounted_bytes,
-        ));
-    }
-    let source_capacity = usize::try_from(snapshot.byte_len)
-        .map_err(|_| memory_budget_error("source_parse", per_worker_limit, snapshot.byte_len))?;
+fn read_snapshotted_source(snapshot: &SourceSnapshot) -> Result<String, NativeError> {
+    let source_capacity = usize::try_from(snapshot.byte_len).map_err(|_| {
+        NativeError::InvalidInput(format!(
+            "source is too large to represent on this platform: {}",
+            snapshot.path
+        ))
+    })?;
     let mut source = String::new();
-    source
-        .try_reserve_exact(source_capacity)
-        .map_err(|_| memory_budget_error("source_parse", per_worker_limit, snapshot.byte_len))?;
+    source.try_reserve_exact(source_capacity).map_err(|error| {
+        NativeError::Io(std::io::Error::other(format!(
+            "failed to reserve source buffer: {error}"
+        )))
+    })?;
     File::open(&snapshot.absolute_path)?.read_to_string(&mut source)?;
     if source.len() as u64 != snapshot.byte_len
         || hash::sha256_file(std::path::Path::new(&snapshot.absolute_path))?
@@ -342,22 +308,13 @@ fn read_snapshotted_source(
     Ok(source)
 }
 
-fn ensure_partition_fits(
+fn partition_accounted_bytes(
     partition: &partition_builder::GraphPartition,
     source_bytes: u64,
-    per_worker_limit: u64,
-) -> Result<u64, NativeError> {
+) -> u64 {
     let source_working = source_bytes.saturating_mul(PARSE_WORKING_BYTES_PER_SOURCE_BYTE);
     let partition_bytes = estimate_partition_bytes(partition).unwrap_or(u64::MAX);
-    let accounted_bytes = partition_working_bytes(source_working, partition_bytes);
-    if accounted_bytes > per_worker_limit {
-        return Err(memory_budget_error(
-            "partition_build",
-            per_worker_limit,
-            accounted_bytes,
-        ));
-    }
-    Ok(accounted_bytes)
+    partition_working_bytes(source_working, partition_bytes)
 }
 
 fn partition_working_bytes(source_working: u64, partition_bytes: u64) -> u64 {
@@ -416,15 +373,6 @@ fn checked_add_strings<const N: usize>(mut bytes: u64, strings: [&String; N]) ->
     Some(bytes)
 }
 
-fn memory_budget_error(phase: &str, limit_bytes: u64, accounted_bytes: u64) -> NativeError {
-    NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new(
-        phase,
-        limit_bytes,
-        accounted_bytes,
-        0,
-    ))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -477,8 +425,6 @@ mod tests {
             atomic_rebuild: false,
             strict: true,
             parallel: false,
-            worker_memory_mib: 768,
-            rust_memory_mib: 384,
             spill_chunk_mib: 32,
             max_parallelism: 2,
             progress: false,
@@ -572,7 +518,6 @@ mod tests {
             vec!["src/a.rs", "src/b.rs", "src/c.rs", "src/d.rs"]
         );
         assert!(stats.high_water_bytes > 0);
-        assert!(stats.high_water_bytes <= request.rust_memory_limit_bytes().unwrap());
         let _ = fs::remove_dir_all(root);
     }
 
@@ -649,34 +594,5 @@ mod tests {
 
         assert_eq!(reused, Some(false));
         let _ = fs::remove_dir_all(root);
-    }
-
-    #[test]
-    fn oversized_source_returns_structured_budget_failure() {
-        let snapshot = SourceSnapshot {
-            path: "src/huge.rs".to_string(),
-            absolute_path: "missing".to_string(),
-            content_hash: "hash".to_string(),
-            language: Some("rust".to_string()),
-            byte_len: 2 * 1024 * 1024,
-            source: None,
-        };
-
-        let error = read_snapshotted_source(&snapshot, 1024 * 1024).unwrap_err();
-        let NativeError::MemoryBudgetExceeded(error) = error else {
-            panic!("oversized source should return a memory budget error");
-        };
-        assert_eq!(error.phase, "source_parse");
-        assert_eq!(error.limit_bytes, 1024 * 1024);
-        assert!(error.accounted_bytes > error.limit_bytes);
-        assert_eq!(error.observed_rss_bytes, 0);
-    }
-
-    #[test]
-    fn reference_sized_partition_fits_the_default_per_worker_budget() {
-        let reference_partition_bytes = 77 * 1024 * 1024;
-        let per_worker_budget_bytes = 192 * 1024 * 1024;
-
-        assert!(partition_working_bytes(0, reference_partition_bytes) <= per_worker_budget_bytes);
     }
 }

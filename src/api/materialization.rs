@@ -48,8 +48,6 @@ pub(crate) struct MaterializeOptions {
     pub(crate) exclude_patterns: Vec<String>,
     pub(crate) candidate_paths: Vec<String>,
     pub(crate) parallel: bool,
-    pub(crate) worker_memory_mib: Option<u64>,
-    pub(crate) rust_memory_mib: Option<u64>,
     pub(crate) spill_chunk_mib: Option<u64>,
     pub(crate) max_parallelism: Option<usize>,
     pub(crate) progress: bool,
@@ -83,8 +81,6 @@ impl Default for MaterializeOptions {
             exclude_patterns: Vec::new(),
             candidate_paths: Vec::new(),
             parallel: true,
-            worker_memory_mib: None,
-            rust_memory_mib: None,
             spill_chunk_mib: None,
             max_parallelism: None,
             progress: false,
@@ -121,8 +117,6 @@ impl MaterializeOptions {
             exclude_patterns: request.exclude_patterns.clone(),
             candidate_paths: request.candidate_paths.clone(),
             parallel: request.parallel,
-            worker_memory_mib: request.worker_memory_mib,
-            rust_memory_mib: request.rust_memory_mib,
             spill_chunk_mib: request.spill_chunk_mib,
             max_parallelism: request.max_parallelism,
             progress: request.progress,
@@ -201,8 +195,6 @@ fn resolve_materialization_path(path: &Path) -> Result<PathBuf, String> {
 pub(crate) struct ConfigScanRules {
     pub(crate) include_patterns: Vec<String>,
     pub(crate) exclude_patterns: Vec<String>,
-    pub(crate) worker_memory_mib: Option<u64>,
-    pub(crate) rust_memory_mib: Option<u64>,
     pub(crate) spill_chunk_mib: Option<u64>,
     pub(crate) max_parallelism: Option<usize>,
 }
@@ -233,8 +225,6 @@ pub(crate) fn materialization_request(
         exclude_patterns: options.exclude_patterns.clone(),
         candidate_paths: options.candidate_paths.clone(),
         parallel: options.parallel,
-        worker_memory_mib: options.worker_memory_mib,
-        rust_memory_mib: options.rust_memory_mib,
         spill_chunk_mib: options.spill_chunk_mib,
         max_parallelism: options.max_parallelism,
         progress: options.progress,
@@ -566,14 +556,6 @@ pub(crate) fn build_request(
     };
     let staging_dir = paths.state_dir.join("native-staging");
     let artifact_root = paths.state_dir.join("artifacts");
-    let worker_memory_mib = options
-        .worker_memory_mib
-        .or(config_rules.worker_memory_mib)
-        .unwrap_or(crate::api::context::DEFAULT_WORKER_MEMORY_MIB);
-    let rust_memory_mib = options
-        .rust_memory_mib
-        .or(config_rules.rust_memory_mib)
-        .unwrap_or(crate::api::context::DEFAULT_RUST_MEMORY_MIB);
     let spill_chunk_mib = options
         .spill_chunk_mib
         .or(config_rules.spill_chunk_mib)
@@ -582,12 +564,7 @@ pub(crate) fn build_request(
         .max_parallelism
         .or(config_rules.max_parallelism)
         .unwrap_or(crate::api::context::DEFAULT_MAX_PARALLELISM);
-    validate_materialization_limits(
-        worker_memory_mib,
-        rust_memory_mib,
-        spill_chunk_mib,
-        max_parallelism,
-    )?;
+    validate_execution_options(spill_chunk_mib, max_parallelism)?;
 
     Ok(NativeSyntaxMaterializationRequest {
         source_root: source_root.to_string_lossy().to_string(),
@@ -612,8 +589,6 @@ pub(crate) fn build_request(
         atomic_rebuild: true,
         strict: true,
         parallel: options.parallel,
-        worker_memory_mib,
-        rust_memory_mib,
         spill_chunk_mib,
         max_parallelism,
         progress: options.progress,
@@ -640,12 +615,6 @@ pub(crate) fn read_materialization_config_rules(path: &Path) -> Result<ConfigSca
             .and_then(|payload| payload.get("exclude"))
             .map(json_string_array)
             .unwrap_or_default(),
-        worker_memory_mib: materialization
-            .and_then(|payload| payload.get("worker_memory_mib"))
-            .and_then(serde_json::Value::as_u64),
-        rust_memory_mib: materialization
-            .and_then(|payload| payload.get("rust_memory_mib"))
-            .and_then(serde_json::Value::as_u64),
         spill_chunk_mib: materialization
             .and_then(|payload| payload.get("spill_chunk_mib"))
             .and_then(serde_json::Value::as_u64),
@@ -656,24 +625,9 @@ pub(crate) fn read_materialization_config_rules(path: &Path) -> Result<ConfigSca
     })
 }
 
-fn validate_materialization_limits(
-    worker_memory_mib: u64,
-    rust_memory_mib: u64,
-    spill_chunk_mib: u64,
-    max_parallelism: usize,
-) -> Result<(), String> {
-    if worker_memory_mib == 0
-        || rust_memory_mib == 0
-        || spill_chunk_mib == 0
-        || max_parallelism == 0
-    {
-        return Err("materialization memory limits and max_parallelism must be positive".into());
-    }
-    if rust_memory_mib > worker_memory_mib {
-        return Err("rust_memory_mib must not exceed worker_memory_mib".into());
-    }
-    if spill_chunk_mib > rust_memory_mib {
-        return Err("spill_chunk_mib must not exceed rust_memory_mib".into());
+fn validate_execution_options(spill_chunk_mib: u64, max_parallelism: usize) -> Result<(), String> {
+    if spill_chunk_mib == 0 || max_parallelism == 0 {
+        return Err("spill_chunk_mib and max_parallelism must be positive".into());
     }
     Ok(())
 }
@@ -2085,8 +2039,6 @@ mod tests {
                 "materialization": {
                     "include": ["src/**/*.rs"],
                     "exclude": ["target/**"],
-                    "worker_memory_mib": 640,
-                    "rust_memory_mib": 320,
                     "spill_chunk_mib": 16,
                     "max_parallelism": 1
                 }
@@ -2137,8 +2089,6 @@ mod tests {
         );
         assert_eq!(request.ignore_patterns, vec!["build/".to_string()]);
         assert!(request.candidate_paths.is_empty());
-        assert_eq!(request.worker_memory_mib, 640);
-        assert_eq!(request.rust_memory_mib, 320);
         assert_eq!(request.spill_chunk_mib, 16);
         assert_eq!(request.max_parallelism, 1);
         let _ = fs::remove_dir_all(root);
@@ -2153,8 +2103,6 @@ mod tests {
             state_dir.join("config.json"),
             serde_json::to_vec(&json!({
                 "materialization": {
-                    "worker_memory_mib": 640,
-                    "rust_memory_mib": 320,
                     "spill_chunk_mib": 16,
                     "max_parallelism": 1
                 }
@@ -2165,16 +2113,12 @@ mod tests {
 
         let request = build_request(&MaterializeOptions {
             source_root: Some(root.clone()),
-            worker_memory_mib: Some(768),
-            rust_memory_mib: Some(384),
             spill_chunk_mib: Some(32),
             max_parallelism: Some(2),
             ..MaterializeOptions::default()
         })
         .unwrap();
 
-        assert_eq!(request.worker_memory_mib, 768);
-        assert_eq!(request.rust_memory_mib, 384);
         assert_eq!(request.spill_chunk_mib, 32);
         assert_eq!(request.max_parallelism, 2);
         let _ = fs::remove_dir_all(root);

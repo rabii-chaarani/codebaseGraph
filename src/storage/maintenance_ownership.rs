@@ -4436,7 +4436,6 @@ pub(crate) mod tests {
             code: Some(0),
             signal: None,
             high_water_bytes: 0,
-            budget_reason: None,
             cancelled: false,
             containment_empty: true,
             supervision_error: None,

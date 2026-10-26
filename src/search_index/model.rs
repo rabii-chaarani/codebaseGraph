@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 pub(super) const FORMAT_VERSION: u32 = 1;
+pub(super) const MAX_DOCUMENT_RECORD_BYTES: usize = 1024 * 1024;
 pub(super) const BACKEND_NAME: &str = "disk_bm25_v1";
 pub(super) const METADATA_SUFFIX: &str = "search.meta.json";
 pub(super) const LEXICON_SUFFIX: &str = "search.lexicon.bin";

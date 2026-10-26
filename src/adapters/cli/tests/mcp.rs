@@ -12,8 +12,6 @@ fn mcp_options_resolve_config_defaults_and_cli_overrides() {
             "repo_root": root,
             "refresh": {"policy": "off", "backend": "auto", "reconcile_interval_ms": 1234},
             "materialization": {
-                "worker_memory_mib": 900,
-                "rust_memory_mib": 450,
                 "spill_chunk_mib": 45,
                 "max_parallelism": 3
             }
@@ -30,10 +28,6 @@ fn mcp_options_resolve_config_defaults_and_cli_overrides() {
             "leader".into(),
             "--refresh-backend".into(),
             "poll".into(),
-            "--worker-memory-mib".into(),
-            "1024".into(),
-            "--rust-memory-mib".into(),
-            "512".into(),
             "--spill-chunk-mib".into(),
             "64".into(),
             "--max-parallelism".into(),
@@ -52,8 +46,6 @@ fn mcp_options_resolve_config_defaults_and_cli_overrides() {
         crate::api::context::GraphRefreshBackend::Poll
     );
     assert_eq!(settings.reconcile_interval_ms, 1234);
-    assert_eq!(settings.worker_memory_mib, 1024);
-    assert_eq!(settings.rust_memory_mib, 512);
     assert_eq!(settings.spill_chunk_mib, 64);
     assert_eq!(settings.max_parallelism, 4);
 
@@ -63,10 +55,6 @@ fn mcp_options_resolve_config_defaults_and_cli_overrides() {
             root.to_string_lossy().into_owned(),
             "--refresh-policy".into(),
             "off".into(),
-            "--worker-memory-mib".into(),
-            "800".into(),
-            "--rust-memory-mib".into(),
-            "400".into(),
         ],
         format::mcp_help(),
     )
@@ -79,31 +67,12 @@ fn mcp_options_resolve_config_defaults_and_cli_overrides() {
 }
 
 #[test]
-fn mcp_options_reject_invalid_resource_limits() {
-    let error = McpServeOptions::parse(
-        &["--worker-memory-mib".into(), "0".into()],
-        format::mcp_help(),
-    )
-    .unwrap_err();
-    assert!(error.contains("positive integer"));
-
-    let root = unique_temp_dir("codebase-graph-rust-mcp-invalid-limits");
-    fs::create_dir_all(&root).unwrap();
-    let options = McpServeOptions::parse(
-        &[
-            "--repo-root".into(),
-            root.to_string_lossy().into_owned(),
-            "--worker-memory-mib".into(),
-            "256".into(),
-        ],
-        format::mcp_help(),
-    )
-    .unwrap();
-    assert!(options
-        .runtime_settings()
-        .unwrap_err()
-        .contains("rust_memory_mib"));
-    let _ = fs::remove_dir_all(root);
+fn mcp_options_reject_removed_memory_flags() {
+    for option in ["--worker-memory-mib", "--rust-memory-mib"] {
+        let error =
+            McpServeOptions::parse(&[option.into(), "1".into()], format::mcp_help()).unwrap_err();
+        assert!(error.contains("unknown mcp start option"));
+    }
 }
 
 #[test]
@@ -121,8 +90,6 @@ fn mcp_graph_query_binds_json_parameters() {
         api: None,
         refresh_policy: None,
         refresh_backend: None,
-        worker_memory_mib: None,
-        rust_memory_mib: None,
         spill_chunk_mib: None,
         max_parallelism: None,
     };
@@ -221,8 +188,6 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         api: None,
         refresh_policy: None,
         refresh_backend: None,
-        worker_memory_mib: None,
-        rust_memory_mib: None,
         spill_chunk_mib: None,
         max_parallelism: None,
     };
@@ -240,6 +205,11 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
     assert!(tools.iter().any(|tool| tool["name"] == "graph_health"));
     assert!(tools.iter().any(|tool| tool["name"] == "graph_search"));
     assert!(tools.iter().any(|tool| tool["name"] == "graph_query"));
+    for tool in tools {
+        let properties = &tool["inputSchema"]["properties"];
+        assert!(properties.get("worker_memory_mib").is_none());
+        assert!(properties.get("rust_memory_mib").is_none());
+    }
     assert!(tools.iter().all(|tool| tool["inputSchema"]["properties"]
         .get("output_format")
         .is_some()));
@@ -320,8 +290,6 @@ fn mcp_stdio_refresh_policy_off_is_watcher_free() {
         api: None,
         refresh_policy: Some(crate::api::context::GraphRefreshPolicy::Off),
         refresh_backend: None,
-        worker_memory_mib: None,
-        rust_memory_mib: None,
         spill_chunk_mib: None,
         max_parallelism: None,
     };

@@ -5,7 +5,7 @@ use super::phase::{
 use super::request::{LadybugWriteMetrics, LadybugWriteRequest};
 use super::rss::release_unused_allocator_pages;
 use super::schema::statement_phases;
-use super::{connect_ladybug_database, open_ladybug_database_with_limits};
+use super::{connect_ladybug_database, open_ladybug_database_with_threads};
 use crate::error::NativeError;
 use lbug::Connection;
 use std::collections::BTreeSet;
@@ -32,10 +32,9 @@ pub fn write_database_with_metrics(
 
 fn write_database_once(request: &LadybugWriteRequest) -> Result<(), NativeError> {
     prepare_candidate(request)?;
-    let database = open_ladybug_database_with_limits(
+    let database = open_ladybug_database_with_threads(
         Path::new(&request.db_path),
         false,
-        request.buffer_pool_bytes,
         request.max_num_threads,
     )?;
     let connection = connect_ladybug_database(&database)?;
@@ -187,16 +186,9 @@ fn prepare_candidate(request: &LadybugWriteRequest) -> Result<(), NativeError> {
 
 fn phase_request(
     request: &LadybugWriteRequest,
-    buffer_pool_bytes: u64,
     phase: LadybugWritePhase,
 ) -> LadybugWritePhaseRequest {
-    LadybugWritePhaseRequest::new(
-        &request.db_path,
-        request.worker_memory_bytes,
-        buffer_pool_bytes,
-        request.max_num_threads,
-        phase,
-    )
+    LadybugWritePhaseRequest::new(&request.db_path, request.max_num_threads, phase)
 }
 
 fn copy_phase(
@@ -214,7 +206,7 @@ fn copy_phase(
 }
 
 fn run_phase(request: &LadybugWriteRequest, phase: LadybugWritePhase) -> Result<u64, NativeError> {
-    run_isolated_phase(&phase_request(request, request.buffer_pool_bytes, phase))
+    run_isolated_phase(&phase_request(request, phase))
 }
 
 fn execute_deferred_index_copy(
@@ -374,8 +366,6 @@ mod tests {
         statements.push("COPY `FROM_Links` FROM 'links.csv'".into());
         let request = LadybugWriteRequest {
             db_path: root.join("candidate.lbug").to_string_lossy().to_string(),
-            worker_memory_bytes: 1024,
-            buffer_pool_bytes: 384,
             max_num_threads: 3,
             defer_hash_indexes: true,
             include_fts: true,
@@ -389,28 +379,6 @@ mod tests {
     }
 
     #[test]
-    fn phase_requests_preserve_low_and_high_configured_pools() {
-        let (_, mut request) = request(1);
-        for pool_mib in [128_u64, 256, 384] {
-            request.buffer_pool_bytes = pool_mib * 1024 * 1024;
-            request.worker_memory_bytes = 768 * 1024 * 1024;
-            request.max_num_threads = 1;
-            let encoded = serde_json::to_value(phase_request(
-                &request,
-                request.buffer_pool_bytes,
-                LadybugWritePhase::Schema {
-                    defer_hash_indexes: true,
-                    statements: vec![],
-                },
-            ))
-            .unwrap();
-            assert_eq!(encoded["buffer_pool_bytes"], request.buffer_pool_bytes);
-            assert_eq!(encoded["worker_memory_bytes"], request.worker_memory_bytes);
-            assert_eq!(encoded["max_num_threads"], 1);
-        }
-    }
-
-    #[test]
     fn isolated_phase_schedule_stops_after_first_error_without_replay() {
         let successful_schedule = ["schema", "copy0", "index", "copy1", "copy2", "postcopy"];
         for failure_index in 0..successful_schedule.len() {
@@ -419,10 +387,10 @@ mod tests {
             let calls = RefCell::new(Vec::new());
             let result = write_database_isolated_with(&request, |request, phase| {
                 let ordinal = calls.borrow().len();
-                let phase_request =
-                    phase_request(request, request.buffer_pool_bytes, phase.clone());
+                let phase_request = phase_request(request, phase.clone());
                 let encoded = serde_json::to_value(&phase_request).unwrap();
-                assert_eq!(encoded["buffer_pool_bytes"], 384);
+                assert!(encoded.get("buffer_pool_bytes").is_none());
+                assert!(encoded.get("worker_memory_bytes").is_none());
                 calls.borrow_mut().push(phase);
                 if ordinal == failure_index {
                     Err(NativeError::Database(
@@ -458,8 +426,7 @@ mod tests {
         let root = std::env::temp_dir().join(format!("writer-query-test-{}", std::process::id()));
         fs::create_dir_all(&root).unwrap();
         let path = root.join("db.lbug");
-        let database =
-            open_ladybug_database_with_limits(&path, false, 128 * 1024 * 1024, 1).unwrap();
+        let database = open_ladybug_database_with_threads(&path, false, 1).unwrap();
         let connection = connect_ladybug_database(&database).unwrap();
         run_schema_query(
             &connection,

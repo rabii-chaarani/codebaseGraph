@@ -25,7 +25,6 @@ mod windows;
 use windows as platform;
 const TICK: Duration = Duration::from_millis(25);
 const DEADLINE: Duration = Duration::from_secs(5);
-const HEADROOM: u64 = 16 * 1024 * 1024;
 const MAX_FRAME: usize = 4096;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -42,9 +41,6 @@ pub(crate) struct SpawnSpec {
     pub workspace: PathBuf,
     pub stderr_path: PathBuf,
     pub stdout: OutputMode,
-    pub memory_limit_bytes: Option<u64>,
-    #[serde(default)]
-    pub memory_phase: Option<String>,
     pub parent_rss_pid: Option<u32>,
 }
 pub(crate) use crate::storage::containment::{BuildDescriptorV2, ContainmentProof, ExitOutcome};
@@ -449,7 +445,6 @@ fn run_guardian(path: &Path) -> Result<(), String> {
     d.worker_pid = child.id();
     let mut started = false;
     let mut high_water = 0;
-    let mut budget_reason = None;
     let mut supervision_error = before_ready_barrier(&d, &owner_gone).err();
     let mut cancelled = owner_gone.load(Ordering::Acquire);
     if !cancelled && supervision_error.is_none() {
@@ -518,28 +513,6 @@ fn run_guardian(path: &Path) -> Result<(), String> {
                     .unwrap_or(0);
                 let observed = rss.saturating_add(parent_rss);
                 high_water = high_water.max(observed);
-                if launch
-                    .spec
-                    .memory_limit_bytes
-                    .is_some_and(|limit| observed > limit.saturating_sub(HEADROOM))
-                {
-                    let mut failure = crate::error::MemoryBudgetExceeded::new(
-                        launch
-                            .spec
-                            .memory_phase
-                            .as_deref()
-                            .unwrap_or("materialization_worker"),
-                        launch.spec.memory_limit_bytes.unwrap(),
-                        observed,
-                        observed,
-                    );
-                    if launch.spec.parent_rss_pid.is_some() {
-                        failure = failure.with_process_rss(parent_rss, rss);
-                    }
-                    budget_reason =
-                        Some(crate::error::NativeError::MemoryBudgetExceeded(failure).to_string());
-                    break;
-                }
             }
         }
         thread::sleep(TICK);
@@ -550,7 +523,6 @@ fn run_guardian(path: &Path) -> Result<(), String> {
         code: None,
         signal: None,
         high_water_bytes: high_water,
-        budget_reason,
         cancelled,
         containment_empty: result.is_ok(),
         supervision_error,
@@ -563,10 +535,7 @@ fn run_guardian(path: &Path) -> Result<(), String> {
                 use std::os::unix::process::ExitStatusExt;
                 outcome.signal = status.signal();
             }
-            outcome.success = status.success()
-                && !cancelled
-                && outcome.budget_reason.is_none()
-                && outcome.supervision_error.is_none();
+            outcome.success = status.success() && !cancelled && outcome.supervision_error.is_none();
         }
         Err(e) => {
             outcome.supervision_error = Some(format!("containment_unknown: {e}"));
@@ -876,8 +845,6 @@ mod tests {
                 workspace: dir.clone(),
                 stderr_path: dir.join("stderr"),
                 stdout: OutputMode::Null,
-                memory_limit_bytes: None,
-                memory_phase: None,
                 parent_rss_pid: None,
             },
         };

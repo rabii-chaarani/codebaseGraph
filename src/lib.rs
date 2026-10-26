@@ -33,7 +33,7 @@ mod staging_writer;
 mod storage;
 mod syntax_materializer;
 
-pub use error::{MaterializationError, MemoryBudgetExceeded};
+pub use error::MaterializationError;
 pub use execution::{execute_materialization_pipeline, plan_materialization};
 pub use protocol::{MaterializationInput, MaterializationResult};
 

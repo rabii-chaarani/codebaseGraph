@@ -562,8 +562,6 @@ mod tests {
             workspace: directory.clone(),
             stderr_path: directory.join("stderr.log"),
             stdout: OutputMode::Null,
-            memory_limit_bytes: None,
-            memory_phase: None,
             parent_rss_pid: None,
         };
         // Creation establishes real kernel membership while the START gate keeps

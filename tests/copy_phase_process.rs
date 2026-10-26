@@ -233,7 +233,8 @@ fn native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles() {
         );
         assert!(events.iter().all(|event| event["success"] == true));
         assert_eq!(events[1]["copy_index"], 0);
-        assert_eq!(events[1]["buffer_pool_bytes"], 384 * 1024 * 1024_u64);
+        assert!(events[1].get("buffer_pool_bytes").is_none());
+        assert!(events[1].get("worker_memory_bytes").is_none());
         assert!(events[1]["staged_file_bytes"].as_u64().unwrap() > 0);
         assert_ne!(
             events[0]["pid"], events[1]["pid"],
@@ -275,6 +276,46 @@ fn string_rows(connection: &lbug::Connection<'_>, statement: &str) -> Vec<Vec<St
                 .collect()
         })
         .collect()
+}
+
+#[test]
+fn jumbo_staged_row_survives_real_copy_and_fresh_process_read() {
+    let fixture = Fixture::new(true);
+    let padding = "x".repeat(2 * 1024 * 1024);
+    fs::write(
+        fixture.root.join("src/lib.rs"),
+        format!("/*{padding}*/\npub fn jumbo_record_marker() {{}}\n"),
+    )
+    .unwrap();
+    let trace = fixture.root.join("jumbo-trace");
+    assert_success(&fixture.build(&trace, 1));
+    assert!(traces(&trace)
+        .iter()
+        .any(|event| event["phase_kind"] == "copy"
+            && event["staged_file_bytes"]
+                .as_u64()
+                .is_some_and(|bytes| bytes > 1024 * 1024)));
+    let (db_path, _) = fixture.paths();
+    let database = lbug::Database::new(
+        &db_path,
+        lbug::SystemConfig::default()
+            .read_only(true)
+            .max_num_threads(1),
+    )
+    .unwrap();
+    let connection = lbug::Connection::new(&database).unwrap();
+    let rows = string_rows(&connection, "MATCH (n:SyntaxCapture) WHERE n.tree_sitter_node_type='block_comment' RETURN CAST(n.metadata AS STRING)");
+    let metadata: Value = serde_json::from_str(&rows[0][0]).unwrap();
+    assert!(metadata["canonical_key"]
+        .as_str()
+        .unwrap()
+        .contains(&padding));
+    drop(connection);
+    drop(database);
+    assert!(fixture
+        .search("jumbo_record_marker")
+        .contains(&"jumbo_record_marker".to_owned()));
+    fs::remove_dir_all(fixture.root).unwrap();
 }
 
 fn logical_snapshot(connection: &lbug::Connection<'_>) -> BTreeMap<String, Vec<Vec<String>>> {
@@ -387,7 +428,6 @@ fn bounded_production_chunks_reopen_with_primary_keys_connectors_and_search() {
         &db_path,
         lbug::SystemConfig::default()
             .read_only(true)
-            .buffer_pool_size(128 * 1024 * 1024)
             .max_num_threads(1),
     )
     .unwrap();
@@ -498,7 +538,6 @@ fn bounded_production_chunks_reopen_with_primary_keys_connectors_and_search() {
         &control_db_path,
         lbug::SystemConfig::default()
             .read_only(true)
-            .buffer_pool_size(128 * 1024 * 1024)
             .max_num_threads(1),
     )
     .unwrap();

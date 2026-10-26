@@ -26,7 +26,7 @@ pub(crate) struct SourceScan {
 pub(crate) fn scan_sources(
     request: &NativeSyntaxMaterializationRequest,
 ) -> Result<SourceScan, NativeError> {
-    request.validate_resource_limits()?;
+    request.validate_execution_options()?;
     validate_profile_grammar_versions(&request.profiles)?;
     let source_root = PathBuf::from(&request.source_root);
     let profiles = ProfileSet::new(&request.profiles);
@@ -499,8 +499,6 @@ mod tests {
             atomic_rebuild: false,
             strict: true,
             parallel: false,
-            worker_memory_mib: 768,
-            rust_memory_mib: 384,
             spill_chunk_mib: 32,
             max_parallelism: 2,
             progress: false,

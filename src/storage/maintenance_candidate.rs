@@ -74,7 +74,6 @@ fn io(error: std::io::Error) -> CandidateError {
 fn evidence(error: crate::error::NativeError) -> CandidateError {
     match error {
         crate::error::NativeError::Io(error) => io(error),
-        crate::error::NativeError::MemoryBudgetExceeded(_) => CandidateError::ResourceLimit,
         crate::error::NativeError::SourceChanged { .. } => CandidateError::Stale,
         _ => CandidateError::InvalidEvidence,
     }
