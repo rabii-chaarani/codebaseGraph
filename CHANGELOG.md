@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.0) (2026-10-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **storage:** database open helpers return GuardedDatabase and reject path forms whose native resource identity cannot be proven. Connections borrow the guarded handle; canonical Windows extended paths retain their namespace.
+
+### Features
+
+* **storage:** automate graph disk cleanup and controlled legacy retirement ([#153](https://github.com/rabii-chaarani/codebaseGraph/issues/153)) ([75a99c8](https://github.com/rabii-chaarani/codebaseGraph/commit/75a99c840aa53e75a3f14df8dab41979c9efa19c))
+
 ## [3.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.3...v3.0.4) (2026-10-21)
 
 
