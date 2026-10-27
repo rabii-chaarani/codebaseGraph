@@ -1,5 +1,11 @@
 # CBG-PLAT-01 — delivery index
 
+## Current amendment — 2026-10-27
+
+The user replaces D05a's minimum/current macOS qualification with **current stable macOS on Apple Silicon only**. The macOS13.3 execution requirement is dropped; existing13.3 deployment metadata remains unchanged and supplies no support claim. See [canonical spec rev0.11](spec.md) and [exact decision/linked-issue impact](decisions/d05a-current-macos-only.md). The separate approval record pins the committed revision. Update COD-51/COD-54/COD-61 and milestone scope without closing them or changing ownership. All other Windows, runtime integrity, actual current-release verification and aggregate gates remain. The older statements below are historical planning/delivery snapshots, not current approval or status.
+
+## Preserved historical delivery index
+
 - Project: [Maintenance, CodebaseGraph workspace](https://linear.app/codebasegraph/project/maintenance-33932479ebd0). Team `COD`.
 - Milestone: `CBG-PLAT-01 — PR #153 platform maintenance`, ID `ff37f4fc-4072-439a-8691-9c15dc739ddd`.
 - Proposed canonical specification: [rev0.1 at full commit 33360340379f878e93324e0829a1bb6f33eafc9d](https://github.com/rabii-chaarani/codebaseGraph/blob/33360340379f878e93324e0829a1bb6f33eafc9d/docs/specs/CBG-PLAT-01/spec.md). No approved specification SHA or implementation sign-off is recorded.
