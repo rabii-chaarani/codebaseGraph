@@ -1,0 +1,24 @@
+{
+  "approved_spec_sha": "1a9db7b558b60248888408daa6268a3b45f2f0df",
+  "approval_commit": "71dc27e92857c4215bbbe583f104de7f341dc816",
+  "baseline": "34eac4f8644adc046093babd84ee1fdbffdae853",
+  "source_status": "no product diffs",
+  "baseline_warning": "release-only unused crate::storage::atomic::write_json_atomically in src/materialization_worker.rs:13; pre-existing; source unchanged",
+  "openssl_source_sha256": "aaf51a1fe064384f811daeaeb4ec4dce7340ec8bd893027eee676af31e83a04f",
+  "openssl_probe_minos": "13.3",
+  "baseline_import_failure_exit": 134,
+  "baseline_binaries": {
+    "codebase-graph": {
+      "sha256": "05736d64ae262deb3a38b3ed464534c2e191e483a3aa1d4476bdf98e464cec2b",
+      "path": "/private/tmp/codebasegraph-cod54-review/baseline-bins/codebase-graph",
+      "imports": "/private/tmp/codebasegraph-cod54-review/baseline-bins/codebase-graph:\n\t/private/tmp/codebasegraph-cod54-review/openssl-probe-build/install/lib/libssl.3.dylib (compatibility version 3.0.0, current version 3.0.0)\n\t/private/tmp/codebasegraph-cod54-review/openssl-probe-build/install/lib/libcrypto.3.dylib (compatibility version 3.0.0, current version 3.0.0)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5026.5.4)\n\t/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices (compatibility version 1.0.0, current version 1226.0.0)\n\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2100.43.0)\n\t/usr/lib/libiconv.2.dylib (compatibility version 7.0.0, current version 7.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)\n",
+      "minos": "/private/tmp/codebasegraph-cod54-review/baseline-bins/codebase-graph:\nLoad command 11\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 13.3\n      sdk 26.5\n   ntools 1\n     tool LD\n  version 1267.0\n"
+    },
+    "k-wiki": {
+      "sha256": "7b19765973e76685689655456003b6c1c68bd5f4f87e995c3af7364d95b082f7",
+      "path": "/private/tmp/codebasegraph-cod54-review/baseline-bins/k-wiki",
+      "imports": "/private/tmp/codebasegraph-cod54-review/baseline-bins/k-wiki:\n\t/private/tmp/codebasegraph-cod54-review/openssl-probe-build/install/lib/libssl.3.dylib (compatibility version 3.0.0, current version 3.0.0)\n\t/private/tmp/codebasegraph-cod54-review/openssl-probe-build/install/lib/libcrypto.3.dylib (compatibility version 3.0.0, current version 3.0.0)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5026.5.4)\n\t/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices (compatibility version 1.0.0, current version 1226.0.0)\n\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2100.43.0)\n\t/usr/lib/libiconv.2.dylib (compatibility version 7.0.0, current version 7.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)\n",
+      "minos": "/private/tmp/codebasegraph-cod54-review/baseline-bins/k-wiki:\nLoad command 11\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 13.3\n      sdk 26.5\n   ntools 1\n     tool LD\n  version 1267.0\n"
+    }
+  }
+}

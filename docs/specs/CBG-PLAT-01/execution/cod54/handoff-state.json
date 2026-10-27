@@ -1,0 +1,26 @@
+{
+  "scope": "COD-54 only R03 A05-A06",
+  "approved_spec_sha": "1a9db7b558b60248888408daa6268a3b45f2f0df",
+  "approval_commit": "71dc27e92857c4215bbbe583f104de7f341dc816",
+  "product_source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "local_review": "GREEN independentGPT6.1SolMaxnofindings",
+  "local_checks": {
+    "xtask": {
+      "passed": 55,
+      "skipped": 0
+    },
+    "fmt": 0,
+    "strict_workspace_clippy": 0,
+    "source_bound_archive_pipeline": 0
+  },
+  "archive_sha256": "e5f32abbf8124584d5f6f2df403091c3323d16a1359a70f387fc99eeeb6e4282",
+  "full_native_suite": "running",
+  "hosted_ci": {
+    "run": 40472491235,
+    "status": "queued",
+    "source": "855c7e282a27de4afbad2d4252d7692de4b42ecb"
+  },
+  "consumer_qualification": "notexecutedcleanMac13.3/current",
+  "closure": "COD54notDone,noaggregateclosure",
+  "fts_limit": "realLOADfts+officialbytes; populateddiskBM25search, notpopulatednativeFTSindex"
+}
