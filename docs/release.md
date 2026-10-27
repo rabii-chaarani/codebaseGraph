@@ -140,10 +140,14 @@ architectures or minimum-OS metadata above 13.3. After load-command edits it
 renews and verifies ad-hoc code signatures, then hashes the final files. This
 is not Developer ID signing or notarization.
 
-Deployment metadata and current-host CI are not support qualification. The exact
-installed archive must still run on clean Apple Silicon macOS 13.3 and a current
-macOS release without Homebrew/OpenSSL. Record those OS builds and archive
-hashes separately; unavailable minimum-host execution leaves qualification open.
+Qualification covers only the current stable macOS release on Apple Silicon.
+The exact installed archive must run on that release without relying on
+separately installed Homebrew/OpenSSL. Current-release hosted CI can supply this
+evidence when it records the actual OS/build and demonstrates those conditions;
+a `macos-latest` label or deployment metadata alone is not proof. The earlier
+macOS13.3 execution requirement is dropped. The existing13.3 deployment target
+remains build metadata, not an older-version support guarantee. See the
+[current-only policy amendment](https://github.com/rabii-chaarani/codebaseGraph/blob/8a410c7a22f5291f06a1cece5cd9e7c0be255e72/docs/specs/CBG-PLAT-01/decisions/d05a-current-macos-only.md).
 
 The internal Actions artifact also carries `provenance.json`, which binds the public archive checksum to the exact
 commit SHA, version, and target. `provenance.json` is validation metadata and is not uploaded as a public release asset.
@@ -184,7 +188,7 @@ with spaces. Every runtime child receives an isolated home, no inherited
 `DYLD_*` or OpenSSL configuration overrides, and a system-only PATH. It checks
 graph build/reopen/search, bundled JSON/FTS bytes, wiki/MCP and invalid runtime
 preflight while preserving an installed payload. These are local/native checks,
-not proof of a clean minimum-OS environment.
+not, by themselves, proof of the required current-release runtime isolation.
 
 After upgrading from a release archive:
 

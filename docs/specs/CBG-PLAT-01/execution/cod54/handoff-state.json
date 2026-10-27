@@ -20,7 +20,14 @@
     "status": "queued",
     "source": "855c7e282a27de4afbad2d4252d7692de4b42ecb"
   },
-  "consumer_qualification": "notexecutedcleanMac13.3/current",
+  "consumer_qualification": "currentstablemacOSAppleSiliconactualOS/build+noexternalOpenSSLruntime evidence required; no13.3gate",
   "closure": "COD54notDone,noaggregateclosure",
-  "fts_limit": "realLOADfts+officialbytes; populateddiskBM25search, notpopulatednativeFTSindex"
+  "fts_limit": "realLOADfts+officialbytes; populateddiskBM25search, notpopulatednativeFTSindex",
+  "policy_amendment": {
+    "spec_revision": "0.11",
+    "spec_sha": "8a410c7a22f5291f06a1cece5cd9e7c0be255e72",
+    "approval_sha": "5c2e9a56d0fa87779fb31312562f4e53f902f0ac",
+    "scope": "currentstablemacOSonly;13.3executiondropped",
+    "original_implementation_approval_preserved": true
+  }
 }

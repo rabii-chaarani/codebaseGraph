@@ -1,5 +1,11 @@
 # COD-54 — macOS bundled OpenSSL implementation and verification
 
+## Current qualification amendment — 2026-10-27
+
+The user explicitly said **“well then just drop it and keep only current”** after the minimum-runner/hosted-CI discussion. [Canonical spec revision0.11](https://github.com/rabii-chaarani/codebaseGraph/blob/8a410c7a22f5291f06a1cece5cd9e7c0be255e72/docs/specs/CBG-PLAT-01/spec.md) at full SHA`8a410c7a22f5291f06a1cece5cd9e7c0be255e72` and [exact amendment approval](https://github.com/rabii-chaarani/codebaseGraph/blob/5c2e9a56d0fa87779fb31312562f4e53f902f0ac/docs/specs/CBG-PLAT-01/approvals/d05a-current-macos-only.md) replace D05a with **current stable macOS on Apple Silicon only**. There is no13.3 execution/support-qualification requirement. Actual current-release final-archive runtime/failure evidence remains required; hosted CI may supply it when the actual OS/build and no-external-Homebrew/OpenSSL runtime conditions are recorded. A moving runner label is not execution proof.
+
+The existing13.3 deployment target and the reviewed/tested product source`855c7e282a27de4afbad2d4252d7692de4b42ecb` remain unchanged. This is a qualification-policy/documentation change, not a new binary or a passing CI claim. Earlier approval/review/evidence files retain their original scope and are historical where they name the replaced minimum gate. D02, Windows, full native/hosted checks and maintainer aggregate closure are unchanged. Scryer amendment`chg-p0s0ar` records the impact; no architecture claim change.
+
 ## Identity and authority
 
 - Work: **CBG-PLAT-01/S03 / COD-54**, R03 / A05–A06 only; [Linear](https://linear.app/codebasegraph/issue/COD-54), [draft PR163](https://github.com/rabii-chaarani/codebaseGraph/pull/163).
@@ -45,7 +51,7 @@ Earlier compiler/fixture/PAX failures are retained in linked evidence and are no
 
 ## Remaining qualification and handoff
 
-**COD-54 is not Done.** Actual final installed archive execution on clean Apple Silicon **macOS13.3 and a current release without Homebrew/OpenSSL** remains unexecuted and mandatory. Deployment metadata and developer-host success are not consumer qualification. Hosted native CI/full-suite evidence and final reviewer evidence reconciliation must also complete. Aggregate closure stays with the maintainer; do not infer S10/COD-61 closure.
+**COD-54 is not Done.** Under the approved current-only amendment above, actual final installed archive execution on **current stable macOS on Apple Silicon without reliance on separately installed Homebrew/OpenSSL** remains required. Hosted CI may supply that execution when its actual OS/build and runtime conditions are evidenced. There is no13.3 execution gate. Deployment metadata, a moving runner label and developer-host success alone are not current-release qualification. Full native/hosted checks still need passing execution; the final bounded source/artifact review is GREEN. Aggregate closure stays with the maintainer; do not infer S10/COD-61 closure.
 
 Configured wiki/Scryer/MCP graph are bound to the older original checkout, not the implementation SHA. Target-local graph discovery was completed before source inspection. Existing claims were checked proportionately; no source-map/current verdict is fabricated for the older root and no unrelated global drift reconciliation is performed.
 
