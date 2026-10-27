@@ -1,5 +1,96 @@
 # Changelog
 
+## [1.2.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.0...v1.2.2) (2026-10-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **storage:** database open helpers return GuardedDatabase and reject path forms whose native resource identity cannot be proven. Connections borrow the guarded handle; canonical Windows extended paths retain their namespace.
+* remove semantic_enrichment and semantic_provider_mode Rust fields and the retired CLI flags. Existing JSON/config keys remain readable through unknown-field handling; graph and storage compatibility is unchanged.
+* remove semantic_enrichment and semantic_provider_mode Rust fields and the retired CLI flags. Existing JSON/config keys remain readable through unknown-field handling; graph and storage compatibility is unchanged.
+* Rust version of codebaseGraph ([#26](https://github.com/rabii-chaarani/codebaseGraph/issues/26))
+
+### Features
+
+* add agent-loop graph hooks ([#118](https://github.com/rabii-chaarani/codebaseGraph/issues/118)) ([d091d4f](https://github.com/rabii-chaarani/codebaseGraph/commit/d091d4fee000c69550313833dd8436260571f9c9))
+* add language grammar extractors ([#65](https://github.com/rabii-chaarani/codebaseGraph/issues/65)) ([ee3a7bd](https://github.com/rabii-chaarani/codebaseGraph/commit/ee3a7bd4e352c0608a9ae589de110896e9bbc73d))
+* added source code ([ba29182](https://github.com/rabii-chaarani/codebaseGraph/commit/ba29182aa3c8055fd9c476be41ac01a32cc81cc2))
+* Enhance semantic resolution across ingestion and reference handling ([#23](https://github.com/rabii-chaarani/codebaseGraph/issues/23)) ([5bad710](https://github.com/rabii-chaarani/codebaseGraph/commit/5bad71071f3fcb0de085d826ad872d64a5628555))
+* Extend ontology and setup workflows for language profiles ([#19](https://github.com/rabii-chaarani/codebaseGraph/issues/19)) ([6c684ea](https://github.com/rabii-chaarani/codebaseGraph/commit/6c684ea71208c9d847ca04a80f360c3de30d9ff3))
+* full functioning knowledge graph ([ee1dac5](https://github.com/rabii-chaarani/codebaseGraph/commit/ee1dac56f0b7f5152c865fa2bf1ba3c1e30f7c76))
+* Implement the k-wiki knowledge management subsystem ([#51](https://github.com/rabii-chaarani/codebaseGraph/issues/51)) ([fd8fe8e](https://github.com/rabii-chaarani/codebaseGraph/commit/fd8fe8e5b1ae63d59f53b0b2825ccae503485ef8))
+* **k-wiki:** initialize memory source on install ([#61](https://github.com/rabii-chaarani/codebaseGraph/issues/61)) ([6680d59](https://github.com/rabii-chaarani/codebaseGraph/commit/6680d5931584d8817b8b7adc9b210a6920667e2a))
+* **k-wiki:** make repository memory durable and reviewable ([cbcbc71](https://github.com/rabii-chaarani/codebaseGraph/commit/cbcbc719cc9df462b4bd57593560517be6d2c73a))
+* **mcp:** share one managed HTTP daemon ([#90](https://github.com/rabii-chaarani/codebaseGraph/issues/90)) ([731367c](https://github.com/rabii-chaarani/codebaseGraph/commit/731367ccf91b822da05c5895aa118e785e36f35d))
+* parse supported languages by default ([#21](https://github.com/rabii-chaarani/codebaseGraph/issues/21)) ([154006f](https://github.com/rabii-chaarani/codebaseGraph/commit/154006fdbae21b903f41a7bfe5df75d4d02f2f4f))
+* **parser:** add CSS support ([#104](https://github.com/rabii-chaarani/codebaseGraph/issues/104)) ([6666b8e](https://github.com/rabii-chaarani/codebaseGraph/commit/6666b8edcaaba603a4a7a61236a458d20d8e602b))
+* **parser:** add web and WebAssembly language support ([#107](https://github.com/rabii-chaarani/codebaseGraph/issues/107)) ([9afad95](https://github.com/rabii-chaarani/codebaseGraph/commit/9afad9533fa9d1f80398120cbd8ea9a7e0bd3276))
+* reduce graph build latency with parallel defaults ([#33](https://github.com/rabii-chaarani/codebaseGraph/issues/33)) ([4a2af02](https://github.com/rabii-chaarani/codebaseGraph/commit/4a2af027070950c02325cfab6a6326ab157cb7cf))
+* Rust version of codebaseGraph ([#26](https://github.com/rabii-chaarani/codebaseGraph/issues/26)) ([712c757](https://github.com/rabii-chaarani/codebaseGraph/commit/712c75724c4bf353904a537bba1a4894c6969551))
+* **storage:** automate graph disk cleanup and controlled legacy retirement ([#153](https://github.com/rabii-chaarani/codebaseGraph/issues/153)) ([75a99c8](https://github.com/rabii-chaarani/codebaseGraph/commit/75a99c840aa53e75a3f14df8dab41979c9efa19c))
+* **storage:** prevent graph growth with immutable generations ([e4f5c95](https://github.com/rabii-chaarani/codebaseGraph/commit/e4f5c95d62a7f8c318cac80b863844c17938ac6f))
+
+
+### Bug Fixes
+
+* [codex] mcp tools exposed ([#10](https://github.com/rabii-chaarani/codebaseGraph/issues/10)) ([2f3c793](https://github.com/rabii-chaarani/codebaseGraph/commit/2f3c7936a4fad97ceba9d17d5e77e616de5f73ef))
+* **ci:** archive historical Python evidence helpers ([#159](https://github.com/rabii-chaarani/codebaseGraph/issues/159)) ([34eac4f](https://github.com/rabii-chaarani/codebaseGraph/commit/34eac4f8644adc046093babd84ee1fdbffdae853))
+* **ci:** compare escaped Windows MCP commands ([0ba9f7e](https://github.com/rabii-chaarani/codebaseGraph/commit/0ba9f7ee8f3cbed2b90a8a87ddd144932809bfbc))
+* **ci:** exercise native lifecycle faults on Windows ([d98143e](https://github.com/rabii-chaarani/codebaseGraph/commit/d98143e2c7be72403587ecfcc15f2f7e533dc2a0))
+* **ci:** make storage cleanup and audit checks portable ([81b699b](https://github.com/rabii-chaarani/codebaseGraph/commit/81b699ba404978c685047f36a3cf5caf24f9e7d0))
+* **ci:** make Windows lock and Hermes tests portable ([515a43c](https://github.com/rabii-chaarani/codebaseGraph/commit/515a43c4bdebdcf48bf8ea67e3ca906500be936a))
+* **ci:** preserve compiler compatibility and patch sanitizer ([b7acfc4](https://github.com/rabii-chaarani/codebaseGraph/commit/b7acfc456663f98961c2e26529330b7a6ae12127))
+* **ci:** prevent Windows test shard stalls ([89cb0f6](https://github.com/rabii-chaarani/codebaseGraph/commit/89cb0f6f693096f3290c55b2b039cb9858650a73))
+* **ci:** read release confirmations at step scope ([c1000de](https://github.com/rabii-chaarani/codebaseGraph/commit/c1000de52a600d0a1a9ba31756d3b25bbc49f5c2))
+* **ci:** repair crates.io package verification ([#75](https://github.com/rabii-chaarani/codebaseGraph/issues/75)) ([5f2686a](https://github.com/rabii-chaarani/codebaseGraph/commit/5f2686af7c83bb7127072739602efc116be2142f))
+* **ci:** unblock Windows release linking ([#53](https://github.com/rabii-chaarani/codebaseGraph/issues/53)) ([0edad59](https://github.com/rabii-chaarani/codebaseGraph/commit/0edad5908fd34503cf54a8097bcb9eeb8e0b4f12))
+* **ci:** use bash for release artifact upload ([276606c](https://github.com/rabii-chaarani/codebaseGraph/commit/276606c005b3e9e59b5cfee9f36bf8e943bdd859))
+* **ci:** use cargo release environment ([ede151f](https://github.com/rabii-chaarani/codebaseGraph/commit/ede151f8a52897d58f753a9dbed8190f6bdb10f9))
+* **ci:** use portable release checksums ([54daa47](https://github.com/rabii-chaarani/codebaseGraph/commit/54daa476202bdbd352ca2a6753a2b836b3bca4f9))
+* ignore local Scryer state ([#13](https://github.com/rabii-chaarani/codebaseGraph/issues/13)) ([098bbc8](https://github.com/rabii-chaarani/codebaseGraph/commit/098bbc8815af3947f2bc4d4d7aa41e787a67aa24))
+* improved codebase context output ([#17](https://github.com/rabii-chaarani/codebaseGraph/issues/17)) ([54cd8ee](https://github.com/rabii-chaarani/codebaseGraph/commit/54cd8eee0d2dc1c41fde6c64a2667c53cff9d817))
+* isolate MCP clients and bound abandoned hook work ([#123](https://github.com/rabii-chaarani/codebaseGraph/issues/123)) ([8c3bcf3](https://github.com/rabii-chaarani/codebaseGraph/commit/8c3bcf317d2bc8e5d803ee59b8f86678c1a55a1c))
+* **k-wiki:** close diagnostic gaps and add regression coverage ([#149](https://github.com/rabii-chaarani/codebaseGraph/issues/149)) ([98ff47a](https://github.com/rabii-chaarani/codebaseGraph/commit/98ff47aee385366f5884193f70f050da79169e71))
+* **k-wiki:** manage memory guidance separately ([f82659d](https://github.com/rabii-chaarani/codebaseGraph/commit/f82659de1d8ed7bc9f5c95fc6f6587a3072f3446))
+* **k-wiki:** prevent cross-repository MCP routing ([6fc7bbf](https://github.com/rabii-chaarani/codebaseGraph/commit/6fc7bbf3b3dad629ab2ccb4bcb92d9e23a641865))
+* **k-wiki:** prevent cross-repository wiki routing ([87898aa](https://github.com/rabii-chaarani/codebaseGraph/commit/87898aa634c9e6ad7b2c730280bc6975bfa4881e))
+* keep MCP daemon alive after client disconnects ([#120](https://github.com/rabii-chaarani/codebaseGraph/issues/120)) ([fd357ab](https://github.com/rabii-chaarani/codebaseGraph/commit/fd357abd37824687db2b1e910add87c264969f2b))
+* keep repository graphs fresh under MCP ([#115](https://github.com/rabii-chaarani/codebaseGraph/issues/115)) ([e29a46b](https://github.com/rabii-chaarani/codebaseGraph/commit/e29a46b9528cc596486f529c5ca9531a9748687c))
+* **mcp:** harden managed daemon recovery ([#99](https://github.com/rabii-chaarani/codebaseGraph/issues/99)) ([1f676d3](https://github.com/rabii-chaarani/codebaseGraph/commit/1f676d3f2fc5f233790891ace29f3c4d8fd3d148))
+* **memory:** enhance agent-memory workflow documentation and add distinct memory kind tests ([#63](https://github.com/rabii-chaarani/codebaseGraph/issues/63)) ([a447ac3](https://github.com/rabii-chaarani/codebaseGraph/commit/a447ac3a3fad28762dfb33f51fc971afc941b8bf))
+* patch ammonia and verify worker recovery boundaries ([#152](https://github.com/rabii-chaarani/codebaseGraph/issues/152)) ([018df35](https://github.com/rabii-chaarani/codebaseGraph/commit/018df35e72447fc3e014e950d1d3c6648bbd4820))
+* Recover live graph refresh after DB contention ([#40](https://github.com/rabii-chaarani/codebaseGraph/issues/40)) ([ee1754b](https://github.com/rabii-chaarani/codebaseGraph/commit/ee1754b66f98a69832b72dbd21224e7a87e97b19))
+* recover MCP sessions and serialize hook cache delivery ([#125](https://github.com/rabii-chaarani/codebaseGraph/issues/125)) ([3fc635f](https://github.com/rabii-chaarani/codebaseGraph/commit/3fc635fbbac46e5674a94dbce50c10d0db8036d2))
+* **refresh:** elect a single repository owner ([#78](https://github.com/rabii-chaarani/codebaseGraph/issues/78)) ([8d624f2](https://github.com/rabii-chaarani/codebaseGraph/commit/8d624f2cd61f99003aeb09ea39a3b9e5d606ab24))
+* **release:** bind asset upload repository ([#82](https://github.com/rabii-chaarani/codebaseGraph/issues/82)) ([2a898c6](https://github.com/rabii-chaarani/codebaseGraph/commit/2a898c6f0c50345723d0d60cf9fc8df0da8f23ee))
+* **release:** bundle Ladybug 0.19 extensions ([#89](https://github.com/rabii-chaarani/codebaseGraph/issues/89)) ([e52bdf4](https://github.com/rabii-chaarani/codebaseGraph/commit/e52bdf4a0bc0b9613125495befc136759a73c630))
+* **release:** download release assets without git checkout ([#7](https://github.com/rabii-chaarani/codebaseGraph/issues/7)) ([05d046d](https://github.com/rabii-chaarani/codebaseGraph/commit/05d046dbabccb391e66ae8ec40371613e5b59568))
+* **release:** enforce strict semver release tags ([#5](https://github.com/rabii-chaarani/codebaseGraph/issues/5)) ([f0f9342](https://github.com/rabii-chaarani/codebaseGraph/commit/f0f9342320cb6066ee1f95163d144709306efd67))
+* **release:** prevent stale tag publication ([#77](https://github.com/rabii-chaarani/codebaseGraph/issues/77)) ([1931dc8](https://github.com/rabii-chaarani/codebaseGraph/commit/1931dc85d32f92477f2fa244dbebb3e0f5ea4c44))
+* **release:** publish after skipped rebuild ([#80](https://github.com/rabii-chaarani/codebaseGraph/issues/80)) ([392b26c](https://github.com/rabii-chaarani/codebaseGraph/commit/392b26cfc304732489cdbf66986ab3d37b310a84))
+* **release:** publish verified merge commits and resume blocked releases ([#127](https://github.com/rabii-chaarani/codebaseGraph/issues/127)) ([4594f38](https://github.com/rabii-chaarani/codebaseGraph/commit/4594f384488e4764c18ca41ac69be146b328c18c))
+* **release:** restore release workflow execution ([#58](https://github.com/rabii-chaarani/codebaseGraph/issues/58)) ([1c3c481](https://github.com/rabii-chaarani/codebaseGraph/commit/1c3c481700cbb8ec503e481c4b58ed09db97faa8))
+* **release:** retry crates.io publish failures ([#96](https://github.com/rabii-chaarani/codebaseGraph/issues/96)) ([b3ebd83](https://github.com/rabii-chaarani/codebaseGraph/commit/b3ebd83f103d4f420eefa8d0b778eed05739d40f))
+* **release:** shrink crates.io package ([07c2e3c](https://github.com/rabii-chaarani/codebaseGraph/commit/07c2e3cc17a0e68593335373cf2a3f11b8964904))
+* **release:** trigger publication from completed ci ([#73](https://github.com/rabii-chaarani/codebaseGraph/issues/73)) ([8d9cc44](https://github.com/rabii-chaarani/codebaseGraph/commit/8d9cc44e77d8cb5f3bef24a4dd6e550a24aba9ad))
+* **runtime:** integrate materialization and coordinator stack ([#88](https://github.com/rabii-chaarani/codebaseGraph/issues/88)) ([b248cd6](https://github.com/rabii-chaarani/codebaseGraph/commit/b248cd61a4dcf0e687809144f673a00772bd4f59))
+* **runtime:** keep Windows recovery probes read-only ([7c368f8](https://github.com/rabii-chaarani/codebaseGraph/commit/7c368f87ca110724da304dea65fd9a29e04c1e41))
+* **runtime:** recover stale workers and clean up database loaders ([809e64b](https://github.com/rabii-chaarani/codebaseGraph/commit/809e64b6b05b19c0700954f8496f491f1a126fc3))
+* **runtime:** recover stale workers and contain database loaders ([fdf73d0](https://github.com/rabii-chaarani/codebaseGraph/commit/fdf73d0e273c77a8b09c6d6b5a120958a56fff37))
+* **storage:** avoid unsupported Windows directory sync ([3376c22](https://github.com/rabii-chaarani/codebaseGraph/commit/3376c2249abf2b200d359e6faf4f98d07f8bfe2f))
+* **storage:** keep graph reads available during Windows cleanup contention ([#134](https://github.com/rabii-chaarani/codebaseGraph/issues/134)) ([fd7362f](https://github.com/rabii-chaarani/codebaseGraph/commit/fd7362fc3d2b3a44837d151ed514cca69964c996))
+* **storage:** make direct publication recovery idempotent ([#126](https://github.com/rabii-chaarani/codebaseGraph/issues/126)) ([f674ece](https://github.com/rabii-chaarani/codebaseGraph/commit/f674ece9558dc903825f2266bd704d68cba20897))
+* **storage:** release refresh leases before watcher idle ([096ed2e](https://github.com/rabii-chaarani/codebaseGraph/commit/096ed2e44e24b689eedc65750ad1a91f5723dd20))
+* **storage:** reuse portable artifact directory sync ([f092d77](https://github.com/rabii-chaarani/codebaseGraph/commit/f092d7769018d901c27dd12759ac4e1a9c025801))
+* **storage:** sync published generations portably ([df00bc3](https://github.com/rabii-chaarani/codebaseGraph/commit/df00bc3fc41c5a9eb9fbe4259b02a591584bb024))
+* **wiki:** preserve UTF-8 boundaries in recall snippets ([5bc3883](https://github.com/rabii-chaarani/codebaseGraph/commit/5bc38834db8b6686c75911d517f61fd99b81c4d4))
+* **wiki:** prevent Unicode memory recall from closing MCP transport ([366dd54](https://github.com/rabii-chaarani/codebaseGraph/commit/366dd543356a84c9b48ba882eaf9c46de4a0021c))
+
+
+### Code Refactoring
+
+* remove retired semantic enrichment interfaces ([#122](https://github.com/rabii-chaarani/codebaseGraph/issues/122)) ([d32d3e3](https://github.com/rabii-chaarani/codebaseGraph/commit/d32d3e3a2b5f35e2b1ebb74fd5931c363757a8a6))
+
 ## [4.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.0) (2026-10-27)
 
 
