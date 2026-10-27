@@ -6,7 +6,7 @@ tags:
 - graph-runtime
 - recovery
 - refresh
-timestamp: 2026-10-15
+timestamp: 2026-10-20
 title: Graph Freshness and Recovery
 type: architecture
 ---
@@ -23,6 +23,10 @@ The runtime now binds explicit root/config input before discovering defaults. A 
 The coordinator pins repository identity without retaining a graph read lease. Source root, selected config, managed storage, and effective direct destinations cannot silently rebind while old ownership locks remain held. Active generations are still resolved per operation. Materialization validates the binding before writing, before acknowledging an unchanged refresh, and before publication. Failure aborts the candidate and preserves the previous generation.
 
 Direct storage retains the existing spelling of its destination paths for journal and lock recovery: those filenames historically hash the database/manifest path strings. Canonicalizing `/var/...` into `/private/var/...` at that boundary would miss existing recovery journals. Identity validation preserves this provenance. Genuinely unbound standalone native requests with explicit direct destinations retain their own source-root authority; managed or explicitly bound requests must match the selected repository.
+
+## Implementation qualification — 2026-10-20
+
+The [graph watcher stall review](./graph-watcher-stall-review-2026-10-20.md) verified that runtime revision `6aa5ba8bd99c3071e106a8bfc7a408652a8e4bb5` and the observed Qunys v3.0.2 daemon still use version-1 numeric-PID worker metadata and direct-child termination. The version-2 guardian, authenticated containment and descendant-teardown descriptions below are not implemented safeguards in that reviewed snapshot. The review reproduced stale-PID recovery blocking and traced escaped loader lifetimes; it also distinguished slow whole-generation publication from a stopped watcher. This qualification records implementation evidence; Scryer retains authority for intended responsibilities and boundaries.
 
 ## Refresh lifecycle
 

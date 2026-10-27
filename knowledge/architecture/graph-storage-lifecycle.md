@@ -173,3 +173,11 @@ Lifecycle regressions cover failure at parsing, staging, search construction, is
 The churn acceptance test performs 10–20 updates. At idle it must leave one managed generation and no run directories, preserve graph results, and keep final physical database size within the greater of 10% or 8 MiB above a clean-control rebuild.
 
 Related: [Graph Runtime](./graph-runtime.md), [Materialization Pipeline](./materialization-pipeline.md), [Public Operations and Runtime Paths](./operation-paths.md), and [Architecture Invariants](./invariants.md).
+
+## Disk retention review qualification — 2026-10-20
+
+The [disk retention review and cleanup proposal](./graph-disk-retention-review-2026-10-20.md) measured legacy staging, active artifact reachability, current build space and a separate former Direct destination. At source revision `6aa5ba8bd99c3071e106a8bfc7a408652a8e4bb5`, the current janitors do not revisit historical top-level `native-staging`, artifact-key enumeration excludes abandoned temporary/replacement directories, and artifact GC is retried only after successful publication. These are confirmed gaps against the recovery and collection intent above, not evidence that the active parsing cache is redundant.
+
+The user selected a proposed retention policy that keeps the current managed graph and its active parsing cache and retires older repository-local Direct destinations after safe ownership checks. Implementation and platform qualification remain pending. Scryer remains the authority for responsibilities, directives and future execution briefs; existing Graph Store claims `resp-109`, `resp-232`, `resp-233` and `resp-234` govern coordination, recovery, retirement and reuse.
+
+The guardian/containment descriptions above must not be counted as implemented safeguards at that reviewed source revision. The [watcher review](./graph-watcher-stall-review-2026-10-20.md) records the source qualification. Any broader collector must preserve unresolved lifecycle evidence, acquire the relevant destination's own ownership, keep stable lock inodes, reject foreign paths and avoid blocking graph readers during large recursive deletion. See the disk review for measured evidence, confirmed findings and acceptance checks.
