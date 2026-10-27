@@ -165,7 +165,7 @@ pub fn stage_runtime(library_dir: &Path, package: &Path) -> Result<(), String> {
                 PAYLOAD_FILES[1]
             };
             change_dependency(
-                &binary,
+                binary,
                 &old_path,
                 &format!("@executable_path/{staged_name}"),
             )?;
