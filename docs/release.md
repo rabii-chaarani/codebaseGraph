@@ -116,6 +116,41 @@ package-owned fixture smoke results. Templates and assets must be loaded from
 the packaged artifact; a smoke run that relies on the repository checkout is
 not sufficient. Generated `.kwiki/` state is never included in an archive.
 
+## Windows Cargo source installs
+
+For Windows x86_64, ordinary `cargo install codebase-graph` uses the default
+`bundled-windows-extensions` feature. The binary carries the existing Ladybug
+0.19.0 JSON and FTS extension bytes; no extension feature flag or runtime
+extension download is needed. Explicit `--no-default-features` opts out of these
+bytes. The workspace `k-wiki` build inherits the root dependency's defaults;
+`k-wiki` is not published as a separate crates.io package.
+
+Cargo is still a native source build, not a self-contained Windows distribution.
+It needs Rust and an MSVC C/C++ build environment, including the Windows SDK,
+for the vendored grammar. Ladybug's source-build fallback additionally uses
+CMake and Ninja and needs compatible native headers/libraries. The final
+native link needs OpenSSL libraries; runtime extension loading needs compatible
+OpenSSL 3 (`libssl-3-x64.dll`, `libcrypto-3-x64.dll`) and the required Visual C++
+runtime libraries. Bundled extension bytes do not supply those DLLs. Missing
+compiler, native-library or DLL prerequisites are errors, not permission to
+download extensions or switch installation routes silently.
+
+The default-feature change is tracked by [COD-53](https://linear.app/codebasegraph/issue/COD-53)
+under [CBG-PLAT-01 revision 0.10, R02/A16](https://github.com/rabii-chaarani/codebaseGraph/blob/1a9db7b558b60248888408daa6268a3b45f2f0df/docs/specs/CBG-PLAT-01/spec.md#a16).
+Before claiming source-install qualification, execute the plain install on a
+documented supported Windows 11 x86_64 build environment. Record the exact
+source/package, compiler, native-library and DLL prerequisites. Then use an
+isolated empty extension cache with runtime extension downloads disabled and
+verify real JSON/FTS loading, graph build, reopen and search. A prepared Windows
+Server CI build or a feature-selection check alone is not this qualification.
+
+Prefer the official prebuilt route if you do not want a native build environment.
+The separate D01 prebuilt-runtime work remains gated on permitted compatible
+runtime supply and controlled loading. This source-install guidance neither
+replaces that policy nor claims that the current prebuilt archive is qualified.
+No exact Windows source-build recipe or clean-consumer execution is claimed by
+the default-feature change alone.
+
 Each native archive must contain:
 
 - `codebase-graph` / `codebase-graph.exe`

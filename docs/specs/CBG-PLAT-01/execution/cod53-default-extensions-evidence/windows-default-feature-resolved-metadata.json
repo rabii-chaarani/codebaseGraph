@@ -1,0 +1,14 @@
+{
+  "command": "cargo metadata --locked --filter-platform x86_64-pc-windows-msvc --format-version 1",
+  "limits": "resolved feature selection only, no Windows compilation/native execution",
+  "features_declared": {
+    "bundled-windows-extensions": [],
+    "default": [
+      "bundled-windows-extensions"
+    ]
+  },
+  "features_resolved": [
+    "bundled-windows-extensions",
+    "default"
+  ]
+}

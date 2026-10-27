@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="4" failures="0" errors="0" uuid="b6b28c99-6afd-48ee-8d80-8de2218e2e0f" timestamp="2026-10-27T14:57:40.439+09:30" time="10.781">
+    <testsuite name="codebase-graph" tests="4" disabled="0" errors="0" failures="0">
+        <testcase name="adapters::cli::tests::graph::graph_search_reads_native_fts_indexes" classname="codebase-graph" timestamp="2026-10-27T14:57:40.439+09:30" time="10.208">
+        </testcase>
+        <testcase name="db_writer::extensions::tests::bundled_extension_archives_decompress_before_cache_seed" classname="codebase-graph" timestamp="2026-10-27T14:57:50.648+09:30" time="0.321">
+        </testcase>
+        <testcase name="db_writer::extensions::tests::supports_prebuilt_and_source_built_ladybug_extension_cache_versions" classname="codebase-graph" timestamp="2026-10-27T14:57:50.969+09:30" time="0.018">
+        </testcase>
+        <testcase name="db_writer::tests::native_writer_loads_json_staging_through_ladybug_copy" classname="codebase-graph" timestamp="2026-10-27T14:57:50.987+09:30" time="0.233">
+        </testcase>
+    </testsuite>
+</testsuites>
