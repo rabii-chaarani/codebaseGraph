@@ -1,0 +1,69 @@
+{
+  "baseline": "931c3ddaeccba9c3f94f75e3ae58be9e3016a4ef",
+  "files": {
+    "src/db_writer/phase.rs": "889b005587d1ce59a63ae35fdcbb1d799ae5248cc910e65cb102e23b80ffa9fa",
+    "tests/copy_phase_process.rs": "bd6d263acba7364a2846b9cb52a669a5281026adadd7b347689e3a5bc0fdbf94"
+  },
+  "cursor_sources": {
+    "src/storage/locks.rs": "3334713035db60f24a86c34e3fbdaed0724943fcbdf96103c7bf1a39e163f25c",
+    "src/storage/maintenance_candidate.rs": "8e539db80a81de8fb674270adaf608a551954db86352b3e87ad674d6badac765"
+  },
+  "commands": [
+    {
+      "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --lib --test copy_phase_process --config-file /private/tmp/codebasegraph-copy-pid-followup/nextest.toml --profile copy-pid -E 'test(phase_trace_process_instance_is_stable) | test(phase_process_oracle_)' --no-fail-fast > /private/tmp/codebasegraph-copy-pid-followup/deterministic-tests.log 2>&1",
+      "result": 0,
+      "log": "deterministic-tests.log",
+      "junit": "deterministic-tests.junit.xml",
+      "result_summary": "3pass,848filtered"
+    },
+    {
+      "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo build --locked -p codebase-graph --bin codebase-graph",
+      "result": 0,
+      "log": "cli-build.log"
+    },
+    {
+      "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --test copy_phase_process --config-file /private/tmp/codebasegraph-copy-pid-followup/nextest.toml --profile copy-pid --no-fail-fast > /private/tmp/codebasegraph-copy-pid-followup/native-copy-process-tests.log 2>&1",
+      "result": 0,
+      "log": "native-copy-process-tests.log",
+      "junit": "native-copy-process-tests.junit.xml",
+      "result_summary": "5pass,0skipped; boundedchunk121.218s jumbo26.980s ManagedDirectackfailure153.320s plus2oracle cases"
+    },
+    {
+      "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+      "result": 0,
+      "log": "clippy.log"
+    },
+    {
+      "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --lib --config-file /private/tmp/codebasegraph-copy-pid-followup/nextest.toml --profile copy-pid -E 'test(db_writer::phase::tests::)' --no-fail-fast > /private/tmp/codebasegraph-copy-pid-followup/phase-unit-tests.log 2>&1",
+      "result": 0,
+      "log": "phase-unit-tests.log",
+      "junit": "phase-unit-tests.junit.xml"
+    },
+    {
+      "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo fmt --all --check",
+      "result": 0,
+      "log": "format-final.log"
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target",
+    "CARGO_BIN_EXE_codebase-graph": "/private/tmp/codebasegraph-copy-pid-followup/captured-codebase-graph",
+    "RUST_TEST_THREADS": "1 from unchanged project .cargo/config.toml",
+    "HOME": "target/test-home project config",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: aarch64-apple-darwin\nrelease: 1.96.0\nLLVM version: 22.1.2\n",
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n"
+  },
+  "cli_sha256": "e189db48a699a276019674f93c8698e59805ff80f0e1f7c9260089069ce7a25f",
+  "native_lbug_sha256": "a840ea7c538e67a8b9fc0d58495b5226dc9c0a5f2f144ff0c48c0f6ca1193ae6",
+  "approval": {
+    "commit": "931c3ddaeccba9c3f94f75e3ae58be9e3016a4ef",
+    "path": "docs/specs/CBG-COPY-01/approvals/process-identity-test.md",
+    "linear": "COD-98",
+    "scryer": "chg-k66bxx"
+  },
+  "limits": [
+    "specific old Windows PID reuse cause unproven, no raw phases retained",
+    "nativeWindowsfollowup pending",
+    "old broad debug run incomplete, fixtureCLI prerequisite failure retained"
+  ]
+}
