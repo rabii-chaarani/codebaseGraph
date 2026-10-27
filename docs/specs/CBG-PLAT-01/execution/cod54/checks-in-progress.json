@@ -63,6 +63,23 @@
     "source_bound_archive_pipeline": 0
   },
   "final_review": "final-review.md GREEN boundedhandoff",
-  "full_native_suite": "running",
-  "hosted_ci": "40472491235 queued"
+  "full_native_suite": {
+    "status": "passed",
+    "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+    "exit": 0,
+    "passed": 1356,
+    "failed": 0,
+    "ignored": 4,
+    "measured": 0,
+    "filtered_out": 0,
+    "report": "native-full-report.json",
+    "summary": "native-full-summary.json"
+  },
+  "hosted_ci": {
+    "status": "failed",
+    "run_id": 40474966274,
+    "head_sha": "1f6859618140b3f434475b56ab2f2fa470976519",
+    "both_native_artifact_jobs": "skipped",
+    "summary": "ci-40474966274-summary.json"
+  }
 }

@@ -1,0 +1,31 @@
+{
+  "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "command": "env SOURCE_SHA=855c7e282a27de4afbad2d4252d7692de4b42ecb cargo run -p xtask --locked -- native-test --target macos-arm64 --cohort all",
+  "exit": 0,
+  "duration_seconds": 6488.1888902080245,
+  "runner": "localmacOS26.6.2/25G83ARM64",
+  "profile": "native-tests optimized debugassertionsenabled",
+  "cohort": "all",
+  "captured_cli_sha256": "de3930c3c3daa63b54b6fae59a8e287ce1f929b0e877a6c2bc24814a3157345a",
+  "captured_cli_unchanged": true,
+  "harness_summaries": 31,
+  "totals": {
+    "passed": 1356,
+    "failed": 0,
+    "ignored": 4,
+    "measured": 0,
+    "filtered_out": 0
+  },
+  "ignored_cases": [
+    "storage::maintenance_native_projection::selected_oracle_tests::dc_native_actual_producer187_selected_strings_and_support_rows ... ignored, requires separately generated actual public-producer187 synthetic fixtures",
+    "storage::maintenance_native_projection::tests::dc_native_actual_producer187_catalog_metadata_checkpoint ... ignored, requires separately generated synthetic public-producer fixture directory",
+    "unrelated_worker_pid_fixture ... ignored, subprocess fixture for legacy worker recovery",
+    "relative_barrier_subprocess_fixture ... ignored, subprocess fixture for cwd-independent run cleanup"
+  ],
+  "evidence_format": "native inventory/report +fullcapturedlog; notJUnit. Focusedxtask55JUnitseparate.",
+  "limits": [
+    "Local developerhostnotindependentcleanconsumerqualification",
+    "31harnessresultlines includingdoctests; fourdeclaredignoredcasesnotcountedaspassed",
+    "Latercommitsonlydocs/policy; nativeRustsourceunchanged"
+  ]
+}

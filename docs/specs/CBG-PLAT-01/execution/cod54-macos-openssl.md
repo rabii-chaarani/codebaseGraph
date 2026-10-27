@@ -38,8 +38,8 @@ Environment: Apple Silicon ARM64, macOS26.6.2 build25G83; rustc1.96.0/cargo1.96.
 | Strict `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` | **passed** | [log](cod54/clippy-final.log), [identity](cod54/clippy-final.json) |
 | Actual native artifact provisional run | pipeline passed: source build, package/audit/sign/install/runtime positives and preflight negatives | [record](cod54/artifact-attempt-2.json), [inventory](cod54/artifact-attempt-2-inventory.json). Provisional metadata named approval SHA, so **excluded from final source-bound qualification** |
 | Exact-source archive at855c7e2 | **full pipeline passed, exit0** | [record](cod54/source-bound-artifact.json), [inventory/provenance](cod54/source-bound-inventory.json), [compressed log](cod54/source-bound-artifact.log.gz). Archive SHA-256 `e5f32abbf8124584d5f6f2df403091c3323d16a1359a70f387fc99eeeb6e4282`; four Mach-O signatures/imports/ARM64/minOS13.3 independently checked by reviewer |
-| Full local native suite, all cohorts | running | Native test profile/captured CLI execution is separate from shipped release archive |
-| Hosted macOS/Windows native CI | running on draft PR163 | Do not count queued/skipped jobs as passing |
+| Full local native suite, all cohorts | **passed, exit0; 1,356 passed / 0 failed / 4 declared ignored** | [summary](cod54/native-full-summary.json), [native execution/inventory report](cod54/native-full-report.json), [compressed full log](cod54/native-full.log.gz); source855c7e2, captured CLI SHA`de3930c3c3daa63b54b6fae59a8e287ce1f929b0e877a6c2bc24814a3157345a`. This is a native report/log, not JUnit; four ignored fixtures are not passing tests |
+| Hosted macOS/Windows native CI | **failed [run40474966274](https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40474966274)** at docs/policy head1f68596 | [failed-job details](cod54/ci-40474966274-summary.json), [compressed failed log](cod54/ci-40474966274-failed.log.gz). Mac unit quiescence-confirmation assertion and Windows integration numeric-PID assertion failed; both archive jobs skipped. No hosted qualification pass |
 
 Earlier compiler/fixture/PAX failures are retained in linked evidence and are not passing results. The official source PAX global comment is validated and never extracted as a file; actual source entries remain confined. All product-source changes are isolated from the original dirty user checkout.
 
@@ -48,6 +48,14 @@ Earlier compiler/fixture/PAX failures are retained in linked evidence and are no
 - Fresh independent proposal review: **GPT-6.1 Sol / High**, [GREEN revision2 and starting conditions](cod54/proposal-review.md), before implementation.
 - Parallel bounded backend lanes: GPT-6 Luna / Extra High, one writer per file; coordinator serialized integration/Git/builds and later took over installer fixture cleanup after stopping the unresponsive worker.
 - Fresh final integrated review: **GPT-6.1 Sol / Max**, [final report](cod54/final-review.md), **GREEN for bounded implementation/local native artifact handoff** at855c7e2. No unresolved introduced P0–P3 defect. The reviewer verified the final55/55 suite, strict lint, source-bound artifact pipeline, immutable archive/installed bytes, imports/IDs/minOS/signatures and clean-env probes. Full native/hosted CI and clean minimum/current consumer qualification remain separate pending gates. The transient older-read mutability observation was withdrawn, not left unresolved.
+
+## Completed local native suite and hosted blockers — 2026-10-27
+
+The source855c7e2 local all-cohort native run completed:1,356 passed,0 failed,4 declared ignored, exit0. These are executed source-bound native results, not clean consumer qualification. Four ignored cases remain explicitly listed in the summary; no generated JUnit is invented for the native runner.
+
+Hosted CI40474966274 at docs/policy head1f68596 failed in two existing paths, so both native artifact jobs and required qualification remain blocked. Mac failure: `dc_s5_existing_old_current_managed_store_requires_one_confirmation_then_retires_old_generation` did not observe durable acceptance of the single quiescence confirmation; local same-source run passes, and no root cause is asserted. Windows failure: `bounded_production_chunks_reopen_with_primary_keys_connectors_and_search` asserts unique numeric PID count53against56; this is the separately tracked COD-98 process-identity issue, fixed and qualified in PR157 but not included in this branch's baseline. Both paths are unchanged by COD-54. This is not proof that the entire hosted failure is unrelated; no failure is suppressed or retried into success.
+
+No storage/COPY fixes, cherry-picks, test weakening or new qualification job have been implemented from this read-only triage. Any independent consumer-qualification workflow discussed in chat remains a proposal, not approved/implemented scope. COD-54 stays In Review; actual current-release hosted/runtime qualification and full head-bound CI remain open. The13.3 execution requirement remains removed by the approved current-only amendment.
 
 ## Remaining qualification and handoff
 

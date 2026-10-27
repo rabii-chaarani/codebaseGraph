@@ -14,11 +14,24 @@
     "source_bound_archive_pipeline": 0
   },
   "archive_sha256": "e5f32abbf8124584d5f6f2df403091c3323d16a1359a70f387fc99eeeb6e4282",
-  "full_native_suite": "running",
+  "full_native_suite": {
+    "status": "passed",
+    "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+    "exit": 0,
+    "passed": 1356,
+    "failed": 0,
+    "ignored": 4,
+    "measured": 0,
+    "filtered_out": 0,
+    "report": "native-full-report.json",
+    "summary": "native-full-summary.json"
+  },
   "hosted_ci": {
-    "run": 40472491235,
-    "status": "queued",
-    "source": "855c7e282a27de4afbad2d4252d7692de4b42ecb"
+    "status": "failed",
+    "run_id": 40474966274,
+    "head_sha": "1f6859618140b3f434475b56ab2f2fa470976519",
+    "both_native_artifact_jobs": "skipped",
+    "summary": "ci-40474966274-summary.json"
   },
   "consumer_qualification": "currentstablemacOSAppleSiliconactualOS/build+noexternalOpenSSLruntime evidence required; no13.3gate",
   "closure": "COD54notDone,noaggregateclosure",
