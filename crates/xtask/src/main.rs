@@ -13,6 +13,9 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use yaml_serde::Value as YamlValue;
 
+mod macos;
+#[cfg(test)]
+mod macos_installer_tests;
 mod native_tests;
 mod release;
 
@@ -62,6 +65,29 @@ impl NativeTarget {
 
     fn uses_windows_extensions(self) -> bool {
         self == Self::WindowsX86_64
+    }
+
+    fn payload_files(self) -> Vec<&'static str> {
+        let (graph, wiki) = self.binary_names();
+        let mut files = vec![graph, wiki];
+        if self == Self::MacosArm64 {
+            files.extend(macos::PAYLOAD_FILES);
+        }
+        files
+    }
+
+    fn package_files(self) -> Vec<(&'static str, u32)> {
+        let (graph, wiki) = self.binary_names();
+        let mut files = vec![(graph, 0o755), (wiki, 0o755)];
+        if self == Self::MacosArm64 {
+            files.extend(macos::PAYLOAD_FILES.map(|name| (name, 0o644)));
+        }
+        files.extend([
+            ("checksums.txt", 0o644),
+            ("install.sh", 0o755),
+            ("install.ps1", 0o644),
+        ]);
+        files
     }
 }
 
@@ -276,7 +302,6 @@ fn native_artifact(args: Vec<String>) -> Result<(), String> {
     ensure_native_host(target)?;
 
     let version = release_version()?;
-    build_native_binaries(target)?;
     fs::create_dir_all(output).map_err(|error| {
         format!(
             "failed to create artifact output {}: {error}",
@@ -285,7 +310,22 @@ fn native_artifact(args: Vec<String>) -> Result<(), String> {
     })?;
 
     let staging = unique_temp_dir(&format!("native_artifact_{}", target.as_str()))?;
-    let result = build_and_smoke_native_archive(target, &version, commit_sha, output, &staging);
+    let result = (|| {
+        let runtime = if target == NativeTarget::MacosArm64 {
+            Some(macos::prepare_openssl(&staging.join("openssl"))?)
+        } else {
+            None
+        };
+        build_native_binaries(target, runtime.as_deref())?;
+        build_and_smoke_native_archive(
+            target,
+            &version,
+            commit_sha,
+            output,
+            &staging,
+            runtime.as_deref(),
+        )
+    })();
     let _ = fs::remove_dir_all(&staging);
     result
 }
@@ -382,8 +422,22 @@ fn release_version_from_tag(tag: &str) -> Result<String, String> {
     Ok(version.to_string())
 }
 
-fn build_native_binaries(target: NativeTarget) -> Result<(), String> {
+fn configure_native_build(command: &mut Command, runtime: Option<&Path>) {
+    if let Some(library_dir) = runtime {
+        command
+            .env("OPENSSL_LIB_DIR", library_dir)
+            .env("MACOSX_DEPLOYMENT_TARGET", "13.3");
+        let flags = env::var("RUSTFLAGS").unwrap_or_default();
+        command.env_remove("CARGO_ENCODED_RUSTFLAGS").env(
+            "RUSTFLAGS",
+            format!("{flags} -C link-arg=-Wl,-headerpad_max_install_names"),
+        );
+    }
+}
+
+fn build_native_binaries(target: NativeTarget, runtime: Option<&Path>) -> Result<(), String> {
     let mut graph = Command::new("cargo");
+    configure_native_build(&mut graph, runtime);
     graph.args(["build", "--locked", "--release", "--bin", "codebase-graph"]);
     if target.uses_windows_extensions() {
         graph.args(["--features", "bundled-windows-extensions"]);
@@ -391,6 +445,7 @@ fn build_native_binaries(target: NativeTarget) -> Result<(), String> {
     run_command(&mut graph, "codebase-graph release build")?;
 
     let mut wiki = Command::new("cargo");
+    configure_native_build(&mut wiki, runtime);
     wiki.args([
         "build",
         "--locked",
@@ -412,6 +467,7 @@ fn build_and_smoke_native_archive(
     commit_sha: &str,
     output: &Path,
     staging: &Path,
+    runtime: Option<&Path>,
 ) -> Result<(), String> {
     let package = staging.join("package");
     let extracted = staging.join("extracted");
@@ -433,12 +489,10 @@ fn build_and_smoke_native_archive(
     set_executable(&package.join(wiki_name))?;
     set_executable(&package.join("install.sh"))?;
 
-    let checksums = format!(
-        "{}  {graph_name}\n{}  {wiki_name}\n",
-        sha256_file(&package.join(graph_name))?,
-        sha256_file(&package.join(wiki_name))?
-    );
-    fs::write(package.join("checksums.txt"), checksums).map_err(|error| error.to_string())?;
+    if let Some(library_dir) = runtime {
+        macos::stage_runtime(library_dir, &package)?;
+    }
+    write_internal_checksums(&package, target)?;
 
     let archive_name = target.archive_name(version);
     let archive_path = output.join(&archive_name);
@@ -465,8 +519,18 @@ fn build_and_smoke_native_archive(
 
     extract_and_validate_native_archive(&archive_path, target, &extracted)?;
     dry_run_installer(target, &extracted, &install_bin)?;
-    smoke_artifact(&extracted.join(graph_name))?;
-    smoke_wiki_artifact(&extracted.join(wiki_name))?;
+    if target == NativeTarget::MacosArm64 {
+        macos::validate_package(&extracted)?;
+        let installed = staging.join("installed bin with spaces");
+        install_macos_package(&extracted, &installed, false)?;
+        macos::validate_package(&installed)?;
+        smoke_artifact(&installed.join(graph_name))?;
+        smoke_wiki_artifact(&installed.join(wiki_name))?;
+        verify_macos_install_rejects_bad_runtime(&extracted, &installed, staging)?;
+    } else {
+        smoke_artifact(&extracted.join(graph_name))?;
+        smoke_wiki_artifact(&extracted.join(wiki_name))?;
+    }
     println!("{}", archive_path.display());
     Ok(())
 }
@@ -510,14 +574,7 @@ fn create_native_archive(
         .mtime(0)
         .write(file, Compression::default());
     let mut archive = tar::Builder::new(encoder);
-    let (graph_name, wiki_name) = target.binary_names();
-    for (name, mode) in [
-        (graph_name, 0o755),
-        (wiki_name, 0o755),
-        ("checksums.txt", 0o644),
-        ("install.sh", 0o755),
-        ("install.ps1", 0o644),
-    ] {
+    for (name, mode) in target.package_files() {
         append_deterministic_file(&mut archive, &package.join(name), name, mode)?;
     }
     let encoder = archive
@@ -594,17 +651,22 @@ fn extract_and_validate_native_archive(
 }
 
 fn expected_package_files(target: NativeTarget) -> BTreeSet<String> {
-    let (graph_name, wiki_name) = target.binary_names();
-    [
-        graph_name,
-        wiki_name,
-        "checksums.txt",
-        "install.sh",
-        "install.ps1",
-    ]
-    .into_iter()
-    .map(str::to_string)
-    .collect()
+    target
+        .package_files()
+        .into_iter()
+        .map(|(name, _)| name.to_string())
+        .collect()
+}
+
+fn write_internal_checksums(directory: &Path, target: NativeTarget) -> Result<(), String> {
+    let mut text = String::new();
+    for name in target.payload_files() {
+        text.push_str(&format!(
+            "{}  {name}\n",
+            sha256_file(&directory.join(name))?
+        ));
+    }
+    fs::write(directory.join("checksums.txt"), text).map_err(|error| error.to_string())
 }
 
 fn validate_internal_checksums(directory: &Path, target: NativeTarget) -> Result<(), String> {
@@ -612,12 +674,12 @@ fn validate_internal_checksums(directory: &Path, target: NativeTarget) -> Result
         .map_err(|error| format!("failed to read checksums.txt: {error}"))?;
     let mut checksums = BTreeMap::new();
     for line in text.lines() {
-        let mut parts = line.split_whitespace();
-        let digest = parts.next().unwrap_or_default();
-        let name = parts.next().unwrap_or_default();
-        if parts.next().is_some()
-            || digest.len() != 64
+        let Some((digest, name)) = line.split_once("  ") else {
+            return Err(format!("invalid checksums.txt line: {line:?}"));
+        };
+        if digest.len() != 64
             || !digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+            || name.bytes().any(|byte| byte.is_ascii_whitespace())
             || checksums
                 .insert(name.to_string(), digest.to_ascii_lowercase())
                 .is_some()
@@ -625,13 +687,13 @@ fn validate_internal_checksums(directory: &Path, target: NativeTarget) -> Result
             return Err(format!("invalid checksums.txt line: {line:?}"));
         }
     }
-    let (graph_name, wiki_name) = target.binary_names();
-    let expected_names: BTreeSet<String> = [graph_name, wiki_name]
+    let expected_names: BTreeSet<String> = target
+        .payload_files()
         .into_iter()
         .map(str::to_string)
         .collect();
     if checksums.keys().cloned().collect::<BTreeSet<_>>() != expected_names {
-        return Err("checksums.txt does not contain exactly both packaged binaries".to_string());
+        return Err("checksums.txt does not contain the exact packaged payload".to_string());
     }
     for (name, expected) in checksums {
         let actual = sha256_file(&directory.join(&name))?;
@@ -670,6 +732,61 @@ fn dry_run_installer(
         command
     };
     run_command(&mut command, "packaged installer dry-run")
+}
+
+fn install_macos_package(source: &Path, destination: &Path, dry_run: bool) -> Result<(), String> {
+    let mut command = Command::new("/bin/bash");
+    command
+        .arg(source.join("install.sh"))
+        .arg("--source-dir")
+        .arg(source)
+        .arg("--bin-dir")
+        .arg(destination);
+    if dry_run {
+        command.arg("--dry-run");
+    }
+    run_command(&mut command, "packaged macOS installer")
+}
+
+fn verify_macos_install_rejects_bad_runtime(
+    source: &Path,
+    destination: &Path,
+    staging: &Path,
+) -> Result<(), String> {
+    let target = NativeTarget::MacosArm64;
+    let before = target
+        .payload_files()
+        .into_iter()
+        .map(|name| sha256_file(&destination.join(name)).map(|digest| (name, digest)))
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    for failure in ["missing", "corrupt", "incompatible"] {
+        let broken = staging.join(format!("{failure} runtime"));
+        fs::create_dir(&broken).map_err(|error| error.to_string())?;
+        for (name, _) in target.package_files() {
+            copy_file(source.join(name), broken.join(name))?;
+        }
+        let library = broken.join(macos::PAYLOAD_FILES[0]);
+        if failure == "missing" {
+            fs::remove_file(&library).map_err(|error| error.to_string())?;
+        } else {
+            fs::write(&library, b"not a compatible Mach-O library\n")
+                .map_err(|error| error.to_string())?;
+            if failure == "incompatible" {
+                write_internal_checksums(&broken, target)?;
+            }
+        }
+        for dry_run in [true, false] {
+            if install_macos_package(&broken, destination, dry_run).is_ok() {
+                return Err(format!("installer accepted {failure} bundled runtime"));
+            }
+            for (name, digest) in &before {
+                if sha256_file(&destination.join(name))? != *digest {
+                    return Err(format!("{failure} runtime changed installed {name}"));
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 fn sha256_file(path: &Path) -> Result<String, String> {
@@ -1663,6 +1780,9 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     if !executable.exists() {
         return Err(format!("binary does not exist: {}", executable.display()));
     }
+    let executable = executable
+        .canonicalize()
+        .map_err(|error| error.to_string())?;
     let temp = unique_temp_dir("codebase_graph_smoke")?;
     fs::create_dir_all(temp.join("sample")).map_err(|error| error.to_string())?;
     fs::write(
@@ -1671,12 +1791,12 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
     )
     .map_err(|error| error.to_string())?;
 
-    run_checked(executable, ["--help"])?;
-    let schema = run_capture(executable, ["schema", "--json"])?;
-    serde_json::from_str::<Value>(&schema)
+    run_checked_in(&executable, ["--help"], &temp)?;
+    let schema = run_capture_in(&executable, ["schema", "--json"], &temp)?;
+    serde_json::from_slice::<Value>(&schema.stdout)
         .map_err(|error| format!("schema did not emit JSON: {error}"))?;
-    run_checked(
-        executable,
+    run_checked_in(
+        &executable,
         [
             "install",
             "--repo-root",
@@ -1688,9 +1808,10 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
             "--dry-run",
             "--json",
         ],
+        &temp,
     )?;
-    run_checked(
-        executable,
+    run_checked_in(
+        &executable,
         [
             "install",
             "--repo-root",
@@ -1701,18 +1822,20 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
             "skip",
             "--json",
         ],
+        &temp,
     )?;
-    run_checked(
-        executable,
+    run_checked_in(
+        &executable,
         [
             "check-health",
             "--repo-root",
             temp.join("sample").to_str().ok_or("invalid temp path")?,
             "--json",
         ],
+        &temp,
     )?;
-    run_checked(
-        executable,
+    run_checked_in(
+        &executable,
         [
             "codebase-search",
             "helper",
@@ -1720,8 +1843,105 @@ fn smoke_artifact(executable: &Path) -> Result<(), String> {
             temp.join("sample").to_str().ok_or("invalid temp path")?,
             "--no-refresh",
         ],
+        &temp,
     )?;
-    smoke_mcp_stdio(executable, &temp.join("sample"))?;
+    if cfg!(target_os = "macos") {
+        verify_bundled_extension_smoke(&executable, &temp)?;
+    }
+    smoke_mcp_stdio(&executable, &temp.join("sample"), &temp)?;
+    Ok(())
+}
+
+fn verify_bundled_extension_smoke(executable: &Path, fixture: &Path) -> Result<(), String> {
+    let sample = fixture.join("sample");
+    let database = fixture.join("extension-smoke.ldb");
+    let manifest = fixture.join("extension-manifest.json");
+    run_checked_in(
+        executable,
+        [
+            "build",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            manifest.to_str().ok_or("invalid manifest path")?,
+            "--no-git",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let search = run_capture_in(
+        executable,
+        [
+            "codebase-search",
+            "helper",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            manifest.to_str().ok_or("invalid manifest path")?,
+            "--no-refresh",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let search: Value =
+        serde_json::from_slice(&search.stdout).map_err(|error| error.to_string())?;
+    if search["results"].as_array().is_none_or(Vec::is_empty) {
+        return Err("installed graph search did not find the smoke fixture".into());
+    }
+
+    // A legacy manifest selects Ladybug FTS rather than the current sidecar backend.
+    let mut legacy: Value =
+        serde_json::from_slice(&fs::read(&manifest).map_err(|error| error.to_string())?)
+            .map_err(|error| error.to_string())?;
+    legacy["search_backend"] = Value::Null;
+    let legacy_manifest = fixture.join("legacy-extension-manifest.json");
+    fs::write(
+        &legacy_manifest,
+        serde_json::to_vec(&legacy).map_err(|error| error.to_string())?,
+    )
+    .map_err(|error| error.to_string())?;
+    run_checked_in(
+        executable,
+        [
+            "codebase-search",
+            "helper",
+            "--repo-root",
+            sample.to_str().ok_or("invalid sample path")?,
+            "--db",
+            database.to_str().ok_or("invalid database path")?,
+            "--manifest",
+            legacy_manifest
+                .to_str()
+                .ok_or("invalid legacy manifest path")?,
+            "--no-refresh",
+            "--json",
+        ],
+        fixture,
+    )?;
+    let cache = fixture.join("smoke-home/.lbdb/extension/0.19.0/osx_arm64");
+    for (extension, digest) in [
+        (
+            "json",
+            "e6482a025de31d662ee4b32a39c991706b8cc3c2ec49673ef5d8ce45cc23ce7a",
+        ),
+        (
+            "fts",
+            "83ae4be9fa718577ca971f27ff890b3aea5789c9dd908784e28f52917febbfdb",
+        ),
+    ] {
+        let path = cache
+            .join(extension)
+            .join(format!("lib{extension}.lbug_extension"));
+        if sha256_file(&path)? != digest {
+            return Err(format!(
+                "installed smoke did not seed the official {extension} bytes"
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -1761,7 +1981,7 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
 
     let bundle_text = bundle.to_str().ok_or("invalid bundle path")?;
     let site_text = site.to_str().ok_or("invalid site path")?;
-    assert_version_surface(&executable, Path::new("crates/k-wiki/Cargo.toml"))?;
+    assert_version_surface(&executable, Path::new("crates/k-wiki/Cargo.toml"), &temp)?;
     run_checked_in(&executable, ["--help"], &temp)?;
     run_checked_in(&executable, ["validate", bundle_text, "--json"], &temp)?;
     run_checked_in(
@@ -1779,7 +1999,7 @@ fn smoke_wiki_artifact(executable: &Path) -> Result<(), String> {
 }
 
 fn smoke_wiki_http(executable: &Path, bundle: &Path, current_dir: &Path) -> Result<(), String> {
-    let mut child = Command::new(executable)
+    let mut child = smoke_command(executable, current_dir)?
         .args(["serve"])
         .arg(bundle)
         .args(["--host", "127.0.0.1", "--port", "0"])
@@ -1845,7 +2065,7 @@ fn smoke_wiki_mcp_stdio(
     bundle: &Path,
     current_dir: &Path,
 ) -> Result<(), String> {
-    let mut child = Command::new(executable)
+    let mut child = smoke_command(executable, current_dir)?
         .arg("mcp")
         .arg(bundle)
         .current_dir(current_dir)
@@ -1898,9 +2118,13 @@ fn smoke_wiki_mcp_stdio(
     Ok(())
 }
 
-fn assert_version_surface(executable: &Path, manifest: &Path) -> Result<(), String> {
+fn assert_version_surface(
+    executable: &Path,
+    manifest: &Path,
+    fixture: &Path,
+) -> Result<(), String> {
     let expected = cargo_version(manifest)?;
-    let output = run_capture_in(executable, ["--version"], Path::new("."))?;
+    let output = run_capture_in(executable, ["--version"], fixture)?;
     let stdout = String::from_utf8(output.stdout).map_err(|error| error.to_string())?;
     let actual = stdout.trim();
     let expected_line = format!("k-wiki {expected}");
@@ -2094,8 +2318,8 @@ fn assert_wiki_codex_project_install(
     Ok(())
 }
 
-fn smoke_mcp_stdio(executable: &Path, repo_root: &Path) -> Result<(), String> {
-    let mut child = Command::new(executable)
+fn smoke_mcp_stdio(executable: &Path, repo_root: &Path, fixture: &Path) -> Result<(), String> {
+    let mut child = smoke_command(executable, fixture)?
         .args(["mcp", "start", "--repo-root"])
         .arg(repo_root)
         .stdin(Stdio::piped())
@@ -2203,25 +2427,22 @@ fn dependency_version(manifest: &Path, dependency: &str) -> Result<String, Strin
     ))
 }
 
-fn run_checked<'a, I>(executable: &Path, args: I) -> Result<(), String>
-where
-    I: IntoIterator<Item = &'a str>,
-{
-    let output = Command::new(executable)
-        .args(args)
-        .output()
-        .map_err(|error| error.to_string())?;
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(format!(
-            "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
-            output.status,
-            executable.display(),
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        ))
+fn smoke_command(executable: &Path, fixture: &Path) -> Result<Command, String> {
+    let mut command = Command::new(executable);
+    if cfg!(target_os = "macos") {
+        let home = fixture.join("smoke-home");
+        fs::create_dir_all(&home).map_err(|error| error.to_string())?;
+        for (key, _) in env::vars_os() {
+            let name = key.to_string_lossy();
+            if name.starts_with("DYLD_") || name.starts_with("OPENSSL_") {
+                command.env_remove(key);
+            }
+        }
+        command
+            .env("HOME", home)
+            .env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin");
     }
+    Ok(command)
 }
 
 fn run_capture_in<'a, I>(
@@ -2232,7 +2453,7 @@ fn run_capture_in<'a, I>(
 where
     I: IntoIterator<Item = &'a str>,
 {
-    Command::new(executable)
+    smoke_command(executable, current_dir)?
         .args(args)
         .current_dir(current_dir)
         .output()
@@ -2261,7 +2482,7 @@ fn run_capture_in_with_env<'a, I>(
 where
     I: IntoIterator<Item = &'a str>,
 {
-    let mut command = Command::new(executable);
+    let mut command = smoke_command(executable, current_dir)?;
     command.args(args).current_dir(current_dir);
     for (key, value) in env_pairs {
         command.env(key, value);
@@ -2288,7 +2509,7 @@ fn run_checked_in<'a, I>(executable: &Path, args: I, current_dir: &Path) -> Resu
 where
     I: IntoIterator<Item = &'a str>,
 {
-    let output = Command::new(executable)
+    let output = smoke_command(executable, current_dir)?
         .args(args)
         .current_dir(current_dir)
         .output()
@@ -2304,26 +2525,6 @@ where
             String::from_utf8_lossy(&output.stderr)
         ))
     }
-}
-
-fn run_capture<'a, I>(executable: &Path, args: I) -> Result<String, String>
-where
-    I: IntoIterator<Item = &'a str>,
-{
-    let output = Command::new(executable)
-        .args(args)
-        .output()
-        .map_err(|error| error.to_string())?;
-    if !output.status.success() {
-        return Err(format!(
-            "command failed with status {}: {}\nstdout:\n{}\nstderr:\n{}",
-            output.status,
-            executable.display(),
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-    String::from_utf8(output.stdout).map_err(|error| error.to_string())
 }
 
 fn unique_temp_dir(prefix: &str) -> Result<PathBuf, String> {
@@ -2484,13 +2685,7 @@ mod tests {
         let temp = super::unique_temp_dir("xtask_archive_contract").unwrap();
         let package = temp.join("package");
         fs::create_dir_all(&package).unwrap();
-        for name in [
-            "codebase-graph",
-            "k-wiki",
-            "checksums.txt",
-            "install.sh",
-            "install.ps1",
-        ] {
+        for (name, _) in NativeTarget::MacosArm64.package_files() {
             fs::write(package.join(name), name).unwrap();
         }
         let archive = temp.join("artifact.tar.gz");
@@ -2500,6 +2695,46 @@ mod tests {
             extract_and_validate_native_archive(&archive, NativeTarget::MacosArm64, &extracted)
                 .unwrap_err();
         assert!(error.contains("checksums.txt") || error.contains("SHA256"));
+        fs::remove_dir_all(temp).unwrap();
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_smoke_commands_use_a_fixture_home_and_system_path() {
+        let fixture = super::unique_temp_dir("xtask_smoke_env").unwrap();
+        let command = super::smoke_command(Path::new("/usr/bin/true"), &fixture).unwrap();
+        let environment = command
+            .get_envs()
+            .collect::<std::collections::BTreeMap<_, _>>();
+        assert_eq!(
+            environment.get(std::ffi::OsStr::new("HOME")),
+            Some(&Some(fixture.join("smoke-home").as_os_str()))
+        );
+        assert_eq!(
+            environment.get(std::ffi::OsStr::new("PATH")),
+            Some(&Some(std::ffi::OsStr::new("/usr/bin:/bin:/usr/sbin:/sbin")))
+        );
+        fs::remove_dir_all(fixture).unwrap();
+    }
+
+    #[test]
+    fn native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory() {
+        let temp = super::unique_temp_dir("xtask_payload_integrity").unwrap();
+        let target = NativeTarget::MacosArm64;
+        for name in target.payload_files() {
+            fs::write(temp.join(name), name).unwrap();
+        }
+        super::write_internal_checksums(&temp, target).unwrap();
+        super::validate_internal_checksums(&temp, target).unwrap();
+        for name in super::macos::PAYLOAD_FILES {
+            fs::write(temp.join(name), b"corrupt").unwrap();
+            assert!(super::validate_internal_checksums(&temp, target).is_err());
+            fs::write(temp.join(name), name).unwrap();
+        }
+        assert_eq!(
+            NativeTarget::WindowsX86_64.payload_files(),
+            ["codebase-graph.exe", "k-wiki.exe"]
+        );
         fs::remove_dir_all(temp).unwrap();
     }
 
@@ -2536,15 +2771,12 @@ mod tests {
         fs::write(package.join(wiki_name), b"wiki").unwrap();
         fs::write(package.join("install.sh"), b"installer").unwrap();
         fs::write(package.join("install.ps1"), b"installer").unwrap();
-        fs::write(
-            package.join("checksums.txt"),
-            format!(
-                "{}  {graph_name}\n{}  {wiki_name}\n",
-                sha256_file(&package.join(graph_name)).unwrap(),
-                sha256_file(&package.join(wiki_name)).unwrap()
-            ),
-        )
-        .unwrap();
+        if target == NativeTarget::MacosArm64 {
+            for name in super::macos::PAYLOAD_FILES {
+                fs::write(package.join(name), name).unwrap();
+            }
+        }
+        super::write_internal_checksums(&package, target).unwrap();
         let archive_name = target.archive_name(version);
         let archive_path = artifact_dir.join(&archive_name);
         create_native_archive(&package, &archive_path, target).unwrap();

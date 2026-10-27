@@ -10,6 +10,7 @@ use crate::process_lifecycle::{
 use crate::protocol::{
     GraphSummary, ManifestDiff, NativeSyntaxMaterializationResponse, ProgressEvent,
 };
+#[cfg(any(debug_assertions, test))]
 use crate::storage::atomic::write_json_atomically;
 use crate::storage::layout::{managed_generation_id, DirectLayout, ManagedLayout};
 use crate::storage::locks::{try_open_locked, LockMode, WorkerLease};

@@ -54,9 +54,14 @@ codebase-graph install
 codebase-graph check-health --repo-root .
 ```
 
-Prefer a prebuilt binary? Download a platform archive from [GitHub
-Releases](https://github.com/rabii-chaarani/codebaseGraph/releases), put
-`codebase-graph` on your `PATH`, and run the same `install` and health commands.
+Prefer a prebuilt archive? Download it from [GitHub
+Releases](https://github.com/rabii-chaarani/codebaseGraph/releases) and extract it.
+On Apple Silicon macOS, run the included `install.sh` to install both binaries
+and their bundled OpenSSL libraries together; copying only `codebase-graph`
+is not sufficient. The libraries resolve beside the installed binaries, so
+Homebrew or a separate OpenSSL installation is not required. Then run the
+same `install` and health commands. See the [release guide](docs/release.md)
+for archive verification and qualification limits.
 For development from this checkout:
 
 ```bash
