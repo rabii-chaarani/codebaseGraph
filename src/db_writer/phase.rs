@@ -1177,13 +1177,18 @@ mod tests {
             PHASE_SEQUENCE.fetch_add(1, Ordering::Relaxed)
         ));
         fs::create_dir_all(&root).unwrap();
-        let source = root.join("rows.json");
+        let source = root.join("rows with spaces.json");
         fs::write(&source, b"[{}]").unwrap();
-        let statement = format!("COPY `Thing` FROM \"{}\"", source.display());
-        assert_eq!(
-            copy_source_metadata(&statement),
-            Some((source.to_string_lossy().to_string(), 4))
+        let statement = format!(
+            "COPY `Thing` FROM \"{}\"",
+            crate::staging_writer::copy_path(&source)
         );
+        let (observed_path, observed_bytes) = copy_source_metadata(&statement).unwrap();
+        assert_eq!(
+            fs::canonicalize(observed_path).unwrap(),
+            fs::canonicalize(&source).unwrap()
+        );
+        assert_eq!(observed_bytes, 4);
         fs::remove_dir_all(root).unwrap();
     }
 

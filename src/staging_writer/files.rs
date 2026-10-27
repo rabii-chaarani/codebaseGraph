@@ -44,7 +44,7 @@ pub(super) fn stage_file_stem(name: &str) -> String {
     }
 }
 
-pub(super) fn copy_path(path: &Path) -> String {
+pub(crate) fn copy_path(path: &Path) -> String {
     let mut copy_path = path.to_string_lossy().replace('\\', "/");
     if let Some(stripped) = copy_path.strip_prefix("//?/UNC/") {
         copy_path = format!("//{stripped}");
