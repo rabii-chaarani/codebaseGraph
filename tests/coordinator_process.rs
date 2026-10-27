@@ -8,6 +8,12 @@ use std::time::{Duration, Instant};
 
 static TEST_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
+fn binary() -> PathBuf {
+    std::env::var_os("CARGO_BIN_EXE_codebase-graph")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_BIN_EXE_codebase-graph")))
+}
+
 #[test]
 fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     let repo = temp_repo();
@@ -22,7 +28,7 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     fs::create_dir_all(&state).unwrap();
     // Keep the periodic reconciliation fallback inside the generation-change
     // deadline when auto backend selection falls back to polling.
-    write_config_with_policy_and_interval(&repo, &storage, "leader", 768, 384, 32, Some(1_000));
+    write_config_with_policy_and_interval(&repo, &storage, "leader", 32, Some(1_000));
 
     let mut clients = ClientGroup::default();
     for index in 0..20 {
@@ -48,6 +54,8 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     let mut owner_min_rss = u64::MAX;
     let mut owner_max_rss = 0_u64;
     let mut worker_peak_rss = 0_u64;
+    // Pin metadata during quiescence checks.
+    let mut artifact_observation = None;
     while !active_path.exists() && Instant::now() < deadline {
         maximum_workers = maximum_workers.max(directory_count(&workers_root));
         if let Ok(rss) = sample_process_rss(first_pid) {
@@ -59,6 +67,13 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
                 worker_peak_rss = worker_peak_rss.max(rss);
             }
         }
+        if artifact_observation.is_none() {
+            if let Ok(file) = fs::File::open(storage.join("artifacts/.use.lock")) {
+                if fs2::FileExt::try_lock_shared(&file).is_ok() {
+                    artifact_observation = Some(file);
+                }
+            }
+        }
         std::thread::sleep(Duration::from_millis(25));
     }
     maximum_workers = maximum_workers.max(directory_count(&workers_root));
@@ -68,6 +83,10 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     );
     assert_eq!(maximum_workers, 1, "did not observe exactly one worker");
     assert!(worker_peak_rss > 0, "did not sample the isolated worker");
+    assert!(
+        artifact_observation.is_some(),
+        "artifact observation lease was not acquired"
+    );
     assert!(
         worker_peak_rss <= 768 * 1024 * 1024,
         "worker RSS exceeded 768 MiB: {worker_peak_rss}"
@@ -186,45 +205,89 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
         .iter()
         .any(|client| client.pid() == replacement_pid));
 
+    // Exclude new births before deliberately killing the remaining owners.
+    // A best-effort snapshot after kill could omit a still-closing Windows
+    // directory and later misclassify its retained owner-loss evidence as new.
+    let snapshot_deadline = Instant::now() + Duration::from_secs(30);
+    let (_snapshot_worker, _snapshot_writer) = loop {
+        let locks = (|| {
+            let worker = observation_lock(&storage.join("worker.lock"))?;
+            let writer = observation_lock(&storage.join("writer.lock"))?;
+            Ok::<_, String>((worker, writer))
+        })();
+        match locks {
+            Ok(locks) => break locks,
+            Err(reason) => {
+                assert!(
+                    Instant::now() < snapshot_deadline,
+                    "preexisting-root snapshot stayed busy: {reason}"
+                );
+                std::thread::sleep(Duration::from_millis(25));
+            }
+        }
+    };
     clients.kill_all();
     let active_before = active_generation_id(&active_path);
-    write_config(&repo, &storage, 129, 1, 1);
+    // Preserve the exact preexisting incarnations from deliberate owner death;
+    // that process could not publish a terminal event after being killed.
+    let mut preexisting = std::collections::BTreeMap::new();
+    for category in ["runs", "workers"] {
+        for entry in fs::read_dir(storage.join(category)).unwrap() {
+            let path = entry.unwrap().path();
+            let identity = physical_directory_identity(&path).unwrap_or_else(|error| {
+                panic!("cannot capture preexisting {}: {error}", path.display())
+            });
+            preexisting.insert(path, identity);
+        }
+    }
+    drop(_snapshot_writer);
+    drop(_snapshot_worker);
+    write_config(&repo, &storage, 1);
     fs::write(
         repo.join("src/lib.rs"),
-        format!(
-            "/*{}*/\npub fn coordinated_graph() -> bool {{ false }}\n",
-            "x".repeat(2 * 1024 * 1024)
-        ),
+        "pub fn coordinated_graph_without_resource_ceiling() -> bool { false }\n",
     )
     .unwrap();
     clients.push(McpClient::start(&repo, 20));
-    let deadline = Instant::now() + Duration::from_secs(30);
-    let mut last_error = String::new();
-    while Instant::now() < deadline {
+    let updated =
+        wait_for_active_generation_change(&active_path, &active_before, Duration::from_secs(90));
+    assert_ne!(updated, active_before);
+    let active_before = updated;
+    // Observe a real quiescent owner after the replacement build,
+    // then verify retained registered roots are terminal rather than live;
+    // their directory count is no longer synchronous disposal evidence.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
         let health = clients.clients[20].call(
-            20_000,
+            20_001,
             "tools/call",
             json!({
-                "name": "graph_health",
-                "arguments": {"include_structured_content": true}
+                "name": "graph_health", "arguments": {"include_structured_content": true}
             }),
         );
-        last_error = health["result"]["structuredContent"]["refresh"]["last_error"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
-        if last_error.contains("memory_budget_exceeded") {
-            break;
+        match registered_work_is_terminal_at_quiescence(&storage, &preexisting) {
+            Ok(retained_owner_loss) => {
+                if !retained_owner_loss.is_empty() {
+                    assert_eq!(
+                        health["result"]["structuredContent"]["maintenance"]["pending"], true,
+                        "retained owner-loss evidence was reported idle"
+                    );
+                    for path in retained_owner_loss {
+                        assert_eq!(
+                            physical_directory_identity(&path).unwrap(),
+                            preexisting[&path]
+                        );
+                    }
+                }
+                break;
+            }
+            Err(reason) => assert!(
+                Instant::now() < deadline,
+                "failed refresh did not reach closed owner state: {reason}; health={health}"
+            ),
         }
-        std::thread::sleep(Duration::from_millis(50));
     }
-    assert!(
-        last_error.contains("memory_budget_exceeded"),
-        "expected a structured memory failure, got {last_error:?}"
-    );
     assert_eq!(active_generation_id(&active_path), active_before);
-    assert_eq!(directory_count(&storage.join("runs")), 0);
-    assert_eq!(directory_count(&workers_root), 0);
 }
 
 #[test]
@@ -233,8 +296,8 @@ fn http_server_plus_coordinator_stays_below_idle_rss_gate() {
     let state = repo.join(".codebaseGraph");
     let storage = state.join("storage");
     fs::create_dir_all(&state).unwrap();
-    write_config_with_policy(&repo, &storage, "off", 768, 384, 32);
-    let mut child = Command::new(env!("CARGO_BIN_EXE_codebase-graph"))
+    write_config_with_policy(&repo, &storage, "off", 32);
+    let mut child = Command::new(binary())
         .arg("mcp")
         .arg("http")
         .arg("--repo-root")
@@ -306,7 +369,7 @@ struct McpClient {
 
 impl McpClient {
     fn start(repo: &Path, index: usize) -> Self {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_codebase-graph"))
+        let mut child = Command::new(binary())
             .arg("mcp")
             .arg("start")
             .arg("--repo-root")
@@ -390,6 +453,181 @@ fn wait_for_coordinator(
         assert!(Instant::now() < deadline, "coordinator takeover timed out");
         std::thread::sleep(Duration::from_millis(25));
     }
+}
+
+fn physical_directory_identity(path: &Path) -> Result<(u64, u64), String> {
+    let metadata = fs::symlink_metadata(path).map_err(|error| error.to_string())?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err("workspace is not a real directory".into());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        Ok((metadata.dev(), metadata.ino()))
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::{fs::OpenOptionsExt, io::AsRawHandle};
+        use windows_sys::Win32::Storage::FileSystem::{
+            GetFileInformationByHandle, BY_HANDLE_FILE_INFORMATION, FILE_ATTRIBUTE_DIRECTORY,
+            FILE_ATTRIBUTE_REPARSE_POINT, FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT,
+            FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+        };
+        let file = fs::OpenOptions::new()
+            .access_mode(FILE_READ_ATTRIBUTES)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+            .open(path)
+            .map_err(|error| error.to_string())?;
+        let mut information: BY_HANDLE_FILE_INFORMATION = unsafe { std::mem::zeroed() };
+        if unsafe { GetFileInformationByHandle(file.as_raw_handle() as _, &mut information) } == 0 {
+            return Err(std::io::Error::last_os_error().to_string());
+        }
+        if information.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY == 0
+            || information.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT != 0
+        {
+            return Err("workspace is not a real directory".into());
+        }
+        Ok((
+            u64::from(information.dwVolumeSerialNumber),
+            (u64::from(information.nFileIndexHigh) << 32) | u64::from(information.nFileIndexLow),
+        ))
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        Err("physical workspace identity unavailable".into())
+    }
+}
+
+/// Observation only: real worker/writer/owner leases exclude concurrent births
+/// and mutations while test assertions inspect committed terminal control facts.
+/// These bytes are never used to authorize cleanup or adopt unknown payloads.
+fn observation_lock(path: &Path) -> Result<fs::File, String> {
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(path)
+        .map_err(|error| format!("{}: {error}", path.display()))?;
+    fs2::FileExt::try_lock_exclusive(&file)
+        .map_err(|error| format!("busy {}: {error}", path.display()))?;
+    Ok(file)
+}
+
+fn registered_work_is_terminal_at_quiescence(
+    storage: &Path,
+    preexisting: &std::collections::BTreeMap<PathBuf, (u64, u64)>,
+) -> Result<Vec<PathBuf>, String> {
+    use sha2::{Digest, Sha256};
+    let lock = observation_lock;
+    let _worker = lock(&storage.join("worker.lock"))?;
+    let _writer = lock(&storage.join("writer.lock"))?;
+    if active_worker_pid(&storage.join("worker.json")).is_some() {
+        return Err("actual worker execution state remains live".into());
+    }
+    let number = |bytes: &[u8]| u64::from_le_bytes(bytes.try_into().unwrap());
+    let mut retained_owner_loss = Vec::new();
+    for category in ["runs", "workers"] {
+        let entries = fs::read_dir(storage.join(category)).map_err(|error| error.to_string())?;
+        for entry in entries {
+            let root = entry.map_err(|error| error.to_string())?.path();
+            let _owner = lock(&root.join("lease.lock"))?;
+            let read = |name: &str| fs::read(root.join(name)).map_err(|error| error.to_string());
+            let scope = read(".workspace.binding")?;
+            if scope.len() != 512
+                || &scope[..8] != b"CGWSCP01"
+                || Sha256::digest(&scope[..480]).as_slice() != &scope[480..]
+            {
+                return Err(format!("unverified registration {}", root.display()));
+            }
+            let selector = read(".publication.selector")?;
+            if selector.len() != 2392
+                || &selector[..8] != b"CGCOMM01"
+                || selector[8..40] != scope[128..160]
+                || Sha256::digest(&selector[..96]).as_slice() != &selector[96..128]
+            {
+                return Err(format!("uncommitted control {}", root.display()));
+            }
+            let intent = &selector[128..];
+            if &intent[..8] == b"CGINTN01"
+                && intent[8..40] == scope[128..160]
+                && Sha256::digest(&intent[..2232]).as_slice() == &intent[2232..]
+                && number(&intent[48..56]) > number(&selector[40..48])
+            {
+                return Err(format!(
+                    "control recovery remains pending {}",
+                    root.display()
+                ));
+            }
+            let active = number(&selector[48..56]);
+            if active > 1 {
+                return Err("invalid active control slot".into());
+            }
+            let slot = read(&format!(".publication.data{active}"))?;
+            if slot.len() != 2136
+                || &slot[..8] != b"CGSLOT01"
+                || slot[8..40] != scope[128..160]
+                || slot[40..48] != selector[40..48]
+                || number(&slot[48..56]) != 456
+                || Sha256::digest(&slot[..2104]).as_slice() != &slot[2104..]
+                || slot[2104..] != selector[56..88]
+            {
+                return Err(format!("unverified terminal payload {}", root.display()));
+            }
+            let control = &slot[56..512];
+            if &control[..8] == b"CGWCTL01"
+                && control[8] == 0
+                && control[9] == 0
+                && category == "workers"
+                && preexisting.get(&root) == Some(&physical_directory_identity(&root)?)
+            {
+                // An earlier deliberately killed owner cannot produce terminal
+                // authority. Its actual unlocked lease + empty-tree
+                // receipt prove inactivity; preserve its Building evidence.
+                let mut leases = Vec::new();
+                for entry in fs::read_dir(&root).map_err(|error| error.to_string())? {
+                    let path = entry.map_err(|error| error.to_string())?.path();
+                    if !path
+                        .file_name()
+                        .unwrap()
+                        .to_string_lossy()
+                        .starts_with(".lifecycle-")
+                    {
+                        continue;
+                    }
+                    let lease = lock(&path.join("lease"))?;
+                    let receipt: serde_json::Value = serde_json::from_slice(
+                        &fs::read(path.join("receipt.json")).map_err(|error| error.to_string())?,
+                    )
+                    .map_err(|error| error.to_string())?;
+                    if receipt["containment_empty"] != true {
+                        return Err(format!(
+                            "preexisting owner-loss containment unproven {}",
+                            root.display()
+                        ));
+                    }
+                    leases.push(lease);
+                }
+                if leases.is_empty() {
+                    return Err("owner-loss root lacks actual empty-tree proof".into());
+                }
+                retained_owner_loss.push(root);
+                continue;
+            }
+            if &control[..8] != b"CGWCTL01"
+                || !matches!(control[8], 4 | 5)
+                || !matches!(control[9], 1 | 2)
+                || control[40..48] != control[48..56]
+                || control[16..24] != control[56..64]
+            {
+                return Err(format!(
+                    "nonterminal registered {} phase={}",
+                    root.display(),
+                    control[8]
+                ));
+            }
+        }
+    }
+    Ok(retained_owner_loss)
 }
 
 fn directory_count(path: &Path) -> usize {
@@ -507,27 +745,18 @@ fn sample_process_rss(_pid: u32) -> std::io::Result<u64> {
     ))
 }
 
-fn write_config(repo: &Path, storage: &Path, worker: u64, rust: u64, spill: u64) {
-    write_config_with_policy(repo, storage, "leader", worker, rust, spill);
+fn write_config(repo: &Path, storage: &Path, spill: u64) {
+    write_config_with_policy(repo, storage, "leader", spill);
 }
 
-fn write_config_with_policy(
-    repo: &Path,
-    storage: &Path,
-    policy: &str,
-    worker: u64,
-    rust: u64,
-    spill: u64,
-) {
-    write_config_with_policy_and_interval(repo, storage, policy, worker, rust, spill, None);
+fn write_config_with_policy(repo: &Path, storage: &Path, policy: &str, spill: u64) {
+    write_config_with_policy_and_interval(repo, storage, policy, spill, None);
 }
 
 fn write_config_with_policy_and_interval(
     repo: &Path,
     storage: &Path,
     policy: &str,
-    worker: u64,
-    rust: u64,
     spill: u64,
     reconcile_interval_ms: Option<u64>,
 ) {
@@ -544,8 +773,6 @@ fn write_config_with_policy_and_interval(
             "refresh": refresh,
             "materialization": {
                 "include_fts": true,
-                "worker_memory_mib": worker,
-                "rust_memory_mib": rust,
                 "spill_chunk_mib": spill,
                 "max_parallelism": 2
             }
@@ -563,5 +790,5 @@ fn temp_repo() -> PathBuf {
         sequence
     ));
     fs::create_dir_all(&path).unwrap();
-    path
+    fs::canonicalize(path).unwrap()
 }

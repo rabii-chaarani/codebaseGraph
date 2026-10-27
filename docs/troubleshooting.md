@@ -37,7 +37,7 @@ are documented in the [security policy](../SECURITY.md).
 | Missing LadyBugDB | Install `codebase-graph` from crates.io, a release archive, or this checkout. |
 | Stale graph | Run `codebase-graph mcp daemon status --config .codebaseGraph/config.json`. Use `watch` for an explicit foreground watcher or `build --mode full` for a manual rebuild. |
 | MCP HTTP transport send error | Run `codebase-graph mcp daemon status --config .codebaseGraph/config.json`. Inspect `service`, `latest_failure`, and `recommended_action`, then run the reported `start_daemon` command. |
-| Daemon service unavailable | Ensure launchd, the systemd user manager, or Task Scheduler is available, then run `codebase-graph mcp daemon start --config .codebaseGraph/config.json`. Setup fails closed instead of silently creating stdio registrations. |
+| Daemon service unavailable | Ensure launchd on macOS ARM64 or Task Scheduler on Windows x86_64 is available, then run `codebase-graph mcp daemon start --config .codebaseGraph/config.json`. Setup fails closed instead of silently creating stdio registrations. |
 | Broken setup state | Run `codebase-graph reinstall` to recreate `.codebaseGraph/` and refresh the selected registration. |
 | Broken client configuration only | Run `codebase-graph mcp install --client <client> --verify`. |
 | Binary not found | Ensure the native `codebase-graph` binary is on `PATH`. |

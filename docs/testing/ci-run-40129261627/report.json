@@ -1,0 +1,38 @@
+{
+  "source_commit": "90f2f17308e9c309e27eb0c30fab919f26c70390",
+  "run_id": 40129261627,
+  "macos": {
+    "unit": {
+      "job": "success",
+      "active_tests": 879,
+      "test_seconds": 1373.994
+    },
+    "generation": {
+      "job": "failure",
+      "all_five_tests_passed": true,
+      "test_seconds": 942.593,
+      "reason": "Cargo rebuilt the compiler output; captured CLI hash changed"
+    },
+    "integration": {
+      "job": "failure",
+      "all_test_and_doctest_assertions_passed": true,
+      "test_seconds": [
+        2139.987,
+        1.456,
+        2.309
+      ],
+      "reason": "Cargo rebuilt the compiler output; captured CLI hash changed"
+    }
+  },
+  "windows": {
+    "preflight_passed": 12,
+    "preflight_failed": 13,
+    "full_suite_executed": false,
+    "causes": [
+      "directory reopen access denied",
+      "inventory fixture reread its still-locked writer file"
+    ]
+  },
+  "linux": "all tests and artifact passed",
+  "required": "failure; native repair verification remains incomplete"
+}

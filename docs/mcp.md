@@ -56,11 +56,10 @@ changing the MCP URL.
 
 The service manager is selected by platform:
 
-- macOS: a user `launchd` service owns the configured loopback listener and
+- macOS ARM64: a user `launchd` service owns the configured loopback listener and
   starts or restarts the daemon when a client connects, including in
   on-demand-only user sessions.
-- Linux: a `systemd --user` unit manages the repository daemon.
-- Windows: Task Scheduler manages the repository daemon.
+- Windows x86_64: Task Scheduler manages the repository daemon.
 
 A repository lock prevents a second daemon from starting for the same graph
 state. If the service manager is unavailable, setup fails closed rather than

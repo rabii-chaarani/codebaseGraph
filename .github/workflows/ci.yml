@@ -94,12 +94,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: linux-x86_64
-            run-tests: true
           - target: macos-arm64
             run-tests: true
-          - target: macos-x86_64
-            run-tests: false
           - target: windows-x86_64
             run-tests: true
     uses: ./.github/workflows/native.yml

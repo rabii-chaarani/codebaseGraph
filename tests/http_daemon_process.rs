@@ -938,35 +938,49 @@ fn one_http_daemon_serves_multiple_sessions_and_rejects_duplicate_owner() {
             .any(|tool| tool["name"] == "graph_health"));
     }
 
-    let context = request(
-        port,
-        "POST",
-        "/mcp",
-        &[
-            (
-                "mcp-session-id",
-                first.headers.get("mcp-session-id").unwrap(),
-            ),
-            ("mcp-protocol-version", MCP_PROTOCOL_VERSION),
-        ],
-        Some(&json!({
-            "jsonrpc": "2.0",
-            "id": 5,
-            "method": "tools/call",
-            "params": {
-                "name": "graph_context",
-                "arguments": {
-                    "query": "helper",
-                    "layer": "semantic",
-                    "profile": "definitions",
-                    "detail": "slim",
-                    "context_limit": 1
+    // Startup reconciliation/cleanup may briefly own the real execution slot.
+    // Retry only that documented transient response; preserve every other MCP
+    // error as a failure with its full diagnostics.
+    let context_deadline = Instant::now() + Duration::from_secs(120);
+    let context = loop {
+        let response = request(
+            port,
+            "POST",
+            "/mcp",
+            &[
+                (
+                    "mcp-session-id",
+                    first.headers.get("mcp-session-id").unwrap(),
+                ),
+                ("mcp-protocol-version", MCP_PROTOCOL_VERSION),
+            ],
+            Some(&json!({
+                "jsonrpc": "2.0",
+                "id": 5,
+                "method": "tools/call",
+                "params": {
+                    "name": "graph_context",
+                    "arguments": {
+                        "query": "helper",
+                        "layer": "semantic",
+                        "profile": "definitions",
+                        "detail": "slim",
+                        "context_limit": 1
+                    }
                 }
-            }
-        })),
-    );
+            })),
+        );
+        if response.body["result"]["structuredContent"]["error"]["code"] != "graph_busy" {
+            break response;
+        }
+        assert!(
+            Instant::now() < context_deadline,
+            "graph_context stayed busy: {response:?}"
+        );
+        thread::sleep(Duration::from_millis(25));
+    };
     assert_eq!(context.status, 200);
-    assert_eq!(context.body["result"]["isError"], false);
+    assert_eq!(context.body["result"]["isError"], false, "{context:?}");
     assert!(context.body["result"]["content"][0]["text"]
         .as_str()
         .unwrap()

@@ -1,0 +1,36 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.12s
+────────────
+ Nextest run ID 5722dd8f-be72-4df1-85a8-631ebc8c57f0 with nextest profile: pr153
+    Starting 30 tests across 1 binary (810 tests skipped)
+        PASS [   0.018s] ( 1/30) codebase-graph storage::maintenance_candidate::tests::candidate_reason_codes_are_fixed_and_reports_do_not_invent_measurements
+        PASS [   0.280s] ( 2/30) codebase-graph storage::maintenance_candidate::tests::candidate_recovers_interrupted_role_control_before_parsing_legacy_payload
+        PASS [   0.252s] ( 3/30) codebase-graph storage::maintenance_candidate::tests::direct_confirmation_does_not_block_modern_metadata_recovery
+        PASS [   0.109s] ( 4/30) codebase-graph storage::maintenance_candidate::tests::managed_confirmation_remains_pending_until_legacy_enrollment
+        PASS [   0.019s] ( 5/30) codebase-graph storage::maintenance_candidate::tests::prepared_candidate_crossings_keep_large_state_indirect
+        PASS [   0.016s] ( 6/30) codebase-graph storage::maintenance_candidate::tests::retirement_control_roundtrip_does_not_certify_whole_pass
+        PASS [   0.019s] ( 7/30) codebase-graph storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_fixed_certificate_rejects_reserved_and_torn_frames
+        PASS [   0.018s] ( 8/30) codebase-graph storage::maintenance_legacy_association::checkpoint_tests::dc_legacy_streaming_native_schema_matches_current_assets
+        PASS [   4.501s] ( 9/30) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_actual_native_association_restart_and_backup_keep_three_payload_fds
+        PASS [   3.470s] (10/30) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_cache_change_after_certification_invalidates_final_join
+        PASS [   6.607s] (11/30) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_database_catalog_and_source_root_substitution_are_unknown
+        PASS [   3.459s] (12/30) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_durable_checkpoint_resumes_after_one_payload_without_relabeling_epoch
+        PASS [   3.122s] (13/30) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_manifest_and_cache_substitution_never_mint_association
+        PASS [   3.240s] (14/30) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_original_epoch_cancellation_and_cap_fail_closed
+        PASS [   3.366s] (15/30) codebase-graph storage::maintenance_legacy_association::tests::dc_legacy_real_public_producer_without_receipts_has_complete_native_association
+        PASS [   0.018s] (16/30) codebase-graph storage::maintenance_legacy_bootstrap::cohort_preparation_layout_tests::accepted_administrative_cohort_keeps_binding_image_out_of_fixed_owner_layout
+        PASS [   0.016s] (17/30) codebase-graph storage::maintenance_legacy_bootstrap::retained_source_observation_layout_tests::retained_source_observer_keeps_snapshot_image_out_of_fixed_owner_layout
+        PASS [   0.118s] (18/30) codebase-graph storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_commit_recovers_without_another_confirmation
+        PASS [   0.098s] (19/30) codebase-graph storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_intent_recovers_without_another_confirmation
+        PASS [   0.099s] (20/30) codebase-graph storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_slot_recovers_without_another_confirmation
+        PASS [   0.017s] (21/30) codebase-graph storage::maintenance_legacy_bootstrap::staging_scope_layout_tests::prepared_staging_scope_keeps_binding_and_scratch_images_boxed
+        PASS [   0.097s] (22/30) codebase-graph storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_closes_and_aborts_only_staging_scope
+        PASS [   0.101s] (23/30) codebase-graph storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_enrolls_and_explicit_rebuild_invalidates_original_owner
+        PASS [   0.043s] (24/30) codebase-graph storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries
+        PASS [   0.016s] (25/30) codebase-graph storage::maintenance_legacy_guard::source_observation_layout_tests::prepared_source_observation_keeps_snapshot_and_recovery_images_boxed
+        PASS [   0.035s] (26/30) codebase-graph storage::maintenance_legacy_guard::tests::dc_legacy_staging_closed_record_refuses_new_actual_producer
+        PASS [   0.016s] (27/30) codebase-graph storage::maintenance_legacy_guard::tests::dc_legacy_staging_custom_root_is_not_enrolled_or_created
+        PASS [   0.021s] (28/30) codebase-graph storage::maintenance_legacy_guard::tests::dc_legacy_staging_retains_actual_shared_gate_through_arc_result_lifetime
+        PASS [   5.554s] (29/30) codebase-graph storage::maintenance_legacy_staging::tests::dc_staging_actual_public_copy_json_csv_profiles_and_streamed_certificates
+        PASS [   0.019s] (30/30) codebase-graph storage::maintenance_legacy_staging::tests::dc_staging_filenames_select_only_exact_known_profiles
+────────────
+     Summary [  34.768s] 30 tests run: 30 passed, 810 skipped

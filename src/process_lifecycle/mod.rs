@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fmt,
     fs::{self, File, OpenOptions},
-    io::{Read, Write},
+    io::{BufWriter, Read, Write},
     net::{TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::{Child, ChildStdin, ChildStdout, Command, Stdio},
@@ -25,7 +25,6 @@ mod windows;
 use windows as platform;
 const TICK: Duration = Duration::from_millis(25);
 const DEADLINE: Duration = Duration::from_secs(5);
-const HEADROOM: u64 = 16 * 1024 * 1024;
 const MAX_FRAME: usize = 4096;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -42,9 +41,6 @@ pub(crate) struct SpawnSpec {
     pub workspace: PathBuf,
     pub stderr_path: PathBuf,
     pub stdout: OutputMode,
-    pub memory_limit_bytes: Option<u64>,
-    #[serde(default)]
-    pub memory_phase: Option<String>,
     pub parent_rss_pid: Option<u32>,
 }
 pub(crate) use crate::storage::containment::{BuildDescriptorV2, ContainmentProof, ExitOutcome};
@@ -58,6 +54,8 @@ pub(crate) enum RecoveryOutcome {
 struct Launch {
     spec: SpawnSpec,
     descriptor: BuildDescriptorV2,
+    #[serde(default)]
+    workspace_startup: Option<crate::storage::maintenance_controls::WorkspaceStartupBinding>,
 }
 #[derive(Serialize, Deserialize)]
 struct Control {
@@ -91,6 +89,52 @@ impl Drop for GuardianChild {
     }
 }
 
+/// Minted only by actual owner-private directory creation, retaining its
+/// physical directory through the optional origin binding operation.
+pub(crate) struct FreshLifecycleDirectory {
+    path: PathBuf,
+    directory: crate::storage::locks::RootedDirectory,
+}
+impl FreshLifecycleDirectory {
+    fn create(path: &Path) -> Result<Self, String> {
+        platform::create_private_dir(path)?;
+        let identity = crate::storage::locks::path_identity(path).map_err(err)?;
+        let directory =
+            crate::storage::locks::RootedDirectory::open(path, identity).map_err(err)?;
+        Ok(Self {
+            path: path.to_owned(),
+            directory,
+        })
+    }
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+    pub(crate) fn directory(&self) -> &crate::storage::locks::RootedDirectory {
+        &self.directory
+    }
+}
+
+/// O_EXCL owner-private file birth; only this module's actual platform
+/// creation branch can construct it. No File/bool conversion is exposed.
+pub(crate) struct FreshLifecycleFile {
+    path: PathBuf,
+    file: File,
+}
+impl FreshLifecycleFile {
+    pub(crate) fn create(path: &Path) -> Result<Self, String> {
+        Ok(Self {
+            path: path.to_owned(),
+            file: platform::create_private_file(path)?,
+        })
+    }
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+    pub(crate) fn file(&self) -> &File {
+        &self.file
+    }
+}
+
 pub(crate) struct PreparedChild {
     guardian: GuardianChild,
     owner: Option<ChildStdin>,
@@ -110,21 +154,36 @@ impl PreparedChild {
                 spec.stderr_path = cwd.join(&spec.stderr_path);
             }
         }
+        let workspace_startup =
+            crate::storage::maintenance_controls::WorkspaceStartupBinding::discover(
+                &spec.workspace,
+            )
+            .map_err(err)?;
+        let _parent_startup = workspace_startup
+            .as_ref()
+            .map(|binding| binding.acquire())
+            .transpose()
+            .map_err(err)?;
         fs::create_dir_all(&spec.workspace).map_err(err)?;
         let build_id = random_id()?;
         let dir = spec.workspace.join(format!(".lifecycle-{build_id}"));
-        platform::create_private_dir(&dir)?;
+        let fresh_lifecycle = FreshLifecycleDirectory::create(&dir)?;
+        if let Ok(Some(created)) =
+            crate::storage::maintenance_controls::WorkspaceCreatedDirectory::from_lifecycle(
+                &fresh_lifecycle,
+            )
+        {
+            let _ =
+                crate::storage::maintenance_origin::record_created_workspace_directory(&created);
+        }
+        drop(fresh_lifecycle);
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
             fs::set_permissions(&dir, fs::Permissions::from_mode(0o700)).map_err(err)?;
         }
-        OpenOptions::new()
-            .create_new(true)
-            .read(true)
-            .write(true)
-            .open(dir.join("lease"))
-            .map_err(err)?;
+        let lease_path = dir.join("lease");
+        create_bound_private_control(&lease_path)?;
         let descriptor = BuildDescriptorV2 {
             version: 2,
             build_id,
@@ -140,6 +199,7 @@ impl PreparedChild {
             &Launch {
                 spec: spec.clone(),
                 descriptor,
+                workspace_startup,
             },
         )?;
         let guardian_executable = match &spec.guardian_executable {
@@ -155,13 +215,7 @@ impl PreparedChild {
                 OutputMode::Pipe => Stdio::piped(),
                 OutputMode::Null => Stdio::null(),
             })
-            .stderr(Stdio::from(
-                OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open(&spec.stderr_path)
-                    .map_err(err)?,
-            ));
+            .stderr(Stdio::from(open_private_append(&spec.stderr_path)?));
         #[cfg(unix)]
         {
             use std::os::unix::process::CommandExt;
@@ -345,6 +399,14 @@ pub(crate) fn run_internal(args: &[String]) -> Result<Option<()>, String> {
 }
 fn run_guardian(path: &Path) -> Result<(), String> {
     let launch: Launch = serde_json::from_slice(&fs::read(path).map_err(err)?).map_err(err)?;
+    // The child opens its OWN shared gate before acquiring lifecycle ownership.
+    // Inherited descriptors are not portable evidence of parent liveness.
+    let startup = launch
+        .workspace_startup
+        .as_ref()
+        .map(|binding| binding.acquire())
+        .transpose()
+        .map_err(err)?;
     let mut d = launch.descriptor;
     let lease = OpenOptions::new()
         .read(true)
@@ -352,6 +414,9 @@ fn run_guardian(path: &Path) -> Result<(), String> {
         .open(d.lifecycle_dir.join("lease"))
         .map_err(err)?;
     lease.lock_exclusive().map_err(err)?;
+    if let Some(startup) = &startup {
+        startup.recheck_building().map_err(err)?;
+    }
     if d.lifecycle_dir.join("retired").exists()
         || d.lifecycle_dir.join("receipt.json").exists()
         || !path.is_file()
@@ -380,7 +445,6 @@ fn run_guardian(path: &Path) -> Result<(), String> {
     d.worker_pid = child.id();
     let mut started = false;
     let mut high_water = 0;
-    let mut budget_reason = None;
     let mut supervision_error = before_ready_barrier(&d, &owner_gone).err();
     let mut cancelled = owner_gone.load(Ordering::Acquire);
     if !cancelled && supervision_error.is_none() {
@@ -388,6 +452,7 @@ fn run_guardian(path: &Path) -> Result<(), String> {
             supervision_error = Some(e);
         }
     }
+    drop(startup);
     loop {
         if supervision_error.is_some() || cancelled {
             break;
@@ -448,28 +513,6 @@ fn run_guardian(path: &Path) -> Result<(), String> {
                     .unwrap_or(0);
                 let observed = rss.saturating_add(parent_rss);
                 high_water = high_water.max(observed);
-                if launch
-                    .spec
-                    .memory_limit_bytes
-                    .is_some_and(|limit| observed > limit.saturating_sub(HEADROOM))
-                {
-                    let mut failure = crate::error::MemoryBudgetExceeded::new(
-                        launch
-                            .spec
-                            .memory_phase
-                            .as_deref()
-                            .unwrap_or("materialization_worker"),
-                        launch.spec.memory_limit_bytes.unwrap(),
-                        observed,
-                        observed,
-                    );
-                    if launch.spec.parent_rss_pid.is_some() {
-                        failure = failure.with_process_rss(parent_rss, rss);
-                    }
-                    budget_reason =
-                        Some(crate::error::NativeError::MemoryBudgetExceeded(failure).to_string());
-                    break;
-                }
             }
         }
         thread::sleep(TICK);
@@ -480,7 +523,6 @@ fn run_guardian(path: &Path) -> Result<(), String> {
         code: None,
         signal: None,
         high_water_bytes: high_water,
-        budget_reason,
         cancelled,
         containment_empty: result.is_ok(),
         supervision_error,
@@ -493,10 +535,7 @@ fn run_guardian(path: &Path) -> Result<(), String> {
                 use std::os::unix::process::ExitStatusExt;
                 outcome.signal = status.signal();
             }
-            outcome.success = status.success()
-                && !cancelled
-                && outcome.budget_reason.is_none()
-                && outcome.supervision_error.is_none();
+            outcome.success = status.success() && !cancelled && outcome.supervision_error.is_none();
         }
         Err(e) => {
             outcome.supervision_error = Some(format!("containment_unknown: {e}"));
@@ -614,24 +653,89 @@ fn random_id() -> Result<String, String> {
 fn err(e: impl fmt::Display) -> String {
     e.to_string()
 }
+fn create_bound_private_control(path: &Path) -> Result<(), String> {
+    let fresh = FreshLifecycleFile::create(path)?;
+    let file =
+        crate::storage::maintenance_controls::WorkspaceControlFile::from_created(fresh, path);
+    if let Some(tracked) = file.tracking() {
+        let _ = crate::storage::maintenance_origin::record_created_workspace_control(tracked);
+    }
+    file.finish_created().map_err(err)
+}
+/// A fresh stderr leaf is private and creation-bound before any inherited
+/// writer can append. Existing caller-owned leaves are never origin-attested.
+fn open_private_append(path: &Path) -> Result<File, String> {
+    if !path.try_exists().map_err(err)? {
+        if let Err(error) = create_bound_private_control(path) {
+            if !path.try_exists().map_err(err)? {
+                return Err(error);
+            }
+        }
+    }
+    OpenOptions::new().append(true).open(path).map_err(err)
+}
 fn write_json(path: &Path, value: &impl Serialize) -> Result<(), String> {
     write_private_json(path, value)
 }
 /// Capability-bearing JSON must be private from the instant its file exists.
 pub(crate) fn write_private_json(path: &Path, value: &impl Serialize) -> Result<(), String> {
+    write_private_json_recorded(path, value).map(|_| ())
+}
+/// Actual creator/accepted-byte/rename evidence, suitable for a caller's
+/// prebound known-metadata record. This never attests an observed old file.
+pub(crate) fn write_private_json_recorded(
+    path: &Path,
+    value: &impl Serialize,
+) -> Result<Option<crate::storage::maintenance_controls::WorkspaceControlPublication>, String> {
     let temp = path.with_extension(format!("{}.tmp", random_id()?));
-    let mut file = platform::create_private_file(&temp)?;
+    let fresh = FreshLifecycleFile::create(&temp)?;
+    let cleanup = (|| {
+        let identity = crate::storage::locks::file_identity(fresh.file()).ok()?;
+        let parent = temp.parent()?;
+        let directory = crate::storage::locks::RootedDirectory::open(
+            parent,
+            crate::storage::locks::path_identity(parent).ok()?,
+        )
+        .ok()?;
+        Some((directory, identity))
+    })();
+    let mut file =
+        crate::storage::maintenance_controls::WorkspaceControlFile::from_created(fresh, path);
+    if let Some(tracked) = file.tracking() {
+        let _ = crate::storage::maintenance_origin::record_created_workspace_control(tracked);
+    }
     let result = (|| {
-        file.write_all(&serde_json::to_vec(value).map_err(err)?)
-            .map_err(err)?;
-        file.sync_all().map_err(err)?;
-        drop(file);
-        fs::rename(&temp, path).map_err(err)
+        {
+            let mut writer = BufWriter::new(&mut file);
+            serde_json::to_writer(&mut writer, value).map_err(err)?;
+            writer.flush().map_err(err)?;
+        }
+        file.publish_recorded(path).map_err(err)
     })();
     if result.is_err() {
-        let _ = fs::remove_file(&temp);
+        if let Some((directory, identity)) = cleanup {
+            if let Some(name) = temp.file_name() {
+                let _ = directory.unlink_file(name.as_encoded_bytes(), identity);
+            }
+        }
     }
     result
+}
+/// Exclusive direct output for a fresh worker request. Serialization remains
+/// streamed through a bounded buffer; the canonical collision is preserved.
+pub(crate) fn write_private_json_new(path: &Path, value: &impl Serialize) -> Result<(), String> {
+    let fresh = FreshLifecycleFile::create(path)?;
+    let mut file =
+        crate::storage::maintenance_controls::WorkspaceControlFile::from_created(fresh, path);
+    if let Some(tracked) = file.tracking() {
+        let _ = crate::storage::maintenance_origin::record_created_workspace_control(tracked);
+    }
+    {
+        let mut writer = BufWriter::new(&mut file);
+        serde_json::to_writer(&mut writer, value).map_err(err)?;
+        writer.flush().map_err(err)?;
+    }
+    file.finish_created().map_err(err)
 }
 
 #[cfg(test)]
@@ -732,6 +836,7 @@ mod tests {
             proof: ContainmentProof::Pending,
         };
         let launch = Launch {
+            workspace_startup: None,
             descriptor,
             spec: SpawnSpec {
                 program: std::env::current_exe().unwrap(),
@@ -740,8 +845,6 @@ mod tests {
                 workspace: dir.clone(),
                 stderr_path: dir.join("stderr"),
                 stdout: OutputMode::Null,
-                memory_limit_bytes: None,
-                memory_phase: None,
                 parent_rss_pid: None,
             },
         };

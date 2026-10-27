@@ -4,6 +4,7 @@ use crate::api::{
     ApiError, CodebaseGraphApi, OperationInvocation, OperationResponse, RefreshServiceConfig,
     RepoSelector,
 };
+use crate::api::{RefreshCancellation, RefreshRuntime, RefreshState};
 use crate::storage::atomic::write_json_atomically;
 use crate::storage::layout::{DirectLayout, ManagedLayout};
 use crate::storage::locks::{try_open_locked, CoordinatorLease, LockMode};
@@ -49,8 +50,21 @@ impl CoordinatorApiConfig {
         }
     }
 
-    fn build_api(&self) -> CodebaseGraphApi {
-        CodebaseGraphApi::for_coordinator_owner(self.selector.clone(), self.refresh)
+    fn build_api(
+        &self,
+        cancellation: RefreshCancellation,
+        maintenance: Option<
+            crate::storage::maintenance::MaintenanceClient<Arc<ExecutionDispatcher>>,
+        >,
+        unavailable: Option<crate::storage::maintenance_scheduler::DriverError>,
+    ) -> (CodebaseGraphApi, Option<RefreshRuntime>) {
+        CodebaseGraphApi::for_coordinator_owner_with_maintenance(
+            self.selector.clone(),
+            self.refresh,
+            cancellation,
+            maintenance,
+            unavailable,
+        )
     }
 }
 
@@ -64,18 +78,97 @@ struct ClientInner {
     control: CoordinatorControlPaths,
     api_config: CoordinatorApiConfig,
     route: Mutex<CoordinatorRoute>,
-    monitor_stop: AtomicBool,
-    monitor: Mutex<Option<JoinHandle<()>>>,
+    monitor_stop: Arc<AtomicBool>,
+    monitor: JoinedThread,
 }
 
 impl Drop for ClientInner {
     fn drop(&mut self) {
         self.monitor_stop.store(true, Ordering::Release);
-        if let Ok(mut monitor) = self.monitor.lock() {
-            // The last strong reference can be released by the monitor itself.
-            // Dropping the handle detaches safely and the weak loop then exits.
-            monitor.take();
+        // The final strong reference may be released by this monitor itself.
+        // That case returns to monitor_route's immediate post-drop exit tail.
+        // External callers always join; no shared mutex spans the wait.
+        self.monitor.join();
+    }
+}
+
+#[derive(Debug)]
+enum JoinState {
+    Empty,
+    Running(JoinHandle<()>),
+    // Preserve target identity even after another drainer takes the handle.
+    Joining(thread::ThreadId),
+    Joined,
+}
+
+#[derive(Debug)]
+struct JoinedThread {
+    state: Mutex<JoinState>,
+    completed: Condvar,
+}
+impl JoinedThread {
+    fn new(handle: Option<JoinHandle<()>>) -> Self {
+        Self {
+            state: Mutex::new(handle.map_or(JoinState::Empty, JoinState::Running)),
+            completed: Condvar::new(),
         }
+    }
+    fn install(&self, handle: JoinHandle<()>) {
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        assert!(matches!(*state, JoinState::Empty));
+        *state = JoinState::Running(handle);
+    }
+    fn is_running(&self) -> bool {
+        match &*self.state.lock().unwrap_or_else(|e| e.into_inner()) {
+            JoinState::Running(handle) => !handle.is_finished(),
+            JoinState::Joining(_) => true,
+            _ => false,
+        }
+    }
+    /// False means the target is the calling thread, never completed drain.
+    fn join(&self) -> bool {
+        let handle = {
+            let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+            loop {
+                match &*state {
+                    JoinState::Empty | JoinState::Joined => return true,
+                    JoinState::Running(handle) => {
+                        let target = handle.thread().id();
+                        if target == thread::current().id() {
+                            return false;
+                        }
+                        let JoinState::Running(handle) =
+                            std::mem::replace(&mut *state, JoinState::Joining(target))
+                        else {
+                            unreachable!()
+                        };
+                        break handle;
+                    }
+                    JoinState::Joining(target) if *target == thread::current().id() => {
+                        return false
+                    }
+                    JoinState::Joining(_) => {
+                        state = self
+                            .completed
+                            .wait(state)
+                            .unwrap_or_else(|e| e.into_inner())
+                    }
+                }
+            }
+        };
+        // First local, last to drop, including if a join panic payload panics.
+        // Concurrent drainers cannot pass until all join-owned disposal ends.
+        let _completion = JoinCompletion(self);
+        let result = handle.join();
+        drop(result);
+        true
+    }
+}
+struct JoinCompletion<'a>(&'a JoinedThread);
+impl Drop for JoinCompletion<'_> {
+    fn drop(&mut self) {
+        *self.0.state.lock().unwrap_or_else(|e| e.into_inner()) = JoinState::Joined;
+        self.0.completed.notify_all();
     }
 }
 
@@ -88,38 +181,28 @@ struct CoordinatorRoute {
 #[derive(Debug)]
 struct CoordinatorOwner {
     stop: Arc<AtomicBool>,
-    thread: Mutex<Option<JoinHandle<()>>>,
+    thread: JoinedThread,
     dispatcher: Arc<ExecutionDispatcher>,
+    refresh_cancel: RefreshCancellation,
 }
 
 impl Drop for CoordinatorOwner {
     fn drop(&mut self) {
-        self.stop.store(true, Ordering::Release);
-        self.dispatcher.stop_admission();
-        if let Ok(mut thread) = self.thread.lock() {
-            if let Some(thread) = thread.take() {
-                let _ = thread.join();
-            }
-        }
+        self.stop_and_drain();
     }
 }
-
 impl CoordinatorOwner {
     fn is_running(&self) -> bool {
-        self.thread
-            .lock()
-            .map(|thread| thread.as_ref().is_some_and(|thread| !thread.is_finished()))
-            .unwrap_or(false)
+        self.thread.is_running()
     }
-
     fn stop_and_drain(&self) {
         self.stop.store(true, Ordering::Release);
+        self.refresh_cancel.request_stop();
         self.dispatcher.stop_admission();
-        if let Ok(mut thread) = self.thread.lock() {
-            if let Some(thread) = thread.take() {
-                let _ = thread.join();
-            }
-        }
+        assert!(
+            self.thread.join(),
+            "coordinator owner cannot drain its own serving thread"
+        );
     }
 }
 
@@ -127,6 +210,8 @@ impl CoordinatorOwner {
 struct CoordinatorControlPaths {
     lock: PathBuf,
     state: PathBuf,
+    managed_initialization: Option<ManagedLayout>,
+    direct_initialization: Option<DirectLayout>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -153,6 +238,7 @@ struct ExecutionJob {
     operation_id: String,
     invocation: OperationInvocation,
     context: ExecutionContext,
+    legacy_confirmation: Option<bool>,
     stream: TcpStream,
     _connection: ConnectionPermit,
 }
@@ -165,13 +251,66 @@ struct ExecutionDispatchState {
 }
 
 #[derive(Debug, Default)]
-struct ExecutionDispatcher {
+pub(crate) struct ExecutionDispatcher {
     state: Mutex<ExecutionDispatchState>,
     ready: Condvar,
     active_snapshot: AtomicBool,
 }
 
+/// Noncloneable ownership of the dispatcher's real execution slot. It has no
+/// caller deadline: only completion/drop of the actual maintenance work releases
+/// admission, including when its initiating caller has gone away.
+#[derive(Debug)]
+pub(crate) struct MaintenanceExecutionPermit {
+    dispatcher: Arc<ExecutionDispatcher>,
+}
+
+impl Drop for MaintenanceExecutionPermit {
+    fn drop(&mut self) {
+        self.dispatcher.finish_one();
+    }
+}
+
+// Driver-only boundary: advisory work never owns this permit. Production
+// collection wiring remains gated on the accepted storage controller contract.
+impl crate::storage::maintenance_scheduler::MaintenanceAdmission for Arc<ExecutionDispatcher> {
+    type Permit = MaintenanceExecutionPermit;
+
+    fn try_acquire(&self) -> Option<Self::Permit> {
+        self.try_acquire_maintenance()
+    }
+
+    fn stop_admission(&self) {
+        ExecutionDispatcher::stop_admission(self);
+    }
+
+    #[cfg(test)]
+    fn run_recovery(
+        &self,
+        operation: &mut dyn FnMut()
+            -> Result<(), crate::storage::maintenance_scheduler::DriverError>,
+    ) -> Result<bool, crate::storage::maintenance_scheduler::DriverError> {
+        let Some(_permit) = self.try_acquire_maintenance() else {
+            return Ok(false);
+        };
+        operation()?;
+        Ok(true)
+    }
+}
+
 impl ExecutionDispatcher {
+    fn try_acquire_maintenance(self: &Arc<Self>) -> Option<MaintenanceExecutionPermit> {
+        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        if state.stopping || state.active || state.job.is_some() {
+            return None;
+        }
+        state.active = true;
+        self.active_snapshot.store(true, Ordering::Release);
+        Some(MaintenanceExecutionPermit {
+            dispatcher: Arc::clone(self),
+        })
+    }
+
     fn try_submit(&self, job: ExecutionJob) -> Result<(), Box<ExecutionJob>> {
         let mut state = self
             .state
@@ -358,8 +497,8 @@ impl CoordinatorClient {
                 control,
                 api_config: config,
                 route: Mutex::new(CoordinatorRoute::default()),
-                monitor_stop: AtomicBool::new(false),
-                monitor: Mutex::new(None),
+                monitor_stop: Arc::new(AtomicBool::new(false)),
+                monitor: JoinedThread::new(None),
             }),
         };
         client.refresh_route()?;
@@ -369,15 +508,12 @@ impl CoordinatorClient {
 
     fn start_monitor(&self) -> Result<(), String> {
         let weak = Arc::downgrade(&self.inner);
+        let stop = Arc::clone(&self.inner.monitor_stop);
         let monitor = thread::Builder::new()
             .name("codebase-graph-coordinator-monitor".to_string())
-            .spawn(move || monitor_route(weak))
+            .spawn(move || monitor_route(weak, stop))
             .map_err(|error| format!("failed to start coordinator monitor: {error}"))?;
-        *self
-            .inner
-            .monitor
-            .lock()
-            .map_err(|_| "coordinator monitor lock is poisoned".to_string())? = Some(monitor);
+        self.inner.monitor.install(monitor);
         Ok(())
     }
 
@@ -421,6 +557,20 @@ impl CoordinatorClient {
         );
         loop {
             context.remaining()?;
+            if let Some(layout) = &self.inner.control.managed_initialization {
+                // Only the actual mutating acquisition may create this root.
+                // Existing roots are never enrolled by observation or emptiness.
+                crate::storage::maintenance_ownership::initialize_fresh_managed_domain(layout)
+                    .map_err(|error| {
+                        ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
+                    })?;
+            }
+            if let Some(layout) = &self.inner.control.direct_initialization {
+                crate::storage::maintenance_ownership::initialize_fresh_direct_domain(layout)
+                    .map_err(|error| {
+                        ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
+                    })?;
+            }
             if let Some(lease) = try_open_locked(&self.inner.control.lock, LockMode::Exclusive)
                 .map_err(|error| {
                     ApiError::new("coordinator_unavailable", error.to_string()).retryable(true)
@@ -601,13 +751,10 @@ impl CoordinatorClient {
 
     pub(crate) fn drain_owned_operation(&self) {
         self.inner.monitor_stop.store(true, Ordering::Release);
-        if let Ok(mut monitor) = self.inner.monitor.lock() {
-            if let Some(monitor) = monitor.take() {
-                if monitor.thread().id() != thread::current().id() {
-                    let _ = monitor.join();
-                }
-            }
-        }
+        assert!(
+            self.inner.monitor.join(),
+            "an external monitor drain cannot join itself"
+        );
         let owner = loop {
             match self.inner.route.try_lock() {
                 Ok(route) => break route.owner.clone(),
@@ -656,30 +803,56 @@ impl CoordinatorClient {
     }
 }
 
-fn monitor_route(inner: Weak<ClientInner>) {
+fn monitor_route(weak: Weak<ClientInner>, stop: Arc<AtomicBool>) {
+    monitor_route_with_probe(weak, stop, |_| {});
+}
+
+enum MonitorPhase {
+    BeforeWait,
+    Observed,
+}
+fn monitor_route_with_probe<P: FnMut(MonitorPhase)>(
+    weak: Weak<ClientInner>,
+    stop: Arc<AtomicBool>,
+    mut probe: P,
+) {
     loop {
-        thread::sleep(MONITOR_INTERVAL);
-        let Some(inner) = inner.upgrade() else {
-            return;
-        };
-        if inner.monitor_stop.load(Ordering::Acquire) {
+        if stop.load(Ordering::Acquire) || weak.strong_count() == 0 {
             return;
         }
-        let (state, owner) = inner
-            .route
-            .lock()
-            .ok()
-            .map(|route| (route.state.clone(), route.owner.clone()))
-            .unwrap_or((None, None));
-        let route_is_reachable = match owner {
-            Some(owner) => owner.is_running(),
-            None => state
-                .as_ref()
-                .is_some_and(|state| ping_state(state).is_ok()),
-        };
-        if !route_is_reachable {
-            let client = CoordinatorClient { inner };
-            let _ = client.refresh_route();
+        probe(MonitorPhase::BeforeWait);
+        thread::sleep(MONITOR_INTERVAL);
+        {
+            let Some(inner) = weak.upgrade() else {
+                return;
+            };
+            if stop.load(Ordering::Acquire) {
+                return;
+            }
+            let (state, owner) = inner
+                .route
+                .lock()
+                .ok()
+                .map(|route| (route.state.clone(), route.owner.clone()))
+                .unwrap_or((None, None));
+            let reachable = match owner {
+                Some(owner) => owner.is_running(),
+                None => state
+                    .as_ref()
+                    .is_some_and(|state| ping_state(state).is_ok()),
+            };
+            if !reachable {
+                let client = CoordinatorClient {
+                    inner: Arc::clone(&inner),
+                };
+                let _ = client.refresh_route();
+            }
+            probe(MonitorPhase::Observed);
+        } // All iteration strong references, including a temporary client, end.
+          // A final self-drop can set stop during that destruction. Check the
+          // independent token/Weak only AFTER it, before another sleep or work.
+        if stop.load(Ordering::Acquire) || weak.strong_count() == 0 {
+            return;
         }
     }
 }
@@ -689,6 +862,27 @@ fn start_owner(
     lease: CoordinatorLease,
     config: CoordinatorApiConfig,
 ) -> Result<(CoordinatorState, CoordinatorOwner), String> {
+    start_owner_with_probe(control, lease, config, |stage| {
+        if let OwnerStartup::RefreshStarted(state) = stage {
+            drop(state);
+        }
+    })
+}
+
+enum OwnerStartup {
+    BeforeRefresh,
+    RefreshStarted(Option<Arc<RefreshState>>),
+}
+
+fn start_owner_with_probe<P>(
+    control: CoordinatorControlPaths,
+    lease: CoordinatorLease,
+    config: CoordinatorApiConfig,
+    mut started: P,
+) -> Result<(CoordinatorState, CoordinatorOwner), String>
+where
+    P: FnMut(OwnerStartup) + Send + 'static,
+{
     let listener = TcpListener::bind(("127.0.0.1", 0))
         .map_err(|error| format!("failed to bind repository coordinator: {error}"))?;
     listener
@@ -709,6 +903,8 @@ fn start_owner(
 
     let stop = Arc::new(AtomicBool::new(false));
     let server_stop = Arc::clone(&stop);
+    let refresh_cancel = RefreshCancellation::default();
+    let server_refresh_cancel = refresh_cancel.clone();
     let server_state = state.clone();
     let state_path = control.state.clone();
     let dispatcher = Arc::new(ExecutionDispatcher::default());
@@ -716,7 +912,37 @@ fn start_owner(
     let thread = thread::Builder::new()
         .name("codebase-graph-coordinator".to_string())
         .spawn(move || {
-            let api = config.build_api();
+            started(OwnerStartup::BeforeRefresh);
+            let maintenance = (|| {
+                let memory = crate::storage::maintenance_budget::CleanupMemory::new(
+                    crate::storage::maintenance::MAINTENANCE_MEMORY_BYTES,
+                )
+                .map_err(|_| crate::storage::maintenance_scheduler::DriverError::ResourceLimit)?;
+                let target = config
+                    .identity
+                    .as_ref()
+                    .expect("captured coordinator identity")
+                    .maintenance_target(&memory)
+                    .map_err(|_| {
+                        crate::storage::maintenance_scheduler::DriverError::ResourceLimit
+                    })?;
+                crate::storage::maintenance::start_controller(
+                    target,
+                    memory,
+                    Arc::clone(&server_dispatcher),
+                    false,
+                )
+            })();
+            let (mut maintenance_runtime, maintenance_client, maintenance_error) = match maintenance
+            {
+                Ok((runtime, client)) => (Some(runtime), Some(client), None),
+                Err(error) => (None, None, Some(error)),
+            };
+            let (api, mut refresh_runtime) =
+                config.build_api(server_refresh_cancel, maintenance_client, maintenance_error);
+            started(OwnerStartup::RefreshStarted(
+                refresh_runtime.as_ref().map(RefreshRuntime::state),
+            ));
             let identity = config
                 .identity
                 .as_ref()
@@ -732,6 +958,15 @@ fn start_owner(
                 &server_stop,
                 &server_dispatcher,
             );
+            if let Some(runtime) = maintenance_runtime.as_ref() {
+                runtime.request_stop();
+            }
+            if let Some(runtime) = refresh_runtime.as_mut() {
+                runtime.stop_and_join();
+            }
+            if let Some(runtime) = maintenance_runtime.as_mut() {
+                runtime.stop_and_join();
+            }
             remove_owned_state(&state_path, &server_state.token);
             drop(lease);
         })
@@ -740,8 +975,9 @@ fn start_owner(
         state,
         CoordinatorOwner {
             stop,
-            thread: Mutex::new(Some(thread)),
+            thread: JoinedThread::new(Some(thread)),
             dispatcher,
+            refresh_cancel,
         },
     ))
 }
@@ -764,16 +1000,22 @@ fn serve_owner(
         state,
         stop,
         dispatcher,
-        move |mut invocation| {
+        move |operation_id, mut invocation| {
             identity
                 .validate()
                 .map_err(|error| ApiError::new("repository_identity_changed", error))?;
             invocation.repo = selector.clone();
-            Ok(invocation)
+            let confirmation =
+                api.prepare_legacy_confirmation_request(operation_id, &invocation)?;
+            Ok((invocation, confirmation))
         },
-        move |operation_id, invocation, context| {
+        move |operation_id, invocation, context, confirmation| {
             context.remaining()?;
-            owner_api.execute_invocation(operation_id, invocation)
+            owner_api.execute_invocation_with_legacy_confirmation(
+                operation_id,
+                invocation,
+                confirmation,
+            )
         },
     );
 }
@@ -786,8 +1028,16 @@ fn serve_owner_with_executor<P, E>(
     prepare: P,
     execute: E,
 ) where
-    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
-    E: Fn(&str, &OperationInvocation, ExecutionContext) -> Result<OperationResponse, ApiError>
+    P: Fn(&str, OperationInvocation) -> Result<(OperationInvocation, Option<bool>), ApiError>
+        + Send
+        + Sync
+        + 'static,
+    E: Fn(
+            &str,
+            &OperationInvocation,
+            ExecutionContext,
+            Option<bool>,
+        ) -> Result<OperationResponse, ApiError>
         + Send
         + Sync
         + 'static,
@@ -798,37 +1048,40 @@ fn serve_owner_with_executor<P, E>(
     let prepare = Arc::new(prepare);
     let execute = Arc::new(execute);
     let worker_execute = Arc::clone(&execute);
-    let worker = thread::Builder::new()
-        .name("codebase-graph-coordinator-executor".to_string())
-        .spawn(move || {
-            while let Some(job) = worker_dispatcher.take() {
-                let reply = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    if job.context.remaining().is_err() {
-                        None
-                    } else {
-                        match worker_execute(&job.operation_id, &job.invocation, job.context) {
-                            Ok(mut response) if job.context.remaining().is_ok() => {
-                                attach_coordinator_status(&mut response, &worker_state);
-                                Some(CoordinatorReply::Success(response))
-                            }
-                            Ok(_) if job.context.remaining().is_err() => None,
-                            Ok(_) => None,
-                            Err(_) if job.context.remaining().is_err() => None,
-                            Err(error) => Some(CoordinatorReply::Failure(error)),
-                        }
-                    }
-                }))
-                .unwrap_or(None);
-                worker_dispatcher.finish_one();
-                if let Some(reply) = reply {
-                    let registry = Arc::clone(&job._connection.registry);
-                    registry.send_response(job.stream, reply, job._connection);
+    let worker = spawn_execution_worker(move || {
+        while let Some(job) = worker_dispatcher.take() {
+            let reply = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                if job.context.remaining().is_err() {
+                    None
                 } else {
-                    let _ = job.stream.shutdown(std::net::Shutdown::Both);
-                    drop(job._connection);
+                    match worker_execute(
+                        &job.operation_id,
+                        &job.invocation,
+                        job.context,
+                        job.legacy_confirmation,
+                    ) {
+                        Ok(mut response) if job.context.remaining().is_ok() => {
+                            attach_coordinator_status(&mut response, &worker_state);
+                            Some(CoordinatorReply::Success(response))
+                        }
+                        Ok(_) if job.context.remaining().is_err() => None,
+                        Ok(_) => None,
+                        Err(_) if job.context.remaining().is_err() => None,
+                        Err(error) => Some(CoordinatorReply::Failure(error)),
+                    }
                 }
+            }))
+            .unwrap_or(None);
+            worker_dispatcher.finish_one();
+            if let Some(reply) = reply {
+                let registry = Arc::clone(&job._connection.registry);
+                registry.send_response(job.stream, reply, job._connection);
+            } else {
+                let _ = job.stream.shutdown(std::net::Shutdown::Both);
+                drop(job._connection);
             }
-        });
+        }
+    });
 
     let Ok(worker) = worker else {
         dispatcher.stop_admission();
@@ -891,6 +1144,23 @@ fn serve_owner_with_executor<P, E>(
     registry.join_writers();
 }
 
+#[cfg(test)]
+thread_local! {
+    static INJECT_EXECUTOR_SPAWN_FAILURE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+fn spawn_execution_worker<F: FnOnce() + Send + 'static>(
+    body: F,
+) -> std::io::Result<JoinHandle<()>> {
+    #[cfg(test)]
+    if INJECT_EXECUTOR_SPAWN_FAILURE.with(|flag| flag.replace(false)) {
+        drop(body);
+        return Err(std::io::Error::other("fixture executor spawn failure"));
+    }
+    thread::Builder::new()
+        .name("codebase-graph-coordinator-executor".into())
+        .spawn(body)
+}
+
 fn handle_connection_dispatch<P>(
     stream: &mut TcpStream,
     accepted_at: Instant,
@@ -899,7 +1169,10 @@ fn handle_connection_dispatch<P>(
     connection: ConnectionPermit,
     prepare: Arc<P>,
 ) where
-    P: Fn(OperationInvocation) -> Result<OperationInvocation, ApiError> + Send + Sync + 'static,
+    P: Fn(&str, OperationInvocation) -> Result<(OperationInvocation, Option<bool>), ApiError>
+        + Send
+        + Sync
+        + 'static,
 {
     let request_deadline = accepted_at + COORDINATOR_FRAME_TIMEOUT;
     let request: CoordinatorRequest = match read_frame_until(stream, request_deadline) {
@@ -952,8 +1225,8 @@ fn handle_connection_dispatch<P>(
                     return;
                 }
             };
-            let invocation = match prepare(invocation) {
-                Ok(invocation) => invocation,
+            let (invocation, legacy_confirmation) = match prepare(&operation_id, invocation) {
+                Ok(prepared) => prepared,
                 Err(error) => {
                     let reply = CoordinatorReply::Failure(error);
                     let _ = write_frame_until(
@@ -977,6 +1250,7 @@ fn handle_connection_dispatch<P>(
                 operation_id,
                 invocation,
                 context,
+                legacy_confirmation,
                 stream: job_stream,
                 _connection: connection,
             };
@@ -1187,12 +1461,16 @@ fn coordinator_control_paths(selector: &RepoSelector) -> Result<CoordinatorContr
         return Ok(CoordinatorControlPaths {
             lock: layout.coordinator_lock_path(),
             state: layout.coordinator_state_path(),
+            managed_initialization: Some(layout),
+            direct_initialization: None,
         });
     }
     let layout = DirectLayout::new(&runtime.db_path, &runtime.manifest_path);
     Ok(CoordinatorControlPaths {
         lock: layout.coordinator_lock_path(),
         state: layout.coordinator_state_path(),
+        managed_initialization: None,
+        direct_initialization: Some(layout),
     })
 }
 

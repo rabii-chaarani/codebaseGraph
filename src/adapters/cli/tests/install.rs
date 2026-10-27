@@ -87,8 +87,6 @@ fn install_writes_schema_v3_managed_config_without_static_database_or_manifest_p
     assert_eq!(config["schema_version"], 3);
     assert_eq!(config["refresh"]["policy"], "leader");
     assert_eq!(config["refresh"]["backend"], "auto");
-    assert_eq!(config["materialization"]["worker_memory_mib"], 768);
-    assert_eq!(config["materialization"]["rust_memory_mib"], 384);
     assert_eq!(config["materialization"]["spill_chunk_mib"], 32);
     assert_eq!(config["materialization"]["max_parallelism"], 2);
     assert!(config["mcp"]["command"]

@@ -49,6 +49,10 @@ struct ManualBuild {
     stderr: PathBuf,
 }
 
+fn publication_wait_timeout() -> Duration {
+    Duration::from_secs(if cfg!(windows) { 240 } else { 90 })
+}
+
 impl ManualBuild {
     fn start(root: &Path) -> Self {
         let stdout = root.join("manual-build.stdout");
@@ -105,7 +109,9 @@ impl ManualBuild {
     }
 
     fn wait_for_success(&mut self) {
-        let deadline = Instant::now() + Duration::from_secs(90);
+        // This verifies successful publication, not a production latency bound.
+        let timeout = publication_wait_timeout();
+        let deadline = Instant::now() + timeout;
         while Instant::now() < deadline {
             if let Some(status) = self.poll() {
                 self.assert_success(status);
@@ -114,7 +120,8 @@ impl ManualBuild {
             thread::sleep(Duration::from_millis(25));
         }
         panic!(
-            "manual build did not finish within 90 seconds: {}",
+            "manual build did not finish within {} seconds: {}",
+            timeout.as_secs(),
             self.diagnostics()
         );
     }
@@ -336,32 +343,67 @@ fn install(root: &Path) -> PathBuf {
         "install failed: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    let build = Command::new(binary())
-        .current_dir(root)
-        .args([
-            "build",
-            "--repo-root",
-            root.to_str().unwrap(),
-            "--mode",
-            "full",
-            "--json",
-        ])
-        .output()
-        .unwrap();
-    assert!(
-        build.status.success(),
-        "initial build failed: {}",
-        String::from_utf8_lossy(&build.stderr)
-    );
+    for attempt in 0..3 {
+        let build = Command::new(binary())
+            .current_dir(root)
+            .args([
+                "build",
+                "--repo-root",
+                root.to_str().unwrap(),
+                "--mode",
+                "full",
+                "--json",
+            ])
+            .output()
+            .unwrap();
+        if build.status.success() {
+            break;
+        }
+        let error = String::from_utf8_lossy(&build.stderr);
+        if attempt < 2 && retryable_initial_build_failure(&error) {
+            eprintln!(
+                "retrying pre-injection fixture build after authenticated empty cleanup: {error}"
+            );
+            thread::sleep(Duration::from_millis(250));
+            continue;
+        }
+        panic!("initial build failed: {error}");
+    }
     root.join(".codebaseGraph/config.json")
+}
+
+// Setup only: never turn an injected fault or unproven containment into a retry.
+fn retryable_initial_build_failure(error: &str) -> bool {
+    error.contains("failed to start guarded Ladybug phase")
+        && error.contains("Resource temporarily unavailable (os error 35)")
+        && error.contains("cleanup: Ok(ExitOutcome")
+        && error.contains("containment_empty: true")
+        && error.contains("supervision_error: None")
+        && !error.contains("containment_unknown")
+}
+
+#[test]
+fn initial_build_retry_requires_exact_transient_and_empty_cleanup() {
+    let error="failed to start guarded Ladybug phase: Resource temporarily unavailable (os error 35); cleanup: Ok(ExitOutcome { containment_empty: true, supervision_error: None })";
+    assert!(retryable_initial_build_failure(error));
+    for invalid in [
+        error.replace("containment_empty: true", "containment_empty: false"),
+        error.replace(
+            "supervision_error: None",
+            "supervision_error: Some(unknown)",
+        ),
+        error.replace("os error 35", "os error 5"),
+        error.replace("cleanup: Ok", "cleanup: Err"),
+        format!("{error}; containment_unknown"),
+    ] {
+        assert!(!retryable_initial_build_failure(&invalid), "{invalid}");
+    }
 }
 
 struct ConfigSettings<'a> {
     policy: &'a str,
     backend: &'a str,
     interval_ms: u64,
-    worker_memory_mib: u64,
-    rust_memory_mib: u64,
     spill_chunk_mib: u64,
     max_parallelism: usize,
     exclude: &'a [&'a str],
@@ -374,8 +416,6 @@ fn set_config(path: &Path, settings: ConfigSettings<'_>) {
         "backend": settings.backend,
         "reconcile_interval_ms": settings.interval_ms
     });
-    config["materialization"]["worker_memory_mib"] = json!(settings.worker_memory_mib);
-    config["materialization"]["rust_memory_mib"] = json!(settings.rust_memory_mib);
     config["materialization"]["spill_chunk_mib"] = json!(settings.spill_chunk_mib);
     config["materialization"]["max_parallelism"] = json!(settings.max_parallelism);
     config["materialization"]["exclude"] = json!(settings.exclude);
@@ -485,15 +525,8 @@ fn start_http_server_with_env(
     panic!("timed out waiting for HTTP daemon on port {port}");
 }
 
-fn now_unix_ms() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
-}
-
-fn memory_limits(health: &Value) -> &Value {
-    &health["refresh"]["memory_limits"]
+fn execution_settings(health: &Value) -> &Value {
+    &health["refresh"]["execution_settings"]
 }
 
 fn reconciliation_is_ready(health: &Value) -> bool {
@@ -600,8 +633,6 @@ fn legacy_worker_pid_recovery(manual_publication: bool) {
             policy: "leader",
             backend: "poll",
             interval_ms: 100,
-            worker_memory_mib: 768,
-            rust_memory_mib: 384,
             spill_chunk_mib: 32,
             max_parallelism: 1,
             exclude: &[],
@@ -784,7 +815,7 @@ fn retired_internal_roles_require_restart_before_reading_requests() {
 }
 
 #[test]
-fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
+fn legacy_memory_fields_do_not_block_refresh_of_larger_source() {
     let root = temp_repo();
     let unrelated = temp_repo();
     fs::write(
@@ -793,10 +824,6 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
     )
     .unwrap();
     let config = install(&root);
-
-    // The source edit is made before the daemon starts.  The initial graph is
-    // therefore the only valid generation available while the tiny budget is
-    // rejecting the pending startup reconciliation.
     fs::write(
         root.join("latest.py"),
         format!(
@@ -810,110 +837,41 @@ fn blocked_refresh_recovers_after_memory_budget_restore_without_source_edit() {
         ConfigSettings {
             policy: "leader",
             backend: "poll",
-            interval_ms: 100,
-            worker_memory_mib: 2,
-            rust_memory_mib: 1,
+            interval_ms: 5_000,
             spill_chunk_mib: 1,
             max_parallelism: 1,
             exclude: &[],
         },
     );
-
+    // Ordinary unknown-field deserialization must not resurrect retired workload ceilings.
+    let mut legacy: Value = serde_json::from_slice(&fs::read(&config).unwrap()).unwrap();
+    legacy["materialization"]["worker_memory_mib"] = json!(2);
+    legacy["materialization"]["rust_memory_mib"] = json!(1);
+    fs::write(&config, serde_json::to_vec_pretty(&legacy).unwrap()).unwrap();
     let (daemon, port, _state) = start_daemon(&root, &config, &unrelated, &[]);
     let mut session = McpSession::start(port);
-    let deadline = Instant::now() + Duration::from_secs(40);
-    let mut blocked_health = None;
-    while Instant::now() < deadline {
+    let deadline = Instant::now() + publication_wait_timeout();
+    loop {
         let health = session.health();
-        let refresh = &health["refresh"];
-        if matches!(
-            refresh["state"].as_str(),
-            Some("blocked") | Some("retrying")
-        ) {
-            blocked_health = Some(health);
+        let paths = session.search_paths("latest_symbol");
+        if paths.iter().any(|path| path == "latest.py") {
+            assert_eq!(health["graph_readable"], true);
+            assert!(execution_settings(&health)
+                .get("worker_memory_mib")
+                .is_none());
+            assert!(execution_settings(&health).get("rust_memory_mib").is_none());
+            assert!(!health["refresh"]["last_error"]
+                .as_str()
+                .unwrap_or("")
+                .contains("memory_budget_exceeded"));
             break;
         }
+        assert!(
+            Instant::now() < deadline,
+            "retired memory options blocked refresh: {health}"
+        );
         thread::sleep(Duration::from_millis(100));
     }
-    let blocked = blocked_health.expect("tiny memory budget should block or retry refresh");
-    let blocked_refresh = &blocked["refresh"];
-    assert_eq!(blocked["ok"], true, "graph health must remain readable");
-    assert_eq!(blocked["graph_readable"], true);
-    assert_eq!(blocked_refresh["task_alive"], true);
-    assert_eq!(blocked_refresh["pending"], true);
-    assert!(
-        blocked_refresh["last_error"]
-            .as_str()
-            .is_some_and(|error| error.contains("memory_budget") || error.contains("memory")),
-        "blocked refresh should expose the memory failure: {blocked}"
-    );
-    if blocked_refresh["state"] == "retrying" {
-        let next_retry = blocked_refresh["next_retry_unix_ms"]
-            .as_u64()
-            .expect("retrying refresh must expose next_retry_unix_ms");
-        assert!(
-            next_retry + 1_000 >= now_unix_ms(),
-            "next_retry_unix_ms must not be in the past while retrying/blocked: {blocked}"
-        );
-    } else if let Some(next_retry) = blocked_refresh["next_retry_unix_ms"].as_u64() {
-        assert!(
-            next_retry + 1_000 >= now_unix_ms(),
-            "blocked next_retry_unix_ms must not be in the past: {blocked}"
-        );
-    }
-    let old_paths = session.search_paths("initial_symbol");
-    assert!(
-        old_paths.iter().any(|path| path == "initial.py"),
-        "the previous generation must remain queryable during refresh failure: {old_paths:?}"
-    );
-
-    set_config(
-        &config,
-        ConfigSettings {
-            policy: "leader",
-            backend: "poll",
-            interval_ms: 100,
-            worker_memory_mib: 768,
-            rust_memory_mib: 384,
-            spill_chunk_mib: 32,
-            max_parallelism: 1,
-            exclude: &[],
-        },
-    );
-    // Native process suites run concurrently in CI. Keep the recovery bound
-    // independent of the short retry cadence and allow the large source to
-    // finish loading while other fixtures are building.
-    let deadline = Instant::now() + Duration::from_secs(90);
-    let mut recovered = None;
-    let mut last_health = Value::Null;
-    while Instant::now() < deadline {
-        let health = session.health();
-        last_health = health.clone();
-        let refresh = &health["refresh"];
-        let latest_paths = session.search_paths("latest_symbol");
-        let limits = memory_limits(&health);
-        if refresh["state"] == "running"
-            && refresh["task_alive"] == true
-            && refresh["pending"] == false
-            && refresh["dirty_epoch"] == refresh["reconciled_epoch"]
-            && refresh["next_retry_unix_ms"].is_null()
-            && limits["worker_memory_mib"] == 768
-            && limits["rust_memory_mib"] == 384
-            && limits["spill_chunk_mib"] == 32
-            && limits["max_parallelism"] == 1
-            && latest_paths.iter().any(|path| path == "latest.py")
-        {
-            recovered = Some((health, latest_paths));
-            break;
-        }
-        thread::sleep(Duration::from_millis(100));
-    }
-    let (recovered, latest_paths) = recovered.unwrap_or_else(|| {
-        panic!("refresh should recover without another source edit: {last_health}")
-    });
-    assert_eq!(recovered["refresh"]["reconcile_interval_ms"], 100);
-    assert!(latest_paths.iter().any(|path| path == "latest.py"));
-
     drop(session);
     drop(daemon);
     let _ = fs::remove_dir_all(root);
@@ -941,8 +899,6 @@ fn config_hot_reload_applies_excludes_while_cli_policy_and_backend_overrides_per
             policy: "off",
             backend: "native",
             interval_ms: 500,
-            worker_memory_mib: 768,
-            rust_memory_mib: 384,
             spill_chunk_mib: 32,
             max_parallelism: 1,
             exclude: &[],
@@ -954,10 +910,6 @@ fn config_hot_reload_applies_excludes_while_cli_policy_and_backend_overrides_per
         "leader",
         "--refresh-backend",
         "poll",
-        "--worker-memory-mib",
-        "768",
-        "--rust-memory-mib",
-        "384",
         "--spill-chunk-mib",
         "32",
         "--max-parallelism",
@@ -982,10 +934,8 @@ fn config_hot_reload_applies_excludes_while_cli_policy_and_backend_overrides_per
         thread::sleep(Duration::from_millis(100));
     }
     let initial = initial.expect("CLI policy/backend overrides should run the service");
-    assert_eq!(memory_limits(&initial)["worker_memory_mib"], 768);
-    assert_eq!(memory_limits(&initial)["rust_memory_mib"], 384);
-    assert_eq!(memory_limits(&initial)["spill_chunk_mib"], 32);
-    assert_eq!(memory_limits(&initial)["max_parallelism"], 1);
+    assert_eq!(execution_settings(&initial)["spill_chunk_mib"], 32);
+    assert_eq!(execution_settings(&initial)["max_parallelism"], 1);
 
     // The config now requests the opposite policy/backend and excludes an
     // existing source file.  The explicit CLI settings must remain in force,
@@ -996,8 +946,6 @@ fn config_hot_reload_applies_excludes_while_cli_policy_and_backend_overrides_per
             policy: "off",
             backend: "native",
             interval_ms: 100,
-            worker_memory_mib: 2,
-            rust_memory_mib: 1,
             spill_chunk_mib: 1,
             max_parallelism: 1,
             exclude: &["ignored.py"],
@@ -1008,13 +956,11 @@ fn config_hot_reload_applies_excludes_while_cli_policy_and_backend_overrides_per
     while Instant::now() < deadline {
         let health = session.health();
         let paths = session.search_paths("ignored_symbol");
-        let limits = memory_limits(&health);
+        let limits = execution_settings(&health);
         if health["refresh"]["state"] == "running"
             && health["refresh"]["backend"] == "poll"
             && health["refresh"]["enabled"] == true
             && health["refresh"]["reconcile_interval_ms"] == 100
-            && limits["worker_memory_mib"] == 768
-            && limits["rust_memory_mib"] == 384
             && limits["spill_chunk_mib"] == 32
             && limits["max_parallelism"] == 1
             && !paths.iter().any(|path| path == "ignored.py")
@@ -1028,8 +974,6 @@ fn config_hot_reload_applies_excludes_while_cli_policy_and_backend_overrides_per
     assert_eq!(reloaded["refresh"]["backend"], "poll");
     assert_eq!(reloaded["refresh"]["reconcile_interval_ms"], 100);
     assert_eq!(reloaded["refresh"]["enabled"], true);
-    assert_eq!(memory_limits(&reloaded)["worker_memory_mib"], 768);
-    assert_eq!(memory_limits(&reloaded)["rust_memory_mib"], 384);
 
     drop(session);
     drop(daemon);

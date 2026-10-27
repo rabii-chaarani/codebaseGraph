@@ -11,4 +11,7 @@ pub(crate) use result::StagingResult;
 pub(crate) use writer::write_graph_rows;
 
 #[cfg(test)]
+pub(crate) use files::copy_path;
+
+#[cfg(test)]
 mod tests;

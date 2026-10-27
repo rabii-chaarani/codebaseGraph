@@ -3,7 +3,7 @@ agent_memory:
   version: 1
   kind: procedural
   scope: repository
-  status: active
+  status: quarantined
   owner: codex
   created_at: 2026-08-28T12:39:47+09:30
   last_verified_at: 2026-08-28T12:39:47+09:30
@@ -30,6 +30,11 @@ agent_memory:
     actor: codex
     at: 2026-08-28T12:39:47+09:30
     reason: Verified against the current materialization and artifact-load budget checks in source, the successful 1.7.0 full rebuild, and the persisted repository-local configuration.
+  - from: active
+    to: quarantined
+    actor: repository-maintainers
+    at: 2026-10-26T12:22:20.315228+00:00
+    reason: User-approved CBG-COPY-01 R1 removes worker_memory_mib/rust_memory_mib enforcement and options. This historical recipe must not recommend retired flags for the new implementation; preserved for source-version history, not active operating guidance.
 description: The codebaseGraph repository’s own full graph exceeds the default two-worker memory split; a single worker with a larger bounded budget completes the rebuild.
 tags:
 - codebase-graph

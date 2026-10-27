@@ -28,9 +28,15 @@ env:
   CARGO_NET_RETRY: "10"
 
 jobs:
-  native:
-    name: native artifact (${{ inputs.target }})
-    runs-on: ${{ fromJSON('{"linux-x86_64":"ubuntu-latest","macos-arm64":"macos-latest","macos-x86_64":"macos-15-intel","windows-x86_64":"windows-2022"}')[inputs.target] }}
+  tests:
+    name: native tests (${{ inputs.target }}, ${{ matrix.cohort }}${{ matrix.shard > 0 && format(', shard {0}', matrix.shard) || '' }})
+    if: inputs.run-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        cohort: [unit, generation, integration]
+        shard: ${{ fromJSON(inputs.target == 'windows-x86_64' && '[1,2,3,4]' || '[0]') }}
+    runs-on: ${{ fromJSON('{"macos-arm64":"macos-latest","windows-x86_64":"windows-2022"}')[inputs.target] }}
     timeout-minutes: 90
     permissions:
       contents: read
@@ -46,8 +52,53 @@ jobs:
           target: ${{ inputs.target }}
 
       - name: Run platform tests
-        if: inputs.run-tests
-        run: cargo run -p xtask -- native-test --target "${{ inputs.target }}"
+        id: platform_tests
+        timeout-minutes: ${{ inputs.target == 'macos-arm64' && 75 || 85 }}
+        shell: bash
+        env:
+          RUST_TEST_NOCAPTURE: "1"
+          RUST_TEST_THREADS: "1"
+          SOURCE_SHA: ${{ inputs.source-sha }}
+          TMP: ${{ runner.temp }}
+          TEMP: ${{ runner.temp }}
+        run: |
+          set -o pipefail
+          mkdir -p diagnostics
+          printf '%s\n' "$SOURCE_SHA" > diagnostics/source-sha.txt
+          shard_args=()
+          if [[ '${{ inputs.target }}' == 'windows-x86_64' ]]; then
+            export CGRAPH_CLEANUP_TRACE=1
+            shard_args=(--shard '${{ matrix.shard }}/4')
+          fi
+          cargo run -p xtask -- native-test --target "${{ inputs.target }}" --cohort "${{ matrix.cohort }}" "${shard_args[@]}" 2>&1 | tee diagnostics/platform-test.log
+
+      - name: Upload native test diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-diagnostics-${{ inputs.target }}-${{ matrix.cohort }}-shard${{ matrix.shard }}-${{ github.run_attempt }}
+          path: diagnostics/
+          if-no-files-found: warn
+          retention-days: 3
+
+  native:
+    name: native artifact (${{ inputs.target }})
+    needs: tests
+    if: ${{ always() && !cancelled() && (!inputs.run-tests || needs.tests.result == 'success') }}
+    runs-on: ${{ fromJSON('{"macos-arm64":"macos-latest","windows-x86_64":"windows-2022"}')[inputs.target] }}
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Check out source SHA
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.source-sha }}
+
+      - name: Set up native dependencies
+        uses: ./.github/actions/setup-native
+        with:
+          target: ${{ inputs.target }}
 
       - name: Build and smoke release artifact
         run: cargo run -p xtask -- native-artifact --target "${{ inputs.target }}" --commit-sha "${{ inputs.source-sha }}" --output "dist/${{ inputs.target }}"

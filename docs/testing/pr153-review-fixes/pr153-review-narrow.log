@@ -1,0 +1,14 @@
+   Compiling codebase-graph v3.0.4 (/private/tmp/codebasegraph-pr153-review)
+    Finished `native-tests` profile [optimized] target(s) in 1m 01s
+────────────
+ Nextest run ID fa216d78-5b4d-40ed-bab7-71aa0c0e3fa0 with nextest profile: pr153
+    Starting 7 tests across 1 binary (833 tests skipped)
+        PASS [   0.027s] (1/7) codebase-graph storage::maintenance_candidate::tests::retirement_control_roundtrip_does_not_certify_whole_pass
+        PASS [   0.026s] (2/7) codebase-graph storage::maintenance_candidate::tests::prepared_candidate_crossings_keep_large_state_indirect
+        PASS [   0.027s] (3/7) codebase-graph storage::maintenance_candidate::tests::candidate_reason_codes_are_fixed_and_reports_do_not_invent_measurements
+        PASS [   0.337s] (4/7) codebase-graph storage::maintenance_candidate::tests::managed_confirmation_remains_pending_until_legacy_enrollment
+        PASS [   0.534s] (5/7) codebase-graph storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries
+        PASS [   0.534s] (6/7) codebase-graph storage::maintenance_candidate::tests::direct_confirmation_does_not_block_modern_metadata_recovery
+        PASS [   0.579s] (7/7) codebase-graph storage::maintenance_candidate::tests::candidate_recovers_interrupted_role_control_before_parsing_legacy_payload
+────────────
+     Summary [   0.582s] 7 tests run: 7 passed, 833 skipped

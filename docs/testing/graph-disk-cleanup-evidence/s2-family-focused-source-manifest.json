@@ -1,0 +1,27 @@
+{
+  "baseline": "bb3c716e899c7141425ba8b80f1238cf212ffc7e",
+  "source_identity": "0e2bde1fe2c37b664aa864175c0b95a1f9297f6f0a64094295aed98c44af2dc3",
+  "owned_files": {
+    "src/db_writer/phase.rs": "24b773599b4757a51ce8a371bed2be00a179ce94ad84f1671d63f12f667582ce",
+    "src/db_writer/write.rs": "d916186b25d4c0b074b476eaba3225f535987f8590c0019f6453d509e77afb8d",
+    "src/execution/run.rs": "df6b6f259b1c542c340f7c0850befcb615d7b89c944b9404dbc0ce5f10e95ae5",
+    "src/storage/containment.rs": "b625c68cdf7beeb98fc0a306c0719498eef968caa9fe620faa9971ed8e56e077",
+    "src/storage/direct.rs": "f1b87f90d597b8f2e7d7d2cd03b5dddb12262894f7721c60e921b0267e923c2c",
+    "src/storage/inventory.rs": "86ee641488ad03d8914ccca2c61bdcc3a186791b3b1a5c64a22dbe5cfc7aa958",
+    "src/storage/layout.rs": "be57d463c715346af69497f3b7820497e8c0f195301824e4bde61518c6da762d",
+    "src/storage/locks.rs": "9de0e4a308233514d3ee56f4ce930005fc475654079108fd13a30459c7c2dacc",
+    "src/storage/maintenance_ownership.rs": "a3ab4989eb5432d099a2aa7657796ffc6f0b63c7615dccdd9a535bf5c149666a",
+    "src/storage/managed.rs": "7c6882f7d87403c94a5c2160012ac93efb609cc7ec5f6c6fd6b2b5da4db188e9"
+  },
+  "excluded_handoff": [
+    "src/storage/mod.rs"
+  ],
+  "context_only_storage_mod_hash": "1549d70674632db6b7233f23f0789055e162c224cf1625f8f15cd8b208bb3eb6",
+  "patch_sha256": "4c0580a3d9ca7bd104713e3d4a72b3a956f4ff5acfb7212c3f11abf723768a21",
+  "review_delta_sha256": "0f02f568ef15fa0823a0ce067ff9127c93e68d33b2f410b3e8adb683f28baa56",
+  "junit": "/private/tmp/codebasegraph-disk-cleanup-7t9af0a6/repo/target/nextest/cleanup-s2/junit.xml",
+  "junit_archive": "/private/tmp/codebasegraph-disk-cleanup-7t9af0a6/s2-family-focused-junit.xml",
+  "junit_sha256": "6118b539934bbec11a16cacaf410fe10b12aea7d4b9e17a5ef600dc1d7941876",
+  "focused_tests_passed": 128,
+  "prior_review_snapshot": "559f93b0526f8b2e9e7ec4eb57d473d3b04a8ffc385cdf68779e25ac4d14d2ca"
+}

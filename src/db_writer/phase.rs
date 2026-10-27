@@ -1,12 +1,12 @@
 use super::rss::sample_process_rss;
-use super::{connect_ladybug_database, open_ladybug_database_with_limits};
-use crate::error::{MemoryBudgetExceeded, NativeError};
+use super::{connect_ladybug_database, open_ladybug_database_with_threads};
+use crate::error::NativeError;
 use crate::process_lifecycle::{self, OutputMode, PreparedChild, SpawnSpec};
 use lbug::Connection;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::fs::{self, OpenOptions};
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -14,13 +14,12 @@ use std::sync::OnceLock;
 
 const PHASE_PROTOCOL_VERSION: u64 = 2;
 const MAX_CHILD_ERROR_BYTES: usize = 64 * 1024;
-const MEMORY_HEADROOM_BYTES: u64 = 16 * 1024 * 1024;
-const RSS_SAMPLE_INTERVAL: std::time::Duration = std::time::Duration::from_millis(25);
 static PHASE_WORKER_EXECUTABLE: OnceLock<PathBuf> = OnceLock::new();
 static PHASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 thread_local! {
     static PHASE_WORKSPACE_ROOT: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
+    static PHASE_PARENT_RUN: RefCell<Option<crate::storage::run_workspace::ParentRunScope>> = const { RefCell::new(None) };
 }
 
 // Synchronous API execution owns this scope. Keep it local to the calling
@@ -39,12 +38,30 @@ pub(crate) fn with_phase_workspace_root<T>(root: PathBuf, execute: impl FnOnce()
     execute()
 }
 
+pub(crate) fn phase_has_parent_workspace() -> bool {
+    PHASE_PARENT_RUN.with(|slot| slot.borrow().is_some())
+}
+
+struct PhaseParentScope(Option<crate::storage::run_workspace::ParentRunScope>);
+impl Drop for PhaseParentScope {
+    fn drop(&mut self) {
+        PHASE_PARENT_RUN.with(|slot| *slot.borrow_mut() = self.0.take());
+    }
+}
+pub(crate) fn with_phase_workspace_scope<T>(
+    root: PathBuf,
+    parent: Option<crate::storage::run_workspace::ParentRunScope>,
+    execute: impl FnOnce() -> T,
+) -> T {
+    let previous = PHASE_PARENT_RUN.with(|slot| slot.replace(parent));
+    let _parent = PhaseParentScope(previous);
+    with_phase_workspace_root(root, execute)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(super) struct LadybugWritePhaseRequest {
     version: u64,
     db_path: PathBuf,
-    worker_memory_bytes: u64,
-    buffer_pool_bytes: u64,
     max_num_threads: u64,
     phase: LadybugWritePhase,
 }
@@ -73,16 +90,12 @@ pub(super) enum LadybugWritePhase {
 impl LadybugWritePhaseRequest {
     pub(super) fn new(
         db_path: impl Into<PathBuf>,
-        worker_memory_bytes: u64,
-        buffer_pool_bytes: u64,
         max_num_threads: u64,
         phase: LadybugWritePhase,
     ) -> Self {
         Self {
             version: PHASE_PROTOCOL_VERSION,
             db_path: db_path.into(),
-            worker_memory_bytes,
-            buffer_pool_bytes,
             max_num_threads,
             phase,
         }
@@ -98,6 +111,8 @@ pub(super) fn phase_worker_available() -> bool {
 }
 
 pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u64, NativeError> {
+    let _database_use =
+        crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(&request.db_path)?;
     let executable = PHASE_WORKER_EXECUTABLE.get().ok_or_else(|| {
         NativeError::InvalidInput("Ladybug phase worker executable is not registered".to_string())
     })?;
@@ -123,13 +138,23 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             })
             .transpose()?
     };
-    let request_path = write_phase_request(request, registry_root.as_deref())?;
+    let (request_path, phase_owner) = write_phase_request_owned(request, registry_root.as_deref())?;
     let mut command = traced_phase_command(executable, request, &request_path)?;
     command
         .arg("__codebase_graph_internal")
         .arg("ladybug-write-phase-v2")
         .arg(&request_path);
     let stderr_path = request_path.with_extension("stderr");
+    if phase_owner.is_some() {
+        if let Ok(Some(output)) =
+            crate::storage::maintenance_controls::WorkspaceOutputFile::create_new(&stderr_path)
+        {
+            // The guardian will append accepted OS bytes to this exact inode.
+            // Bound creation provenance owns incomplete output; it does not
+            // certify loader usability or pretend to hash child-owned writes.
+            let _ = crate::storage::maintenance_origin::record_created_workspace_output(&output);
+        }
+    }
     if !inherited {
         let workspace = if registry_root.is_some() {
             request_path
@@ -141,7 +166,7 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             // their local fallback; API callers always supply a stable root.
             request_path.with_extension("containment")
         };
-        return run_guarded_phase(
+        let result = run_guarded_phase(
             request,
             executable,
             command,
@@ -149,6 +174,10 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             &stderr_path,
             workspace,
         );
+        if let Some(owner) = phase_owner {
+            owner.finish_if_empty();
+        }
+        return result;
     }
     // Preserve the root guardian's proof writer through both the native child
     // and the optional /usr/bin/time wrapper.
@@ -168,9 +197,6 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
         }
     };
     let mut high_water_bytes = 0_u64;
-    let kill_threshold = request
-        .worker_memory_bytes
-        .saturating_sub(MEMORY_HEADROOM_BYTES);
     let status = loop {
         match child.try_wait() {
             Ok(Some(status)) => break status,
@@ -178,53 +204,28 @@ pub(super) fn run_isolated_phase(request: &LadybugWritePhaseRequest) -> Result<u
             Err(error) => {
                 let _ = child.kill();
                 let _ = child.wait();
-                // The wrapper may have a surviving native child. The outer
-                // build must return this error so its guardian cleans the tree.
                 return Err(NativeError::Database(format!(
                     "failed to supervise Ladybug phase: {error}; retain {} until build containment is empty",
                     request_path.display()
                 )));
             }
         }
-        let child_rss = sample_process_rss(child.id()).unwrap_or(0);
-        let parent_rss = sample_process_rss(std::process::id()).unwrap_or(0);
-        let observed = child_rss.saturating_add(parent_rss);
+        let observed = sample_process_rss(child.id())
+            .unwrap_or(0)
+            .saturating_add(sample_process_rss(std::process::id()).unwrap_or(0));
         high_water_bytes = high_water_bytes.max(observed);
-        if observed > kill_threshold {
-            let _ = child.kill();
-            let _ = child.wait();
-            // Retain artifacts until the root guardian proves the whole build
-            // empty; killing a timing wrapper alone cannot prove that.
-            return Err(NativeError::MemoryBudgetExceeded(
-                MemoryBudgetExceeded::new(
-                    phase_memory_label(request),
-                    request.worker_memory_bytes,
-                    observed,
-                    observed,
-                )
-                .with_process_rss(parent_rss, child_rss),
-            ));
-        }
-        std::thread::sleep(RSS_SAMPLE_INTERVAL);
+        std::thread::sleep(std::time::Duration::from_millis(25));
     };
-    let stderr = fs::read(&stderr_path).unwrap_or_default();
     if !status.success() {
-        let stderr = bounded_child_error(&stderr);
-        return Err(NativeError::Database(format!(
-            "isolated Ladybug write phase exited with {}: {stderr}",
-            status
+        let stderr = read_error_tail(&stderr_path).unwrap_or_default();
+        return Err(NativeError::Database(isolated_phase_error(
+            request,
+            &status.to_string(),
+            &stderr,
         )));
     }
     cleanup_phase_files(&request_path, &stderr_path);
     Ok(high_water_bytes)
-}
-
-fn phase_memory_label(request: &LadybugWritePhaseRequest) -> String {
-    format!(
-        "ladybug_{}_pool_{}_mib",
-        request.phase.trace_label(),
-        request.buffer_pool_bytes / (1024 * 1024)
-    )
 }
 
 fn run_guarded_phase(
@@ -242,8 +243,6 @@ fn run_guarded_phase(
         workspace: workspace.clone(),
         stderr_path: stderr_path.to_path_buf(),
         stdout: OutputMode::Null,
-        memory_limit_bytes: Some(request.worker_memory_bytes),
-        memory_phase: Some(phase_memory_label(request)),
         parent_rss_pid: Some(std::process::id()),
     };
     let mut child = PreparedChild::prepare(spec).map_err(NativeError::Database)?;
@@ -254,7 +253,7 @@ fn run_guarded_phase(
             .is_ok_and(|outcome| outcome.containment_empty)
         {
             cleanup_phase_files(request_path, stderr_path);
-            let _ = fs::remove_dir_all(&workspace);
+            cleanup_phase_workspace(&workspace);
         }
         return Err(NativeError::Database(format!(
             "failed to start guarded Ladybug phase: {error}; cleanup: {cleanup:?}"
@@ -271,37 +270,55 @@ fn run_guarded_phase(
                 .is_ok_and(|outcome| outcome.containment_empty)
             {
                 cleanup_phase_files(request_path, stderr_path);
-                let _ = fs::remove_dir_all(&workspace);
+                cleanup_phase_workspace(&workspace);
             }
             return Err(NativeError::Database(format!(
                 "failed to supervise guarded Ladybug phase: {error}; cleanup: {cleanup:?}"
             )));
         }
     };
-    let stderr = fs::read(stderr_path).unwrap_or_default();
     if !outcome.containment_empty {
         return Err(NativeError::Database(format!(
             "{outcome}; retain {} until containment is proven empty",
             workspace.display()
         )));
     }
-    cleanup_phase_files(request_path, stderr_path);
-    let _ = fs::remove_dir_all(&workspace);
-    if let Some(reason) = &outcome.budget_reason {
-        let failure: MemoryBudgetExceeded = serde_json::from_str(reason).map_err(|error| {
-            NativeError::Database(format!(
-                "invalid guardian memory failure: {error}: {reason}"
-            ))
-        })?;
-        return Err(NativeError::MemoryBudgetExceeded(failure));
-    }
     if !outcome.success {
-        return Err(NativeError::Database(format!(
-            "isolated Ladybug write phase exited with {outcome}: {}",
-            bounded_child_error(&stderr)
+        let stderr = read_error_tail(stderr_path).unwrap_or_default();
+        cleanup_phase_files(request_path, stderr_path);
+        cleanup_phase_workspace(&workspace);
+        return Err(NativeError::Database(isolated_phase_error(
+            request,
+            &outcome.to_string(),
+            &stderr,
         )));
     }
+    cleanup_phase_files(request_path, stderr_path);
+    cleanup_phase_workspace(&workspace);
     Ok(outcome.high_water_bytes)
+}
+
+fn cleanup_phase_workspace(workspace: &Path) {
+    // A registered root is disposed only through the bounded local lane.
+    if !workspace.join(".workspace.binding").exists() {
+        let _ = fs::remove_dir_all(workspace);
+    }
+}
+
+struct PhaseWorkspaceOwner {
+    registration: crate::storage::maintenance_controls::WorkspaceRegistration,
+    owner: crate::storage::locks::LockedFile,
+    mutation: crate::storage::maintenance_ownership::ReferenceMutation<'static>,
+    _parent: crate::storage::run_workspace::ParentRunScope,
+}
+impl PhaseWorkspaceOwner {
+    fn finish_if_empty(self) {
+        let _ = self.registration.terminal(
+            &self.owner,
+            &self.mutation,
+            crate::storage::maintenance_controls::WorkspaceDisposition::AbortedNotPublished,
+        );
+    }
 }
 
 fn cleanup_phase_files(request_path: &Path, stderr_path: &Path) {
@@ -341,9 +358,111 @@ pub(crate) fn execute_phase_file(path: &Path) -> Result<(), String> {
     let request: LadybugWritePhaseRequest = serde_json::from_reader(BufReader::new(file))
         .map_err(|error| format!("failed to parse Ladybug phase request: {error}"))?;
     validate_phase_protocol(request.version)?;
+    let _database_use =
+        crate::storage::maintenance_ownership::DatabaseUseLease::acquire_shared(&request.db_path)
+            .map_err(|error| error.to_string())?;
     #[cfg(debug_assertions)]
     wait_for_test_phase_barrier(path)?;
-    execute_phase(&request).map_err(|error| error.to_string())
+    execute_phase(&request).map_err(|error| error.to_string())?;
+    #[cfg(debug_assertions)]
+    record_test_phase_result(&request)?;
+    Ok(())
+}
+
+#[cfg(debug_assertions)]
+fn copy_source_metadata(statement: &str) -> Option<(String, u64)> {
+    let source = statement.split_once(" FROM ")?.1.trim_start();
+    let quote = source.chars().next()?;
+    if quote != '\"' && quote != '\'' {
+        return None;
+    }
+    let mut value = String::new();
+    let mut escaped = false;
+    for character in source[quote.len_utf8()..].chars() {
+        if escaped {
+            value.push(match character {
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                other => other,
+            });
+            escaped = false;
+        } else if character == '\\' {
+            escaped = true;
+        } else if character == quote {
+            let bytes = fs::metadata(&value).ok()?.len();
+            return Some((value, bytes));
+        } else {
+            value.push(character);
+        }
+    }
+    None
+}
+
+#[cfg(debug_assertions)]
+fn record_test_phase_result(request: &LadybugWritePhaseRequest) -> Result<(), String> {
+    let Some(directory) = std::env::var_os("CODEBASE_GRAPH_TEST_COPY_RESULT_DIR") else {
+        return Ok(());
+    };
+    let directory = PathBuf::from(directory);
+    fs::create_dir_all(&directory)
+        .map_err(|error| format!("failed to create test phase result directory: {error}"))?;
+    let (phase, copy_index, copy_total, target) = match &request.phase {
+        LadybugWritePhase::Schema { .. } => ("schema", None, None, None),
+        LadybugWritePhase::Copy {
+            index,
+            total,
+            statement,
+            ..
+        } => (
+            "copy",
+            Some(*index),
+            Some(*total),
+            Some(copy_target(statement).to_string()),
+        ),
+        LadybugWritePhase::Index { table } => ("index", None, None, Some(table.clone())),
+        LadybugWritePhase::PostCopy { .. } => ("postcopy", None, None, None),
+    };
+    let mut trace = serde_json::to_value(request)
+        .map_err(|error| format!("failed to encode test phase request: {error}"))?;
+    let object = trace
+        .as_object_mut()
+        .ok_or_else(|| "test phase request did not encode as an object".to_string())?;
+    object.insert("phase_kind".into(), serde_json::json!(phase));
+    object.insert("copy_index".into(), serde_json::json!(copy_index));
+    object.insert("copy_total".into(), serde_json::json!(copy_total));
+    object.insert("target".into(), serde_json::json!(target));
+    let staged = match &request.phase {
+        LadybugWritePhase::Copy { statement, .. } => copy_source_metadata(statement),
+        _ => None,
+    };
+    object.insert(
+        "staged_file_path".into(),
+        serde_json::json!(staged.as_ref().map(|(path, _)| path)),
+    );
+    object.insert(
+        "staged_file_bytes".into(),
+        serde_json::json!(staged.as_ref().map(|(_, bytes)| bytes)),
+    );
+    object.insert("pid".into(), serde_json::json!(std::process::id()));
+    object.insert("success".into(), serde_json::json!(true));
+    let trace_path = directory.join("phases.jsonl");
+    let mut trace_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&trace_path)
+        .map_err(|error| format!("failed to open test phase results: {error}"))?;
+    writeln!(trace_file, "{trace}")
+        .map_err(|error| format!("failed to write test phase result: {error}"))?;
+    if matches!(&request.phase, LadybugWritePhase::Copy { .. })
+        && directory.join("FAIL_AFTER_COPY").exists()
+    {
+        return Err(
+            "COPY result acknowledgement failed: Buffer manager exception: the buffer pool is full"
+                .to_string(),
+        );
+    }
+    Ok(())
 }
 
 fn validate_phase_protocol(version: u64) -> Result<(), String> {
@@ -385,7 +504,7 @@ fn wait_for_test_phase_barrier(request_path: &Path) -> Result<(), String> {
                 directory.join("CONTINUE").display()
             ));
         }
-        std::thread::sleep(RSS_SAMPLE_INTERVAL);
+        std::thread::sleep(std::time::Duration::from_millis(25));
     }
     Ok(())
 }
@@ -432,12 +551,8 @@ fn allocate_test_phase_memory(directory: &Path, pid: u32) -> Result<Option<Vec<u
 }
 
 fn execute_phase(request: &LadybugWritePhaseRequest) -> Result<(), NativeError> {
-    let database = open_ladybug_database_with_limits(
-        &request.db_path,
-        false,
-        request.buffer_pool_bytes,
-        request.max_num_threads,
-    )?;
+    let database =
+        open_ladybug_database_with_threads(&request.db_path, false, request.max_num_threads)?;
     let connection = connect_ladybug_database(&database)?;
     match &request.phase {
         LadybugWritePhase::Schema {
@@ -454,7 +569,7 @@ fn execute_phase(request: &LadybugWritePhaseRequest) -> Result<(), NativeError> 
                     })?;
             }
             for statement in statements {
-                query_ignoring_existing(&connection, statement)?;
+                run_schema_query(&connection, statement)?;
             }
             checkpoint(&connection, "schema creation")
         }
@@ -465,14 +580,9 @@ fn execute_phase(request: &LadybugWritePhaseRequest) -> Result<(), NativeError> 
             runtime_loads,
         } => {
             load_runtime_extensions(&connection, runtime_loads)?;
-            connection.query(statement).map_err(|error| {
-                NativeError::Database(format!(
-                    "COPY statement {}/{} ({}) failed: {error}",
-                    index + 1,
-                    total,
-                    copy_target(statement)
-                ))
-            })?;
+            connection
+                .query(statement)
+                .map_err(|error| copy_query_failure(*index, *total, statement, error))?;
             checkpoint(
                 &connection,
                 &format!(
@@ -499,16 +609,23 @@ fn execute_phase(request: &LadybugWritePhaseRequest) -> Result<(), NativeError> 
             runtime_loads,
         } => {
             load_runtime_extensions(&connection, runtime_loads)?;
-            query_ignoring_existing(&connection, statement)?;
+            run_schema_query(&connection, statement)?;
             checkpoint(&connection, "post-COPY schema creation")
         }
     }
 }
 
+#[cfg(test)]
 fn write_phase_request(
     request: &LadybugWritePhaseRequest,
     registry_root: Option<&Path>,
 ) -> Result<PathBuf, NativeError> {
+    write_phase_request_owned(request, registry_root).map(|(path, _)| path)
+}
+fn write_phase_request_owned(
+    request: &LadybugWritePhaseRequest,
+    registry_root: Option<&Path>,
+) -> Result<(PathBuf, Option<PhaseWorkspaceOwner>), NativeError> {
     let parent = match registry_root {
         Some(root) => root,
         None => request.db_path.parent().ok_or_else(|| {
@@ -521,25 +638,113 @@ fn write_phase_request(
     fs::create_dir_all(parent)?;
     for _ in 0..16 {
         let sequence = PHASE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+        let mut phase_owner = None;
         let path = if registry_root.is_some() {
             let workspace = parent.join(format!("phase-{}-{sequence}", std::process::id()));
-            match fs::create_dir(&workspace) {
-                Ok(()) => workspace.join("request.json"),
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
-                Err(error) => return Err(NativeError::Io(error)),
+            let parent_scope =
+                PHASE_PARENT_RUN.with(|slot| slot.borrow().as_ref().map(|parent| parent.retain()));
+            let mutation = parent_scope
+                .as_ref()
+                .map(|parent| {
+                    crate::storage::maintenance_ownership::ReferenceMutation::begin_in_domain(
+                        parent.domain(),
+                    )
+                })
+                .transpose()?;
+            let _startup = parent_scope
+                .as_ref()
+                .map(|parent| {
+                    crate::storage::locks::open_shared_coordination(
+                        &parent.domain().workspace_startup_path(),
+                    )
+                })
+                .transpose()?;
+            let Some(fresh) = crate::storage::layout::create_fresh_reference_root(&workspace)?
+            else {
+                continue;
+            };
+            if let (Some(parent), Some(mutation)) = (parent_scope, mutation) {
+                let directory =
+                    crate::storage::locks::RootedDirectory::open(&workspace, fresh.identity())?;
+                let owner = crate::storage::locks::create_new_coordination_in(
+                    &directory,
+                    b"lease.lock",
+                    &workspace.join("lease.lock"),
+                )?;
+                if let Some(registration) =
+                    crate::storage::maintenance_controls::WorkspaceRegistration::create_with_parent(
+                        &fresh,
+                        parent.domain(),
+                        &mutation,
+                        &owner,
+                        3,
+                        Some(&parent),
+                    )
+                    .ok()
+                    .flatten()
+                {
+                    phase_owner = Some(PhaseWorkspaceOwner {
+                        registration,
+                        owner,
+                        mutation,
+                        _parent: parent,
+                    });
+                }
             }
+            workspace.join("request.json")
         } else {
             parent.join(format!(
                 ".ladybug-phase-{}-{sequence}.json",
                 std::process::id()
             ))
         };
+        if phase_owner.is_some() {
+            match crate::storage::maintenance_controls::WorkspaceOutputFile::create_new(&path) {
+                Ok(Some(output)) => {
+                    let _ = crate::storage::maintenance_origin::record_created_workspace_output(
+                        &output,
+                    );
+                    let mut writer = BufWriter::new(output);
+                    serde_json::to_writer(&mut writer, request)?;
+                    writer.flush()?;
+                    let output = writer
+                        .into_inner()
+                        .map_err(|error| NativeError::Io(error.into_error()))?;
+                    if let Ok(completed) = output.finish() {
+                        let _ =
+                            crate::storage::maintenance_origin::record_completed_workspace_output(
+                                &completed,
+                            );
+                    }
+                    return Ok((path, phase_owner));
+                }
+                Ok(None) => {
+                    // Optional activation may have created an unattested empty
+                    // inode. Primary request construction remains available.
+                    let file = OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .truncate(true)
+                        .open(&path)?;
+                    let mut writer = BufWriter::new(file);
+                    serde_json::to_writer(&mut writer, request)?;
+                    writer.flush()?;
+                    return Ok((path, phase_owner));
+                }
+                Err(NativeError::Io(error))
+                    if error.kind() == std::io::ErrorKind::AlreadyExists =>
+                {
+                    continue
+                }
+                Err(error) => return Err(error),
+            }
+        }
         match OpenOptions::new().write(true).create_new(true).open(&path) {
             Ok(file) => {
                 let mut writer = BufWriter::new(file);
                 serde_json::to_writer(&mut writer, request)?;
                 writer.flush()?;
-                return Ok(path);
+                return Ok((path, phase_owner));
             }
             Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
             Err(error) => return Err(NativeError::Io(error)),
@@ -555,35 +760,42 @@ fn load_runtime_extensions(
     statements: &[String],
 ) -> Result<(), NativeError> {
     for statement in statements {
-        query_ignoring_existing(connection, statement)?;
+        run_schema_query(connection, statement)?;
     }
     Ok(())
 }
 
-fn query_ignoring_existing(
-    connection: &Connection<'_>,
+fn run_schema_query(connection: &Connection<'_>, statement: &str) -> Result<(), NativeError> {
+    connection
+        .query(statement)
+        .map(|_| ())
+        .map_err(|error| NativeError::Database(error.to_string()))
+}
+
+fn copy_query_failure(
+    index: usize,
+    total: usize,
     statement: &str,
-) -> Result<(), NativeError> {
-    match connection.query(statement) {
-        Ok(_) => Ok(()),
-        Err(error) => {
-            let message = error.to_string().to_lowercase();
-            if message.contains("already exists")
-                || message.contains("exists already")
-                || message.contains("already installed")
-            {
-                Ok(())
-            } else {
-                Err(NativeError::Database(error.to_string()))
-            }
-        }
-    }
+    error: impl std::fmt::Display,
+) -> NativeError {
+    NativeError::Database(format!(
+        "COPY statement {}/{} ({}) failed: {error}; operation=COPY-query",
+        index.saturating_add(1),
+        total,
+        copy_target(statement)
+    ))
+}
+
+fn checkpoint_failure(after: &str, error: impl std::fmt::Display) -> NativeError {
+    NativeError::Database(format!(
+        "checkpoint after {after} failed: {error}; operation=explicit-CHECKPOINT"
+    ))
 }
 
 fn checkpoint(connection: &Connection<'_>, after: &str) -> Result<(), NativeError> {
-    connection.query("CHECKPOINT").map_err(|error| {
-        NativeError::Database(format!("checkpoint after {after} failed: {error}"))
-    })?;
+    connection
+        .query("CHECKPOINT")
+        .map_err(|error| checkpoint_failure(after, error))?;
     Ok(())
 }
 
@@ -595,11 +807,98 @@ fn copy_target(statement: &str) -> &str {
         .unwrap_or("unknown target")
 }
 
-fn bounded_child_error(bytes: &[u8]) -> String {
-    let start = bytes.len().saturating_sub(MAX_CHILD_ERROR_BYTES);
-    String::from_utf8_lossy(&bytes[start..]).trim().to_string()
+fn read_error_tail(path: &Path) -> Result<String, std::io::Error> {
+    read_error_tail_from(&mut fs::File::open(path)?)
 }
 
+fn read_error_tail_from(file: &mut (impl Read + Seek)) -> Result<String, std::io::Error> {
+    let len = file.seek(SeekFrom::End(0))?;
+    let start = len.saturating_sub(MAX_CHILD_ERROR_BYTES as u64);
+    file.seek(SeekFrom::Start(start))?;
+    let mut bytes = Vec::with_capacity((len - start) as usize);
+    file.take(MAX_CHILD_ERROR_BYTES as u64)
+        .read_to_end(&mut bytes)?;
+    let decoded = String::from_utf8_lossy(&bytes);
+    let marker = "[stderr truncated] ";
+    let truncated = start > 0 || decoded.len() > MAX_CHILD_ERROR_BYTES;
+    let budget = MAX_CHILD_ERROR_BYTES - if truncated { marker.len() } else { 0 };
+    let tail = truncate_utf8_tail(decoded.trim(), budget);
+    Ok(if truncated {
+        format!("{marker}{tail}")
+    } else {
+        tail.to_string()
+    })
+}
+
+fn isolated_phase_error(
+    request: &LadybugWritePhaseRequest,
+    status: &str,
+    child_error: &str,
+) -> String {
+    let db_path = request.db_path.display().to_string();
+    let db_path = truncate_utf8_head(&db_path, 1024);
+    let status = truncate_utf8_head(status, 1024);
+    let (phase, target) = match &request.phase {
+        LadybugWritePhase::Schema { .. } => ("schema", String::new()),
+        LadybugWritePhase::Copy {
+            index,
+            total,
+            statement,
+            ..
+        } => (
+            "copy",
+            format!(
+                " copy={}/{} target={}",
+                index.saturating_add(1),
+                total,
+                truncate_utf8_head(copy_target(statement), 1024)
+            ),
+        ),
+        LadybugWritePhase::Index { table } => (
+            "index",
+            format!(" target={}", truncate_utf8_head(table, 1024)),
+        ),
+        LadybugWritePhase::PostCopy { .. } => ("post-copy", String::new()),
+    };
+    let context = format!(
+        "isolated Ladybug write phase exited with {status}: phase={phase} db={db_path} max_num_threads={}{target}; ",
+        request.max_num_threads,
+    );
+    let marker = "[stderr truncated] ";
+    let payload = child_error.strip_prefix(marker).unwrap_or(child_error);
+    let truncated = child_error.starts_with(marker)
+        || payload.len() > MAX_CHILD_ERROR_BYTES.saturating_sub(context.len());
+    let budget = MAX_CHILD_ERROR_BYTES
+        .saturating_sub(context.len())
+        .saturating_sub(if truncated { marker.len() } else { 0 });
+    let tail = truncate_utf8_tail(payload, budget);
+    if truncated {
+        format!("{context}{marker}{tail}")
+    } else {
+        format!("{context}{tail}")
+    }
+}
+
+fn truncate_utf8_head(text: &str, limit: usize) -> &str {
+    let mut end = text.len().min(limit);
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    &text[..end]
+}
+
+fn truncate_utf8_tail(text: &str, limit: usize) -> &str {
+    if text.len() <= limit {
+        return text;
+    }
+    let mut start = text.len() - limit;
+    while !text.is_char_boundary(start) {
+        start += 1;
+    }
+    &text[start..]
+}
+
+#[cfg(target_os = "macos")]
 impl LadybugWritePhase {
     fn trace_label(&self) -> String {
         let label = match self {
@@ -624,6 +923,39 @@ impl LadybugWritePhase {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error() {
+        let root = std::env::temp_dir().join(format!(
+            "phase-query-test-{}-{}",
+            std::process::id(),
+            PHASE_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("db.lbug");
+        let database = open_ladybug_database_with_threads(&path, false, 1).unwrap();
+        let connection = connect_ladybug_database(&database).unwrap();
+        run_schema_query(
+            &connection,
+            "CREATE NODE TABLE IF NOT EXISTS `Thing`(`id` STRING PRIMARY KEY)",
+        )
+        .unwrap();
+        run_schema_query(
+            &connection,
+            "CREATE NODE TABLE IF NOT EXISTS `Thing`(`id` STRING PRIMARY KEY)",
+        )
+        .unwrap();
+        let error = run_schema_query(
+            &connection,
+            "CREATE NODE TABLE `Thing`(`id` STRING PRIMARY KEY)",
+        )
+        .unwrap_err();
+        let message = error.to_string().to_lowercase();
+        assert!(message.contains("already exists") || message.contains("exists already"));
+        drop(connection);
+        drop(database);
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn phase_registry_scope_restores_nested_and_unwound_contexts() {
@@ -661,8 +993,6 @@ mod tests {
         let registry = root.join("stable").join("phases");
         let request = LadybugWritePhaseRequest::new(
             root.join("run/candidate/db"),
-            1024,
-            128,
             2,
             LadybugWritePhase::Index {
                 table: "Function".into(),
@@ -732,11 +1062,140 @@ mod tests {
     }
 
     #[test]
-    fn phase_request_v2_preserves_native_resource_settings() {
+    fn error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily() {
+        let root = std::env::temp_dir().join(format!(
+            "phase-error-tail-{}-{}",
+            std::process::id(),
+            PHASE_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("stderr");
+        let mut contents = vec![b'x'; MAX_CHILD_ERROR_BYTES + 4096];
+        contents[MAX_CHILD_ERROR_BYTES + 3] = 0xff;
+        contents[MAX_CHILD_ERROR_BYTES + 4094] = 0xc3;
+        contents[MAX_CHILD_ERROR_BYTES + 4095] = 0xa9;
+        fs::write(&path, contents).unwrap();
+        let tail = read_error_tail(&path).unwrap();
+        assert!(tail.len() <= MAX_CHILD_ERROR_BYTES + "[stderr truncated]\n".len());
+        assert!(tail.starts_with("[stderr truncated]"));
+        assert!(tail.contains('\u{fffd}'));
+        assert!(tail.ends_with('é'));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn error_tail_reader_requests_no_more_than_the_limit() {
+        struct CountingCursor {
+            cursor: std::io::Cursor<Vec<u8>>,
+            requested: usize,
+        }
+        impl Read for CountingCursor {
+            fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+                self.requested = self.requested.saturating_add(buffer.len());
+                self.cursor.read(buffer)
+            }
+        }
+        impl Seek for CountingCursor {
+            fn seek(&mut self, position: SeekFrom) -> std::io::Result<u64> {
+                self.cursor.seek(position)
+            }
+        }
+        let mut reader = CountingCursor {
+            cursor: std::io::Cursor::new(vec![b'x'; MAX_CHILD_ERROR_BYTES * 5]),
+            requested: 0,
+        };
+        let tail = read_error_tail_from(&mut reader).unwrap();
+        assert_eq!(reader.requested, MAX_CHILD_ERROR_BYTES);
+        assert!(tail.starts_with("[stderr truncated]"));
+        assert!(tail.len() <= MAX_CHILD_ERROR_BYTES + "[stderr truncated]\n".len());
+    }
+
+    #[test]
+    fn oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary() {
+        let statement = "COPY `Thing` FROM 'rows.json'";
         let request = LadybugWritePhaseRequest::new(
             "candidate/db",
-            1024 * 1024 * 1024,
-            128 * 1024 * 1024,
+            1,
+            LadybugWritePhase::Copy {
+                index: 0,
+                total: 1,
+                statement: statement.into(),
+                runtime_loads: vec![],
+            },
+        );
+        let native = "é".repeat(MAX_CHILD_ERROR_BYTES);
+        let failures = [
+            (
+                copy_query_failure(0, 1, statement, &native),
+                "operation=COPY-query",
+            ),
+            (
+                checkpoint_failure("COPY statement 1/1", &native),
+                "operation=explicit-CHECKPOINT",
+            ),
+        ];
+        for (failure, boundary) in failures {
+            let mut stderr =
+                std::io::Cursor::new(format!("earlier native output\n{failure}\n").into_bytes());
+            let tail = read_error_tail_from(&mut stderr).unwrap();
+            let diagnostic = isolated_phase_error(&request, "exit status: 1", &tail);
+            assert!(diagnostic.len() <= MAX_CHILD_ERROR_BYTES);
+            assert!(diagnostic.contains("[stderr truncated]"));
+            assert!(
+                diagnostic.ends_with(boundary),
+                "operation boundary was lost"
+            );
+            assert!(diagnostic.contains("copy=1/1 target=`Thing`"));
+        }
+    }
+
+    #[test]
+    fn isolated_error_keeps_context_inside_the_cap() {
+        let request = LadybugWritePhaseRequest::new(
+            "candidate/db",
+            2,
+            LadybugWritePhase::Copy {
+                index: 7,
+                total: 10,
+                statement: "COPY `DocumentationSource` FROM 'rows.csv'".into(),
+                runtime_loads: vec![],
+            },
+        );
+        let message = isolated_phase_error(&request, "exit status: 1", &"é".repeat(40_000));
+        assert!(message.len() <= MAX_CHILD_ERROR_BYTES);
+        assert!(message.contains("copy=8/10 target=`DocumentationSource`"));
+        assert!(message.contains("max_num_threads=2"));
+        assert!(std::str::from_utf8(message.as_bytes()).is_ok());
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn copy_trace_metadata_reports_generated_file_bytes() {
+        let root = std::env::temp_dir().join(format!(
+            "phase-copy-source-{}-{}",
+            std::process::id(),
+            PHASE_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let source = root.join("rows with spaces.json");
+        fs::write(&source, b"[{}]").unwrap();
+        let statement = format!(
+            "COPY `Thing` FROM \"{}\"",
+            crate::staging_writer::copy_path(&source)
+        );
+        let (observed_path, observed_bytes) = copy_source_metadata(&statement).unwrap();
+        assert_eq!(
+            fs::canonicalize(observed_path).unwrap(),
+            fs::canonicalize(&source).unwrap()
+        );
+        assert_eq!(observed_bytes, 4);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn phase_request_v2_preserves_thread_setting() {
+        let request = LadybugWritePhaseRequest::new(
+            "candidate/db",
             3,
             LadybugWritePhase::Copy {
                 index: 2,
@@ -748,13 +1207,7 @@ mod tests {
         let roundtrip: LadybugWritePhaseRequest =
             serde_json::from_slice(&serde_json::to_vec(&request).unwrap()).unwrap();
         assert_eq!(roundtrip.version, 2);
-        assert_eq!(roundtrip.worker_memory_bytes, request.worker_memory_bytes);
-        assert_eq!(roundtrip.buffer_pool_bytes, request.buffer_pool_bytes);
         assert_eq!(roundtrip.max_num_threads, 3);
-        assert_eq!(
-            phase_memory_label(&roundtrip),
-            "ladybug__Function__pool_128_mib"
-        );
         assert!(matches!(
             roundtrip.phase,
             LadybugWritePhase::Copy {

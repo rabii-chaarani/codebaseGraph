@@ -212,7 +212,7 @@ jobs:
             artifact_count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REQUESTED_CI_RUN_ID/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("native-")))] | length')"
             {
               echo "ci-run-id=$REQUESTED_CI_RUN_ID"
-              if [[ "$artifact_count" == '4' ]]; then
+              if [[ "$artifact_count" == '2' ]]; then
                 echo 'artifacts-available=true'
               else
                 echo 'artifacts-available=false'
@@ -229,7 +229,7 @@ jobs:
               artifact_count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("native-")))] | length')"
               {
                 echo "ci-run-id=$run_id"
-                if [[ "$artifact_count" == '4' ]]; then
+                if [[ "$artifact_count" == '2' ]]; then
                   echo "artifacts-available=true"
                 else
                   echo "artifacts-available=false"
@@ -322,9 +322,7 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - linux-x86_64
           - macos-arm64
-          - macos-x86_64
           - windows-x86_64
     uses: ./.github/workflows/native.yml
     with:

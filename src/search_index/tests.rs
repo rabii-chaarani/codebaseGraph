@@ -80,6 +80,51 @@ fn builder_consumes_all_staging_chunks_in_sequence() {
 }
 
 #[test]
+fn document_larger_than_batch_target_roundtrips_within_format_limit() {
+    let fixture = Fixture::new("large-document");
+    let identifier = format!("fn:large:{}", "padding".repeat(2_000));
+    fixture.write_nodes(
+        "function",
+        &[node(&identifier, "large_document_marker", "src/large.rs")],
+    );
+    let built = build(fixture.request(128)).unwrap();
+    validate(&fixture.db_path, &built.metadata).unwrap();
+    let hits = search(
+        &fixture.db_path,
+        &built.metadata,
+        "large_document_marker",
+        "semantic",
+        10,
+    )
+    .unwrap();
+    assert_eq!(hits[0].id, identifier);
+    let mut file = fs::File::open(sidecar_path(
+        &fixture.db_path,
+        super::model::DOCUMENTS_SUFFIX,
+    ))
+    .unwrap();
+    let decoded = super::io::read_document_at(
+        &mut file,
+        super::model::DOCUMENTS_MAGIC.len() as u64,
+        super::model::MAX_DOCUMENT_RECORD_BYTES,
+    )
+    .unwrap();
+    assert_eq!(decoded.id, identifier);
+}
+
+#[test]
+fn document_format_bound_still_rejects_an_unreadable_record() {
+    let fixture = Fixture::new("invalid-large-document");
+    let identifier = "x".repeat(super::model::MAX_DOCUMENT_RECORD_BYTES);
+    fixture.write_nodes(
+        "function",
+        &[node(&identifier, "format_limit_marker", "src/large.rs")],
+    );
+    let error = build(fixture.request(128)).unwrap_err();
+    assert!(error.to_string().contains("sidecar read-format length"));
+}
+
+#[test]
 fn tokenizer_indexes_unicode_identifiers_case_insensitively() {
     let fixture = Fixture::new("unicode");
     fixture.write_nodes(

@@ -1,0 +1,97 @@
+{
+  "status": "confirmed finding; correction and focused verification pending",
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "independent": true,
+    "scope": "DC-S2 wrapper foundation only; read-only reviewed source"
+  },
+  "snapshot": {
+    "root": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9",
+    "repo": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo",
+    "base": "88a369f5820c7c21e05a4336f061887cc5f5d52f",
+    "patch": "/private/tmp/codebasegraph-disk-cleanup-7t9af0a6/s2-wrapper-evidence/wrapper.patch",
+    "patch_sha256": "b45624c7390ada1316cee51c18720fa908ea2bf2502a0baa67aeaabb8374092b",
+    "files": {
+      "src/db_writer/access.rs": "7d1e60ac9d84d07ab9eb210189990fe6ad0e0cbd8972414367ee39c11eadb909",
+      "src/db_writer/mod.rs": "519f8c9c5f0482d0ca4d9cea6430fe831ea753b3a13b7ba5af06499f91a0f81e",
+      "src/db_writer/tests.rs": "232f87431b7e7657f300ef98440158b0c6b390214a48c6e947378c27a53aae85",
+      "src/api/graph_read.rs": "759863fd6b8d19b4701fa5357f48404251d9fb3b603a62d3bc0be8b9333c778b"
+    }
+  },
+  "last_code_commit": "077a8d8e1e75dbca553a4d9b0f65412ca9c5def1",
+  "main_baseline": "018df35e72447fc3e014e950d1d3c6648bbd4820",
+  "findings": [
+    {
+      "id": "WRAPPER-PATH-1",
+      "priority": "P1",
+      "title": "Native path interpretation can open a database outside the retained use lease",
+      "location": {
+        "path": "src/db_writer/access.rs",
+        "lines": [
+          141,
+          142
+        ]
+      },
+      "contract": "GuardedDatabase must retain exact physical-resource DatabaseUseLease for the full native handle lifetime.",
+      "trigger": "Call open_ladybug_database with a leading-tilde path. The lease interprets tilde as a literal directory, but lbug expands it before opening.",
+      "evidence": "Isolated Darwin public-API probe successfully queried RETURN 1 and RETURN 2 on the native database while its actual parent-family coordination file accepted exclusive fs2 ownership. The addressed literal database did not exist. The distinct actual and guarded parents are printed in tilde-probe.log. The probe exited0.",
+      "consequence": "A cleanup caller can obtain physical-family exclusivity over the database actually opened while the guarded native handle remains live; the new lifetime exclusion contract is therefore false.",
+      "baseline_distinction": "Native path expansion predates the patch. The introduced wrapper acquires exclusion for the untransformed input, so its newly promised lifetime protection is incomplete.",
+      "remedy": "Validate native path interpretation before acquisition and native open. Use the same supported, absolute, lossless, consistently normalized path for both lease and Database::new, or explicitly reject unsupported forms before side effects. Do not silently reinterpret a formerly expanded tilde as a different literal cwd/tilde database. Preserve raw Direct address-derived writer/journal keys and caller SystemConfig flags.",
+      "verification": "Add regressions for native path transforms and prove that the actual native physical-family lock cannot be obtained exclusively while a wrapper/connection is live; alternatively prove rejected forms fail before creating native files or coordination state."
+    }
+  ],
+  "native_path_trace": {
+    "dependency": "lbug 0.19.0, inspected local crate source",
+    "rust": "src/database.rs::Database::new passes path.display().to_string() to native FFI.",
+    "cpp": "lbug-src/src/main/database.cpp::Database::initMembers calls StorageUtils::expandPath.",
+    "expansion": "lbug-src/src/storage/storage_utils.cpp:72-107 preserves empty/:memory: mode, expands leading tilde, then makes relative paths absolute and lexically normalizes dot and dot-dot. Windows drive/UNC special handling avoids absolute where appropriate.",
+    "cwd": "Static interleaving: lease resolves a relative path, another thread changes process CWD, and the unchanged relative path passed to native is resolved again. No deterministic CWD-race probe was executed.",
+    "symlink_dotdot": "Static consideration: Rust canonicalize follows an intermediate symlink before dot-dot, whereas native lexically_normal cancels components before filesystem lookup. Absolute conversion alone does not address that distinction. No symlink/dot-dot native probe was executed.",
+    "non_utf8": "Static Linux consideration: lease validates UTF-8 basename but not all parent bytes; native display conversion may open a U+FFFD parent while the lease protects original bytes. The attempted Darwin raw-parent fixture failed at directory creation with EILSEQ; it does not establish native Linux qualification.",
+    "memory_mode": "Empty paths and :memory: are native in-memory modes; a correction must not silently convert these into on-disk resources."
+  },
+  "checks": {
+    "nextest": {
+      "result": "24 passed; 0 failures; 0 errors; 508 unselected",
+      "junit": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/junit.xml",
+      "log": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/run.log",
+      "inventory": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/inventory.json",
+      "binary": "/Users/rabii/Projects/Repositories/codebaseGraph/target/debug/deps/codebase_graph-cafb7613f0ed9fdf",
+      "binary_sha256": "4af16ffad5ee0bb32c0280d7afd57292e10dc4e2797f5dbb6a8d3e1089eb8cff",
+      "root_test_codegen_units": 143,
+      "compile_checkout": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/repo"
+    },
+    "doctests": {
+      "result": "3 passed: 1 no-run positive compile and 2 compile-fail cases",
+      "log": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/doctests.log"
+    },
+    "tilde_probe": {
+      "result": "exit 0; live native query plus actual-family exclusive acquisition",
+      "source": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/probe/src/main.rs",
+      "log": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/tilde-probe.log"
+    },
+    "raw_parent_attempt": {
+      "result": "Darwin EILSEQ at fixture directory creation; not a product defect reproduction",
+      "log": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/path-probe.log"
+    },
+    "invalid_doc_command": {
+      "result": "initial invocation combined incompatible --doc/--lib flags; no tests ran; corrected command passed",
+      "log": "/private/tmp/cleanup-s2-wrapper-review-ccjn2do9/doctests-invalid-invocation.log"
+    },
+    "shipping_constructor_audit": "Only shipping Database::new is the guarded constructor; three raw native constructor uses are test fixtures.",
+    "borrow_drop_config": "Static review found private fields, immutable Deref only, no Clone/DerefMut/AsMut or consuming raw escape; declaration order drops native Database before lease; connections borrow through immutable native reference; graph search/context keep SystemConfig::default().read_only(true).",
+    "warnings": "75 preexisting pending-foundation warnings observed; wrapper does not qualify their final removal."
+  },
+  "limitations": [
+    "Graph MCP indexes the older original checkout and did not index new maintenance_ownership symbols. The dependency was read using explicit Scryer/frozen file anchors; configured graph was not rebuilt.",
+    "Fresh k-wiki read returned approved revision 0.2; Scryer chg-6vx5tj node-9emgn1/resp-2x4van and node-2xwzve governed the review. No wiki or Scryer mutation was made.",
+    "The discarded corrupt-native-file fixture produced nextest LEAK in worker evidence and is not counted as qualified. Final missing-readonly-native fixture passed. No introduced source defect is inferred from that discarded log.",
+    "No native Linux/Windows execution; no whole-S2 fast-seal, phase admission, collector, automatic runtime or aggregate qualification.",
+    "The confirmed finding remains unresolved. A fresh final frozen snapshot and focused independent verification are required.",
+    "No additional probes were run after coordinator requested historical report. Cargo had already been explicitly released.",
+    "Durable lesson exists about binding native path interpretation to guarded resource identity; coordinator owns any later wiki/memory recording after fix validation."
+  ],
+  "cargo": "RELEASED"
+}

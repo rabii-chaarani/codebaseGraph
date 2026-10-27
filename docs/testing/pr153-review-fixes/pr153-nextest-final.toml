@@ -1,0 +1,4 @@
+[profile.pr153]
+inherits = "default"
+[profile.pr153.junit]
+path = "/private/tmp/pr153-review-final-junit.xml"

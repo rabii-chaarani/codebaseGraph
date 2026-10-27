@@ -1,0 +1,426 @@
+use super::*;
+use std::time::Instant;
+
+mod shards;
+use shards::Shard;
+
+struct CapturedCli {
+    directory: PathBuf,
+    executable: PathBuf,
+}
+impl CapturedCli {
+    fn copy(source: &Path, name: &str) -> Result<Self, String> {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|e| e.to_string())?
+            .as_nanos();
+        let directory =
+            env::temp_dir().join(format!("native-test-cli-{}-{nanos}", std::process::id()));
+        fs::create_dir(&directory).map_err(|e| e.to_string())?;
+        let captured = Self {
+            executable: directory.join(name),
+            directory,
+        };
+        fs::copy(source, &captured.executable).map_err(|e| e.to_string())?;
+        if sha256_file(source)? != sha256_file(&captured.executable)? {
+            return Err("captured native CLI copy differs from the compiler artifact".into());
+        }
+        Ok(captured)
+    }
+}
+impl Drop for CapturedCli {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.directory);
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Cohort {
+    All,
+    Unit,
+    Generation,
+    Integration,
+}
+impl Cohort {
+    fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "all" => Ok(Self::All),
+            "unit" => Ok(Self::Unit),
+            "generation" => Ok(Self::Generation),
+            "integration" => Ok(Self::Integration),
+            _ => Err(format!("unsupported native test cohort: {value}")),
+        }
+    }
+    fn name(self) -> &'static str {
+        match self {
+            Self::All => "all",
+            Self::Unit => "unit",
+            Self::Generation => "generation",
+            Self::Integration => "integration",
+        }
+    }
+}
+
+fn cohort(package: &str, kind: &str, name: &str) -> Option<Cohort> {
+    match kind {
+        "lib" | "bin" | "example" => Some(Cohort::Unit),
+        "test" if package == "codebase-graph" && name == "generation_storage" => {
+            Some(Cohort::Generation)
+        }
+        "test" | "doctest" => Some(Cohort::Integration),
+        _ => None,
+    }
+}
+
+fn inventory(metadata: &Value) -> Result<Vec<Value>, String> {
+    let members = metadata["workspace_members"]
+        .as_array()
+        .ok_or("missing workspace members")?;
+    let mut inventory = Vec::new();
+    for package in metadata["packages"].as_array().ok_or("missing packages")? {
+        if !members.contains(&package["id"]) {
+            continue;
+        }
+        let package_name = package["name"].as_str().ok_or("missing package name")?;
+        for target in package["targets"].as_array().ok_or("missing targets")? {
+            let name = target["name"].as_str().ok_or("missing target name")?;
+            for kind in target["kind"].as_array().ok_or("missing target kind")? {
+                let kind = kind.as_str().ok_or("invalid target kind")?;
+                let mut kinds = Vec::new();
+                if target["test"] == true {
+                    kinds.push(kind);
+                }
+                if target["doctest"] == true {
+                    kinds.push("doctest");
+                }
+                for kind in kinds {
+                    if let Some(cohort) = cohort(package_name, kind, name) {
+                        inventory.push(json!({"package":package_name,"target":name,
+                            "kind":kind,"cohort":cohort.name()}));
+                    }
+                }
+            }
+        }
+    }
+    Ok(inventory)
+}
+
+fn windows_preflight(base: &[String]) -> Vec<String> {
+    let mut regressions = base.to_vec();
+    regressions.extend(
+        [
+            "--lib",
+            "--",
+            "storage::locks::",
+            "maintenance_legacy_bootstrap::",
+            "dc_workspace_root_removal_restarts",
+            "managed_read_recovery_does_not_recreate",
+            "dc_generation_actual_",
+            "dc_generation_engine_actual_",
+            "maintenance_projection::tests::",
+            "busy_writer_is_reported",
+            "dc_s2_current_v2_receipt",
+            "dc_s5_canonical_only_real_producer_spare_key",
+            "dc_s5_artifact_use_lease_defers_obsolete_key_until_release",
+            "dc_s5_real_copied_orphan_staging_requires_confirmation_then_retires_without_source_edit",
+            "dc_s5_real_reader_lease_protects_predecessor_until_release",
+        ]
+        .map(str::to_owned),
+    );
+    regressions
+}
+
+fn commands(target: NativeTarget, selected: Cohort, inventory: &[Value]) -> Vec<Vec<String>> {
+    let base: Vec<String> = native_test_command(target)
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+    if selected == Cohort::All {
+        let mut commands = Vec::new();
+        if target == NativeTarget::WindowsX86_64 {
+            commands.push(windows_preflight(&base));
+        }
+        let mut complete = base;
+        complete.push("--no-fail-fast".into());
+        commands.push(complete);
+        return commands;
+    }
+    let mut commands = Vec::new();
+    if selected == Cohort::Unit {
+        if target == NativeTarget::WindowsX86_64 {
+            commands.push(windows_preflight(&base));
+        }
+        let mut command = base.clone();
+        command.extend(["--lib", "--bins", "--examples"].map(str::to_owned));
+        commands.push(command);
+    } else {
+        let mut packages: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        for entry in inventory
+            .iter()
+            .filter(|e| e["cohort"] == selected.name() && e["kind"] == "test")
+        {
+            packages
+                .entry(entry["package"].as_str().unwrap().into())
+                .or_default()
+                .insert(entry["target"].as_str().unwrap().into());
+        }
+        for (package, tests) in packages {
+            let mut command: Vec<String> = base
+                .iter()
+                .filter(|s| *s != "--workspace")
+                .cloned()
+                .collect();
+            if target == NativeTarget::WindowsX86_64 {
+                let features = command.iter().position(|s| s == "--features").unwrap() + 1;
+                command[features] = format!("{package}/bundled-windows-extensions");
+            }
+            command.extend(["--package".into(), package]);
+            for test in tests {
+                command.extend(["--test".into(), test]);
+            }
+            commands.push(command);
+        }
+        if selected == Cohort::Integration {
+            let mut command = base;
+            command.push("--doc".into());
+            commands.push(command);
+        }
+    }
+    commands
+}
+
+pub(super) fn run(args: Vec<String>) -> Result<(), String> {
+    let options = parse_options(&args, &["--target", "--cohort", "--shard"])?;
+    let target = NativeTarget::parse(required_option(&options, "--target")?)?;
+    let selected = Cohort::parse(options.get("--cohort").map(String::as_str).unwrap_or("all"))?;
+    let shard = options
+        .get("--shard")
+        .map(|s| Shard::parse(s))
+        .transpose()?;
+    if shard.is_some() && selected == Cohort::All {
+        return Err("--shard requires the unit, generation or integration cohort".into());
+    }
+    ensure_native_host(target)?;
+    let suffix = shard
+        .map(|s| format!("-{}of{}", s.part, s.total))
+        .unwrap_or_default();
+    let output = PathBuf::from("diagnostics/tests").join(format!(
+        "{}-{}{suffix}",
+        target.as_str(),
+        selected.name()
+    ));
+    fs::create_dir_all(&output).map_err(|e| e.to_string())?;
+    let metadata = Command::new("cargo")
+        .args(["metadata", "--no-deps", "--locked", "--format-version", "1"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !metadata.status.success() {
+        return Err(String::from_utf8_lossy(&metadata.stderr).into_owned());
+    }
+    let metadata: Value = serde_json::from_slice(&metadata.stdout).map_err(|e| e.to_string())?;
+    let inventory = inventory(&metadata)?;
+    let unsharded = commands(target, selected, &inventory);
+    let started = Instant::now();
+    let compiler_artifact = capture_native_test_cli(target)?;
+    let captured = CapturedCli::copy(&compiler_artifact, target.binary_names().0)?;
+    let executable = captured.executable.as_path();
+    let hash = sha256_file(executable)?;
+    println!(
+        "native-test CLI compiler artifact: {} sha256={hash}",
+        executable.display()
+    );
+    let commands = if let Some(shard) = shard {
+        let mut planned = Vec::new();
+        for (index, args) in unsharded.iter().enumerate() {
+            // Keep the existing focused preflight once, and all doctests once.
+            if args.iter().any(|a| a == "--" || a == "--doc") {
+                if shard.part == 1 {
+                    planned.push(args.clone());
+                }
+                continue;
+            }
+            let listed = list_tests(args, &["--list"], executable)?;
+            fs::write(
+                output.join(format!("source-{index}-inventory.txt")),
+                &listed,
+            )
+            .map_err(|e| e.to_string())?;
+            fs::write(
+                output.join(format!("source-{index}-ignored.txt")),
+                list_tests(args, &["--list", "--ignored"], executable)?,
+            )
+            .map_err(|e| e.to_string())?;
+            let listing = std::str::from_utf8(&listed).map_err(|e| e.to_string())?;
+            let (cases, chunks) = shard.commands(args, listing)?;
+            fs::write(
+                output.join(format!("source-{index}-selection.json")),
+                serde_json::to_vec_pretty(&json!({"part":shard.part,"total":shard.total,
+                    "selected_cases":cases,"commands":chunks}))
+                .unwrap(),
+            )
+            .map_err(|e| e.to_string())?;
+            planned.extend(chunks);
+        }
+        planned
+    } else {
+        unsharded.clone()
+    };
+    let mut report = json!({"source_sha":env::var("SOURCE_SHA").ok(),"target":target.as_str(),
+        "cohort":selected.name(),"cli":executable,"compiler_artifact":compiler_artifact,"cli_sha256":hash,"inventory":inventory,
+        "shard":shard.map(|s| json!({"part":s.part,"total":s.total})),"unsharded_commands":unsharded,
+        "commands":commands,"executions":[],"capture_seconds":started.elapsed().as_secs_f64()});
+    let save = |report: &Value| {
+        fs::write(
+            output.join("report.json"),
+            serde_json::to_vec_pretty(report).unwrap(),
+        )
+        .map_err(|e| e.to_string())
+    };
+    save(&report)?;
+    let mut failures = Vec::new();
+    for (index, args) in commands.iter().enumerate() {
+        for (label, extra) in [
+            ("inventory", vec!["--list"]),
+            ("ignored", vec!["--list", "--ignored"]),
+        ] {
+            fs::write(
+                output.join(format!("{index}-{label}.txt")),
+                list_tests(args, &extra, executable)?,
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        println!(
+            "native test command {}: cargo {}",
+            index + 1,
+            args.join(" ")
+        );
+        let now = Instant::now();
+        let result = run_command(
+            Command::new("cargo")
+                .args(args)
+                .env("CARGO_BIN_EXE_codebase-graph", executable),
+            "native test",
+        );
+        let seconds = now.elapsed().as_secs_f64();
+        println!(
+            "native test command {} finished in {seconds:.3}s: {result:?}",
+            index + 1
+        );
+        report["executions"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"command":index,"seconds":seconds,"error":result.as_ref().err()}));
+        save(&report)?;
+        if let Err(error) = result {
+            failures.push(error);
+            if target == NativeTarget::WindowsX86_64
+                && matches!(selected, Cohort::All | Cohort::Unit)
+                && index == 0
+                && unsharded.first() == Some(args)
+            {
+                break;
+            }
+        }
+    }
+    report["total_seconds"] = json!(started.elapsed().as_secs_f64());
+    report["cli_unchanged"] = json!(sha256_file(executable).is_ok_and(|h| h == hash));
+    save(&report)?;
+    if report["cli_unchanged"] != true {
+        return Err("captured native-test CLI changed during execution".into());
+    }
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(failures.join("\n"))
+    }
+}
+
+fn list_tests(args: &[String], extra: &[&str], executable: &Path) -> Result<Vec<u8>, String> {
+    let mut command = Command::new("cargo");
+    command.args(args);
+    if !args.iter().any(|a| a == "--") {
+        command.arg("--");
+    }
+    let listing = command
+        .args(extra)
+        .env("CARGO_BIN_EXE_codebase-graph", executable)
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !listing.status.success() {
+        return Err(format!(
+            "native test listing failed: {}",
+            String::from_utf8_lossy(&listing.stderr)
+        ));
+    }
+    Ok(listing.stdout)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn captured_cli_survives_cargo_replacing_its_output() {
+        let root = unique_temp_dir("native-cli-copy-test").unwrap();
+        let source = root.join("original");
+        fs::write(&source, b"compiler artifact").unwrap();
+        let captured = CapturedCli::copy(&source, "captured").unwrap();
+        let directory = captured.directory.clone();
+        fs::write(source, b"later Cargo output").unwrap();
+        assert_eq!(
+            fs::read(&captured.executable).unwrap(),
+            b"compiler artifact"
+        );
+        drop(captured);
+        assert!(!directory.exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn windows_regressions_precede_the_complete_unfiltered_suite() {
+        let commands = commands(NativeTarget::WindowsX86_64, Cohort::All, &[]);
+        assert_eq!(commands.len(), 2);
+        assert!(commands[0].contains(&"--lib".into()));
+        assert!(commands[0].contains(&"--workspace".into()));
+        assert!(!commands[0].contains(&"--package".into()));
+        assert!(commands[0].contains(&"--".into()));
+        assert!(commands[1].contains(&"--workspace".into()));
+        assert!(!commands[1].contains(&"--".into()));
+        assert!(commands[1].contains(&"--no-fail-fast".into()));
+        let unit = super::commands(NativeTarget::WindowsX86_64, Cohort::Unit, &[]);
+        assert_eq!(unit.len(), 2);
+        assert!(unit[1].contains(&"--lib".into()));
+        let inventory = vec![
+            json!({"package":"codebase-graph","target":"generation_storage","kind":"test","cohort":"generation"}),
+        ];
+        let generation =
+            super::commands(NativeTarget::WindowsX86_64, Cohort::Generation, &inventory);
+        assert!(generation[0].contains(&"codebase-graph/bundled-windows-extensions".into()));
+        assert!(!generation[0].iter().any(|s| s.contains("k-wiki/bundled")));
+    }
+    #[test]
+    fn partitions_every_test_target_and_keeps_new_integration_targets() {
+        let metadata = json!({"workspace_members":["root","wiki"],"packages":[
+            {"id":"root","name":"codebase-graph","targets":[
+                {"name":"codebase_graph","kind":["lib"],"test":true,"doctest":true},
+                {"name":"codebase-graph","kind":["bin"],"test":true,"doctest":false},
+                {"name":"generation_storage","kind":["test"],"test":true,"doctest":false},
+                {"name":"future_test","kind":["test"],"test":true,"doctest":false}]},
+            {"id":"wiki","name":"k-wiki","targets":[
+                {"name":"generation_storage","kind":["test"],"test":true,"doctest":false}]}]});
+        let inventory = inventory(&metadata).unwrap();
+        assert_eq!(inventory.len(), 6);
+        assert_eq!(
+            inventory
+                .iter()
+                .filter(|x| x["cohort"] == "generation")
+                .count(),
+            1
+        );
+        let selected = commands(NativeTarget::MacosArm64, Cohort::Integration, &inventory);
+        assert_eq!(selected.len(), 3);
+        assert!(selected[0].contains(&"future_test".into()));
+        assert!(!selected[0].contains(&"generation_storage".into()));
+        assert!(selected[1].contains(&"generation_storage".into()));
+        assert!(selected[2].contains(&"--doc".into()));
+        assert!(Cohort::parse("invalid").is_err());
+    }
+}

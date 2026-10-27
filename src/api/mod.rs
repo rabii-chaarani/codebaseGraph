@@ -14,6 +14,8 @@ pub mod facade;
 pub(crate) mod graph_read;
 pub mod lifecycle;
 mod materialization;
+#[cfg(all(test, debug_assertions))]
+pub(crate) use materialization::build_request as build_materialization_request_for_test;
 mod normalization;
 pub mod presenter;
 mod refresh;
@@ -40,8 +42,11 @@ pub use lifecycle::{
 };
 pub(crate) use materialization::{
     execute_candidate_materialization, execute_materialization, read_manifest, MaterializeOptions,
+    NativeVerifiedGeneration,
 };
-pub(crate) use refresh::{RefreshConfigOverrides, RefreshServiceConfig};
+pub(crate) use refresh::{
+    RefreshCancellation, RefreshConfigOverrides, RefreshRuntime, RefreshServiceConfig, RefreshState,
+};
 
 #[cfg(test)]
 pub(crate) use refresh::{

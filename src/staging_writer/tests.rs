@@ -309,6 +309,11 @@ fn small_budget_forces_spill_without_changing_deterministic_output() {
     assert_eq!(bounded_result.connector_rows, 800);
     assert!(bounded_result.spill_bytes > 0);
     assert!(bounded_result.high_water_bytes > 0);
+    for entry in fs::read_dir(&bounded_dir).unwrap().filter_map(Result::ok) {
+        if entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            assert!(entry.metadata().unwrap().len() <= 8_192);
+        }
+    }
     assert_eq!(
         unique_statement_tables(&bounded_result.copy_statements),
         unique_statement_tables(&default_result.copy_statements)
@@ -335,8 +340,6 @@ fn small_budget_forces_spill_without_changing_deterministic_output() {
     let database_path = bounded_dir.join("chunked-copy.lbdb");
     write_database(LadybugWriteRequest {
         db_path: database_path.to_string_lossy().into_owned(),
-        worker_memory_bytes: 768 * 1024 * 1024,
-        buffer_pool_bytes: 384 * 1024 * 1024,
         max_num_threads: 1,
         defer_hash_indexes: false,
         include_fts: false,
@@ -350,25 +353,21 @@ fn small_budget_forces_spill_without_changing_deterministic_output() {
 }
 
 #[test]
-fn single_record_larger_than_budget_fails_structurally() {
-    let staging_dir = temp_staging_dir("record_budget");
+fn single_record_larger_than_chunk_target_roundtrips() {
+    let staging_dir = temp_staging_dir("record_target");
     let graph = partition(
         "hash-1",
-        vec![node("file:one", "File", "file.py")],
+        vec![node("file:one", "File", &"label".repeat(128))],
         Vec::new(),
     );
     let mut staging =
         StagingAccumulator::with_chunk_limit(&staging_dir.to_string_lossy(), 64).unwrap();
     staging.add_partition(&graph);
-
-    let error = staging.finish().unwrap_err();
-
-    let crate::error::NativeError::MemoryBudgetExceeded(error) = error else {
-        panic!("expected a structured memory budget error");
-    };
-    assert_eq!(error.phase, "staged");
-    assert_eq!(error.limit_bytes, 64);
-    assert!(error.accounted_bytes > error.limit_bytes);
+    let result = staging.finish().unwrap();
+    assert_eq!(result.node_rows, 1);
+    let rows = read_json_array(&staging_dir.join("file.json"));
+    assert_eq!(rows[0]["id"], "file:one");
+    assert_eq!(rows[0]["label"], "label".repeat(128));
 }
 
 fn partition(

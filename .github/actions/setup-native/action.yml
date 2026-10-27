@@ -16,7 +16,7 @@ runs:
       run: |
         set -euo pipefail
         case "${NATIVE_TARGET}:${RUNNER_OS}:${RUNNER_ARCH}" in
-          linux-x86_64:Linux:X64|macos-arm64:macOS:ARM64|macos-x86_64:macOS:X64|windows-x86_64:Windows:X64) ;;
+          macos-arm64:macOS:ARM64|windows-x86_64:Windows:X64) ;;
           *)
             echo "Target ${NATIVE_TARGET} does not match ${RUNNER_OS}/${RUNNER_ARCH}." >&2
             exit 1
@@ -47,9 +47,7 @@ runs:
         set -euo pipefail
         version="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"
         case "$NATIVE_TARGET" in
-          linux-x86_64) archive='liblbug-static-linux-x86_64-compat.tar.gz' ;;
           macos-arm64) archive='liblbug-static-osx-arm64.tar.gz' ;;
-          macos-x86_64) archive='liblbug-static-osx-x86_64.tar.gz' ;;
           windows-x86_64) archive='liblbug-static-windows-x86_64.zip' ;;
           *) echo "Unsupported native target: $NATIVE_TARGET" >&2; exit 1 ;;
         esac

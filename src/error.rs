@@ -1,41 +1,4 @@
-use serde::{Deserialize, Serialize};
 use std::fmt;
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MemoryBudgetExceeded {
-    pub phase: String,
-    pub limit_bytes: u64,
-    pub accounted_bytes: u64,
-    pub observed_rss_bytes: u64,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub parent_rss_bytes: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub child_rss_bytes: Option<u64>,
-}
-
-impl MemoryBudgetExceeded {
-    pub(crate) fn new(
-        phase: impl Into<String>,
-        limit_bytes: u64,
-        accounted_bytes: u64,
-        observed_rss_bytes: u64,
-    ) -> Self {
-        Self {
-            phase: phase.into(),
-            limit_bytes,
-            accounted_bytes,
-            observed_rss_bytes,
-            parent_rss_bytes: None,
-            child_rss_bytes: None,
-        }
-    }
-
-    pub(crate) fn with_process_rss(mut self, parent_bytes: u64, child_bytes: u64) -> Self {
-        self.parent_rss_bytes = Some(parent_bytes);
-        self.child_rss_bytes = Some(child_bytes);
-        self
-    }
-}
 
 #[derive(Debug)]
 pub enum NativeError {
@@ -44,7 +7,6 @@ pub enum NativeError {
     Database(String),
     InvalidInput(String),
     SourceChanged { path: String },
-    MemoryBudgetExceeded(MemoryBudgetExceeded),
     Unsupported(String),
 }
 
@@ -62,22 +24,6 @@ impl fmt::Display for NativeError {
                     "error": "source_changed",
                     "path": path,
                 });
-                write!(formatter, "{payload}")
-            }
-            NativeError::MemoryBudgetExceeded(error) => {
-                let mut payload = serde_json::json!({
-                    "error": "memory_budget_exceeded",
-                    "phase": error.phase,
-                    "limit_bytes": error.limit_bytes,
-                    "accounted_bytes": error.accounted_bytes,
-                    "observed_rss_bytes": error.observed_rss_bytes,
-                });
-                if let Some(parent_bytes) = error.parent_rss_bytes {
-                    payload["parent_rss_bytes"] = serde_json::json!(parent_bytes);
-                }
-                if let Some(child_bytes) = error.child_rss_bytes {
-                    payload["child_rss_bytes"] = serde_json::json!(child_bytes);
-                }
                 write!(formatter, "{payload}")
             }
             NativeError::Unsupported(message) => write!(formatter, "{message}"),
@@ -102,32 +48,6 @@ impl From<serde_json::Error> for NativeError {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn memory_budget_failure_has_a_structured_machine_readable_message() {
-        let error =
-            NativeError::MemoryBudgetExceeded(MemoryBudgetExceeded::new("parse", 1024, 2048, 512));
-        let value: serde_json::Value = serde_json::from_str(&error.to_string()).unwrap();
-
-        assert_eq!(value["error"], "memory_budget_exceeded");
-        assert_eq!(value["phase"], "parse");
-        assert_eq!(value["limit_bytes"], 1024);
-        assert_eq!(value["accounted_bytes"], 2048);
-        assert_eq!(value["observed_rss_bytes"], 512);
-        assert!(value.get("parent_rss_bytes").is_none());
-        assert!(value.get("child_rss_bytes").is_none());
-    }
-
-    #[test]
-    fn memory_budget_failure_can_report_supervised_process_split() {
-        let error = NativeError::MemoryBudgetExceeded(
-            MemoryBudgetExceeded::new("ladybug_copy", 1024, 900, 900).with_process_rss(300, 600),
-        );
-        let value: serde_json::Value = serde_json::from_str(&error.to_string()).unwrap();
-
-        assert_eq!(value["parent_rss_bytes"], 300);
-        assert_eq!(value["child_rss_bytes"], 600);
-    }
 
     #[test]
     fn source_change_failure_has_a_stable_machine_readable_message() {

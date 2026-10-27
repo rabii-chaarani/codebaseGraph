@@ -7,6 +7,11 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT -or
+    [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString() -ne 'X64') {
+    throw 'This installer supports Windows x86_64. Use install.sh on macOS ARM64.'
+}
+
 function Get-ExpectedHashes {
     param([string]$ChecksumsPath)
 

@@ -106,6 +106,8 @@ pub enum OutputFormat {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HealthRequest {
     pub repo: RepoSelector,
+    #[serde(default)]
+    pub confirm_legacy_quiescence: bool,
     pub refresh_status: Option<serde_json::Value>,
     pub output_format: OutputFormat,
 }
@@ -169,10 +171,6 @@ pub struct MaterializationRequest {
     pub exclude_patterns: Vec<String>,
     pub candidate_paths: Vec<String>,
     pub parallel: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub worker_memory_mib: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rust_memory_mib: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub spill_chunk_mib: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -395,8 +393,6 @@ mod tests {
             exclude_patterns: vec!["target/**".to_string()],
             candidate_paths: vec!["src/lib.rs".to_string()],
             parallel: true,
-            worker_memory_mib: Some(768),
-            rust_memory_mib: Some(384),
             spill_chunk_mib: Some(32),
             max_parallelism: Some(2),
             progress: false,
@@ -439,10 +435,21 @@ mod tests {
     }
 
     #[test]
+    fn older_health_requests_decode_with_confirmation_disabled() {
+        let request: HealthRequest = serde_json::from_value(
+            json!({"repo": repository(), "refresh_status": null, "output_format": "Typed"}),
+        )
+        .unwrap();
+        assert!(!request.confirm_legacy_quiescence);
+        assert!(serde_json::from_value::<HealthRequest>(json!({"repo": repository(), "refresh_status": null, "output_format": "Typed", "confirm_legacy_quiescence": "true"})).is_err());
+    }
+
+    #[test]
     fn public_operation_contracts_round_trip_without_transport_types() {
         let requests = vec![
             OperationRequest::Health(HealthRequest {
                 repo: repository(),
+                confirm_legacy_quiescence: false,
                 refresh_status: Some(json!({"running": true})),
                 output_format: OutputFormat::Block,
             }),

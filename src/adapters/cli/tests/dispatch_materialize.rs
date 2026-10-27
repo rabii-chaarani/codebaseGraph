@@ -637,8 +637,6 @@ fn setup_materializes_graph_and_writes_config() {
     assert!(config["materialization"]
         .get("semantic_provider_mode")
         .is_none());
-    assert_eq!(config["materialization"]["worker_memory_mib"], 768);
-    assert_eq!(config["materialization"]["rust_memory_mib"], 384);
     assert_eq!(config["materialization"]["spill_chunk_mib"], 32);
     assert_eq!(config["materialization"]["max_parallelism"], 2);
     assert_eq!(config["mcp"]["server_name"], "codebase_graph");

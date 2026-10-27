@@ -1,5 +1,11 @@
+#[cfg(not(test))]
 #[global_allocator]
 static GLOBAL_ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
+#[cfg(test)]
+#[global_allocator]
+static GLOBAL_ALLOCATOR: storage::maintenance_scheduler::allocation_boundary_test::Allocator =
+    storage::maintenance_scheduler::allocation_boundary_test::Allocator;
 
 pub mod adapters;
 pub mod agent_hooks;
@@ -27,7 +33,7 @@ mod staging_writer;
 mod storage;
 mod syntax_materializer;
 
-pub use error::{MaterializationError, MemoryBudgetExceeded};
+pub use error::MaterializationError;
 pub use execution::{execute_materialization_pipeline, plan_materialization};
 pub use protocol::{MaterializationInput, MaterializationResult};
 

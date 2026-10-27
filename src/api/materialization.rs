@@ -7,12 +7,17 @@ use crate::api::{
 };
 use crate::artifact_store::ArtifactStore;
 use crate::protocol::{
-    ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
+    MaintenanceSummary, ManifestEntry, NativeManifest, NativeSyntaxMaterializationRequest,
     NativeSyntaxMaterializationResponse, MATERIALIZATION_MANIFEST_SCHEMA_VERSION,
 };
 use crate::storage::direct::{DirectStore, DirectWriteSession};
-use crate::storage::layout::{DirectLayout, RepositoryLayout, DIRECT_DB_SIDECAR_SUFFIXES};
-use crate::storage::managed::{GraphStorage, ManagedStore, ManagedWriteSession, StorageMode};
+use crate::storage::layout::{
+    DirectLayout, ManagedLayout, RepositoryLayout, DIRECT_DB_SIDECAR_SUFFIXES,
+};
+use crate::storage::managed::{
+    GraphStorage, ManagedJanitorReport, ManagedReadSnapshot, ManagedStore, ManagedWriteSession,
+    StorageMode,
+};
 use crate::storage::run_workspace::{RunPhase, RunWorkspace};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -43,8 +48,6 @@ pub(crate) struct MaterializeOptions {
     pub(crate) exclude_patterns: Vec<String>,
     pub(crate) candidate_paths: Vec<String>,
     pub(crate) parallel: bool,
-    pub(crate) worker_memory_mib: Option<u64>,
-    pub(crate) rust_memory_mib: Option<u64>,
     pub(crate) spill_chunk_mib: Option<u64>,
     pub(crate) max_parallelism: Option<usize>,
     pub(crate) progress: bool,
@@ -78,8 +81,6 @@ impl Default for MaterializeOptions {
             exclude_patterns: Vec::new(),
             candidate_paths: Vec::new(),
             parallel: true,
-            worker_memory_mib: None,
-            rust_memory_mib: None,
             spill_chunk_mib: None,
             max_parallelism: None,
             progress: false,
@@ -116,8 +117,6 @@ impl MaterializeOptions {
             exclude_patterns: request.exclude_patterns.clone(),
             candidate_paths: request.candidate_paths.clone(),
             parallel: request.parallel,
-            worker_memory_mib: request.worker_memory_mib,
-            rust_memory_mib: request.rust_memory_mib,
             spill_chunk_mib: request.spill_chunk_mib,
             max_parallelism: request.max_parallelism,
             progress: request.progress,
@@ -196,8 +195,6 @@ fn resolve_materialization_path(path: &Path) -> Result<PathBuf, String> {
 pub(crate) struct ConfigScanRules {
     pub(crate) include_patterns: Vec<String>,
     pub(crate) exclude_patterns: Vec<String>,
-    pub(crate) worker_memory_mib: Option<u64>,
-    pub(crate) rust_memory_mib: Option<u64>,
     pub(crate) spill_chunk_mib: Option<u64>,
     pub(crate) max_parallelism: Option<usize>,
 }
@@ -228,8 +225,6 @@ pub(crate) fn materialization_request(
         exclude_patterns: options.exclude_patterns.clone(),
         candidate_paths: options.candidate_paths.clone(),
         parallel: options.parallel,
-        worker_memory_mib: options.worker_memory_mib,
-        rust_memory_mib: options.rust_memory_mib,
         spill_chunk_mib: options.spill_chunk_mib,
         max_parallelism: options.max_parallelism,
         progress: options.progress,
@@ -308,13 +303,14 @@ pub(crate) fn execute_materialization_request(
     }
     let started = Instant::now();
     let final_request = request;
-    let mut response =
-        match crate::db_writer::with_phase_workspace_root(execution.phase_workspace_root(), || {
-            crate::execute_materialization_pipeline(&final_request)
-        }) {
-            Ok(response) => response,
-            Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
-        };
+    let mut response = match crate::db_writer::with_phase_workspace_scope(
+        execution.phase_workspace_root(),
+        execution.phase_owner_scope(),
+        || crate::execute_materialization_pipeline(&final_request),
+    ) {
+        Ok(response) => response,
+        Err(error) => return Err(execution.abort_with_cleanup(error.to_string())),
+    };
     response.phase_timings.insert(
         "native_cli_seconds".to_string(),
         started.elapsed().as_secs_f64(),
@@ -403,6 +399,13 @@ enum StorageExecution {
 }
 
 impl StorageExecution {
+    fn phase_owner_scope(&self) -> Option<crate::storage::run_workspace::ParentRunScope> {
+        match self {
+            Self::Direct { workspace, .. } => workspace.phase_owner_scope(),
+            Self::Managed { session, .. } => session.phase_owner_scope(),
+        }
+    }
+
     fn phase_workspace_root(&self) -> PathBuf {
         match self {
             Self::Direct { session, .. } => session.phase_workspace_root(),
@@ -553,14 +556,6 @@ pub(crate) fn build_request(
     };
     let staging_dir = paths.state_dir.join("native-staging");
     let artifact_root = paths.state_dir.join("artifacts");
-    let worker_memory_mib = options
-        .worker_memory_mib
-        .or(config_rules.worker_memory_mib)
-        .unwrap_or(crate::api::context::DEFAULT_WORKER_MEMORY_MIB);
-    let rust_memory_mib = options
-        .rust_memory_mib
-        .or(config_rules.rust_memory_mib)
-        .unwrap_or(crate::api::context::DEFAULT_RUST_MEMORY_MIB);
     let spill_chunk_mib = options
         .spill_chunk_mib
         .or(config_rules.spill_chunk_mib)
@@ -569,12 +564,7 @@ pub(crate) fn build_request(
         .max_parallelism
         .or(config_rules.max_parallelism)
         .unwrap_or(crate::api::context::DEFAULT_MAX_PARALLELISM);
-    validate_materialization_limits(
-        worker_memory_mib,
-        rust_memory_mib,
-        spill_chunk_mib,
-        max_parallelism,
-    )?;
+    validate_execution_options(spill_chunk_mib, max_parallelism)?;
 
     Ok(NativeSyntaxMaterializationRequest {
         source_root: source_root.to_string_lossy().to_string(),
@@ -599,8 +589,6 @@ pub(crate) fn build_request(
         atomic_rebuild: true,
         strict: true,
         parallel: options.parallel,
-        worker_memory_mib,
-        rust_memory_mib,
         spill_chunk_mib,
         max_parallelism,
         progress: options.progress,
@@ -627,12 +615,6 @@ pub(crate) fn read_materialization_config_rules(path: &Path) -> Result<ConfigSca
             .and_then(|payload| payload.get("exclude"))
             .map(json_string_array)
             .unwrap_or_default(),
-        worker_memory_mib: materialization
-            .and_then(|payload| payload.get("worker_memory_mib"))
-            .and_then(serde_json::Value::as_u64),
-        rust_memory_mib: materialization
-            .and_then(|payload| payload.get("rust_memory_mib"))
-            .and_then(serde_json::Value::as_u64),
         spill_chunk_mib: materialization
             .and_then(|payload| payload.get("spill_chunk_mib"))
             .and_then(serde_json::Value::as_u64),
@@ -643,24 +625,9 @@ pub(crate) fn read_materialization_config_rules(path: &Path) -> Result<ConfigSca
     })
 }
 
-fn validate_materialization_limits(
-    worker_memory_mib: u64,
-    rust_memory_mib: u64,
-    spill_chunk_mib: u64,
-    max_parallelism: usize,
-) -> Result<(), String> {
-    if worker_memory_mib == 0
-        || rust_memory_mib == 0
-        || spill_chunk_mib == 0
-        || max_parallelism == 0
-    {
-        return Err("materialization memory limits and max_parallelism must be positive".into());
-    }
-    if rust_memory_mib > worker_memory_mib {
-        return Err("rust_memory_mib must not exceed worker_memory_mib".into());
-    }
-    if spill_chunk_mib > rust_memory_mib {
-        return Err("spill_chunk_mib must not exceed rust_memory_mib".into());
+fn validate_execution_options(spill_chunk_mib: u64, max_parallelism: usize) -> Result<(), String> {
+    if spill_chunk_mib == 0 || max_parallelism == 0 {
+        return Err("spill_chunk_mib and max_parallelism must be positive".into());
     }
     Ok(())
 }
@@ -813,6 +780,11 @@ pub(crate) fn write_manifest(
     graph_build_digest: Option<String>,
     search_backend: Option<crate::protocol::SearchBackendMetadata>,
 ) -> Result<NativeManifest, String> {
+    let _reference_mutation =
+        crate::storage::maintenance_ownership::ReferenceMutation::begin_producing(
+            &request.resolved_artifact_root(),
+        )
+        .map_err(|error| error.to_string())?;
     let files = materialized_entries
         .iter()
         .map(|(path, entry)| (path.clone(), entry.clone().compact()))
@@ -846,8 +818,15 @@ fn prepare_storage_execution(options: &MaterializeOptions) -> Result<StorageExec
         db_path: options.db.clone(),
         manifest_path: options.manifest.clone(),
     };
-    let mut runtime = crate::api::context::resolve_runtime(&selector)
-        .map_err(|error| format!("failed to resolve materialization storage target: {error}"))?;
+    let explicit_rebuild = options.intent == MaterializationIntent::ExplicitBuild
+        && options.mode == "full"
+        && !options.plan_only;
+    let mut runtime = if explicit_rebuild {
+        crate::api::context::resolve_runtime_for_rebuild(&selector)
+    } else {
+        crate::api::context::resolve_runtime(&selector)
+    }
+    .map_err(|error| format!("failed to resolve materialization storage target: {error}"))?;
     runtime.active_read = None;
     runtime.direct_read = None;
     let managed_storage_root = options.storage_root.clone().or_else(|| {
@@ -880,18 +859,25 @@ fn prepare_storage_execution(options: &MaterializeOptions) -> Result<StorageExec
             let artifact_root = layout.artifact_root_path();
             let store = DirectStore::new(layout.clone())
                 .map_err(|error| format!("failed to prepare direct storage target: {error}"))?;
-            let session = store
-                .begin_write()
-                .map_err(|error| format!("failed to create direct write session: {error}"))?;
+            let session = if explicit_rebuild {
+                store.begin_write_explicit_rebuild()
+            } else {
+                store.begin_write()
+            }
+            .map_err(|error| format!("failed to create direct write session: {error}"))?;
             let previous_manifest = if runtime.manifest_path.exists() {
                 Some(read_manifest(&runtime.manifest_path)?)
             } else {
                 None
             };
-            let mut workspace = RunWorkspace::create(
+            let reference_domain =
+                crate::storage::maintenance_ownership::ReferenceDomain::direct(&layout)
+                    .map_err(|error| error.to_string())?;
+            let mut workspace = RunWorkspace::create_scoped(
                 RepositoryLayout::new(&runtime.state_dir)
                     .state_root()
                     .join("direct-runs"),
+                &reference_domain,
                 None,
             )
             .map_err(|error| format!("failed to create direct run workspace: {error}"))?;
@@ -919,6 +905,13 @@ fn finalize_materialization(
     response: &mut NativeSyntaxMaterializationResponse,
     identity: Option<&RepositoryIdentity>,
 ) -> Result<(), String> {
+    // Finalization occurs after the public pipeline's guard is released.
+    // The execution/session and scoped run remain active through all effects.
+    let _reference_mutation =
+        crate::storage::maintenance_ownership::ReferenceMutation::begin_existing(
+            execution.artifact_root(),
+        )
+        .map_err(|error| error.to_string())?;
     let request_db_path = execution.request_db_path();
     let request_manifest_path = execution.request_manifest_path();
     let artifact_root = execution.artifact_root().to_path_buf();
@@ -1013,28 +1006,42 @@ fn finalize_materialization(
                         .map(|cleanup| cleanup.to_string()),
                 ));
             }
-            if let Err(error) = garbage_collect_artifacts(&artifact_root, &published_manifest) {
-                return Err(append_cleanup_error(
-                    error.clone(),
-                    workspace
-                        .abort(Some(error))
-                        .err()
-                        .map(|cleanup| cleanup.to_string()),
-                ));
-            }
+            defer_artifact_maintenance(response);
             response.storage_format = "direct".to_string();
             response.active_generation = None;
             response.cleanup_pending = false;
             response.pending_runs = 0;
+            if let Some(error) = session.take_retirement_issue() {
+                response.cleanup_pending = true;
+                record_postpublication_cleanup_error(
+                    response,
+                    "direct_active_attestation_pending",
+                    error.to_string(),
+                );
+            }
             if !manifest_path.exists() {
                 return Err(format!(
                     "direct manifest publication did not produce {}",
                     manifest_path.display()
                 ));
             }
-            workspace
-                .finish()
-                .map_err(|error| format!("failed to clean direct run workspace: {error}"))?;
+            // Publication, its journal transition and required readback have
+            // succeeded. Failure to dispose the published run is independent.
+            #[cfg(test)]
+            POST_DIRECT_CLEANUP_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(workspace.root());
+                }
+            });
+            if let Err(error) = workspace.finish() {
+                response.cleanup_pending = true;
+                response.pending_runs = 1;
+                record_postpublication_cleanup_error(
+                    response,
+                    "direct_run_cleanup_pending",
+                    format!("failed to clean direct run workspace: {error}"),
+                );
+            }
             session.finish();
         }
         StorageExecution::Managed {
@@ -1043,41 +1050,166 @@ fn finalize_materialization(
             store,
             ..
         } => {
-            let published_generation = session
-                .publish_with_stats(&response.graph_summary)
+            let publication = session
+                .publish_with_stats_typed(&response.graph_summary)
                 .map_err(|error| format!("failed to publish managed graph generation: {error}"))?;
-            let read = store
-                .open_read()
-                .map_err(|error| format!("failed to reopen managed graph generation: {error}"))?;
+            let published_generation = publication.generation_id;
+            let mut janitor = publication.janitor;
+            let read = match store.open_read() {
+                Ok(read) => read,
+                Err(error) => {
+                    return Err(append_managed_janitor_secondary(
+                        format!("failed to reopen managed graph generation: {error}"),
+                        &mut janitor,
+                    ))
+                }
+            };
             if read.generation_id != published_generation {
-                return Err(format!(
+                let error = format!(
                     "managed publish activated {}, but reopened generation was {}",
                     published_generation, read.generation_id
-                ));
+                );
+                release_managed_validation_snapshot(read, &session, &store, &published_generation);
+                return Err(append_managed_janitor_secondary(error, &mut janitor));
             }
-            let published_manifest = read_manifest(&read.manifest_path)?;
-            validate_candidate_bundle(
+            let published_manifest = match read_manifest(&read.manifest_path) {
+                Ok(manifest) => manifest,
+                Err(error) => {
+                    release_managed_validation_snapshot(
+                        read,
+                        &session,
+                        &store,
+                        &published_generation,
+                    );
+                    return Err(append_managed_janitor_secondary(error, &mut janitor));
+                }
+            };
+            if let Err(error) = validate_candidate_bundle(
                 &read.db_path,
                 &read.manifest_path,
                 &artifact_root,
                 &published_manifest,
                 response,
-            )?;
-            let cleanup = session
-                .recover_and_gc()
-                .map_err(|error| format!("failed to reconcile managed storage cleanup: {error}"))?;
-            if cleanup.run_recovery.skipped_locked == 0 {
-                garbage_collect_artifacts(&artifact_root, &published_manifest)?;
+            ) {
+                release_managed_validation_snapshot(read, &session, &store, &published_generation);
+                return Err(append_managed_janitor_secondary(error, &mut janitor));
             }
+            #[cfg(test)]
+            POST_MANAGED_VERIFICATION_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(&session, &store);
+                }
+            });
+            let reconciliation = match session.reconcile_typed() {
+                Ok(report) => report,
+                Err(error) => {
+                    release_managed_validation_snapshot(
+                        read,
+                        &session,
+                        &store,
+                        &published_generation,
+                    );
+                    return Err(append_managed_janitor_secondary(
+                        format!("failed to reconcile managed storage cleanup: {error}"),
+                        &mut janitor,
+                    ));
+                }
+            };
+            #[cfg(test)]
+            POST_MANAGED_RECONCILE_HOOK.with(|hook| {
+                if let Some(hook) = hook.take() {
+                    hook(&session, &store);
+                }
+            });
+            let recovery_complete = reconciliation.recovery.observation_complete;
+            janitor.merge_latest(reconciliation.janitor);
+            if let Err(error) = session.check_active_generation(&published_generation) {
+                release_managed_validation_snapshot(read, &session, &store, &published_generation);
+                return Err(append_managed_janitor_secondary(
+                    error.to_string(),
+                    &mut janitor,
+                ));
+            }
+            if recovery_complete {
+                let verified = NativeVerifiedGeneration {
+                    session: &session,
+                    store: &store,
+                    read: &read,
+                    published: &published_generation,
+                };
+                if let Err(error) =
+                    crate::storage::maintenance_generations::seal_verified_generation(&verified)
+                {
+                    janitor.record_generation_disposition_failure(error);
+                }
+            }
+            if !recovery_complete {
+                janitor.deferred_reason = Some("managed_recovery_deferred");
+                janitor.pending = true;
+                janitor.observation_complete = false;
+            }
+            // Release every generation/native-family reader before publishing
+            // completion and releasing the writer to the bounded controller.
+            release_managed_validation_snapshot(read, &session, &store, &published_generation);
+            defer_artifact_maintenance(response);
             response.storage_format = "managed_v2".to_string();
             response.active_generation = Some(published_generation);
-            response.cleanup_pending =
-                cleanup.retired_generations_pending > 0 || cleanup.run_recovery.skipped_locked > 0;
-            response.pending_runs = cleanup.run_recovery.skipped_locked;
-            session.finish();
+            response.cleanup_pending = janitor.pending
+                || janitor.legacy.retired_generations_pending > 0
+                || janitor.legacy.run_recovery.skipped_locked > 0;
+            response.pending_runs = janitor.legacy.run_recovery.skipped_locked;
+            record_managed_janitor_report(response, janitor);
+            session.finish_without_cleanup();
         }
     }
     Ok(())
+}
+
+fn release_managed_validation_snapshot(
+    read: ManagedReadSnapshot,
+    session: &ManagedWriteSession,
+    store: &ManagedStore,
+    generation: &str,
+) {
+    drop(read);
+    #[cfg(test)]
+    POST_MANAGED_SNAPSHOT_DROP_HOOK.with(|hook| {
+        if let Some(hook) = hook.take() {
+            hook(session, store, generation);
+        }
+    });
+    #[cfg(not(test))]
+    let _ = (session, store, generation);
+}
+
+/// Only this module constructs this token, after actual native readback and
+/// required reconciliation/current-identity checks. Its borrows retain the
+/// genuine publishing session writer and the verified generation reader.
+pub(crate) struct NativeVerifiedGeneration<'a> {
+    session: &'a ManagedWriteSession,
+    store: &'a ManagedStore,
+    read: &'a ManagedReadSnapshot,
+    published: &'a str,
+}
+impl NativeVerifiedGeneration<'_> {
+    pub(crate) fn layout(&self) -> &ManagedLayout {
+        self.store.layout()
+    }
+    pub(crate) fn writer(&self) -> &crate::storage::locks::WriterLease {
+        self.session
+            .writer_lease()
+            .expect("verified publication retains its actual writer")
+    }
+    pub(crate) fn generation_id(&self) -> &str {
+        debug_assert_eq!(self.read.generation_id, self.published);
+        self.published
+    }
+    pub(crate) fn previous_generation_id(&self) -> Option<&str> {
+        self.session
+            .base_generation
+            .as_ref()
+            .map(|generation| generation.generation_id.as_str())
+    }
 }
 
 fn run_root_from_candidate(candidate_root: &Path) -> PathBuf {
@@ -1175,30 +1307,97 @@ fn validate_candidate_bundle(
     Ok(())
 }
 
-fn garbage_collect_artifacts(
-    artifact_root: &Path,
-    active_manifest: &NativeManifest,
-) -> Result<(), String> {
-    let retained = active_manifest
-        .files
-        .values()
-        .filter_map(|entry| entry.artifact_key.clone())
-        .collect::<BTreeSet<_>>();
-    let store = ArtifactStore::new(artifact_root);
-    for key in store.list_keys().map_err(|error| {
-        format!(
-            "failed to list artifacts in {}: {error}",
-            artifact_root.display()
-        )
-    })? {
-        if retained.contains(&key) {
-            continue;
-        }
-        store
-            .delete_key(&key)
-            .map_err(|error| format!("failed to delete artifact {key}: {error}"))?;
+/// The former manifest-only deletion loop had no destination/use ownership
+/// proof and could scan without a budget. Leave the owned collector's work
+/// pending rather than exercising authorityless ArtifactStore::delete_key.
+fn defer_artifact_maintenance(response: &mut NativeSyntaxMaterializationResponse) {
+    let summary = response
+        .maintenance
+        .get_or_insert_with(MaintenanceSummary::default);
+    summary.pending = true;
+    let reason = "artifact_collection_requires_owned_maintenance";
+    if !summary.reasons.iter().any(|value| value == reason) {
+        summary.reasons.push(reason.into());
     }
-    Ok(())
+}
+
+fn record_postpublication_cleanup_error(
+    response: &mut NativeSyntaxMaterializationResponse,
+    reason: &str,
+    error: String,
+) {
+    let summary = response
+        .maintenance
+        .get_or_insert_with(MaintenanceSummary::default);
+    summary.pending = true;
+    summary.reasons.push(reason.into());
+    summary.errors.push(error.clone());
+    response
+        .diagnostics
+        .push(format!("cleanup pending: {error}"));
+}
+
+fn record_managed_janitor_report(
+    response: &mut NativeSyntaxMaterializationResponse,
+    mut report: ManagedJanitorReport,
+) {
+    let summary = response
+        .maintenance
+        .get_or_insert_with(MaintenanceSummary::default);
+    if !report.observation_complete {
+        summary.observation_complete = false;
+        summary
+            .reasons
+            .push("managed_janitor_observation_incomplete".into());
+    }
+    if let Some(reason) = report.deferred_reason {
+        if !report.observation_complete {
+            summary.reasons.push(reason.into());
+        }
+    }
+    summary.pending |= report.pending;
+    if let Some(issue) = report.first_issue.take() {
+        let reason = if report.pending {
+            issue.stage.reason()
+        } else {
+            "managed_janitor_issue_resolved"
+        };
+        summary.reasons.push(reason.into());
+        let error = issue.source.to_string();
+        summary.errors.push(error.clone());
+        response.diagnostics.push(format!(
+            "{}: {error}",
+            if report.pending {
+                "cleanup pending"
+            } else {
+                "cleanup diagnostic"
+            }
+        ));
+    }
+    if report.issue_count > 1 {
+        summary
+            .reasons
+            .push("additional_managed_janitor_errors_omitted".into());
+        response.diagnostics.push(format!(
+            "{} additional managed cleanup errors",
+            report.issue_count - 1
+        ));
+    }
+}
+
+#[cfg(test)]
+type ManagedTestHook = fn(&ManagedWriteSession, &ManagedStore);
+#[cfg(test)]
+type ManagedSnapshotTestHook = fn(&ManagedWriteSession, &ManagedStore, &str);
+
+#[cfg(test)]
+thread_local! {
+    // Inject a real workspace cleanup failure only after commit/readback.
+    static POST_DIRECT_CLEANUP_HOOK: std::cell::Cell<Option<fn(&Path)>> = const { std::cell::Cell::new(None) };
+    static POST_MANAGED_VERIFICATION_HOOK: std::cell::Cell<Option<ManagedTestHook>> = const { std::cell::Cell::new(None) };
+    static POST_MANAGED_RECONCILE_HOOK: std::cell::Cell<Option<ManagedTestHook>> = const { std::cell::Cell::new(None) };
+    static POST_MANAGED_SNAPSHOT_DROP_HOOK: std::cell::Cell<Option<ManagedSnapshotTestHook>> = const { std::cell::Cell::new(None) };
+    static MANAGED_SNAPSHOT_RELEASE_OBSERVED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
 fn cleanup_direct_candidate(session: &DirectWriteSession) -> Result<(), String> {
@@ -1252,6 +1451,19 @@ fn remove_path_if_exists(path: &Path) -> Result<(), String> {
     }
 }
 
+fn append_managed_janitor_secondary(
+    primary_error: String,
+    report: &mut ManagedJanitorReport,
+) -> String {
+    append_cleanup_error(
+        primary_error,
+        report
+            .first_issue
+            .take()
+            .map(|issue| issue.source.to_string()),
+    )
+}
+
 fn append_cleanup_error(primary_error: String, cleanup_error: Option<String>) -> String {
     match cleanup_error {
         Some(cleanup_error) if !cleanup_error.is_empty() => {
@@ -1283,7 +1495,8 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {
-        std::env::temp_dir().join(format!(
+        // Ownership fixtures need a real parent; macOS TMPDIR can start at /var.
+        std::env::temp_dir().canonicalize().unwrap().join(format!(
             "{prefix}-{}-{}",
             std::process::id(),
             SystemTime::now()
@@ -1291,6 +1504,50 @@ mod tests {
                 .expect("clock should be after epoch")
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn dc_epoch_manifest_finalization_advances_tracked_reference_domain() {
+        use crate::storage::layout::{create_fresh_reference_root, ManagedLayout};
+        use crate::storage::locks::{open_locked, LockMode};
+        use crate::storage::maintenance_ownership::{
+            initialize_fresh_reference_domain, observe_reference_epoch, EpochObservation,
+            ReferenceDomain,
+        };
+        let root = unique_temp_dir("epoch-finalization-manifest");
+        fs::create_dir_all(&root).unwrap();
+        let storage = root.join("storage");
+        let fresh = create_fresh_reference_root(&storage).unwrap().unwrap();
+        let layout = ManagedLayout::new(&storage);
+        layout.ensure_roots().unwrap();
+        let writer = open_locked(layout.writer_lock_path(), LockMode::Exclusive).unwrap();
+        let domain = ReferenceDomain::managed(&layout).unwrap();
+        assert!(initialize_fresh_reference_domain(&domain, &fresh, &writer).unwrap());
+        drop(writer);
+        let before = match observe_reference_epoch(&domain).unwrap() {
+            EpochObservation::Verified(epoch) => epoch,
+            other => panic!("{other:?}"),
+        };
+        let path = layout
+            .generations_root()
+            .join("gen-finalization/manifest.json");
+        let mut request = build_request(&MaterializeOptions {
+            source_root: Some(root.clone()),
+            db: Some(storage.join("candidate.ldb")),
+            manifest: Some(path.clone()),
+            ..MaterializeOptions::default()
+        })
+        .unwrap();
+        request.artifact_root = layout.artifacts_root().to_string_lossy().into_owned();
+        let manifest = write_manifest(&path, &request, &BTreeMap::new(), None, None).unwrap();
+        assert!(manifest.files.is_empty());
+        assert!(path.is_file());
+        let after = match observe_reference_epoch(&domain).unwrap() {
+            EpochObservation::Verified(epoch) => epoch,
+            other => panic!("{other:?}"),
+        };
+        assert!(after.counter() > before.counter());
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1412,8 +1669,8 @@ mod tests {
     }
 
     #[test]
-    fn artifact_gc_retains_active_manifest_keys_and_removes_stale_keys() {
-        let root = unique_temp_dir("codebase-graph-artifact-gc");
+    fn deferred_artifact_collection_preserves_unregistered_foreign_state() {
+        let root = unique_temp_dir("unregistered-artifacts");
         let retained_key = "a".repeat(64);
         let stale_key = "b".repeat(64);
         let retained_dir = root.join("aa").join(&retained_key);
@@ -1422,36 +1679,173 @@ mod tests {
         fs::create_dir_all(&stale_dir).unwrap();
         fs::write(retained_dir.join("partition.json"), "retained").unwrap();
         fs::write(stale_dir.join("partition.json"), "stale").unwrap();
-        let manifest = NativeManifest {
-            schema_version: 2,
-            ontology: "code_ontology_v1".to_string(),
-            parser_version: "native".to_string(),
-            graph_build_digest: Some("digest".to_string()),
-            search_backend: None,
-            files: BTreeMap::from([(
-                "src/lib.rs".to_string(),
-                ManifestEntry {
-                    path: "src/lib.rs".to_string(),
-                    content_hash: "hash".to_string(),
-                    language: "rust".to_string(),
-                    partition_id: "partition".to_string(),
-                    artifact_key: Some(retained_key.clone()),
-                    node_ids: Vec::new(),
-                    edge_ids: Vec::new(),
-                    node_types: BTreeMap::new(),
-                    edge_types: BTreeMap::new(),
-                    node_count: 0,
-                    edge_count: 0,
-                    materialized_at: "unix:0".to_string(),
-                },
-            )]),
+        let mut response = empty_test_response();
+        defer_artifact_maintenance(&mut response);
+        let summary = response.maintenance.unwrap();
+        assert!(summary.pending);
+        assert!(summary.inventory_status.is_none());
+        assert!(summary.bytes.unknown.allocated_bytes.is_none());
+        assert!(summary
+            .reasons
+            .iter()
+            .any(|reason| reason == "artifact_collection_requires_owned_maintenance"));
+        let authority_error = ArtifactStore::new(&root)
+            .delete_key(&stale_key)
+            .unwrap_err();
+        assert!(authority_error
+            .to_string()
+            .contains("requires_current_maintenance_authority"));
+        assert!(!summary.requested);
+        assert!(!summary.running);
+        assert_eq!(
+            fs::read(retained_dir.join("partition.json")).unwrap(),
+            b"retained"
+        );
+        assert_eq!(
+            fs::read(stale_dir.join("partition.json")).unwrap(),
+            b"stale"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    fn empty_test_response() -> NativeSyntaxMaterializationResponse {
+        NativeSyntaxMaterializationResponse::skipped(
+            BTreeMap::new(),
+            crate::protocol::ManifestDiff {
+                added: Vec::new(),
+                modified: Vec::new(),
+                unchanged: Vec::new(),
+                deleted: Vec::new(),
+                force_rebuild: false,
+            },
+            Vec::new(),
+            Vec::new(),
+            BTreeMap::new(),
+        )
+    }
+
+    fn committed_artifact_fixture(managed: bool) -> (PathBuf, MaterializeOptions, PathBuf) {
+        let root = unique_temp_dir(if managed { "postgc-m" } else { "postgc-d" });
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/lib.rs"), "pub fn first_version() {}\n").unwrap();
+        let options = MaterializeOptions {
+            source_root: Some(root.clone()),
+            mode: "full".into(),
+            parallel: false,
+            storage_root: managed.then(|| root.join(".codebaseGraph/storage")),
+            db: (!managed).then(|| root.join("output/graph.ldb")),
+            manifest: (!managed).then(|| root.join("output/manifest.json")),
+            ..MaterializeOptions::default()
         };
+        let (request, _) = execute_materialization(&options).unwrap();
+        let artifact_root = PathBuf::from(request.artifact_root);
+        (root, options, artifact_root)
+    }
 
-        garbage_collect_artifacts(&root, &manifest).unwrap();
+    fn assert_published_graph_readable(
+        options: &MaterializeOptions,
+        response: &NativeSyntaxMaterializationResponse,
+    ) {
+        let database = if let Some(storage_root) = &options.storage_root {
+            GraphStorage::managed(storage_root)
+                .layout()
+                .generation(response.active_generation.as_ref().unwrap())
+                .unwrap()
+                .db_path()
+        } else {
+            options.db.clone().unwrap()
+        };
+        assert!(crate::api::graph_read::count_graph_nodes(&database).unwrap() > 0);
+    }
 
-        assert!(retained_dir.exists());
-        assert!(!stale_dir.exists());
-        let _ = fs::remove_dir_all(root);
+    fn verify_committed_artifact_deferral(managed: bool) {
+        let (root, options, artifact_root) = committed_artifact_fixture(managed);
+        // This residue was introduced outside the producing protocol and must
+        // survive. It reproduced the old authorityless postcommit GC failure.
+        let stale_key = "b".repeat(64);
+        let foreign_payload = artifact_root
+            .join("bb")
+            .join(stale_key)
+            .join("partition.json");
+        fs::create_dir_all(foreign_payload.parent().unwrap()).unwrap();
+        fs::write(&foreign_payload, "foreign unvalidated payload").unwrap();
+        fs::write(root.join("src/lib.rs"), "pub fn second_version() {}\n").unwrap();
+        let (_, response) = execute_materialization(&options)
+            .expect("committed publication must survive deferred artifact GC");
+        assert!(response.database_written);
+        assert_eq!(
+            response.storage_format,
+            if managed { "managed_v2" } else { "direct" }
+        );
+        let summary = response.maintenance.as_ref().unwrap();
+        assert!(summary.pending);
+        assert!(summary
+            .reasons
+            .iter()
+            .any(|reason| reason == "artifact_collection_requires_owned_maintenance"));
+        assert!(summary.last_attempt.is_none());
+        assert!(summary.bytes.total.allocated_bytes.is_none());
+        assert_eq!(
+            fs::read_to_string(&foreign_payload).unwrap(),
+            "foreign unvalidated payload"
+        );
+        assert_published_graph_readable(&options, &response);
+        // The new optional field must decode old worker/native responses.
+        let mut old_payload = serde_json::to_value(&response).unwrap();
+        old_payload.as_object_mut().unwrap().remove("maintenance");
+        assert!(
+            serde_json::from_value::<NativeSyntaxMaterializationResponse>(old_payload)
+                .unwrap()
+                .maintenance
+                .is_none()
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn committed_direct_graph_survives_deferred_artifact_collection() {
+        verify_committed_artifact_deferral(false);
+    }
+
+    #[test]
+    fn committed_managed_graph_survives_deferred_artifact_collection() {
+        verify_committed_artifact_deferral(true);
+    }
+
+    #[test]
+    fn committed_direct_graph_survives_real_workspace_cleanup_failure() {
+        let (root, options, _) = committed_artifact_fixture(false);
+        POST_DIRECT_CLEANUP_HOOK.with(|hook| {
+            hook.set(Some(|run_root| {
+                fs::write(
+                    run_root.join("cleanup-barrier.json"),
+                    "invalid barrier fixture",
+                )
+                .unwrap();
+            }))
+        });
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn after_cleanup_failure() {}\n",
+        )
+        .unwrap();
+        let (_, response) = execute_materialization(&options)
+            .expect("cleanup failure must not undo committed result");
+        assert!(response.database_written);
+        assert!(response.cleanup_pending);
+        assert_eq!(response.pending_runs, 1);
+        let summary = response.maintenance.as_ref().unwrap();
+        assert!(summary.pending);
+        assert!(summary
+            .errors
+            .iter()
+            .any(|error| error.contains("invalid run cleanup barrier")));
+        assert!(response
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.starts_with("cleanup pending:")));
+        assert_published_graph_readable(&options, &response);
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1498,13 +1892,15 @@ mod tests {
     }
 
     #[test]
-    fn prepublication_failures_clean_managed_and_direct_run_state() {
+    fn prepublication_failures_close_managed_runs_and_clean_legacy_direct_run_state() {
         for phase in ["parsing", "staging", "database", "candidate_validation"] {
             let root = unique_temp_dir(&format!("codebase-graph-cleanup-{phase}"));
             let managed_root = root.join("managed");
             let managed_store = GraphStorage::managed(&managed_root);
             let managed_session = managed_store.begin_write().unwrap();
-            fs::write(managed_session.candidate_db_path(), "partial-db").unwrap();
+            let managed_candidate = managed_session.candidate_db_path();
+            let managed_run = run_root_from_candidate(managed_session.candidate.paths().root());
+            fs::write(&managed_candidate, "partial-db").unwrap();
             let managed_error = StorageExecution::Managed {
                 artifact_root: managed_store.layout().artifacts_root(),
                 session: managed_session,
@@ -1513,10 +1909,29 @@ mod tests {
             }
             .abort_with_cleanup(format!("{phase} failed"));
             assert_eq!(managed_error, format!("{phase} failed"));
-            assert!(fs::read_dir(managed_store.layout().runs_root())
-                .unwrap()
-                .next()
-                .is_none());
+            // A registered owner publishes abort closure and leaves disposal
+            // to bounded collection. This manual, unreceipted payload conveys
+            // no deletion authority and must remain byte-for-byte intact.
+            assert!(managed_run.join(".workspace.binding").is_file());
+            let journal: crate::storage::run_workspace::RunJournal =
+                serde_json::from_slice(&fs::read(managed_run.join("journal.json")).unwrap())
+                    .unwrap();
+            assert_eq!(journal.phase, RunPhase::Failed);
+            assert_eq!(fs::read(&managed_candidate).unwrap(), b"partial-db");
+            let domain = crate::storage::maintenance_ownership::ReferenceDomain::managed(
+                managed_store.layout(),
+            )
+            .unwrap();
+            let memory = crate::storage::maintenance_budget::CleanupMemory::new(
+                crate::storage::maintenance::MAINTENANCE_MEMORY_BYTES,
+            )
+            .unwrap();
+            crate::storage::maintenance_controls::prepare_terminal_workspace_boxed(
+                &managed_run,
+                &domain,
+                &memory,
+            )
+            .unwrap();
 
             let direct_layout =
                 DirectLayout::new(root.join("graph.ldb"), root.join("manifest.json"));
@@ -1624,8 +2039,6 @@ mod tests {
                 "materialization": {
                     "include": ["src/**/*.rs"],
                     "exclude": ["target/**"],
-                    "worker_memory_mib": 640,
-                    "rust_memory_mib": 320,
                     "spill_chunk_mib": 16,
                     "max_parallelism": 1
                 }
@@ -1676,8 +2089,6 @@ mod tests {
         );
         assert_eq!(request.ignore_patterns, vec!["build/".to_string()]);
         assert!(request.candidate_paths.is_empty());
-        assert_eq!(request.worker_memory_mib, 640);
-        assert_eq!(request.rust_memory_mib, 320);
         assert_eq!(request.spill_chunk_mib, 16);
         assert_eq!(request.max_parallelism, 1);
         let _ = fs::remove_dir_all(root);
@@ -1692,8 +2103,6 @@ mod tests {
             state_dir.join("config.json"),
             serde_json::to_vec(&json!({
                 "materialization": {
-                    "worker_memory_mib": 640,
-                    "rust_memory_mib": 320,
                     "spill_chunk_mib": 16,
                     "max_parallelism": 1
                 }
@@ -1704,16 +2113,12 @@ mod tests {
 
         let request = build_request(&MaterializeOptions {
             source_root: Some(root.clone()),
-            worker_memory_mib: Some(768),
-            rust_memory_mib: Some(384),
             spill_chunk_mib: Some(32),
             max_parallelism: Some(2),
             ..MaterializeOptions::default()
         })
         .unwrap();
 
-        assert_eq!(request.worker_memory_mib, 768);
-        assert_eq!(request.rust_memory_mib, 384);
         assert_eq!(request.spill_chunk_mib, 32);
         assert_eq!(request.max_parallelism, 2);
         let _ = fs::remove_dir_all(root);
@@ -1746,5 +2151,270 @@ mod tests {
             )
         );
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn managed_committed_native_result_survives_real_run_disposal_failure() {
+        let (root, options, _) = committed_artifact_fixture(true);
+        crate::storage::managed::set_managed_cleanup_hook(|run| {
+            fs::write(run.join("cleanup-barrier.json"), b"invalid cleanup barrier").unwrap();
+        });
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn managed_cleanup_pending_symbol() {}\n",
+        )
+        .unwrap();
+        let (_, response) = execute_materialization(&options)
+            .expect("verified committed graph must survive optional run disposal failure");
+        assert!(response.database_written);
+        assert!(response.cleanup_pending);
+        assert_eq!(
+            response.pending_runs, 1,
+            "same run counted more than once across publication/reconcile"
+        );
+        let summary = response.maintenance.as_ref().unwrap();
+        assert!(summary.pending);
+        assert!(!summary.requested);
+        assert!(!summary.observation_complete);
+        assert!(
+            summary
+                .errors
+                .iter()
+                .any(|e| e.contains("invalid run cleanup barrier")),
+            "{summary:?}"
+        );
+        assert!(response
+            .diagnostics
+            .iter()
+            .any(|d| d.starts_with("cleanup pending:")));
+        assert_published_graph_readable(&options, &response);
+        let store = GraphStorage::managed(options.storage_root.as_ref().unwrap());
+        for entry in fs::read_dir(store.layout().runs_root()).unwrap() {
+            let entry = entry.unwrap();
+            if entry.path().join("cleanup-barrier.json").exists() {
+                fs::remove_file(entry.path().join("cleanup-barrier.json")).unwrap();
+            }
+        }
+        store.cleanup().unwrap();
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn managed_native_pointer_error_is_primary_and_retains_publishing_evidence() {
+        use crate::storage::managed::{inject_managed_fault, ManagedFault};
+        let (root, options, _) = committed_artifact_fixture(true);
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn uncertain_managed_publication() {}\n",
+        )
+        .unwrap();
+        let fault = inject_managed_fault(ManagedFault::PointerAfterRename);
+        let error = execute_materialization(&options).unwrap_err();
+        assert!(
+            error.starts_with("failed to publish managed graph generation:"),
+            "{error}"
+        );
+        assert!(error.contains("after rename"));
+        drop(fault);
+        let store = GraphStorage::managed(options.storage_root.as_ref().unwrap());
+        let active = store.read_active_generation().unwrap().unwrap();
+        let generation = store.layout().generation(&active.generation_id).unwrap();
+        assert!(!generation.retired_path().exists());
+        let runs = fs::read_dir(store.layout().runs_root())
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|path| {
+                let journal: crate::storage::run_workspace::RunJournal =
+                    serde_json::from_slice(&fs::read(path.join("journal.json")).unwrap()).unwrap();
+                journal.phase == RunPhase::Publishing
+            })
+            .collect::<Vec<_>>();
+        // Genuine closed terminal workspaces may await bounded collection;
+        // exactly one actual Publishing transaction must retain this failure.
+        assert_eq!(runs.len(), 1);
+        let journal = fs::read(runs[0].join("journal.json")).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<crate::storage::run_workspace::RunJournal>(&journal)
+                .unwrap()
+                .phase,
+            RunPhase::Publishing
+        );
+        assert!(crate::api::graph_read::count_graph_nodes(&generation.db_path()).unwrap() > 0);
+        assert_eq!(fs::read(runs[0].join("journal.json")).unwrap(), journal);
+        store.cleanup().unwrap();
+        assert!(!runs[0].exists());
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    fn assert_managed_snapshot_released_with_writer_owned(
+        session: &ManagedWriteSession,
+        store: &ManagedStore,
+        generation: &str,
+    ) {
+        use crate::storage::locks::{try_open_existing_locked, LockMode};
+        assert!(session.writer_lease().unwrap().is_current().unwrap());
+        assert!(
+            try_open_existing_locked(&store.layout().writer_lock_path(), LockMode::Exclusive)
+                .unwrap()
+                .is_none(),
+            "actual publishing writer was released early"
+        );
+        let paths = store.layout().generation(generation).unwrap();
+        let generation_lease =
+            try_open_existing_locked(&paths.lease_path(), LockMode::Exclusive).unwrap();
+        assert!(
+            generation_lease.is_some(),
+            "validation snapshot still owns its actual generation lease"
+        );
+        drop(generation_lease);
+        MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.set(true));
+    }
+
+    #[test]
+    fn managed_native_postreconcile_active_change_remains_primary() {
+        let (root, options, _) = committed_artifact_fixture(true);
+        MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.set(false));
+        POST_MANAGED_SNAPSHOT_DROP_HOOK
+            .with(|hook| hook.set(Some(assert_managed_snapshot_released_with_writer_owned)));
+        POST_MANAGED_RECONCILE_HOOK.with(|hook| {
+            hook.set(Some(|_, store| {
+                let _state = crate::storage::locks::open_locked(
+                    store.layout().state_lock_path(),
+                    crate::storage::locks::LockMode::Exclusive,
+                )
+                .unwrap();
+                crate::storage::atomic::write_json_atomically(
+                    &store.layout().active_pointer_path(),
+                    &crate::storage::managed::ActiveGeneration {
+                        schema_version: 2,
+                        generation_id: "unexpected-active".into(),
+                        published_at: "fixture".into(),
+                        activated_at_ms: 0,
+                    },
+                )
+                .unwrap();
+            }))
+        });
+        fs::write(
+            root.join("src/lib.rs"),
+            "pub fn changed_before_report() {}\n",
+        )
+        .unwrap();
+        let error = execute_materialization(&options).unwrap_err();
+        assert!(error.starts_with("managed publish activated"), "{error}");
+        assert!(error.contains("unexpected-active"), "{error}");
+        assert!(
+            MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.get()),
+            "error-path snapshot release was not observed"
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn bounded_measurement_counts_actual_native_graph_and_active_cache_without_following_foreign_link(
+    ) {
+        use crate::storage::maintenance_budget::CleanupMemory;
+        let (root, options, _) = committed_artifact_fixture(true);
+        let outside = unique_temp_dir("measure-outside");
+        fs::create_dir_all(&outside).unwrap();
+        let sentinel = outside.join("source-sentinel");
+        fs::write(&sentinel, b"foreign source must remain untouched").unwrap();
+        let state = root.join(".codebaseGraph");
+        let target = crate::storage::inventory::MaintenanceTarget {
+            repository_root: root.clone(),
+            state_root: state.clone(),
+            storage_root: options.storage_root.clone(),
+            direct_pair: None,
+            config_path: None,
+        };
+        let memory =
+            CleanupMemory::new(crate::storage::maintenance::MAINTENANCE_MEMORY_BYTES).unwrap();
+        let (_, _, _, _, _, deferred_before) =
+            crate::storage::maintenance::observe_bytes_for_test(&target, &memory, &|| false)
+                .unwrap();
+        std::os::unix::fs::symlink(&outside, state.join("foreign-link")).unwrap();
+        let foreign_json = state.join("caller-owned.json");
+        fs::write(&foreign_json, b"{\"caller\":\"preserve unknown state\"}").unwrap();
+        let store = GraphStorage::managed(options.storage_root.as_ref().unwrap());
+        let unknown_key = "f".repeat(64);
+        let unknown_root = store
+            .layout()
+            .artifacts_root()
+            .join("ff")
+            .join(&unknown_key);
+        fs::create_dir_all(&unknown_root).unwrap();
+        let unknown_payload = unknown_root.join("artifact.json");
+        fs::write(&unknown_payload, b"unreceipted caller payload").unwrap();
+        let pointer_before = fs::read(store.layout().active_pointer_path()).unwrap();
+
+        let floor = memory.used();
+        let (graph, cache, complete, references, unknown, deferred) =
+            crate::storage::maintenance::observe_bytes_for_test(&target, &memory, &|| false)
+                .unwrap();
+        assert!(graph.logical_bytes.is_some_and(|bytes| bytes > 0));
+        assert!(cache.logical_bytes.is_some_and(|bytes| bytes > 0));
+        // Skipping the foreign symlink/unregistered subtree leaves the whole
+        // unknown category unmeasurable; observed leaf bytes are not its total.
+        assert_eq!(unknown.logical_bytes, None);
+        assert_eq!(unknown.allocated_bytes, None);
+        // The producer may already have genuine deferred terminal work. Adding
+        // unknown caller state must not reclassify its bytes as deferred work.
+        assert_eq!(deferred.logical_bytes, deferred_before.logical_bytes);
+        assert_eq!(deferred.allocated_bytes, deferred_before.allocated_bytes);
+        assert_eq!(
+            fs::read(&unknown_payload).unwrap(),
+            b"unreceipted caller payload"
+        );
+        assert_eq!(
+            fs::read(&foreign_json).unwrap(),
+            b"{\"caller\":\"preserve unknown state\"}"
+        );
+        assert!(
+            references,
+            "actual active manifest references were not observed"
+        );
+        assert!(!complete, "foreign symlink uncertainty was hidden");
+        assert_eq!(memory.used(), floor, "advisory buffers escaped observation");
+        assert!(memory.peak() <= memory.limit());
+        assert_eq!(
+            fs::read(store.layout().active_pointer_path()).unwrap(),
+            pointer_before
+        );
+        assert_eq!(
+            fs::read(&sentinel).unwrap(),
+            b"foreign source must remain untouched"
+        );
+        let read = store.open_read().unwrap();
+        assert!(crate::api::graph_read::count_graph_nodes(&read.db_path).unwrap() > 0);
+        drop(read);
+        let tiny = CleanupMemory::new(4096).unwrap();
+        let tiny_floor = tiny.used();
+        assert!(
+            crate::storage::maintenance::observe_bytes_for_test(&target, &tiny, &|| false).is_err()
+        );
+        assert_eq!(tiny.used(), tiny_floor);
+        let (_, _, cancelled, _, _, _) =
+            crate::storage::maintenance::observe_bytes_for_test(&target, &memory, &|| true)
+                .unwrap();
+        assert!(!cancelled);
+        fs::remove_dir_all(root).unwrap();
+        fs::remove_dir_all(outside).unwrap();
+    }
+
+    #[test]
+    fn managed_native_verification_snapshot_drops_before_writer_release() {
+        let (root, options, _) = committed_artifact_fixture(true);
+        MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.set(false));
+        POST_MANAGED_SNAPSHOT_DROP_HOOK
+            .with(|hook| hook.set(Some(assert_managed_snapshot_released_with_writer_owned)));
+        fs::write(root.join("src/lib.rs"), "pub fn no_hidden_janitor() {}\n").unwrap();
+        let (_, response) = execute_materialization(&options).unwrap();
+        assert!(
+            MANAGED_SNAPSHOT_RELEASE_OBSERVED.with(|observed| observed.get()),
+            "snapshot release was not observed before writer release"
+        );
+        assert_published_graph_readable(&options, &response);
+        fs::remove_dir_all(root).unwrap();
     }
 }

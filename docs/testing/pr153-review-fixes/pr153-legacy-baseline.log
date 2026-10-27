@@ -1,0 +1,18 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.08s
+     Running unittests src/lib.rs (/Users/rabii/Projects/Repositories/codebaseGraph/target/native-tests/deps/codebase_graph-35351ef9068f9494)
+
+running 1 test
+test storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries ...
+thread 'storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries' (33053250) panicked at src/storage/maintenance_legacy_generations_engine.rs:2304:14:
+called `Result::unwrap()` on an `Err` value: Kind(WouldBlock)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    storage::maintenance_legacy_generations_engine::tests::legacy_generation_advisory_scan_exceeds_one_hundred_entries
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 838 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p codebase-graph --lib`
