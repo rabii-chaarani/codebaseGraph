@@ -1173,6 +1173,12 @@ fn check_workflow_policy(
         );
     }
     let ci_publish = yaml_path(ci, &["jobs", "publish-dry-run"]).unwrap_or(&YamlValue::Null);
+    if !yaml_contains_string(ci_publish, "cargo run -p xtask --locked -- release-gate") {
+        issues.push(
+            "FAIL: repository-release-gate-missing: CI must check repository release policy."
+                .to_string(),
+        );
+    }
     if !yaml_contains_string(ci_publish, "cargo package --locked --no-verify")
         || !yaml_contains_string(ci_publish, "verify-crate-size")
     {
@@ -2833,6 +2839,31 @@ mod tests {
             issues
                 .iter()
                 .any(|issue| issue.contains("release-publish-retry-missing")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_missing_repository_release_gate() {
+        let mut ci = valid_ci_workflow();
+        let steps = ci["jobs"]["publish-dry-run"]["steps"]
+            .as_sequence_mut()
+            .unwrap();
+        steps.retain(|step| {
+            step.get("run").and_then(YamlValue::as_str)
+                != Some("cargo run -p xtask --locked -- release-gate")
+        });
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            &ci,
+            &valid_native_workflow(),
+            &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+            &mut issues,
+        );
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("repository-release-gate-missing")),
             "{issues:?}"
         );
     }

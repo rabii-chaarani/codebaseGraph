@@ -37,6 +37,7 @@ Pull requests targeting `main` and pushes to `main` run:
 - platform-aligned workspace tests on macOS ARM64 and Windows x86_64
 - `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
 - Rust advisory scanning with `cargo audit`
+- `cargo run -p xtask --locked -- release-gate`, before the package dry-run, to reject repository-policy violations before release.
 - `cargo publish --dry-run --locked`
 - An exact-byte check that the generated `.crate` does not exceed crates.io's 10 MiB upload limit.
 - `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
