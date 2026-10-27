@@ -1,0 +1,116 @@
+{
+  "work_item": "COD-99",
+  "baseline_commit": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+  "approval": {
+    "date": "2026-10-27",
+    "user_decision": "i approve archiving the python helpers",
+    "scope": "Archive four historical Python helpers losslessly. No release replacement or publication approval."
+  },
+  "scope": "Historical evidence archival and required CI repository policy prevention; no architecture, source-policy exemption, runtime or package-payload changes.",
+  "environment": {
+    "platform": "Darwin aarch64",
+    "rustc": "1.96.0 (ac68faa20 2026-05-25)",
+    "cargo": "1.96.0 (30a34c682 2026-05-25)",
+    "cargo_nextest": "0.9.140"
+  },
+  "snapshot_sha256": {
+    ".github/workflows/ci.yml": "a2cc1e8eb18dee65eaa72f9fdfbfd7a9df23f3a071a4faa935e124a888c747bb",
+    "crates/xtask/src/main.rs": "70507a624361a97a7bcdb28412b31112258fcb023fa8e80dccd943b113b335ad",
+    "docs/release.md": "8c813f005f68e62e8dfeca0d4cdf8054a3802efcf9311ca865f9bdbbab508ecf",
+    "docs/testing/graph-disk-cleanup-evidence/README.md": "1c7212d00b8793b00a7672482bb77fee508fac8bbe80f0ee305eec12f4c3a7bc",
+    "docs/testing/graph-disk-cleanup-evidence/historical-python-helpers.json": "b9b750c6f8500064b9942d9d4fa413c949f4ca8075bb0e1564fd9aab2ecdfcbb",
+    "docs/testing/graph-disk-cleanup-evidence/historical-python-helpers.tar.gz": "032ac4ef9cfddf40dc0540a913f71c34de4901a4a7d61d035141cb96832e7519"
+  },
+  "archive_integrity": {
+    "sha256": "032ac4ef9cfddf40dc0540a913f71c34de4901a4a7d61d035141cb96832e7519",
+    "repeated_archive_byte_identical": true,
+    "files_checked": 4,
+    "source_bytes_checked_before_removal": true,
+    "no_extra_regular_members": true,
+    "safe_paths_and_types": true,
+    "extracted_hashes": [
+      {
+        "path": "docs/testing/graph-disk-cleanup-evidence/audit.py",
+        "sha256": "316630c38e1638370b8c1873174d4311cc32ae4d0d9bcbbf0045e1083ccfb518",
+        "matched": true
+      },
+      {
+        "path": "docs/testing/graph-disk-cleanup-evidence/qualification.py",
+        "sha256": "264753ae10581691d0dc1c7591acab9601b29ff7c9f95df8d04ed56b56509e3b",
+        "matched": true
+      },
+      {
+        "path": "docs/testing/graph-disk-cleanup-evidence/test_audit.py",
+        "sha256": "b317ac2a5f4ab7ec3c52e98169e37090d65c9a7a92d397bd898962516f6f545c",
+        "matched": true
+      },
+      {
+        "path": "docs/testing/graph-disk-cleanup-evidence/test_qualification.py",
+        "sha256": "4fa5adbdff51ec53085ae307444ca4800a557726b95e18cacfc42091c0c57ef3",
+        "matched": true
+      }
+    ]
+  },
+  "checks": [
+    {
+      "command": "cargo fmt --check",
+      "result": "passed"
+    },
+    {
+      "command": "cargo test -p xtask --locked",
+      "result": "passed",
+      "tests": 43,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "command": "cargo clippy -p xtask --all-targets --locked -- -D warnings",
+      "result": "passed"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- check-workflows",
+      "result": "passed"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- release-gate",
+      "result": "passed"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- release-gate --production --confirm release-environment --confirm private-vulnerability-reporting",
+      "result": "passed",
+      "note": "Reproduces failed-job confirmation arguments; not new owner-controlled environment verification."
+    },
+    {
+      "command": "cargo nextest run -p xtask --locked --config-file /private/tmp/codebasegraph-cod99-verification/nextest.toml --profile cod99",
+      "result": "passed",
+      "run_id": "caa02f03-1b42-4b8f-94c0-6b9fb63dedcf",
+      "tests": 43,
+      "failed": 0,
+      "skipped": 0,
+      "junit_path": "xtask.junit.xml",
+      "junit_sha256": "551ec04ad88fcf4885fa2b375a7a2c4eab8eba74dab28032b579dcab68ec4c18"
+    },
+    {
+      "method": "Run target/debug/xtask release-gate with an empty loose Python source probe in the same evidence directory, then remove the probe",
+      "result": "expected failure: python-file-present",
+      "exit_code": 1
+    },
+    {
+      "command": "target/debug/xtask release-gate --production",
+      "result": "expected failure: both production confirmations missing",
+      "exit_code": 1
+    }
+  ],
+  "limits": [
+    "Historical helper tests were not rerun; exact bytes and extraction verified.",
+    "Full product/native platform matrix and package dry-run not executed locally; pending PR CI.",
+    "Existing failed job remains bound to immutable 7038e66. Corrected release replacement/version/publication require a separate decision.",
+    "Shared Scryer model is configured for the unrelated original worktree; no whole-project drift reconciliation or verdict activation against mismatched source."
+  ],
+  "scryer_change": "chg-cxz5az",
+  "scryer_existing_claims": [
+    "resp-14",
+    "resp-15"
+  ],
+  "architecture_claims_changed": false
+}
