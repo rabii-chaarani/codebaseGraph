@@ -41,9 +41,9 @@
      Running unittests src/main.rs (/private/tmp/codebasegraph-cod100-cargo-target/debug/deps/xtask-d46547d2161cf356)
 
 running 1 test
-test release::workflow_tests::staged_assets_match_the_supported_native_targets ... 
+test release::workflow_tests::staged_assets_match_the_supported_native_targets ...
 thread 'release::workflow_tests::staged_assets_match_the_supported_native_targets' (35033717) panicked at crates/xtask/src/release/workflow_tests.rs:276:9:
-assertion `left == right` failed: 
+assertion `left == right` failed:
   left: false
  right: true
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
