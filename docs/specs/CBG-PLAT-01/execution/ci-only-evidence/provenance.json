@@ -1,0 +1,29 @@
+{
+  "spec_sha": "1a9db7b558b60248888408daa6268a3b45f2f0df",
+  "approval_sha": "7650f264fe0cbfa7fa328840722929feac1f32df",
+  "approval_url": "https://github.com/rabii-chaarani/codebaseGraph/blob/7650f264fe0cbfa7fa328840722929feac1f32df/docs/specs/CBG-PLAT-01/approvals/ci-only-s06-s08.md",
+  "source_base": "862a8f88d485d5bd257ebd9456c194156fd4ee94",
+  "branch": "fix/pr153-ci-maintenance",
+  "code_root": "/tmp/codebasegraph-pr153-ci-only-source",
+  "target_dir": "/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target",
+  "normal_cli_sha256": "a6c8042acc1bbc1f8b709cfe53fa009dbf4edff081a504e41b001ccb28ed491e",
+  "scope": [
+    "COD-57",
+    "COD-58",
+    "COD-59"
+  ],
+  "out_of_scope": [
+    "COD-52",
+    "COD-53",
+    "COD-54",
+    "COD-55",
+    "COD-56",
+    "COD-60",
+    "COD-61 aggregate closure",
+    "merge",
+    "deployment",
+    "service restart"
+  ],
+  "focused_unit_result": "42 passed on macOS ARM64; no native Windows execution yet",
+  "model_change": "chg-pzt87f,0 entries, user scope signed off"
+}
