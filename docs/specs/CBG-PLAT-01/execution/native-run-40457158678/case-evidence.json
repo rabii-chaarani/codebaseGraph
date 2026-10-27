@@ -1,0 +1,1150 @@
+{
+  "run_id": 40457158678,
+  "head": "5e3e42f48a55581ef75b25ba21732913089f664d",
+  "tested_merge": "f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb",
+  "head_merge_diff": "",
+  "status": "success",
+  "job_counts": {
+    "success": 22,
+    "failure": 0,
+    "skipped": 0
+  },
+  "cases": [
+    {
+      "case": "phase_trace_process_instance_is_stable_across_calls_and_threads",
+      "job_id": 122033480377,
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "line": 1037,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T06:18:08.7844800Z test db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads ... ok"
+      ]
+    },
+    {
+      "case": "interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement",
+      "job_id": 122033480377,
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "line": 1242,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T06:18:35.3812960Z test storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement ... ok"
+      ]
+    },
+    {
+      "case": "nested_directory_scans_do_not_consume_the_outer_cursor",
+      "job_id": 122033480377,
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "line": 1245,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T06:18:35.5064450Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+      ]
+    },
+    {
+      "case": "terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto",
+      "job_id": 122033480377,
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "line": 1316,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T06:19:38.7911810Z test storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto ... ok"
+      ]
+    },
+    {
+      "case": "bounded_production_chunks_reopen_with_primary_keys_connectors_and_search",
+      "job_id": 122033480404,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+      "line": 885,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:08:13.8580013Z test bounded_production_chunks_reopen_with_primary_keys_connectors_and_search ... chunked native build resources: {\"database_write\":162131968,\"parse\":23124171,\"search_index\":1048568,\"staging\":2053466}",
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:08:21.9497707Z PK lookup plan: QueryResult { result: \"explain result\\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\u2502\\n\u2502\u2502          Physical Plan           \u2502\u2502\\n\u2502\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502        RESULT_COLLECTOR[2]         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         Expressions: n.id          \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502      ExecutionTime: 0.000000       \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502        TotalTime: 0.000000         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         NumOutputTuples: 0         \u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502           PROJECTION[1]            \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         Expressions: n.id          \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502      ExecutionTime: 0.000000       \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502        TotalTime: 0.000000         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         NumOutputTuples: 0         \u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502   PRIMARY_KEY_SCAN_NODE_TABLE[0]   \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502            Key: missing            \u2502\\n\u2502              Alias: n              \u2502\\n\u2502             Index: HASH            \u2502\\n\u2502          Expressions: n.id         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502      ExecutionTime: 0.000000       \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502        TotalTime: 0.000000         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         NumOutputTuples: 0         \u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n\\n\" }",
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:08:49.6812376Z ok",
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:08:49.6812708Z ",
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:08:49.6813196Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 66.13s"
+      ]
+    },
+    {
+      "case": "jumbo_staged_row_survives_real_copy_and_fresh_process_read",
+      "job_id": 122033480543,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "line": 881,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:25:32.8739332Z test jumbo_staged_row_survives_real_copy_and_fresh_process_read ... ok"
+      ]
+    },
+    {
+      "case": "native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles",
+      "job_id": 122033480543,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "line": 882,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:27:12.4392919Z test native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles ... ok"
+      ]
+    },
+    {
+      "case": "phase_process_oracle_rejects_missing_or_invalid_evidence",
+      "job_id": 122033480543,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "line": 883,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:27:12.4393555Z test phase_process_oracle_rejects_missing_or_invalid_evidence ... ok"
+      ]
+    },
+    {
+      "case": "nested_directory_scans_do_not_consume_the_outer_cursor",
+      "job_id": 122033480543,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "line": 947,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:32:40.9561921Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+      ]
+    },
+    {
+      "case": "bounded_production_chunks_reopen_with_primary_keys_connectors_and_search",
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 700,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:29:02.1557780Z test bounded_production_chunks_reopen_with_primary_keys_connectors_and_search ... chunked native build resources: {\"database_write\":138513664,\"parse\":23124382,\"search_index\":1048544,\"staging\":2053466}",
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:29:05.2390730Z PK lookup plan: QueryResult { result: \"explain result\\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\u2502\\n\u2502\u2502          Physical Plan           \u2502\u2502\\n\u2502\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502        RESULT_COLLECTOR[2]         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         Expressions: n.id          \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         NumOutputTuples: 0         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502      ExecutionTime: 0.000000       \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502        TotalTime: 0.000000         \u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502           PROJECTION[1]            \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         Expressions: n.id          \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         NumOutputTuples: 0         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502      ExecutionTime: 0.000000       \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502        TotalTime: 0.000000         \u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\\n\u2502   PRIMARY_KEY_SCAN_NODE_TABLE[0]   \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502            Key: missing            \u2502\\n\u2502              Alias: n              \u2502\\n\u2502             Index: HASH            \u2502\\n\u2502          Expressions: n.id         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502         NumOutputTuples: 0         \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502      ExecutionTime: 0.000000       \u2502\\n\u2502   ------------------------------   \u2502\\n\u2502        TotalTime: 0.000000         \u2502\\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\\n\\n\" }",
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:29:45.6909140Z ok",
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:30:25.6233240Z test jumbo_staged_row_survives_real_copy_and_fresh_process_read ... ok",
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:33:08.6082640Z test native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles ... ok",
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:33:08.6083640Z test phase_process_oracle_accepts_reused_pid_but_rejects_reused_process ... ok",
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:33:08.6093150Z test phase_process_oracle_rejects_missing_or_invalid_evidence ... ok",
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:33:08.6093530Z ",
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:33:08.6093800Z test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 291.54s"
+      ]
+    },
+    {
+      "case": "jumbo_staged_row_survives_real_copy_and_fresh_process_read",
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 703,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:30:25.6233240Z test jumbo_staged_row_survives_real_copy_and_fresh_process_read ... ok"
+      ]
+    },
+    {
+      "case": "native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles",
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 704,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:33:08.6082640Z test native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles ... ok"
+      ]
+    },
+    {
+      "case": "phase_process_oracle_accepts_reused_pid_but_rejects_reused_process",
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 705,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:33:08.6083640Z test phase_process_oracle_accepts_reused_pid_but_rejects_reused_process ... ok"
+      ]
+    },
+    {
+      "case": "phase_process_oracle_rejects_missing_or_invalid_evidence",
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 706,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:33:08.6093150Z test phase_process_oracle_rejects_missing_or_invalid_evidence ... ok"
+      ]
+    },
+    {
+      "case": "interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement",
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 880,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T07:03:57.0402490Z test storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement ... ok"
+      ]
+    },
+    {
+      "case": "nested_directory_scans_do_not_consume_the_outer_cursor",
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 883,
+      "records": [
+        "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T07:03:57.1433010Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+      ]
+    },
+    {
+      "case": "nested_directory_scans_do_not_consume_the_outer_cursor",
+      "job_id": 122033480578,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+      "line": 892,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:39.2155654Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+      ]
+    },
+    {
+      "case": "phase_trace_process_instance_is_stable_across_calls_and_threads",
+      "job_id": 122033480628,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+      "line": 961,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:17:53.8742241Z test db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads ... ok"
+      ]
+    },
+    {
+      "case": "nested_directory_scans_do_not_consume_the_outer_cursor",
+      "job_id": 122033480686,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+      "line": 1081,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:31:51.2231638Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+      ]
+    },
+    {
+      "case": "phase_process_oracle_accepts_reused_pid_but_rejects_reused_process",
+      "job_id": 122033480738,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+      "line": 883,
+      "records": [
+        "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:28:25.5030661Z test phase_process_oracle_accepts_reused_pid_but_rejects_reused_process ... ok"
+      ]
+    }
+  ],
+  "provenance": [
+    {
+      "job_id": 122033480377,
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "line": 36,
+      "record": "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T06:09:41.5725870Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480377,
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "line": 126,
+      "record": "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T06:09:45.1617360Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480377,
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "line": 661,
+      "record": "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T06:15:14.2956590Z native-test CLI compiler artifact: /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native-test-cli-3561-1793081705795347000/codebase-graph sha256=823651ff36397de7e85392efd41df05d823fd04b8458d6b65bf66a481a960beb"
+    },
+    {
+      "job_id": 122033480404,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+      "line": 36,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T05:47:21.1441350Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480404,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+      "line": 129,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T05:47:27.6685647Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480404,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+      "line": 839,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:03:18.4131724Z native-test CLI compiler artifact: D:\\a\\_temp\\native-test-cli-5844-1793080995025551100\\codebase-graph.exe sha256=fe204d9ec44bde89e951ae21175fddd719a2d06b12b458efaf52c7cd2043987b"
+    },
+    {
+      "job_id": 122033480452,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)",
+      "line": 36,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:47:20.1742708Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480452,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)",
+      "line": 129,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:47:25.5601233Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480452,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)",
+      "line": 838,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:58:34.3525303Z native-test CLI compiler artifact: D:\\a\\_temp\\native-test-cli-3112-1793080711787530000\\codebase-graph.exe sha256=d13bb133999dd0456c737c873ceb500124cc5039ac77784bd0b40fd3397fb95d"
+    },
+    {
+      "job_id": 122033480469,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+      "line": 36,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T05:47:21.4288003Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480469,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+      "line": 129,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T05:47:28.1605279Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480469,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+      "line": 838,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:03:48.9839184Z native-test CLI compiler artifact: D:\\a\\_temp\\native-test-cli-5616-1793081024433226300\\codebase-graph.exe sha256=516a51d6bf9cbfe7bac1c6d3f5dafa07506e3ace08d43c76098c25bbcbb3baeb"
+    },
+    {
+      "job_id": 122033480543,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "line": 36,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:08:52.2700208Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480543,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "line": 129,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:08:58.2704963Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480543,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "line": 840,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:23:01.1512585Z native-test CLI compiler artifact: D:\\a\\_temp\\native-test-cli-8044-1793082178655954500\\codebase-graph.exe sha256=2bfbf62d1e870350f170549b26781b21d387d9f861f452b276a58c7ad1f627e5"
+    },
+    {
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 36,
+      "record": "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:16:42.9580490Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 126,
+      "record": "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:16:45.5688050Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480554,
+      "job": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "line": 661,
+      "record": "native (macos-arm64) / native tests (macos-arm64, integration)\tUNKNOWN STEP\t2026-10-27T06:23:03.7526330Z native-test CLI compiler artifact: /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native-test-cli-1718-1793082172998550000/codebase-graph sha256=13f3ad4f8b6ec515294af0cf03485320f61f18cac6b728f1a337f190a9c03339"
+    },
+    {
+      "job_id": 122033480578,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+      "line": 36,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T05:59:59.8884468Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480578,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+      "line": 129,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:00:06.5362852Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480578,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+      "line": 839,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:37.0100485Z native-test CLI compiler artifact: D:\\a\\_temp\\native-test-cli-5064-1793081733684995600\\codebase-graph.exe sha256=ef94247063d574df14760be90b8c728f999077f5f0ddd2688790d4f9976f61bf"
+    },
+    {
+      "job_id": 122033480628,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+      "line": 36,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:00:05.2105532Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480628,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+      "line": 129,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:00:11.2788569Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480628,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+      "line": 839,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:16:56.0463881Z native-test CLI compiler artifact: D:\\a\\_temp\\native-test-cli-6676-1793081812750887500\\codebase-graph.exe sha256=e764d5979e60d70ff5d449a367a3a644651f9f1415d99b2a6ec8e211fd3f52ec"
+    },
+    {
+      "job_id": 122033480686,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+      "line": 36,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:14:28.7605359Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480686,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+      "line": 129,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:14:38.8090489Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480686,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+      "line": 838,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:30:47.3411874Z native-test CLI compiler artifact: D:\\a\\_temp\\native-test-cli-4508-1793082642808196600\\codebase-graph.exe sha256=2762804ece362d99e1efc343873366c840bca141ccc1da01aa0d64402b8a3b9a"
+    },
+    {
+      "job_id": 122033480738,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+      "line": 36,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:11:49.8117097Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb"
+    },
+    {
+      "job_id": 122033480738,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+      "line": 129,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:11:55.6858295Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d"
+    },
+    {
+      "job_id": 122033480738,
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+      "line": 839,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:24:58.2272988Z native-test CLI compiler artifact: D:\\a\\_temp\\native-test-cli-3060-1793082294127197200\\codebase-graph.exe sha256=9af42b1bb8685eb6edce0b83ea0d0429458835ae228bd3dd6bc5d1f45039d1cb"
+    }
+  ],
+  "warnings_preexisting": [
+    {
+      "job_id": 122033480404,
+      "line": 752,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T05:55:49.9576448Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 760,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T05:55:50.0348003Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 810,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T05:56:34.0780807Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 818,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T05:58:34.2813370Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 827,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T05:59:12.7027468Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 836,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T05:59:48.4395930Z warning: `codebase-graph` (test \"generation_storage\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 837,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:03:14.9863138Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 841,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:06:10.7378988Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 849,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:06:10.7382628Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 855,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:06:10.7384720Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 1022,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:14:16.1958869Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 1030,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:14:16.1962635Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 1036,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:14:16.1965652Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480404,
+      "line": 1045,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T06:14:16.1970025Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 755,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:53:06.2144904Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 763,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:53:06.2147621Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 809,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:53:35.4726700Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 817,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:54:57.2830217Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 826,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:58:02.8436848Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 835,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:58:24.4053842Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 836,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T05:58:27.9562625Z warning: `codebase-graph` (test \"generation_storage\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 840,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T06:00:42.4861166Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 848,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T06:00:42.4863987Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 854,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T06:00:42.4865312Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 1007,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T06:09:14.5506683Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 1015,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T06:09:14.5508360Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 1021,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T06:09:14.5509606Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480452,
+      "line": 1030,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)\tUNKNOWN STEP\t2026-10-27T06:09:14.5664906Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 762,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T05:55:58.5853874Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 770,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T05:55:58.8675397Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 809,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T05:56:42.5334107Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 817,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T05:58:30.0614467Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 826,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:01:35.5910240Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 835,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:03:12.5979108Z warning: `codebase-graph` (test \"generation_storage\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 836,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:03:44.3991372Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 840,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:03:50.5151424Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 848,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:03:50.5154793Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 854,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:03:50.5157593Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 855,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:03:50.5158124Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 863,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:03:50.5162085Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 1009,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:05:13.6937361Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 1017,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:05:13.6941188Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 1023,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:05:13.6944355Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 1024,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:05:13.6944996Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 1032,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:05:13.6949990Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 3267,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:16:28.8242533Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 3275,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:16:28.8244741Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 3281,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:16:28.8246465Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 3282,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:16:28.8246797Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480469,
+      "line": 3290,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T06:16:28.8249253Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 749,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:56.4977345Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 757,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:56.4980447Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 811,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:16:38.7067438Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 819,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:18:02.4308309Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 828,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:20:03.0012739Z warning: `codebase-graph` (test \"generation_storage\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 837,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:21:32.1878074Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 838,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:21:36.0039698Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 842,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:25:13.8906122Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 850,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:25:13.8908365Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 856,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:25:13.8910228Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 1028,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:34:17.0563083Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 1036,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:34:17.0565585Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 1042,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:34:17.0567203Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 1051,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:34:17.0569093Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 1163,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:34:22.9854019Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 1171,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:34:22.9856117Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480543,
+      "line": 1177,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)\tUNKNOWN STEP\t2026-10-27T06:34:22.9857838Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 751,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:08:22.9946476Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 759,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:08:22.9951538Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 810,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:09:04.5058195Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 818,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:10:47.9651661Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 827,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:11:26.0433807Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 836,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:12:43.2658247Z warning: `codebase-graph` (test \"generation_storage\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 837,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:33.6148532Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 841,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:39.0119049Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 849,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:39.0123043Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 855,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:39.0126342Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 863,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:39.0130184Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 864,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:15:39.0131235Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 2893,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:27:04.2247108Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 2901,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:27:04.2251210Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 2907,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:27:04.2254435Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 2908,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:27:04.2255079Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 2916,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:27:04.2260189Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 3062,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:28:16.7828411Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 3070,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:28:16.7831396Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 3076,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:28:16.7834029Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 3077,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:28:16.7834465Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 3085,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:28:16.7837603Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 4408,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:37:57.4605661Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 4416,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:37:57.4609655Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 4422,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:37:57.4613038Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 4423,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:37:57.4613418Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480578,
+      "line": 4431,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T06:37:57.4616597Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 751,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:09:48.8229335Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 759,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:09:48.8243579Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 810,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:10:30.5983374Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 818,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:12:13.5686603Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 827,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:12:56.0761206Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 836,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:15:37.4662308Z warning: `codebase-graph` (test \"generation_storage\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 837,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:16:44.9859158Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 841,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:16:57.7521019Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 849,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:16:57.7525772Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 855,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:16:57.7528859Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 856,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:16:57.7529388Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 864,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:16:57.7533374Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 1001,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:17:54.7494799Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 1009,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:17:54.7498344Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 1015,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:17:54.7501316Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 1016,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:17:54.7501862Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 1024,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:17:54.7505688Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 10072,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:46:28.4378497Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 10080,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:46:28.4383504Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 10086,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:46:28.4385825Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 10087,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:46:28.4386240Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480628,
+      "line": 10095,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)\tUNKNOWN STEP\t2026-10-27T06:46:28.4389470Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 761,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:23:05.9317563Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 769,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:23:06.0971575Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 809,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:23:49.7679220Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 817,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:26:00.0607343Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 826,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:28:09.3134347Z warning: `codebase-graph` (test \"generation_storage\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 835,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:29:33.2030933Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 836,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:30:42.7732183Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 840,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:30:48.8112075Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 848,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:30:48.8115614Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 854,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:30:48.8118882Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 855,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:30:48.8119504Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 863,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:30:48.8124057Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1010,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:31:48.8914699Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1018,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:31:48.8918435Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1024,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:31:48.8921687Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1025,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:31:48.8922357Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1033,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:31:48.8927283Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1259,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:35:31.8834457Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1267,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:35:31.8839091Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1273,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:35:31.8842661Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1274,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:35:31.8843278Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480686,
+      "line": 1282,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)\tUNKNOWN STEP\t2026-10-27T06:35:31.8847790Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 752,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:18:45.7522613Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 760,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:18:45.7525720Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 810,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:19:18.3741454Z warning: unused import: `remove_partial_state_tree`"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 818,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:20:37.0475954Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 827,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:21:20.8345782Z warning: `codebase-graph` (test \"generation_storage\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 836,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:22:50.0109247Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 837,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:24:53.7831416Z warning: `codebase-graph` (lib test) generated 3 warnings (2 duplicates) (run `cargo fix --lib -p codebase-graph --tests` to apply 1 suggestion)"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 841,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:27:12.4206296Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 849,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:27:12.4209137Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 855,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:27:12.4211631Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 1004,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:34:01.7132439Z warning: function `home_dir` is never used"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 1012,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:34:01.7134890Z warning: function `workspace_fifo_pin_name` is never used"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 1018,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:34:01.7136501Z warning: `codebase-graph` (lib) generated 2 warnings"
+    },
+    {
+      "job_id": 122033480738,
+      "line": 1027,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)\tUNKNOWN STEP\t2026-10-27T06:34:01.7138877Z warning: `k-wiki` (test \"bundle_reader\") generated 1 warning"
+    }
+  ]
+}

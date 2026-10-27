@@ -1,5 +1,7 @@
 # COD-52 — macOS nested directory scans
 
+> **Current verification:** implementation head `5e3e42f48a55581ef75b25ba21732913089f664d` passed all22jobs in CI40457158678, including named Mac/Windows regressions and both artifactbuild/smoke jobs. See [final exact-head verification](cod52-cod98-native-qualification.md). Earlier in-progress/failure limits below remain historical; consumer/aggregate/merge/deployment gates are separate.
+
 ## Identity and scope
 
 - Work: `CBG-PLAT-01/S01`, [COD-52](https://linear.app/codebasegraph/issue/COD-52), Maintenance `P-COD-2`. S00/COD-51 is cleared **only for this slice**.

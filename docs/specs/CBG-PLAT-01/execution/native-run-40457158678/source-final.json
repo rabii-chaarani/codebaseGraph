@@ -1,0 +1,21 @@
+{
+  "head": "5e3e42f48a55581ef75b25ba21732913089f664d",
+  "tested_merge": "f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb",
+  "source_files": {
+    "src/storage/locks.rs": "3334713035db60f24a86c34e3fbdaed0724943fcbdf96103c7bf1a39e163f25c",
+    "src/storage/maintenance_candidate.rs": "8e539db80a81de8fb674270adaf608a551954db86352b3e87ad674d6badac765",
+    "src/db_writer/phase.rs": "889b005587d1ce59a63ae35fdcbb1d799ae5248cc910e65cb102e23b80ffa9fa",
+    "tests/copy_phase_process.rs": "bd6d263acba7364a2846b9cb52a669a5281026adadd7b347689e3a5bc0fdbf94"
+  },
+  "prior_approval_commits": {
+    "COD52": "9bf9212d9266c33b389829925b456c1da7320886",
+    "COD98": "931c3ddaeccba9c3f94f75e3ae58be9e3016a4ef"
+  },
+  "reviewers": {
+    "proposal_model": "openai-codex/gpt-6.1-sol",
+    "proposal_effort": "high",
+    "final_model": "openai-codex/gpt-6.1-sol",
+    "final_effort": "max"
+  },
+  "no_source_edits_after_review": true
+}

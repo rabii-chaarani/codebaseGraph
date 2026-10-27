@@ -1,0 +1,131 @@
+job=122033480377 line=36 native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T06:09:41.5725870Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480377 line=126 native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T06:09:45.1617360Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480377 line=661 native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T06:15:14.2956590Z native-test CLI compiler artifact: /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native-test-cli-3561-1793081705795347000/codebase-graph sha256=823651ff36397de7e85392efd41df05d823fd04b8458d6b65bf66a481a960beb
+
+job=122033480404 line=36 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T05:47:21.1441350Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480404 line=129 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T05:47:27.6685647Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480404 line=839 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T06:03:18.4131724Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-5844-1793080995025551100\codebase-graph.exe sha256=fe204d9ec44bde89e951ae21175fddd719a2d06b12b458efaf52c7cd2043987b
+
+job=122033480452 line=36 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)	UNKNOWN STEP	2026-10-27T05:47:20.1742708Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480452 line=129 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)	UNKNOWN STEP	2026-10-27T05:47:25.5601233Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480452 line=838 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)	UNKNOWN STEP	2026-10-27T05:58:34.3525303Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-3112-1793080711787530000\codebase-graph.exe sha256=d13bb133999dd0456c737c873ceb500124cc5039ac77784bd0b40fd3397fb95d
+
+job=122033480469 line=36 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)	UNKNOWN STEP	2026-10-27T05:47:21.4288003Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480469 line=129 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)	UNKNOWN STEP	2026-10-27T05:47:28.1605279Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480469 line=838 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)	UNKNOWN STEP	2026-10-27T06:03:48.9839184Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-5616-1793081024433226300\codebase-graph.exe sha256=516a51d6bf9cbfe7bac1c6d3f5dafa07506e3ace08d43c76098c25bbcbb3baeb
+
+job=122033480543 line=36 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)	UNKNOWN STEP	2026-10-27T06:08:52.2700208Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480543 line=129 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)	UNKNOWN STEP	2026-10-27T06:08:58.2704963Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480543 line=840 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)	UNKNOWN STEP	2026-10-27T06:23:01.1512585Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-8044-1793082178655954500\codebase-graph.exe sha256=2bfbf62d1e870350f170549b26781b21d387d9f861f452b276a58c7ad1f627e5
+
+job=122033480554 line=36 native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:16:42.9580490Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480554 line=126 native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:16:45.5688050Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480554 line=661 native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:23:03.7526330Z native-test CLI compiler artifact: /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native-test-cli-1718-1793082172998550000/codebase-graph sha256=13f3ad4f8b6ec515294af0cf03485320f61f18cac6b728f1a337f190a9c03339
+
+job=122033480578 line=36 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)	UNKNOWN STEP	2026-10-27T05:59:59.8884468Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480578 line=129 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)	UNKNOWN STEP	2026-10-27T06:00:06.5362852Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480578 line=839 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)	UNKNOWN STEP	2026-10-27T06:15:37.0100485Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-5064-1793081733684995600\codebase-graph.exe sha256=ef94247063d574df14760be90b8c728f999077f5f0ddd2688790d4f9976f61bf
+
+job=122033480628 line=36 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)	UNKNOWN STEP	2026-10-27T06:00:05.2105532Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480628 line=129 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)	UNKNOWN STEP	2026-10-27T06:00:11.2788569Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480628 line=839 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)	UNKNOWN STEP	2026-10-27T06:16:56.0463881Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-6676-1793081812750887500\codebase-graph.exe sha256=e764d5979e60d70ff5d449a367a3a644651f9f1415d99b2a6ec8e211fd3f52ec
+
+job=122033480686 line=36 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)	UNKNOWN STEP	2026-10-27T06:14:28.7605359Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480686 line=129 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)	UNKNOWN STEP	2026-10-27T06:14:38.8090489Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480686 line=838 native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)	UNKNOWN STEP	2026-10-27T06:30:47.3411874Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-4508-1793082642808196600\codebase-graph.exe sha256=2762804ece362d99e1efc343873366c840bca141ccc1da01aa0d64402b8a3b9a
+
+job=122033480738 line=36 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)	UNKNOWN STEP	2026-10-27T06:11:49.8117097Z   source-sha: f61579940edfa3f3bf67ac6b2e7abbf04ea37cfb
+
+job=122033480738 line=129 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)	UNKNOWN STEP	2026-10-27T06:11:55.6858295Z HEAD is now at f615799 Merge 5e3e42f48a55581ef75b25ba21732913089f664d into 7038e66ff8271ffddc511f879cf8d28353a09b2d
+
+job=122033480738 line=839 native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)	UNKNOWN STEP	2026-10-27T06:24:58.2272988Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-3060-1793082294127197200\codebase-graph.exe sha256=9af42b1bb8685eb6edce0b83ea0d0429458835ae228bd3dd6bc5d1f45039d1cb
+
+CASE phase_trace_process_instance_is_stable_across_calls_and_threads job=122033480377 line=1037
+native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T06:18:08.7844800Z test db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads ... ok
+
+CASE interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement job=122033480377 line=1242
+native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T06:18:35.3812960Z test storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement ... ok
+
+CASE nested_directory_scans_do_not_consume_the_outer_cursor job=122033480377 line=1245
+native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T06:18:35.5064450Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+
+CASE terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto job=122033480377 line=1316
+native (macos-arm64) / native tests (macos-arm64, unit)	UNKNOWN STEP	2026-10-27T06:19:38.7911810Z test storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto ... ok
+
+CASE bounded_production_chunks_reopen_with_primary_keys_connectors_and_search job=122033480404 line=885
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T06:08:13.8580013Z test bounded_production_chunks_reopen_with_primary_keys_connectors_and_search ... chunked native build resources: {"database_write":162131968,"parse":23124171,"search_index":1048568,"staging":2053466}
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T06:08:21.9497707Z PK lookup plan: QueryResult { result: "explain result\n┌────────────────────────────────────┐\n│┌──────────────────────────────────┐│\n││          Physical Plan           ││\n│└──────────────────────────────────┘│\n└────────────────────────────────────┘\n┌────────────────────────────────────┐\n│        RESULT_COLLECTOR[2]         │\n│   ------------------------------   │\n│         Expressions: n.id          │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n└─────────────────┬──────────────────┘\n┌─────────────────┴──────────────────┐\n│           PROJECTION[1]            │\n│   ------------------------------   │\n│         Expressions: n.id          │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n└─────────────────┬──────────────────┘\n┌─────────────────┴──────────────────┐\n│   PRIMARY_KEY_SCAN_NODE_TABLE[0]   │\n│   ------------------------------   │\n│            Key: missing            │\n│              Alias: n              │\n│             Index: HASH            │\n│          Expressions: n.id         │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n└────────────────────────────────────┘\n\n" }
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T06:08:49.6812376Z ok
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T06:08:49.6812708Z 
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)	UNKNOWN STEP	2026-10-27T06:08:49.6813196Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 66.13s
+
+CASE jumbo_staged_row_survives_real_copy_and_fresh_process_read job=122033480543 line=881
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)	UNKNOWN STEP	2026-10-27T06:25:32.8739332Z test jumbo_staged_row_survives_real_copy_and_fresh_process_read ... ok
+
+CASE native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles job=122033480543 line=882
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)	UNKNOWN STEP	2026-10-27T06:27:12.4392919Z test native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles ... ok
+
+CASE phase_process_oracle_rejects_missing_or_invalid_evidence job=122033480543 line=883
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)	UNKNOWN STEP	2026-10-27T06:27:12.4393555Z test phase_process_oracle_rejects_missing_or_invalid_evidence ... ok
+
+CASE nested_directory_scans_do_not_consume_the_outer_cursor job=122033480543 line=947
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)	UNKNOWN STEP	2026-10-27T06:32:40.9561921Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+
+CASE bounded_production_chunks_reopen_with_primary_keys_connectors_and_search job=122033480554 line=700
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:29:02.1557780Z test bounded_production_chunks_reopen_with_primary_keys_connectors_and_search ... chunked native build resources: {"database_write":138513664,"parse":23124382,"search_index":1048544,"staging":2053466}
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:29:05.2390730Z PK lookup plan: QueryResult { result: "explain result\n┌────────────────────────────────────┐\n│┌──────────────────────────────────┐│\n││          Physical Plan           ││\n│└──────────────────────────────────┘│\n└────────────────────────────────────┘\n┌────────────────────────────────────┐\n│        RESULT_COLLECTOR[2]         │\n│   ------------------------------   │\n│         Expressions: n.id          │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n└─────────────────┬──────────────────┘\n┌─────────────────┴──────────────────┐\n│           PROJECTION[1]            │\n│   ------------------------------   │\n│         Expressions: n.id          │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n└─────────────────┬──────────────────┘\n┌─────────────────┴──────────────────┐\n│   PRIMARY_KEY_SCAN_NODE_TABLE[0]   │\n│   ------------------------------   │\n│            Key: missing            │\n│              Alias: n              │\n│             Index: HASH            │\n│          Expressions: n.id         │\n│   ------------------------------   │\n│         NumOutputTuples: 0         │\n│   ------------------------------   │\n│      ExecutionTime: 0.000000       │\n│   ------------------------------   │\n│        TotalTime: 0.000000         │\n└────────────────────────────────────┘\n\n" }
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:29:45.6909140Z ok
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:30:25.6233240Z test jumbo_staged_row_survives_real_copy_and_fresh_process_read ... ok
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:33:08.6082640Z test native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles ... ok
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:33:08.6083640Z test phase_process_oracle_accepts_reused_pid_but_rejects_reused_process ... ok
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:33:08.6093150Z test phase_process_oracle_rejects_missing_or_invalid_evidence ... ok
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:33:08.6093530Z 
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:33:08.6093800Z test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 291.54s
+
+CASE jumbo_staged_row_survives_real_copy_and_fresh_process_read job=122033480554 line=703
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:30:25.6233240Z test jumbo_staged_row_survives_real_copy_and_fresh_process_read ... ok
+
+CASE native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles job=122033480554 line=704
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:33:08.6082640Z test native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles ... ok
+
+CASE phase_process_oracle_accepts_reused_pid_but_rejects_reused_process job=122033480554 line=705
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:33:08.6083640Z test phase_process_oracle_accepts_reused_pid_but_rejects_reused_process ... ok
+
+CASE phase_process_oracle_rejects_missing_or_invalid_evidence job=122033480554 line=706
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T06:33:08.6093150Z test phase_process_oracle_rejects_missing_or_invalid_evidence ... ok
+
+CASE interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement job=122033480554 line=880
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T07:03:57.0402490Z test storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement ... ok
+
+CASE nested_directory_scans_do_not_consume_the_outer_cursor job=122033480554 line=883
+native (macos-arm64) / native tests (macos-arm64, integration)	UNKNOWN STEP	2026-10-27T07:03:57.1433010Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+
+CASE nested_directory_scans_do_not_consume_the_outer_cursor job=122033480578 line=892
+native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)	UNKNOWN STEP	2026-10-27T06:15:39.2155654Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+
+CASE phase_trace_process_instance_is_stable_across_calls_and_threads job=122033480628 line=961
+native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)	UNKNOWN STEP	2026-10-27T06:17:53.8742241Z test db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads ... ok
+
+CASE nested_directory_scans_do_not_consume_the_outer_cursor job=122033480686 line=1081
+native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)	UNKNOWN STEP	2026-10-27T06:31:51.2231638Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+
+CASE phase_process_oracle_accepts_reused_pid_but_rejects_reused_process job=122033480738 line=883
+native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)	UNKNOWN STEP	2026-10-27T06:28:25.5030661Z test phase_process_oracle_accepts_reused_pid_but_rejects_reused_process ... ok

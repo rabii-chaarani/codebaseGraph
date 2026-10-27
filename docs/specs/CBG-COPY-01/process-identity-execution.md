@@ -1,5 +1,7 @@
 # CBG-COPY-01 — process-identity verification repair
 
+> **Current verification:** implementation head `5e3e42f48a55581ef75b25ba21732913089f664d` passed all22jobs in CI40457158678, including named Mac/Windows regressions and both artifactbuild/smoke jobs. See [final exact-head verification](../CBG-PLAT-01/execution/cod52-cod98-native-qualification.md). Earlier in-progress/failure limits below remain historical; consumer/aggregate/merge/deployment gates are separate.
+
 ## Scope and approval
 
 [COD-98](https://linear.app/codebasegraph/issue/COD-98), Maintenance `P-COD-2`; separate from COD-52 cursor behavior. [User-approved follow-up](https://github.com/rabii-chaarani/codebaseGraph/blob/931c3ddaeccba9c3f94f75e3ae58be9e3016a4ef/docs/specs/CBG-COPY-01/approvals/process-identity-test.md) at full commit `931c3ddaeccba9c3f94f75e3ae58be9e3016a4ef` records the2026-10-27 explicit “approved” response. Reuse existing CBG-COPY-01 A3/A9 with historical ScopeA/resource-amendment approvals unchanged. Scryer `chg-k66bxx`; no new modeled responsibilities/topology.
