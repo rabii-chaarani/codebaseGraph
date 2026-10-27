@@ -41,6 +41,21 @@ Commands and result codes: [executed-commands.json](cod52-evidence/executed-comm
 
 Fresh GPT-6.1Sol/High [proposal review](cod52-evidence/proposal-review.md) green. Fresh GPT-6.1Sol/Max [initial final review](cod52-evidence/final-review.md) found a P2 Windows advisory-directory expectation in the new test; fixed by verifying hinted directory opens, without changing production. [Follow-up](cod52-evidence/final-review-followup.md) checks the final strengthened receipt/cancellation fixture and reports no unresolved P0–P3 source defect. Earlier fixture variants/evidence in that historical report retain their stated limits; the final strengthened fixture's exact results are above. Final full-suite/native Windows evidence still gates acceptance/closure.
 
+## Hosted native execution — source head `d2a442faaf4ca59dc5fe33f082b2072f49b97aa5`
+
+[CI run40449278177](https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177) finished **failure**:19jobs succeeded,2failed (one native integration and required aggregate),1Windows artifact skipped. [Job/case summary](cod52-evidence/hosted-run-40449278177/summary.json), [exact testcase and failure records](cod52-evidence/hosted-run-40449278177/case-records.txt).
+
+Actual tested synthetic merge `f633445077d1c81888eb44f7a496927f54289ad7` merges the head into baseline `7038e66ff8271ffddc511f879cf8d28353a09b2d`. Executed `git diff --stat` between tested merge and head is empty: whole Git trees match. Named actual passes (not inferred from green jobs):
+
+- Mac unit job122007921553: interruption/public-root substitution, nested scan and genuine terminal receipt selection; all843cases pass,2ignored. Mac integration/generation and native artifact build/smoke also pass.
+- Windows unit jobs122007920956/122007921364: nested scan passes; the same test also passes in storage-foundation inside failed integration job122007921021. All Windows unit/generation cohorts and3of4integration shards pass.
+
+Blocking Windows integration shard3 failure is **unchanged** `tests/copy_phase_process.rs:417`, `bounded_production_chunks_reopen_with_primary_keys_connectors_and_search`: the assertion compares unique numeric PID count to COPY event count and sees55vs56. This establishes duplicate PID values. PID reuse is a likely explanation, not confirmed raw-phase provenance or evidence of COPY/data loss. This test and COPY production paths are unchanged from baseline; no relation to the macOS-only production delta is established. Read-only triage discovered the file through the target graph; connected graph MCP became unavailable (`MCP session is not initialized`), CLI fallback used. No assertion/deadline weakened, unapproved test repair, CI retry or dependency change performed.
+
+[Fresh reviewer evidence addendum](cod52-evidence/hosted-run-40449278177/review-addendum.md) confirms the scope distinction and notes that downstream reopen/PK/connector/search/control checks in the failed COPY case were not reached. Windows named nested-scan execution is now verified; the required aggregate is not.
+
+Required aggregate remains failed and Windows artifact skipped, **not passing qualification**. COD-52 remains In Review; no merge/close/consumer qualification. User decision is required before expanding to repair the separate process-identity test. Final local library+foundation run is still active with slow cleanup coverage, not a passing full-suite result.
+
 ## Architecture, delivery and remaining gates
 
 Scryer proportional ledger `chg-bfthrc` preserves existing Graph Store resp-232/233; no new claims/topology. Governing intent/rules and changed-symbol claims were checked. Configured graph/model remain bound to the older dirty root checkout; target-scoped local graph independently discovered implementation/fixture files. `orient(project=isolated_path)` reports no model. No model was copied/invented, worktree reports were not ingested as root verdicts, and unrelated drift/pending claims were not globally reconciled.
