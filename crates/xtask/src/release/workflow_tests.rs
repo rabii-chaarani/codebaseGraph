@@ -256,6 +256,40 @@ fn proposal_reports_pending_release_then_proceeds_after_finalization() {
 }
 
 #[test]
+fn staged_assets_match_the_supported_native_targets() {
+    let script = step("validate-artifacts", "Stage complete validated set");
+    for complete in [true, false] {
+        let f = Fixture::new();
+        let native = f.root.join("dist/native");
+        fs::create_dir_all(&native).unwrap();
+        for target in crate::NATIVE_TARGETS {
+            let archive = target.archive_name("2.0.0");
+            fs::write(native.join(&archive), b"validated archive").unwrap();
+            fs::write(native.join(format!("{archive}.sha256")), b"checksum").unwrap();
+        }
+        if !complete {
+            let archive = crate::NATIVE_TARGETS[0].archive_name("2.0.0");
+            fs::remove_file(native.join(format!("{archive}.sha256"))).unwrap();
+        }
+        let output = f.execute(&format!("set -euo pipefail\n{script}"), &[]);
+        assert_eq!(
+            output.status.success(),
+            complete,
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        if complete {
+            assert_eq!(
+                fs::read_dir(f.root.join("dist/release-assets"))
+                    .unwrap()
+                    .count(),
+                crate::NATIVE_TARGETS.len() * 2
+            );
+        }
+    }
+}
+
+#[test]
 fn ci_run_recovery_dry_run_validates_without_authorizing_publication() {
     let f = Fixture::new();
     let script = step("release-target", "Resolve tag and source SHA");

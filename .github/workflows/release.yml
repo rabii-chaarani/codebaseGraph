@@ -375,7 +375,7 @@ jobs:
           mkdir -p dist/release-assets
           while IFS= read -r -d '' artifact; do cp "$artifact" dist/release-assets/; done < <(find dist/native -type f -name 'codebase-graph-*.tar.gz' -print0)
           while IFS= read -r -d '' checksum; do cp "$checksum" dist/release-assets/; done < <(find dist/native -type f -name 'codebase-graph-*.tar.gz.sha256' -print0)
-          test "$(find dist/release-assets -type f | wc -l | tr -d ' ')" = '8'
+          test "$(find dist/release-assets -type f | wc -l | tr -d ' ')" = '4'
       - name: Upload validated release set
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
