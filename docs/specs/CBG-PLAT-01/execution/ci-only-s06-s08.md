@@ -4,7 +4,7 @@
 
 - Source baseline: PR153 `862a8f88d485d5bd257ebd9456c194156fd4ee94`. Delivered fixes: [`d6dd34493e9da6f80847240bafcc92dbcaed2c38`](https://github.com/rabii-chaarani/codebaseGraph/commit/d6dd34493e9da6f80847240bafcc92dbcaed2c38) in [existing PR153](https://github.com/rabii-chaarani/codebaseGraph/pull/153).
 - Exact user approval: [CI-only S06–S08 record](https://github.com/rabii-chaarani/codebaseGraph/blob/7650f264fe0cbfa7fa328840722929feac1f32df/docs/specs/CBG-PLAT-01/approvals/ci-only-s06-s08.md), approved spec0.10 full SHA `1a9db7b558b60248888408daa6268a3b45f2f0df`. User: **“I approve CI-only implementation scope”**.
-- Issues: [COD-57](https://linear.app/codebasegraph/issue/COD-57), [COD-58](https://linear.app/codebasegraph/issue/COD-58), [COD-59](https://linear.app/codebasegraph/issue/COD-59), all **In Review**, not Done. COD-51 remains Backlog for other implementation scope. No other slices, packaging, runtime policy changes, full-platform closure, merge/deployment/restart included.
+- Issues: [COD-57](https://linear.app/codebasegraph/issue/COD-57), [COD-58](https://linear.app/codebasegraph/issue/COD-58), [COD-59](https://linear.app/codebasegraph/issue/COD-59) were delivered In Review pending native CI. The subsequent exact-head [hosted verification](ci-only-hosted-qualification.md) records their final affected-native results/status. COD-51 remains Backlog for other implementation scope. No other slices, packaging, runtime policy changes, full-platform closure, merge/deployment/restart included.
 - Changed source: only `src/adapters/cli/format/help.rs`, `src/db_writer/phase.rs` test, `src/staging_writer/files.rs` internal visibility, `src/staging_writer/mod.rs` test-only re-export and `tests/support/storage_maintenance/process.rs` fixture/tests.
 
 ## Implemented behavior
@@ -35,7 +35,7 @@ Host: aarch64-apple-darwin, Rust/Cargo1.96.0, source native Cargo environment in
 
 ## Qualification and delivery limits
 
-Push updated existing PR153 to the exact code SHA above; no force push or merge. The automatic head-bound native CI must execute Windows unit shard1 (COPY), Windows unit shard4 + Mac unit (help), Windows integration shard2 (epoch) and the new Windows-only case, plus ordinary required cohort/artifact gates. No old green/failed run or skipped artifact counts as current passing execution. A normal automatic push trigger is not a manual CI rerun. Initial immediate post-push check discovery had no runs yet; later status must be fetched and recorded honestly.
+Push updated existing PR153 to the exact code SHA above; no force push or merge. Initial post-push discovery had no runs yet. The subsequent [head-bound hosted verification](ci-only-hosted-qualification.md) records run40426019260 and actual named testcase/native cohort/artifact outcomes. No old green/failed run or skipped artifact counts as current passing execution. A normal automatic push trigger is not a manual CI rerun.
 
 If actual contention still exceeds five seconds after classification is fixed, investigate separately; do not silently increase deadline or weaken assertions. Archive/clean-consumer/milestone qualification remains outside this CI-only implementation approval. Do not close issues until their native criteria/review/verification are satisfied.
 
