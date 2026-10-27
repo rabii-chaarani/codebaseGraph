@@ -161,6 +161,23 @@ After upgrading from a release archive:
 
 To force a specific next version, merge a commit whose body contains a `Release-As: X.Y.Z` trailer.
 
+### Unpublished 4.0.0 recovery
+
+Release PR #156 merged as 4.0.0, but its immutable source failed the production repository gate before publication.
+PR #159 corrected that gate on later main; it cannot change the old release source. PR #162 therefore proposes 4.0.1
+from corrected main instead of retrying or tagging the failed 4.0.0 source. The old proposal remains unpublished, not tagged.
+
+`release-please-config.json` uses that failed merge, `7038e66ff8271ffddc511f879cf8d28353a09b2d`, as its
+`bootstrap-sha` commit cutoff. When the manifest's tag is missing, this prevents a full-history scan from replaying
+an old `Release-As: 1.2.2` trailer. The cutoff is not evidence of publication and does not authorize a tag, CI run,
+or artifact source. Once the manifest version has a real release tag, release-please ignores the bootstrap cutoff.
+No permanent `release-as` version pin is used. The 4.0.1 notes explicitly include the unpublished storage change;
+all existing exact-SHA CI, production, artifact, and crate-publication gates still apply to the new release merge.
+
+Until this correction reaches main, another ordinary main merge can make the old generator overwrite the open PR.
+Reapply the reviewed correction if that happens; do not publish a placeholder 4.0.0 tag or clear pending labels to
+work around proposal generation. Publication and maintainer merge approval remain separate from this repair.
+
 ## Conda-Forge Release Path
 
 This repository intentionally does not upload directly to Anaconda.org. Conda distribution should go through

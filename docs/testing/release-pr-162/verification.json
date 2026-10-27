@@ -1,0 +1,111 @@
+{
+  "work_item": "COD-100",
+  "pull_request": 162,
+  "scryer_change": "chg-9sernm",
+  "user_approval": {
+    "date": "2026-10-27",
+    "decision": "make it 4.0.1 and resolve the issues first",
+    "scope": "Repair open release PR; no merge or publication performed"
+  },
+  "base_main": "34eac4f8644adc046093babd84ee1fdbffdae853",
+  "original_pr_head": "95e3830c6997190d2eaaf4147dc6c7352c1880f8",
+  "failed_release": {
+    "pull_request": 156,
+    "source_sha": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+    "ci_run": 40444108082,
+    "release_run": 40453997235,
+    "status": "unpublished; immutable production gate failed; no tag/release/crate4.0.0 observed",
+    "labels_at_start": []
+  },
+  "environment": {
+    "platform": "Darwin aarch64",
+    "cargo": "1.96.0",
+    "nextest": "0.9.140",
+    "release_please": "17.6.0"
+  },
+  "changed_constants": {
+    "workspace_versions": "1.2.2 proposal / 4.0.0 main -> 4.0.1",
+    "public_asset_count": "8 -> 4 (two supported targets, one archive and checksum each)",
+    "bootstrap_sha": "7038e66ff8271ffddc511f879cf8d28353a09b2d (commit floor only; never tag/publication authorization)"
+  },
+  "snapshot_sha256": {
+    ".github/workflows/release.yml": "56b4530d355685f13da6b690ca28c401f9e3211d7db76d387c63281524fcc2e2",
+    ".release-please-manifest.json": "f87e6c288df6c2b7ae134915c0a4e9f0828551c9c8d200f64a32743015bdd050",
+    "CHANGELOG.md": "c83a38e8e2f9a91324ec47784809eeca94f016d51f122f81cfe61a4dc0971978",
+    "Cargo.lock": "03b13a29495eb408054cb381fd3dee3f029c28cce07ad73998c38ba1667463f1",
+    "Cargo.toml": "e9c384f697b8c0af11c2e73c269c2cd1711f1be4445a7d0909629b931a2335cc",
+    "crates/k-wiki/Cargo.toml": "a819729c99aa5927f0b9e796a77031860fe3f3eb5d796d9263e26dadc0cd72b3",
+    "crates/xtask/Cargo.toml": "b5eb92df487c6ecfe6c17d01b8b1f812ac2ca6bb11e5fb7267763be01ae0e30c",
+    "crates/xtask/src/release/workflow_tests.rs": "ce8e04c3afd53f9095d5e549a111ab0cb294b32105aac511fa7ba6bfd9b06c2a",
+    "docs/release.md": "0e871d395f34cbbfb4a1d9095bdbe781b503a7981fca5c0f9f9af5c64e5303b0",
+    "release-please-config.json": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497"
+  },
+  "checks": [
+    {
+      "command": "cd /private/tmp/codebasegraph-cod100-release-401 && CARGO_TARGET_DIR=/private/tmp/codebasegraph-cod100-cargo-target cargo test -p xtask --locked staged_assets_match_the_supported_native_targets -- --nocapture",
+      "result": "expected failure before workflow fix; new regression demonstrates complete supported set rejected"
+    },
+    {
+      "command": "cargo nextest run -p xtask --locked --config-file docs/testing/release-pr-162/nextest.toml --profile cod100",
+      "result": "passed",
+      "tests": 44,
+      "skipped": 0,
+      "report": "xtask.junit.xml"
+    },
+    {
+      "command": "cargo fmt --check",
+      "result": "passed"
+    },
+    {
+      "command": "cargo clippy -p xtask --all-targets --locked -- -D warnings",
+      "result": "passed"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- check-workflows",
+      "result": "passed"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- release-gate",
+      "result": "passed"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- release-gate --production --confirm release-environment --confirm private-vulnerability-reporting",
+      "result": "passed"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- verify-release-version v4.0.1",
+      "result": "passed"
+    },
+    {
+      "command": "cargo metadata --no-deps --locked --format-version 1",
+      "result": "passed"
+    },
+    {
+      "method": "actual release-please17.6.0 read-only generation with bootstrap failed4.0.0 merge; blocked outbound mutations",
+      "result": "4.0.1 proposed naturally; all package update versions agree; only post-floor fix159 notes generated",
+      "report": "generator-4.0.1.json"
+    }
+  ],
+  "limits": [
+    "No full product/native matrix or package publish dry-run was run locally; hosted PR CI and exact main-merge CI remain required.",
+    "Production confirmation arguments reproduce existing configured job; not new verification of owner-controlled settings.",
+    "Scryer is configured against unrelated original worktree; do not activate passing fingerprints there from this isolated snapshot. JUnit retained for correct-snapshot reconciliation.",
+    "Current-main generator can overwrite this open PR until the correction merges; no workflow settings/permissions or labels were changed to bypass it.",
+    "4.0.0 remains untagged/unpublished; no tag,release,crate,merge,workflow-dispatch was performed."
+  ],
+  "architecture_claims_changed": false,
+  "generator_additional_checks": {
+    "actual_repaired_head_over_live_main": "4.0.2, not downgrade; overlay only, not regeneration of current4.0.1 proposal",
+    "synthetic_matching4.0.1_release_no_new_commits": "no candidates",
+    "synthetic_matching4.0.1_release_plus_new_fix": "4.0.2 with only new fix",
+    "report": "generator-future.json"
+  },
+  "review": {
+    "model": "openai-codex/gpt-6.1-sol",
+    "effort": "max",
+    "independent": true,
+    "report": "final-review.md",
+    "result": "No confirmed P0-P3 findings; conditional delivery/qualification risks retained",
+    "reviewed_snapshot": "10 source/test SHA-256 entries in snapshot_sha256; local HEAD not treated as final"
+  }
+}

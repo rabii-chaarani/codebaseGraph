@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.0.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.1) (2026-10-27)
+
+This release replaces the unpublished 4.0.0 proposal ([#156](https://github.com/rabii-chaarani/codebaseGraph/pull/156)). Its production gate failed before any tag or release was created. The storage changes below are included because 3.0.4 remains the last published release.
+
+### ⚠ BREAKING CHANGES
+
+* **storage:** database open helpers return GuardedDatabase and reject path forms whose native resource identity cannot be proven. Connections borrow the guarded handle; canonical Windows extended paths retain their namespace.
+
+### Features
+
+* **storage:** automate graph disk cleanup and controlled legacy retirement ([#153](https://github.com/rabii-chaarani/codebaseGraph/pull/153)) ([75a99c8](https://github.com/rabii-chaarani/codebaseGraph/commit/75a99c840aa53e75a3f14df8dab41979c9efa19c))
+
+### Bug Fixes
+
+* **ci:** archive historical Python evidence helpers without changing their bytes, and check repository release policy in ordinary CI ([#159](https://github.com/rabii-chaarani/codebaseGraph/pull/159)) ([34eac4f](https://github.com/rabii-chaarani/codebaseGraph/commit/34eac4f8644adc046093babd84ee1fdbffdae853))
+* **release:** stop replaying old release overrides when a manifest version has no published tag, and stage the four public archive/checksum files for the two supported native targets ([#162](https://github.com/rabii-chaarani/codebaseGraph/pull/162)).
+
 ## [4.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.0) (2026-10-27)
 
 
