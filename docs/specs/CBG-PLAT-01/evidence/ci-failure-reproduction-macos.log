@@ -1,0 +1,25 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running unittests src/lib.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/codebase_graph-ffa80bf96221ee79)
+
+running 2 tests
+test adapters::cli::tests::dispatch_materialize::watch_help_documents_parallel_default_and_opt_out ... FAILED
+test db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes ... ok
+
+failures:
+
+---- adapters::cli::tests::dispatch_materialize::watch_help_documents_parallel_default_and_opt_out stdout ----
+
+thread 'adapters::cli::tests::dispatch_materialize::watch_help_documents_parallel_default_and_opt_out' (33972985) panicked at src/adapters/cli/tests/dispatch_materialize.rs:73:5:
+assertion failed: text.contains("--parallel                Parse independent files concurrently; default behavior")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    adapters::cli::tests::dispatch_materialize::watch_help_documents_parallel_default_and_opt_out
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 840 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p codebase-graph --lib`

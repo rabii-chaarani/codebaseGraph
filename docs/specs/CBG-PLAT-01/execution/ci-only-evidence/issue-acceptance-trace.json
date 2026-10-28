@@ -1,0 +1,29 @@
+{
+  "COD-57": {
+    "criterion": "A10",
+    "case": "adapters::cli::tests::dispatch_materialize::watch_help_documents_parallel_default_and_opt_out",
+    "required_platforms": [
+      "macos-arm64",
+      "windows-x86_64"
+    ]
+  },
+  "COD-58": {
+    "criterion": "A11",
+    "case": "db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes",
+    "required_platforms": [
+      "macos-arm64",
+      "windows-x86_64"
+    ]
+  },
+  "COD-59": {
+    "criterion": "A12",
+    "case": "isolated_worker_first_creation_and_followup_keep_same_covered_publication_birth",
+    "new_windows_case": "fixture::process::tests::covered_epoch_observer_retries_actual_contention_until_release",
+    "other_case": "fixture::process::tests::covered_epoch_observer_propagates_missing_serial_lock",
+    "required_platforms": [
+      "windows-x86_64"
+    ],
+    "preserved_deadline_seconds": 5,
+    "unchanged_epoch_integrity_and_birth_assertions": true
+  }
+}

@@ -1,0 +1,17 @@
+
+running 1 test
+test pr153_review_macos_nested_scan_does_not_consume_outer_cursor ... baseline=200, outer=85, inner_min=200
+
+thread 'pr153_review_macos_nested_scan_does_not_consume_outer_cursor' (33983795) panicked at /tmp/codebasegraph-pr153-platform-862a8f88d485/filesystem-current-source-probes.rs:26:5:
+assertion `left == right` failed: same-parent nested scan must preserve the outer cursor
+  left: 85
+ right: 200
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    pr153_review_macos_nested_scan_does_not_consume_outer_cursor
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 266 filtered out; finished in 0.26s

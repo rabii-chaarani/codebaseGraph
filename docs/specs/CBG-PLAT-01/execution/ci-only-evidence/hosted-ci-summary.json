@@ -1,0 +1,223 @@
+{
+  "run": {
+    "databaseId": 40426019260,
+    "headSha": "d6dd34493e9da6f80847240bafcc92dbcaed2c38",
+    "headBranch": "codex/automatic-graph-disk-cleanup",
+    "event": "pull_request",
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260",
+    "createdAt": "2026-10-27T00:22:51Z",
+    "updatedAt": "2026-10-27T01:42:13Z"
+  },
+  "attempt": 1,
+  "expected_code_sha": "d6dd34493e9da6f80847240bafcc92dbcaed2c38",
+  "all_22_jobs_succeeded": true,
+  "jobs": [
+    {
+      "databaseId": 121931860390,
+      "name": "cargo clippy",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860390",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:23:56Z"
+    },
+    {
+      "databaseId": 121931860543,
+      "name": "cargo audit",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860543",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:23:12Z"
+    },
+    {
+      "databaseId": 121931860630,
+      "name": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860630",
+      "startedAt": "2026-10-27T00:22:54Z",
+      "completedAt": "2026-10-27T01:16:30Z"
+    },
+    {
+      "databaseId": 121931860656,
+      "name": "cargo publish dry-run",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860656",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:23:50Z"
+    },
+    {
+      "databaseId": 121931860705,
+      "name": "cargo fmt",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860705",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:22:59Z"
+    },
+    {
+      "databaseId": 121931860919,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860919",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:57:34Z"
+    },
+    {
+      "databaseId": 121931860936,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860936",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:47:59Z"
+    },
+    {
+      "databaseId": 121931860962,
+      "name": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860962",
+      "startedAt": "2026-10-27T00:22:54Z",
+      "completedAt": "2026-10-27T01:01:19Z"
+    },
+    {
+      "databaseId": 121931861031,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861031",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:52:31Z"
+    },
+    {
+      "databaseId": 121931861045,
+      "name": "native (macos-arm64) / native tests (macos-arm64, generation)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861045",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:41:32Z"
+    },
+    {
+      "databaseId": 121931861091,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 3)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861091",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:52:00Z"
+    },
+    {
+      "databaseId": 121931861092,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861092",
+      "startedAt": "2026-10-27T00:22:54Z",
+      "completedAt": "2026-10-27T00:50:47Z"
+    },
+    {
+      "databaseId": 121931861146,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 4)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861146",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T01:17:37Z"
+    },
+    {
+      "databaseId": 121931861177,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861177",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T01:06:07Z"
+    },
+    {
+      "databaseId": 121931861193,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861193",
+      "startedAt": "2026-10-27T00:22:54Z",
+      "completedAt": "2026-10-27T00:53:47Z"
+    },
+    {
+      "databaseId": 121931861212,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 2)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861212",
+      "startedAt": "2026-10-27T00:22:54Z",
+      "completedAt": "2026-10-27T00:38:42Z"
+    },
+    {
+      "databaseId": 121931861239,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861239",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T01:21:11Z"
+    },
+    {
+      "databaseId": 121931861245,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861245",
+      "startedAt": "2026-10-27T00:22:53Z",
+      "completedAt": "2026-10-27T00:41:07Z"
+    },
+    {
+      "databaseId": 121931861293,
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861293",
+      "startedAt": "2026-10-27T00:22:54Z",
+      "completedAt": "2026-10-27T00:51:07Z"
+    },
+    {
+      "databaseId": 121950333792,
+      "name": "native (macos-arm64) / native artifact (macos-arm64)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121950333792",
+      "startedAt": "2026-10-27T01:16:33Z",
+      "completedAt": "2026-10-27T01:21:35Z"
+    },
+    {
+      "databaseId": 121951853727,
+      "name": "native (windows-x86_64) / native artifact (windows-x86_64)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121951853727",
+      "startedAt": "2026-10-27T01:21:14Z",
+      "completedAt": "2026-10-27T01:42:07Z"
+    },
+    {
+      "databaseId": 121958592900,
+      "name": "required",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121958592900",
+      "startedAt": "2026-10-27T01:42:09Z",
+      "completedAt": "2026-10-27T01:42:13Z"
+    }
+  ],
+  "qualification_scope": "current exact-head native CI/packaged build-host smoke; not clean desktop consumers, policy packaging fixes, merge/deploy, or milestone closure",
+  "actual_tested_merge_sha": "af71103436086bff1189e67e0f5f03464e977bd4",
+  "actual_tested_merge_base": "ca115690b226384164cf364458a0e3255b8908d3",
+  "head_to_merge_differing_files": [
+    "CHANGELOG.md"
+  ],
+  "case_verification": "named actual PASS records checked; requested execution none missing"
+}

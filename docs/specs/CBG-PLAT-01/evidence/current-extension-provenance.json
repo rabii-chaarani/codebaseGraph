@@ -1,0 +1,34 @@
+{
+  "head": "862a8f88d485d5bd257ebd9456c194156fd4ee94",
+  "source_root": "/tmp/codebasegraph-pr153-platform-source-862a8f88d485",
+  "assets": [
+    {
+      "source": "assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension.xz",
+      "compressed_sha256": "a8a9d74be93a54482b6bb6df7c44ead6cb751f398b87b10c990d63e2da77910d",
+      "extracted_file": "/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/win_amd64-fts.lbug_extension",
+      "extracted_bytes": 14779904,
+      "extracted_sha256": "7f82059c8149bb7851420a9bfd0c46859e92efaeda0bcd5c65418d8f174edac4"
+    },
+    {
+      "source": "assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension.xz",
+      "compressed_sha256": "adf5e05d5a63c181a1be3e1e6c90a8ffb9901118171e7caf8f860af055868ada",
+      "extracted_file": "/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/win_amd64-json.lbug_extension",
+      "extracted_bytes": 14178304,
+      "extracted_sha256": "bdecb5201dd6abccc06ddc1f6cb4fcf0be3adb7aa3ddaac2f383ed129fca2b1f"
+    },
+    {
+      "source": "assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension.xz",
+      "compressed_sha256": "e34b00df38ced0b09993112a6d3a2d76735ecea639bb7deaf4e804351343f891",
+      "extracted_file": "/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/osx_arm64-fts.lbug_extension",
+      "extracted_bytes": 1562680,
+      "extracted_sha256": "83ae4be9fa718577ca971f27ff890b3aea5789c9dd908784e28f52917febbfdb"
+    },
+    {
+      "source": "assets/ladybug-extensions/0.19.0/osx_arm64/json/libjson.lbug_extension.xz",
+      "compressed_sha256": "7d39d0ba2fe3eb41364febc09fb45aca02b37bb64a06e3a3666bfb70f49792cd",
+      "extracted_file": "/tmp/codebasegraph-pr153-platform-862a8f88d485/current-extension-imports/osx_arm64-json.lbug_extension",
+      "extracted_bytes": 630440,
+      "extracted_sha256": "e6482a025de31d662ee4b32a39c991706b8cc3c2ec49673ef5d8ce45cc23ce7a"
+    }
+  ]
+}
