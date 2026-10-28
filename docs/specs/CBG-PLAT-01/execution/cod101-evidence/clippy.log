@@ -1,0 +1,4 @@
+   Compiling codebase-graph v4.0.1 (/private/tmp/codebasegraph-cod52-macos-scans)
+    Checking xtask v4.0.1 (/private/tmp/codebasegraph-cod52-macos-scans/crates/xtask)
+    Checking k-wiki v4.0.1 (/private/tmp/codebasegraph-cod52-macos-scans/crates/k-wiki)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 38.75s

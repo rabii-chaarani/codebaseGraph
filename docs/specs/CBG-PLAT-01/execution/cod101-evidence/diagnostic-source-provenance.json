@@ -1,0 +1,7 @@
+{
+  "head": "2a392a1b49f25923291ad90944148aa72a5caace",
+  "native_diagnostic_artifact_store_sha256": "ff8d7af8c7d32cbf9a441a59565ada82b68f85923dfcfc458a1a6f63dd0b6ebb",
+  "native_lib_sha256": "524be1d1038d898a7f2357e307984d63b2465f111dd8e2d18d689d45e67afb69",
+  "native_cli_sha256": "7be1d8661d409c0a7b197e94436486c45e80e7ccd5701c087e02a9c9f0c3b9eb",
+  "stress_source_sha256": "4c568b4133d4d3145c9308f0fee6d523036eddb378adae6affaf5259253cbc3d"
+}
