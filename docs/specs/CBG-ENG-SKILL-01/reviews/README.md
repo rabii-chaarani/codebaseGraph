@@ -1,0 +1,10 @@
+# CBG-ENG-SKILL-01 — proposal review reconciliation
+
+- Required proposal-review skill: `/Users/rabii/.codex/skills/adversarial-proposal-review-engineer/SKILL.md`.
+- Independent reviewer: `openai-codex/gpt-6.1-sol`, High effort; separate read-only child session, no implementation writing/delegation. The runtime lacks explicit `agent_type`/`fork_turns` arguments. Q20=1 accepts this limitation for this task, not a claim those parameters were set. Service tier `default` is not agent type.
+- Reviewed design SHA-256: `c48c6aaa1d4ccc9aac244c8ba7a6f8ef136a631f6b27ef0ad2caa2054e609ced`; corrected design: `5c239d7bca51977533ac501038a042d411e379d7cee6c4f19bd440d32a6729fa`.
+- [Full design review](proposal-review.md) recommended proceeding with F01: add approved wiki/docs lesson behavior to actual scenario acceptance. [Focused verification](proposal-verification.md) found F01 resolved at the acceptance-contract level. Scenarios/load/implementation were not executed.
+- These preserved reports contain historical temporary-file locations and then-pending decisions. They are review evidence, not live instructions or an approval record. Q16/Q4, Q17 isolated worktree, Q18 no Linear records, Q19 spec preparation, Q20 runtime exception and Q21 missing-rules pause are now settled in the canonical spec.
+- The canonical spec is a structured translation of the approved design, with R01–R10/A01–A16 and explicit Q21 handling. [Actual-spec readback](spec-readback.md) passed against SHA-256 `6d89b77257710e4d791f4d65c04012449c7eb18d5e517961b350e797cb2505e4`, with no confirmed material translation gap. This permits the authorized spec commit/approval request, not skill creation. No product claims/topology are added. Detailed product execution briefs are not stored here.
+- Baseline: `62dcb10305af07e24be7b1a960407f47135bf93c`; original checkout state is not a current-main implementation claim. Main lacks AGENTS.md; this work does not add/copy it. No Linear issue or integration settings are created/changed.
+- The future final-artifact review must be a fresh reviewer using the required final review skill/model/effort. Proposal review is not final implementation review.
