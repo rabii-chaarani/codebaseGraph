@@ -596,6 +596,8 @@ fn main() {
             "trailing\\".to_string(),
             "quote\"inside".to_string(),
             "ampersand & pipe | angle < > caret ^ percent % bang !".to_string(),
+            "%PATH% %CD% !CD!".to_string(),
+            format!("quoted\" & echo CODE55_INJECTED > {}", sentinel.display()),
             injection,
         ];
 

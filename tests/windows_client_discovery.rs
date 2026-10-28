@@ -68,14 +68,7 @@ impl Case {
     fn fixture(&self) -> PathBuf {
         let source = self.path("fixture.rs");
         let binary = self.path("fixture.exe");
-        fs::write(
-            &source,
-            FIXTURE.replace(
-                "PROTOCOL_VERSION",
-                codebase_graph::api::CodebaseGraphApi::latest_mcp_protocol_version(),
-            ),
-        )
-        .unwrap();
+        fs::write(&source, FIXTURE).unwrap();
         let output = Command::new("rustc")
             .args(["--edition=2021", "--crate-name", "cod55_fixture"])
             .arg(&source)
@@ -102,7 +95,10 @@ impl Case {
         } else {
             fs::write(
                 path,
-                format!("@echo off\r\n\"{}\" %*\r\n", fixture.display()),
+                format!(
+                    "@echo off\r\n\"{}\" %*\r\nexit /b %errorlevel%\r\n",
+                    fixture.display()
+                ),
             )
             .unwrap();
         }
@@ -342,8 +338,21 @@ fn cod55_windows_claude_project_visibility_runs_in_selected_project() {
         let visibility = &result["verification"]["client_visibility"];
         assert_eq!(visibility["ok"], true, "{client}: {result}");
         assert_ne!(visibility["skipped"], true, "{client}: {result}");
-        let expected_cwd = format!("CWD {}", hex(case.path("repo space").to_str().unwrap()));
-        assert!(case.calls().contains(&expected_cwd), "{}", case.calls());
+        let calls = case.calls();
+        let encoded_cwd = calls
+            .lines()
+            .find_map(|line| line.strip_prefix("CWD "))
+            .unwrap();
+        let cwd_bytes = encoded_cwd
+            .as_bytes()
+            .chunks_exact(2)
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).unwrap(), 16).unwrap())
+            .collect::<Vec<_>>();
+        let observed_cwd = PathBuf::from(String::from_utf8(cwd_bytes).unwrap());
+        assert_eq!(
+            fs::canonicalize(observed_cwd).unwrap(),
+            fs::canonicalize(case.path("repo space")).unwrap()
+        );
 
         let result = payload(
             case.cli(client)
@@ -394,7 +403,7 @@ fn main(){
  let args:Vec<String>=env::args().skip(1).collect();
  if args.get(1).map(String::as_str)==Some("start") {
   let mut input=String::new();std::io::stdin().read_to_string(&mut input).unwrap();
-  println!(r#"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"PROTOCOL_VERSION"}}"#);
+  println!(r#"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25"}}"#);
   println!(r#"{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"graph_health"},{"name":"graph_search"}]}}"#);
   println!(r#"{"jsonrpc":"2.0","id":3,"result":{"structuredContent":{"ok":true}}}"#);
   println!(r#"{"jsonrpc":"2.0","id":4,"result":{}}"#);

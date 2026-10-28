@@ -1835,6 +1835,7 @@ fn executable_in_path(name: &str) -> Option<PathBuf> {
     })
 }
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn home_dir() -> PathBuf {
     env::var_os("HOME")
         .or_else(|| env::var_os("USERPROFILE"))
