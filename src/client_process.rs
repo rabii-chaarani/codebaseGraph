@@ -622,3 +622,10 @@ fn main() {
         }
     }
 }
+
+#[cfg(test)]
+mod mcp_client_fixture_compile {
+    include!("../tests/support/mcp_client_fixture.rs");
+
+    const _: fn() = main;
+}

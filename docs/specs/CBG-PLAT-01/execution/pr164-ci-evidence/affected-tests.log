@@ -1,0 +1,65 @@
+   Compiling codebase-graph v4.0.1 (/private/tmp/codebasegraph-pr164-ci-clean)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.97s
+────────────
+ Nextest run ID 6fe3ca2c-0d4a-49c5-bcb4-ff29b1e814ca with nextest profile: pr164
+    Starting 58 tests across 1 binary (795 tests skipped)
+        PASS [   6.832s] ( 1/58) codebase-graph adapters::cli::tests::install::mcp_install_agent_hooks_provisions_http_daemon_for_stdio_registration
+        PASS [   6.249s] ( 2/58) codebase-graph adapters::cli::tests::install::mcp_install_preserves_explicit_stdio_compatibility
+        PASS [   7.529s] ( 3/58) codebase-graph adapters::cli::tests::install::mcp_install_reports_copilot_studio_metadata
+        PASS [   7.495s] ( 4/58) codebase-graph adapters::cli::tests::install::mcp_install_writes_generic_client_config
+        PASS [   7.680s] ( 5/58) codebase-graph adapters::cli::tests::mcp::mcp_graph_query_binds_json_parameters
+        PASS [   7.511s] ( 6/58) codebase-graph adapters::cli::tests::mcp::mcp_http_enforces_bearer_token_when_configured
+        PASS [   8.917s] ( 7/58) codebase-graph adapters::cli::tests::mcp::mcp_http_handles_initialize_list_call_and_protocol_errors
+        PASS [   0.018s] ( 8/58) codebase-graph adapters::cli::tests::mcp::mcp_http_rejects_remote_bind_without_auth_token
+        PASS [   0.017s] ( 9/58) codebase-graph adapters::cli::tests::mcp::mcp_options_reject_removed_memory_flags
+        PASS [   0.018s] (10/58) codebase-graph adapters::cli::tests::mcp::mcp_options_resolve_config_defaults_and_cli_overrides
+        PASS [   9.304s] (11/58) codebase-graph adapters::cli::tests::mcp::mcp_stdio_refresh_policy_off_is_watcher_free
+        PASS [  15.644s] (12/58) codebase-graph adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors
+        PASS [   0.037s] (13/58) codebase-graph api::core::tests::generic_mcp_server_registration_preserves_configuration_with_short_arguments
+        PASS [   0.032s] (14/58) codebase-graph api::core::tests::mcp_install_operation_preserves_unrelated_client_configuration
+        PASS [   0.022s] (15/58) codebase-graph api::lifecycle::tests::claude_desktop_path_is_rejected_for_loopback_http
+        PASS [   0.021s] (16/58) codebase-graph api::lifecycle::tests::cloud_targets_require_public_https_without_exposing_loopback
+        PASS [   0.017s] (17/58) codebase-graph api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments
+        PASS [   0.023s] (18/58) codebase-graph api::lifecycle::tests::codex_toml_reject_different_leaves_existing_file_byte_identical
+        PASS [   0.017s] (19/58) codebase-graph api::lifecycle::tests::daemon_port_selection_migrates_collisions_but_rejects_unavailable_overrides
+        PASS [   0.017s] (20/58) codebase-graph api::lifecycle::tests::dry_run_language_detection_recognizes_webassembly_case_insensitively
+        PASS [   0.019s] (21/58) codebase-graph api::lifecycle::tests::hermes_install_migrates_singular_marker_blocks_without_dropping_existing_entries
+        PASS [   0.017s] (22/58) codebase-graph api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments
+        PASS [   0.019s] (23/58) codebase-graph api::lifecycle::tests::hermes_reject_different_leaves_existing_file_byte_identical
+        PASS [   0.031s] (24/58) codebase-graph api::lifecycle::tests::http_registration_can_be_inspected_renamed_and_removed
+        PASS [   0.022s] (25/58) codebase-graph api::lifecycle::tests::http_registration_migrates_only_the_recognized_stdio_entry
+        PASS [   0.018s] (26/58) codebase-graph api::lifecycle::tests::http_registration_shapes_match_every_loopback_harness
+        PASS [   0.022s] (27/58) codebase-graph api::lifecycle::tests::install_removes_legacy_k_wiki_entry_in_the_same_file_update
+        PASS [   0.022s] (28/58) codebase-graph api::lifecycle::tests::json_reject_different_leaves_existing_file_byte_identical
+        PASS [   0.017s] (29/58) codebase-graph api::lifecycle::tests::managed_instruction_block_replaces_stale_guidance_and_preserves_surrounding_text
+        PASS [   0.030s] (30/58) codebase-graph api::lifecycle::tests::matching_entries_remain_idempotent_across_json_codex_and_hermes_configs
+        PASS [   0.043s] (31/58) codebase-graph api::lifecycle::tests::mcp_agent_hook_persistence_unions_existing_clients
+        PASS [   0.017s] (32/58) codebase-graph api::lifecycle::tests::native_client_commands_preserve_every_server_argument
+        PASS [   0.017s] (33/58) codebase-graph api::lifecycle::tests::refresh_failure_classifier_retries_source_changes_and_worker_exit
+        PASS [   0.027s] (34/58) codebase-graph api::lifecycle::tests::registration_rename_deduplicates_matching_json_destination_atomically
+        PASS [   0.027s] (35/58) codebase-graph api::lifecycle::tests::registration_rename_preserves_codex_entry_and_rejects_conflicting_destination
+        PASS [   0.027s] (36/58) codebase-graph api::lifecycle::tests::reinstall_activation_boundary_keeps_new_state_on_post_activation_failure
+        PASS [   0.023s] (37/58) codebase-graph api::lifecycle::tests::reinstall_activation_boundary_restores_backup_on_activation_failure
+        PASS [   0.023s] (38/58) codebase-graph api::lifecycle::tests::remove_mcp_server_dry_run_reports_previous_without_writing_and_write_removes_entry
+        PASS [   0.028s] (39/58) codebase-graph api::lifecycle::tests::remove_partial_state_tree_rejects_symlinks
+        PASS [   0.021s] (40/58) codebase-graph api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets
+        PASS [   0.019s] (41/58) codebase-graph api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared
+        PASS [   0.017s] (42/58) codebase-graph api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths
+        PASS [   0.017s] (43/58) codebase-graph client_config::tests::non_windows_command_configuration_does_not_change_child_environment
+        PASS [   0.017s] (44/58) codebase-graph client_config::tests::non_windows_keeps_home_default_behavior
+        PASS [   0.016s] (45/58) codebase-graph client_config::tests::repository_targets_and_client_overrides_do_not_resolve_a_profile
+        PASS [   0.017s] (46/58) codebase-graph client_config::tests::unsupported_windows_config_files_are_skipped_without_environment_changes
+        PASS [   0.022s] (47/58) codebase-graph client_config::tests::windows_claude_project_visibility_uses_the_selected_project_directory
+        PASS [   0.018s] (48/58) codebase-graph client_config::tests::windows_command_projects_relative_targets_before_child_cwd_changes
+        PASS [   0.016s] (49/58) codebase-graph client_config::tests::windows_fails_when_profile_is_unavailable_or_not_absolute
+        PASS [   0.017s] (50/58) codebase-graph client_config::tests::windows_uses_native_profile_after_invalid_userprofile
+        PASS [   0.027s] (51/58) codebase-graph client_config::tests::windows_uses_native_profile_when_userprofile_is_an_absolute_file
+        PASS [   0.021s] (52/58) codebase-graph client_config::tests::windows_uses_userprofile_and_ignores_home
+        PASS [   0.020s] (53/58) codebase-graph client_process::tests::cod55_non_windows_discovery_keeps_exact_filename_semantics
+        PASS [   0.017s] (54/58) codebase-graph mcp_client::tests::endpoint_validation_rejects_non_loopback_and_wrong_path
+        PASS [   0.017s] (55/58) codebase-graph mcp_client::tests::expired_hook_budget_does_not_connect
+        PASS [   0.019s] (56/58) codebase-graph mcp_client::tests::hook_tool_calls_send_clamped_remaining_deadline_and_regular_calls_omit_it
+        PASS [   0.369s] (57/58) codebase-graph mcp_client::tests::trickled_response_cannot_extend_the_elapsed_deadline
+        PASS [   0.018s] (58/58) codebase-graph mcp_client::tests::zero_timeout_does_not_connect
+────────────
+     Summary [  78.632s] 58 tests run: 58 passed, 795 skipped

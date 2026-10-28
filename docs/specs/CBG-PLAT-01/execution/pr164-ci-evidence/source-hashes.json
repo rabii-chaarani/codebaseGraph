@@ -1,0 +1,5 @@
+{
+  "src/client_process.rs": "e9a460c783287409f151765bbf0db704bc3e77dfd3978dd1c11a17dd76a5ea05",
+  "tests/windows_client_discovery.rs": "c8ef90536f8f0bfef9ae216e43fad17c0f3c099d9429140044d5b1b483b7e43d",
+  "tests/support/mcp_client_fixture.rs": "944a044a2f81ff4b97d76f044fdcea82e5fa95d190d11e60cc451267f36de148"
+}

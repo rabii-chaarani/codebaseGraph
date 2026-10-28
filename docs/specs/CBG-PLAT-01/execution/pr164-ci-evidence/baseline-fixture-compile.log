@@ -1,0 +1,51 @@
+error: invalid format string: expected `}`, found `\"`
+ --> /tmp/pr164-ci-debug/baseline-fixture.rs:8:16
+  |
+8 |   println!(r#"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25"}}"#);
+  |               -^ expected `}` in format string
+  |               |
+  |               because of this opening brace
+  |
+  = note: if you intended to print `{`, you can escape it using `{{`
+
+error: invalid format string: expected `}`, found `\"`
+ --> /tmp/pr164-ci-debug/baseline-fixture.rs:9:16
+  |
+9 |   println!(r#"{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"graph_health"},{"name":"graph_search"}]}}"#);
+  |               -^ expected `}` in format string
+  |               |
+  |               because of this opening brace
+  |
+  = note: if you intended to print `{`, you can escape it using `{{`
+
+error: invalid format string: expected `}`, found `\"`
+  --> /tmp/pr164-ci-debug/baseline-fixture.rs:10:16
+   |
+10 |   println!(r#"{"jsonrpc":"2.0","id":3,"result":{"structuredContent":{"ok":true}}}"#);
+   |               -^ expected `}` in format string
+   |               |
+   |               because of this opening brace
+   |
+   = note: if you intended to print `{`, you can escape it using `{{`
+
+error: invalid format string: expected `}`, found `\"`
+  --> /tmp/pr164-ci-debug/baseline-fixture.rs:11:16
+   |
+11 |   println!(r#"{"jsonrpc":"2.0","id":4,"result":{}}"#);
+   |               -^ expected `}` in format string
+   |               |
+   |               because of this opening brace
+   |
+   = note: if you intended to print `{`, you can escape it using `{{`
+
+error: invalid format string: expected `}`, found `\"`
+  --> /tmp/pr164-ci-debug/baseline-fixture.rs:12:16
+   |
+12 |   println!(r#"{"jsonrpc":"2.0","id":5,"result":{"isError":true}}"#);return
+   |               -^ expected `}` in format string
+   |               |
+   |               because of this opening brace
+   |
+   = note: if you intended to print `{`, you can escape it using `{{`
+
+error: aborting due to 5 previous errors
