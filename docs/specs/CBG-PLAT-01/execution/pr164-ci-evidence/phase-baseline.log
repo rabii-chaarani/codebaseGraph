@@ -1,0 +1,18 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.42s
+     Running unittests src/lib.rs (/private/tmp/codebasegraph-pr164-target/debug/deps/codebase_graph-86ff53f7fb2e6ee1)
+
+running 12 tests
+test db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes ... ok
+test db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit ... ok
+test db_writer::phase::tests::error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily ... ok
+test db_writer::phase::tests::isolated_error_keeps_context_inside_the_cap ... ok
+test db_writer::phase::tests::oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary ... ok
+test db_writer::phase::tests::phase_protocol_requires_v2_containment_contract ... ok
+test db_writer::phase::tests::phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error ... ok
+test db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts ... ok
+test db_writer::phase::tests::phase_request_v2_preserves_thread_setting ... ok
+test db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader ... ok
+test db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory ... ok
+test db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 841 filtered out; finished in 0.15s

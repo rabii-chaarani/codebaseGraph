@@ -1,0 +1,23 @@
+{
+  "repo_root": "/private/tmp/codebasegraph-pr164-ci-clean",
+  "command": "codebase-graph build --repo-root /private/tmp/codebasegraph-pr164-ci-clean --mode full --max-parallelism 1 --spill-chunk-mib 32",
+  "exit_code": 0,
+  "summary": {
+    "active_generation": "70972-1793155519632027000-1",
+    "artifacts_rebuilt": 420,
+    "artifacts_reused": 0,
+    "cleanup_pending": true,
+    "connector_rows": 8158688,
+    "copy_calls": 229,
+    "database_written": true,
+    "edge_rows": 4079344,
+    "graph_build_digest": "9b7c359ef11dba4ff4067f62639d4760bb0feed8386cb1cdb42a2eaedcaad1bf",
+    "node_rows": 1860077,
+    "pending_runs": 0,
+    "skipped": false,
+    "spill_bytes": 16401270778,
+    "storage_format": "managed_v2"
+  },
+  "discovery": "q bounded_production_chunks_reopen_with_primary_keys_connectors_and_search layer=semantic\nfile path tests/copy_phase_process.rs\n- Function bounded_production_chunks_reopen_with_primary_keys_connectors_and_search L338-L552 rank_score=1.00 id=Function:e131463bc4563f08e031 layer=semantic\nq bounded_production_chunks_reopen_with_primary_keys_connectors_and_search layer=semantic\nfile path tests/copy_phase_process.rs\n- Function bounded_production_chunks_reopen_with_primary_keys_connectors_and_search L338-L552 rank_score=1.00 id=Function:e131463bc4563f08e031 layer=semantic\n",
+  "source_digest": "dbff1132733d5557a7108033f9bb41b8e5968357614c1b1bb8a4344fc046424b"
+}
