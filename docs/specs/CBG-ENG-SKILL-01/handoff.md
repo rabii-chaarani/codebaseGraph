@@ -13,11 +13,13 @@ The approved project-local **codebaseGraph Engineer** Markdown skill and four re
 - Scryer: empty documentation-only ledger `chg-drc849` closed with `close_change`; no model entries/claims/anchors/tests or unrelated drift altered. Empty closure is recorded by Scryer as abandonment of unfiled plan intent, not a false implemented claim.
 - Reusable knowledge assessed: user workflow is embodied in the skill; existing sources cover the lessons. Synthetic checks add no verified product fact/runbook; no filler wiki/memory write/build.
 
-## Pending PR permission
+## PR decision for this delivery
 
-Git push succeeded. A read-only open-PR search found no branch PR. The single GitHub MCP creation request failed with HTTP 403: `Resource not accessible by personal access token`. A subsequent read-only search again found no matching open PR. No blind create retry, credential/integration change, alternate-tool write, merge or release was attempted.
+User decision, 28 October 2026, this conversation: **“a pr is not needed for this skill at the moment”**. No PR is required for the current skill-creation handoff; this gate is no longer pending. The skill is committed, pushed, verified and reviewed. No further PR attempt, alternate interface or permission change is needed.
 
-**PR delivery remains pending**, not complete. User decision is required to authorize another permitted interface, reconnect with appropriate access, or create the PR manually. Suggested compare page: https://github.com/rabii-chaarani/codebaseGraph/compare/main...feat/codebasegraph-engineer?expand=1 . No aggregate closure is claimed.
+Historical delivery evidence: Git push succeeded; the single GitHub MCP PR request returned HTTP 403, and read-only searches found no matching open PR. No blind create retry, credential/integration change, alternate-tool write, merge or release occurred. That historical failure is not an unresolved requirement after the user's decision.
+
+This exception applies only to the current skill-creation delivery. It does not alter the approved spec, the reusable engineer's normal Git/PR duties, or authorize merge, release or aggregate closure.
 
 ## Use and limits
 

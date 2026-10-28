@@ -1,3 +1,7 @@
+# Unsubmitted PR draft
+
+The user stated on 28 October 2026: “a pr is not needed for this skill at the moment”. This draft is retained as delivery history, not a pending action or permission to create a PR. See [handoff](handoff.md). The body below preserves the previously prepared description.
+
 ## Summary
 - Add the project-local **codebaseGraph Engineer** Markdown skill and four focused references.
 - Orchestrate one user-selected Linear issue at a time, with scoped readiness recommendations, live architecture/approval checks and exact coding-agent ownership.

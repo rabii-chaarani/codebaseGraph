@@ -28,6 +28,6 @@ All 16 supplied variants were exercised as instructional walkthroughs, with no c
 - No settings, constants, dependencies, hooks, product code or AGENTS.md changed; original dirty checkout status remained unchanged. No Linear records were created. Architecture ledger is documentation-only, no invented claims or unrelated drift reconciliation.
 - Reusable learning was explicitly assessed: this packages approved user workflow and existing lessons. Synthetic walkthroughs add no verified product fact/runbook; no filler wiki/memory record or wiki rebuild is warranted.
 
-## Remaining delivery
+## Delivery status
 
-Fresh final review and focused F01 verification are complete; final document/scope checks pass. Approved commit/push/PR and empty Scryer ledger closure remain delivery steps. This paragraph is a progress update after the reviewed evidence snapshot; skill files, approved spec and substantive executed evidence are unchanged. Do not treat native routing, mock results or a PR as approval or aggregate closure.
+Fresh final review and focused F01 verification, final document/scope checks, implementation commit/push and empty Scryer ledger closure are complete. The user explicitly stated that no PR is needed for this skill at the moment; [handoff](../handoff.md) records the task-specific exception and historical failed PR attempt. No PR gate remains pending for the current delivery. Skill files, approved spec and substantive executed evidence are unchanged. This progress update neither changes the reusable engineer's normal PR duties nor claims merge, release, real-issue qualification or aggregate closure.
