@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.1...v4.0.2) (2026-10-28)
+
+
+### Bug Fixes
+
+* **storage:** isolate macOS nested directory scan cursors (COD-52) ([#157](https://github.com/rabii-chaarani/codebaseGraph/issues/157)) ([62dcb10](https://github.com/rabii-chaarani/codebaseGraph/commit/62dcb10305af07e24be7b1a960407f47135bf93c))
+
 ## [4.0.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.1) (2026-10-27)
 
 This release replaces the unpublished 4.0.0 proposal ([#156](https://github.com/rabii-chaarani/codebaseGraph/pull/156)). Its production gate failed before any tag or release was created. The storage changes below are included because 3.0.4 remains the last published release.
