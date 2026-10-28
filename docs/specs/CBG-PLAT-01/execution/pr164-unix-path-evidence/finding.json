@@ -1,0 +1,8 @@
+{
+  "thread_id": "PRRT_kwDOSZ0Wus6w-Hjy",
+  "url": "https://github.com/rabii-chaarani/codebaseGraph/pull/164#discussion_r4396573116",
+  "baseline": "afcb83feb98c7a9cffeb2a942dd6f30b6ed23271",
+  "comment": "Unix PATH lookup pins a non-executable earlier candidate instead of continuing to a later runnable client.",
+  "baseline_reproduction": "previous status=exit status: 0 stdout=runnable\npinned error kind=PermissionDenied: Permission denied (os error 13)\n",
+  "scope": "restore non-Windows behavior; Windows and explicit-path policy unchanged"
+}

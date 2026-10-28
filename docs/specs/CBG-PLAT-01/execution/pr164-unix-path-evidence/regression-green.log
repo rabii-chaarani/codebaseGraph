@@ -1,0 +1,10 @@
+   Compiling codebase-graph v4.0.1 (/private/tmp/codebasegraph-pr164-ci-clean)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.79s
+     Running unittests src/lib.rs (/private/tmp/codebasegraph-pr164-target/debug/deps/codebase_graph-86ff53f7fb2e6ee1)
+
+running 3 tests
+test client_process::tests::unix_path_prefers_first_executable_candidate_and_pins_relative_directories ... ok
+test client_process::tests::unix_path_returns_none_for_all_non_executable_candidates_but_keeps_explicit_path_behavior ... ok
+test client_process::tests::unix_path_skips_non_executable_candidates_and_runs_selected_script_with_exact_arguments ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 854 filtered out; finished in 0.48s
