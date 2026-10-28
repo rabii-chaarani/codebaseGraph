@@ -1,0 +1,49 @@
+{
+  "runtime": "prime-agent 0.10.1",
+  "date": "2026-10-28",
+  "skill_sha256": "caa4cc326ff7b83e7758a636e3be7509a78812b70bd035a2141e6ae287e1f235",
+  "runs": {
+    "explicit": {
+      "session_id": "01a18102-b097-75ff-91ab-78073646d57c",
+      "exit_code": 0,
+      "actual_tool_calls": [
+        {
+          "type": "toolCall",
+          "id": "call_3b049cb4c09c4192b11d4bbfee902933|fc_044b5d260896ecfd016ae189eeb5d081919beee55fe6437f14",
+          "name": "python_repl",
+          "arguments": {
+            "code": "from pathlib import Path\nskill_text = Path('/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/SKILL.md').read_text()\nprint(skill_text)"
+          }
+        }
+      ],
+      "tool_results": "Completed successfully; actual read body hash matches SKILL.md identity. No other tool calls in retained full event stream.",
+      "final_responses": [
+        "**Display heading:** codebaseGraph Engineer\n\n**Four references:**\n- Issue selection \u2014 `references/issue-selection.md`\n- Wiki and docs lessons \u2014 `references/lessons.md`\n- Agent focus and recovery \u2014 `references/agent-focus.md`\n- Verification and handoff \u2014 `references/verification.md`\n\n**Read-only rule:** A read-only question stays read-only: no issue creation, workers, commits, or delivery writes. No repository investigation or development was started."
+      ],
+      "raw_stdout_sha256": "71c66dc1485c21dd14eaaca7c8b64fc8a85c16b57e16f1c57b0a253c0ce3901a",
+      "model": "openai-codex/gpt-6.1-sol",
+      "effort": "Not explicitly set or verified in these loader checks."
+    },
+    "routing": {
+      "session_id": "01a18102-f7d5-745c-a2e6-1a50faaa6d07",
+      "exit_code": 0,
+      "actual_tool_calls": [
+        {
+          "type": "toolCall",
+          "id": "call_55cccfa049d34f9a8d6625398e8075a5|fc_088cf097c2f7018d016ae189fc4ff481919c4b21dac6a8fc08",
+          "name": "python_repl",
+          "arguments": {
+            "code": "from pathlib import Path\nskill_path = Path('/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/SKILL.md')\nskill_text = skill_path.read_text()\nprint(skill_text)"
+          }
+        }
+      ],
+      "tool_results": "Completed successfully; actual read body hash matches SKILL.md identity. No other tool calls in retained full event stream.",
+      "final_responses": [
+        "The applicable skill is **`codebasegraph-engineer`**.\n\nIts first authority check is to identify the actual repository, checkout, Git revision/status, and user request, then read applicable live repository instructions and governing tool rules. The skill itself is not architectural authority.\n\nYour read-only permission controls here: I read only the skill instructions. No repository inspection, issue-service access, or delegation was performed."
+      ],
+      "raw_stdout_sha256": "3c1840db3ae8c7ee831214b51ad4c95c5cdeb3b7d222fcd6ccdac14c31343131",
+      "model": "openai-codex/gpt-6.1-sol",
+      "effort": "Not explicitly set or verified in these loader checks."
+    }
+  }
+}

@@ -1,0 +1,37 @@
+# Keep agents focused and recover safely
+
+## Before dispatch
+
+Work on one selected issue. Resolve user-owned decisions and verify exact-scope approvals, governing architecture/directives and required proposal review. Implement prerequisite contracts first. Delegate only substantial ready independent slices; coordinator can own small tasks and integration. Follow live worker models/effort, reviewer independence and concurrency rules rather than this skill's creation-time settings.
+
+Keep the canonical detailed brief and file ownership in Scryer under the live proportional workflow. Never invent architecture entries to fill a template. A worker receives the canonical brief reference and essential constraints, not a competing durable brief. If the required brief mechanism/context is unavailable, pause dependent delegation and report the blocker.
+
+The brief must identify:
+
+- stable issue/work/phase/slice identity and Linear/canonical spec/approved revision links;
+- requirement/acceptance IDs, deliverable and completion criteria;
+- exact writable files; one named owner for shared types/configuration/manifests/lockfiles;
+- dependencies/contracts/prerequisites and applicable Scryer claims/directives/boundaries;
+- selected wiki **and** docs source sections, concrete implications and relevant safeguards/checks;
+- permitted test commands/environment, expected observable behavior/failure paths and evidence location;
+- stop conditions: unknown behavior, architecture/contract/ownership conflict, required out-of-scope edits or unavailable prerequisite.
+
+Tell workers they share the workspace, must preserve others' edits, read applicable selected sources and report blockers/ownership changes promptly. No worker Git mutations; coordinator serializes integration and commits. Repartition or use authorized isolated worktrees if overlap cannot be avoided; do not run overlapping writers and hope to merge later.
+
+## During work and accepting results
+
+Use meaningful notifications, milestones and handoffs, not busy polling. Review actual changed file lists/diffs, architecture impact and executed evidence. Worker confidence or a summary is not acceptance. Ask each worker to return files, implemented behavior, relevant lesson application/non-applicability, actual command/results and unresolved risks.
+
+For each proposed addition ask: is it necessary to meet an approved requirement/architecture contract or a demonstrated failure path? If not, remove it from the plan or report it separately. Avoid speculative abstractions, compatibility shims, extra configuration/dependencies, unrelated cleanup, invented edge cases and unnecessary tests. Do not resolve compiler warnings with unrelated broad rewrites; escalate out-of-scope needs while preserving the warning gate.
+
+If an agent drifts/stalls, inspect the actual state. Stop the affected writer, preserve its edits, then redirect, replace or reorganize inside unchanged approved scope and ownership. Do not overlap the replacement, silently reset shared work or discard useful evidence. Coordinator can approve routine ownership adjustments inside existing boundaries; changed user-owned scope/architecture/contracts/permissions require a numbered decision before dependent work.
+
+Check architecture again before accepting/integrating the slice. Reject a rationale that changes intended architecture to bless an accidental implementation. Complete applicable claims/anchors/test evidence only after actual implementation/checks; do not touch unrelated drift or pending claims.
+
+## Interruptions, uncertainty and resume
+
+On cancellation, stop new assignments and settle/stop live writers safely; preserve edits, known pending writes, results and blockers in existing authoritative handoffs. No private parallel task-state store.
+
+On resume reconcile Git HEAD/status/branch and active writers; canonical scope/approval identities; live Linear/Scryer prerequisites/ownership/pending work; correct graph/tool bindings; actual test/review revisions and relevant wiki/docs lessons. Chat summaries and memory only guide discovery. Preserve dirty unrelated files; ask about conflicting edits instead of stashing/resetting/deleting them.
+
+Report unavailable required services, sources, models or reviewers. Keep dependent work pending and continue independent already-approved work only. Use only fallbacks the live rules allow; no silent model/project substitution or integration-setting bypass. For uncertain external mutations, inspect known IDs/current state before retry and avoid duplicate records; unknown outcome is not failure or success.

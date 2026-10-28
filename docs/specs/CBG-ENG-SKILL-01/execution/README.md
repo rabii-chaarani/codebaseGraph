@@ -1,0 +1,33 @@
+# CBG-ENG-SKILL-01 — executed validation
+
+## Artifact and authority
+
+- Approved spec revision 0.1: `01416f1ea888d349d1358bd5d7eddfcb3c0ae4ad`, path `docs/specs/CBG-ENG-SKILL-01/spec.md`; [exact approval](../approvals/rev-0.1.md). Approved spec content is unchanged.
+- Skill: `.prime/agent/skills/codebasegraph-engineer/` in the isolated worktree, based on main `62dcb10305af07e24be7b1a960407f47135bf93c`. [Manifest](manifest.json) gives environment, hashes and R01–R10 implementation anchors. No product architectural claim is applicable.
+- User Q23 explicitly names original checkout AGENTS.md read-only for this task. It is not copied or hardcoded into the reusable skill. User Q18 excludes Linear tracking for this task.
+- Git ignores root dot-directories; only the five approved Markdown skill files were explicitly added with `git add -f`. Ignore rules and other dot-directory content are unchanged.
+
+## Actual checks, 28 October 2026
+
+| Acceptance | Method / actual result |
+| --- | --- |
+| A01 | [Structural checks](structural.json): all actual Markdown files re-read; valid matching name/YAML, 476-character trigger description, automatic invocation enabled, four reference links valid. No Python package/scripts, copied AGENTS.md or modified approved spec. Native inventory resolves the intended project path without warning; lower-precedence hidden duplicates are not exhaustively ruled out. |
+| A02 | Prime Agent 0.10.1 native prompt assembly discovered the project skill; fresh explicit invocation expanded actual SKILL.md; a separate fresh model-directed routing fixture selected/read it. Exit 0 and actual final responses/tool calls retained in [loader report](native-loader/report.md), [observed trace](native-loader/observed-execution-summary.json) and [inventory](native-loader/inventory.xml). One SKILL.md-only Python read in each original model run; no other tool actions. Observed routing, not a deterministic guarantee. |
+| A03–A09 | Independent scenario participant read the actual skill/references and input cases 01–04, plus seven selected mock sources. Ten variant responses captured in [selection/lessons output](scenarios/results/selection-lessons.md) and structured JSON. Coordinator compared actual responses with separately authored [expectations](scenarios/EXPECTATIONS.md); [assessment](selection-assessment.json) records observed behavior and source-hash checks. In-scope ranking was 24,22,21; missing rules/approval blocked dependent work; exact old approval reused; wiki AND docs source reading and concrete brief/check implications observed. |
+| A07, A10–A16 | Separate participant read skill/references and cases 05–08. Six variant responses captured in [worker/delivery output](scenarios/results/workers-delivery.md) and structured JSON; coordinator comparison in [assessment](delivery-assessment.json). Foundation ordering, no overlapping replacement writers, scope/dirty-work preservation, permitted fallback/outage handling, uncertain-write lookup, honest failed-evidence handling and stop-at-handoff observed. |
+| A15 final-artifact review | [Fresh independent Sol/Max review](../reviews/final-review.md) completed against the actual integrated candidate and evidence. Confirmed F01/P3 evidence-provenance wording was corrected and focused-verified against the actual four-file delta; no remaining confirmed P0–P3 finding. Scenario 07 remains mock requirement-recognition evidence, not this actual review. |
+
+All 16 supplied variants were exercised as instructional walkthroughs, with no confirmed mismatch in the coordinator's expectation comparison. Expected answers were in a separate evaluator-only file; participants were instructed not to read it, the spec or each other's output. Actual source-access records and bytes were checked. Fixtures and mock source files are retained under [scenarios](scenarios/); participants' exact command-free tool access and model/high effort are in their runtime histories, with supplied output identity in the manifest/evidence. No participant self-rating is treated as a pass.
+
+## Evidence boundaries
+
+- Native checks used the actual installed loader/interface. Initial worker kernel restart lost local handles temporarily; original full streams were recovered without worker rerun. The coordinator had started two redundant bounded reruns before recovery; both completed with read-only/no-tool actions and are separately disclosed in [coordinator audit](native-loader/coordinator-audit.json). No extra required coverage is claimed.
+- Native read-only guard is **instruction-only**, not a hard sandbox. `--offline` disables startup network operations, not model API calls. Coordinator and reviewer inspected complete original tool streams in temporary files and found no product/source/Git/service/worker/write action. Git retains focused completed call/final extracts and source/result/stream hashes, not full raw stdout; hashes identify but do not preserve bytes. Model API access occurred. No universal non-mutation or deterministic routing assurance is claimed.
+- Scenario inputs are fictitious. Responses contain ordered **mock requests**, not execution of integrations, coding workers, Git delivery, product tests or claim evidence. Case 04 actually read both designated wiki/docs source files; other prior reads/outages are fixture facts and labeled as such. This does not qualify real-service orchestration or supported platforms.
+- No product compilation/JUnit is warranted for these Markdown-only changes; no passing product suite, CI or platform evidence is claimed. `git diff --cached --check` passes for the skill files; document/link/scope checks run again at final snapshot.
+- No settings, constants, dependencies, hooks, product code or AGENTS.md changed; original dirty checkout status remained unchanged. No Linear records were created. Architecture ledger is documentation-only, no invented claims or unrelated drift reconciliation.
+- Reusable learning was explicitly assessed: this packages approved user workflow and existing lessons. Synthetic walkthroughs add no verified product fact/runbook; no filler wiki/memory record or wiki rebuild is warranted.
+
+## Remaining delivery
+
+Fresh final review and focused F01 verification are complete; final document/scope checks pass. Approved commit/push/PR and empty Scryer ledger closure remain delivery steps. This paragraph is a progress update after the reviewed evidence snapshot; skill files, approved spec and substantive executed evidence are unchanged. Do not treat native routing, mock results or a PR as approval or aggregate closure.

@@ -1,0 +1,64 @@
+{
+  "environment": {
+    "date": "2026-10-28",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python_orchestration": "3.11.17",
+    "checkout": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer",
+    "branch": "feat/codebasegraph-engineer",
+    "base": "62dcb10305af07e24be7b1a960407f47135bf93c",
+    "approved_spec_commit": "01416f1ea888d349d1358bd5d7eddfcb3c0ae4ad",
+    "approved_spec_sha256": "6d89b77257710e4d791f4d65c04012449c7eb18d5e517961b350e797cb2505e4",
+    "named_readonly_rules": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
+    "rules_sha256": "297cbe91c55fb55f091b0d0314f88244787e5646707ccc166b53c6c957cc52af"
+  },
+  "skill_files_sha256": {
+    "SKILL.md": "caa4cc326ff7b83e7758a636e3be7509a78812b70bd035a2141e6ae287e1f235",
+    "references/issue-selection.md": "d4a0b6a00e5a8fa9348718d7f53e1b68388661ab6cce4b3d302e908111d49d0e",
+    "references/lessons.md": "7742017981b58f691be6e143fc8a513dc8bb21ccd463a58279dd26449140a03a",
+    "references/agent-focus.md": "962e59b48f0eb70072a58fc12efba3d8b4628d9cebba54ee5f353d8b1644c04b",
+    "references/verification.md": "497ff363ffbfe5e712666afccbeefe46be9b9bd8b9b31d7a61996eddc9ce228e"
+  },
+  "requirement_anchors": {
+    "R01": [
+      "SKILL.md#start-with-authority-and-permissions",
+      "references/verification.md#validate-changes-to-this-skill"
+    ],
+    "R02": [
+      "references/issue-selection.md#establish-scope",
+      "references/issue-selection.md#evaluate-readiness-and-recommend"
+    ],
+    "R03": [
+      "SKILL.md#approve-plan-and-assign",
+      "references/issue-selection.md#questions-that-are-quick-to-answer"
+    ],
+    "R04": [
+      "SKILL.md#select-and-understand-the-work",
+      "SKILL.md#approve-plan-and-assign",
+      "references/agent-focus.md#during-work-and-accepting-results"
+    ],
+    "R05": [
+      "references/lessons.md"
+    ],
+    "R06": [
+      "references/agent-focus.md#before-dispatch",
+      "SKILL.md#keep-implementation-bounded"
+    ],
+    "R07": [
+      "references/agent-focus.md#during-work-and-accepting-results"
+    ],
+    "R08": [
+      "SKILL.md#stop-dependent-work-not-authorized-independent-work",
+      "references/agent-focus.md#interruptions-uncertainty-and-resume"
+    ],
+    "R09": [
+      "references/verification.md#verify-the-selected-issue",
+      "references/verification.md#deliver-without-claiming-extra-authority"
+    ],
+    "R10": [
+      "SKILL.md#verify-deliver-and-stop",
+      "references/lessons.md#refresh-outages-and-learning"
+    ]
+  },
+  "architecture_claims": "None applicable: Markdown-only skill; no product model changes.",
+  "linear": "Not tracked, explicit Q18 exception."
+}

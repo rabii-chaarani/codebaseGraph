@@ -1,0 +1,3 @@
+# Runtime cancellation
+Locator: docs/runtime/cancellation.md, graph-discovered at 4444444444444444444444444444444444444444. Canonical contract: docs/specs/MOCK-40/spec.md revision 2 / MOCK-40-R1, A1, A2.
+Current runtime uses a per-query registry, not the old global pool. The cleanup call releases only the cancelled query's registry entry after runtime receives the parser's cancellation signal. Releasing all entries breaks a concurrent or subsequent query. The runtime regression check cancels one registered query and then runs another query to completion; its assertion checks the second query's valid result. Both cancellation failure handling and valid subsequent query behavior are part of the approved restoration.

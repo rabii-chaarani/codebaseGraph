@@ -1,0 +1,58 @@
+{
+  "work_id": "CBG-ENG-SKILL-01",
+  "date": "2026-10-28",
+  "method": "Coordinator re-read all Markdown files; Python standard regex/pathlib and PyYAML data parsing (no target project imports); compare exact approved spec hash.",
+  "acceptance": [
+    "A01"
+  ],
+  "files_sha256": {
+    "SKILL.md": "caa4cc326ff7b83e7758a636e3be7509a78812b70bd035a2141e6ae287e1f235",
+    "references/issue-selection.md": "d4a0b6a00e5a8fa9348718d7f53e1b68388661ab6cce4b3d302e908111d49d0e",
+    "references/lessons.md": "7742017981b58f691be6e143fc8a513dc8bb21ccd463a58279dd26449140a03a",
+    "references/agent-focus.md": "962e59b48f0eb70072a58fc12efba3d8b4628d9cebba54ee5f353d8b1644c04b",
+    "references/verification.md": "497ff363ffbfe5e712666afccbeefe46be9b9bd8b9b31d7a61996eddc9ce228e"
+  },
+  "checks": {
+    "frontmatter_mapping": true,
+    "name_syntax_and_limit": true,
+    "name_matches_directory": true,
+    "description_valid": true,
+    "automatic_invocation_enabled": true,
+    "relative_links_exist": true,
+    "compatibility_limit": true,
+    "approved_spec_unchanged": true,
+    "rules_not_copied": true,
+    "no_python_package_or_scripts": true
+  },
+  "frontmatter": {
+    "name": "codebasegraph-engineer",
+    "description": "Orchestrate codebaseGraph development end to end. Use for codebaseGraph requests involving Linear issue recommendations or delivery, features, fixes, refactors, tests, architecture compliance, coding-agent delegation, verification, reviews, or pull requests. Keep work within approved scope and architecture, apply relevant knowledge-wiki and docs lessons, and prevent unrelated edits and overengineering. Also support explicit invocation; read-only requests remain read-only."
+  },
+  "description_characters": 476,
+  "relative_links": [
+    {
+      "source": "SKILL.md",
+      "href": "references/issue-selection.md",
+      "exists": true
+    },
+    {
+      "source": "SKILL.md",
+      "href": "references/lessons.md",
+      "exists": true
+    },
+    {
+      "source": "SKILL.md",
+      "href": "references/agent-focus.md",
+      "exists": true
+    },
+    {
+      "source": "SKILL.md",
+      "href": "references/verification.md",
+      "exists": true
+    }
+  ],
+  "limits": [
+    "Structural checks are not native discovery/loading, model routing, scenario behavior or live service execution.",
+    "Final native discovery will check visible precedence collisions; no project/global target collision was present before creation."
+  ]
+}

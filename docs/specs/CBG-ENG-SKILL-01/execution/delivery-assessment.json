@@ -1,0 +1,64 @@
+{
+  "scope": "Coordinator compared six actual response variants for cases 05\u201308 against independent evaluator expectations.",
+  "observed": {
+    "A07": "Foundation contract and real verification gates precede dependent dispatch; architecture rechecked on acceptance.",
+    "A10": "Changed subsystem/familiar failure triggers wiki AND docs refresh; source outage blocks only dependent runtime work.",
+    "A11": "One selected issue, exact disjoint files, shared-file coordinator ownership and canonical briefs preserved; missing test paths requested before dispatch.",
+    "A12": "Rejects unrelated rank rewrite/retry abstraction/lockfile changes; stops old writer before replacement, preserves edits and other user dirty work.",
+    "A13": "Uses permitted same-project CLI fallback, rejects other-project graph; required reviewer remains pending; uncertain PR looked up before retry.",
+    "A14": "Reconciles actual HEAD/status/spec/approval/ownership/evidence instead of old summary; does not inherit parser approval for new runtime scope.",
+    "A15": "Rejects verified/closure claim with current failure and warning; requires actual fix/rerun/focused review and genuine applicable JUnit, no unrelated drift or false macOS claim.",
+    "A16": "Outcome-first scoped handoff, separate platform/aggregate owner, no filler memory, no duplicate PR, merge/release or next-issue recommendation."
+  },
+  "source_read_hash_checks": [
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-engineer-validation-2i85opi3/participant-workers-delivery.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/SKILL.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/references/issue-selection.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/references/lessons.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/references/agent-focus.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/references/verification.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/05-workers.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/06-resume-outage.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/07-verification.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/08-handoff.md",
+      "matches": true
+    }
+  ],
+  "limits": [
+    "All proposed service/worker/product/Git actions remain mocked; no live integration or product qualification.",
+    "Fixtures 05/08 stipulated prior selected-source reads; actual source reading is established separately in case 04.",
+    "No actual product tests or claims were ingested."
+  ]
+}

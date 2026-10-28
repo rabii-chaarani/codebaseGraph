@@ -1,0 +1,38 @@
+[
+  {
+    "name": "engineer-test-selection-lessons",
+    "model": {
+      "provider": "openai-codex",
+      "modelId": "gpt-6.1-sol"
+    },
+    "session": "engineer-test-selection-lessons",
+    "reasoning": [
+      {
+        "type": "thinking_level_change",
+        "id": "88f5b4ac",
+        "parentId": "3a2dfb64",
+        "timestamp": "2026-10-28T05:39:54.811Z",
+        "thinkingLevel": "high"
+      }
+    ],
+    "output_scope": "Fixture-only, read-only except new tempfile outputs; no expectation/spec access in participant records."
+  },
+  {
+    "name": "engineer-test-workers-delivery",
+    "model": {
+      "provider": "openai-codex",
+      "modelId": "gpt-6.1-sol"
+    },
+    "session": "engineer-test-workers-delivery",
+    "reasoning": [
+      {
+        "type": "thinking_level_change",
+        "id": "0ecfe02d",
+        "parentId": "56ccf8a9",
+        "timestamp": "2026-10-28T05:39:54.813Z",
+        "thinkingLevel": "high"
+      }
+    ],
+    "output_scope": "Fixture-only, read-only except new tempfile outputs; no expectation/spec access in participant records."
+  }
+]

@@ -1,0 +1,102 @@
+{
+  "scope": "Independent input cases 01\u201304; coordinator compared actual responses against separately authored evaluator expectations, not participant self-rating.",
+  "case_ids": [
+    "01-entry/A",
+    "01-entry/B",
+    "02-selection/A",
+    "02-selection/B",
+    "02-selection/C",
+    "02-selection/D",
+    "03-approval-architecture/main",
+    "03-approval-architecture/test-only",
+    "04-lessons/main",
+    "04-lessons/typo-only"
+  ],
+  "observed": {
+    "A03": "Missing rules caused a numbered path question and dependent pause; read-only blockage answer had no proposed mutation.",
+    "A04": "Actual ranking 24,22,21; unapproved 25, blocked 26 and out-of-scope 27 excluded; selection awaited.",
+    "A05": "Missing scope/no-ready/archived-work cases asked bounded questions and did not start unselected work.",
+    "A06": "Revision-2 approval mismatch blocked implementation; exact unchanged revision-1 approval reused.",
+    "A07": "Rejected parser/cache boundary bypass, requested explicit graph search/context before mock source read and preserved prerequisite gate.",
+    "A08": "Actually read wiki+docs fixture source files and gave concrete registry/cancellation/no-partial/subsequent-query implications in mocked Scryer briefs and worker-source obligations; rejected summary-only handoff.",
+    "A09": "Lifecycle/current-revision caveats distinguished candidate/proposal/historical/stale records; empty lookup produced no filler. No real memory transitions claimed."
+  },
+  "source_read_hash_checks": [
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-engineer-validation-2i85opi3/participant-selection-lessons.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/SKILL.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/references/issue-selection.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/references/lessons.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/references/agent-focus.md",
+      "matches": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/references/verification.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/01-entry.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/02-selection.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/03-approval-architecture.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/04-lessons.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/sources/04-active-memory.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/sources/04-wiki.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/sources/04-doc.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/sources/04-candidate.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/sources/04-history.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/sources/04-proposal.md",
+      "matches": true
+    },
+    {
+      "path": "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/cbg-eng-scenarios-py4njcce/sources/04-stale.md",
+      "matches": true
+    }
+  ],
+  "limits": [
+    "Mock instructions/decisions only; no product/service/worker execution or platform qualification.",
+    "Exact missing test file names/commands were requested rather than invented; executable assignment requires those fields before dispatch."
+  ]
+}

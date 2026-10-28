@@ -1,0 +1,39 @@
+{
+  "native_raw_stream_sha256": {
+    "explicit-full.jsonl": "71c66dc1485c21dd14eaaca7c8b64fc8a85c16b57e16f1c57b0a253c0ce3901a",
+    "routing-full.jsonl": "3c1840db3ae8c7ee831214b51ad4c95c5cdeb3b7d222fcd6ccdac14c31343131",
+    "fresh-prompt-created.json": "9536ab67142c3672dc2ba1a6e514cf397eb0216a8fb672a9c9081724ffddc8a6"
+  },
+  "replay_note": "Coordinator reruns completed before original-output recovery notice; no additional required coverage claimed. Full tool events audited for reads only; output preserved as supplemental observation.",
+  "redundant_replays": {
+    "explicit": {
+      "tool_calls": [],
+      "responses": [
+        "**Display heading:** codebaseGraph Engineer\n\n**Reference filenames:**\n- `references/issue-selection.md`\n- `references/lessons.md`\n- `references/agent-focus.md`\n- `references/verification.md`\n\n**Read-only rule:** A read-only request stays read-only. Do not create issues, launch workers, commit, or make delivery writes. Automatic skill activation or issue selection does not grant approval for further action."
+      ],
+      "stderr": "",
+      "exit_code": 0,
+      "sha256": "4a9eb82a1b5cd2a46c332254e212416f0a3b75f8823f3a1a7d963b19bd108c9a"
+    },
+    "routing": {
+      "tool_calls": [
+        {
+          "type": "toolCall",
+          "id": "call_3b29190c717a42b39edfef927bfaf676|fc_03f9976033217f02016ae18aadb1a48191a9250b3367d3a437",
+          "name": "python_repl",
+          "arguments": {
+            "code": "from pathlib import Path\nskill_text = Path('/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/SKILL.md').read_text()\nprint(skill_text)"
+          }
+        }
+      ],
+      "responses": [
+        "The applicable skill is **`codebasegraph-engineer`**.\n\nIts first authority check is to identify the actual repository, checkout, Git revision/status, and user request, then read applicable live repository instructions and governing tool rules.\n\nThat is not permission to act: this read-only fixture authorizes no repository investigation or changes."
+      ],
+      "stderr": "",
+      "exit_code": 0,
+      "sha256": "31bba20b9da476c65167101fe3f7800e76f7e5ca7442df5b3d25ab52ced72a45"
+    }
+  },
+  "hard_sandbox": false,
+  "routing_claim": "Observed model-directed activation in bounded fixtures only, not deterministic enforcement."
+}

@@ -1,0 +1,6 @@
+<skill>
+    <name>codebasegraph-engineer</name>
+    <type>markdown</type>
+    <description>Orchestrate codebaseGraph development end to end. Use for codebaseGraph requests involving Linear issue recommendations or delivery, features, fixes, refactors, tests, architecture compliance, coding-agent delegation, verification, reviews, or pull requests. Keep work within approved scope and architecture, apply relevant knowledge-wiki and docs lessons, and prevent unrelated edits and overengineering. Also support explicit invocation; read-only requests remain read-only.</description>
+    <location>/Users/rabii/Projects/Repositories/codebaseGraph-engineer/.prime/agent/skills/codebasegraph-engineer/SKILL.md</location>
+  </skill>

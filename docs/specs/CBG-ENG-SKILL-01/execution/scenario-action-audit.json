@@ -1,0 +1,54 @@
+[
+  {
+    "name": "engineer-test-selection-lessons",
+    "actual_tool_count": 8,
+    "actual_tool_names": [
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl"
+    ],
+    "tool_code_sha256": [
+      "e1dc6ddc66009c676b04f5d317fc786461d5c529d91914d0f4e04a0e575381ec",
+      "f33653f614d2679dedcf1653e5c4a18b93025971026b9ac8e37436079b895b42",
+      "fa3319e213457f5447b6f64b4433d5dfed700de0a948b3aead62edad983c66ec",
+      "aa09a77a57ef2c1ee25581cd668b12a04385fe03edd3efc9135f217df9d84c8e",
+      "f4f743171d168900f4746b30c51b357ac847c321466ec34c5b7f0266ee455231",
+      "d1ce0181d7faa5eb55a0f550aa93ad5ded6d697aec47c533ecee927e6de07e52",
+      "77309e7dd535a89d280cef56c8817bc0e59064b74eadb32d82d812319e81620a",
+      "c2f21d8d8b80d8147f1c2ba5828ca0cf72a1454d3646e78317c522c4565e0386"
+    ],
+    "expected_answers_or_spec_read": false,
+    "forbidden_real_command_calls": false,
+    "assessment": "Coordinator inspected actual Python call code: allowed task/skill/rules/fixtures/mock-source reads and tempfile outputs, plus explicit parent result message only. No real service, shell/Git/product execution, worker dispatch or repository mutation."
+  },
+  {
+    "name": "engineer-test-workers-delivery",
+    "actual_tool_count": 7,
+    "actual_tool_names": [
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl",
+      "python_repl"
+    ],
+    "tool_code_sha256": [
+      "199c0128d76da24ba7b895d3965bc6d3f19f200f69692af5a18788d68b56787a",
+      "5fa93aebfdb4e5ee632840db3187d6f81ac88f28fb84c017f19a513208595492",
+      "4ea69bf61028f7698ca42e4da089f7e82b6e2eba3ac83673d32d1050e48f9158",
+      "19d59b9b658baef836f3af0313c01b28baed8a208eb5b5dd21f9ff8ee9ca778d",
+      "9b291a47bd715f06c930fb7f3e127f724298f0a2b7424da4e7a004c50c856d84",
+      "bcc911bbf8bd6c27957f413a1ed2d355b64c713a37232beb23d7865432dca465",
+      "66ac6fbd6c885236f16c9f6d828b871b4477e2d686282985d09537b4d16d9996"
+    ],
+    "expected_answers_or_spec_read": false,
+    "forbidden_real_command_calls": false,
+    "assessment": "Coordinator inspected actual Python call code: allowed task/skill/rules/fixtures/mock-source reads and tempfile outputs, plus explicit parent result message only. No real service, shell/Git/product execution, worker dispatch or repository mutation."
+  }
+]

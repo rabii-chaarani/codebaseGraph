@@ -1,0 +1,11 @@
+# Isolated instruction walkthrough
+
+Everything below is fictitious. Use the provided engineer skill and supplied authoritative rules to respond to the user request. Do not call real integrations, launch real workers, mutate a repository or create real tracking. Express tool/worker actions as mock requests and responses. All issue/spec/commit/source identifiers are synthetic. A mock result is not production evidence. Each variant starts independently unless marked as a continuation. Only the fixture input and its source files go to the participant; grading material is separate.
+
+# Selected-work handoff
+
+User: “Finish the handoff for CBG-MOCK-80.” This is the only selected issue; no next-work request exists. All records here are mock.
+
+Canonical spec `docs/specs/MOCK-80/spec.md` revision 1 is approved at `8888888888888888888888888888888888888888`; implementation and final reviewed snapshot `9999999999999999999999999999999999999999`. Required baseline/integrated diff review used the prescribed independent reviewer/model/effort. Confirmed P0–P3 findings were fixed, affected checks rerun and focused reviewer verification at the final snapshot is complete. Documented target-project checks at the final snapshot pass success, cancellation failure and subsequent-query paths; required suite passes with no warnings. Same-scope Scryer claim evidence/JUnit/anchors and drift reconciliation complete; unrelated drift untouched. Canonical acceptance records and Linear issue have matching evidence. Supported Linux qualification is complete; release-wide macOS qualification remains open under a separate record/owner and is not an issue-acceptance prerequisite. User owns aggregate milestone closure.
+
+Reviewed Conventional Commit, branch push and PR `mock://pr/80` have already succeeded and are linked from mock Linear. No merge/release authorization exists. Lessons actually read from `wiki://mock/runtime/cleanup` and `docs/runtime/cancellation.md` caused a failure-path cleanup assertion and subsequent-query check to be included; both executed checks pass at the final snapshot. No unresolved lesson-source gap. Durable conclusion is already recorded as active verified wiki procedure with current provenance; this run adds no new general knowledge. No wiki/memory mutation has occurred. Linear shows CBG-MOCK-81 ready in the same milestone.
