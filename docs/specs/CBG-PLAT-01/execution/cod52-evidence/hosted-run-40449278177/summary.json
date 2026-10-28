@@ -1,0 +1,214 @@
+{
+  "run": {
+    "databaseId": 40449278177,
+    "status": "completed",
+    "conclusion": "failure",
+    "headSha": "d2a442faaf4ca59dc5fe33f082b2072f49b97aa5",
+    "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177"
+  },
+  "actual_tested_merge": "f633445077d1c81888eb44f7a496927f54289ad7",
+  "base": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+  "head_vs_merge_tree_diff": "empty, git diff --stat executed",
+  "jobs": [
+    {
+      "name": "cargo audit",
+      "id": 122007920803,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007920803"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 3)",
+      "id": 122007920955,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007920955"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+      "id": 122007920956,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007920956"
+    },
+    {
+      "name": "native (macos-arm64) / native tests (macos-arm64, generation)",
+      "id": 122007920981,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007920981"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+      "id": 122007921021,
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921021"
+    },
+    {
+      "name": "cargo publish dry-run",
+      "id": 122007921044,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921044"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 4)",
+      "id": 122007921046,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921046"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)",
+      "id": 122007921054,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921054"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+      "id": 122007921069,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921069"
+    },
+    {
+      "name": "cargo clippy",
+      "id": 122007921085,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921085"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+      "id": 122007921094,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921094"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+      "id": 122007921291,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921291"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+      "id": 122007921364,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921364"
+    },
+    {
+      "name": "native (macos-arm64) / native tests (macos-arm64, integration)",
+      "id": 122007921367,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921367"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 2)",
+      "id": 122007921416,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921416"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)",
+      "id": 122007921485,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921485"
+    },
+    {
+      "name": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "id": 122007921553,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921553"
+    },
+    {
+      "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+      "id": 122007921569,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007921569"
+    },
+    {
+      "name": "cargo fmt",
+      "id": 122007922020,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122007922020"
+    },
+    {
+      "name": "native (macos-arm64) / native artifact (macos-arm64)",
+      "id": 122022637472,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122022637472"
+    },
+    {
+      "name": "required",
+      "id": 122024829779,
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122024829779"
+    },
+    {
+      "name": "native (windows-x86_64) / native artifact (${{ inputs.target }})",
+      "id": 122024830234,
+      "status": "completed",
+      "conclusion": "skipped",
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40449278177/job/122024830234"
+    }
+  ],
+  "new_case_actual_passes": [
+    {
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+      "id": 122007920956,
+      "line": 892,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)\tUNKNOWN STEP\t2026-10-27T04:37:38.0004485Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+    },
+    {
+      "job": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+      "id": 122007921364,
+      "line": 1077,
+      "record": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)\tUNKNOWN STEP\t2026-10-27T04:39:36.6026999Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+    },
+    {
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "id": 122007921553,
+      "line": 1242,
+      "record": "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T04:32:26.2595620Z test storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement ... ok"
+    },
+    {
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "id": 122007921553,
+      "line": 1245,
+      "record": "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T04:32:26.4023460Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+    },
+    {
+      "job": "native (macos-arm64) / native tests (macos-arm64, unit)",
+      "id": 122007921553,
+      "line": 1316,
+      "record": "native (macos-arm64) / native tests (macos-arm64, unit)\tUNKNOWN STEP\t2026-10-27T04:33:31.6553580Z test storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto ... ok"
+    }
+  ],
+  "blocking_failure": {
+    "name": "bounded_production_chunks_reopen_with_primary_keys_connectors_and_search",
+    "path": "tests/copy_phase_process.rs",
+    "line": 417,
+    "observed_unique_pids": 55,
+    "copy_event_count": 56,
+    "source_unchanged_from_baseline": true,
+    "cause_status": "duplicate_numeric_PID established by source/assertion; PID reuse likely, not a confirmed COPY/data regression"
+  },
+  "windows_nested_scan_pass_in_failed_job": {
+    "line": 959,
+    "record": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)\tUNKNOWN STEP\t2026-10-27T04:48:34.8878250Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok"
+  },
+  "aggregate_limit": "overall run failed; required failed; Windows artifact skipped, not passing"
+}
