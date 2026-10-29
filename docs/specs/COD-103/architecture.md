@@ -1,6 +1,6 @@
 # COD-103 — architecture rationale and Scryer references
 
-**Status:** proposed, revision 0.1; user approval, Scryer sign-off and implementation remain pending. Date: 2026-10-29.
+**Status:** proposed, revision 0.2; user approval, Scryer sign-off and implementation remain pending. Date: 2026-10-29.
 
 Governing scope is [spec.md](spec.md), C103-R01–R06 / A01–A06, and unchanged [CBG-PLAT-01 revision 0.11 S05/R05/A09](https://github.com/rabii-chaarani/codebaseGraph/blob/8a410c7a22f5291f06a1cece5cd9e7c0be255e72/docs/specs/CBG-PLAT-01/spec.md#s05--reject-failing-native-probes-in-the-powershell-installer). Concrete software contracts are in [design.md](design.md). This is an architecture rationale/reference, not a duplicate execution brief or platform specification.
 

@@ -1,6 +1,6 @@
 # COD-103 — Production-gate corrections and bounded policy refinements
 
-**Proposed requirements revision:** 0.1. **Status:** preparation; not implementation-approved.
+**Proposed requirements revision:** 0.2. **Status:** preparation; not implementation-approved.
 **Canonical destination for Production to freeze:** `docs/specs/COD-103/spec.md`.
 **Owner:** repository maintainer/user; Engineer coordinates delivery. Detailed design, execution briefs, file ownership and claim changes belong in Scryer, not this requirements document.
 
@@ -10,6 +10,8 @@
 This canonical proposed revision is accompanied by [software design](design.md), [architecture rationale](architecture.md), [verification plan](verification.md) and the compact [delivery/queue index](delivery.md). These references settle proposal preparation, not user implementation approval. Detailed execution briefs remain only in Scryer: COD-105 `chg-ahwwmf`, COD-106 `chg-9bqhd2`, COD-56 `chg-2z3ngs`, COD-107 `chg-xd2jtt`, COD-108 `chg-cw9n3h`. Preparation ledger: `chg-fdm24r`. Proposed COD-108 changed intent: `chg-9xdkd4`, existing `node-1`, draft claims `resp-1rnbs9` and `resp-tddbkj`; sign-off is pending.
 
 The fixed literal stack and bounded staging exception are proposed in delivery.md; actual main integrations remain serial with successful full main CI at each merge SHA. All acceptance checks remain unexecuted. Separate approval must identify this proposal's immutable remote full Git SHA and exact scope before dependent implementation. This file does not embed its own containing commit SHA.
+
+Revision 0.2 clarifies only the first hosted stack-proof gate in response to [PR-01](reviews/proposal-r01.md); see [resolution record](reviews/resolution-r01.md). Revision 0.1 at `b4af6ac79f3603c9e277a2c98bee3c4f75f2639c` and its review are preserved. Focused rereview and combined user approval remain pending.
 
 ## 1. Identity, decisions and baseline
 
@@ -104,7 +106,7 @@ Keep exactly one stable `required` result for each qualified PR. The result must
 
 A changed head or base must invalidate previous classification/qualification. Preserve strict-freshness enforcement and the intentionally retained admin bypass; do not claim a bypass-capable actor provides server enforcement.
 
-Proposed fixed true-PR-stack order: **COD-105 → COD-106 → COD-56 → COD-107 → COD-108**. The stack CI/staging prerequisite may be delivered as part of first-PR staging under the approved combined scope. The technical proposal must specify how non-main-base stack PRs gain valid qualification under currently main-only PR triggers. It may not silently discard stacking, introduce an unapproved privileged trigger or accept missing/greenless required checks. Any approved staging exception to default merge-before-next-implementation must be explicit in the fixed queue record.
+Proposed fixed true-PR-stack order: **COD-105 → COD-106 → COD-56 → COD-107 → COD-108**. The stack CI/staging prerequisite may be delivered as part of first-PR staging under the approved combined scope. The technical proposal must specify how non-main-base stack PRs gain valid qualification under currently main-only PR triggers. It may not silently discard stacking, introduce an unapproved privileged trigger or accept missing/greenless required checks. Any approved staging exception to default merge-before-next-implementation must be explicit in the fixed queue record. The [delivery index](delivery.md#first-child-staging-clarification-pr-01) distinguishes COD-105 staging-only handoff from full qualification: its own applicable local/artifact/full-main-base-PR checks and independent final review/fix verification permit opening COD-106 solely to obtain the deferred first-child non-main-base full-CI proof. Production obtains it, Evidence Verifier records it against C103-A05, and Engineer links both existing ledgers. Missing/failed/stale proof blocks full COD-105 qualification, COD-106 handoff to COD-56, every actual main integration, Done and release. Later per-PR retarget proof remains due at its actual stage, not as a prerequisite to opening its own PR. No evidence is waived or presumed passed.
 
 Integrate actual main merges serially. Require successful full main CI for each actual merge before the next integration step. Shared ownership and implementation details remain in Scryer.
 
