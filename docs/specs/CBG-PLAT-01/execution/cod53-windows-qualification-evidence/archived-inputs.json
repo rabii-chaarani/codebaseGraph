@@ -1,0 +1,20 @@
+{
+  "purpose": "Historical qualification input, not maintained implementation or supported tooling.",
+  "source_commit": "5f68b41cebc327072cf71be770c9e5a9d1c0dad2",
+  "archive": {
+    "path": "historical-reject-proxy.tar.gz",
+    "bytes": 998,
+    "sha256": "d37b3c86d978018d137375e7a30316b3ce779b2787df5037237032bdec892752",
+    "creation_command": "git archive --format=tar.gz 5f68b41cebc327072cf71be770c9e5a9d1c0dad2 docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/reject-proxy.py"
+  },
+  "files": [
+    {
+      "original_path": "reject-proxy.py",
+      "member": "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/reject-proxy.py",
+      "bytes": 1311,
+      "sha256": "ca7ada29f99cb0a6da0807d6f468c22ad81d1bce59abe5c9f743c1b03b83588f"
+    }
+  ],
+  "evidence_index": "evidence-index.json is unchanged; its original proxy path resolves to the archived member above.",
+  "reconstruction": "Verify archive/member digests, then extract only into a separate historical checkout, never this checkout. Original reports, commands and qualification limits remain unchanged."
+}

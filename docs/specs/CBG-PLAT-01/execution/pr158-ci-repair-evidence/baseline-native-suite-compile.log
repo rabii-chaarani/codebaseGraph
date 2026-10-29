@@ -1,0 +1,184 @@
+   Compiling find-msvc-tools v0.1.9
+   Compiling shlex v2.0.1
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.45
+   Compiling tree-sitter-language v0.1.8
+   Compiling smallvec v1.15.2
+   Compiling stable_deref_trait v1.2.1
+   Compiling siphasher v1.0.3
+   Compiling errno v0.3.14
+   Compiling serde_core v1.0.228
+   Compiling memchr v2.8.2
+   Compiling fastrand v2.5.0
+   Compiling cc v1.2.64
+   Compiling phf_shared v0.13.1
+   Compiling bytes v1.12.1
+   Compiling pin-project-lite v0.2.17
+   Compiling futures-core v0.3.32
+   Compiling writeable v0.6.3
+   Compiling phf_generator v0.13.1
+   Compiling litemap v0.8.2
+   Compiling rustversion v1.0.22
+   Compiling parking_lot_core v0.9.12
+   Compiling scratch v1.0.9
+   Compiling serde_json v1.0.150
+   Compiling icu_properties_data v2.2.0
+   Compiling utf8_iter v1.0.4
+   Compiling scopeguard v1.2.0
+   Compiling icu_normalizer_data v2.2.0
+   Compiling lock_api v0.4.14
+   Compiling link-cplusplus v1.0.12
+   Compiling syn v2.0.117
+   Compiling syn v3.0.3
+   Compiling string_cache_codegen v0.6.1
+   Compiling http v1.5.0
+   Compiling phf_codegen v0.13.1
+   Compiling indexmap v2.7.1
+   Compiling new_debug_unreachable v1.0.6
+   Compiling synstructure v0.13.2
+   Compiling cxxbridge-flags v1.0.138
+   Compiling unicode-width v0.1.14
+   Compiling autocfg v1.5.1
+   Compiling termcolor v1.4.1
+   Compiling cxx v1.0.138
+   Compiling http-body v1.1.0
+   Compiling codespan-reporting v0.11.1
+   Compiling displaydoc v0.2.7
+   Compiling tokio-macros v2.7.2
+   Compiling num-traits v0.2.19
+   Compiling web_atoms v0.2.6
+   Compiling parking_lot v0.12.5
+   Compiling libmimalloc-sys v0.1.49
+   Compiling signal-hook-registry v1.4.8
+   Compiling socket2 v0.6.5
+   Compiling mio v1.2.1
+   Compiling log v0.4.32
+   Compiling precomputed-hash v0.1.1
+   Compiling httparse v1.10.1
+   Compiling string_cache v0.9.0
+   Compiling tree-sitter v0.25.10
+   Compiling zerofrom-derive v0.1.7
+   Compiling yoke-derive v0.8.2
+   Compiling zerovec-derive v0.11.3
+   Compiling serde_derive v1.0.228
+   Compiling tokio v1.53.1
+   Compiling cxx-build v1.0.138
+   Compiling zerofrom v0.1.8
+   Compiling cmake v0.1.58
+   Compiling aho-corasick v1.1.4
+   Compiling phf v0.13.1
+   Compiling rust_decimal v1.42.1
+   Compiling powerfmt v0.2.0
+   Compiling regex-syntax v0.8.11
+   Compiling percent-encoding v2.3.2
+   Compiling tower-service v0.3.3
+   Compiling deranged v0.3.11
+   Compiling serde v1.0.228
+   Compiling lbug v0.19.0
+   Compiling cxxbridge-macro v1.0.138
+   Compiling regex-automata v0.4.14
+   Compiling yoke v0.8.3
+   Compiling tendril v0.5.1
+   Compiling tree-sitter-javascript v0.25.0
+   Compiling tree-sitter-typescript v0.23.2
+   Compiling tree-sitter-rust v0.24.2
+   Compiling tree-sitter-go v0.25.0
+   Compiling tree-sitter-html v0.23.2
+   Compiling tree-sitter-fortran v0.6.0
+   Compiling tree-sitter-c v0.24.2
+   Compiling tree-sitter-python v0.25.0
+   Compiling tree-sitter-css v0.25.0
+   Compiling tree-sitter-cpp v0.23.4
+   Compiling futures-channel v0.3.32
+   Compiling arrayvec v0.7.6
+   Compiling cty v0.2.2
+   Compiling dtoa v1.0.11
+   Compiling crc-catalog v2.5.0
+   Compiling getrandom v0.3.4
+   Compiling foldhash v0.1.5
+   Compiling sync_wrapper v1.0.2
+   Compiling futures-task v0.3.32
+   Compiling httpdate v1.0.3
+   Compiling tower-layer v0.3.3
+   Compiling same-file v1.0.6
+   Compiling num-conv v0.1.0
+   Compiling time-core v0.1.2
+   Compiling slab v0.4.12
+   Compiling atomic-waker v1.1.2
+   Compiling time v0.3.36
+   Compiling walkdir v2.5.0
+   Compiling futures-util v0.3.32
+   Compiling dtoa-short v0.3.5
+   Compiling crc v3.4.0
+   Compiling hyper v1.11.0
+   Compiling zerovec v0.11.6
+   Compiling zerotrie v0.2.4
+warning: lbug@0.19.0: In file included from /private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/sources/lbug/src/ffi.rs.cc:1:
+warning: lbug@0.19.0: /private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/crate/lbug/include/lbug_rs.h:16:10: fatal error: 'lbug.h' file not found
+warning: lbug@0.19.0:    16 | #include <lbug.h>
+warning: lbug@0.19.0:       |          ^~~~~~~~
+warning: lbug@0.19.0: 1 error generated.
+error: failed to run custom build command for `lbug v0.19.0`
+
+Caused by:
+  process didn't exit successfully: `/private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-4ca07292dcf6cd27/build-script-build` (exit status: 1)
+  --- stdout
+  cargo:rustc-link-search=native=/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/.cache/lbug-prebuilt/latest/lib
+  cargo:rustc-link-arg=-Wl,-rpath,/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/.cache/lbug-prebuilt/latest/lib
+  cargo:rustc-env=LBUG_PRECOMPILED_SOURCE=external
+  cargo:rustc-env=LBUG_PRECOMPILED_LIBRARY_DIR=/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/.cache/lbug-prebuilt/latest/lib
+  cargo:rustc-link-arg=-rdynamic
+  cargo:rustc-link-lib=static:+whole-archive=lbug
+  cargo:rustc-link-lib=dylib=c++
+  cargo:rustc-link-search=native=/opt/homebrew/Cellar/openssl@3/3.6.2/lib
+  cargo:rustc-link-lib=dylib=ssl
+  cargo:rustc-link-lib=dylib=crypto
+  cargo:CXXBRIDGE_PREFIX=lbug
+  cargo:CXXBRIDGE_DIR0=/private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/include
+  cargo:CXXBRIDGE_DIR1=/private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/crate
+  cargo:rerun-if-env-changed=LBUG_SHARED
+  cargo:rerun-if-changed=include/lbug_rs.h
+  cargo:rerun-if-changed=src/lbug_rs.cpp
+  cargo:rerun-if-changed=src/ffi.rs
+  cargo:rerun-if-changed=src/lbug_rs.cpp
+  cargo:rerun-if-env-changed=CC_FORCE_DISABLE
+  CC_FORCE_DISABLE = None
+  cargo:rerun-if-env-changed=CXX_aarch64-apple-darwin
+  CXX_aarch64-apple-darwin = None
+  cargo:rerun-if-env-changed=CXX_aarch64_apple_darwin
+  CXX_aarch64_apple_darwin = None
+  cargo:rerun-if-env-changed=HOST_CXX
+  HOST_CXX = None
+  cargo:rerun-if-env-changed=CXX
+  CXX = None
+  cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+  cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+  CRATE_CC_NO_DEFAULTS = None
+  cargo:rerun-if-env-changed=MACOSX_DEPLOYMENT_TARGET
+  MACOSX_DEPLOYMENT_TARGET = None
+  cargo:rerun-if-env-changed=CXXFLAGS
+  CXXFLAGS = None
+  cargo:rerun-if-env-changed=HOST_CXXFLAGS
+  HOST_CXXFLAGS = None
+  cargo:rerun-if-env-changed=CXXFLAGS_aarch64_apple_darwin
+  CXXFLAGS_aarch64_apple_darwin = None
+  cargo:rerun-if-env-changed=CXXFLAGS_aarch64-apple-darwin
+  CXXFLAGS_aarch64-apple-darwin = None
+  cargo:warning=In file included from /private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/sources/lbug/src/ffi.rs.cc:1:
+  cargo:warning=/private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/crate/lbug/include/lbug_rs.h:16:10: fatal error: 'lbug.h' file not found
+  cargo:warning=   16 | #include <lbug.h>
+  cargo:warning=      |          ^~~~~~~~
+  cargo:warning=1 error generated.
+
+  --- stderr
+
+  CXX include path:
+    /private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/include
+    /private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/crate
+
+
+  error occurred in cc-rs: command did not execute successfully (status code exit status: 1): env -u IPHONEOS_DEPLOYMENT_TARGET LC_ALL="C" "c++" "-O0" "-ffunction-sections" "-fdata-sections" "-fPIC" "-g" "-gdwarf-2" "-fno-omit-frame-pointer" "--target=arm64-apple-macosx" "-mmacosx-version-min=26.5" "-I" "/private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/include" "-I" "/private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/crate" "-I" "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/include" "-I" "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/.cache/lbug-prebuilt/latest/include" "-Wall" "-Wextra" "-std=c++2a" "-DENABLE_RUNTIME_CHECKS=1" "-DLBUG_STATIC_DEFINE" "-o" "/private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/694e1b58ba026442-ffi.rs.o" "-c" "/private/tmp/codebasegraph-pr158-ci-fix/target/debug/build/lbug-abfee79798fc3738/out/cxxbridge/sources/lbug/src/ffi.rs.cc"
+
+
+warning: build failed, waiting for other jobs to finish...
+error: command `/Users/rabii/.rustup/toolchains/stable-aarch64-apple-darwin/bin/cargo test --no-run --message-format json-render-diagnostics --package k-wiki --package xtask --locked` exited with code 101

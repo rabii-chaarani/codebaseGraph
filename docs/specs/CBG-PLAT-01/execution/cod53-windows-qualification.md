@@ -42,6 +42,19 @@ The first installed full build timed out before a phase guardian READY, then ret
 
 Independent read-only [static fixture review](cod53-windows-qualification-evidence/probe-static-review.md) and [execution review](cod53-windows-qualification-evidence/execution-review.md) distinguish actual commands, checked cache/native bytes, supplied prerequisites and remaining acceptance gaps. They did not rerun the build or modify product source.
 
+## Historical helper archive — CI repair
+
+The original `reject-proxy.py` is retained as historical evidence in
+[historical-reject-proxy.tar.gz](cod53-windows-qualification-evidence/historical-reject-proxy.tar.gz),
+not maintained Python source. [archived-inputs.json](cod53-windows-qualification-evidence/archived-inputs.json)
+records the source commit, original member path, byte length and SHA-256 digests.
+The original [evidence index](cod53-windows-qualification-evidence/evidence-index.json),
+raw reports and recorded commands are unchanged. Its `reject-proxy.py` entry now
+resolves to that archived member with the same 1,311 bytes and digest.
+Verify both the archive and member before extracting into a separate historical
+checkout; do not extract Python files into this checkout. This archival repair
+adds no Windows qualification and does not change any verdict above.
+
 ## Still open; no aggregate closure
 
 - **A16 remains partial** while clear missing-runtime diagnostic evidence is incomplete. A successful prepared-environment path install, default/native tests and installed behavior do not erase its failure-condition limits. Registry publication was neither required nor performed for this unpublished candidate.
