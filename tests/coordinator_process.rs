@@ -195,7 +195,27 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
         std::thread::sleep(Duration::from_millis(25));
     }
 
+    let no_preexisting = std::collections::BTreeMap::new();
+    let (_kill_worker, _kill_writer, kill_owner_guards) = loop {
+        let attempt = (|| {
+            let (worker, writer) = quiescence_locks(&storage)?;
+            let (_, owner_guards) =
+                registered_work_is_terminal_at_quiescence_locked(&storage, &no_preexisting)?;
+            Ok::<_, String>((worker, writer, owner_guards))
+        })();
+        match attempt {
+            Ok(guards) => break guards,
+            Err(reason) => assert!(
+                Instant::now() < search_deadline,
+                "first coordinator could not reach terminal worker state before takeover: {reason}"
+            ),
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    };
     clients.kill_pid(first_pid);
+    drop(kill_owner_guards);
+    drop(_kill_writer);
+    drop(_kill_worker);
     let replacement =
         wait_for_coordinator(&coordinator_path, Some(first_pid), Duration::from_secs(5));
     let replacement_pid = replacement["pid"].as_u64().unwrap() as u32;
@@ -210,11 +230,7 @@ fn twenty_mcp_clients_share_one_coordinator_worker_and_take_over() {
     // directory and later misclassify its retained owner-loss evidence as new.
     let snapshot_deadline = Instant::now() + Duration::from_secs(30);
     let (_snapshot_worker, _snapshot_writer) = loop {
-        let locks = (|| {
-            let worker = observation_lock(&storage.join("worker.lock"))?;
-            let writer = observation_lock(&storage.join("writer.lock"))?;
-            Ok::<_, String>((worker, writer))
-        })();
+        let locks = quiescence_locks(&storage);
         match locks {
             Ok(locks) => break locks,
             Err(reason) => {
@@ -513,24 +529,66 @@ fn observation_lock(path: &Path) -> Result<fs::File, String> {
     Ok(file)
 }
 
+fn quiescence_locks(storage: &Path) -> Result<(fs::File, fs::File), String> {
+    let worker = observation_lock(&storage.join("worker.lock"))?;
+    let writer = observation_lock(&storage.join("writer.lock"))?;
+    Ok((worker, writer))
+}
+
+#[test]
+fn quiescence_observation_requires_and_holds_both_execution_leases() {
+    let storage = temp_repo();
+    let worker_path = storage.join("worker.lock");
+    let writer_path = storage.join("writer.lock");
+    fs::File::create(&worker_path).unwrap();
+    fs::File::create(&writer_path).unwrap();
+
+    let worker = observation_lock(&worker_path).unwrap();
+    assert!(quiescence_locks(&storage).is_err());
+    drop(worker);
+
+    let writer = observation_lock(&writer_path).unwrap();
+    assert!(quiescence_locks(&storage).is_err());
+    let worker = observation_lock(&worker_path).unwrap();
+    drop(worker);
+    drop(writer);
+
+    let held = quiescence_locks(&storage).unwrap();
+    assert!(observation_lock(&worker_path).is_err());
+    assert!(observation_lock(&writer_path).is_err());
+    drop(held);
+    let released = quiescence_locks(&storage).unwrap();
+    drop(released);
+    fs::remove_dir_all(storage).unwrap();
+}
+
 fn registered_work_is_terminal_at_quiescence(
     storage: &Path,
     preexisting: &std::collections::BTreeMap<PathBuf, (u64, u64)>,
 ) -> Result<Vec<PathBuf>, String> {
+    let (_worker, _writer) = quiescence_locks(storage)?;
+    let (retained_owner_loss, _owner_guards) =
+        registered_work_is_terminal_at_quiescence_locked(storage, preexisting)?;
+    Ok(retained_owner_loss)
+}
+
+fn registered_work_is_terminal_at_quiescence_locked(
+    storage: &Path,
+    preexisting: &std::collections::BTreeMap<PathBuf, (u64, u64)>,
+) -> Result<(Vec<PathBuf>, Vec<fs::File>), String> {
     use sha2::{Digest, Sha256};
     let lock = observation_lock;
-    let _worker = lock(&storage.join("worker.lock"))?;
-    let _writer = lock(&storage.join("writer.lock"))?;
     if active_worker_pid(&storage.join("worker.json")).is_some() {
         return Err("actual worker execution state remains live".into());
     }
     let number = |bytes: &[u8]| u64::from_le_bytes(bytes.try_into().unwrap());
     let mut retained_owner_loss = Vec::new();
+    let mut owner_guards = Vec::new();
     for category in ["runs", "workers"] {
         let entries = fs::read_dir(storage.join(category)).map_err(|error| error.to_string())?;
         for entry in entries {
             let root = entry.map_err(|error| error.to_string())?.path();
-            let _owner = lock(&root.join("lease.lock"))?;
+            owner_guards.push(observation_lock(&root.join("lease.lock"))?);
             let read = |name: &str| fs::read(root.join(name)).map_err(|error| error.to_string());
             let scope = read(".workspace.binding")?;
             if scope.len() != 512
@@ -627,7 +685,7 @@ fn registered_work_is_terminal_at_quiescence(
             }
         }
     }
-    Ok(retained_owner_loss)
+    Ok((retained_owner_loss, owner_guards))
 }
 
 fn directory_count(path: &Path) -> usize {

@@ -1,0 +1,36 @@
+{
+  "work_id": "COD-109/GH-160",
+  "scryer_change": "chg-n2nnjh",
+  "original_head": "12fdbb28f7b44185b8de695694c02d734555caff",
+  "original_base": "c4e9767d8f3ec92c40dd2f809b8421b8f9c78742",
+  "failed_ci": {
+    "run": 40822202389,
+    "attempt": 1,
+    "job": 123277004101,
+    "artifact": 12876577537,
+    "source_sha": "bec2d8089f64efd7f3198a88d6a03830e973a5e3",
+    "head_and_merge_tree": "767a0292d8a91308d9d2d54db05e21fb24a60ca1",
+    "cli_sha256": "f1904c92f136081cad51ecac4864b30a3fff3e0906f14cba09cb0d339e5cc856"
+  },
+  "implementation_starting_head": "db35f8b8376f86c49a871f139dcf92f26fce24ed",
+  "implementation_starting_tree": "64109b33e96725b44c54f0a634d0351820139045",
+  "integrated_main": "5889ed09954a4a07efd2590dd1bd380ee77be06a",
+  "ready_proposal_sha256": "c46da1e8725d989a6b77e968faf9061b3c0a59adec13c4e13c3c379d134150f2",
+  "proposal_report_sha256": "a26086a0249eed306db3f7d7583103cae912085b3a69c2232ec00f57bab9403d",
+  "corrected_execution": "5/5 selected native macOS cases passed first execution/no retries; 22 other cases filtered",
+  "final_review": "pending",
+  "hosted_final_head_ci": "pending",
+  "merge": "pending",
+  "main_merge_sha_ci": "pending",
+  "implementation_source_sha256": {
+    "tests/coordinator_process.rs": "d3dd06523d1ebc4250820770bb99a3c03a664e99a2870d4c66edf9351a80657a"
+  },
+  "implementation_source_state": "source frozen; independently locally verified; final review and hosted CI pending",
+  "local_checks": {
+    "fmt": "passed",
+    "strict_workspace_all_targets_all_features_clippy": "passed, no warnings",
+    "cli_sha256": "cfa18cfce96d1f85b385e1c413d132eefe513b180955cda9d2f62eef49118edb",
+    "junit_sha256": "9b6424c26465df13c837cd2f1d42cc695308e467003b7709f4ea3f9f62d4c8fe",
+    "source_manifest_sha256": "3e8e702e298f4a2159d43d3d9e35576189f97deeea82ef1892f457214bdebdfd"
+  }
+}

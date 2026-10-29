@@ -1,0 +1,9 @@
+[profile.pr160-verifier]
+retries = 0
+test-threads = 1
+
+[profile.pr160-verifier.junit]
+path = "/tmp/codebasegraph-pr160/final-evidence/junit.xml"
+report-name = "COD-109 exact native macOS verification"
+store-success-output = true
+store-failure-output = true

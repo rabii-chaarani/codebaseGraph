@@ -1,0 +1,12 @@
+{
+  "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259113475860000-1-34320-1",
+  "build_id": "34320-1793259113475860000-1",
+  "result_sha256": "8252df227c41450d1e7b133373d7634d8d428932bd2ba30a8873394967d250e1",
+  "result_ok": true,
+  "active_generation": "34519-1793259114010563000-1",
+  "manifest": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/generations/gen-34519-1793259114010563000-1/manifest.json",
+  "manifest_sha256": "6eef357d638179bb0a86d6b73c9073104ed363acbeea43bae5247938911ac42a",
+  "src_lib_content_hash": "b6079da826011cf7c1035e0bc4857d598540fa2c9575204b5150acd2b4ab5cff",
+  "expected_edited_source_sha256": "b6079da826011cf7c1035e0bc4857d598540fa2c9575204b5150acd2b4ab5cff",
+  "matches_edited_generation": true
+}

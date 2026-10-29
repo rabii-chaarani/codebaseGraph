@@ -1,0 +1,28 @@
+{
+  "source_revision": "db35f8b8376f86c49a871f139dcf92f26fce24ed",
+  "source_tree": "64109b33e96725b44c54f0a634d0351820139045",
+  "frozen_test_sha256": "d3dd06523d1ebc4250820770bb99a3c03a664e99a2870d4c66edf9351a80657a",
+  "compiler_artifact": "/tmp/codebasegraph-pr160-target/native-tests/codebase-graph",
+  "cli": "/tmp/codebasegraph-pr160/final-evidence/captured-cli/codebase-graph",
+  "cli_sha256": "cfa18cfce96d1f85b385e1c413d132eefe513b180955cda9d2f62eef49118edb",
+  "profile": {
+    "opt_level": "3",
+    "debuginfo": 0,
+    "debug_assertions": true,
+    "overflow_checks": true,
+    "test": false
+  },
+  "tests": {
+    "coordinator_process": {
+      "executable": "/tmp/codebasegraph-pr160-target/native-tests/deps/coordinator_process-3d2749abeda181f6",
+      "sha256": "c2a0b6522abf07b3cf7b317302f93121efd456430c3e318319160eb101b85499",
+      "fresh": false
+    },
+    "refresh_recovery_process": {
+      "executable": "/tmp/codebasegraph-pr160-target/native-tests/deps/refresh_recovery_process-1a7ebcfdae4ff422",
+      "sha256": "8ff7e80961cb02603a79f235553e3f89e0812c206e82520a9d0eff69de3dfa12",
+      "fresh": false
+    }
+  },
+  "source_unchanged_after_build": true
+}

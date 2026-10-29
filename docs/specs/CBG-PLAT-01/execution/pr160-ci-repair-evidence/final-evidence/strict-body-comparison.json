@@ -1,0 +1,11 @@
+{
+  "equal_after_only_approved_guard_signature_changes": true,
+  "baseline_test_sha256": "4ffc40b55894159a45df943f5b924ea267e7781da6b4e20e036ebc05e358845a",
+  "final_test_sha256": "d3dd06523d1ebc4250820770bb99a3c03a664e99a2870d4c66edf9351a80657a",
+  "transformations": [
+    "return guard vector in signature/result",
+    "move global locks to wrapper/helper",
+    "collect existing per-root EX lock handles into returned vector"
+  ],
+  "all_control_validation_conditions_identical": true
+}

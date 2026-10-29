@@ -1,0 +1,61 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.12s
+────────────
+ Nextest run ID 5e9de0dd-43db-4d51-92c9-1e3258446e06 with nextest profile: pr160-verifier
+    Starting 5 tests across 2 binaries (22 tests skipped)
+        PASS [   0.013s] (1/5) codebase-graph::coordinator_process quiescence_observation_requires_and_holds_both_execution_leases
+        PASS [  46.000s] (2/5) codebase-graph::coordinator_process twenty_mcp_clients_share_one_coordinator_worker_and_take_over
+        SLOW [> 60.000s] (───) codebase-graph::refresh_recovery_process lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit
+        PASS [ 103.343s] (3/5) codebase-graph::refresh_recovery_process lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit
+        SLOW [> 60.000s] (───) codebase-graph::refresh_recovery_process lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery
+        PASS [  99.352s] (4/5) codebase-graph::refresh_recovery_process lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery
+        SLOW [> 60.000s] (───) codebase-graph::refresh_recovery_process lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven
+        PASS [ 105.239s] (5/5) codebase-graph::refresh_recovery_process lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven
+────────────
+     Summary [ 353.952s] 5 tests run: 5 passed (3 slow), 22 skipped
+        PASS [   0.013s] (1/5) codebase-graph::coordinator_process quiescence_observation_requires_and_holds_both_execution_leases
+  stdout ───
+
+    running 1 test
+    test quiescence_observation_requires_and_holds_both_execution_leases ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+
+        PASS [  46.000s] (2/5) codebase-graph::coordinator_process twenty_mcp_clients_share_one_coordinator_worker_and_take_over
+  stdout ───
+
+    running 1 test
+    test twenty_mcp_clients_share_one_coordinator_worker_and_take_over ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 45.99s
+
+  stderr ───
+    resource_gate stdio_follower_p95=12402688 coordinator_idle=18579456 coordinator_build_growth=933888 worker_peak=162807808
+
+        SLOW [ 103.343s] (3/5) codebase-graph::refresh_recovery_process lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit
+  stdout ───
+
+    running 1 test
+    test lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 103.33s
+
+
+        SLOW [  99.352s] (4/5) codebase-graph::refresh_recovery_process lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery
+  stdout ───
+
+    running 1 test
+    test lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 99.34s
+
+
+        SLOW [ 105.239s] (5/5) codebase-graph::refresh_recovery_process lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven
+  stdout ───
+
+    running 1 test
+    test lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven ... ok
+
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 105.23s
+
+

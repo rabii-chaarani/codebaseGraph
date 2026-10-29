@@ -1,0 +1,299 @@
+{
+  "observed_at": "2026-10-29T07:33:41.601045+00:00",
+  "repo": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0",
+  "control_snapshot_passive": true,
+  "locks": {
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/worker.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/writer.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259113475860000-1-34320-1/lease.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259142815723000-1-34671-1/lease.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259128309966000-0-34671-0/lease.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259098364069000-0-34320-0/lease.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34675-1793259128697690000-0/lease.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34519-1793259113851647000-0/lease.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34828-1793259143155672000-0/lease.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34352-1793259098760879000-0/lease.lock": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259113475860000-1-34320-1/.lifecycle-2ffa343c6af73be3593561cc33400bf55446d91646790f8ab438fb83c5df6c65/lease": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259142815723000-1-34671-1/.lifecycle-ddba7ce29ce62d8677d03bf0db1e9f47f5ed93c4c1a135276f3908393bb67dd2/lease": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259128309966000-0-34671-0/.lifecycle-72e6e56cd5d3b5937b3baddef75cfabc7295a3ab6ce46d85027c732545484b18/lease": "exclusive observation acquired (existing inode; noncreating)",
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259098364069000-0-34320-0/.lifecycle-f73c6585e0262e577ca9617c694f70b0cc4a9a5e4b63f16fcdd98e06bf88f0a8/lease": "exclusive observation acquired (existing inode; noncreating)"
+  },
+  "roots": {
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259113475860000-1-34320-1": {
+      "selector_sequence": 0,
+      "intent_sequence": 0,
+      "intent_digest_valid": false,
+      "intent_pending": false,
+      "active_slot": 0,
+      "control_magic": "CGWCTL01",
+      "phase": 0,
+      "closure": 0,
+      "control_sequence_equal": true,
+      "control_identity_equal": true,
+      "slot_digest_valid": true,
+      "selector_digest_valid": true,
+      "binding_digest_valid": true,
+      "physical_identity": {
+        "dev": 16777232,
+        "ino": 76470104
+      },
+      "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259113475860000-1-34320-1",
+      "digests": {
+        ".workspace.binding": "44fe1b9426e1512c1770015796dd61c4db8a841c27c90df498a0e5326accaba3",
+        ".publication.selector": "addaf3d06f5d2bd9ba89ed0e460f25c95e0b0ba9d146d6c537f292548449439c",
+        ".publication.data0": "243d4cc0c44520924c65ad336c5f687565fad30c2e0e7127393cd4ddf47fe382",
+        ".publication.data1": "395d41614714eafc1c5bdd21620473e03c49e06013a2dedce2f9a7fbfaa34ef2",
+        "intent_bytes": "db62eb79fead0e2f498a377689d6e458d4c04afa34bdc2fca835be40e9e65c53"
+      },
+      "receipts": [
+        {
+          "path": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259113475860000-1-34320-1/.lifecycle-2ffa343c6af73be3593561cc33400bf55446d91646790f8ab438fb83c5df6c65/receipt.json",
+          "sha256": "38c6fc584a03a7d1094ba46173ddc22978c20ad50c68952582a2ac3182fb1ac9",
+          "public_fields": {
+            "success": false,
+            "code": null,
+            "signal": null,
+            "cancelled": true,
+            "containment_empty": false,
+            "supervision_error": "containment_unknown: killpg for owned worker 34519: Operation not permitted (os error 1)"
+          }
+        }
+      ]
+    },
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259142815723000-1-34671-1": {
+      "selector_sequence": 1,
+      "intent_sequence": 1,
+      "intent_digest_valid": true,
+      "intent_pending": false,
+      "active_slot": 1,
+      "control_magic": "CGWCTL01",
+      "phase": 4,
+      "closure": 1,
+      "control_sequence_equal": true,
+      "control_identity_equal": true,
+      "slot_digest_valid": true,
+      "selector_digest_valid": true,
+      "binding_digest_valid": true,
+      "physical_identity": {
+        "dev": 16777232,
+        "ino": 76472400
+      },
+      "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259142815723000-1-34671-1",
+      "digests": {
+        ".workspace.binding": "981f8121325eb877385ca93021a272d98194539ad1824cff7603962d103f03d7",
+        ".publication.selector": "0032eff679ee0447fd885b130ffe2d41ac50a87c506bd08974388fa568a0e5b7",
+        ".publication.data0": "99d80c0823f2e3325a4cb365abb3817277c36178968a1924ae2a46856ded1a1f",
+        ".publication.data1": "36e8bfc51c09c5eea2031d8b1ad73a95dbafdc4b27c42fb50da54badab16d39c",
+        "intent_bytes": "ccc1597623064f34ac0437e295a08d1a205c9f8bde4416d7d23ff02b603a596a"
+      },
+      "receipts": [
+        {
+          "path": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259142815723000-1-34671-1/.lifecycle-ddba7ce29ce62d8677d03bf0db1e9f47f5ed93c4c1a135276f3908393bb67dd2/receipt.json",
+          "sha256": "2eb3e48c1adef12492b3403efb60a671fe7d03aafa8cce7e6637aca16f38ec80",
+          "public_fields": {
+            "success": true,
+            "code": 0,
+            "signal": null,
+            "cancelled": false,
+            "containment_empty": true,
+            "supervision_error": null
+          }
+        }
+      ]
+    },
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259128309966000-0-34671-0": {
+      "selector_sequence": 1,
+      "intent_sequence": 1,
+      "intent_digest_valid": true,
+      "intent_pending": false,
+      "active_slot": 1,
+      "control_magic": "CGWCTL01",
+      "phase": 4,
+      "closure": 1,
+      "control_sequence_equal": true,
+      "control_identity_equal": true,
+      "slot_digest_valid": true,
+      "selector_digest_valid": true,
+      "binding_digest_valid": true,
+      "physical_identity": {
+        "dev": 16777232,
+        "ino": 76471243
+      },
+      "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259128309966000-0-34671-0",
+      "digests": {
+        ".workspace.binding": "ce91862009bd234c5e7b2195b544317f5a0041972e53f651e43df656683ad8fd",
+        ".publication.selector": "5b95032bf44f71a77022200a1560bd700f403e54b7d4ec295ca3c894ebc6cae7",
+        ".publication.data0": "151f8ca4bd1f4c697a515aec561b89af4992159b61ec0a0c62604cb77af966bc",
+        ".publication.data1": "0009fe72ff6b85b9074b1d0d28afb06b3972aa953c767473b4950f8473274499",
+        "intent_bytes": "add3a6263b601059a70c69882a199d1b849f387a04d685140808fd2b065baa06"
+      },
+      "receipts": [
+        {
+          "path": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34671-1793259128309966000-0-34671-0/.lifecycle-72e6e56cd5d3b5937b3baddef75cfabc7295a3ab6ce46d85027c732545484b18/receipt.json",
+          "sha256": "50f0e8f31cffbc65b79088c7e9d194d257e688765858cb6feae7548e70869107",
+          "public_fields": {
+            "success": true,
+            "code": 0,
+            "signal": null,
+            "cancelled": false,
+            "containment_empty": true,
+            "supervision_error": null
+          }
+        }
+      ]
+    },
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259098364069000-0-34320-0": {
+      "selector_sequence": 1,
+      "intent_sequence": 1,
+      "intent_digest_valid": true,
+      "intent_pending": false,
+      "active_slot": 1,
+      "control_magic": "CGWCTL01",
+      "phase": 4,
+      "closure": 1,
+      "control_sequence_equal": true,
+      "control_identity_equal": true,
+      "slot_digest_valid": true,
+      "selector_digest_valid": true,
+      "binding_digest_valid": true,
+      "physical_identity": {
+        "dev": 16777232,
+        "ino": 76468930
+      },
+      "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259098364069000-0-34320-0",
+      "digests": {
+        ".workspace.binding": "3cd8ad98bc003a742512202e3320212861e495d0efd087abfa498b243595b95a",
+        ".publication.selector": "3355092115c83da0e7faf368b291771dff344cc6703a00fe61c715371fd6333e",
+        ".publication.data0": "6680a136a5e35a904a65ec9936b00358621a9e2eed0da895e27b0e2413298d30",
+        ".publication.data1": "42df2ba3672e06700cec30fc10b9b50f6fca9518b60d351da7962cb6469b5770",
+        "intent_bytes": "72446d039c2fb60f1e207ef789fa29e91a0c442446eddc7df90c43b0fa82e563"
+      },
+      "receipts": [
+        {
+          "path": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/workers/worker-34320-1793259098364069000-0-34320-0/.lifecycle-f73c6585e0262e577ca9617c694f70b0cc4a9a5e4b63f16fcdd98e06bf88f0a8/receipt.json",
+          "sha256": "aa9598e87bfc88669b7a4748ddcf448c8b4aef91154ddbca35dc9bf5357963fd",
+          "public_fields": {
+            "success": true,
+            "code": 0,
+            "signal": null,
+            "cancelled": false,
+            "containment_empty": true,
+            "supervision_error": null
+          }
+        }
+      ]
+    },
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34675-1793259128697690000-0": {
+      "selector_sequence": 12,
+      "intent_sequence": 12,
+      "intent_digest_valid": true,
+      "intent_pending": false,
+      "active_slot": 0,
+      "control_magic": "CGWCTL01",
+      "phase": 4,
+      "closure": 1,
+      "control_sequence_equal": true,
+      "control_identity_equal": true,
+      "slot_digest_valid": true,
+      "selector_digest_valid": true,
+      "binding_digest_valid": true,
+      "physical_identity": {
+        "dev": 16777232,
+        "ino": 76471278
+      },
+      "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34675-1793259128697690000-0",
+      "digests": {
+        ".workspace.binding": "cdeb5cf1f599da76af3aa37ddec2e027d4b5b4367bbef04e1063aa5ef2519083",
+        ".publication.selector": "f325f8ff6a178b1e349fa152fa788a2cc1de1068d0ebc606cbffaae6366b72a3",
+        ".publication.data0": "fe376608fcb595cabb50f4ba9c3a075404716ca09db14f7fcf32ad7178abeff0",
+        ".publication.data1": "be1a74fbde0fb463aacd3f4f0fb13100831a0d617b8aad37aa070b40abf91477",
+        "intent_bytes": "c4a14b428c424f529463a57aa2a60f4f5ddc1cfe48963441796bf2bf438211a3"
+      },
+      "receipts": []
+    },
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34519-1793259113851647000-0": {
+      "selector_sequence": 12,
+      "intent_sequence": 12,
+      "intent_digest_valid": true,
+      "intent_pending": false,
+      "active_slot": 0,
+      "control_magic": "CGWCTL01",
+      "phase": 4,
+      "closure": 1,
+      "control_sequence_equal": true,
+      "control_identity_equal": true,
+      "slot_digest_valid": true,
+      "selector_digest_valid": true,
+      "binding_digest_valid": true,
+      "physical_identity": {
+        "dev": 16777232,
+        "ino": 76470141
+      },
+      "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34519-1793259113851647000-0",
+      "digests": {
+        ".workspace.binding": "d158407d4fe84977d9e10d53c47260405fbabc207e89764decac63399215ba57",
+        ".publication.selector": "28aea9133931d78109bfb60d0135af9fb0842913fe25b550ebab55eb32252cf8",
+        ".publication.data0": "40144705e88610e587c01fc4e299e95afa1519ae6d45c260f74c9d9d20fdc1d7",
+        ".publication.data1": "8718e35a4e88255f24a6d44d966137a8aaef052d7bfbc78920db0b2d3dc9b70e",
+        "intent_bytes": "a1df8582e8361d01f2b62b542a9f7a06182368e834ebeb1f3a61553d7f1988e0"
+      },
+      "receipts": []
+    },
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34828-1793259143155672000-0": {
+      "selector_sequence": 7,
+      "intent_sequence": 7,
+      "intent_digest_valid": true,
+      "intent_pending": false,
+      "active_slot": 1,
+      "control_magic": "CGWCTL01",
+      "phase": 4,
+      "closure": 2,
+      "control_sequence_equal": true,
+      "control_identity_equal": true,
+      "slot_digest_valid": true,
+      "selector_digest_valid": true,
+      "binding_digest_valid": true,
+      "physical_identity": {
+        "dev": 16777232,
+        "ino": 76472435
+      },
+      "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34828-1793259143155672000-0",
+      "digests": {
+        ".workspace.binding": "c158ed2f71e70ef3f0da8fe056e02999e02a25e601d8962553268d5a575ca967",
+        ".publication.selector": "41ba1703e311cc461b31beb25f77afa5c5990682b7a3d1c81cb0f6061fd686fb",
+        ".publication.data0": "92befa41e5028b311c6055f968a2a255679d040256467c7446cb0a1d2634796b",
+        ".publication.data1": "f2bafde732214944e4802bc4acdd58851a2113f0feeb0e4d5fd828de6c52e542",
+        "intent_bytes": "20e3eda9edf2314a50c7fbfc4fa34bd71210f9ad68bf0dcc78d5041f4c3695d9"
+      },
+      "receipts": []
+    },
+    "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34352-1793259098760879000-0": {
+      "selector_sequence": 12,
+      "intent_sequence": 12,
+      "intent_digest_valid": true,
+      "intent_pending": false,
+      "active_slot": 0,
+      "control_magic": "CGWCTL01",
+      "phase": 4,
+      "closure": 1,
+      "control_sequence_equal": true,
+      "control_identity_equal": true,
+      "slot_digest_valid": true,
+      "selector_digest_valid": true,
+      "binding_digest_valid": true,
+      "physical_identity": {
+        "dev": 16777232,
+        "ino": 76468968
+      },
+      "root": "/private/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/codebase_graph_coordinator_process_34319_0/.codebaseGraph/storage/runs/run-34352-1793259098760879000-0",
+      "digests": {
+        ".workspace.binding": "2c7ab7fec5f5fc802bfcf4518e47251370e4b6c2430e5058db652cffe97ec518",
+        ".publication.selector": "145b127649e163c9a55f17ea353f7fbf15ce6cc935411f6e10e53a82a8d98101",
+        ".publication.data0": "23b9d4e171c51702bf954e9d2700f4a6c11b346f8776fc998f15ef7aa4ab9380",
+        ".publication.data1": "a4241eafabe1eb88d7772ce5222fc9439291b59a72401edfd031082c9e547ce7",
+        "intent_bytes": "81760e09f4559f2b6375263bdbaaf74932790760d40514f41bb39436278890b2"
+      },
+      "receipts": []
+    }
+  }
+}

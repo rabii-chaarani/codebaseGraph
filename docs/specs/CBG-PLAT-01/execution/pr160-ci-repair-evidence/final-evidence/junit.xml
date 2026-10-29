@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="COD-109 exact native macOS verification" tests="5" failures="0" errors="0" uuid="5e9de0dd-43db-4d51-92c9-1e3258446e06" timestamp="2026-10-29T18:42:37.327+09:30" time="353.952">
+    <testsuite name="codebase-graph::coordinator_process" tests="2" disabled="0" errors="0" failures="0">
+        <testcase name="quiescence_observation_requires_and_holds_both_execution_leases" classname="codebase-graph::coordinator_process" timestamp="2026-10-29T18:42:37.327+09:30" time="0.013">
+            <system-out>
+running 1 test
+test quiescence_observation_requires_and_holds_both_execution_leases ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="twenty_mcp_clients_share_one_coordinator_worker_and_take_over" classname="codebase-graph::coordinator_process" timestamp="2026-10-29T18:42:37.341+09:30" time="46.000">
+            <system-out>
+running 1 test
+test twenty_mcp_clients_share_one_coordinator_worker_and_take_over ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 45.99s
+
+</system-out>
+            <system-err>resource_gate stdio_follower_p95=12402688 coordinator_idle=18579456 coordinator_build_growth=933888 worker_peak=162807808
+</system-err>
+        </testcase>
+    </testsuite>
+    <testsuite name="codebase-graph::refresh_recovery_process" tests="3" disabled="0" errors="0" failures="0">
+        <testcase name="lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit" classname="codebase-graph::refresh_recovery_process" timestamp="2026-10-29T18:43:23.341+09:30" time="103.343">
+            <system-out>
+running 1 test
+test lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 103.33s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery" classname="codebase-graph::refresh_recovery_process" timestamp="2026-10-29T18:45:06.685+09:30" time="99.352">
+            <system-out>
+running 1 test
+test lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 99.34s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven" classname="codebase-graph::refresh_recovery_process" timestamp="2026-10-29T18:46:46.039+09:30" time="105.239">
+            <system-out>
+running 1 test
+test lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 105.23s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

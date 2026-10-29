@@ -1,0 +1,73 @@
+{
+  "snapshot": "db35f8b8376f86c49a871f139dcf92f26fce24ed",
+  "main": "5889ed09954a4a07efd2590dd1bd380ee77be06a",
+  "frozen_test_sha256": "d3dd06523d1ebc4250820770bb99a3c03a664e99a2870d4c66edf9351a80657a",
+  "cli_sha256": "cfa18cfce96d1f85b385e1c413d132eefe513b180955cda9d2f62eef49118edb",
+  "native_tests": {
+    "exit_code": 0,
+    "wall_seconds": 355.28682279214263,
+    "reported_seconds": 353.952,
+    "run_id": "5e9de0dd-43db-4d51-92c9-1e3258446e06",
+    "cases": [
+      {
+        "name": "quiescence_observation_requires_and_holds_both_execution_leases",
+        "classname": "codebase-graph::coordinator_process",
+        "time": "0.013",
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "twenty_mcp_clients_share_one_coordinator_worker_and_take_over",
+        "classname": "codebase-graph::coordinator_process",
+        "time": "46.000",
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit",
+        "classname": "codebase-graph::refresh_recovery_process",
+        "time": "103.343",
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery",
+        "classname": "codebase-graph::refresh_recovery_process",
+        "time": "99.352",
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven",
+        "classname": "codebase-graph::refresh_recovery_process",
+        "time": "105.239",
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "no_retries": true,
+    "junit_sha256": "9b6424c26465df13c837cd2f1d42cc695308e467003b7709f4ea3f9f62d4c8fe"
+  },
+  "fmt": {
+    "exit_code": 0,
+    "wall_seconds": 1.8124895421788096
+  },
+  "clippy": {
+    "exit_code": 0,
+    "wall_seconds": 34.413741416996345,
+    "warnings_allowed": false
+  },
+  "source_unchanged_after_native_tests": true,
+  "captured_cli_unchanged_after_native_tests": true,
+  "configured_scryer_ingestion": "not done: configured model bound to different root checkout/fingerprints",
+  "source_unchanged_after_all_checks": true,
+  "captured_cli_unchanged_after_all_checks": true,
+  "captured_cli_sha256_after_all_checks": "cfa18cfce96d1f85b385e1c413d132eefe513b180955cda9d2f62eef49118edb",
+  "source_manifest_sha256": "3e8e702e298f4a2159d43d3d9e35576189f97deeea82ef1892f457214bdebdfd",
+  "commands_sha256": "81a3402fdd756786c91f5196dff60b55a72f03127d1003227db72622ddeb1066"
+}

@@ -1,0 +1,17 @@
+{
+  "source_revision": "12fdbb28f7b44185b8de695694c02d734555caff",
+  "source_tree": "767a0292d8a91308d9d2d54db05e21fb24a60ca1",
+  "compiler_artifact": "/tmp/codebasegraph-pr160-target/native-tests/codebase-graph",
+  "captured_cli": "/tmp/codebasegraph-pr160/baseline-evidence/captured-cli/codebase-graph",
+  "cli_sha256": "f2fc23004b4138f7ce56a1121c0caa113615f58d2c5ec16fd8bf67c0b3e5b0a1",
+  "coordinator_test_binary": "/tmp/codebasegraph-pr160-target/native-tests/deps/coordinator_process-0ab63c88e81094e5",
+  "coordinator_test_sha256": "e4ba189ca1bc8b14d9ebb62176294ca6396bb9d2498f39d65bcc05c95beaeacc",
+  "profile": {
+    "opt_level": "3",
+    "debuginfo": 0,
+    "debug_assertions": true,
+    "overflow_checks": true,
+    "test": false
+  },
+  "source_unchanged_after_build": true
+}

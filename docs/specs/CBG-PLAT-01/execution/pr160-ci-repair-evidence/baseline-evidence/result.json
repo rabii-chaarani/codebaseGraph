@@ -1,0 +1,17 @@
+{
+  "criterion": "coordinator owner closure and existing PR145-TREE-R2/R3/R4 compatibility",
+  "command": "env CARGO_TARGET_DIR=/tmp/codebasegraph-pr160-target CARGO_BIN_EXE_codebase-graph=/tmp/codebasegraph-pr160/baseline-evidence/captured-cli/codebase-graph cargo test --locked --profile native-tests -p codebase-graph --test coordinator_process twenty_mcp_clients_share_one_coordinator_worker_and_take_over -- --exact --nocapture",
+  "exit_code": 101,
+  "wall_seconds": 57.24936125008389,
+  "test_reported_seconds": 56.43,
+  "result": "failed",
+  "test": "twenty_mcp_clients_share_one_coordinator_worker_and_take_over",
+  "failure": "preexisting owner-loss containment unproven",
+  "ci_exact_pending_intent_reproduced": false,
+  "source_unchanged": true,
+  "captured_cli_unchanged": true,
+  "cli_sha256": "f2fc23004b4138f7ce56a1121c0caa113615f58d2c5ec16fd8bf67c0b3e5b0a1",
+  "test_sha256": "e4ba189ca1bc8b14d9ebb62176294ca6396bb9d2498f39d65bcc05c95beaeacc",
+  "environment": "macOS26.6.2 (25G83), arm64, rustc1.96.0, native-tests",
+  "source_revision": "12fdbb28f7b44185b8de695694c02d734555caff"
+}
