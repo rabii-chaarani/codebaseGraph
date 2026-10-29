@@ -1,0 +1,524 @@
+{
+  "schema_version": 1,
+  "issue": "COD-105",
+  "status": "authorized local checks passed; artifact/hosted/review/staging gates pending",
+  "created_at_utc": "2026-10-29T10:02:47.153659+00:00",
+  "verifier": {
+    "model": "openai-codex/gpt-6.1-sol",
+    "thinking_level": "max",
+    "exposure": "persisted model_change/thinking_level_change events independently read",
+    "session": "01a186e2-7e46-7149-81c0-32c3feb8d5b3",
+    "role": "Evidence Verifier"
+  },
+  "scope": {
+    "spec_path": "docs/specs/COD-103/spec.md",
+    "spec_revision": "0.2",
+    "approved_sha": "7e79f7e924536f29d3212e83899b01c38afd39de",
+    "approval_commit": "383a481bd5a71c58dab7dd796ace92a365760da5",
+    "approval_path": "docs/specs/COD-103/approvals/2026-10-29-combined.md",
+    "scryer_change": "chg-ahwwmf",
+    "requirements": [
+      "C103-R01",
+      "C103-R05 (first-PR prerequisite)"
+    ],
+    "acceptance": [
+      "C103-A01 (local portion)",
+      "C103-A05 (local stack policy portion)"
+    ],
+    "existing_claims": [
+      "resp-16",
+      "resp-17",
+      "resp-256",
+      "resp-15"
+    ]
+  },
+  "snapshot": {
+    "kind": "uncommitted implementation bound to initial base + three SHA256 file identities; not HEAD-only evidence",
+    "worktree": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+    "initial_head": "c8b8e7395c0a83bb8a2fe53a5add97df0d9cf617",
+    "head_after": "c8b8e7395c0a83bb8a2fe53a5add97df0d9cf617",
+    "product_baseline": "5889ed09954a4a07efd2590dd1bd380ee77be06a",
+    "before_hashes": {
+      "crates/xtask/src/main.rs": "652dbeb10cfbeabef04b61fa2429356be7155f70be90d05822ff0d278df985d4",
+      ".github/workflows/ci.yml": "98f659e98ad2060f503785390bc810b453a3eb23518b372e85122d2090f1fcda",
+      "docs/release.md": "88efe80f119558fdc3e913211c4ebdde11a131a9d5b349248cb1b5a4b8e0c5a3"
+    },
+    "after_hashes": {
+      "crates/xtask/src/main.rs": "652dbeb10cfbeabef04b61fa2429356be7155f70be90d05822ff0d278df985d4",
+      ".github/workflows/ci.yml": "98f659e98ad2060f503785390bc810b453a3eb23518b372e85122d2090f1fcda",
+      "docs/release.md": "88efe80f119558fdc3e913211c4ebdde11a131a9d5b349248cb1b5a4b8e0c5a3"
+    },
+    "matches_handoff_before_and_after": true,
+    "handoff_path": "/tmp/cod105-implementation-handoff.md",
+    "handoff_sha256": "1cfe23e93d62627da0d1f60516a079e5f8a138a01e4c990da5af607c62cf0154",
+    "tracked_file_comparison": {
+      "method": "read index v2 DIRC entries and compare Git blob SHA1 to working bytes in Python; no Git CLI or write",
+      "tracked_files": 858,
+      "before_modified_files": [
+        ".github/workflows/ci.yml",
+        "crates/xtask/src/main.rs",
+        "docs/release.md"
+      ],
+      "before_other_tracked_files_unchanged": true,
+      "diff_file": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/implementation.diff"
+    },
+    "protected_unchanged_sha256": {
+      "Cargo.toml": "c63dee160da25eaea8bb371823f71d13f1a2b449ecec8437087e425917f63dc7",
+      "Cargo.lock": "96e53dc75e1cc07aa0782db9ba0345ea21b4b4260aaeb3df7cfb3ad5b357e298",
+      "crates/xtask/Cargo.toml": "f78f07ba2b595b91305121b79613863c90b2c357d4a8f1306f2cbab19744b8ce",
+      "crates/k-wiki/Cargo.toml": "5a29946d625c5003ae04daa66627e69d38f123d7f998c3d07b403f4e128648e4",
+      "crates/xtask/src/native_tests.rs": "ada965856dbc889902c68a01c1e5fbe33c4a050dc84e915a5e07244162d7e5a4",
+      "crates/xtask/src/native_tests/shards.rs": "7420672dcfb926caf3e12c6483e3f0349e11ef11cb37a4d603811f43797c42f3",
+      ".github/workflows/native.yml": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+      ".github/workflows/release.yml": "56b4530d355685f13da6b690ca28c401f9e3211d7db76d387c63281524fcc2e2",
+      ".github/actions/verified-release/action.yml": "b69e532e353090199ff7c8c98e1c71dc1d060cf7207af00c10e65cd8e7ebd230",
+      ".cargo/config.toml": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82"
+    },
+    "protected_comparison_note": "Before scan found no tracked changes outside the3; after hashes independently match product-baseline/proposal-workspace files. No manifest/dependency/native-runner/workflow changes."
+  },
+  "environment": {
+    "host_os": "macOS",
+    "host_version": "26.6.2",
+    "host_architecture": "arm64",
+    "rust_host": "aarch64-apple-darwin",
+    "cargo_version": "cargo 1.96.0 (30a34c682 2026-05-25)",
+    "rustc_details": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: aarch64-apple-darwin\nrelease: 1.96.0\nLLVM version: 22.1.2",
+    "nextest_details": "cargo-nextest 0.9.140 (a9fef2964 2026-07-05)\nrelease: 0.9.140\ncommit-hash: a9fef2964e34f64ed4fceeee7c0c3559ce560920\ncommit-date: 2026-07-05\nhost: aarch64-apple-darwin",
+    "project_cargo_config": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n",
+    "cargo_config_effects": {
+      "RUST_TEST_THREADS": "1",
+      "HOME": "forced by project config to worktree-relative target/test-home"
+    },
+    "verifier_environment_overrides": {},
+    "nextest_user_config": "none",
+    "nextest_profile": "cod103",
+    "nextest_retries": 0,
+    "focused_cargo_profile": "native-tests",
+    "full_xtask_cargo_profile": "test (default)",
+    "sdk_path_readiness_observation": "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk; xcrun lookup exit0 in earlier preparation; not product compilation evidence",
+    "output_capture": "BashHandle combined stdout/stderr retained without filtering in per-command logs; no separate streams claimed"
+  },
+  "initial_successful_attempts_preserved": [
+    {
+      "label": "initial-tool-versions",
+      "commands": [
+        "cargo --version",
+        "rustc -Vv",
+        "cargo nextest --version"
+      ],
+      "exit_code": 0,
+      "duration_seconds": null,
+      "duration_note": "Bash durations initially captured in transient REPL records; not retained after kernel restore. Do not infer zero.",
+      "logs": [
+        "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/cargo-version.log",
+        "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/rustc-version.log",
+        "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest-version.log"
+      ]
+    },
+    {
+      "label": "initial-nextest-inventory",
+      "command": "cargo nextest list --locked -p xtask --bin xtask --cargo-profile native-tests --config-file /private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest.toml --user-config-file none --profile cod103 -E 'test(=tests::workflow_policy_rejects_unconditional_release_publication) | test(=tests::native_test_failure_cannot_authorize_artifact_production) | test(=tests::workflows_reject_removed_platform_targets) | test(=tests::windows_native_tests_forward_bundled_extensions) | test(=tests::native_capture_reuses_the_exact_test_profile_and_features) | test(=tests::native_capture_requires_unique_source_bound_normal_cli_artifact) | test(=tests::archive_contract_rejects_unexpected_entries) | test(=tests::complete_artifact_set_rejects_mixed_provenance) | test(=tests::mcp_smoke_accepts_valid_initialize_and_tools) | test(=tests::mcp_smoke_rejects_nonzero_child_with_success_payload) | test(=tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses) | test(=tests::workflow_policy_accepts_exact_cod103_stack_bases) | test(=tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace) | test(=tests::workflow_policy_rejects_privileged_pr_event) | test(=tests::workflow_policy_rejects_unapproved_pull_request_activity)'",
+      "exit_code": 0,
+      "duration_seconds": null,
+      "profile_compilation_seconds_reported_by_cargo": 6.47,
+      "log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest-inventory.log"
+    },
+    {
+      "label": "initial-nextest-focused",
+      "command": "cargo nextest run --locked -p xtask --bin xtask --cargo-profile native-tests --config-file /private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest.toml --user-config-file none --profile cod103 --no-tests fail -E 'test(=tests::workflow_policy_rejects_unconditional_release_publication) | test(=tests::native_test_failure_cannot_authorize_artifact_production) | test(=tests::workflows_reject_removed_platform_targets) | test(=tests::windows_native_tests_forward_bundled_extensions) | test(=tests::native_capture_reuses_the_exact_test_profile_and_features) | test(=tests::native_capture_requires_unique_source_bound_normal_cli_artifact) | test(=tests::archive_contract_rejects_unexpected_entries) | test(=tests::complete_artifact_set_rejects_mixed_provenance) | test(=tests::mcp_smoke_accepts_valid_initialize_and_tools) | test(=tests::mcp_smoke_rejects_nonzero_child_with_success_payload) | test(=tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses) | test(=tests::workflow_policy_accepts_exact_cod103_stack_bases) | test(=tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace) | test(=tests::workflow_policy_rejects_privileged_pr_event) | test(=tests::workflow_policy_rejects_unapproved_pull_request_activity)'",
+      "exit_code": 0,
+      "duration_seconds": null,
+      "tests": 15,
+      "passed": 15,
+      "filtered_out": 36,
+      "nextest_run_id": "59f7fe31-cc84-4d44-bcef-9b67c9acebf5",
+      "junit_suite_seconds": 0.019,
+      "junit_report": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/cod105-focused-initial.xml",
+      "log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest-focused.log"
+    },
+    {
+      "label": "initial-full-xtask",
+      "command": "cargo test --locked -p xtask",
+      "exit_code": 0,
+      "duration_seconds": null,
+      "tests": 51,
+      "passed": 51,
+      "failed": 0,
+      "ignored": 0,
+      "libtest_seconds": 4.53,
+      "log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/full-xtask.log"
+    }
+  ],
+  "recorded_serial_commands": [
+    {
+      "label": "cargo-version-final",
+      "command": "cargo --version",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T09:59:59.190545+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1459,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.06392916711047292,
+      "ended_at_utc": "2026-10-29T09:59:59.254882+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/cargo-version-final.log",
+      "output_sha256": "b6ef6807dd96d18b833474ad68e7a23a29e562a29c67afa71a59fb9a73df0068",
+      "warnings": []
+    },
+    {
+      "label": "rustc-version-final",
+      "command": "rustc -Vv",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T09:59:59.255183+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1464,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.02100599999539554,
+      "ended_at_utc": "2026-10-29T09:59:59.276470+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/rustc-version-final.log",
+      "output_sha256": "aea7c77c2b0d24444d07240e4d785e4ba73b6c9e786748af2ddc22bbf4c104bf",
+      "warnings": []
+    },
+    {
+      "label": "nextest-version-final",
+      "command": "cargo nextest --version",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T09:59:59.276706+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1469,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.03442695806734264,
+      "ended_at_utc": "2026-10-29T09:59:59.311426+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest-version-final.log",
+      "output_sha256": "6308c0cdee31234d945b3b2cbf7d56d9db80153d1015df1d3ccff75eaca8d498",
+      "warnings": []
+    },
+    {
+      "label": "nextest-inventory-final",
+      "command": "cargo nextest list --locked -p xtask --bin xtask --cargo-profile native-tests --config-file /private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest.toml --user-config-file none --profile cod103 -E 'test(=tests::workflow_policy_rejects_unconditional_release_publication) | test(=tests::native_test_failure_cannot_authorize_artifact_production) | test(=tests::workflows_reject_removed_platform_targets) | test(=tests::windows_native_tests_forward_bundled_extensions) | test(=tests::native_capture_reuses_the_exact_test_profile_and_features) | test(=tests::native_capture_requires_unique_source_bound_normal_cli_artifact) | test(=tests::archive_contract_rejects_unexpected_entries) | test(=tests::complete_artifact_set_rejects_mixed_provenance) | test(=tests::mcp_smoke_accepts_valid_initialize_and_tools) | test(=tests::mcp_smoke_rejects_nonzero_child_with_success_payload) | test(=tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses) | test(=tests::workflow_policy_accepts_exact_cod103_stack_bases) | test(=tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace) | test(=tests::workflow_policy_rejects_privileged_pr_event) | test(=tests::workflow_policy_rejects_unapproved_pull_request_activity)'",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T09:59:59.311634+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1474,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.2264438329730183,
+      "ended_at_utc": "2026-10-29T09:59:59.538388+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest-inventory-final.log",
+      "output_sha256": "19228e0226b6221539f87db671cf78d88b8274c23ee4d77a510d8117dc224fe1",
+      "warnings": []
+    },
+    {
+      "label": "nextest-focused-final",
+      "command": "cargo nextest run --locked -p xtask --bin xtask --cargo-profile native-tests --config-file /private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest.toml --user-config-file none --profile cod103 --no-tests fail -E 'test(=tests::workflow_policy_rejects_unconditional_release_publication) | test(=tests::native_test_failure_cannot_authorize_artifact_production) | test(=tests::workflows_reject_removed_platform_targets) | test(=tests::windows_native_tests_forward_bundled_extensions) | test(=tests::native_capture_reuses_the_exact_test_profile_and_features) | test(=tests::native_capture_requires_unique_source_bound_normal_cli_artifact) | test(=tests::archive_contract_rejects_unexpected_entries) | test(=tests::complete_artifact_set_rejects_mixed_provenance) | test(=tests::mcp_smoke_accepts_valid_initialize_and_tools) | test(=tests::mcp_smoke_rejects_nonzero_child_with_success_payload) | test(=tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses) | test(=tests::workflow_policy_accepts_exact_cod103_stack_bases) | test(=tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace) | test(=tests::workflow_policy_rejects_privileged_pr_event) | test(=tests::workflow_policy_rejects_unapproved_pull_request_activity)'",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T09:59:59.538605+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1485,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.15187649987637997,
+      "ended_at_utc": "2026-10-29T09:59:59.690780+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/nextest-focused-final.log",
+      "output_sha256": "ea4634cccc229bbce543722867b4ddd4656d6161d0c17716b581162cbed9ee08",
+      "warnings": []
+    },
+    {
+      "label": "full-xtask-final",
+      "command": "cargo test --locked -p xtask",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T09:59:59.691107+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1511,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 5.342033124994487,
+      "ended_at_utc": "2026-10-29T10:00:05.033572+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/full-xtask-final.log",
+      "output_sha256": "763a9179422d50f44d6a0270437a1aaf4728d221054138b09bb962bffbcc82d4",
+      "warnings": []
+    },
+    {
+      "label": "fmt-all-check",
+      "command": "cargo fmt --all --check",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T10:00:05.033872+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1951,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.9490370419807732,
+      "ended_at_utc": "2026-10-29T10:00:05.983172+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/fmt-all-check.log",
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "warnings": []
+    },
+    {
+      "label": "strict-xtask-clippy",
+      "command": "cargo clippy --locked -p xtask --all-targets -- -D warnings",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T10:00:05.983474+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1958,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.0966853341087699,
+      "ended_at_utc": "2026-10-29T10:00:06.080470+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/strict-xtask-clippy.log",
+      "output_sha256": "99f71393b9903dca098310bb446022a4bdee195ea9996f351a787195555210a6",
+      "warnings": []
+    },
+    {
+      "label": "check-workflows",
+      "command": "cargo run --locked -p xtask -- check-workflows",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T10:00:06.080793+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1967,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.5244485421571881,
+      "ended_at_utc": "2026-10-29T10:00:06.606085+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/check-workflows.log",
+      "output_sha256": "ab99258fa32d96f12c9c8fc7af40c3c44029cc1405a7b09f40779b16c2fdd747",
+      "warnings": []
+    },
+    {
+      "label": "release-gate",
+      "command": "cargo run --locked -p xtask -- release-gate",
+      "cwd": "/private/tmp/codebasegraph-cod103-cod105-20261029",
+      "started_at_utc": "2026-10-29T10:00:06.606655+00:00",
+      "environment_overrides": {},
+      "output_streams": "BashHandle combined stdout/stderr",
+      "pid": 1986,
+      "status": "completed",
+      "exit_code": 0,
+      "duration_seconds": 0.323200749931857,
+      "ended_at_utc": "2026-10-29T10:00:06.930601+00:00",
+      "output_log": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/release-gate.log",
+      "output_sha256": "459c074511a1f98a6a1db6ffa5ae3514591d32f3f4ee9b7259085f435d5d9dc4",
+      "warnings": []
+    }
+  ],
+  "execution_summary": {
+    "all_final_exit_codes": 0,
+    "focused_named_tests": 15,
+    "focused_passed": 15,
+    "focused_failed": 0,
+    "focused_errors": 0,
+    "focused_other_suite_tests_filtered_out": 36,
+    "new_named_tests": 7,
+    "baseline_named_tests": 8,
+    "full_xtask_tests": 51,
+    "full_xtask_passed": 51,
+    "full_xtask_failed": 0,
+    "full_xtask_ignored": 0,
+    "warnings_observed": [],
+    "repetition_note": "Original selected/full runs already passed. Kernel restore lost in-memory wrapper durations; repeated small selected/full runs were already completed before parent clarified repetition was unnecessary. Both attempts/logs/XML preserved; no further repeat."
+  },
+  "new_test_names": [
+    "tests::mcp_smoke_accepts_valid_initialize_and_tools",
+    "tests::mcp_smoke_rejects_nonzero_child_with_success_payload",
+    "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+    "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+    "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+    "tests::workflow_policy_rejects_privileged_pr_event",
+    "tests::workflow_policy_rejects_unapproved_pull_request_activity"
+  ],
+  "selected_test_names": [
+    "tests::workflow_policy_rejects_unconditional_release_publication",
+    "tests::native_test_failure_cannot_authorize_artifact_production",
+    "tests::workflows_reject_removed_platform_targets",
+    "tests::windows_native_tests_forward_bundled_extensions",
+    "tests::native_capture_reuses_the_exact_test_profile_and_features",
+    "tests::native_capture_requires_unique_source_bound_normal_cli_artifact",
+    "tests::archive_contract_rejects_unexpected_entries",
+    "tests::complete_artifact_set_rejects_mixed_provenance",
+    "tests::mcp_smoke_accepts_valid_initialize_and_tools",
+    "tests::mcp_smoke_rejects_nonzero_child_with_success_payload",
+    "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+    "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+    "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+    "tests::workflow_policy_rejects_privileged_pr_event",
+    "tests::workflow_policy_rejects_unapproved_pull_request_activity"
+  ],
+  "grouped_subcases": {
+    "mcp_negative_test": "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+    "mcp_negative_labels": [
+      "zero-status JSON-RPC error",
+      "missing initialize",
+      "missing tools response",
+      "malformed JSON",
+      "non-object protocol data",
+      "wrong response ID",
+      "duplicate response ID",
+      "description-only decoy"
+    ],
+    "policy_namespace_test": "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+    "policy_namespace_cases": [
+      {
+        "event": "pull_request",
+        "branches": [
+          "cod103-stack/cod-108"
+        ]
+      },
+      {
+        "event": "pull_request",
+        "branches": [
+          "*"
+        ]
+      },
+      {
+        "event": "push",
+        "branches": [
+          "cod103-stack/cod-105"
+        ]
+      },
+      {
+        "event": "push",
+        "branches": [
+          "*"
+        ]
+      }
+    ],
+    "note": "Subcases are assertions inside named tests, not separate JUnit case counts."
+  },
+  "junit": {
+    "path": "/private/tmp/cod105-evidence/c8b8e739-652dbeb10cfb/cod105-focused.xml",
+    "sha256": "580f693dafbc418d493990064b0b29da9e59564cc0168a580b2b1e61395f856b",
+    "run_id": "21e6c57d-70ac-419c-add4-449a1e5153fd",
+    "timestamp_reported_by_runner": "2026-10-29T19:29:59.667+09:30",
+    "suite_seconds": 0.019,
+    "testcase_count": 15,
+    "failures": 0,
+    "errors": 0,
+    "testcases": [
+      {
+        "name": "tests::mcp_smoke_rejects_nonzero_child_with_success_payload",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.008,
+        "status": "passed"
+      },
+      {
+        "name": "tests::native_capture_requires_unique_source_bound_normal_cli_artifact",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.009,
+        "status": "passed"
+      },
+      {
+        "name": "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.009,
+        "status": "passed"
+      },
+      {
+        "name": "tests::native_capture_reuses_the_exact_test_profile_and_features",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.009,
+        "status": "passed"
+      },
+      {
+        "name": "tests::mcp_smoke_accepts_valid_initialize_and_tools",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.009,
+        "status": "passed"
+      },
+      {
+        "name": "tests::windows_native_tests_forward_bundled_extensions",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.01,
+        "status": "passed"
+      },
+      {
+        "name": "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.011,
+        "status": "passed"
+      },
+      {
+        "name": "tests::native_test_failure_cannot_authorize_artifact_production",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.011,
+        "status": "passed"
+      },
+      {
+        "name": "tests::archive_contract_rejects_unexpected_entries",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.011,
+        "status": "passed"
+      },
+      {
+        "name": "tests::complete_artifact_set_rejects_mixed_provenance",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.015,
+        "status": "passed"
+      },
+      {
+        "name": "tests::workflow_policy_rejects_unapproved_pull_request_activity",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.007,
+        "status": "passed"
+      },
+      {
+        "name": "tests::workflow_policy_rejects_privileged_pr_event",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.007,
+        "status": "passed"
+      },
+      {
+        "name": "tests::workflows_reject_removed_platform_targets",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.008,
+        "status": "passed"
+      },
+      {
+        "name": "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.008,
+        "status": "passed"
+      },
+      {
+        "name": "tests::workflow_policy_rejects_unconditional_release_publication",
+        "classname": "xtask::bin/xtask",
+        "time_seconds": 0.009,
+        "status": "passed"
+      }
+    ],
+    "ingested": false,
+    "ingestion_note": "No model write permission; authorized owner later attaches genuine matching tests and ingests actual report. No verdict/fold claimed."
+  },
+  "local_oracles": [
+    {
+      "criterion": "C103-A01 local parser portion",
+      "evidence": "Real validator Output fixtures passed including zero-success, unconditional nonzero rejection, grouped8 negative protocol cases; source confirms smoke uses same validator and both-pipe collection/reap path.",
+      "not_proven": "Real packaged process startup, artifacts/native execution or every possible protocol/process error branch."
+    },
+    {
+      "criterion": "C103-A05 local first-PR policy portion",
+      "evidence": "Actual YAML policy acceptance for exact5 PR bases/four activities; rejects unknown/wildcard PR base, stack/wildcard push namespace, privileged pull_request_target and unapproved activity. Baseline policy/native/CLI/artifact regressions pass.",
+      "not_proven": "Hosted trigger scheduling, required context freshness/job behavior, actual child-base proof or strict server merge enforcement."
+    }
+  ],
+  "limitations": [
+    "No product/native artifact build or smoke on either platform. C103-A01 not fully qualified.",
+    "No full workspace product/native tests/Clippy/package/advisory job execution; authorized full xtask/source checks only.",
+    "No hosted main-base PR CI or later actual COD-106 child-base full-CI/stable-required proof; PR-01 staging/full qualification not passed here.",
+    "No independent final review or confirmed-fix verification claimed.",
+    "No Git/commit/PR/main merge/release/publish/hosted dispatch/model/Linear/wiki/settings/dependency/install/source fixes.",
+    "No Scryer test attachment/JUnit ingestion/verdict/closure.",
+    "No Windows native or Windows11 desktop evidence; non-bypass actor and A09 are later owner gates, not local blockers.",
+    "Three files remain uncommitted at exact supplied hashes; future edit invalidates affected evidence."
+  ],
+  "reusable_knowledge_assessment": "No new memory warranted for transient per-snapshot execution; authoritative reports/approved contracts retained."
+}

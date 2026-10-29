@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "issue": "COD-105",
+  "source_base": "5889ed09954a4a07efd2590dd1bd380ee77be06a",
+  "tested_initial_head": "c8b8e7395c0a83bb8a2fe53a5add97df0d9cf617",
+  "technical_commit": "d24245c0e364d55964473a91edb078b46a3c0a07",
+  "reviewed_tested_committed_sha256": {
+    "crates/xtask/src/main.rs": "652dbeb10cfbeabef04b61fa2429356be7155f70be90d05822ff0d278df985d4",
+    ".github/workflows/ci.yml": "98f659e98ad2060f503785390bc810b453a3eb23518b372e85122d2090f1fcda",
+    "docs/release.md": "88efe80f119558fdc3e913211c4ebdde11a131a9d5b349248cb1b5a4b8e0c5a3"
+  },
+  "proof": "Production compared each reviewed/tested working file SHA256 before commit and each exact committed Git blob after commit; byte-identical. Tests ran on initial HEAD plus these dirty files, not at evidence metadata commit.",
+  "fresh_implementation_session": {
+    "child_id": "sub-1ab0ef16",
+    "name": "implement-cod105",
+    "model": "openai-codex/gpt-6-luna",
+    "effort": "xhigh",
+    "exposure": "Engineer actual spawn confirmation"
+  },
+  "reviewer": {
+    "child_id": "sub-59591f89",
+    "session_id": "01a18718-9487-7152-8fa3-259b68adcfe0",
+    "model": "openai-codex/gpt-6.1-sol",
+    "effort": "max",
+    "exposure": "reviewer persisted events independently exposed"
+  },
+  "artifacts": {
+    "final-review.md": "0de14578c8e4ab2b0918e8cf8123948bff7457671bcd9ee23f91699c4a37e19b",
+    "implementation-handoff.md": "1cfe23e93d62627da0d1f60516a079e5f8a138a01e4c990da5af607c62cf0154",
+    "independent-evidence.json": "ee477599f13014bdc91047ba9d0b31c85f776bf21d7398b6bee1d19c4947dc6e",
+    "independent-evidence.md": "57e9326e5318005c68ad86e142332670254c496f10a4b403ab8de2d0c46ddd41",
+    "raw/cargo-version-final.log": "b6ef6807dd96d18b833474ad68e7a23a29e562a29c67afa71a59fb9a73df0068",
+    "raw/cargo-version.log": "b6ef6807dd96d18b833474ad68e7a23a29e562a29c67afa71a59fb9a73df0068",
+    "raw/check-workflows.log": "ab99258fa32d96f12c9c8fc7af40c3c44029cc1405a7b09f40779b16c2fdd747",
+    "raw/cod105-focused-initial.xml": "c8964beab13c376ddfa1fd5f1df21c8f91fb82aacc4bddea3fcb29ed7bfe9450",
+    "raw/cod105-focused.xml": "580f693dafbc418d493990064b0b29da9e59564cc0168a580b2b1e61395f856b",
+    "raw/command-records.json": "31cad01e6638a3a3eb03f8b90fd3b5953a63eae7a37a41d88e72be793bdf9df2",
+    "raw/fmt-all-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "raw/full-xtask-final.log": "763a9179422d50f44d6a0270437a1aaf4728d221054138b09bb962bffbcc82d4",
+    "raw/full-xtask.log": "e4b9b05222f94cc91f69a759272c50264e86cfc614ab1d2c8a481a7e11520f30",
+    "raw/implementation.diff": "95931accd59e6f31e2e491ae9a4b5bd69509590b739ed6c283230ec98cfbfe87",
+    "raw/nextest-focused-final.log": "ea4634cccc229bbce543722867b4ddd4656d6161d0c17716b581162cbed9ee08",
+    "raw/nextest-focused.log": "aeaef9d77e2f26abd64bf95151d2d5ee5dbc278a634887ffe4084fe7663a5f70",
+    "raw/nextest-inventory-final.log": "19228e0226b6221539f87db671cf78d88b8274c23ee4d77a510d8117dc224fe1",
+    "raw/nextest-inventory.log": "bfc6c27d8d363371c1984ae05944f8bfa307b8b37585be1c85f8bf0c296ad301",
+    "raw/nextest-version-final.log": "6308c0cdee31234d945b3b2cbf7d56d9db80153d1015df1d3ccff75eaca8d498",
+    "raw/nextest-version.log": "6308c0cdee31234d945b3b2cbf7d56d9db80153d1015df1d3ccff75eaca8d498",
+    "raw/nextest.toml": "e8787f4464c6b73fc4410dee62e79c7863755977ac49cdbd666ea58b1bd8ff90",
+    "raw/release-gate.log": "459c074511a1f98a6a1db6ffa5ae3514591d32f3f4ee9b7259085f435d5d9dc4",
+    "raw/rustc-version-final.log": "aea7c77c2b0d24444d07240e4d785e4ba73b6c9e786748af2ddc22bbf4c104bf",
+    "raw/rustc-version.log": "aea7c77c2b0d24444d07240e4d785e4ba73b6c9e786748af2ddc22bbf4c104bf",
+    "raw/selected-test-names.json": "40006b3ae6b91a1a8902bc1b29047002dead72d1c74f5624d3fc13a1c0aed044",
+    "raw/strict-xtask-clippy.log": "99f71393b9903dca098310bb446022a4bdee195ea9996f351a787195555210a6",
+    "scryer-evidence-binding.md": "0360496b4873a54bf19930ad06f08d866b4d1cdafe05768a39b163fef9fe9827"
+  },
+  "limits": [
+    "local evidence only; two target native artifacts and hosted full PR CI pending",
+    "first COD106 nonmain proof pending",
+    "Scryer fingerprint/worktree binding pending; no unsafe ingestion",
+    "no merge/release/Done authorization"
+  ]
+}
