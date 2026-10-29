@@ -1221,15 +1221,47 @@ fn check_workflow_policy(
     release: &YamlValue,
     issues: &mut Vec<String>,
 ) {
-    for event in ["pull_request", "push"] {
-        let branches = yaml_path(ci, &["on", event, "branches"])
-            .and_then(yaml_string_set)
-            .unwrap_or_default();
-        if branches != BTreeSet::from(["main".to_string()]) {
-            issues.push(format!(
-                "FAIL: workflow-trigger-invalid: CI {event} branches must contain only main."
-            ));
-        }
+    let pull_request_bases = BTreeSet::from([
+        "main",
+        "cod103-stack/cod-105",
+        "cod103-stack/cod-106",
+        "cod103-stack/cod-56",
+        "cod103-stack/cod-107",
+    ])
+    .into_iter()
+    .map(str::to_string)
+    .collect::<BTreeSet<_>>();
+    if !yaml_matches_string_set(
+        yaml_path(ci, &["on", "pull_request", "branches"]),
+        &pull_request_bases,
+    ) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI pull_request branches must contain exactly main and the four approved COD-103 stack bases.".to_string(),
+        );
+    }
+    let pull_request_types = BTreeSet::from(["opened", "synchronize", "reopened", "edited"])
+        .into_iter()
+        .map(str::to_string)
+        .collect();
+    if !yaml_matches_string_set(
+        yaml_path(ci, &["on", "pull_request", "types"]),
+        &pull_request_types,
+    ) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI pull_request activities must be opened, synchronize, reopened, and edited.".to_string(),
+        );
+    }
+    let ci_events = yaml_mapping_key_set(yaml_path(ci, &["on"])).unwrap_or_default();
+    if ci_events.contains("pull_request_target") {
+        issues.push(
+            "FAIL: workflow-privileged-pr-event: CI must not use pull_request_target.".to_string(),
+        );
+    }
+    let push_branches = BTreeSet::from(["main".to_string()]);
+    if !yaml_matches_string_set(yaml_path(ci, &["on", "push", "branches"]), &push_branches) {
+        issues.push(
+            "FAIL: workflow-trigger-invalid: CI push branches must contain only main.".to_string(),
+        );
     }
     if yaml_path(ci, &["jobs", "native", "uses"]).and_then(YamlValue::as_str)
         != Some("./.github/workflows/native.yml")
@@ -1681,6 +1713,22 @@ fn yaml_string_set(value: &YamlValue) -> Option<BTreeSet<String>> {
             .map(str::to_string)
             .collect()
     })
+}
+
+fn yaml_matches_string_set(value: Option<&YamlValue>, expected: &BTreeSet<String>) -> bool {
+    value.and_then(YamlValue::as_sequence).is_some_and(|items| {
+        items.len() == expected.len()
+            && items.iter().all(YamlValue::is_string)
+            && yaml_string_set(value.unwrap()) == Some(expected.clone())
+    })
+}
+
+fn yaml_mapping_key_set(value: Option<&YamlValue>) -> Option<BTreeSet<String>> {
+    value?
+        .as_mapping()?
+        .keys()
+        .map(|key| key.as_str().map(str::to_string))
+        .collect()
 }
 
 fn yaml_step_by_id<'a>(job: &'a YamlValue, id: &str) -> Option<&'a YamlValue> {
@@ -2327,8 +2375,10 @@ fn smoke_mcp_stdio(executable: &Path, repo_root: &Path, fixture: &Path) -> Resul
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| format!("failed to spawn MCP server: {error}"))?;
-    {
-        let mut stdin = child.stdin.take().ok_or("missing MCP stdin")?;
+    let write_result = (|| {
+        let mut stdin = child.stdin.take().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::BrokenPipe, "missing MCP stdin")
+        })?;
         let initialize = json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -2339,20 +2389,164 @@ fn smoke_mcp_stdio(executable: &Path, repo_root: &Path, fixture: &Path) -> Resul
                 "clientInfo": {"name": "xtask-smoke", "version": "0"}
             }
         });
-        writeln!(stdin, "{}", initialize).map_err(|error| error.to_string())?;
+        writeln!(stdin, "{initialize}")?;
         let tools = json!({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}});
-        writeln!(stdin, "{}", tools).map_err(|error| error.to_string())?;
+        writeln!(stdin, "{tools}")?;
+        Ok::<(), std::io::Error>(())
+    })();
+    if let Err(error) = write_result {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(format!("failed to write MCP smoke requests: {error}"));
     }
-    let mut output = String::new();
-    if let Some(mut stdout) = child.stdout.take() {
-        stdout.read_to_string(&mut output).ok();
+
+    let output = child
+        .wait_with_output()
+        .map_err(|error| format!("failed to collect MCP smoke output: {error}"))?;
+    validate_mcp_smoke_output(&output)
+}
+
+fn validate_mcp_smoke_output(output: &std::process::Output) -> Result<(), String> {
+    if !output.status.success() {
+        return Err(format!(
+            "MCP stdio smoke child exited with status {}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ));
     }
-    let status = child.wait().map_err(|error| error.to_string())?;
-    if !status.success() && output.is_empty() {
-        return Err(format!("MCP stdio smoke failed with status {status}"));
+    let stdout = std::str::from_utf8(&output.stdout).map_err(|error| {
+        format!(
+            "MCP stdio smoke stdout is not valid UTF-8: {error}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+    })?;
+    let mut seen_ids = Vec::new();
+    let mut initialize_result = None;
+    let mut tools_result = None;
+
+    for (index, line) in stdout.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+        let message: Value = serde_json::from_str(line).map_err(|error| {
+            format!(
+                "MCP stdio smoke received malformed JSON on stdout line {}: {error}; stdout: {stdout:?}; stderr: {}",
+                index + 1,
+                String::from_utf8_lossy(&output.stderr)
+            )
+        })?;
+        let Some(object) = message.as_object() else {
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a JSON-RPC object: {message}; stderr: {}",
+                index + 1,
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        };
+        if object.get("jsonrpc").and_then(Value::as_str) != Some("2.0") {
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a JSON-RPC 2.0 message: {message}",
+                index + 1
+            ));
+        }
+        let Some(id) = object.get("id") else {
+            let valid_params = object
+                .get("params")
+                .is_none_or(|params| params.is_object() || params.is_array());
+            if object
+                .get("method")
+                .and_then(Value::as_str)
+                .is_some_and(|method| !method.is_empty())
+                && valid_params
+                && !object.contains_key("error")
+                && !object.contains_key("result")
+            {
+                continue;
+            }
+            return Err(format!(
+                "MCP stdio smoke stdout line {} is not a valid JSON-RPC notification: {message}",
+                index + 1
+            ));
+        };
+        if object.contains_key("method") || object.contains_key("params") {
+            return Err(format!(
+                "MCP stdio smoke response {id} contains request fields: {message}"
+            ));
+        }
+        if !(id.is_number() || id.is_string()) {
+            return Err(format!(
+                "MCP stdio smoke response id is not a string or number: {id}"
+            ));
+        }
+        if id.as_i64() == Some(1) || id.as_i64() == Some(2) {
+            if seen_ids.iter().any(|seen| seen == id) {
+                return Err(format!(
+                    "MCP stdio smoke received duplicate response id {id}"
+                ));
+            }
+            seen_ids.push(id.clone());
+        }
+        if object.contains_key("error") {
+            return Err(format!(
+                "MCP stdio smoke response {id} contains an error: {message}"
+            ));
+        }
+        let Some(result) = object.get("result").and_then(Value::as_object) else {
+            return Err(format!(
+                "MCP stdio smoke response {id} has no object result: {message}"
+            ));
+        };
+        match id {
+            Value::Number(number) if number.as_i64() == Some(1) => {
+                if !result.get("protocolVersion").is_some_and(Value::is_string)
+                    || !result.get("capabilities").is_some_and(Value::is_object)
+                    || !result.get("serverInfo").is_some_and(Value::is_object)
+                {
+                    return Err(format!(
+                        "MCP initialize response is missing protocolVersion, capabilities, or serverInfo: {message}"
+                    ));
+                }
+                initialize_result = Some(());
+            }
+            Value::Number(number) if number.as_i64() == Some(2) => {
+                let has_graph_search =
+                    result
+                        .get("tools")
+                        .and_then(Value::as_array)
+                        .is_some_and(|tools| {
+                            tools.iter().any(|tool| {
+                                tool.as_object()
+                                    .and_then(|tool| tool.get("name"))
+                                    .and_then(Value::as_str)
+                                    == Some("graph_search")
+                            })
+                        });
+                if !has_graph_search {
+                    return Err(format!(
+                        "MCP tools/list response does not contain a graph_search tool: {message}"
+                    ));
+                }
+                tools_result = Some(());
+            }
+            _ => {
+                return Err(format!(
+                    "MCP stdio smoke received unexpected response id {id}: {message}"
+                ));
+            }
+        }
     }
-    if !output.contains("graph_search") {
-        return Err("MCP stdio smoke did not list graph_search".to_string());
+
+    if initialize_result.is_none() {
+        return Err(format!(
+            "MCP stdio smoke did not receive initialize response id 1; stdout: {stdout:?}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    if tools_result.is_none() {
+        return Err(format!(
+            "MCP stdio smoke did not receive tools/list response id 2; stdout: {stdout:?}; stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
     }
     Ok(())
 }
@@ -2572,6 +2766,81 @@ mod tests {
     use std::collections::BTreeSet;
     use std::fs;
     use std::path::Path;
+    use std::process::{ExitStatus, Output};
+
+    fn mcp_smoke_output(exit_code: i32, stdout: &str) -> Output {
+        #[cfg(unix)]
+        fn status(exit_code: i32) -> ExitStatus {
+            use std::os::unix::process::ExitStatusExt;
+            ExitStatus::from_raw(exit_code << 8)
+        }
+
+        #[cfg(windows)]
+        fn status(exit_code: i32) -> ExitStatus {
+            use std::os::windows::process::ExitStatusExt;
+            ExitStatus::from_raw(exit_code as u32)
+        }
+
+        Output {
+            status: status(exit_code),
+            stdout: stdout.as_bytes().to_vec(),
+            stderr: Vec::new(),
+        }
+    }
+
+    fn valid_mcp_smoke_stdout() -> String {
+        concat!(
+            r#"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{},"serverInfo":{"name":"codebase-graph","version":"4.0.3"}}}"#,
+            "\n",
+            r#"{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"graph_search","description":"Search graph"}]}}"#,
+        )
+        .to_string()
+    }
+
+    #[test]
+    fn mcp_smoke_accepts_valid_initialize_and_tools() {
+        assert!(
+            super::validate_mcp_smoke_output(&mcp_smoke_output(0, &valid_mcp_smoke_stdout()))
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn mcp_smoke_rejects_nonzero_child_with_success_payload() {
+        let error = super::validate_mcp_smoke_output(&mcp_smoke_output(
+            7,
+            &format!(
+                "{}\nMCP server stopped with an error",
+                valid_mcp_smoke_stdout()
+            ),
+        ))
+        .unwrap_err();
+        assert!(error.contains("status"));
+        assert!(error.contains("graph_search"));
+    }
+
+    #[test]
+    fn mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses() {
+        let valid = valid_mcp_smoke_stdout();
+        let initialize = valid.lines().next().unwrap();
+        let tools = valid.lines().nth(1).unwrap();
+        let cases = [
+            ("zero-status JSON-RPC error", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":2,\"error\":{{\"message\":\"graph_search failed\"}}}}")),
+            ("missing initialize", tools.to_string()),
+            ("missing tools response", initialize.to_string()),
+            ("malformed JSON", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",")),
+            ("non-object protocol data", format!("{initialize}\n[]\n{tools}")),
+            ("wrong response ID", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":3,\"result\":{{\"tools\":[{{\"name\":\"graph_search\"}}]}}}}")),
+            ("duplicate response ID", format!("{initialize}\n{initialize}\n{tools}")),
+            ("description-only decoy", format!("{initialize}\n{{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{{\"tools\":[{{\"name\":\"not_graph_search\",\"description\":\"graph_search\"}}]}}}}")),
+        ];
+        for (label, stdout) in cases {
+            assert!(
+                super::validate_mcp_smoke_output(&mcp_smoke_output(0, &stdout)).is_err(),
+                "accepted {label}"
+            );
+        }
+    }
 
     #[test]
     fn workflow_yaml_validation_rejects_unindented_heredoc_body() {
@@ -2894,6 +3163,17 @@ mod tests {
         include_str!("../../../.github/workflows/release.yml").to_string()
     }
 
+    fn workflow_policy_issues_for_ci(ci: &YamlValue) -> Vec<String> {
+        let mut issues = Vec::new();
+        check_workflow_policy(
+            ci,
+            &valid_native_workflow(),
+            &yaml_serde::from_str(&valid_release_workflow_text()).unwrap(),
+            &mut issues,
+        );
+        issues
+    }
+
     fn workflow_policy_issues(release_text: &str) -> Vec<String> {
         let release = yaml_serde::from_str(release_text).unwrap();
         let mut issues = Vec::new();
@@ -2904,6 +3184,57 @@ mod tests {
             &mut issues,
         );
         issues
+    }
+
+    #[test]
+    fn workflow_policy_accepts_exact_cod103_stack_bases() {
+        assert!(workflow_policy_issues_for_ci(&valid_ci_workflow()).is_empty());
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unknown_stack_base_and_push_namespace() {
+        for (event, branch) in [
+            ("pull_request", "cod103-stack/cod-108"),
+            ("pull_request", "*"),
+            ("push", "cod103-stack/cod-105"),
+            ("push", "*"),
+        ] {
+            let mut ci = valid_ci_workflow();
+            ci["on"][event]["branches"] = yaml_serde::from_str(&format!("- '{branch}'\n")).unwrap();
+            let issues = workflow_policy_issues_for_ci(&ci);
+            assert!(
+                issues
+                    .iter()
+                    .any(|issue| issue.contains("workflow-trigger-invalid")),
+                "accepted {event} branch {branch}: {issues:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn workflow_policy_rejects_privileged_pr_event() {
+        let mut ci = valid_ci_workflow();
+        ci["on"]["pull_request_target"] = yaml_serde::from_str("branches: [main]").unwrap();
+        let issues = workflow_policy_issues_for_ci(&ci);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("workflow-privileged-pr-event")),
+            "{issues:?}"
+        );
+    }
+
+    #[test]
+    fn workflow_policy_rejects_unapproved_pull_request_activity() {
+        let mut ci = valid_ci_workflow();
+        ci["on"]["pull_request"]["types"] = yaml_serde::from_str("[opened, labeled]").unwrap();
+        let issues = workflow_policy_issues_for_ci(&ci);
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.contains("workflow-trigger-invalid")),
+            "{issues:?}"
+        );
     }
 
     #[test]
