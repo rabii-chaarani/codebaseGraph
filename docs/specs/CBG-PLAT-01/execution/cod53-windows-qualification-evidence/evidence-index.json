@@ -1,6 +1,12 @@
 {
   "tested_source_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+  "raw_bytes_preserved_by": ".gitattributes (* -text)",
   "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 9,
+      "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+    },
     {
       "path": "cache-audit.json",
       "bytes": 1696,
