@@ -1,0 +1,15 @@
+rustc 1.96.0 (ac68faa20 2026-05-25)
+binary: rustc
+commit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96
+commit-date: 2026-05-25
+host: x86_64-pc-windows-msvc
+release: 1.96.0
+LLVM version: 22.1.2
+cargo 1.96.0 (30a34c682 2026-05-25)
+POWERSHELL=5.1.22621.7649
+{"Caption":"Microsoft Windows 11 Enterprise","Version":"10.0.22631","BuildNumber":"22631","OSArchitecture":"64-bit"}
+{"Path":"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\Hostx64\\x64\\cl.exe","FileVersion":"19.39.33523.0","ProductVersion":"14.39.33523.0"}
+{"Path":"C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin\\libssl-3-x64.dll","FileVersion":"3.3.2","ProductVersion":"3.3.2"}
+{"Path":"C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin\\libcrypto-3-x64.dll","FileVersion":"3.3.2","ProductVersion":"3.3.2"}
+{"Path":"C:\\Windows\\System32\\MSVCP140.dll","FileVersion":"14.50.35719.0","ProductVersion":"14.50.35719.0"}
+WINDOWS_SDK=10.0.22621.0

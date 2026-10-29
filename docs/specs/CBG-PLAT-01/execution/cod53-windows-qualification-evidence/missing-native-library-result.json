@@ -1,0 +1,11 @@
+{
+  "source_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+  "expected_negative_pass": true,
+  "exit_code": 101,
+  "error": "missing external lbug_shared.lib",
+  "configured_external_directory": "C:\\Users\\rcha0053\\pr158-qualification\\missing-native-library",
+  "directory_empty": true,
+  "no_installed_exe": true,
+  "log_sha256": "019ca3ae30d695dfa0fd2fbb2fa9db4d885823d9233a35cf93f054cf2bbe3358",
+  "scope": "explicit absent native import library supplied through declared LBUG external override; no source/compiler/runtime absence inferred"
+}

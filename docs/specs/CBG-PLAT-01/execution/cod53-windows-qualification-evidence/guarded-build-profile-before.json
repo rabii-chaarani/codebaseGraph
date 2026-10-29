@@ -1,0 +1,28 @@
+{
+  "repo": "C:\\Users\\rcha0053\\q158b",
+  "profile": "C:\\Users\\rcha0053\\q158bh",
+  "profile_empty_before": true,
+  "guard": {
+    "port": 55319,
+    "pid": 29812,
+    "at": "2026-10-29T01:10:46.188294+00:00",
+    "policy": "loopback only, always502, no forwarding code"
+  },
+  "environment": {
+    "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:55319",
+    "LADYBUG_HTTP_PROXY": "http://127.0.0.1:55319",
+    "LADYBUG_ALL_PROXY": "http://127.0.0.1:55319",
+    "HTTPS_PROXY": "http://127.0.0.1:55319",
+    "HTTP_PROXY": "http://127.0.0.1:55319",
+    "ALL_PROXY": "http://127.0.0.1:55319",
+    "LADYBUG_NO_PROXY": null,
+    "no_proxy": null,
+    "NO_PROXY": null,
+    "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+    "USERPROFILE": "C:\\Users\\rcha0053\\q158bh",
+    "HOME": "C:\\Users\\rcha0053\\q158bh"
+  },
+  "negative_log": "durable-guard-negative.log",
+  "proxy_requests_before": "{\"at\": \"2026-10-29T01:11:14.417133+00:00\", \"method\": \"CONNECT\", \"target\": \"extension.ladybugdb.com:443\", \"client\": [\"127.0.0.1\", 54277]}\n",
+  "started_at": "2026-10-29T01:11:14.551533+00:00"
+}

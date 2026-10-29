@@ -1,0 +1,31 @@
+{
+  "head_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+  "worktree": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+  "core_autocrlf": true,
+  "files": [
+    {
+      "path": "Cargo.toml",
+      "working_copy_sha256": "3d6d1f94a1dc5333d921ddf81785989585fefa7488d3c548c2796a0ac14a82f5",
+      "lf_normalized_sha256": "455a508cf5a3d4ac664af80133bafebe1c8b4c4f721d3ca3e52ab65f822b298e",
+      "size": 2400
+    },
+    {
+      "path": "Cargo.lock",
+      "working_copy_sha256": "872a1ae44699845609e9c585b3da8e701a31b037acb700707162239fb76ef5df",
+      "lf_normalized_sha256": "b99948cf1027f1609cbec7f7c43b796743ce4523550e95ce860cfe5dbd4d7d84",
+      "size": 54607
+    },
+    {
+      "path": "src/db_writer/extensions.rs",
+      "working_copy_sha256": "69abf1ca8854fc0d21dd5bfec00e08e54b19a0b339bd897bec31ec4dc45d0c2c",
+      "lf_normalized_sha256": "fdaad58193a79b94345a88237efe452938f643ee9c45b8c6e8548c36b760a69d",
+      "size": 5406
+    },
+    {
+      "path": "docs/release.md",
+      "working_copy_sha256": "8ae92bbb190e1b58a4c702fc5d230706072e2d64c0827215004a6c4f3acb9997",
+      "lf_normalized_sha256": "6343cbe12df65148254a057cd65572631d8f3b2c0a49029eaef5c696729740d9",
+      "size": 13453
+    }
+  ]
+}

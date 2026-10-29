@@ -1,0 +1,22 @@
+[
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0\\lbug.h",
+    "size": 79108,
+    "sha256": "3d5114d0863b3dab3b28bd2fec97a52e6cf669213739921a01814a5bbf5525eb"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0\\lbug.hpp",
+    "size": 342729,
+    "sha256": "daed54339332e19487ae7ae211c82c88b1f639275feb331ce8015aa1f1381495"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0\\lbug_shared.lib",
+    "size": 32417318,
+    "sha256": "28fe5a12b09aceb6c2d6ffa2b36b1f18e59f7b09183bbaecf5d567fe692f74d2"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0\\lbug_shared.dll",
+    "size": 20199424,
+    "sha256": "5b28bf744580c3a47aaeee7ece40a3511e2141268def5207e9beffe236c9b512"
+  }
+]

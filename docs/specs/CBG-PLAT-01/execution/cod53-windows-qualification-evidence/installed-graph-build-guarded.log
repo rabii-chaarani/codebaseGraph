@@ -1,0 +1,245 @@
+{
+  "active_generation": null,
+  "artifacts_rebuilt": 1,
+  "artifacts_reused": 0,
+  "cleanup_pending": false,
+  "connector_rows": 70,
+  "copy_calls": 55,
+  "copy_statements": [
+    "COPY `Class` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/class.json\";",
+    "COPY `File` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/file.json\";",
+    "COPY `Literal` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/literal.json\";",
+    "COPY `Method` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/method.json\";",
+    "COPY `Module` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/module.json\";",
+    "COPY `Parameter` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/parameter.json\";",
+    "COPY `Repository` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/repository.json\";",
+    "COPY `Scope` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/scope.json\";",
+    "COPY `SourceRoot` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/sourceroot.json\";",
+    "COPY `SyntaxCapture` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/syntaxcapture.json\";",
+    "COPY `Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/contains.json\";",
+    "COPY `Declares` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/declares.json\";",
+    "COPY `Defines` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/defines.json\";",
+    "COPY `DerivedFrom` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/derivedfrom.json\";",
+    "COPY `EvidencedBy` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/evidencedby.json\";",
+    "COPY `HasParameter` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/hasparameter.json\";",
+    "COPY `HasScope` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/hasscope.json\";",
+    "COPY `SyntaxChild` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/syntaxchild.json\";",
+    "COPY `FROM_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_contains__class__contains.csv\" (header=true, from=\"Class\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_contains__file__contains.csv\" (header=true, from=\"File\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_contains__method__contains.csv\" (header=true, from=\"Method\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_contains__module__contains.csv\" (header=true, from=\"Module\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_contains__repository__contains.csv\" (header=true, from=\"Repository\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_contains__scope__contains.csv\" (header=true, from=\"Scope\", to=\"Contains\");",
+    "COPY `FROM_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_contains__sourceroot__contains.csv\" (header=true, from=\"SourceRoot\", to=\"Contains\");",
+    "COPY `TO_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_contains__contains__class.csv\" (header=true, from=\"Contains\", to=\"Class\");",
+    "COPY `TO_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_contains__contains__file.csv\" (header=true, from=\"Contains\", to=\"File\");",
+    "COPY `TO_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_contains__contains__literal.csv\" (header=true, from=\"Contains\", to=\"Literal\");",
+    "COPY `TO_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_contains__contains__method.csv\" (header=true, from=\"Contains\", to=\"Method\");",
+    "COPY `TO_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_contains__contains__module.csv\" (header=true, from=\"Contains\", to=\"Module\");",
+    "COPY `TO_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_contains__contains__scope.csv\" (header=true, from=\"Contains\", to=\"Scope\");",
+    "COPY `TO_Contains` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_contains__contains__sourceroot.csv\" (header=true, from=\"Contains\", to=\"SourceRoot\");",
+    "COPY `FROM_Declares` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_declares__class__declares.csv\" (header=true, from=\"Class\", to=\"Declares\");",
+    "COPY `FROM_Declares` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_declares__module__declares.csv\" (header=true, from=\"Module\", to=\"Declares\");",
+    "COPY `TO_Declares` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_declares__declares__class.csv\" (header=true, from=\"Declares\", to=\"Class\");",
+    "COPY `TO_Declares` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_declares__declares__method.csv\" (header=true, from=\"Declares\", to=\"Method\");",
+    "COPY `FROM_Defines` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_defines__class__defines.csv\" (header=true, from=\"Class\", to=\"Defines\");",
+    "COPY `FROM_Defines` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_defines__module__defines.csv\" (header=true, from=\"Module\", to=\"Defines\");",
+    "COPY `TO_Defines` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_defines__defines__class.csv\" (header=true, from=\"Defines\", to=\"Class\");",
+    "COPY `TO_Defines` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_defines__defines__method.csv\" (header=true, from=\"Defines\", to=\"Method\");",
+    "COPY `FROM_DerivedFrom` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_derivedfrom__class__derivedfrom.csv\" (header=true, from=\"Class\", to=\"DerivedFrom\");",
+    "COPY `FROM_DerivedFrom` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_derivedfrom__literal__derivedfrom.csv\" (header=true, from=\"Literal\", to=\"DerivedFrom\");",
+    "COPY `FROM_DerivedFrom` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_derivedfrom__method__derivedfrom.csv\" (header=true, from=\"Method\", to=\"DerivedFrom\");",
+    "COPY `FROM_DerivedFrom` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_derivedfrom__parameter__derivedfrom.csv\" (header=true, from=\"Parameter\", to=\"DerivedFrom\");",
+    "COPY `TO_DerivedFrom` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_derivedfrom__derivedfrom__syntaxcapture.csv\" (header=true, from=\"DerivedFrom\", to=\"SyntaxCapture\");",
+    "COPY `FROM_EvidencedBy` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_evidencedby__file__evidencedby.csv\" (header=true, from=\"File\", to=\"EvidencedBy\");",
+    "COPY `TO_EvidencedBy` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_evidencedby__evidencedby__syntaxcapture.csv\" (header=true, from=\"EvidencedBy\", to=\"SyntaxCapture\");",
+    "COPY `FROM_HasParameter` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_hasparameter__method__hasparameter.csv\" (header=true, from=\"Method\", to=\"HasParameter\");",
+    "COPY `TO_HasParameter` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_hasparameter__hasparameter__parameter.csv\" (header=true, from=\"HasParameter\", to=\"Parameter\");",
+    "COPY `FROM_HasScope` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_hasscope__class__hasscope.csv\" (header=true, from=\"Class\", to=\"HasScope\");",
+    "COPY `FROM_HasScope` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_hasscope__method__hasscope.csv\" (header=true, from=\"Method\", to=\"HasScope\");",
+    "COPY `FROM_HasScope` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_hasscope__module__hasscope.csv\" (header=true, from=\"Module\", to=\"HasScope\");",
+    "COPY `TO_HasScope` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_hasscope__hasscope__scope.csv\" (header=true, from=\"HasScope\", to=\"Scope\");",
+    "COPY `FROM_SyntaxChild` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/from_syntaxchild__syntaxcapture__syntaxchild.csv\" (header=true, from=\"SyntaxCapture\", to=\"SyntaxChild\");",
+    "COPY `TO_SyntaxChild` FROM \"C:/Users/rcha0053/q158b/.codebaseGraph/direct-runs/run-3220-1793236279577452300-0/staging/to_syntaxchild__syntaxchild__syntaxcapture.csv\" (header=true, from=\"SyntaxChild\", to=\"SyntaxCapture\");"
+  ],
+  "database_written": true,
+  "diagnostics": [],
+  "diff": {
+    "added": [
+      "service.py"
+    ],
+    "deleted": [],
+    "force_rebuild": true,
+    "modified": [],
+    "unchanged": []
+  },
+  "edge_rows": 35,
+  "graph_build_digest": "d338a57cfa02f1d37ab54361e99c85bb0f6fffd11634b4868bf053be4a82e4e5",
+  "graph_summary": {
+    "edge_count": 35,
+    "node_count": 23
+  },
+  "maintenance": {
+    "bytes": {
+      "by_category": {
+        "active_cache": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "active_graph": {
+          "allocated_bytes": null,
+          "logical_bytes": 5907434
+        },
+        "artifact_temporary": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "coordination": {
+          "allocated_bytes": null,
+          "logical_bytes": 22101
+        },
+        "leased_generation": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "legacy_staging": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "live_run": {
+          "allocated_bytes": null,
+          "logical_bytes": 70923
+        },
+        "recovery_evidence": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "retired_direct": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        },
+        "unknown": {
+          "allocated_bytes": null,
+          "logical_bytes": null
+        }
+      },
+      "deferred": {
+        "allocated_bytes": null,
+        "logical_bytes": 70923
+      },
+      "potential_reclamation": {
+        "allocated_bytes": null,
+        "logical_bytes": null
+      },
+      "retained": {
+        "allocated_bytes": null,
+        "logical_bytes": 5929535
+      },
+      "total": {
+        "allocated_bytes": null,
+        "logical_bytes": null
+      },
+      "unknown": {
+        "allocated_bytes": null,
+        "logical_bytes": null
+      }
+    },
+    "errors": [],
+    "inventory_status": null,
+    "last_attempt": {
+      "attempted_entries": 19,
+      "continuation_phase": null,
+      "deleted_entries": 0,
+      "finished_at_unix_ms": 1793236429192,
+      "reclaimed_allocated_bytes": null,
+      "started_at_unix_ms": 1793236429066,
+      "status": "partial"
+    },
+    "measurement_complete": false,
+    "observation_age_ms": 65,
+    "observation_complete": false,
+    "observed_at_unix_ms": 1793236429128,
+    "pending": true,
+    "reasons": [
+      "maintenance_measurement_partial_lower_bounds",
+      "active_cache_references_incomplete",
+      "allocated_bytes_unavailable",
+      "unknown_entries_retained",
+      "reference_in_use",
+      "maintenance_observation_incomplete",
+      "maintenance_stopped"
+    ],
+    "requested": true,
+    "running": false
+  },
+  "materialized_entries": {
+    "service.py": {
+      "artifact_key": "33f0a515946e44077df6f827a06991bdd67f0d81fa48e1b9968ed8687aa1e5ca",
+      "content_hash": "778d750c2381edc466065d2a9e4d092207ed7c4e7a431820459e479741544b8d",
+      "edge_count": 35,
+      "language": "python",
+      "materialized_at": "unix:0",
+      "node_count": 23,
+      "partition_id": "567053110c31f6448b8e",
+      "path": "service.py"
+    }
+  },
+  "node_rows": 23,
+  "pending_runs": 0,
+  "phase_high_water_marks": {
+    "database_write": 162537472,
+    "parse": 181102,
+    "search_index": 3904,
+    "staging": 52160
+  },
+  "phase_timings": {
+    "database_write_seconds": 138.3828903,
+    "graph_build_seconds": 0.0003853,
+    "native_cli_seconds": 146.3364761,
+    "parse_seconds": 0.0271676,
+    "scan_seconds": 0.3431994,
+    "search_index_seconds": 0.0489318,
+    "staging_seconds": 7.329019300000001
+  },
+  "progress_events": [],
+  "rebuilt_entries": {
+    "service.py": {
+      "artifact_key": "33f0a515946e44077df6f827a06991bdd67f0d81fa48e1b9968ed8687aa1e5ca",
+      "content_hash": "778d750c2381edc466065d2a9e4d092207ed7c4e7a431820459e479741544b8d",
+      "edge_count": 35,
+      "language": "python",
+      "materialized_at": "unix:0",
+      "node_count": 23,
+      "partition_id": "567053110c31f6448b8e",
+      "path": "service.py"
+    }
+  },
+  "search_backend": {
+    "backend": "disk_bm25_v1",
+    "document_count": 18,
+    "files": {
+      "search.doc_lengths.bin": "c3c85b234908a3de7e853acb34a1d5e8f8d583f7eded1c1451d198ed6c2413d6",
+      "search.document_offsets.bin": "238cdb3ac0da749baf840a6be17ccb98074021b1397b7ef4e2739a58a3b1c47a",
+      "search.documents.bin": "45e417f1e556f3e638b002f9838c26c17de979e9ff1fc73fa059838f57952702",
+      "search.lexicon.bin": "5b25af9424eb71221462b881840d01c41cedc1cf2433500a332a1fa621d1fa84",
+      "search.meta.json": "497199b943c4a9f1da129d9e481af45f236b012d1c35421d4ff97bc64b6194e1",
+      "search.postings.bin": "bcc1ad7d503cee5ffe0ad6583e0386d1b46b1b834e25ef90d7400b1b017153fe"
+    },
+    "format_version": 1,
+    "term_count": 24,
+    "total_tokens": 93
+  },
+  "skipped": false,
+  "snapshots": {
+    "service.py": {
+      "absolute_path": "\\\\?\\C:\\Users\\rcha0053\\q158b\\.codebaseGraph\\direct-runs\\run-3220-1793236279577452300-0\\staging\\source-snapshots\\56\\567053110c31f6448b8e-778d750c2381edc466065d2a9e4d092207ed7c4e7a431820459e479741544b8d.snapshot",
+      "byte_len": 63,
+      "content_hash": "778d750c2381edc466065d2a9e4d092207ed7c4e7a431820459e479741544b8d",
+      "language": "python",
+      "path": "service.py"
+    }
+  },
+  "spill_bytes": 80455,
+  "storage_format": "direct"
+}
+NATIVE_EXIT_STATUS=0

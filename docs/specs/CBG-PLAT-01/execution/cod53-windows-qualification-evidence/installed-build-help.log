@@ -1,0 +1,26 @@
+codebase-graph build
+
+USAGE:
+  codebase-graph build [--source-root <path>|--repo-root <path>] [--db <path>] [--manifest <path>] [--mode full|changed] [--json]
+  codebase-graph build --native-request <path> [--manifest <path>] [--json]
+
+OPTIONS:
+  --source-root <path>      Repository or source root override; auto-detected when omitted
+  --repo-root <path>        Alias for --source-root
+  --db <path>               Ladybug database path; defaults under .codebaseGraph
+  --manifest <path>         Manifest path; defaults under .codebaseGraph
+  --mode <mode>             full or changed; defaults to changed
+  --no-git                  Disable Git file discovery and scan the filesystem
+  --git-diff                Materialize files from git diff plus untracked files
+  --git-base <rev>          Revision used by --git-diff; defaults to HEAD
+  --include <glob>          Include only paths matching the glob; repeatable
+  --exclude <glob>          Exclude paths matching the glob; repeatable
+  --parallel                Parse independent files concurrently; default behavior
+  --single-thread           Disable concurrent parsing and build partitions serially
+  --spill-chunk-mib <n>     External-sort chunk size; defaults to config or 32
+  --max-parallelism <n>     Worker count; defaults to config or 2
+  --progress                Include progress events in JSON output
+  --no-fts                  Skip FTS extension loading and index creation
+  --native-request <path>   JSON NativeSyntaxMaterializationRequest payload
+  --json                    Emit JSON output
+NATIVE_EXIT_STATUS=0

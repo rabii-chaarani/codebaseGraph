@@ -1,0 +1,38 @@
+Microsoft (R) COFF/PE Dumper Version 14.39.33523.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file C:\Users\rcha0053\pr158-qualification\ladybug-shared-0.19.0\lbug_shared.dll
+
+File Type: DLL
+
+  Image has the following dependencies:
+
+    libssl-3-x64.dll
+    libcrypto-3-x64.dll
+    KERNEL32.dll
+    MSVCP140.dll
+    WS2_32.dll
+    CRYPT32.dll
+    VCRUNTIME140.dll
+    VCRUNTIME140_1.dll
+    api-ms-win-crt-runtime-l1-1-0.dll
+    api-ms-win-crt-math-l1-1-0.dll
+    api-ms-win-crt-heap-l1-1-0.dll
+    api-ms-win-crt-locale-l1-1-0.dll
+    api-ms-win-crt-string-l1-1-0.dll
+    api-ms-win-crt-convert-l1-1-0.dll
+    api-ms-win-crt-time-l1-1-0.dll
+    api-ms-win-crt-stdio-l1-1-0.dll
+    api-ms-win-crt-environment-l1-1-0.dll
+    api-ms-win-crt-filesystem-l1-1-0.dll
+    api-ms-win-crt-utility-l1-1-0.dll
+
+  Summary
+
+       46000 .data
+       6A000 .pdata
+      89B000 .rdata
+        B000 .reloc
+        1000 .rsrc
+      9F7000 .text

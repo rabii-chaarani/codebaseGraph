@@ -1,0 +1,15 @@
+{
+  "before": [],
+  "fixture_exit": 0,
+  "proxy_requests": [
+    {
+      "at": "2026-10-28T11:46:30.323676+00:00",
+      "request": "CONNECT extension.ladybugdb.com:443 HTTP/1.1\r\nAccept: */*\r\nHost: extension.ladybugdb.com\r\nUser-Agent: cpp-httplib/0.14.2\r\n\r\n",
+      "peer": [
+        "127.0.0.1",
+        63660
+      ]
+    }
+  ],
+  "extension_payloads_after": []
+}
