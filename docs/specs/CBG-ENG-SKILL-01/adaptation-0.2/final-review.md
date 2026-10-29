@@ -1,6 +1,6 @@
 # Final review
 
-Fresh GPT-6.1 Sol/Max used `adversarial-review-engineer`, read-only. **No confirmed P0–P3 findings.** Reviewed baseline commit `e2fa0d956b70ba974dc5cd0b787285663ae5b4c6`, frozen spec/candidates at `b2eee244300244b71ad2af9a1f991f9a2fc58aba`, installed source and retained validation evidence.
+Fresh GPT-6.1 Sol/Max used `adversarial-review-engineer`, read-only. **No confirmed P0–P3 findings.** Reviewed snapshot `e2fa0d956b70ba974dc5cd0b787285663ae5b4c6`, frozen spec/candidates at `b2eee244300244b71ad2af9a1f991f9a2fc58aba`, installed source and retained validation evidence.
 
 Independent checks confirmed all eight installed hashes, unchanged lessons, original symlink, 146-line AGENTS and seven TOML roles. Existing user/AGENTS precedence makes the model map authoritative for role model/effort; delegated skills retain review procedure.
 
