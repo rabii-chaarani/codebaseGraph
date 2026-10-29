@@ -1,0 +1,21 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.03s
+────────────
+ Nextest run ID 59f7fe31-cc84-4d44-bcef-9b67c9acebf5 with nextest profile: cod103
+    Starting 15 tests across 1 binary (36 tests skipped)
+        PASS [   0.008s] ( 1/15) xtask::bin/xtask tests::windows_native_tests_forward_bundled_extensions
+        PASS [   0.009s] ( 2/15) xtask::bin/xtask tests::native_capture_reuses_the_exact_test_profile_and_features
+        PASS [   0.009s] ( 3/15) xtask::bin/xtask tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses
+        PASS [   0.010s] ( 4/15) xtask::bin/xtask tests::native_test_failure_cannot_authorize_artifact_production
+        PASS [   0.010s] ( 5/15) xtask::bin/xtask tests::workflow_policy_accepts_exact_cod103_stack_bases
+        PASS [   0.010s] ( 6/15) xtask::bin/xtask tests::native_capture_requires_unique_source_bound_normal_cli_artifact
+        PASS [   0.011s] ( 7/15) xtask::bin/xtask tests::mcp_smoke_accepts_valid_initialize_and_tools
+        PASS [   0.011s] ( 8/15) xtask::bin/xtask tests::mcp_smoke_rejects_nonzero_child_with_success_payload
+        PASS [   0.011s] ( 9/15) xtask::bin/xtask tests::archive_contract_rejects_unexpected_entries
+        PASS [   0.015s] (10/15) xtask::bin/xtask tests::complete_artifact_set_rejects_mixed_provenance
+        PASS [   0.007s] (11/15) xtask::bin/xtask tests::workflow_policy_rejects_unconditional_release_publication
+        PASS [   0.008s] (12/15) xtask::bin/xtask tests::workflow_policy_rejects_privileged_pr_event
+        PASS [   0.008s] (13/15) xtask::bin/xtask tests::workflow_policy_rejects_unapproved_pull_request_activity
+        PASS [   0.007s] (14/15) xtask::bin/xtask tests::workflows_reject_removed_platform_targets
+        PASS [   0.008s] (15/15) xtask::bin/xtask tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace
+────────────
+     Summary [   0.019s] 15 tests run: 15 passed, 36 skipped

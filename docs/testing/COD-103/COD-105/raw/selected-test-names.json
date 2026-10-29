@@ -1,0 +1,17 @@
+[
+  "tests::workflow_policy_rejects_unconditional_release_publication",
+  "tests::native_test_failure_cannot_authorize_artifact_production",
+  "tests::workflows_reject_removed_platform_targets",
+  "tests::windows_native_tests_forward_bundled_extensions",
+  "tests::native_capture_reuses_the_exact_test_profile_and_features",
+  "tests::native_capture_requires_unique_source_bound_normal_cli_artifact",
+  "tests::archive_contract_rejects_unexpected_entries",
+  "tests::complete_artifact_set_rejects_mixed_provenance",
+  "tests::mcp_smoke_accepts_valid_initialize_and_tools",
+  "tests::mcp_smoke_rejects_nonzero_child_with_success_payload",
+  "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+  "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+  "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+  "tests::workflow_policy_rejects_privileged_pr_event",
+  "tests::workflow_policy_rejects_unapproved_pull_request_activity"
+]
