@@ -1,6 +1,6 @@
 # COD-103 — proposed delivery index
 
-**Status:** proposed revision 0.1; independent proposal review and exact-scope user approval pending. No implementation, qualification, merge or release approval is recorded by this index.
+**Status:** proposed revision 0.2; independent proposal review and exact-scope user approval pending. No implementation, qualification, merge or release approval is recorded by this index.
 
 Requirements are in [spec.md](spec.md), contracts in [design.md](design.md), architectural intent in [architecture.md](architecture.md), and planned evidence in [verification.md](verification.md). Detailed execution briefs, exact writable files, prerequisites and tests belong only in Scryer. Preparation ledger: `chg-fdm24r`. Repository source base: `5889ed09954a4a07efd2590dd1bd380ee77be06a`.
 
@@ -22,9 +22,18 @@ COD-56 keeps [CBG-PLAT-01 revision 0.11 S05/R05/A09](https://github.com/rabii-ch
 
 ## Explicit stack-staging exception proposed for approval
 
-Normally actual merge/main-CI gates precede advancing a release queue. This bounded exception permits the next ordered issue to be staged as a **real PR on its reviewed and verified predecessor branch** after that predecessor's PR handoff, without merging it first. It does not permit simultaneous active issues, bypassing acceptance blockers, intermediate-branch merges or out-of-order main integration.
+Normally actual merge/main-CI gates precede advancing a release queue. This bounded exception permits the next ordered issue to be staged as a **real PR on its reviewed and verified predecessor branch** after that predecessor's applicable handoff (COD-105 has the staging-only handoff below), without merging it first. It does not permit simultaneous active issues, bypassing acceptance blockers, intermediate-branch merges or out-of-order main integration.
 
-The first COD-105 PR establishes the bounded stack-base trigger/policy/tests/docs prerequisite before any dependent PR opens. All stack staging remains full CI; no classifier is pulled forward. Only the five literal bases in [design.md](design.md) and its ordinary PR activities are admitted. Push/release stay main-only, with no privileged trigger, publication permission expansion or PR artifact retention. Base/head changes invalidate prior qualification and require a fresh event/current pair.
+The first COD-105 PR establishes the bounded stack-base trigger/policy/tests/docs prerequisite and the staging-only handoff below before COD-106 opens. All stack staging remains full CI; no classifier is pulled forward. Only the five literal bases in [design.md](design.md) and its ordinary PR activities are admitted. Push/release stay main-only, with no privileged trigger, publication permission expansion or PR artifact retention. Base/head changes invalidate prior qualification and require a fresh event/current pair.
+
+### First-child staging clarification (PR-01)
+
+1. **COD-105 staging-only handoff:** the foundation is implemented; applicable local and real-artifact checks, including C103-A01, full first main-base PR CI, independent final review and confirmed-fix verification pass at the exact staging snapshot. Engineer records this limited readiness and the still-pending C103-A05 hosted non-main-base proof. This is not Done, full stack qualification or integration approval.
+2. **Permission to open the first child:** COD-106 becomes the sole active implementation issue. Production may open its real PR against `cod103-stack/cod-105` to obtain the deferred proof. COD-105 is no longer an active implementation writer.
+3. **Deferred hosted proof:** Production obtains that first child's actual fresh non-main-base event. Evidence Verifier records its real full-CI/stable-`required` result, base/head/run/attempt identities and limits against C103-A05; Engineer links it to both COD-105 `chg-ahwwmf` and COD-106 `chg-9bqhd2`. If child CI reveals a foundation defect, pause COD-106 writes, return the fix to COD-105's owner, independently review it and rerun the child's fresh base/head pair. This first-child proof supplies the existing COD-105 brief's **later** hosted stack evidence; it does not require all later stack/retarget events before the first merge. Existing per-PR freshness and retarget checks remain mandatory at their actual stage.
+4. **Completion barrier:** missing, failed or stale deferred proof blocks full COD-105/stack qualification, COD-106 handoff to COD-56, **every actual main integration**, Done and release claims. Opening COD-106 under the limited handoff does not imply that proof passed or was waived. All original tests, acceptance IDs and subsequent serial-main/full-CI gates remain.
+
+This canonical qualification-stage rule interprets the immutable existing Scryer briefs' forward reference without rewriting or duplicating them. No later PR is needed before permission to open that PR. See [review resolution](reviews/resolution-r01.md); independent focused rereview and combined user approval remain pending.
 
 Actual integration stays **serial to main**. Retarget/transplant only the next accepted slice to current main, review that exact resulting diff and run fresh full PR CI. Use an independently verified authorized non-bypass merge actor under strict freshness. Require successful full main CI at each actual merge SHA before the next merge. COD-108's own PR remains full until its classifier is on protected main. Hosted lightweight rollout evidence follows merge/full main CI and must exist before the final release-PR merge.
 
@@ -40,4 +49,4 @@ Actual integration stays **serial to main**. Retarget/transplant only the next a
 
 ## Provenance and evidence status
 
-Compact index derived from Planner source SHA-256 `f376c2dca99d9cb80cacd2d0726a6597a13533dcae747bc470a3c6e20d66f81f`; Planner actual profile Sol/high. Detailed briefs were verified present through Scryer read-back; no brief contents are duplicated here. Source artifact hashes are preparation provenance, not approval. No behavioral tests/builds or qualification checks have executed for this proposal. Documentation reference/whitespace checks do not establish product acceptance.
+Compact index derived from Planner source SHA-256 `d75b0f94d64c1f9d2e0586d9df060ba427e35c8aa45d9185fa373bfdb0f37519`; Planner actual profile Sol/high. Detailed briefs were verified present through Scryer read-back; no brief contents are duplicated here. Source artifact hashes are preparation provenance, not approval. No behavioral tests/builds or qualification checks have executed for this proposal. Documentation reference/whitespace checks do not establish product acceptance.

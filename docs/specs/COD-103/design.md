@@ -1,7 +1,7 @@
 # COD-103 — bounded software design
 
 **Status:** proposed design for combined approval, not implementation authorization. 2026-10-29.
-**Governing requirements:** [spec.md](spec.md), revision 0.1, C103-R01–R06 / A01–A06, plus unchanged **CBG-PLAT-01 rev0.11 S05/R05/A09** at `8a410c7a22f5291f06a1cece5cd9e7c0be255e72`. Canonical new policy home is `docs/specs/COD-103/spec.md`; this report is a design input, not a second spec or execution-brief authority.
+**Governing requirements:** [spec.md](spec.md), revision 0.2, C103-R01–R06 / A01–A06, plus unchanged **CBG-PLAT-01 rev0.11 S05/R05/A09** at `8a410c7a22f5291f06a1cece5cd9e7c0be255e72`. Canonical new policy home is `docs/specs/COD-103/spec.md`; this report is a design input, not a second spec or execution-brief authority.
 **Architecture:** [architecture.md](architecture.md). Reuse Release Verifier / Release Gate. Keep `resp-15` on static workflow validation; GitHub orchestration is not a responsibility of `check_workflows`. No new topology. The two proposed component-level lightweight admission/full-fallback claims fit this design, pending approval; draft Scryer IDs are `chg-9xdkd4`, `resp-1rnbs9` and `resp-tddbkj` as recorded in architecture.md.
 
 ## 1. Role, baseline and limits
@@ -74,7 +74,7 @@ Tests use an isolated complete gate fixture, not mutations to the real checkout:
 
 ## 7. First PR prerequisite — literal stack CI (R05 / A05)
 
-Deliver stack-enabling CI/policy/tests/docs **with COD-105**, before opening the first dependent PR. It is an explicit prerequisite in that issue, not an extra backlog item or an unapproved broad trigger change.
+Deliver stack-enabling CI/policy/tests/docs **with COD-105**, before its staging-only handoff permits COD-106 to open. That limited handoff requires COD-105's applicable local/real-artifact checks, full main-base PR CI and independent final review/fix verification, not the first child event that cannot yet exist. The [delivery stage rule](delivery.md#first-child-staging-clarification-pr-01) assigns Production/Evidence Verifier/Engineer the subsequent first COD-106 non-main-base full-CI proof and blocks full qualification, further handoff and every main integration until it passes. Per-PR retarget checks still occur at their actual stage. This is an explicit prerequisite in COD-105, not an extra backlog item, waived acceptance or an unapproved broad trigger change.
 
 Proposed branch namespace and fixed literal chain:
 
