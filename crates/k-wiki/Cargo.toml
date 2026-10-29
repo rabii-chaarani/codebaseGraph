@@ -25,7 +25,7 @@ bundled-windows-extensions = ["codebase-graph/bundled-windows-extensions"]
 ammonia = "~4.1.8"
 axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
 codebase-graph = { version = "4.0.2", path = "../.." }
-pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+pulldown-cmark = { version = "0.13.5", default-features = false, features = ["html"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10.9"

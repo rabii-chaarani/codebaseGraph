@@ -1,0 +1,23 @@
+{
+  "subset-focused.junit.xml": {
+    "cases": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "4d1dec5d6e51c9a7a45fa5c2be3940800e35587a8c16240511d15bf579335643"
+  },
+  "subset-optout.junit.xml": {
+    "cases": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "ad43e4875ae1f383f6ac18962a43396d47a77809afb1e8ac0b9b63ce6baad86b"
+  },
+  "subset-xtask.junit.xml": {
+    "cases": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "29c08310d66e54d3aa91710b7544f51c3ce6ed662687f61f7753c5790f6770dc"
+  }
+}

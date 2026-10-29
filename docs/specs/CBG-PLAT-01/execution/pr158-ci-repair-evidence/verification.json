@@ -1,0 +1,179 @@
+{
+  "baseline_head": "5f68b41cebc327072cf71be770c9e5a9d1c0dad2",
+  "baseline_ci_run": 40798473142,
+  "baseline_ci_merge": "f49fbb5afe9e6c24ac410a65b61a646d72078aa2",
+  "pinned_main": "9f69a0bd4b468eaa8652d933d518fafb8c596b6a",
+  "reviewed_working_files": {
+    "Cargo.lock": {
+      "sha256": "0dad64ba6cbc462ff960c2c0ea645cb792013f5cadf2bad06723a05417ceb9a8",
+      "bytes": 52538
+    },
+    "crates/k-wiki/Cargo.toml": {
+      "sha256": "ae33600ffc67273b640969feb9cc0d9ad76128c02150034f2ba303cc432c811b",
+      "bytes": 1011
+    },
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification.md": {
+      "sha256": "e03319dd7611d19d43650ad3df0c5e8a78c28071c8ed9252683be0ee9a512736",
+      "bytes": 12438
+    },
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/archived-inputs.json": {
+      "sha256": "fed1f963d456b8634542f0f8c13649f9aa383c00d7dd2f7b034978de7bc5ac42",
+      "bytes": 1114
+    },
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/historical-reject-proxy.tar.gz": {
+      "sha256": "d37b3c86d978018d137375e7a30316b3ce779b2787df5037237032bdec892752",
+      "bytes": 998
+    }
+  },
+  "environment": {
+    "os": "macOS ARM64",
+    "cargo": "1.96.0",
+    "native_sdk": "Ladybug0.19.0",
+    "native_static_library_sha256": "a840ea7c538e67a8b9fc0d58495b5226dc9c0a5f2f144ff0c48c0f6ca1193ae6",
+    "native_include_and_library_directory": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/.cache/lbug-prebuilt/latest/lib"
+  },
+  "executed_checks": [
+    {
+      "command": "cargo-audit 0.22.2 audit --ignore RUSTSEC-2026-0009",
+      "baseline_exit": 1,
+      "final_exit": 0,
+      "logs": [
+        "baseline-head-audit.log",
+        "final-audit.log"
+      ],
+      "limits": "Same preexisting time exception; features checked without parsing. Existing cxx and tokio informational unsound warnings unchanged."
+    },
+    {
+      "command": "cargo run -p xtask --locked -- release-gate",
+      "tree": "baseline CI merge f49fbb5 + frozen repair diff",
+      "exit": 0,
+      "log": "merged-release-gate.log"
+    },
+    {
+      "command": "same release gate with deliberate temporary loose .py",
+      "exit": 1,
+      "expected": "python-file-present",
+      "log": "policy-negative.log"
+    },
+    {
+      "command": "same release gate after temporary probe removal",
+      "exit": 0,
+      "log": "policy-after-negative.log"
+    },
+    {
+      "command": "cargo nextest run --locked -p k-wiki -p xtask --config-file /private/tmp/codebasegraph-pr158-ci-40798473142/nextest.toml --profile pr158",
+      "exit": 0,
+      "passed": 174,
+      "failed": 0,
+      "skipped": 0,
+      "log": "wiki-xtask-tests.log",
+      "junit": "wiki-xtask.junit.xml"
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "exit": 0,
+      "log": "fmt.log"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features --locked -- -D warnings",
+      "exit": 0,
+      "log": "clippy.log"
+    },
+    {
+      "command": "cargo publish --dry-run --locked --allow-dirty",
+      "tree": "baseline CI merge f49fbb5 + frozen repair diff",
+      "exit": 0,
+      "log": "merged-package-dry-run.log",
+      "limits": "Normal extracted package compiled using pinned native SDK. No upload."
+    },
+    {
+      "command": "cargo package --locked --no-verify --allow-dirty; xtask verify-crate-size",
+      "exit": 0,
+      "logs": [
+        "crate-package.log",
+        "crate-size.log"
+      ],
+      "archive_bytes": 8458182
+    },
+    {
+      "command": "cargo package -p k-wiki --locked --no-verify --allow-dirty --config patch.crates-io.codebase-graph.path=.",
+      "exit": 0,
+      "log": "wiki-package.log",
+      "limits": "Archive inventory, not isolated archive compile."
+    },
+    {
+      "command": "Windows-filtered Cargo feature trees default and root no-default-features",
+      "exit": 0,
+      "logs": [
+        "windows-default-feature-tree.log",
+        "windows-optout-feature-tree.log"
+      ],
+      "limits": "Resolution checks, not native Windows execution."
+    },
+    {
+      "command": "two independent git archive invocations and original evidence-index verification",
+      "pass": true,
+      "log": "archive-verification.json",
+      "original_records_verified": 65,
+      "index_bytes_unchanged": true
+    }
+  ],
+  "crate_audits": [
+    {
+      "path": "/private/tmp/codebasegraph-pr158-ci-merge/target/package/codebase-graph-4.0.2.crate",
+      "bytes": 8458182,
+      "sha256": "9f273128955240df50a9e043ac3fb203f20b39a88a7094025b6f621d9bc9871c",
+      "members": 207,
+      "assets": [
+        {
+          "path": "assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension.xz",
+          "sha256": "e34b00df38ced0b09993112a6d3a2d76735ecea639bb7deaf4e804351343f891",
+          "matches_source": true
+        },
+        {
+          "path": "assets/ladybug-extensions/0.19.0/osx_arm64/json/libjson.lbug_extension.xz",
+          "sha256": "7d39d0ba2fe3eb41364febc09fb45aca02b37bb64a06e3a3666bfb70f49792cd",
+          "matches_source": true
+        },
+        {
+          "path": "assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension.xz",
+          "sha256": "a8a9d74be93a54482b6bb6df7c44ead6cb751f398b87b10c990d63e2da77910d",
+          "matches_source": true
+        },
+        {
+          "path": "assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension.xz",
+          "sha256": "adf5e05d5a63c181a1be3e1e6c90a8ffb9901118171e7caf8f860af055868ada",
+          "matches_source": true
+        }
+      ]
+    },
+    {
+      "path": "/private/tmp/codebasegraph-pr158-ci-merge/target/package/k-wiki-4.0.2.crate",
+      "bytes": 140452,
+      "sha256": "3ec816b0da0dba1cc4b9e1e4be36317c0a6b27dc85063257aa383fa8921852a5",
+      "members": 64,
+      "assets": []
+    }
+  ],
+  "limitations": [
+    "Final pushed-head native CI is pending.",
+    "Old Windows11 prepared-environment evidence remains bound to47808ac and is not repeated or promoted by this repair.",
+    "Full COD53 S02/A03/A04/fullA16 and aggregate qualification remain open.",
+    "No actual Rust1.82 full-workspace execution is asserted; parser crate declares unchanged MSRV1.71.1.",
+    "First local baseline compile used a nonexistent include directory and failed; corrected environment compiled without source edits.",
+    "Head-only baseline release-gate has4 older helpers already archived by mainPR159; actual combined-tree gate was tested without importing unrelated main changes."
+  ],
+  "reusable_knowledge_assessment": "No new durable memory. The archival procedure is already established in PR159/COD99; this version-bound repair belongs in canonical evidence.",
+  "baseline_ci_log_archives": {
+    "baseline-audit-job.log": {
+      "path": "baseline-audit-job.log.gz",
+      "decoded_sha256": "c4582c73c6ad38a86415c52c831057fc31449801f1915a23fa1cf36959109f16",
+      "reason": "Preserve captured timestamped log whitespace byte-for-byte in a gzip evidence file."
+    },
+    "baseline-package-job.log": {
+      "path": "baseline-package-job.log.gz",
+      "decoded_sha256": "738dfcf7e105a387c11f62246e8ebbb3328f4390a14af6da9217c38aab37d20a",
+      "reason": "Preserve captured timestamped log whitespace byte-for-byte in a gzip evidence file."
+    }
+  }
+}

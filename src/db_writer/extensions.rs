@@ -141,7 +141,14 @@ mod tests {
     #[test]
     fn bundled_extension_archives_decompress_before_cache_seed() {
         for extension in ["json", "fts"] {
-            let Some(bytes) = bundled_extension_bytes(extension).unwrap() else {
+            let bytes = bundled_extension_bytes(extension).unwrap();
+            #[cfg(all(
+                target_os = "windows",
+                target_arch = "x86_64",
+                feature = "bundled-windows-extensions"
+            ))]
+            assert!(bytes.is_some(), "{extension} extension should be bundled");
+            let Some(bytes) = bytes else {
                 continue;
             };
             assert!(bytes.len() > 500_000, "{extension} extension is truncated");

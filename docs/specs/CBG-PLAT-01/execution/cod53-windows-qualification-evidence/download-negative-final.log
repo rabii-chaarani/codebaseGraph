@@ -1,0 +1,2 @@
+EXPECTED_DOWNLOAD_FAILURE Query execution failed: IO exception: Failed to download extension: json at URL https://extension.ladybugdb.com/v0.19.0/win_amd64/json/libjson.lbug_extension (ERROR: Proxy connection failed)
+NATIVE_EXIT_STATUS=0

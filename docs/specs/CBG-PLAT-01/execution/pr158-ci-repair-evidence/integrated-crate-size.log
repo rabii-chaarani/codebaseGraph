@@ -1,0 +1,4 @@
+    Blocking waiting for file lock on build directory
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.79s
+     Running `target/debug/xtask verify-crate-size target/package/codebase-graph-4.0.2.crate`
+crate package size verified: 8458173 bytes <= 10485760 bytes

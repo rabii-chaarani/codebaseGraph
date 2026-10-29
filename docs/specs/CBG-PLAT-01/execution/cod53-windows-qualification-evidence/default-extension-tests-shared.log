@@ -1,0 +1,70 @@
+   Compiling lbug v0.19.0
+   Compiling codebase-graph v4.0.0 (C:\Users\rcha0053\Repositories\cbg-pr158)
+warning: unused import: `remove_partial_state_tree`
+    --> src\api\lifecycle.rs:5118:9
+     |
+5118 |         remove_partial_state_tree, rename_mcp_server, render_client_http_config,
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `files::copy_path`
+  --> src\staging_writer\mod.rs:14:16
+   |
+14 | pub(crate) use files::copy_path;
+   |                ^^^^^^^^^^^^^^^^
+
+warning: function `home_dir` is never used
+    --> src\adapters\mcp\daemon.rs:1838:4
+     |
+1838 | fn home_dir() -> PathBuf {
+     |    ^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `leave_prepared_temporary_for_test` is never used
+   --> src\artifact_store.rs:826:15
+    |
+826 | pub(crate) fn leave_prepared_temporary_for_test(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `workspace_fifo_pin_name` is never used
+    --> src\storage\maintenance_controls.rs:3434:15
+     |
+3434 | pub(crate) fn workspace_fifo_pin_name(binding: &WorkspaceOutputBinding) -> [u8; 69] {
+     |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `LegacyStagingJobObservation` is never constructed
+    --> src\storage\maintenance_legacy_staging.rs:1223:19
+     |
+1223 | pub(crate) struct LegacyStagingJobObservation {
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `observe_accepted_staging_job` is never used
+    --> src\storage\maintenance_legacy_staging.rs:1229:15
+     |
+1229 | pub(crate) fn observe_accepted_staging_job(
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `ScopedManagedSyncFault` is never constructed
+   --> src\storage\managed.rs:541:19
+    |
+541 | pub(crate) struct ScopedManagedSyncFault(Option<super::locks::FileIdentity>);
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `inject_scoped_managed_sync_fault` is never used
+   --> src\storage\managed.rs:551:15
+    |
+551 | pub(crate) fn inject_scoped_managed_sync_fault(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `codebase-graph` (lib test) generated 9 warnings (run `cargo fix --lib -p codebase-graph --tests` to apply 2 suggestions)
+    Finished `release` profile [optimized] target(s) in 2m 58s
+     Running unittests src\lib.rs (C:\Users\rcha0053\pr158-qualification\target\release\deps\codebase_graph-3cda96f058e84b64.exe)
+
+running 2 tests
+test db_writer::extensions::tests::bundled_extension_archives_decompress_before_cache_seed ... ok
+test db_writer::extensions::tests::supports_prebuilt_and_source_built_ladybug_extension_cache_versions ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 799 filtered out; finished in 0.56s
+

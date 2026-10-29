@@ -1,0 +1,48 @@
+{
+  "source_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+  "validated_at": "2026-10-29T01:16:14.016611+00:00",
+  "tracked_product_source_unchanged": true,
+  "artifact_hash_checks": [
+    {
+      "path": "C:\\Users\\rcha0053\\pr158-qualification\\installed\\bin\\codebase-graph.exe",
+      "matches": true
+    },
+    {
+      "path": "C:\\Users\\rcha0053\\pr158-qualification\\target\\release\\pr158-windows-probe.exe",
+      "matches": true
+    },
+    {
+      "path": "C:\\Users\\rcha0053\\pr158-qualification\\probe\\src\\main.rs",
+      "matches": true
+    },
+    {
+      "path": "C:\\Users\\rcha0053\\pr158-qualification\\probe\\Cargo.toml",
+      "matches": true
+    },
+    {
+      "path": "C:\\Users\\rcha0053\\pr158-qualification\\probe\\Cargo.lock",
+      "matches": true
+    }
+  ],
+  "source_hash_checks": [
+    {
+      "path": "Cargo.toml",
+      "matches": true
+    },
+    {
+      "path": "Cargo.lock",
+      "matches": true
+    },
+    {
+      "path": "src/db_writer/extensions.rs",
+      "matches": true
+    }
+  ],
+  "json_files_validated": 29,
+  "report_relative_links_missing": [],
+  "secret_like_findings": [],
+  "native_executable_dll_lib_bytes_committed": false,
+  "product_numeric_constants_changed": false,
+  "temporary_proxy_processes_stopped": true,
+  "wiki_memory_decision": "No new record: SHA-bound qualification results and unproven timeout cause are execution evidence, not a reusable repository fact."
+}

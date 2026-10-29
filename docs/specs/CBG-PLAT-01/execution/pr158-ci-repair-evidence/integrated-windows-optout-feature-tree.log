@@ -1,0 +1,590 @@
+codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix)
+├── fs2 feature "default"
+│   └── fs2 v0.4.3
+│       ├── winapi feature "default"
+│       │   └── winapi v0.3.9
+│       ├── winapi feature "fileapi"
+│       │   └── winapi v0.3.9
+│       ├── winapi feature "handleapi"
+│       │   └── winapi v0.3.9
+│       ├── winapi feature "processthreadsapi"
+│       │   └── winapi v0.3.9
+│       ├── winapi feature "std"
+│       │   └── winapi v0.3.9
+│       ├── winapi feature "winbase"
+│       │   └── winapi v0.3.9
+│       └── winapi feature "winerror"
+│           └── winapi v0.3.9
+├── getrandom feature "default"
+│   └── getrandom v0.3.4
+│       └── cfg-if feature "default"
+│           └── cfg-if v1.0.4
+├── lbug feature "default"
+│   └── lbug v0.19.0
+│       ├── rust_decimal v1.42.1
+│       │   ├── arrayvec v0.7.6
+│       │   └── num-traits feature "i128"
+│       │       └── num-traits v0.2.19
+│       │           [build-dependencies]
+│       │           └── autocfg feature "default"
+│       │               └── autocfg v1.5.1
+│       ├── cxx feature "default"
+│       │   ├── cxx v1.0.138
+│       │   │   ├── foldhash v0.1.5
+│       │   │   ├── cxxbridge-macro feature "default"
+│       │   │   │   └── cxxbridge-macro v1.0.138 (proc-macro)
+│       │   │   │       ├── proc-macro2 feature "default"
+│       │   │   │       │   ├── proc-macro2 v1.0.106
+│       │   │   │       │   │   └── unicode-ident feature "default"
+│       │   │   │       │   │       └── unicode-ident v1.0.24
+│       │   │   │       │   └── proc-macro2 feature "proc-macro"
+│       │   │   │       │       └── proc-macro2 v1.0.106 (*)
+│       │   │   │       ├── quote feature "default"
+│       │   │   │       │   ├── quote v1.0.45
+│       │   │   │       │   │   └── proc-macro2 v1.0.106 (*)
+│       │   │   │       │   └── quote feature "proc-macro"
+│       │   │   │       │       ├── quote v1.0.45 (*)
+│       │   │   │       │       └── proc-macro2 feature "proc-macro" (*)
+│       │   │   │       ├── rustversion feature "default"
+│       │   │   │       │   └── rustversion v1.0.22 (proc-macro)
+│       │   │   │       ├── syn feature "default"
+│       │   │   │       │   ├── syn v2.0.117
+│       │   │   │       │   │   ├── proc-macro2 v1.0.106 (*)
+│       │   │   │       │   │   ├── quote v1.0.45 (*)
+│       │   │   │       │   │   └── unicode-ident feature "default" (*)
+│       │   │   │       │   ├── syn feature "clone-impls"
+│       │   │   │       │   │   └── syn v2.0.117 (*)
+│       │   │   │       │   ├── syn feature "derive"
+│       │   │   │       │   │   └── syn v2.0.117 (*)
+│       │   │   │       │   ├── syn feature "parsing"
+│       │   │   │       │   │   └── syn v2.0.117 (*)
+│       │   │   │       │   ├── syn feature "printing"
+│       │   │   │       │   │   └── syn v2.0.117 (*)
+│       │   │   │       │   └── syn feature "proc-macro"
+│       │   │   │       │       ├── syn v2.0.117 (*)
+│       │   │   │       │       ├── proc-macro2 feature "proc-macro" (*)
+│       │   │   │       │       └── quote feature "proc-macro" (*)
+│       │   │   │       └── syn feature "full"
+│       │   │   │           └── syn v2.0.117 (*)
+│       │   │   └── link-cplusplus feature "default"
+│       │   │       └── link-cplusplus v1.0.12
+│       │   │           [build-dependencies]
+│       │   │           └── cc feature "default"
+│       │   │               └── cc v1.2.64
+│       │   │                   ├── find-msvc-tools feature "default"
+│       │   │                   │   └── find-msvc-tools v0.1.9
+│       │   │                   └── shlex feature "default"
+│       │   │                       ├── shlex v2.0.1
+│       │   │                       └── shlex feature "std"
+│       │   │                           └── shlex v2.0.1
+│       │   │   [build-dependencies]
+│       │   │   ├── cxxbridge-flags v1.0.138
+│       │   │   └── cc feature "default" (*)
+│       │   ├── cxx feature "std"
+│       │   │   ├── cxx v1.0.138 (*)
+│       │   │   ├── cxx feature "alloc"
+│       │   │   │   └── cxx v1.0.138 (*)
+│       │   │   └── foldhash feature "std"
+│       │   │       └── foldhash v0.1.5
+│       │   └── cxxbridge-flags feature "default"
+│       │       └── cxxbridge-flags v1.0.138
+│       ├── serde_json feature "default"
+│       │   ├── serde_json v1.0.150
+│       │   │   ├── memchr v2.8.2
+│       │   │   ├── serde_core v1.0.228
+│       │   │   ├── itoa feature "default"
+│       │   │   │   └── itoa v1.0.18
+│       │   │   └── zmij feature "default"
+│       │   │       └── zmij v1.0.21
+│       │   └── serde_json feature "std"
+│       │       ├── serde_json v1.0.150 (*)
+│       │       ├── memchr feature "std"
+│       │       │   ├── memchr v2.8.2
+│       │       │   └── memchr feature "alloc"
+│       │       │       └── memchr v2.8.2
+│       │       └── serde_core feature "std"
+│       │           └── serde_core v1.0.228
+│       ├── time feature "default"
+│       │   ├── time v0.3.36
+│       │   │   ├── powerfmt v0.2.0
+│       │   │   ├── deranged feature "powerfmt"
+│       │   │   │   └── deranged v0.3.11
+│       │   │   │       └── powerfmt v0.2.0
+│       │   │   ├── num-conv feature "default"
+│       │   │   │   └── num-conv v0.1.0
+│       │   │   └── time-core feature "default"
+│       │   │       └── time-core v0.1.2
+│       │   └── time feature "std"
+│       │       ├── time v0.3.36 (*)
+│       │       ├── time feature "alloc"
+│       │       │   └── time v0.3.36 (*)
+│       │       └── deranged feature "std"
+│       │           ├── deranged v0.3.11 (*)
+│       │           └── deranged feature "alloc"
+│       │               └── deranged v0.3.11 (*)
+│       └── uuid feature "default"
+│           ├── uuid v1.18.1
+│           └── uuid feature "std"
+│               └── uuid v1.18.1
+│       [build-dependencies]
+│       ├── cmake feature "default"
+│       │   └── cmake v0.1.58
+│       │       └── cc feature "default" (*)
+│       ├── rustversion feature "default" (*)
+│       └── cxx-build feature "default"
+│           └── cxx-build v1.0.138
+│               ├── quote v1.0.45 (*)
+│               ├── cc feature "default" (*)
+│               ├── proc-macro2 feature "span-locations"
+│               │   └── proc-macro2 v1.0.106 (*)
+│               ├── syn feature "clone-impls" (*)
+│               ├── syn feature "full" (*)
+│               ├── syn feature "parsing" (*)
+│               ├── syn feature "printing" (*)
+│               ├── codespan-reporting feature "default"
+│               │   └── codespan-reporting v0.11.1
+│               │       ├── termcolor feature "default"
+│               │       │   └── termcolor v1.4.1
+│               │       └── unicode-width feature "default"
+│               │           ├── unicode-width v0.1.14
+│               │           └── unicode-width feature "cjk"
+│               │               └── unicode-width v0.1.14
+│               └── scratch feature "default"
+│                   └── scratch v1.0.9
+├── serde_json feature "default" (*)
+├── libc feature "default"
+│   ├── libc v0.2.189
+│   └── libc feature "std"
+│       └── libc v0.2.189
+├── libmimalloc-sys feature "default"
+│   └── libmimalloc-sys v0.1.49
+│       └── cty feature "default"
+│           └── cty v0.2.2
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── libmimalloc-sys feature "extended"
+│   ├── libmimalloc-sys v0.1.49 (*)
+│   └── libmimalloc-sys feature "cty"
+│       └── libmimalloc-sys v0.1.49 (*)
+├── lzma-rs feature "default"
+│   └── lzma-rs v0.3.0
+│       ├── byteorder feature "default"
+│       │   ├── byteorder v1.5.0
+│       │   └── byteorder feature "std"
+│       │       └── byteorder v1.5.0
+│       └── crc feature "default"
+│           └── crc v3.4.0
+│               └── crc-catalog feature "default"
+│                   └── crc-catalog v2.5.0
+├── mimalloc feature "default"
+│   └── mimalloc v0.1.52
+│       └── libmimalloc-sys v0.1.49 (*)
+├── mimalloc feature "extended"
+│   ├── mimalloc v0.1.52 (*)
+│   └── libmimalloc-sys feature "extended" (*)
+├── notify feature "default"
+│   ├── notify v8.2.0
+│   │   ├── libc feature "default" (*)
+│   │   ├── log feature "default"
+│   │   │   └── log v0.4.32
+│   │   ├── notify-types feature "default"
+│   │   │   └── notify-types v2.0.0
+│   │   ├── walkdir feature "default"
+│   │   │   └── walkdir v2.5.0
+│   │   │       ├── same-file feature "default"
+│   │   │       │   └── same-file v1.0.6
+│   │   │       │       └── winapi-util feature "default"
+│   │   │       │           └── winapi-util v0.1.11
+│   │   │       │               ├── windows-sys feature "Win32_Foundation"
+│   │   │       │               │   ├── windows-sys v0.61.2
+│   │   │       │               │   │   └── windows-link v0.2.1
+│   │   │       │               │   └── windows-sys feature "Win32"
+│   │   │       │               │       ├── windows-sys v0.61.2 (*)
+│   │   │       │               │       └── windows-sys feature "Win32_Foundation" (*)
+│   │   │       │               ├── windows-sys feature "Win32_Storage_FileSystem"
+│   │   │       │               │   ├── windows-sys v0.61.2 (*)
+│   │   │       │               │   └── windows-sys feature "Win32_Storage"
+│   │   │       │               │       ├── windows-sys v0.61.2 (*)
+│   │   │       │               │       └── windows-sys feature "Win32" (*)
+│   │   │       │               ├── windows-sys feature "Win32_System_Console"
+│   │   │       │               │   ├── windows-sys v0.61.2 (*)
+│   │   │       │               │   └── windows-sys feature "Win32_System"
+│   │   │       │               │       ├── windows-sys v0.61.2 (*)
+│   │   │       │               │       └── windows-sys feature "Win32" (*)
+│   │   │       │               ├── windows-sys feature "Win32_System_SystemInformation"
+│   │   │       │               │   ├── windows-sys v0.61.2 (*)
+│   │   │       │               │   └── windows-sys feature "Win32_System" (*)
+│   │   │       │               └── windows-sys feature "default"
+│   │   │       │                   └── windows-sys v0.61.2 (*)
+│   │   │       └── winapi-util feature "default" (*)
+│   │   ├── windows-sys feature "Win32_Foundation"
+│   │   │   ├── windows-sys v0.60.2
+│   │   │   │   └── windows-targets v0.53.5
+│   │   │   │       └── windows_x86_64_msvc feature "default"
+│   │   │   │           └── windows_x86_64_msvc v0.53.1
+│   │   │   └── windows-sys feature "Win32"
+│   │   │       ├── windows-sys v0.60.2 (*)
+│   │   │       └── windows-sys feature "Win32_Foundation" (*)
+│   │   ├── windows-sys feature "Win32_Security"
+│   │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   └── windows-sys feature "Win32" (*)
+│   │   ├── windows-sys feature "Win32_Storage_FileSystem"
+│   │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   └── windows-sys feature "Win32_Storage"
+│   │   │       ├── windows-sys v0.60.2 (*)
+│   │   │       └── windows-sys feature "Win32" (*)
+│   │   ├── windows-sys feature "Win32_System_IO"
+│   │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   └── windows-sys feature "Win32_System"
+│   │   │       ├── windows-sys v0.60.2 (*)
+│   │   │       └── windows-sys feature "Win32" (*)
+│   │   ├── windows-sys feature "Win32_System_Threading"
+│   │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   └── windows-sys feature "Win32_System" (*)
+│   │   ├── windows-sys feature "Win32_System_WindowsProgramming"
+│   │   │   ├── windows-sys v0.60.2 (*)
+│   │   │   └── windows-sys feature "Win32_System" (*)
+│   │   └── windows-sys feature "default"
+│   │       └── windows-sys v0.60.2 (*)
+│   └── notify feature "macos_fsevent"
+│       ├── notify v8.2.0 (*)
+│       └── notify feature "fsevent-sys"
+│           └── notify v8.2.0 (*)
+├── walkdir feature "default" (*)
+├── windows-sys feature "Wdk_Foundation"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Wdk"
+│       ├── windows-sys v0.61.2 (*)
+│       └── windows-sys feature "Win32_Foundation" (*)
+├── windows-sys feature "Wdk_Storage_FileSystem"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Wdk_Storage"
+│       ├── windows-sys v0.61.2 (*)
+│       └── windows-sys feature "Wdk" (*)
+├── windows-sys feature "Win32_Foundation" (*)
+├── windows-sys feature "Win32_Globalization"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32" (*)
+├── windows-sys feature "Win32_Security"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32" (*)
+├── windows-sys feature "Win32_Security_Authorization"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_Security" (*)
+├── windows-sys feature "Win32_Storage_FileSystem" (*)
+├── windows-sys feature "Win32_System_Console" (*)
+├── windows-sys feature "Win32_System_Diagnostics_ToolHelp"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_System_Diagnostics"
+│       ├── windows-sys v0.61.2 (*)
+│       └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_IO"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_JobObjects"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_Memory"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_Pipes"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_ProcessStatus"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_SystemServices"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "Win32_System_Threading"
+│   ├── windows-sys v0.61.2 (*)
+│   └── windows-sys feature "Win32_System" (*)
+├── windows-sys feature "default" (*)
+├── serde feature "default"
+│   ├── serde v1.0.228
+│   │   ├── serde_core feature "result"
+│   │   │   └── serde_core v1.0.228
+│   │   └── serde_derive feature "default"
+│   │       └── serde_derive v1.0.228 (proc-macro)
+│   │           ├── proc-macro2 feature "proc-macro" (*)
+│   │           ├── quote feature "proc-macro" (*)
+│   │           ├── syn feature "clone-impls" (*)
+│   │           ├── syn feature "derive" (*)
+│   │           ├── syn feature "parsing" (*)
+│   │           ├── syn feature "printing" (*)
+│   │           └── syn feature "proc-macro" (*)
+│   └── serde feature "std"
+│       ├── serde v1.0.228 (*)
+│       └── serde_core feature "std" (*)
+├── serde feature "derive"
+│   ├── serde v1.0.228 (*)
+│   └── serde feature "serde_derive"
+│       └── serde v1.0.228 (*)
+├── sha2 feature "default"
+│   ├── sha2 v0.10.9
+│   │   ├── cfg-if feature "default" (*)
+│   │   ├── cpufeatures feature "default"
+│   │   │   └── cpufeatures v0.2.17
+│   │   └── digest feature "default"
+│   │       ├── digest v0.10.7
+│   │       │   ├── block-buffer feature "default"
+│   │       │   │   └── block-buffer v0.10.4
+│   │       │   │       └── generic-array feature "default"
+│   │       │   │           └── generic-array v0.14.7
+│   │       │   │               └── typenum feature "default"
+│   │       │   │                   └── typenum v1.20.1
+│   │       │   │               [build-dependencies]
+│   │       │   │               └── version_check feature "default"
+│   │       │   │                   └── version_check v0.9.5
+│   │       │   └── crypto-common feature "default"
+│   │       │       └── crypto-common v0.1.7
+│   │       │           ├── generic-array feature "default" (*)
+│   │       │           ├── generic-array feature "more_lengths"
+│   │       │           │   └── generic-array v0.14.7 (*)
+│   │       │           └── typenum feature "default" (*)
+│   │       └── digest feature "core-api"
+│   │           ├── digest v0.10.7 (*)
+│   │           └── digest feature "block-buffer"
+│   │               └── digest v0.10.7 (*)
+│   └── sha2 feature "std"
+│       ├── sha2 v0.10.9 (*)
+│       └── digest feature "std"
+│           ├── digest v0.10.7 (*)
+│           ├── digest feature "alloc"
+│           │   └── digest v0.10.7 (*)
+│           └── crypto-common feature "std"
+│               └── crypto-common v0.1.7 (*)
+├── tree-sitter feature "default"
+│   ├── tree-sitter v0.25.10
+│   │   ├── regex-syntax v0.8.11
+│   │   ├── regex feature "unicode"
+│   │   │   ├── regex v1.12.4
+│   │   │   │   ├── aho-corasick v1.1.4
+│   │   │   │   │   └── memchr v2.8.2
+│   │   │   │   ├── memchr v2.8.2
+│   │   │   │   ├── regex-syntax v0.8.11
+│   │   │   │   ├── regex-automata feature "alloc"
+│   │   │   │   │   └── regex-automata v0.4.14
+│   │   │   │   │       ├── aho-corasick v1.1.4 (*)
+│   │   │   │   │       ├── memchr v2.8.2
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   ├── regex-automata feature "meta"
+│   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   ├── regex-automata feature "nfa-pikevm"
+│   │   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   │   └── regex-automata feature "nfa-thompson"
+│   │   │   │   │   │       ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   │       └── regex-automata feature "alloc" (*)
+│   │   │   │   │   └── regex-automata feature "syntax"
+│   │   │   │   │       ├── regex-automata v0.4.14 (*)
+│   │   │   │   │       └── regex-automata feature "alloc" (*)
+│   │   │   │   ├── regex-automata feature "nfa-pikevm" (*)
+│   │   │   │   └── regex-automata feature "syntax" (*)
+│   │   │   ├── regex feature "unicode-age"
+│   │   │   │   ├── regex v1.12.4 (*)
+│   │   │   │   ├── regex-automata feature "unicode-age"
+│   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   └── regex-syntax feature "unicode-age"
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   └── regex-syntax feature "unicode-age" (*)
+│   │   │   ├── regex feature "unicode-bool"
+│   │   │   │   ├── regex v1.12.4 (*)
+│   │   │   │   ├── regex-automata feature "unicode-bool"
+│   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   └── regex-syntax feature "unicode-bool"
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   └── regex-syntax feature "unicode-bool" (*)
+│   │   │   ├── regex feature "unicode-case"
+│   │   │   │   ├── regex v1.12.4 (*)
+│   │   │   │   ├── regex-automata feature "unicode-case"
+│   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   └── regex-syntax feature "unicode-case"
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   └── regex-syntax feature "unicode-case" (*)
+│   │   │   ├── regex feature "unicode-gencat"
+│   │   │   │   ├── regex v1.12.4 (*)
+│   │   │   │   ├── regex-automata feature "unicode-gencat"
+│   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   └── regex-syntax feature "unicode-gencat"
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   └── regex-syntax feature "unicode-gencat" (*)
+│   │   │   ├── regex feature "unicode-perl"
+│   │   │   │   ├── regex v1.12.4 (*)
+│   │   │   │   ├── regex-automata feature "unicode-perl"
+│   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   └── regex-syntax feature "unicode-perl"
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   ├── regex-automata feature "unicode-word-boundary"
+│   │   │   │   │   └── regex-automata v0.4.14 (*)
+│   │   │   │   └── regex-syntax feature "unicode-perl" (*)
+│   │   │   ├── regex feature "unicode-script"
+│   │   │   │   ├── regex v1.12.4 (*)
+│   │   │   │   ├── regex-automata feature "unicode-script"
+│   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   └── regex-syntax feature "unicode-script"
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   └── regex-syntax feature "unicode-script" (*)
+│   │   │   ├── regex feature "unicode-segment"
+│   │   │   │   ├── regex v1.12.4 (*)
+│   │   │   │   ├── regex-automata feature "unicode-segment"
+│   │   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   │   └── regex-syntax feature "unicode-segment"
+│   │   │   │   │       └── regex-syntax v0.8.11
+│   │   │   │   └── regex-syntax feature "unicode-segment" (*)
+│   │   │   ├── regex-automata feature "unicode"
+│   │   │   │   ├── regex-automata v0.4.14 (*)
+│   │   │   │   ├── regex-automata feature "unicode-age" (*)
+│   │   │   │   ├── regex-automata feature "unicode-bool" (*)
+│   │   │   │   ├── regex-automata feature "unicode-case" (*)
+│   │   │   │   ├── regex-automata feature "unicode-gencat" (*)
+│   │   │   │   ├── regex-automata feature "unicode-perl" (*)
+│   │   │   │   ├── regex-automata feature "unicode-script" (*)
+│   │   │   │   ├── regex-automata feature "unicode-segment" (*)
+│   │   │   │   ├── regex-automata feature "unicode-word-boundary" (*)
+│   │   │   │   └── regex-syntax feature "unicode"
+│   │   │   │       ├── regex-syntax v0.8.11
+│   │   │   │       ├── regex-syntax feature "unicode-age" (*)
+│   │   │   │       ├── regex-syntax feature "unicode-bool" (*)
+│   │   │   │       ├── regex-syntax feature "unicode-case" (*)
+│   │   │   │       ├── regex-syntax feature "unicode-gencat" (*)
+│   │   │   │       ├── regex-syntax feature "unicode-perl" (*)
+│   │   │   │       ├── regex-syntax feature "unicode-script" (*)
+│   │   │   │       └── regex-syntax feature "unicode-segment" (*)
+│   │   │   └── regex-syntax feature "unicode" (*)
+│   │   ├── streaming-iterator feature "default"
+│   │   │   └── streaming-iterator v0.1.9
+│   │   └── tree-sitter-language feature "default"
+│   │       └── tree-sitter-language v0.1.8
+│   │   [build-dependencies]
+│   │   ├── cc feature "default" (*)
+│   │   ├── serde_json feature "default"
+│   │   │   ├── serde_json v1.0.150
+│   │   │   │   ├── memchr v2.8.2
+│   │   │   │   ├── serde_core v1.0.228
+│   │   │   │   ├── indexmap feature "default"
+│   │   │   │   │   ├── indexmap v2.7.1
+│   │   │   │   │   │   ├── equivalent v1.0.2
+│   │   │   │   │   │   └── hashbrown v0.15.5
+│   │   │   │   │   └── indexmap feature "std"
+│   │   │   │   │       └── indexmap v2.7.1 (*)
+│   │   │   │   ├── itoa feature "default"
+│   │   │   │   │   └── itoa v1.0.18
+│   │   │   │   └── zmij feature "default"
+│   │   │   │       └── zmij v1.0.21
+│   │   │   └── serde_json feature "std"
+│   │   │       ├── serde_json v1.0.150 (*)
+│   │   │       ├── memchr feature "std"
+│   │   │       │   ├── memchr v2.8.2
+│   │   │       │   └── memchr feature "alloc"
+│   │   │       │       └── memchr v2.8.2
+│   │   │       └── serde_core feature "std"
+│   │   │           └── serde_core v1.0.228
+│   │   └── serde_json feature "preserve_order"
+│   │       ├── serde_json v1.0.150 (*)
+│   │       ├── serde_json feature "indexmap"
+│   │       │   └── serde_json v1.0.150 (*)
+│   │       └── serde_json feature "std" (*)
+│   └── tree-sitter feature "std"
+│       ├── tree-sitter v0.25.10 (*)
+│       ├── regex feature "perf"
+│       │   ├── regex v1.12.4 (*)
+│       │   ├── regex feature "perf-backtrack"
+│       │   │   ├── regex v1.12.4 (*)
+│       │   │   └── regex-automata feature "nfa-backtrack"
+│       │   │       ├── regex-automata v0.4.14 (*)
+│       │   │       └── regex-automata feature "nfa-thompson" (*)
+│       │   ├── regex feature "perf-cache"
+│       │   │   └── regex v1.12.4 (*)
+│       │   ├── regex feature "perf-dfa"
+│       │   │   ├── regex v1.12.4 (*)
+│       │   │   └── regex-automata feature "hybrid"
+│       │   │       ├── regex-automata v0.4.14 (*)
+│       │   │       ├── regex-automata feature "alloc" (*)
+│       │   │       └── regex-automata feature "nfa-thompson" (*)
+│       │   ├── regex feature "perf-inline"
+│       │   │   ├── regex v1.12.4 (*)
+│       │   │   └── regex-automata feature "perf-inline"
+│       │   │       └── regex-automata v0.4.14 (*)
+│       │   ├── regex feature "perf-literal"
+│       │   │   ├── regex v1.12.4 (*)
+│       │   │   └── regex-automata feature "perf-literal"
+│       │   │       ├── regex-automata v0.4.14 (*)
+│       │   │       ├── regex-automata feature "perf-literal-multisubstring"
+│       │   │       │   └── regex-automata v0.4.14 (*)
+│       │   │       └── regex-automata feature "perf-literal-substring"
+│       │   │           ├── regex-automata v0.4.14 (*)
+│       │   │           └── aho-corasick feature "perf-literal"
+│       │   │               └── aho-corasick v1.1.4 (*)
+│       │   └── regex feature "perf-onepass"
+│       │       ├── regex v1.12.4 (*)
+│       │       └── regex-automata feature "dfa-onepass"
+│       │           ├── regex-automata v0.4.14 (*)
+│       │           └── regex-automata feature "nfa-thompson" (*)
+│       ├── regex feature "std"
+│       │   ├── regex v1.12.4 (*)
+│       │   ├── memchr feature "std" (*)
+│       │   ├── aho-corasick feature "std"
+│       │   │   ├── aho-corasick v1.1.4 (*)
+│       │   │   └── memchr feature "std" (*)
+│       │   ├── regex-automata feature "std"
+│       │   │   ├── regex-automata v0.4.14 (*)
+│       │   │   ├── memchr feature "std" (*)
+│       │   │   ├── aho-corasick feature "std" (*)
+│       │   │   ├── regex-automata feature "alloc" (*)
+│       │   │   └── regex-syntax feature "std"
+│       │   │       └── regex-syntax v0.8.11
+│       │   └── regex-syntax feature "std" (*)
+│       └── regex-syntax feature "unicode" (*)
+├── tree-sitter-language feature "default" (*)
+├── tree-sitter-c feature "default"
+│   └── tree-sitter-c v0.24.2
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── tree-sitter-cpp feature "default"
+│   └── tree-sitter-cpp v0.23.4
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── tree-sitter-css feature "default"
+│   └── tree-sitter-css v0.25.0
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── tree-sitter-fortran feature "default"
+│   └── tree-sitter-fortran v0.6.0
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── tree-sitter-go feature "default"
+│   └── tree-sitter-go v0.25.0
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── tree-sitter-html feature "default"
+│   └── tree-sitter-html v0.23.2
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── tree-sitter-javascript feature "default"
+│   └── tree-sitter-javascript v0.25.0
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── tree-sitter-python feature "default"
+│   └── tree-sitter-python v0.25.0
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+├── tree-sitter-rust feature "default"
+│   └── tree-sitter-rust v0.24.2
+│       └── tree-sitter-language feature "default" (*)
+│       [build-dependencies]
+│       └── cc feature "default" (*)
+└── tree-sitter-typescript feature "default"
+    └── tree-sitter-typescript v0.23.2
+        └── tree-sitter-language feature "default" (*)
+        [build-dependencies]
+        └── cc feature "default" (*)
+[build-dependencies]
+└── cc feature "default" (*)

@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="174" failures="0" errors="0" uuid="737a3796-b8c5-4d4e-953a-44c248621ab9" timestamp="2026-10-29T10:56:51.123+09:30" time="17.221">
+    <testsuite name="k-wiki" tests="10" disabled="0" errors="0" failures="0">
+        <testcase name="adapters::install::tests::failed_post_install_migration_keeps_the_install_payload_and_recovery" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.029">
+        </testcase>
+        <testcase name="graph_context::tests::graph_failures_degrade_without_propagating_raw_errors" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.029">
+        </testcase>
+        <testcase name="graph_context::tests::path_safety_rejects_foreign_absolute_and_parent_paths" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.029">
+        </testcase>
+        <testcase name="model::tests::public_projection_round_trips_deterministically" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.029">
+        </testcase>
+        <testcase name="model::tests::diagnostic_serialization_never_requires_absolute_paths" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.030">
+        </testcase>
+        <testcase name="graph_context::tests::public_results_are_bounded_and_path_safe" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.030">
+        </testcase>
+        <testcase name="api::registry::tests::registry_is_sorted_unique_and_advertises_exact_mcp_surface" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.031">
+        </testcase>
+        <testcase name="api::facade::tests::facade_dispatches_each_request_exactly_once" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.032">
+        </testcase>
+        <testcase name="adapters::install::tests::install_repository_upserts_separate_wiki_and_memory_workflows_in_both_instruction_files" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.135">
+        </testcase>
+        <testcase name="adapters::install::tests::install_repository_initializes_and_reuses_local_wiki_state" classname="k-wiki" timestamp="2026-10-29T10:56:51.125+09:30" time="0.137">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::api_integration" tests="27" disabled="0" errors="0" failures="0">
+        <testcase name="mcp_authoring_round_trip_creates_populates_reads_and_searches_a_concept" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.161+09:30" time="0.095">
+        </testcase>
+        <testcase name="cli_validate_and_build_use_the_integrated_public_api" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.161+09:30" time="4.884">
+        </testcase>
+        <testcase name="install_command_initializes_repository_local_wiki_state" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.169+09:30" time="4.915">
+        </testcase>
+        <testcase name="mcp_install_command_keeps_registration_when_runtime_verification_fails" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.183+09:30" time="4.940">
+        </testcase>
+        <testcase name="mcp_install_command_registers_the_repository_knowledge_bundle" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.256+09:30" time="4.905">
+        </testcase>
+        <testcase name="mcp_install_command_dry_run_reports_per_client_targets_for_all_clients" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.173+09:30" time="5.000">
+        </testcase>
+        <testcase name="mcp_install_command_preserves_explicit_shared_name_and_rejects_shared_k_wiki_name" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.183+09:30" time="5.011">
+        </testcase>
+        <testcase name="mcp_install_command_rejects_conflicting_existing_entries_without_rewriting_files" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.261+09:30" time="4.983">
+        </testcase>
+        <testcase name="mcp_install_command_requires_an_initialized_knowledge_bundle" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.245+09:30" time="0.072">
+        </testcase>
+        <testcase name="mcp_install_command_preserves_other_repository_legacy_codex_registration" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.183+09:30" time="5.243">
+        </testcase>
+        <testcase name="mcp_install_command_keeps_codex_project_and_local_registrations_repository_local" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.179+09:30" time="5.256">
+        </testcase>
+        <testcase name="mcp_install_command_rejects_unreadable_legacy_config_before_local_install" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.085+09:30" time="0.364">
+        </testcase>
+        <testcase name="mcp_lists_only_configured_bundles_and_keeps_them_readable" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.440+09:30" time="0.031">
+        </testcase>
+        <testcase name="mcp_install_command_rejects_unsupported_clients_and_scopes" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.143+09:30" time="0.336">
+        </testcase>
+        <testcase name="mcp_install_command_rejects_conflicting_legacy_preservation_before_writing_local_config" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:51.262+09:30" time="5.221">
+        </testcase>
+        <testcase name="mcp_install_command_rejects_malformed_legacy_registration_before_local_install" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.045+09:30" time="0.452">
+        </testcase>
+        <testcase name="mcp_stdio_binary_advertises_the_packaged_knowledge_wiki_schema" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.482+09:30" time="0.067">
+        </testcase>
+        <testcase name="preview_http_dispatches_health_and_serves_static_content_with_security_headers" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.500+09:30" time="0.070">
+        </testcase>
+        <testcase name="mcp_install_command_reports_unique_manual_registration_and_cleanup_instructions" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.201+09:30" time="0.369">
+        </testcase>
+        <testcase name="mcp_memory_round_trip_records_activates_and_recalls_repository_knowledge" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.472+09:30" time="0.098">
+        </testcase>
+        <testcase name="mcp_maintenance_tools_validate_check_links_and_build_a_site" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.452+09:30" time="0.134">
+        </testcase>
+        <testcase name="mcp_install_command_removes_same_repository_legacy_codex_registration" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.179+09:30" time="0.407">
+        </testcase>
+        <testcase name="wiki_graph_context_and_service_do_not_import_graph_internals" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.557+09:30" time="0.029">
+        </testcase>
+        <testcase name="mcp_install_command_removes_legacy_shared_entry_and_reports_dry_run_cleanup" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.164+09:30" time="0.423">
+        </testcase>
+        <testcase name="mcp_stdio_memory_recall_with_unicode_keeps_the_transport_open" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.485+09:30" time="0.115">
+        </testcase>
+        <testcase name="mcp_install_command_verifies_the_registered_single_bundle_runtime" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.428+09:30" time="0.258">
+        </testcase>
+        <testcase name="mcp_install_command_uses_distinct_shared_names_for_same_basename_repositories" classname="k-wiki::api_integration" timestamp="2026-10-29T10:56:56.328+09:30" time="0.397">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::authoring" tests="14" disabled="0" errors="0" failures="0">
+        <testcase name="authoring_frontmatter_delimiters_match_bundle_reader" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.572+09:30" time="0.024">
+        </testcase>
+        <testcase name="authoring_io_errors_use_categories_without_raw_paths_or_dependency_text" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.572+09:30" time="0.027">
+        </testcase>
+        <testcase name="create_bundle_fails_if_the_target_already_exists_without_modifying_it" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.572+09:30" time="0.029">
+        </testcase>
+        <testcase name="create_page_rejects_symlink_paths_that_escape_the_bundle_root" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.590+09:30" time="0.032">
+        </testcase>
+        <testcase name="create_page_rejects_reserved_escape_and_absolute_targets" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.590+09:30" time="0.044">
+        </testcase>
+        <testcase name="create_page_creates_one_valid_concept_at_a_validated_bundle_relative_identity" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.590+09:30" time="0.046">
+        </testcase>
+        <testcase name="create_bundle_initializes_a_conformant_root_index_within_a_permitted_repository" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.590+09:30" time="0.049">
+        </testcase>
+        <testcase name="malformed_existing_frontmatter_does_not_echo_source_values" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.596+09:30" time="0.048">
+        </testcase>
+        <testcase name="production_authoring_validator_enforces_required_frontmatter" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.635+09:30" time="0.020">
+        </testcase>
+        <testcase name="populate_page_validates_before_replacing_the_destination" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.602+09:30" time="0.054">
+        </testcase>
+        <testcase name="populate_page_rejects_stale_writes_without_changing_source_content" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.604+09:30" time="0.062">
+        </testcase>
+        <testcase name="populate_page_preserves_unknown_frontmatter_fields_during_updates" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.602+09:30" time="0.072">
+        </testcase>
+        <testcase name="unsupported_yaml_serialization_does_not_echo_tags_or_values" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.638+09:30" time="0.039">
+        </testcase>
+        <testcase name="populate_page_writes_validated_frontmatter_and_markdown_atomically" classname="k-wiki::authoring" timestamp="2026-10-29T10:56:56.625+09:30" time="0.067">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::bundle_reader" tests="10" disabled="0" errors="0" failures="0">
+        <testcase name="invalid_bundle_root_error_omits_absolute_host_path" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.648+09:30" time="0.027">
+        </testcase>
+        <testcase name="closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.643+09:30" time="0.041">
+        </testcase>
+        <testcase name="resp_169_parses_standard_fields_and_preserves_extensions" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.667+09:30" time="0.021">
+        </testcase>
+        <testcase name="resp_168_discovers_bundle_boundaries_and_metadata" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.663+09:30" time="0.031">
+        </testcase>
+        <testcase name="parser_diagnostics_exclude_source_values_and_keep_relative_locations" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.663+09:30" time="0.032">
+        </testcase>
+        <testcase name="resp_171_records_root_okf_version_from_bundle_index" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.676+09:30" time="0.023">
+        </testcase>
+        <testcase name="resp_170_classifies_reserved_files_without_promoting_them_to_concepts" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.676+09:30" time="0.026">
+        </testcase>
+        <testcase name="resp_172_rejects_markdown_entries_that_escape_the_bundle_root" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.678+09:30" time="0.027">
+        </testcase>
+        <testcase name="unterminated_frontmatter_is_invalid_even_when_yaml_is_valid" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.684+09:30" time="0.025">
+        </testcase>
+        <testcase name="walk_errors_keep_relative_location_and_safe_io_category" classname="k-wiki::bundle_reader" timestamp="2026-10-29T10:56:56.688+09:30" time="0.031">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::compilation" tests="5" disabled="0" errors="0" failures="0">
+        <testcase name="broken_fragment_external_and_rejected_links_remain_visible" classname="k-wiki::compilation" timestamp="2026-10-29T10:56:56.692+09:30" time="0.025">
+        </testcase>
+        <testcase name="backlinks_update_after_link_add_change_and_removal" classname="k-wiki::compilation" timestamp="2026-10-29T10:56:56.688+09:30" time="0.031">
+        </testcase>
+        <testcase name="directory_indexes_history_and_citations_are_compiled_deterministically" classname="k-wiki::compilation" timestamp="2026-10-29T10:56:56.695+09:30" time="0.027">
+        </testcase>
+        <testcase name="compilation_is_deterministic_and_namespaces_routes" classname="k-wiki::compilation" timestamp="2026-10-29T10:56:56.694+09:30" time="0.028">
+        </testcase>
+        <testcase name="relative_directory_and_fragment_routes_resolve_canonically" classname="k-wiki::compilation" timestamp="2026-10-29T10:56:56.699+09:30" time="0.038">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::conformance" tests="4" disabled="0" errors="0" failures="0">
+        <testcase name="resp_174_reports_errors_for_missing_or_invalid_concept_frontmatter" classname="k-wiki::conformance" timestamp="2026-10-29T10:56:56.706+09:30" time="0.027">
+        </testcase>
+        <testcase name="resp_173_evaluates_normative_and_recommended_profiles_separately" classname="k-wiki::conformance" timestamp="2026-10-29T10:56:56.702+09:30" time="0.031">
+        </testcase>
+        <testcase name="resp_176_validates_reserved_file_structures" classname="k-wiki::conformance" timestamp="2026-10-29T10:56:56.717+09:30" time="0.024">
+        </testcase>
+        <testcase name="resp_175_retains_unknown_types_and_extensions_in_consume_mode" classname="k-wiki::conformance" timestamp="2026-10-29T10:56:56.709+09:30" time="0.037">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::diagnostic_transports" tests="8" disabled="0" errors="0" failures="0">
+        <testcase name="mcp_malformed_arguments_keep_rpc_classification" classname="k-wiki::diagnostic_transports" timestamp="2026-10-29T10:56:56.726+09:30" time="0.040">
+        </testcase>
+        <testcase name="mcp_missing_concept_preserves_domain_error_on_the_wire" classname="k-wiki::diagnostic_transports" timestamp="2026-10-29T10:56:56.732+09:30" time="0.034">
+        </testcase>
+        <testcase name="mcp_retryable_api_error_preserves_details_on_the_wire" classname="k-wiki::diagnostic_transports" timestamp="2026-10-29T10:56:56.732+09:30" time="0.034">
+        </testcase>
+        <testcase name="cli_validate_consume_accepts_error_diagnostics" classname="k-wiki::diagnostic_transports" timestamp="2026-10-29T10:56:56.720+09:30" time="0.046">
+        </testcase>
+        <testcase name="mcp_stale_authoring_write_preserves_conflict_on_the_wire" classname="k-wiki::diagnostic_transports" timestamp="2026-10-29T10:56:56.737+09:30" time="0.048">
+        </testcase>
+        <testcase name="cli_validate_warning_acceptance_depends_on_profile" classname="k-wiki::diagnostic_transports" timestamp="2026-10-29T10:56:56.722+09:30" time="0.074">
+        </testcase>
+        <testcase name="cli_validate_rejected_profiles_exit_nonzero_in_text_and_json" classname="k-wiki::diagnostic_transports" timestamp="2026-10-29T10:56:56.723+09:30" time="0.106">
+        </testcase>
+        <testcase name="cli_validate_accepted_profiles_exit_zero_in_text_and_json" classname="k-wiki::diagnostic_transports" timestamp="2026-10-29T10:56:56.719+09:30" time="0.112">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::diagnostics" tests="12" disabled="0" errors="0" failures="0">
+        <testcase name="configured_root_failure_preserves_cache_and_recovers" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.746+09:30" time="0.038">
+        </testcase>
+        <testcase name="external_edits_and_deletions_are_visible_on_the_next_read" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.767+09:30" time="0.028">
+        </testcase>
+        <testcase name="failed_acquisition_cannot_replace_cache_even_via_permissive_build" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.767+09:30" time="0.033">
+        </testcase>
+        <testcase name="explicit_builds_for_other_roots_do_not_change_configured_reads" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.767+09:30" time="0.038">
+        </testcase>
+        <testcase name="compiler_locations_include_frontmatter_once_and_preserve_conformance_lines" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.741+09:30" time="0.074">
+        </testcase>
+        <testcase name="incomplete_scan_messages_are_safe_through_api_mcp_and_http" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.767+09:30" time="0.049">
+        </testcase>
+        <testcase name="malformed_source_errors_are_safe_through_api_mcp_and_http" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.784+09:30" time="0.041">
+        </testcase>
+        <testcase name="unavailable_roots_use_503_while_unknown_bundles_remain_404" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.795+09:30" time="0.037">
+        </testcase>
+        <testcase name="maintenance_operations_share_conformance_and_compiler_diagnostics" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.784+09:30" time="0.055">
+        </testcase>
+        <testcase name="unchanged_reads_reuse_the_explicit_projection_generation" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.796+09:30" time="0.043">
+        </testcase>
+        <testcase name="unterminated_frontmatter_is_reported_by_validation_and_builds" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.799+09:30" time="0.047">
+        </testcase>
+        <testcase name="validation_profiles_apply_to_merged_link_warnings" classname="k-wiki::diagnostics" timestamp="2026-10-29T10:56:56.805+09:30" time="0.045">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::memory" tests="8" disabled="0" errors="0" failures="0">
+        <testcase name="invalid_transition_rejects_without_changing_source" classname="k-wiki::memory" timestamp="2026-10-29T10:56:56.826+09:30" time="0.064">
+        </testcase>
+        <testcase name="malformed_memory_is_advisory_outside_the_recommended_profile" classname="k-wiki::memory" timestamp="2026-10-29T10:56:56.829+09:30" time="0.066">
+        </testcase>
+        <testcase name="recall_returns_only_valid_active_memory_in_requested_bundle" classname="k-wiki::memory" timestamp="2026-10-29T10:56:56.832+09:30" time="0.085">
+        </testcase>
+        <testcase name="record_memory_persists_candidate_with_structured_provenance" classname="k-wiki::memory" timestamp="2026-10-29T10:56:56.839+09:30" time="0.086">
+        </testcase>
+        <testcase name="default_recall_excludes_malformed_and_quarantined_memory" classname="k-wiki::memory" timestamp="2026-10-29T10:56:56.815+09:30" time="0.142">
+        </testcase>
+        <testcase name="independent_reader_observes_quarantine_activation_and_deletion" classname="k-wiki::memory" timestamp="2026-10-29T10:56:56.816+09:30" time="0.183">
+        </testcase>
+        <testcase name="memory_kinds_use_distinct_paths_and_recall_filters" classname="k-wiki::memory" timestamp="2026-10-29T10:56:56.831+09:30" time="0.215">
+        </testcase>
+        <testcase name="supersession_preserves_prior_record_for_audit" classname="k-wiki::memory" timestamp="2026-10-29T10:56:56.839+09:30" time="0.207">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::projection" tests="4" disabled="0" errors="0" failures="0">
+        <testcase name="projection_state_uses_the_repository_local_dot_kwiki_root" classname="k-wiki::projection" timestamp="2026-10-29T10:56:56.849+09:30" time="0.044">
+        </testcase>
+        <testcase name="unchanged_bundle_rebuild_is_a_cache_hit" classname="k-wiki::projection" timestamp="2026-10-29T10:56:56.899+09:30" time="0.100">
+        </testcase>
+        <testcase name="publish_generation_is_atomic_and_retains_last_valid_projection_on_failure" classname="k-wiki::projection" timestamp="2026-10-29T10:56:56.891+09:30" time="0.117">
+        </testcase>
+        <testcase name="newest_generation_wins_when_competing_builds_finish_out_of_order" classname="k-wiki::projection" timestamp="2026-10-29T10:56:56.847+09:30" time="0.162">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::refresh" tests="8" disabled="0" errors="0" failures="0">
+        <testcase name="active_wiki_refresh_prevents_stale_publication_until_completion" classname="k-wiki::refresh" timestamp="2026-10-29T10:56:56.899+09:30" time="0.020">
+        </testcase>
+        <testcase name="coalesces_duplicate_paths_and_produces_deterministic_batches" classname="k-wiki::refresh" timestamp="2026-10-29T10:56:56.919+09:30" time="0.019">
+        </testcase>
+        <testcase name="concept_index_and_log_changes_invalidate_expected_artifacts" classname="k-wiki::refresh" timestamp="2026-10-29T10:56:56.923+09:30" time="0.020">
+        </testcase>
+        <testcase name="consumer_failures_are_independent_and_report_retryability" classname="k-wiki::refresh" timestamp="2026-10-29T10:56:56.926+09:30" time="0.021">
+        </testcase>
+        <testcase name="failed_refresh_records_diagnostics_until_a_successful_retry" classname="k-wiki::refresh" timestamp="2026-10-29T10:56:56.942+09:30" time="0.020">
+        </testcase>
+        <testcase name="one_debounced_burst_dispatches_each_consumer_once" classname="k-wiki::refresh" timestamp="2026-10-29T10:56:56.946+09:30" time="0.018">
+        </testcase>
+        <testcase name="paths_are_partitioned_for_graph_wiki_or_both" classname="k-wiki::refresh" timestamp="2026-10-29T10:56:56.950+09:30" time="0.018">
+        </testcase>
+        <testcase name="rename_delete_and_shutdown_flush_each_path_once" classname="k-wiki::refresh" timestamp="2026-10-29T10:56:56.958+09:30" time="0.018">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::rendering" tests="6" disabled="0" errors="0" failures="0">
+        <testcase name="concept_pages_sanitize_active_content_and_route_broken_links_to_diagnostics" classname="k-wiki::rendering" timestamp="2026-10-29T10:56:56.965+09:30" time="0.031">
+        </testcase>
+        <testcase name="renderer_rejects_css_urls_in_concepts_and_directories_and_preserves_safe_markup" classname="k-wiki::rendering" timestamp="2026-10-29T10:56:56.972+09:30" time="0.028">
+        </testcase>
+        <testcase name="rendered_site_writes_manifest_assets_and_enforces_output_root_containment" classname="k-wiki::rendering" timestamp="2026-10-29T10:56:56.965+09:30" time="0.054">
+        </testcase>
+        <testcase name="representative_html_fixtures_stay_deterministic_for_desktop_and_narrow_layouts" classname="k-wiki::rendering" timestamp="2026-10-29T10:56:56.978+09:30" time="0.044">
+        </testcase>
+        <testcase name="route_helpers_percent_encode_reversibly_and_reject_escape_segments" classname="k-wiki::rendering" timestamp="2026-10-29T10:56:56.997+09:30" time="0.030">
+        </testcase>
+        <testcase name="sanitizer_css_url_policy_is_case_insensitive" classname="k-wiki::rendering" timestamp="2026-10-29T10:56:57.005+09:30" time="0.035">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::search" tests="5" disabled="0" errors="0" failures="0">
+        <testcase name="serialized_index_round_trips_deterministically" classname="k-wiki::search" timestamp="2026-10-29T10:56:57.008+09:30" time="0.027">
+        </testcase>
+        <testcase name="exact_identity_and_title_matches_rank_above_body_only_matches" classname="k-wiki::search" timestamp="2026-10-29T10:56:57.008+09:30" time="0.028">
+        </testcase>
+        <testcase name="snippet_windows_preserve_utf8_boundaries" classname="k-wiki::search" timestamp="2026-10-29T10:56:57.009+09:30" time="0.028">
+        </testcase>
+        <testcase name="filters_restrict_bundle_type_and_tag_matches" classname="k-wiki::search" timestamp="2026-10-29T10:56:57.004+09:30" time="0.033">
+        </testcase>
+        <testcase name="snippets_are_html_escaped_bounded_and_deterministic" classname="k-wiki::search" timestamp="2026-10-29T10:56:57.024+09:30" time="0.027">
+        </testcase>
+    </testsuite>
+    <testsuite name="k-wiki::transports" tests="11" disabled="0" errors="0" failures="0">
+        <testcase name="cli_parses_phase8_commands" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.023+09:30" time="0.028">
+        </testcase>
+        <testcase name="cli_run_emits_structured_validation_output_when_json_is_requested" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.035+09:30" time="0.028">
+        </testcase>
+        <testcase name="mcp_initialize_uses_exact_server_display_name" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.041+09:30" time="0.026">
+        </testcase>
+        <testcase name="cli_run_dispatches_exactly_once" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.029+09:30" time="0.038">
+        </testcase>
+        <testcase name="http_security_headers_and_safe_errors_follow_phase8_contract" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.042+09:30" time="0.026">
+        </testcase>
+        <testcase name="cli_run_reports_the_packaged_version_without_dispatching" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.042+09:30" time="0.027">
+        </testcase>
+        <testcase name="cli_run_preserves_completed_command_output_and_exit_status" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.042+09:30" time="0.029">
+        </testcase>
+        <testcase name="mcp_protocol_errors_and_success_envelopes_remain_compatible" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.046+09:30" time="0.038">
+        </testcase>
+        <testcase name="mcp_tools_list_advertises_declared_metadata" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.051+09:30" time="0.034">
+        </testcase>
+        <testcase name="serve_rejects_remote_binding_without_security_change" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.052+09:30" time="0.035">
+        </testcase>
+        <testcase name="mcp_tool_calls_dispatch_exactly_once_and_preserve_error_codes" classname="k-wiki::transports" timestamp="2026-10-29T10:56:57.048+09:30" time="0.046">
+        </testcase>
+    </testsuite>
+    <testsuite name="xtask::bin/xtask" tests="42" disabled="0" errors="0" failures="0">
+        <testcase name="native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.064+09:30" time="0.023">
+        </testcase>
+        <testcase name="native_tests::tests::captured_cli_survives_cargo_replacing_its_output" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.068+09:30" time="0.024">
+        </testcase>
+        <testcase name="native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.075+09:30" time="0.022">
+        </testcase>
+        <testcase name="native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.069+09:30" time="0.029">
+        </testcase>
+        <testcase name="native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.068+09:30" time="0.037">
+        </testcase>
+        <testcase name="native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.068+09:30" time="0.038">
+        </testcase>
+        <testcase name="release::tests::notes_only_include_the_exact_release" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.086+09:30" time="0.020">
+        </testcase>
+        <testcase name="release::tests::metadata_rejects_inconsistent_versions" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.086+09:30" time="0.027">
+        </testcase>
+        <testcase name="release::tests::notes_reject_missing_duplicate_and_empty_sections" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.086+09:30" time="0.030">
+        </testcase>
+        <testcase name="tests::archive_contract_rejects_unexpected_entries" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.116+09:30" time="0.029">
+        </testcase>
+        <testcase name="tests::complete_artifact_set_rejects_mixed_provenance" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.146+09:30" time="0.027">
+        </testcase>
+        <testcase name="tests::crate_size_validation_enforces_the_registry_limit" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.172+09:30" time="0.014">
+        </testcase>
+        <testcase name="release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.105+09:30" time="0.090">
+        </testcase>
+        <testcase name="tests::native_capture_requires_unique_source_bound_normal_cli_artifact" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.195+09:30" time="0.017">
+        </testcase>
+        <testcase name="tests::native_capture_reuses_the_exact_test_profile_and_features" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.212+09:30" time="0.013">
+        </testcase>
+        <testcase name="tests::native_target_contract_maps_names_and_binaries" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.225+09:30" time="0.012">
+        </testcase>
+        <testcase name="tests::native_test_failure_cannot_authorize_artifact_production" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.237+09:30" time="0.030">
+        </testcase>
+        <testcase name="tests::release_identity_validation_is_strict" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.267+09:30" time="0.013">
+        </testcase>
+        <testcase name="tests::windows_native_tests_forward_bundled_extensions" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.280+09:30" time="0.016">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_automatic_rebuild_recovery" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.296+09:30" time="0.022">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_direct_release_push_trigger" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.318+09:30" time="0.021">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_github_sha_for_release_identity" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.339+09:30" time="0.022">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_ci_success_guard" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.361+09:30" time="0.024">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_crate_publish_retry" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.384+09:30" time="0.040">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_crate_size_gates" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.424+09:30" time="0.031">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_triggering_run_binding" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.455+09:30" time="0.023">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_release_queue_replacement" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.478+09:30" time="0.023">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_unconditional_release_publication" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.502+09:30" time="0.021">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_unvalidated_publishers" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.523+09:30" time="0.071">
+        </testcase>
+        <testcase name="tests::workflow_policy_requires_ci_completion_release_trigger" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.594+09:30" time="0.040">
+        </testcase>
+        <testcase name="tests::workflow_policy_requires_publication_revalidation" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.634+09:30" time="0.040">
+        </testcase>
+        <testcase name="tests::workflow_yaml_validation_rejects_unindented_heredoc_body" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.674+09:30" time="0.014">
+        </testcase>
+        <testcase name="tests::workflows_reject_removed_platform_targets" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.688+09:30" time="0.029">
+        </testcase>
+        <testcase name="release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.087+09:30" time="1.759">
+        </testcase>
+        <testcase name="release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.097+09:30" time="2.043">
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.112+09:30" time="2.586">
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_targets_original_sha_and_is_idempotent" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.098+09:30" time="2.868">
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.097+09:30" time="3.040">
+        </testcase>
+        <testcase name="tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.187+09:30" time="3.290">
+        </testcase>
+        <testcase name="release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.093+09:30" time="5.257">
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.106+09:30" time="10.768">
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history" classname="xtask::bin/xtask" timestamp="2026-10-29T10:56:57.106+09:30" time="11.239">
+        </testcase>
+    </testsuite>
+</testsuites>

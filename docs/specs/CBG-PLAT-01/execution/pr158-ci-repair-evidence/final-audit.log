@@ -1,0 +1,21 @@
+    Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
+      Loaded 1381 security advisories (from /Users/rabii/.cargo/advisory-db)
+    Updating crates.io index
+    Scanning Cargo.lock for vulnerabilities (223 crate dependencies)
+Crate:     cxx
+Version:   1.0.138
+Warning:   unsound
+Title:     `let_cxx_string!` uses uninitialized value due to exception safety violations
+Date:      2026-07-05
+ID:        RUSTSEC-2026-0202
+URL:       https://rustsec.org/advisories/RUSTSEC-2026-0202
+
+Crate:     tokio
+Version:   1.53.1
+Warning:   unsound
+Title:     `AsyncFd::new` and related constructors violate I/O safety
+Date:      2026-10-13
+ID:        RUSTSEC-2026-0386
+URL:       https://rustsec.org/advisories/RUSTSEC-2026-0386
+
+warning: 2 allowed warnings found

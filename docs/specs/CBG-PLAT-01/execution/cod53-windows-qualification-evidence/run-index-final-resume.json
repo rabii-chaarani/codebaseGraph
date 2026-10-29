@@ -1,0 +1,152 @@
+[
+  {
+    "label": "installed-graph-search-short",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/installed/bin/codebase-graph.exe\" codebase-search SampleService --repo-root \"C:/Users/rcha0053/q158\" --json",
+    "cwd": "C:\\Users\\rcha0053\\q158",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:53712",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:53712",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:53712",
+      "HTTPS_PROXY": "http://127.0.0.1:53712",
+      "HTTP_PROXY": "http://127.0.0.1:53712",
+      "ALL_PROXY": "http://127.0.0.1:53712",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\q158home",
+      "HOME": "C:\\Users\\rcha0053\\q158home"
+    },
+    "started_at": "2026-10-29T01:07:08.336475+00:00",
+    "pid": 27892,
+    "exit_code": 0,
+    "duration": 12.062000000005355
+  },
+  {
+    "label": "missing-native-library-install",
+    "command": "cargo install --path \"C:/Users/rcha0053/Repositories/cbg-pr158\" --locked --offline --root \"C:/Users/rcha0053/pr158-qualification/negative-library-install\" --bin codebase-graph",
+    "cwd": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "overrides": {
+      "LBUG_LIBRARY_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\missing-native-library",
+      "LBUG_INCLUDE_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0",
+      "CARGO_TARGET_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\negative-library-target",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "started_at": "2026-10-29T01:08:59.479383+00:00",
+    "pid": 9756,
+    "exit_code": 101,
+    "duration": 214.21900000001187
+  },
+  {
+    "label": "exact-native-versions",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/capture-versions.ps1\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {},
+    "started_at": "2026-10-29T01:10:08.868555+00:00",
+    "pid": 22048,
+    "exit_code": 0,
+    "duration": 3.797000000005937
+  },
+  {
+    "label": "durable-proxy-guard",
+    "command": "\"C:/Users/rcha0053/.prime/agent/kernel-venv/Scripts/python.exe\" -u \"C:/Users/rcha0053/pr158-qualification/reject-proxy.py\" --ready \"C:/Users/rcha0053/pr158-qualification/proxy-guard-ready.json\" --requests \"C:/Users/rcha0053/pr158-qualification/proxy-guard-requests.jsonl\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {},
+    "started_at": "2026-10-29T01:10:43.656288+00:00",
+    "pid": 23460,
+    "exit_code": 1,
+    "duration": 229.82799999999406
+  },
+  {
+    "label": "durable-guard-negative",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/pr158-windows-probe.exe\" download-negative \"C:/Users/rcha0053/pr158-qualification/durable-negative-db\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:55319",
+      "HTTPS_PROXY": "http://127.0.0.1:55319",
+      "HTTP_PROXY": "http://127.0.0.1:55319",
+      "ALL_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\q158neg",
+      "HOME": "C:\\Users\\rcha0053\\q158neg"
+    },
+    "started_at": "2026-10-29T01:11:05.940199+00:00",
+    "pid": 30680,
+    "exit_code": 0,
+    "duration": 8.593999999997322
+  },
+  {
+    "label": "installed-graph-build-guarded",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/installed/bin/codebase-graph.exe\" build --repo-root \"C:/Users/rcha0053/q158b\" --mode full --no-git --single-thread --max-parallelism 1 --json",
+    "cwd": "C:\\Users\\rcha0053\\q158b",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:55319",
+      "HTTPS_PROXY": "http://127.0.0.1:55319",
+      "HTTP_PROXY": "http://127.0.0.1:55319",
+      "ALL_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\q158bh",
+      "HOME": "C:\\Users\\rcha0053\\q158bh"
+    },
+    "started_at": "2026-10-29T01:11:14.551533+00:00",
+    "pid": 24320,
+    "exit_code": 0,
+    "duration": 154.73500000000058
+  },
+  {
+    "label": "installed-graph-search-guarded",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/installed/bin/codebase-graph.exe\" codebase-search SampleService --repo-root \"C:/Users/rcha0053/q158b\" --json",
+    "cwd": "C:\\Users\\rcha0053\\q158b",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:55319",
+      "HTTPS_PROXY": "http://127.0.0.1:55319",
+      "HTTP_PROXY": "http://127.0.0.1:55319",
+      "ALL_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\q158bh",
+      "HOME": "C:\\Users\\rcha0053\\q158bh"
+    },
+    "started_at": "2026-10-29T01:14:01.075435+00:00",
+    "pid": 26980,
+    "exit_code": 0,
+    "duration": 5.389999999999418
+  },
+  {
+    "label": "durable-guard-negative-after",
+    "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/rcha0053/pr158-qualification/run-native.ps1\" \"C:/Users/rcha0053/pr158-qualification/target/release/pr158-windows-probe.exe\" download-negative \"C:/Users/rcha0053/pr158-qualification/durable-negative-after-db\"",
+    "cwd": "C:\\Users\\rcha0053\\pr158-qualification",
+    "overrides": {
+      "LADYBUG_HTTPS_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_HTTP_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_ALL_PROXY": "http://127.0.0.1:55319",
+      "HTTPS_PROXY": "http://127.0.0.1:55319",
+      "HTTP_PROXY": "http://127.0.0.1:55319",
+      "ALL_PROXY": "http://127.0.0.1:55319",
+      "LADYBUG_NO_PROXY": null,
+      "no_proxy": null,
+      "NO_PROXY": null,
+      "QUALIFICATION_NATIVE_PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+      "USERPROFILE": "C:\\Users\\rcha0053\\q158neg2",
+      "HOME": "C:\\Users\\rcha0053\\q158neg2"
+    },
+    "started_at": "2026-10-29T01:14:29.980394+00:00",
+    "pid": 5700,
+    "exit_code": 0,
+    "duration": 3.5160000000032596
+  }
+]

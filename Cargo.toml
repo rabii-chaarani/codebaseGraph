@@ -36,6 +36,7 @@ panic = "unwind"
 name = "codebase_graph"
 
 [features]
+default = ["bundled-windows-extensions"]
 bundled-windows-extensions = []
 
 [dependencies]
