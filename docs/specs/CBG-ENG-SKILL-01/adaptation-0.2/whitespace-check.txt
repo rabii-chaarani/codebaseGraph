@@ -1,0 +1,102 @@
+Full branch diff check; preserved exact evidence whitespace is disclosed.
+Exit: 2
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/after/AGENTS.md.txt:143: trailing whitespace.
++After requested code changes, 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/after/AGENTS.md.txt:144: trailing whitespace.
++- review and commit relevant changes with a Conventional Commit message.  
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/before/AGENTS.md.txt:142: trailing whitespace.
++After requested code changes, 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/before/AGENTS.md.txt:143: trailing whitespace.
++- review and commit relevant changes with a Conventional Commit message.  
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:9: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:11: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:14: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:17: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:26: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:29: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:32: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:43: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:46: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:52: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:55: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:61: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:64: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:78: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:80: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:83: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:87: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:91: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:93: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:99: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:101: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:104: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:106: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:108: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:110: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:113: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:118: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:120: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:123: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:125: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:127: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:130: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:132: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:135: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:138: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:141: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:150: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:155: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:157: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:160: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:164: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:166: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:177: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:181: trailing whitespace.
++ 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:184: trailing whitespace.
++ After requested code changes, 
+docs/specs/CBG-ENG-SKILL-01/adaptation-0.2/instructions.patch:185: trailing whitespace.
++ - review and commit relevant changes with a Conventional Commit message.  

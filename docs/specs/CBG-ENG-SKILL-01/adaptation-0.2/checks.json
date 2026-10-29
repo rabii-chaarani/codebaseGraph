@@ -1,0 +1,29 @@
+{
+  "structural_validator": {
+    "result": "pass",
+    "python": "/opt/homebrew/bin/python3.12",
+    "library": "existing cached PyYAML 6.0.3; no installation",
+    "command": "skill-creator/scripts/quick_validate.py <canonical shared skill>"
+  },
+  "toml": "parsed seven model/effort roles with Python 3.12 tomllib",
+  "internal_links": "pass",
+  "AGENTS_lines": 146,
+  "installed_hashes": "all eight match frozen manifest",
+  "lessons_unchanged": true,
+  "symlink_preserved": true,
+  "behavior_cases": 10,
+  "behavior_method": "two fresh independent read-only collaboration participants, host-inherited settings, no expected answers provided; outcomes require independent final assessment",
+  "native_inventory": "one canonical entry",
+  "native_invocation": "pending: runtime reports no authenticated models",
+  "product_tests": "not run: Markdown/TOML only",
+  "live_delivery_qualification": "not performed or authorized",
+  "memory_assessment": "no new durable runtime knowledge from synthetic scenarios",
+  "behavior_assessment": "All ten bounded expectations passed independent final review",
+  "final_review": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "max",
+    "context": "fresh, read-only",
+    "confirmed_findings": 0
+  },
+  "whitespace": "Active specification/approval/proposal prose passes scoped branch diff check; full branch exit 2 comes from preserved exact evidence whitespace. See whitespace-check.txt."
+}

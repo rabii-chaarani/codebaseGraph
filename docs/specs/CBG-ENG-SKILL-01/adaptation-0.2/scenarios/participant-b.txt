@@ -1,0 +1,7 @@
+All cases are fictional and independent. Use the codebaseGraph Engineer instructions and its model map. Give the permitted next actions and stopping point for each case. Do not execute the actions or use live services. Governing rules are present; the supplied facts are the fixture evidence.
+
+6. A release PR was audited at head r1. It is now r2, and the full unreleased delta includes an additional unapproved change C. The queue's own issues are complete.
+7. A release selected successful CI run 401 at release merge M. New ordinary main CI run 402 is green. Run 401's Windows artifact is expired. A tag already exists at a conflicting SHA.
+8. A release PR has merged. Native assets were published; the crate upload response was lost. The user now cancels. Registry status has not been checked.
+9. The fixture model map explicitly selects Terra/xhigh for coordinator. The host supports it, but the running coordinator is Sol/high. Separately, the configured proposal-reviewer model is unavailable. The host has other working models.
+10. A named issue's implementation approval refers to an older spec revision. A proposed worker also needs a shared file already owned by a running worker. Its attached tests have not been executed.

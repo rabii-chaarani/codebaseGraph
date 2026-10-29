@@ -1,0 +1,25 @@
+{
+  "runtime": "Prime Agent 0.10.1",
+  "inventory_command": "prime-agent prompt --cwd /Users/rabii/Projects/Repositories/codebaseGraph --json",
+  "inventory_entries": 1,
+  "inventory_source": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/SKILL.md",
+  "inventory_sha256": "1d425f54b4076edd3228c0c730f49d48c687e952bc4511ef7f44666f8dfe59a6",
+  "invocation_status": "pending: no authenticated native models",
+  "attempts": [
+    {
+      "group": "a",
+      "returncode": 1,
+      "stderr": "Error: No authenticated models available. Configure a provider or select a model explicitly.",
+      "stdout_bytes": 0,
+      "command_sha256": "ec3c0d66dae8563007da91d285c54418a30dc11a2f519872f9c4355939749565"
+    },
+    {
+      "group": "b",
+      "returncode": 1,
+      "stderr": "Error: No authenticated models available. Configure a provider or select a model explicitly.",
+      "stdout_bytes": 0,
+      "command_sha256": "542e272c38e910d900c31726550ae1be071dd2d6c8197a5f9fbd7e1de6a19b24"
+    }
+  ],
+  "scope": "No login, provider, credentials, or settings changes. Inventory is discovery evidence, not completed native invocation/routing."
+}

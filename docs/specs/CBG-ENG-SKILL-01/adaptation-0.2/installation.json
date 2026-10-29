@@ -1,0 +1,49 @@
+{
+  "frozen_commit": "b2eee244300244b71ad2af9a1f991f9a2fc58aba",
+  "base_checks": "passed before all writes",
+  "installed_checks": "passed",
+  "symlink_preserved": true,
+  "lessons_unchanged": true,
+  "files": [
+    {
+      "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/SKILL.md",
+      "sha256": "3779071c7cd5fd5228e0c75f45e9aba318632d7b59c86f8ec8e79327f2da645d",
+      "changed": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/issue-selection.md",
+      "sha256": "3559d6f9c1f0457f5a405a4c227267fe4241b2ff71428c49562644cbf8d55801",
+      "changed": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/agent-focus.md",
+      "sha256": "d60bb7ec9d848e86d060831acf92726d5b9e26289b10507b2332d0951f13d98b",
+      "changed": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/verification.md",
+      "sha256": "828fe4f3c008e4623fce437ba02c5c7274b45f620da16e7410c1936b814ea457",
+      "changed": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/lessons.md",
+      "sha256": "7742017981b58f691be6e143fc8a513dc8bb21ccd463a58279dd26449140a03a",
+      "changed": false
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/codebaseGraph/AGENTS.md",
+      "sha256": "660c835af15f06268c0eaf6fc2c406f5b171a951e86bce7216c0a7cd62d6848f",
+      "changed": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+      "sha256": "c08843ea6d3f9cefc0b858cfd08bfcc71fa5f344516f8ec8b5183faa705ef1d1",
+      "changed": true
+    },
+    {
+      "path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/references/merge-and-release.md",
+      "sha256": "3f937eb847d1717b35e8f2b7ab7907a74d3ff41f788d0a41ca283e80c78b4fe1",
+      "changed": true
+    }
+  ]
+}
