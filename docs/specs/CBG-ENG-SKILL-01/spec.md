@@ -1,117 +1,74 @@
-# CBG-ENG-SKILL-01 — codebaseGraph Engineer
+# CBG-ENG-SKILL-01 — codebaseGraph Engineer Agent
 
-## 1. Identity and status
+## Identity and approval
 
-- **Canonical path:** `docs/specs/CBG-ENG-SKILL-01/spec.md`; logical revision **0.1**.
-- **Outcome:** a project-local Markdown skill that orchestrates codebaseGraph development end to end, with focused Linear issue selection, architecture compliance and bounded coding agents.
-- **State:** design approved; specification proposed for exact-revision approval. Skill creation, execution qualification and completion are not approved or claimed by this document.
-- **Decision owner / aggregate closure owner:** the user. Individual delivery gates remain with their live assigned owners.
-- **Linear:** deliberately not tracked for this skill-creation task, per Q18. This exception does not remove the created engineer's normal Linear responsibilities.
-- **Scryer:** documentation-only change ledger `chg-drc849`, explicitly opened against the configured original repository. No product responsibilities, nodes, links, directives, anchors or tests change; no architectural claims are invented. Close the empty ledger under the proportionality rules when this work ends.
-- **Review:** [proposal review](reviews/proposal-review.md), [focused F01 verification](reviews/proposal-verification.md), and [review reconciliation](reviews/README.md). These review the design, not a nonexistent implementation.
-- **Approval record:** pending. After the user approves this path at its full committed Git SHA and exact scope, record that approval separately; never embed this file's own containing commit SHA here.
+- Canonical path: `docs/specs/CBG-ENG-SKILL-01/spec.md`; revision **0.2**, 29 October 2026.
+- Scope: adapt the existing Engineer Agent instructions for approved queues, protected merges, approved-content releases and configurable role models. No live delivery batch is authorized.
+- User decision: **“PLEASE IMPLEMENT THIS PLAN”**, followed by Terra/xhigh authorship, concise-writing and model-config instructions. The user chose host inheritance for the coordinator and evidence verifier. This does not claim the user reviewed a later-created Git SHA.
+- Tracking: [COD-102](https://linear.app/codebasegraph/issue/COD-102/cbg-eng-skill-01-r02-extend-engineer-agent-through-approved-queues). Scryer ledger: `chg-7dqyj1`, documentation only; no product claims change.
+- Approval mapping: [revision 0.2](approvals/rev-0.2.md). Exact instruction bytes/hashes: [manifest](adaptation-0.2/manifest.json). Freeze the commit and scope record before installation; a commit alone is not approval.
+- Preserve [revision 0.1 approval](approvals/rev-0.1.md) and its [immutable specification](https://github.com/rabii-chaarani/codebaseGraph/blob/01416f1ea888d349d1358bd5d7eddfcb3c0ae4ad/docs/specs/CBG-ENG-SKILL-01/spec.md). Its creation-only no-Linear/no-PR exceptions do not apply here.
+- Aggregate closure remains with the user. Installation, behavior checks and live-host qualification are separate outcomes.
 
-### Approved preparation baseline
+## Problem and outcome
 
-The user selected an isolated current-main worktree (Q17=1). `origin/main` was fetched on 28 October 2026 and resolved to `62dcb10305af07e24be7b1a960407f47135bf93c`. Branch `feat/codebasegraph-engineer` is based on that commit in `/Users/rabii/Projects/Repositories/codebaseGraph-engineer`. The dirty original checkout is not the delivery baseline and must remain untouched. Fetching main is an observation at preparation time, not a promise that the branch always follows a moving tip.
+The installed skill already coordinates planning, workers, integration and evidence. Its unconditional one-issue stopping rule prevents the approved queue workflow. It lacks a merge/release procedure and role-model configuration.
 
-Current main has no `AGENTS.md` in the worktree or its ancestor directories. Q21=1 explicitly requires asking for the authoritative rules location and pausing dependent work; do not copy another checkout's rules or add `AGENTS.md`. The repository instructions supplied in this conversation govern this approved specification preparation. The future skill must not assume those instructions are automatically available in another session.
+The codebaseGraph Engineer Agent remains the sole coordinator. It follows the authorized endpoint, handles one issue at a time, delegates independent slices, merges after required gates and releases only a completed approved queue. Read-only and default single-issue requests retain their limits.
 
-## 2. Problem and observable outcome
+## Scope and constraints
 
-The user wants development orchestration that recommends useful ready work from Linear, honors intended architecture and keeps coding agents on their assigned task. Principal failure modes are unrelated edits, overengineering and ignoring architecture. Prior wiki and documentation lessons must affect actual plans, assignments and checks, rather than being merely mentioned.
+Update the shared skill, its issue-selection, agent-focus and verification references, one new merge/release reference, a single `models.toml` role map, and the original repository's `AGENTS.md`. Preserve the skill identifier, original `.agents` symlink and unchanged lessons reference. Keep `AGENTS.md` at most 150 lines.
 
-Given a codebaseGraph request, the skill discovers current authority and task context, asks for user-owned decisions, works on one selected issue within approved scope, delegates only ready independent slices, verifies actual results and delivers an honest handoff. It stops after that handoff. Skill instructions guide a model; they are not a technical enforcement or security boundary.
+Retire the former tracked `.prime/agent/skills/codebasegraph-engineer` copy on this branch. Preserve original bytes, approvals and history as inert evidence. The shared directory remains the sole active source; evidence uses `.txt` suffixes and cannot become another discoverable skill.
 
-## 3. Scope and constraints
+No product code/API, architecture topology, scheduler, task database, credentials, integration settings, hooks, live issue trial, merge, publication or aggregate closure changes. The host supplies execution/recovery; instructions do not enforce policy or switch the running coordinator's model.
 
-### Deliverables
+Preserve authority: repository instructions govern procedure; Scryer governs architecture and briefs; specs govern contracts/acceptance/approval; Linear tracks delivery; wiki supplies knowledge; graph indexes implementation; source/tests establish behavior. Memory is advisory. User-owned decisions remain with the user.
 
-- `.prime/agent/skills/codebasegraph-engineer/SKILL.md`, with machine name `codebasegraph-engineer`, display heading **codebaseGraph Engineer** and a trigger-specific description.
-- Focused Markdown references for issue selection, agent focus/ownership, wiki/docs lesson use and verification. Load details only when needed; keep the main skill concise.
-- This Git specification, a separate exact-revision approval record, review records and durable validation evidence under this work ID.
-- A reviewed Conventional Commit, branch push and PR after approved implementation and verification, subject to live gates. No automatic merge or release.
+## Requirements
 
-### Exclusions and unchanged boundaries
-
-No product-code, `AGENTS.md`, package, dependency, daemon, hook, model topology, credential or integration-setting changes. No global skill installation, new knowledge store, wiki mirror, background polling, automatic issue chaining, real-issue trial or production mutation as part of skill validation. No Linear records for this task. No `.omx` files or directories.
-
-The skill follows applicable live repository instructions and tool rules rather than copying volatile policies, models/effort settings, API schemas, commands or workspace/project identities. Scryer remains architectural authority and canonical execution-brief/ownership owner; specs retain delivery contracts/acceptance/approval; Linear tracks delivery; wiki supplies reusable knowledge/rationale; graph indexes implementation; source and executed tests supply behavior evidence; memory remains advisory. Conflicts require the appropriate authority/user decision, not a convenient source winning by recency.
-
-The original repository's configured graph/wiki/Scryer reads used for planning are not evidence about implementation at the new worktree revision. Do not silently reuse a graph or architecture state bound to another checkout. Discover and verify the correct same-repository bindings for future coding; report unavailable context and use only permitted fallbacks. This Markdown-only task does not rebuild a graph or change those bindings.
-
-## 4. Requirements
+R04, R05, R07 and R10 retain their revision 0.1 meaning. The following requirements revise or extend that contract.
 
 | ID | Required behavior |
 | --- | --- |
-| R01 | **Identity/routing/authority:** install the project-local Markdown skill at the stated path. Support explicit `/skill:codebasegraph-engineer` and automatic model-directed activation for codebaseGraph development requests. Read applicable live rules before dependent work; missing or ambiguous rules trigger a numbered location question and a pause, never a copied/default ruleset. Read-only questions stay read-only. |
-| R02 | **Scoped issue selection:** use the verified CodebaseGraph Linear workspace and a user-named scope. If scope is absent, ask; never silently expand it. Recommend at most three ready issues, ranked by work unblocked, then Linear priority, then milestone order. Show readiness evidence, blockers and a short rationale. Confirm prerequisites/approval from sources, not status labels. Await selection. A directly named issue is already selected, not approved for implementation. If no issue is ready, show nearest candidates/blockers and recommend preparation, but wait for selection. Do not invent tie-break weights or a numeric readiness score. |
-| R03 | **Approvals/decisions:** issue selection permits investigation and work only where existing approvals and prerequisites apply. Verify same-scope committed approval identity and reuse it without reopening settled decisions. Prepare missing approvals and ask before dependent implementation. Ask about unresolved behavior, scope, contract, architecture, permissions, compatibility, acceptance and GUI decisions. Use numbered answer options, a recommendation and concrete consequences; silence is not approval. Routine choices inside approved constraints may proceed. For development with no named issue, search matching work, including relevant archived/completed records, clarify scope and create tracking only for authorized approved work under live rules. |
-| R04 | **Architecture:** check Scryer intent, governing rules, directives, ownership, pending intent and relevant drift before coding, in assignments and before accepting changes. Discover target files through the correct graph before reading source; explicitly inspect impact/dependencies as live rules require. Resolve governing conflicts before dependent work. Never rewrite architecture to justify code. Use proportional ledgers; docs, tests, fixes restoring claims and pure refactors do not earn invented model entries. |
-| R05 | **Wiki/docs lessons:** before planning and delegation, retrieve task-relevant lessons from both the configured wiki/memory and graph-discovered repository docs using subsystem, error, symbol and decision terms. Read selected actual sources and canonical links, not only snippets. Distinguish approved decisions, verified procedures, historical outcomes, proposals and lifecycle states. General search can expose candidate memory; active recall still does not prove current applicability. Verify revision/environment and mutable facts through current evidence. Put source locators, concrete implications and relevant safeguards/checks in canonical Scryer briefs. Workers must read applicable sources and report application or justified non-applicability; summaries alone are insufficient. Refresh on new subsystems/material scope changes, familiar failures and relevant resume changes. No copied knowledge base, fixed lesson quota, invented freshness TTL, filler lesson or unrelated test/change. |
-| R06 | **Bounded execution:** keep one selected issue active. Delegate substantial ready independent slices; handle small tasks and integration directly. Follow live model, effort and independent-review requirements without silent substitution. Each canonical Scryer brief identifies exact writable files, approved revision, requirement/acceptance IDs, deliverable, dependencies/contracts, architecture constraints, relevant lessons, tests and stop/completion conditions. Workers share the workspace, preserve edits and report blockers or needed scope/ownership changes. One writer per file, including types, configuration, manifests and lockfiles. Implement prerequisites before dependent workers. |
-| R07 | **Focus/intervention:** implement the smallest change meeting approved behavior and architecture. Do not add speculative abstractions, configuration, compatibility layers, dependencies or adjacent cleanup without demonstrated need and applicable approval. Inspect actual diffs and results, not only worker summaries. At meaningful notifications/handoffs, redirect or replace stalled/drifting agents inside unchanged approved scope; stop the old writer, preserve edits and prevent overlap before replacement. Escalate user-owned scope/architecture/ownership changes. Report useful out-of-scope improvements separately. No busy-polling surveillance loop. Coordinator alone serializes Git integration/mutation. |
-| R08 | **Failure/resume:** report unavailable required services, sources, models, reviewers or permissions. Pause dependent work and continue only independent already-approved work. Use only live-rule-authorized fallbacks; never use another project's state, alter settings to bypass gates or blindly retry uncertain writes. Resume from Git HEAD/status, live specs/approvals, Linear/Scryer state, ownership and actual executed evidence; summaries/memory are advisory. Preserve unrelated dirty work and surface conflicts; never silently stash/reset/delete it. |
-| R09 | **Verification/delivery/stop:** verify observable behavior and failure paths in the target project's environment; trace requirements/acceptance to actual evidence. Ingest JUnit/attach tests/reconcile claims and drift only where applicable under live rules; never clear unrelated drift. Resolve warnings, run required independent reviews and focused fix verification against final content. Commit/push/create a PR with linked scope/evidence. Keep unavailable gates pending. No merge, release or aggregate milestone closure without separately required authorization. Hand off once and wait; do not choose/start another issue. Distinguish implementation, approval, test/review, platform qualification and aggregate closure. |
-| R10 | **Communication/learning:** give concise outcome-first updates at meaningful milestones, decisions, blockers and handoff. Cite lessons that materially affected the result, unresolved source gaps and executed checks. Before completion explicitly assess reusable knowledge; record only verified durable learning with provenance under live wiki/memory lifecycle and validation rules. No raw sessions, filler records, automatic promotion or re-ingestion of recalled text. |
+| R01 | Keep `codebasegraph-engineer` discoverable at its shared source. Name the Engineer Agent as sole coordinator. Read-only requests cause no writes. A single issue defaults to PR handoff unless a further endpoint is explicit. |
+| R02 | Treat a named issue or fixed authorized queue as selected. Recommend only when selection is needed. Verify approvals/dependencies; advance only inside the authorized queue, one active issue at a time. |
+| R03 | Reuse matching exact-scope approvals. Queue membership, adoption, status and review do not confer implementation or publication permission. Ask unresolved behavior, scope, contract, architecture, permission, compatibility, acceptance and GUI decisions. |
+| R06 | Coordinator owns dispatch, file ownership, integration, Git and authorized merge/release. Delegate substantial independent slices; settle prerequisites/shared files first. Keep detailed briefs in Scryer. |
+| R08 | Resume from actual approvals, ownership, evidence and publication state. Stop previous writers before replacement. Reconcile uncertain writes before retrying. Missing gates remain pending; preserve unrelated work. |
+| R09 | Verify behavior and executed evidence with required independent reviews. Bind merge to the reviewed/tested head and integration candidate plus actor-applicable server freshness. Verify main CI before advancing. Release only a complete queue and approved contents; release-PR merge commits to publication. Promote the release merge's exact CI artifacts, verify publication and stop at the authorized endpoint. Preserve aggregate closure ownership. |
+| R11 | Terra/xhigh writes the skill changes. Use concise plain wording and established names. Bind installed files to reviewed bytes/hashes; reject stale bases. Preserve the symlink and lessons bytes. |
+| R12 | Reuse the existing publisher. Missing host, policy, reviewer or publication capabilities block dependent live actions. Synthetic checks and loader observations do not qualify production delivery. |
+| R13 | One `models.toml` assigns model/effort to coordinator, proposal reviewer, backend/frontend workers, evidence verifier, final reviewer and skill writer. Preserve agreed defaults; coordinator/verifier inherit host settings. Read it before dispatch, record actual settings and block unsupported assignments without silent fallback or editing the map to pass a gate. Explicit coordinator settings must match actual host execution. |
 
-No product architecture claim is applicable to R01–R10 for this Markdown skill. Requirement-to-file anchors and actual validation evidence will be recorded after approved creation, without manufacturing claim IDs or executed JUnit evidence.
+## Failure and recovery
 
-## 5. Failure and recovery contract
+Blocked items remain in the queue. Independent approved work may bypass them under the user's approved policy; unfinished items prevent release. Unknown release contents require a user decision.
 
-- **No scope / no selection:** ask numbered options and wait. A recommendation is not permission to act.
-- **No ready issue:** disclose nearest candidates and blockers; do not expand scope or start unselected preparation.
-- **Missing rules, approval, architecture agreement or required context:** ask the smallest necessary owner question and pause dependent work. Continue only independent approved work, including read-only clarification where appropriate.
-- **Unavailable/empty sources:** a failed wiki/docs/tool read is not an empty search result. Do not present cached paraphrases as live evidence. An honestly empty relevant search needs no filler lesson. Preserve source lifecycle/revision caveats; report unresolved conflicts.
-- **Worker drift/conflict:** stop affected writers, preserve shared edits, review the actual diff, then redirect/reassign within approval or ask for changed scope/ownership. No destructive rollback of others' work.
-- **Interrupted/uncertain external mutation:** record known outcome/identities, inspect current state before retry, prevent duplicates, and report uncertainty rather than claim success.
-- **Cancellation/reopen:** stop assigning work, settle/stop live writers and preserve a handoff in existing authoritative records. On resumption recheck actual approvals, changed files, bindings and evidence before dependent work; do not create a second task-state store.
-- **Unmet completion gate:** report the specific pending review/load/remote/tracking/platform gate; do not label the issue or aggregate outcome closed.
+Before release/resume, inspect existing release PRs, pending publication, jobs, tags and registry versions. Activity is not authorization. Recover only the same authorized target after successful dry-run validation. Do not substitute CI, automatically rebuild missing artifacts, move conflicting tags, clear labels or change permissions to pass a gate.
 
-## 6. Acceptance and verification
+Cancellation stops new work and reconciles in-flight actions. Publication may complete after release-PR merge. Report actual outcomes and remaining gates.
 
-All checks below are **planned, not executed**. These validate an instructional Markdown skill, not actual production issue orchestration or hard enforcement. Use isolated fictitious issue/tool/worker/source states with no production writes or real coding workers. Scenario participants receive the skill and fixture input, not expected answers. Capture actual responses/actions and compare with independently held expectations; a written checklist alone is not a pass. Record artifact hashes, runner/model settings, methods, dates, environment, actual outcomes and limits in the canonical evidence record.
+## Acceptance and evidence
 
-| Criterion | Requirements | Given / When / Then and method |
+| Criteria | Requirements | Method |
 | --- | --- | --- |
-| A01 | R01 | Given final artifacts, when checking structure, then valid YAML has matching lowercase/hyphenated name/directory, nonempty trigger-specific description <=1024 chars, automatic routing not disabled, valid references and no unresolved name collision. Re-read all files and check internal links. |
-| A02 | R01 | Given a fresh or reloaded session in the delivery worktree, when discovering/invoking the skill, then record actual load/invocation evidence and routing observations. If the runtime cannot reload or expose discovery, mark that gate pending; structural parsing alone is not loading. Do not claim deterministic activation. |
-| A03 | R01, R03, R08 | Given missing/ambiguous rules or a purely read-only request, when entering the workflow, then ask for authoritative rules and pause dependent work; read-only requests cause no issue/delivery writes. Include the observed missing-AGENTS starting case. |
-| A04 | R02 | Given mixed-ready issues inside/outside a named scope, when recommending, then show at most three in-scope ready choices with evidence and rank by unblocking, priority and milestone order. Exclude blocked/unapproved implementation from ready work and wait for selection. |
-| A05 | R02, R03 | Given a directly named issue, no named scope, no ready issues, or a development request without an issue, when selecting work, then honor direct selection without implied approval; ask missing scope; show blockers/preparation without starting it; search/reuse existing tracking before authorized creation. |
-| A06 | R03 | Given selected work with missing or mismatched spec approval, when planning implementation, then investigate/prepare approval but do not implement. Verified matching approval is reused; questions have numbered options, recommendation and consequences. |
-| A07 | R04, R06 | Given an architecture conflict or missing prerequisite, when planning, assigning or accepting a slice, then consult correct intent/evidence and stop dependent work. Do not change architecture to bless code or dispatch dependent workers. |
-| A08 | R05 | Given separate relevant wiki and graph-discovered docs sources, when planning/assigning, then read both and preserve source locators, concrete implications and relevant checks in the mocked canonical Scryer brief. The mocked worker reads selected sources rather than a summary alone; returned implementation/check evidence addresses applicable implications. |
-| A09 | R05, R08 | Given candidate/stale/wrong-revision/historical sources, conflicting advice or honestly empty results, when considering lessons, then verify authority/lifecycle/applicability, preserve caveats, reject unsupported current claims and avoid filler or unrelated scope. A search hit is not active/approved practice. |
-| A10 | R05, R08 | Given a new subsystem, changed scope, familiar failure or required-source outage, when proceeding/resuming, then refresh targeted retrieval; disclose unavailable sources, pause dependent work and continue independent approved work only. No cached-summary or other-project substitution. |
-| A11 | R06 | Given independent slices plus shared files, when assigning, then preserve one selected issue, prerequisites and one writer per exact file; briefs carry approval/acceptance/architecture/lesson/test boundaries. Small tasks need no invented parallel work. |
-| A12 | R07 | Given an unrelated edit or speculative abstraction/dependency in a worker diff, when accepting/intervening, then detect it, preserve edits, stop affected writer before replacement and redirect within approval or escalate. No overlapping writers, collateral cleanup or silent destructive reset. |
-| A13 | R08 | Given unavailable prescribed tools/reviewers and an uncertain write outcome, when recovering, then use only permitted fallbacks, report pending gates and reconcile state before retry. No settings bypass, silent model/project substitution, duplicate mutation or false success. |
-| A14 | R05, R08 | Given interrupted work and unrelated dirty files, when resuming, then reconstruct actual Git/spec/Linear/Scryer/ownership/evidence state, refresh relevant lessons and preserve other work; do not rely on a chat summary alone. |
-| A15 | R09, R10 | Given mock results with planned-only tests, failed checks or incomplete reviews, when verifying/handover, then require actual revision-bound evidence and retain failures/limits. Include independent final review of actual artifacts and evidence, with all confirmed P0–P3 defects fixed and affected paths reverified. No product-test or platform claims from mock results. |
-| A16 | R09, R10 | Given completed selected work, when handing off, then report outcomes, source implications, actual evidence and remaining gates concisely; assess reusable learning without filler; do not merge/release/close aggregates or start/recommend the next issue without a new user request. |
+| A01 | R01, R11, R13 | Structural validator; links, TOML roles, line count, file hashes, unchanged lessons/symlink. |
+| A02 | R01, R12 | Fresh native Prime Agent inventory, explicit invocation and one observed automatic routing run. Record actual settings/actions; leave unavailable checks pending. |
+| A03–A07, A11, A13–A16 | R01–R10 | Blind fictitious scenarios for read-only/single-issue limits, approval/dependency/ownership conflicts, unavailable reviewers, stale evidence, resume and authorized stopping. A16 now permits explicitly authorized continuation. |
+| A17 | R02, R03, R06 | Two-issue queue advances after successful merge/main CI without repeated selection, extra backlog work or partial release. |
+| A18 | R09, R12 | Changed base/head blocks merge until affected evidence and server checks are current. Expected head alone is insufficient. |
+| A19 | R09, R12 | Extra contents or changed release PR blocks commitment. Verify exact release CI/four-target artifacts, assets, crate and finalization. |
+| A20 | R08, R09 | Lost response, partial publication, missing artifacts, conflicting tags and cancellation trigger scoped readback/recovery rather than blind writes. |
+| A21 | R11, R13 | Review exact instruction/config diffs. Check base hashes before installation and installed hashes afterward. Preserve legacy history as inert evidence; dispatch uses the configured role. |
 
-Skill-specific checks use the skill's actual loader/interface and non-mutating walkthroughs; no product compilation or product JUnit is warranted by documentation-only changes. The final fresh read-only adversarial reviewer must use the required review skill on the actual diff, baseline, criteria and evidence, follow live model/effort settings and verify confirmed fixes. Model-driven mock behavior is bounded evidence, not proof of live integrations, worker compliance or production reliability.
+Evidence belongs in [adaptation-0.2](adaptation-0.2/). Keep expectations separate from participants. Checks establish bounded instruction behavior, not hard enforcement or supported-platform qualification. Product compilation/JUnit is unnecessary for this Markdown/TOML adaptation.
 
-## 7. Decisions and approvals
+## Reviews, lessons and handoff
 
-| Decision reference (this conversation, 28 October 2026) | Settled scope |
-| --- | --- |
-| Initial answers and approved defaults | End-to-end; project-local Markdown; display name/codebasegraph-engineer ID; automatic activation; live rules; prioritize Linear pickup, architecture compliance, unrelated edits and overengineering. |
-| Named-scope/ranking/concurrency/autonomy answers | User-named scope; at most three suggestions ranked by unblocking/priority/milestone; one selected issue with independent slices; smallest compliant change. |
-| Q1–Q4 = 1 | Delegate substantial independent work, coordinator handles small tasks/integration; exact boundaries and redirection; selection is not approval; outages pause dependent work only. |
-| Q5–Q9 = 1 | Direct issue selection; nearest blocked candidates/preparation; preserve/reassign drifting workers within approval; verified commit/push/PR, no unauthorized merge/release; concise updates. |
-| Q10–Q15 = 1 | Architecture at three checkpoints; live model/review rules; actual-state resume; issue discovery for unnamed development; stop at handoff; structural/load and isolated non-mutating validation, no real issue trial. |
-| Q16 = 1 | Both engineer and coding agents use task-relevant live wiki/docs lessons, concrete Scryer implications and actual relevant checks; refresh when scope/failure warrants. |
-| Q17 = 1; Q18 explicit exception | Isolated worktree from latest fetched main; **no Linear tracking for this task** (not Maintenance). |
-| Q19 = 1 | Design approved; prepare/commit spec and ask for exact committed-revision approval **before creating the skill**. |
-| Q20 = 1 | For this task's independent reviews, accept that runtime exposes model/effort and separate history but not explicit `agent_type`/`fork_turns` launch parameters. Retain required models/effort; record actual settings. Do not imply those exact parameters were set or weaken future engineer live-rule requirements. |
-| Q21 = 1 | Missing authoritative live rules cause a numbered location question and dependent-work pause. Do not copy rules from another checkout or add AGENTS.md. |
+Proposal reviewer: fresh GPT-6.1 Sol/High. Author: GPT-6.1 Terra/xhigh. Final reviewer: fresh GPT-6.1 Sol/Max, with focused fix verification. Models/effort live in the role map; independent review procedure stays in repository rules.
 
-No unresolved behavior/scope decision remains for the specification. Exact committed-spec approval, implementation/load/review evidence and delivery gates remain pending. The user's decisions above authorize only their stated scope; commits, PRs and this decision table are not substitute approval of dependent implementation.
+Applied lessons: wiki `architecture/release-verification` and memory `exact-commit-release-publication-and-recovery-2026-09-24` require exact source/run promotion and scoped recovery. The original checkout's older release docs are historical, not proof of the deployed publisher. Verify live revisions/rules before actual publication; this task does not change them.
 
-## 8. Handoff and closure
-
-Before skill creation: commit this reviewable spec, ensure review covers its actual content, publish its immutable reference, and obtain the user's exact path/full-SHA/scope approval. Record it separately without advancing the approved link silently. No skill exists at the specification-only stage.
-
-After approved creation: map R01–R10/A01–A16 to file anchors and executed evidence; validate frontmatter/references/load/scenarios; complete required final review and focused verification; commit/push and open the PR with this spec/approval/evidence. Record no Linear update for this task. Assess wiki/memory usefulness without duplicating this spec or adding filler; report unavailable gates honestly. Close the empty Scryer ledger under its rules without touching unrelated pending work/drift. Preserve the user's aggregate closure ownership, the original dirty checkout and the distinction between documented intent and executed qualification.
+Handoff: reviewed hashes, approval/scope mapping, installed results, actual checks, COD-102, commits/PR and remaining qualification. Preserve revision 0.1 reports. Synthetic tests alone warrant no new reusable memory.

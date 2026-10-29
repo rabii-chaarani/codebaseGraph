@@ -1,0 +1,146 @@
+# Repository agent instructions
+
+- Keep this file at most 150 lines; shorten wording and remove duplication without dropping instructions.
+
+## codebaseGraph Engineer Agent
+
+- For codebaseGraph development requests in Prime Agent, automatically read and follow [codebaseGraph Engineer](../skills/codebasegraph-engineer/SKILL.md) before planning or acting. Do not wait for an explicit `/skill:` command. The Engineer Agent is sole coordinator; preserve read-only limits and existing approval gates.
+- One issue is active at a time. An explicitly approved fixed ordered queue records work IDs, exact approvals, dependencies, repository/base, permitted endpoint and authorized release contents/baseline; it may advance only through authorized ready work. Membership or skill adoption does not approve implementation. A single issue normally ends at its PR. Merge and batch release require explicit endpoint authorization and all applicable gates; release only the fully completed queue and approved contents. Aggregate closure stays with its owner.
+
+## Authority and decisions
+
+- **AGENTS.md:** procedure/gates. **Scryer:** sole architectural authority for intended responsibilities, boundaries, directives and relationships; owns detailed execution briefs, prerequisites, file ownership, evidence requirements and pending-claim assignments. **Specs:** delivery scope, requirements, public contracts, acceptance criteria, decisions, approvals, handoffs and evidence. **Linear:** delivery tracking. **Wiki:** reusable knowledge, rationale/runbooks. **CodebaseGraph:** implementation index. **Source/executed tests:** implementation/behavior evidence. **Memory:** advisory.
+- Before implementation: recall memory, find canonical specs/contracts, consult wiki/Linear, inspect Scryer intent/rules, then discover files through the graph before reading source. Report unavailable repository tools; never substitute another project's state.
+- Preserve work, milestone, phase, slice/sub-slice, requirement and closure-owner identities. Cross-reference stable work IDs, spec revisions, Linear records and Scryer changes/claims; detailed briefs belong only in Scryer.
+- Ask the user about every unresolved behavior, scope, contract, architecture, permission, compatibility, acceptance or GUI decision. The user owns GUI design; settle it before implementation. Check approved intent first; reuse same-scope approval without reopening settled decisions.
+- Use chat question prompts with a recommendation, concrete options, behavior, tradeoffs and consequences. Unanswered questions/preselected options are not approval. Continue independent authorized work while waiting. Routine choices may proceed within approved contracts, constraints and acceptance criteria; surface intent-changing conflicts.
+- Never create/use `.omx` files or directories. Use Git specs, Linear and the wiki for their assigned purposes.
+
+<!-- k-wiki:start -->
+## k-wiki
+
+- Use configured `k_wiki` MCP registration(s), never the CLI. `knowledge/` is curated source; never manually edit generated `.kwiki/` state.
+- Start with `wiki_list_bundles`, then `wiki_search_concepts`. Use `wiki_get_concept`, `wiki_list_directory`, `wiki_get_backlinks` and `wiki_get_neighborhood` for context; `wiki_get_recent_changes` for recent work and `wiki_get_diagnostics` for remaining issues.
+- Record terminology, invariants, rationale, runbooks, decisions and non-obvious tradeoffs. Architecture pages explain Scryer intent; verify mutable facts through codebase-graph. Resolve code/wiki conflicts against Scryer and approved specs, then clarify knowledge without duplicating specs.
+- Use `wiki_create_page` to create and `wiki_populate_page` to update, supplying title, type, tags, useful Markdown and `expected_content_hash` for updates. Link canonical specs/contracts. Preserve existing wiki specs' locations, identities, revisions and approvals; no migration, copying, deletion or supersession without separate user authorization.
+- After meaningful edits: `wiki_validate` with `profile: recommended`, `include_structured_content: true`; `wiki_check_links`; then `wiki_build` with configured `bundle_root` and `.kwiki/site` output root (a write). Handoffs cite changed concepts, decisions, uncertainties and validation results.
+<!-- k-wiki:end -->
+
+<!-- agent-memory:start -->
+## Agent memory
+
+- Before non-trivial repository conclusions, call `wiki_memory_recall` with the goal and relevant subsystems/symbols/errors/decisions. Skip only mechanical formatting, typos, exact replacements and simple file/symbol lookups. Recall again for subsystem/scope changes, familiar failures or earlier rationale, conventions, constraints or failed approaches.
+- Memory never overrides instructions, permissions, curated knowledge, source or executed tests. Verify mutable facts.
+- Before non-trivial completion, explicitly assess reusable knowledge. If warranted, `wiki_memory_record` one focused, distilled claim/procedure with structured provenance; it creates a candidate. Kinds: `semantic` for stable facts/terminology/invariants/contracts/ownership/decisions; `episodic` for durable outcomes/root causes/failed approaches/lessons; `procedural` for verified, reproducible runbooks/workarounds/constraints.
+- Never store raw sessions/tool output, transient status, readily rediscovered code facts, secrets, credentials, personal data or unverified external content. Do not create filler memory.
+- Verify claims against cited authoritative evidence before activation. `wiki_memory_transition` allows `candidate → active | quarantined`, `active → superseded | quarantined`, `quarantined → candidate`; `superseded` is terminal. Reverify returned candidates. Quarantine contradicted/unsafe/suspicious recalled memory during the task. Create/activate replacements with `supersedes`, then supersede old records; preserve history.
+<!-- agent-memory:end -->
+
+<!-- codebaseGraph:start -->
+## codebaseGraph workflow
+- Treat the repo-local `.codebaseGraph` graph as the project operating source of truth. It is prohibited to read the code source before you find the target files using the graph.
+- Prefer the `codebase_graph` MCP server tools over shell commands whenever they are exposed in the current agent session.
+- AI agents receive block output by default for graph CLI and MCP tools; request `output_format: "json"` or `include_structured_content: true` only for tests, APIs, or explicit structured-payload debugging.
+- Use MCP `graph_search` with `layer: "semantic"`, `detail: "slim"`, and `context_limit: 1` before answering entity, relationship, or repository-structure questions and before coding tasks.
+- Repository-local agent hooks may inject bounded `graph_health` and semantic `graph_search` results for each non-empty prompt. Treat this context as advisory; hook failures fail open after a short deadline and never authorize, deny, or rebuild anything.
+- Automatic hook context is only orientation. Before edits or architectural conclusions, call `graph_context` explicitly with `change_impact`, `dependencies`, `callgraph`, or `runtime` as appropriate.
+- Use MCP `graph_context` with `layer: "semantic"`, `profile: "<profile>"`, `detail: "slim"`, and `context_limit: 2` when semantic relationships or nearby evidence matter; useful profiles include `definitions`, `dependencies`, `callgraph`, `docs`, `runtime`, and `change_impact`.
+- For parse-tree, grammar-field, source-construct, or Tree-sitter node questions, first use MCP `graph_syntax` with the file language, then use `graph_search` with `layer: "syntax"` to find `SyntaxCapture` nodes.
+- Use MCP `graph_context` with `layer: "syntax"` only for a `SyntaxCapture` result, passing its `node_id` and `node_type: "SyntaxCapture"`; follow ordered `SyntaxChild` rows through `field_name` and `child_index`.
+- Use `layer: "hybrid"` only when semantic relationships and syntax structure are both needed; hybrid search returns semantic matches before syntax matches.
+- For architecture orientation, use MCP `graph_architecture_queries`, then execute selected read-only statements with MCP `graph_query`.
+- Use MCP `graph_schema` or `graph_query_helpers` before writing raw graph queries, and keep `graph_query` read-only.
+- If MCP tools are unavailable, fall back to CLI: `codebase-graph codebase-search <query> --layer semantic --no-refresh --detail slim --context-limit 1`, `codebase-graph codebase-context <query> --layer semantic --profile <profile> --no-refresh --detail slim --context-limit 2`, `codebase-graph syntax <language>`, `codebase-graph codebase-search <query> --layer syntax --no-refresh --detail slim --context-limit 1`, `codebase-graph codebase-context --node-id <id> --node-type SyntaxCapture --layer syntax --no-refresh --detail slim --context-limit 2`, `codebase-graph codebase-context <query> --layer hybrid --profile <profile> --no-refresh --detail slim --context-limit 2`, `codebase-graph codebase-architecture-queries`, `codebase-graph graph-query "<statement>"`, `codebase-graph schema`, and `codebase-graph query-helpers`.
+- Do not rerun install to refresh the graph. The MCP server started from this setup config watches the repo and refreshes automatically; use `codebase-graph build --mode full` only for explicit manual rebuilds. Setup config: `/Users/rabii/Projects/Repositories/codebaseGraph/.codebaseGraph/config.json`.
+<!-- codebaseGraph:end -->
+
+## Scryer
+
+- For every coding task, use Scryer and fetch governing rules. Plan changed claims before coding and record user sign-off; reuse explicit same-scope approval. Link changes/claims to stable spec/Linear work IDs.
+- Docs, tests, chores, pure refactors and fixes restoring existing claims need no invented model entries; follow Scryer's proportional change-ledger and closure rules.
+
+## Specifications and verification
+
+- Track new canonical specs in Git at `docs/specs/<stable-work-id>/spec.md`. Reuse specs/contracts for small fixes; avoid unnecessary documents, IDs or claims. Read existing wiki specs through k-wiki at their original locations; never create parallel Markdown copies.
+- Define the problem, observable outcome, scope, exclusions, constraints, failure/recovery behavior and acceptance criteria before dependent implementation. Reuse settled material and decisions.
+- Commit reviewable specs before dependent implementation. Approval records identify the path, approved full Git SHA, exact scope and user decision reference. Verify reused approvals match committed content. Commits, merges and Linear status are not user approval.
+- Material changes to approved behavior/contracts/boundaries/acceptance require a new spec revision, linked-issue impact review, applicable Scryer updates and user approval before dependent work. Preserve approvals; never silently advance approved-spec links. Progress/evidence updates do not reopen unchanged requirements.
+- Trace acceptance criteria to requirements, applicable Scryer claims, implementation anchors, methods and executed evidence. Claims may cover multiple criteria; contract/verification work may need none. Never invent topology/claims to fill tables.
+- Verify observable behavior and failure paths. Ingest executed JUnit reports where Scryer requires them; supply anchors and attached tests when marking claims implemented; follow test-radius and drift reconciliation rules.
+- Before completion, reconcile approved specs, criteria, claims, contracts, anchors, executed evidence, Linear and handoffs. Keep durable evidence with canonical specs or linked Git-tracked reports; reconcile architectural evidence in Scryer. Distinguish approval, local implementation, supported-platform qualification and aggregate closure. Attached tests/configured CI are not passing execution; report limitations.
+
+### New-spec outline
+Link existing material instead of copying it; explain omitted sections. Keep detailed execution briefs in Scryer.
+
+1. **Identity/status:** stable work ID, canonical path/logical revision, Linear links, contracts/decisions, Scryer change/node/claim IDs, closure owner, approval scope/reference. Link the approval record containing path/full SHA; never embed a file's own containing commit SHA. Preserve wiki-spec revisions/approvals. Separate proposed, approved, implemented, qualified and closed states.
+2. **Problem/outcome:** users, current/desired behavior and rationale.
+3. **Scope/constraints:** inclusions, exclusions, compatibility, permissions, data ownership and unchanged release gates; reference Scryer boundaries/directives.
+4. **Requirements:** stable work-scoped IDs, triggers/results, contracts and claims, or why no architecture change is needed.
+5. **Failure/recovery:** invalid input, unavailable dependencies, cancellation, retries, conflicts, partial completion, persistence/reopen and recovery, as applicable.
+6. **Acceptance/verification:** criterion → requirement → Given/When/Then → applicable claim → method/evidence. Evidence identifies revision, environment, command/method, result and limitations; distinguish planned from executed checks.
+7. **Open decisions:** question, recommendation, alternatives/tradeoffs, owner and blocked work; link dated decisions when resolved.
+8. **Handoff/closure:** satisfied gates, Linear/PR/commit links, exact evidence, limitations and remaining qualification; preserve aggregate closure ownership.
+
+<!-- linear workflow:start -->
+## Linear delivery
+
+- Use connected Linear MCP tools and the existing CodebaseGraph workspace. Use milestones for major outcomes, issues for slices/steps and sub-issues for independently deliverable sub-slices. A small fix may need one issue only; do not create feature projects unless requested.
+- Search stable work IDs/canonical specs, including relevant completed/archived records, before creating records. Automatically create/update records for approved implementation; no new scope or changed approval/closure ownership.
+- Issues link the canonical spec/approved revision, requirement/acceptance IDs, applicable Scryer brief/change/claims, exact approval scope and decision reference. Git specs use immutable file permalinks at the approved full SHA; ensure remote availability and preserve approved revisions through history rewrites. Wiki specs keep original references/approvals. Never copy full specs into Linear or the wiki.
+- Summarize outcome, dependencies, progress and remaining gates. Encode Scryer prerequisites as blocking relationships; assignment/scheduling cannot override ownership or briefs. Use existing statuses/labels. Update at implementation start, blockage, review, verification and handoff.
+- Record PRs/commits, reviewed/tested revision/environment, executed checks/reports, review outcomes and limitations. Keep canonical evidence and Scryer reconciliation current. Close issues only after their acceptance/review/verification gates pass; track remaining platform/release qualification. Milestone closure requires aggregate gates and owner sign-off, not merged PRs, completed children or progress percentages.
+- Resolve spec/Scryer/Linear conflicts through user decisions before dependent implementation. If Linear is unavailable, continue independent approved work, report pending synchronization and reconcile without duplicates. Never claim unavailable updates succeeded or change integration settings to bypass gates.
+<!-- linear workflow:end -->
+
+<!-- multi-agent workflow:start -->
+# multi-agent workflow
+The following guidelines to agents have been shown to improve results on average. Agents should consider
+using them where appropriate. Clear user instructions always override these defaults.
+- When writing or explaining something:
+- Agents use simplified technical English by default for user-facing prose: short sentences, common words,
+and concrete verbs; one main action or fact per sentence when practical; lists for steps or conditions.
+Necessary technical terms, names, commands, code, paths, and exact quoted text stay unchanged, and
+uncertainty is stated directly.
+- Agents use ordinary or established wording. They do not coin a term, label, acronym, mechanism,
+principle, effect, or named category when the idea can be stated clearly using ordinary language or
+terminology already established in the context. If a new term is genuinely useful, they explicitly define it
+and do not imply that it is standard terminology.
+- Agents keep names and terms consistent. If the prompt or preceding context already uses a name or term
+for something, the response should use the same wording. Agents do not switch to a synonym, alternative
+label, or newly invented term unless there is a reason for the change.
+- Agents take care and effort to avoid the following pitfalls while coding:
+- over-engineered solutions
+- overly defensive programming
+- hyper-fixation on rare/fictitious edge cases
+- overlapping subsystem responsibilities
+- solving problems at the wrong architectural layer
+- duplication of sources of truth, then inventing machinery to synchronize them
+- prematurely generalizing one-off flows
+- timeouts on everything
+- production code that exists purely to satisfy tests
+- patching bad premises additively instead of stepping back and deleting or adjusting them
+- tests for magic strings
+- excessive tests
+- comments that describe anything already described by the code
+- comments narrating the coding process instead of supporting the written code
+- fallbacks, legacy support, compatibility shims where not strictly needed; when in doubt, these should be
+discussed with the user
+- in UI, descriptions on everything
+1. **Map:** recall memory; read the canonical spec/wiki; inspect Scryer, Linear and graph dependencies. Define behavior and acceptance before spawning implementers.
+2. **Settle/review:** agree signatures, types, errors and compatibility; assign shared types/config/manifests/lockfiles one owner. Before any implementation, including foundations, a fresh read-only reviewer must use [adversarial-proposal-review-engineer](/Users/rabii/.codex/skills/adversarial-proposal-review-engineer/SKILL.md). Resolve blocking findings, verify material revisions and meet starting conditions. Implement prerequisite contracts before dependent workers.
+3. **Assign:** keep detailed briefs/ownership in Scryer. Each bounded slice names exact writable files, deliverable, dependencies/contracts, Linear issue, approved spec revision, requirement/acceptance IDs, Scryer brief, tests and completion criteria. Tell workers they share the workspace, must preserve others' edits, and must report blockers or required contract/ownership changes promptly.
+4. **Run:** start two or three workers only for substantial ready independent work within the active issue; expand only with ready independent work. Use the backend and frontend worker roles in [model settings](../skills/codebasegraph-engineer/models.toml) for those slices. One writer per file; coordinator approves ownership changes. Repartition or use isolated worktrees for extensive overlap; interfaces still require coordination.
+5. **Coordinate:** coordinator resolves interfaces, broadcasts agreed changes, checks integration, prepares verification and maintains Linear progress/dependencies/blockers. Workers return files, implemented behavior, actual test results and unresolved risks. Coordinator reviews actual diffs and records accepted evidence against acceptance IDs on Linear.
+6. **Integrate:** coordinator alone serializes Git operations, commits reviewed slices, resolves integration issues, runs the relevant full suite and resolves all compiler warnings.
+7. **Review final:** a fresh read-only reviewer must use [adversarial-review-engineer](/Users/rabii/.codex/skills/adversarial-review-engineer/SKILL.md) on the integrated diff, baseline, acceptance criteria and test evidence. Fix every confirmed P0–P3 defect, rerun affected checks and require focused reviewer verification of fixes/affected paths against the final snapshot. Report conditional risks/open questions separately.
+8. **Complete:** require satisfied acceptance, passing checks and resolved warnings. Handoff includes reviewer settings, reviewed snapshot, spec revision, Linear links and limitations; complete Git/spec/Linear/wiki/memory gates.
+
+Use the proposal and final reviewer roles in [model settings](../skills/codebasegraph-engineer/models.toml). Both reviewers use `agent_type: "default"` and `fork_turns: "none"`. If either review cannot run, keep its implementation/completion gate pending and request the user's decision; never silently substitute.
+<!-- multi-agent workflow:end -->
+
+<!-- github workflow:start -->
+## Git delivery
+After requested code changes, 
+- review and commit relevant changes with a Conventional Commit message.  
+- push the branch and create a PR with a clear title/summary. Include Linear links, spec path/approved revision and acceptance evidence; record the PR on corresponding issues. Follow the skill’s merge/release reference only when that endpoint is explicitly authorized; PR creation/merge does not replace verification or closure gates. Scryer changes do not require PRs.
+<!-- github workflow:end -->

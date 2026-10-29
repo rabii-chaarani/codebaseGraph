@@ -1,0 +1,28 @@
+# "inherit" uses the host setting; record the actual setting used.
+[agents.coordinator]
+model = "inherit"
+reasoning_effort = "inherit"
+
+[agents.proposal_reviewer]
+model = "gpt-6.1-sol"
+reasoning_effort = "high"
+
+[agents.backend_worker]
+model = "gpt-6-luna"
+reasoning_effort = "xhigh"
+
+[agents.frontend_worker]
+model = "gpt-6-luna"
+reasoning_effort = "xhigh"
+
+[agents.evidence_verifier]
+model = "inherit"
+reasoning_effort = "inherit"
+
+[agents.final_reviewer]
+model = "gpt-6.1-sol"
+reasoning_effort = "max"
+
+[agents.skill_writer]
+model = "gpt-6.1-terra"
+reasoning_effort = "xhigh"

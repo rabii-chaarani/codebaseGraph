@@ -1,0 +1,25 @@
+# Authorized merge and batch release
+
+The coordinator owns merge and release. An explicitly authorized single-issue release follows the batch release gates as a one-item queue. Use this reference only for an explicitly authorized endpoint; issue selection, status, a PR, existing release work or adoption of this skill is not authorization. Apply live repository rules and verify the deployed pipeline and its capabilities before action. A previously observed checkout or pipeline does not establish that the production deployment qualifies.
+
+## Merge an issue
+
+Before merge, confirm authorization and the final reviewed and tested head, base and actual integration revision. Verify required reviews, resolved discussions and successful required CI from the expected source for that revision. Confirm server-enforced strict branch freshness applies to the actor actually merging. Pass the reviewed expected head in the actual merge call; that condition alone does not bind the base. If that guarantee or another required gate is missing, leave merge pending; do not bypass policy or use administrative override. Recheck head and base immediately before merge; changes or staleness invalidate affected review and test gates.
+
+Preserve approved spec SHA ancestry, using merge commits rather than rewriting approval history. Verify successful main CI for the actual merge SHA before moving to the next queue item. Repair failures only within approved scope through a PR and repeat affected gates. Keep a blocked item in the queue; independent approved work can proceed only as authorized, and a partial batch cannot be released.
+
+## Prepare the release
+
+Release only after all approved queue items are complete, merged and have successful main CI. Compare the full delta from the previous fully published release against authorized release contents, including permitted generated metadata. Unknown or unapproved changes block release and require a user decision. List open release work, merged releases pending publication, running jobs, tags and registry versions. Their existence does not authorize publication. Establish one coordinator as release owner.
+
+Reuse the existing release-please and governed pipeline. Before merging a release PR, inspect its exact head, base, versions, root/wiki/dependency/manifest changes and changelog. Complete its required reviews, discussions and PR checks, and verify hosted permissions, environment and publisher capabilities. Merging the release PR commits to unattended publication. Observations after merge cannot replace these checks before publication. Recheck head and base; stale or changed content invalidates affected gates.
+
+## Publish and verify
+
+Use the exact release merge SHA and a successful main-push CI run and attempt. Verify the expected repository, workflow, event, branch, conclusion and ancestry. Qualify the four native archives: linux-x86_64, macos-arm64, macos-x86_64 and windows-x86_64. Verify checksums, provenance, packaged CLI/MCP/wiki smoke checks and applicable production/package gates. Promote those exact CI artifacts to native assets and then the crate. Verify the public tag SHA, asset digests, crate source and version, and finalization. A later ordinary main merge does not replace the selected run or invalidate its source solely because it is no longer the branch tip.
+
+## Recovery and cancellation
+
+Missing, failed or unknown gates remain pending. For an uncertain write, inspect authoritative state and identifiers before retrying. Resume a matching partial outcome only for the same authorized target, after a successful dry run and with the same exact CI artifacts. Do not substitute a run, automatically rebuild, retag, clear labels, change tokens or settings, or bypass absent permissions. Conflicts or missing permission block dependent action and require a user decision where applicable.
+
+On cancellation stop new actions and reconcile in-flight state. After release PR merge, withdrawal cannot be promised. Report the exact revision, artifacts, observed outcomes and remaining limits; stop at the authorized endpoint and leave aggregate closure to its owner.

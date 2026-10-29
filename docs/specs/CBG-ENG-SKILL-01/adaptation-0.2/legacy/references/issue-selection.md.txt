@@ -1,0 +1,34 @@
+# Issue selection and user decisions
+
+## Establish scope
+
+Verify the connected CodebaseGraph workspace and relevant repository/team/project identities from live tools; a matching name or recalled ID is not sufficient. Use the user's named project, milestone, issue set, labels or other explicit boundary. If the boundary is missing/ambiguous, ask rather than expanding it.
+
+A directly named issue counts as the selection. Fetch its full context and relations; skip an unnecessary shortlist. It does not approve a spec, architecture change or implementation. For unnamed development, search stable work IDs/canonical paths and relevant completed/archived work before creating anything. Create/update tracking only for authorized approved work, under live rules; no new feature project or changed closure ownership. Read-only questions need no issue.
+
+## Evaluate readiness and recommend
+
+1. Fetch enough paginated in-scope issue, dependency and milestone context to support the recommendation. Disclose search limits; never imply a partial search is exhaustive.
+2. Check actual prerequisites, blocking relationships, assignment/ownership, applicable Scryer brief/pending intent and canonical scope/approval. A status, priority, assignee or completed sibling does not satisfy another gate.
+3. Distinguish **ready for approved implementation** from **ready for selected preparation/approval work**. A missing implementation approval stays unsatisfied; explain the action that is actually ready. Do not dispatch coding on a merely preparatory recommendation.
+4. Recommend at most three ready choices. Rank work that unblocks other work first, then Linear priority, then milestone order. Use live priority semantics; no invented weights/readiness score. Explain genuine ties or missing order data, rather than silently invent a policy.
+5. For each choice show issue ID/title/link, proposed action, readiness evidence, dependencies and short ranking reason. Wait for the user's selection. Keep one selected issue active; parallel slices stay inside it.
+
+If no issue is ready, show nearest in-scope candidates and their specific blockers. Recommend a bounded preparation action and wait for selection. Do not switch projects, expand scope or start unselected preparation. If Linear is unavailable, report it; do not fabricate readiness or substitute another workspace. Continue only independent approved work and reconcile later without duplicate records.
+
+## Questions that are quick to answer
+
+Check existing approved intent first; do not ask the user to decide an already settled same-scope point. Ask unresolved behavior/scope/contract/architecture/permission/compatibility/acceptance/GUI questions before dependent implementation. Keep independent approved work moving.
+
+Use a stable question label and **numbered answer options**, for example:
+
+> Q1. Which scope should I use?
+> 1. The project or milestone you name — recommended; keeps recommendations bounded.
+> 2. A specific issue or explicit issue set — skips broad selection.
+> 3. Another scope — describe it.
+
+For a real decision, state the recommended option's observable behavior, tradeoffs and consequences; do not supply arbitrary projects/options or treat the recommendation as selected. Ask for an authoritative rules path if absent; an explicit external path can be used read-only for the authorized scope, not installed/copied or assumed in future sessions.
+
+Selection permits investigation and only work covered by verified approvals/prerequisites. Prepare missing contracts/approvals, commit a reviewable spec when required, and obtain exact path/full-SHA/scope approval before dependent implementation. Preserve approved revisions through history; updates to progress/evidence do not reopen unchanged requirements or silently advance approved links.
+
+After selection, follow the live tracking lifecycle with canonical spec/approval, requirement/acceptance and Scryer references. Encode real prerequisites as blockers. Never copy full specs into Linear. Close only satisfied issue gates, leaving platform/release and aggregate-owner gates distinct. After handoff, stop; no automatic next recommendation or issue chaining.
