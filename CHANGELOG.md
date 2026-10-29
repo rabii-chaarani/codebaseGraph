@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.2...v4.0.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **extensions:** enable default Windows bundled bytes (COD-53 subset) ([#158](https://github.com/rabii-chaarani/codebaseGraph/issues/158)) ([c4e9767](https://github.com/rabii-chaarani/codebaseGraph/commit/c4e9767d8f3ec92c40dd2f809b8421b8f9c78742))
+
 ## [4.0.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.1...v4.0.2) (2026-10-28)
 
 
