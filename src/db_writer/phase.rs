@@ -400,6 +400,21 @@ fn copy_source_metadata(statement: &str) -> Option<(String, u64)> {
 }
 
 #[cfg(debug_assertions)]
+fn test_process_instance() -> Result<&'static str, String> {
+    static INSTANCE: OnceLock<Result<String, String>> = OnceLock::new();
+    INSTANCE
+        .get_or_init(|| {
+            let mut bytes = [0; 32];
+            getrandom::fill(&mut bytes)
+                .map_err(|error| format!("failed to identify test phase process: {error}"))?;
+            Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
+        })
+        .as_ref()
+        .map(String::as_str)
+        .map_err(Clone::clone)
+}
+
+#[cfg(debug_assertions)]
 fn record_test_phase_result(request: &LadybugWritePhaseRequest) -> Result<(), String> {
     let Some(directory) = std::env::var_os("CODEBASE_GRAPH_TEST_COPY_RESULT_DIR") else {
         return Ok(());
@@ -445,6 +460,10 @@ fn record_test_phase_result(request: &LadybugWritePhaseRequest) -> Result<(), St
         serde_json::json!(staged.as_ref().map(|(_, bytes)| bytes)),
     );
     object.insert("pid".into(), serde_json::json!(std::process::id()));
+    object.insert(
+        "process_instance".into(),
+        serde_json::json!(test_process_instance()?),
+    );
     object.insert("success".into(), serde_json::json!(true));
     let trace_path = directory.join("phases.jsonl");
     let mut trace_file = OpenOptions::new()
@@ -1166,6 +1185,23 @@ mod tests {
         assert!(message.contains("copy=8/10 target=`DocumentationSource`"));
         assert!(message.contains("max_num_threads=2"));
         assert!(std::str::from_utf8(message.as_bytes()).is_ok());
+    }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    fn phase_trace_process_instance_is_stable_across_calls_and_threads() {
+        let first = test_process_instance().unwrap();
+        assert_eq!(first.len(), 64);
+        assert!(first
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)));
+        assert_eq!(test_process_instance().unwrap(), first);
+        assert_eq!(
+            std::thread::spawn(|| test_process_instance().unwrap())
+                .join()
+                .unwrap(),
+            first
+        );
     }
 
     #[cfg(debug_assertions)]

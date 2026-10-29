@@ -72,6 +72,29 @@ binding describes the original older checkout, not the isolated PR branch;
 exact source comparisons and local snapshot hashes are retained, and no
 unrelated drift was cleared or branch-specific passing fingerprint invented.
 
+## Post-push main synchronization
+
+The reviewed repair was pushed as `359d946e91c6cb3ee7e170b73c6e9bab577b0b04`.
+GitHub could not create its PR merge or start CI: the parser declaration was
+adjacent to main's package-version update. A normal pinned-main integration
+retains main `9f69a0bd4b468eaa8652d933d518fafb8c596b6a` and the repair history.
+The only manual conflict resolution keeps `codebase-graph 4.0.2` and
+`pulldown-cmark 0.13.5` in the wiki manifest. No PR merge, rebase, release,
+new scope or changed approval is implied.
+
+The resolved critical file hashes match the combined contents already used for
+local policy/package verification. The actual integrated tree passes **176/176
+wiki/xtask tests, 0 skipped**, fmt, strict workspace Clippy, unchanged release
+gate/audit and the normal extracted-package publish dry-run. Its generated root
+archive is **8,458,173 bytes**; the earlier package measurement remains a separate
+historical result. [Integration checks](pr158-ci-repair-evidence/integration-verification.json)
+and [Sol Max focused integration review](pr158-ci-repair-evidence/merge-final-review.md)
+are retained separately; no confirmed P0–P3 defects were found. Older results are
+not labeled new-head CI.
+Historical raw evidence imported unchanged from main and the original PR has
+preexisting whitespace/CRLF diagnostics. It was not rewritten to satisfy a
+blanket diff check; the new manual Cargo resolution passes its scoped check.
+
 ## Reviews and remaining gates
 
 Fresh independent **GPT-6.1 Sol / High** proposal review cleared the bounded

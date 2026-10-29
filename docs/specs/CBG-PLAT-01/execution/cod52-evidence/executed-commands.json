@@ -1,0 +1,93 @@
+[
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo test --locked -p codebase-graph --test storage_foundation --no-run",
+    "result": 0,
+    "log": "baseline-compile.log"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --test storage_foundation --config-file /private/tmp/codebasegraph-cod52-evidence/nextest.toml --profile cod52 -E test(rooted_directory_tests::)",
+    "result": 0,
+    "log": "baseline-rooted-tests.log",
+    "junit": "baseline-rooted.junit.xml"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --test storage_foundation --config-file /private/tmp/codebasegraph-cod52-evidence/nextest.toml --profile cod52 -E 'test(nested_directory_scans_do_not_consume_the_outer_cursor) | test(interrupted_directory_scan_restarts_on_the_pinned_root)' --no-fail-fast",
+    "result": 100,
+    "log": "regression-baseline.log",
+    "junit": "regression-baseline.junit.xml",
+    "limits": "new tests with old Mac production, expected invariant failure"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --test storage_foundation --config-file /private/tmp/codebasegraph-cod52-evidence/nextest.toml --profile cod52 --no-fail-fast",
+    "result": 0,
+    "log": "storage-foundation-full.log",
+    "junit": "storage-foundation-full.junit.xml",
+    "limits": "267 pass, ignored subprocess-only relative_barrier_subprocess_fixture; precedes final fixture changes"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+    "result": 101,
+    "log": "clippy.log",
+    "limits": "manual C string lint, fixed"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+    "result": 0,
+    "log": "clippy-fixed.log"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --test storage_foundation --config-file /private/tmp/codebasegraph-cod52-evidence/nextest.toml --profile cod52 -E 'test(rooted_directory_tests::)' --no-fail-fast",
+    "result": 0,
+    "log": "rooted-postreview.log",
+    "junit": "rooted-postreview.junit.xml",
+    "limits": "14/14, Windows-advisory expectation corrected but native Mac execution only"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo fmt --all --check",
+    "result": 0,
+    "log": "format-final.log"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --test storage_maintenance --config-file /private/tmp/codebasegraph-cod52-evidence/nextest.toml --profile cod52 --no-fail-fast",
+    "result": 0,
+    "log": "storage-maintenance-full.log",
+    "junit": "storage-maintenance-full.junit.xml",
+    "limits": "11 pass, no skipped; before final candidate test-only integration"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --lib --config-file /private/tmp/codebasegraph-cod52-evidence/nextest.toml --profile cod52 -E 'test(storage::locks::rooted_directory_tests::) | test(terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto)' --no-fail-fast",
+    "result": 0,
+    "log": "integrated-final-regressions.log",
+    "junit": "integrated-final-regressions.junit.xml",
+    "source_hashes": {
+      "src/storage/locks.rs": "3334713035db60f24a86c34e3fbdaed0724943fcbdf96103c7bf1a39e163f25c",
+      "src/storage/maintenance_candidate.rs": "8e539db80a81de8fb674270adaf608a551954db86352b3e87ad674d6badac765"
+    },
+    "result_summary": "15 pass,830 filtered (not executed)"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo nextest run --locked -p codebase-graph --lib --config-file /private/tmp/codebasegraph-cod52-evidence/nextest.toml --profile cod52 -E 'test(terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto)'",
+    "result": 100,
+    "log": "receipt-final-old-production.log",
+    "junit": "receipt-final-old-production.junit.xml",
+    "limits": "final strengthened candidate fixture, only Mac production reverted to old cursor; expected selection failure"
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+    "result": 0,
+    "log": "clippy-final-frozen.log",
+    "source_hashes": {
+      "src/storage/locks.rs": "3334713035db60f24a86c34e3fbdaed0724943fcbdf96103c7bf1a39e163f25c",
+      "src/storage/maintenance_candidate.rs": "8e539db80a81de8fb674270adaf608a551954db86352b3e87ad674d6badac765"
+    }
+  },
+  {
+    "command": "cd /private/tmp/codebasegraph-cod52-macos-scans && cargo fmt --all --check",
+    "result": 0,
+    "log": "format-final-frozen.log",
+    "source_hashes": {
+      "src/storage/locks.rs": "3334713035db60f24a86c34e3fbdaed0724943fcbdf96103c7bf1a39e163f25c",
+      "src/storage/maintenance_candidate.rs": "8e539db80a81de8fb674270adaf608a551954db86352b3e87ad674d6badac765"
+    }
+  }
+]

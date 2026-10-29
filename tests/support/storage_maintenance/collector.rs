@@ -1433,12 +1433,30 @@ fn capture_receipt_diagnostics(root: &FixtureRoot, artifact_root: &Path, key: &s
         }
         Err(error) => json!({"error":error.to_string()}),
     };
+    let payload = match fs::read(
+        artifact_root
+            .join(&key[..2])
+            .join(key)
+            .join("partition.json"),
+    ) {
+        Ok(bytes) => {
+            json!({"bytes": bytes.len(), "sha256": format!("{:x}", Sha256::digest(&bytes))})
+        }
+        Err(error) => json!({"error": error.to_string()}),
+    };
     let path = root
         .path()
         .parent()
         .unwrap()
         .join("qualification-receipt-diagnostics.json");
-    fs::write(&path, serde_json::to_vec_pretty(&json!({"fixture_root":root.path(),"artifact_root":artifact_root,"key":key,"reference_epoch":epoch,"controls":metadata,"receipt":receipt})).unwrap()).unwrap();
+    let diagnostics = serde_json::to_vec_pretty(&json!({"fixture_root":root.path(),"artifact_root":artifact_root,"key":key,"reference_epoch":epoch,"controls":metadata,"receipt":receipt,"payload":payload})).unwrap();
+    // CI retains the test log, but does not upload arbitrary fixture paths.
+    // Emit the evidence before writing so even a failed diagnostic write keeps it.
+    eprintln!(
+        "canonical receipt diagnostics:\n{}",
+        String::from_utf8_lossy(&diagnostics)
+    );
+    fs::write(&path, diagnostics).unwrap();
     path
 }
 

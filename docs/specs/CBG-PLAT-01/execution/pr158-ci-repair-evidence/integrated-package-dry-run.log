@@ -1,0 +1,25 @@
+    Updating crates.io index
+warning: crate codebase-graph@4.0.2 already exists on crates.io index
+   Packaging codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix)
+    Updating crates.io index
+    Packaged 207 files, 14.0MiB (8.1MiB compressed)
+   Verifying codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix)
+   Compiling syn v2.0.117
+   Compiling serde_core v1.0.228
+   Compiling serde_json v1.0.150
+   Compiling aho-corasick v1.1.4
+   Compiling serde v1.0.228
+   Compiling codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix/target/package/codebase-graph-4.0.2)
+   Compiling bitflags v2.13.0
+   Compiling notify v8.2.0
+   Compiling regex-automata v0.4.14
+   Compiling tree-sitter v0.25.10
+   Compiling cxx-build v1.0.138
+   Compiling cxxbridge-macro v1.0.138
+   Compiling serde_derive v1.0.228
+   Compiling regex v1.12.4
+   Compiling lbug v0.19.0
+   Compiling cxx v1.0.138
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 26.29s
+   Uploading codebase-graph v4.0.2 (/private/tmp/codebasegraph-pr158-ci-fix)
+warning: aborting upload due to dry run

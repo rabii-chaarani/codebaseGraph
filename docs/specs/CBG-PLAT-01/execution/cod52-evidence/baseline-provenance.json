@@ -1,0 +1,27 @@
+{
+  "baseline": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+  "approval": "9bf9212d9266c33b389829925b456c1da7320886",
+  "scope": [
+    "COD-52",
+    "R01",
+    "A01",
+    "A02"
+  ],
+  "files": {
+    "src/storage/locks.rs": "c9e62ce647dfe207e6c44a7f9029b734bc1ff5dd319fccc60c1a87c7d6a4d88b",
+    "src/storage/maintenance_candidate.rs": "2d63f7e9950cd82784f84fb3cbffcb4ff266508949161ef65e5934d02ae4dd17",
+    "Cargo.toml": "c63838504978568dc8428065f3d4e8afcff76528040bac9496f6380ce614eef9",
+    "Cargo.lock": "b99948cf1027f1609cbec7f7c43b796743ce4523550e95ce860cfe5dbd4d7d84"
+  },
+  "native_library": {
+    "path": "/Users/rabii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lbug-0.19.0/.cache/lbug-prebuilt/latest/lib/liblbug.a",
+    "sha256": "a840ea7c538e67a8b9fc0d58495b5226dc9c0a5f2f144ff0c48c0f6ca1193ae6"
+  },
+  "target_dir": "/private/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target",
+  "platform": {
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\n",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: aarch64-apple-darwin\nrelease: 1.96.0\nLLVM version: 22.1.2\n"
+  },
+  "old_root_mcp_graph_not_exact_source": true,
+  "target_graph_discovery": "/private/tmp/codebasegraph-cod52-evidence/graph-discovery.txt"
+}

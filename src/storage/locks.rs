@@ -2100,28 +2100,105 @@ mod rooted_directory_tests {
         root.sync_namespace().unwrap();
         assert_eq!(root.identity(), id);
     }
-    #[cfg(windows)]
+    #[cfg(any(target_os = "macos", windows))]
     #[test]
     fn nested_directory_scans_do_not_consume_the_outer_cursor() {
         let fixture = Fixture::new();
         let root = fixture.anchor();
-        for name in [b"one".as_slice(), b"two", b"three"] {
-            drop(root.create_new(name).unwrap());
+        let mut expected = Vec::new();
+        // Even minimum-sized native records cannot fit in one scratch buffer.
+        for index in 0..160 {
+            let name = format!("directory-{index:03}-{}", "x".repeat(64)).into_bytes();
+            drop(root.create_directory(&name).unwrap());
+            expected.push(name);
         }
-        let mut outer = Vec::new();
+        let mut all_entries = expected.clone();
+        drop(root.create_new(b"regular-payload").unwrap());
+        all_entries.push(b"regular-payload".to_vec());
+        all_entries.sort();
+        let mut baseline = Vec::new();
         root.visit_entries(&mut [0; 4096], &mut |name| {
-            let mut inner = 0;
-            root.visit_entries(&mut [0; 4096], &mut |_| {
-                inner += 1;
-                Ok(())
-            })?;
-            assert_eq!(inner, 3);
-            outer.push(name.to_vec());
+            baseline.push(name.to_vec());
             Ok(())
         })
         .unwrap();
-        outer.sort();
-        assert_eq!(outer, [b"one".to_vec(), b"three".to_vec(), b"two".to_vec()]);
+        baseline.sort();
+        assert_eq!(baseline, all_entries);
+
+        for directories_only in [false, true] {
+            let mut outer = Vec::new();
+            let mut visit = |name: &[u8]| {
+                if directories_only && root.open_directory_readonly(name).is_err() {
+                    return Ok(());
+                }
+                let mut inner = Vec::new();
+                root.visit_entries(&mut [0; 4096], &mut |entry| {
+                    inner.push(entry.to_vec());
+                    Ok(())
+                })?;
+                inner.sort();
+                assert_eq!(inner, all_entries);
+                outer.push(name.to_vec());
+                Ok(())
+            };
+            if directories_only {
+                root.visit_directories(&mut [0; 4096], &mut visit)
+            } else {
+                root.visit_entries(&mut [0; 4096], &mut visit)
+            }
+            .unwrap();
+            outer.sort();
+            assert_eq!(
+                outer.as_slice(),
+                if directories_only {
+                    &expected
+                } else {
+                    &all_entries
+                }
+            );
+        }
+    }
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement() {
+        let fixture = Fixture::new();
+        let public = fixture.root.join("public");
+        fs::create_dir(&public).unwrap();
+        let root =
+            RootedDirectory::open_readonly_root(&public, path_identity(&public).unwrap()).unwrap();
+        let mut expected = Vec::new();
+        for index in 0..160 {
+            let name = format!("owned-{index:03}").into_bytes();
+            drop(root.create_new(&name).unwrap());
+            expected.push(name);
+        }
+        let mut visited = 0;
+        let error = root
+            .visit_entries(&mut [0; 4096], &mut |_| {
+                visited += 1;
+                Err(std::io::ErrorKind::Interrupted.into())
+            })
+            .unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::Interrupted);
+        assert_eq!(visited, 1);
+        fs::rename(&public, fixture.root.join("original")).unwrap();
+        fs::create_dir(&public).unwrap();
+        fs::write(public.join("foreign-sentinel"), b"foreign").unwrap();
+
+        for _ in 0..2 {
+            let mut seen = Vec::new();
+            root.visit_entries(&mut [0; 4096], &mut |name| {
+                seen.push(name.to_vec());
+                Ok(())
+            })
+            .unwrap();
+            seen.sort();
+            assert_eq!(seen, expected);
+        }
+        assert_eq!(
+            fs::read(public.join("foreign-sentinel")).unwrap(),
+            b"foreign"
+        );
     }
     #[cfg(windows)]
     #[test]
@@ -2540,22 +2617,37 @@ impl RootedDirectory {
     ) -> std::io::Result<()> {
         #[cfg(target_os = "macos")]
         {
-            use std::os::fd::AsRawFd;
+            use std::os::fd::{AsRawFd, FromRawFd};
+            // A new open file description isolates nested traversal offsets.
+            // SAFETY: trusted dot resolves against the retained actual directory;
+            // no public pathname is reopened and the returned FD is owned below.
+            let fd = unsafe {
+                libc::openat(
+                    self.directory.as_raw_fd(),
+                    c".".as_ptr(),
+                    libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+                )
+            };
+            if fd < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            // SAFETY: openat returned a fresh descriptor owned by this File.
+            let directory = unsafe { File::from_raw_fd(fd) };
+            if file_identity(&directory).map_err(native_io)? != self.identity {
+                return Err(std::io::ErrorKind::InvalidInput.into());
+            }
             let mut attributes: libc::attrlist = unsafe { std::mem::zeroed() };
             attributes.bitmapcount = libc::ATTR_BIT_MAP_COUNT;
             attributes.commonattr = libc::ATTR_CMN_NAME | libc::ATTR_CMN_RETURNED_ATTRS;
             if directories_only {
                 attributes.commonattr |= libc::ATTR_CMN_OBJTYPE;
             }
-            // SAFETY: actual directory FD, bounded writable caller scratch and
-            // initialized attrlist. No libc DIR allocation or path expansion.
-            if unsafe { libc::lseek(self.directory.as_raw_fd(), 0, libc::SEEK_SET) } < 0 {
-                return Err(std::io::Error::last_os_error());
-            }
             loop {
+                // SAFETY: actual directory FD, bounded writable caller scratch
+                // and initialized attrlist. No libc DIR or path expansion.
                 let count = unsafe {
                     libc::getattrlistbulk(
-                        self.directory.as_raw_fd(),
+                        directory.as_raw_fd(),
                         (&mut attributes as *mut libc::attrlist).cast(),
                         bytes.as_mut_ptr().cast(),
                         bytes.len(),

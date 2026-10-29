@@ -2104,6 +2104,147 @@ mod tests {
         corrupt[8] = 1;
         assert!(Control::decode(&corrupt, scope).is_err());
     }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto() {
+        use super::super::layout::{create_fresh_reference_root, managed_generation_id};
+        use super::super::maintenance_admission::tests::Fixture;
+        use super::super::maintenance_controls::{
+            self as controls, WorkspaceCreatedDirectory, WorkspaceDisposition,
+            WorkspaceRegistration,
+        };
+        use super::super::maintenance_origin;
+        use super::super::maintenance_ownership::ReferenceMutation;
+        use std::fs;
+        use std::path::Path;
+
+        let f = Fixture::new();
+        let workspace_base = f
+            .domain
+            .workspace_registry(2, Some(&f.target.state_root))
+            .expect("managed worker registry");
+        fs::create_dir_all(&workspace_base).unwrap();
+        let root = workspace_base.join(format!("worker-{}", managed_generation_id()));
+        let fresh = create_fresh_reference_root(&root).unwrap().unwrap();
+        let anchor = RootedDirectory::open(&root, fresh.identity()).unwrap();
+        let owner =
+            locks::create_new_coordination_in(&anchor, b"lease.lock", &root.join("lease.lock"))
+                .unwrap();
+        let creation_mutation = ReferenceMutation::begin_in_domain(&f.domain).unwrap();
+        let startup = locks::open_shared_coordination(&f.domain.workspace_startup_path()).unwrap();
+        let registration =
+            WorkspaceRegistration::create(&fresh, &f.domain, &creation_mutation, &owner, 2)
+                .unwrap()
+                .expect("fresh worker registration");
+        drop((startup, creation_mutation));
+
+        let create_directory = |path: &Path| {
+            let output = WorkspaceCreatedDirectory::create_new(path)
+                .unwrap()
+                .expect("registered workspace directory output");
+            let binding = output.origin_binding();
+            maintenance_origin::record_created_workspace_directory(&output).unwrap();
+            let receipt = controls::workspace_origin_name(
+                &binding.incarnation,
+                binding.parent,
+                binding.output,
+                &binding.operation,
+            );
+            let identity = binding.output;
+            drop(output);
+            (receipt, identity)
+        };
+
+        let mut fillers = Vec::new();
+        for index in 0..161 {
+            let path = root.join(format!("output-{index:03}"));
+            let (receipt, identity) = create_directory(&path);
+            fs::write(path.join("retain"), b"ineligible").unwrap();
+            fillers.push((path, receipt, identity));
+        }
+        // Without the child-receipt veto this smallest receipt would win.
+        let parent_index = fillers
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, (_, receipt, _))| *receipt)
+            .unwrap()
+            .0;
+        let (parent_path, parent_receipt, parent_id) = fillers.remove(parent_index);
+        fs::remove_file(parent_path.join("retain")).unwrap();
+        let child = parent_path.join("retired-child");
+        let _ = create_directory(&child);
+        fs::remove_dir(&child).unwrap();
+
+        // Observe native order rather than assume APFS ordering. The selected
+        // target lies well beyond the first 4096-byte native result batch.
+        let root_pin =
+            RootedDirectory::open_readonly_root(&root, locks::path_identity(&root).unwrap())
+                .unwrap();
+        let registry = root_pin
+            .open_directory_readonly(b".workspace-origins")
+            .unwrap();
+        let mut order = Vec::new();
+        registry
+            .visit_entries(&mut [0; 4096], &mut |entry| {
+                if entry.len() == 64 {
+                    let mut name = [0; 64];
+                    name.copy_from_slice(entry);
+                    order.push(name);
+                }
+                Ok(())
+            })
+            .unwrap();
+        let position = |name: &[u8; 64]| order.iter().position(|seen| seen == name);
+        let (target_path, target_receipt, target_id) = fillers
+            .iter()
+            .find(|(_, receipt, _)| position(receipt).is_some_and(|index| index > 128))
+            .expect("160 fillers cannot all fit in the first 129 entries");
+        let target_position = position(target_receipt).unwrap();
+        assert!(target_position > 128);
+        assert!(parent_receipt < *target_receipt);
+        assert!(parent_path.is_dir());
+        assert!(!parent_path.join("retired-child").exists());
+        assert_eq!(fs::read_dir(&parent_path).unwrap().count(), 0);
+        fs::remove_file(target_path.join("retain")).unwrap();
+
+        let mutation = ReferenceMutation::begin_in_domain(&f.domain).unwrap();
+        registration
+            .terminal(&owner, &mutation, WorkspaceDisposition::AbortedNotPublished)
+            .unwrap();
+        drop((mutation, owner, anchor, fresh));
+
+        let ready =
+            controls::prepare_terminal_workspace_boxed(&root, &f.domain, &f.memory).unwrap();
+        let scope = ready.origin_scope();
+        assert!(
+            workspace_has_child_receipts(&registry, parent_id, scope, &f.memory, &|| false)
+                .unwrap()
+        );
+        drop(registry);
+        drop(root_pin);
+
+        let mut report = CandidateReport::default();
+        assert!(matches!(
+            prepare_terminal_output(ready, &f.memory, &|| true, &mut report),
+            Err(CandidateError::Io(std::io::ErrorKind::Interrupted))
+        ));
+        assert!(parent_path.is_dir());
+        let ready =
+            controls::prepare_terminal_workspace_boxed(&root, &f.domain, &f.memory).unwrap();
+        let selected = prepare_terminal_output(ready, &f.memory, &|| false, &mut report)
+            .unwrap()
+            .expect("selection must continue after the parent receipt is vetoed");
+        assert_eq!(selected.origin.binding.output, *target_id);
+        assert!(selected.origin.directory);
+        let selected_name =
+            &selected.origin.binding.name[..selected.origin.binding.name_len as usize];
+        assert_eq!(
+            selected_name,
+            target_path.file_name().unwrap().as_encoded_bytes()
+        );
+        assert!(parent_path.is_dir());
+    }
 }
 
 /// Produced only after the already-prepared completion control was durably

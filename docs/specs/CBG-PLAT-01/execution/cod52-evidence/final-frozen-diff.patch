@@ -1,0 +1,321 @@
+diff --git a/src/storage/locks.rs b/src/storage/locks.rs
+index 8407242..754de2f 100644
+--- a/src/storage/locks.rs
++++ b/src/storage/locks.rs
+@@ -2100,28 +2100,105 @@ mod rooted_directory_tests {
+         root.sync_namespace().unwrap();
+         assert_eq!(root.identity(), id);
+     }
+-    #[cfg(windows)]
++    #[cfg(any(target_os = "macos", windows))]
+     #[test]
+     fn nested_directory_scans_do_not_consume_the_outer_cursor() {
+         let fixture = Fixture::new();
+         let root = fixture.anchor();
+-        for name in [b"one".as_slice(), b"two", b"three"] {
+-            drop(root.create_new(name).unwrap());
+-        }
+-        let mut outer = Vec::new();
++        let mut expected = Vec::new();
++        // Even minimum-sized native records cannot fit in one scratch buffer.
++        for index in 0..160 {
++            let name = format!("directory-{index:03}-{}", "x".repeat(64)).into_bytes();
++            drop(root.create_directory(&name).unwrap());
++            expected.push(name);
++        }
++        let mut all_entries = expected.clone();
++        drop(root.create_new(b"regular-payload").unwrap());
++        all_entries.push(b"regular-payload".to_vec());
++        all_entries.sort();
++        let mut baseline = Vec::new();
+         root.visit_entries(&mut [0; 4096], &mut |name| {
+-            let mut inner = 0;
+-            root.visit_entries(&mut [0; 4096], &mut |_| {
+-                inner += 1;
+-                Ok(())
+-            })?;
+-            assert_eq!(inner, 3);
+-            outer.push(name.to_vec());
++            baseline.push(name.to_vec());
+             Ok(())
+         })
+         .unwrap();
+-        outer.sort();
+-        assert_eq!(outer, [b"one".to_vec(), b"three".to_vec(), b"two".to_vec()]);
++        baseline.sort();
++        assert_eq!(baseline, all_entries);
++
++        for directories_only in [false, true] {
++            let mut outer = Vec::new();
++            let mut visit = |name: &[u8]| {
++                if directories_only && root.open_directory_readonly(name).is_err() {
++                    return Ok(());
++                }
++                let mut inner = Vec::new();
++                root.visit_entries(&mut [0; 4096], &mut |entry| {
++                    inner.push(entry.to_vec());
++                    Ok(())
++                })?;
++                inner.sort();
++                assert_eq!(inner, all_entries);
++                outer.push(name.to_vec());
++                Ok(())
++            };
++            if directories_only {
++                root.visit_directories(&mut [0; 4096], &mut visit)
++            } else {
++                root.visit_entries(&mut [0; 4096], &mut visit)
++            }
++            .unwrap();
++            outer.sort();
++            assert_eq!(
++                outer.as_slice(),
++                if directories_only {
++                    &expected
++                } else {
++                    &all_entries
++                }
++            );
++        }
++    }
++    #[cfg(target_os = "macos")]
++    #[test]
++    fn interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement() {
++        let fixture = Fixture::new();
++        let public = fixture.root.join("public");
++        fs::create_dir(&public).unwrap();
++        let root =
++            RootedDirectory::open_readonly_root(&public, path_identity(&public).unwrap()).unwrap();
++        let mut expected = Vec::new();
++        for index in 0..160 {
++            let name = format!("owned-{index:03}").into_bytes();
++            drop(root.create_new(&name).unwrap());
++            expected.push(name);
++        }
++        let mut visited = 0;
++        let error = root
++            .visit_entries(&mut [0; 4096], &mut |_| {
++                visited += 1;
++                Err(std::io::ErrorKind::Interrupted.into())
++            })
++            .unwrap_err();
++        assert_eq!(error.kind(), std::io::ErrorKind::Interrupted);
++        assert_eq!(visited, 1);
++        fs::rename(&public, fixture.root.join("original")).unwrap();
++        fs::create_dir(&public).unwrap();
++        fs::write(public.join("foreign-sentinel"), b"foreign").unwrap();
++
++        for _ in 0..2 {
++            let mut seen = Vec::new();
++            root.visit_entries(&mut [0; 4096], &mut |name| {
++                seen.push(name.to_vec());
++                Ok(())
++            })
++            .unwrap();
++            seen.sort();
++            assert_eq!(seen, expected);
++        }
++        assert_eq!(
++            fs::read(public.join("foreign-sentinel")).unwrap(),
++            b"foreign"
++        );
+     }
+     #[cfg(windows)]
+     #[test]
+@@ -2540,22 +2617,37 @@ impl RootedDirectory {
+     ) -> std::io::Result<()> {
+         #[cfg(target_os = "macos")]
+         {
+-            use std::os::fd::AsRawFd;
++            use std::os::fd::{AsRawFd, FromRawFd};
++            // A new open file description isolates nested traversal offsets.
++            // SAFETY: trusted dot resolves against the retained actual directory;
++            // no public pathname is reopened and the returned FD is owned below.
++            let fd = unsafe {
++                libc::openat(
++                    self.directory.as_raw_fd(),
++                    c".".as_ptr(),
++                    libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC,
++                )
++            };
++            if fd < 0 {
++                return Err(std::io::Error::last_os_error());
++            }
++            // SAFETY: openat returned a fresh descriptor owned by this File.
++            let directory = unsafe { File::from_raw_fd(fd) };
++            if file_identity(&directory).map_err(native_io)? != self.identity {
++                return Err(std::io::ErrorKind::InvalidInput.into());
++            }
+             let mut attributes: libc::attrlist = unsafe { std::mem::zeroed() };
+             attributes.bitmapcount = libc::ATTR_BIT_MAP_COUNT;
+             attributes.commonattr = libc::ATTR_CMN_NAME | libc::ATTR_CMN_RETURNED_ATTRS;
+             if directories_only {
+                 attributes.commonattr |= libc::ATTR_CMN_OBJTYPE;
+             }
+-            // SAFETY: actual directory FD, bounded writable caller scratch and
+-            // initialized attrlist. No libc DIR allocation or path expansion.
+-            if unsafe { libc::lseek(self.directory.as_raw_fd(), 0, libc::SEEK_SET) } < 0 {
+-                return Err(std::io::Error::last_os_error());
+-            }
+             loop {
++                // SAFETY: actual directory FD, bounded writable caller scratch
++                // and initialized attrlist. No libc DIR or path expansion.
+                 let count = unsafe {
+                     libc::getattrlistbulk(
+-                        self.directory.as_raw_fd(),
++                        directory.as_raw_fd(),
+                         (&mut attributes as *mut libc::attrlist).cast(),
+                         bytes.as_mut_ptr().cast(),
+                         bytes.len(),
+diff --git a/src/storage/maintenance_candidate.rs b/src/storage/maintenance_candidate.rs
+index 92bc9c3..9c862a4 100644
+--- a/src/storage/maintenance_candidate.rs
++++ b/src/storage/maintenance_candidate.rs
+@@ -2104,6 +2104,147 @@ mod tests {
+         corrupt[8] = 1;
+         assert!(Control::decode(&corrupt, scope).is_err());
+     }
++
++    #[cfg(target_os = "macos")]
++    #[test]
++    fn terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto() {
++        use super::super::layout::{create_fresh_reference_root, managed_generation_id};
++        use super::super::maintenance_admission::tests::Fixture;
++        use super::super::maintenance_controls::{
++            self as controls, WorkspaceCreatedDirectory, WorkspaceDisposition,
++            WorkspaceRegistration,
++        };
++        use super::super::maintenance_origin;
++        use super::super::maintenance_ownership::ReferenceMutation;
++        use std::fs;
++        use std::path::Path;
++
++        let f = Fixture::new();
++        let workspace_base = f
++            .domain
++            .workspace_registry(2, Some(&f.target.state_root))
++            .expect("managed worker registry");
++        fs::create_dir_all(&workspace_base).unwrap();
++        let root = workspace_base.join(format!("worker-{}", managed_generation_id()));
++        let fresh = create_fresh_reference_root(&root).unwrap().unwrap();
++        let anchor = RootedDirectory::open(&root, fresh.identity()).unwrap();
++        let owner =
++            locks::create_new_coordination_in(&anchor, b"lease.lock", &root.join("lease.lock"))
++                .unwrap();
++        let creation_mutation = ReferenceMutation::begin_in_domain(&f.domain).unwrap();
++        let startup = locks::open_shared_coordination(&f.domain.workspace_startup_path()).unwrap();
++        let registration =
++            WorkspaceRegistration::create(&fresh, &f.domain, &creation_mutation, &owner, 2)
++                .unwrap()
++                .expect("fresh worker registration");
++        drop((startup, creation_mutation));
++
++        let create_directory = |path: &Path| {
++            let output = WorkspaceCreatedDirectory::create_new(path)
++                .unwrap()
++                .expect("registered workspace directory output");
++            let binding = output.origin_binding();
++            maintenance_origin::record_created_workspace_directory(&output).unwrap();
++            let receipt = controls::workspace_origin_name(
++                &binding.incarnation,
++                binding.parent,
++                binding.output,
++                &binding.operation,
++            );
++            let identity = binding.output;
++            drop(output);
++            (receipt, identity)
++        };
++
++        let mut fillers = Vec::new();
++        for index in 0..161 {
++            let path = root.join(format!("output-{index:03}"));
++            let (receipt, identity) = create_directory(&path);
++            fs::write(path.join("retain"), b"ineligible").unwrap();
++            fillers.push((path, receipt, identity));
++        }
++        // Without the child-receipt veto this smallest receipt would win.
++        let parent_index = fillers
++            .iter()
++            .enumerate()
++            .min_by_key(|(_, (_, receipt, _))| *receipt)
++            .unwrap()
++            .0;
++        let (parent_path, parent_receipt, parent_id) = fillers.remove(parent_index);
++        fs::remove_file(parent_path.join("retain")).unwrap();
++        let child = parent_path.join("retired-child");
++        let _ = create_directory(&child);
++        fs::remove_dir(&child).unwrap();
++
++        // Observe native order rather than assume APFS ordering. The selected
++        // target lies well beyond the first 4096-byte native result batch.
++        let root_pin =
++            RootedDirectory::open_readonly_root(&root, locks::path_identity(&root).unwrap())
++                .unwrap();
++        let registry = root_pin
++            .open_directory_readonly(b".workspace-origins")
++            .unwrap();
++        let mut order = Vec::new();
++        registry
++            .visit_entries(&mut [0; 4096], &mut |entry| {
++                if entry.len() == 64 {
++                    let mut name = [0; 64];
++                    name.copy_from_slice(entry);
++                    order.push(name);
++                }
++                Ok(())
++            })
++            .unwrap();
++        let position = |name: &[u8; 64]| order.iter().position(|seen| seen == name);
++        let (target_path, target_receipt, target_id) = fillers
++            .iter()
++            .find(|(_, receipt, _)| position(receipt).is_some_and(|index| index > 128))
++            .expect("160 fillers cannot all fit in the first 129 entries");
++        let target_position = position(target_receipt).unwrap();
++        assert!(target_position > 128);
++        assert!(parent_receipt < *target_receipt);
++        assert!(parent_path.is_dir());
++        assert!(!parent_path.join("retired-child").exists());
++        assert_eq!(fs::read_dir(&parent_path).unwrap().count(), 0);
++        fs::remove_file(target_path.join("retain")).unwrap();
++
++        let mutation = ReferenceMutation::begin_in_domain(&f.domain).unwrap();
++        registration
++            .terminal(&owner, &mutation, WorkspaceDisposition::AbortedNotPublished)
++            .unwrap();
++        drop((mutation, owner, anchor, fresh));
++
++        let ready =
++            controls::prepare_terminal_workspace_boxed(&root, &f.domain, &f.memory).unwrap();
++        let scope = ready.origin_scope();
++        assert!(
++            workspace_has_child_receipts(&registry, parent_id, scope, &f.memory, &|| false)
++                .unwrap()
++        );
++        drop(registry);
++        drop(root_pin);
++
++        let mut report = CandidateReport::default();
++        assert!(matches!(
++            prepare_terminal_output(ready, &f.memory, &|| true, &mut report),
++            Err(CandidateError::Io(std::io::ErrorKind::Interrupted))
++        ));
++        assert!(parent_path.is_dir());
++        let ready =
++            controls::prepare_terminal_workspace_boxed(&root, &f.domain, &f.memory).unwrap();
++        let selected = prepare_terminal_output(ready, &f.memory, &|| false, &mut report)
++            .unwrap()
++            .expect("selection must continue after the parent receipt is vetoed");
++        assert_eq!(selected.origin.binding.output, *target_id);
++        assert!(selected.origin.directory);
++        let selected_name =
++            &selected.origin.binding.name[..selected.origin.binding.name_len as usize];
++        assert_eq!(
++            selected_name,
++            target_path.file_name().unwrap().as_encoded_bytes()
++        );
++        assert!(parent_path.is_dir());
++    }
+ }
+ 
+ /// Produced only after the already-prepared completion control was durably

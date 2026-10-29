@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="13" failures="0" errors="0" uuid="d548c202-96ad-4f3e-830b-09a527a7bddb" timestamp="2026-10-27T15:14:49.156+09:30" time="0.410">
+    <testsuite name="codebase-graph" tests="13" disabled="0" errors="0" failures="0">
+        <testcase name="db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes" classname="codebase-graph" timestamp="2026-10-27T15:14:49.157+09:30" time="0.036">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.02s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit" classname="codebase-graph" timestamp="2026-10-27T15:14:49.193+09:30" time="0.021">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily" classname="codebase-graph" timestamp="2026-10-27T15:14:49.214+09:30" time="0.020">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::isolated_error_keeps_context_inside_the_cap" classname="codebase-graph" timestamp="2026-10-27T15:14:49.234+09:30" time="0.024">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::isolated_error_keeps_context_inside_the_cap ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary" classname="codebase-graph" timestamp="2026-10-27T15:14:49.258+09:30" time="0.021">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_protocol_requires_v2_containment_contract" classname="codebase-graph" timestamp="2026-10-27T15:14:49.279+09:30" time="0.019">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::phase_protocol_requires_v2_containment_contract ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error" classname="codebase-graph" timestamp="2026-10-27T15:14:49.298+09:30" time="0.141">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.12s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts" classname="codebase-graph" timestamp="2026-10-27T15:14:49.441+09:30" time="0.023">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err>
+thread &apos;db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts&apos; (34625047) panicked at src/db_writer/phase.rs:993:21:
+test scope restoration
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+</system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_request_v2_preserves_thread_setting" classname="codebase-graph" timestamp="2026-10-27T15:14:49.464+09:30" time="0.024">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::phase_request_v2_preserves_thread_setting ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.01s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader" classname="codebase-graph" timestamp="2026-10-27T15:14:49.488+09:30" time="0.020">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory" classname="codebase-graph" timestamp="2026-10-27T15:14:49.507+09:30" time="0.019">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads" classname="codebase-graph" timestamp="2026-10-27T15:14:49.527+09:30" time="0.020">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+        <testcase name="db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path" classname="codebase-graph" timestamp="2026-10-27T15:14:49.547+09:30" time="0.019">
+            <system-out>
+running 1 test
+test db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 0.00s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>
