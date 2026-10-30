@@ -1,0 +1,70 @@
+[
+  {
+    "gate": "focused-process-lifecycle",
+    "command": "cargo nextest run --config-file /tmp/codebasegraph-pr163-ci-investigation-20261030/verification/nextest-verification.toml --user-config-file none --profile pr163-verification --cargo-profile native-tests --offline --locked -p codebase-graph --lib -E 'test(process_lifecycle::)' --test-threads 1 --no-tests fail",
+    "exit_code": 0,
+    "log": "focused-process-lifecycle.log",
+    "junit": "focused-process-lifecycle.junit.xml",
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3"
+  },
+  {
+    "gate": "fmt",
+    "command": "cargo fmt --all --check",
+    "exit_code": 0,
+    "log": "fmt-final.txt",
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3"
+  },
+  {
+    "gate": "clippy",
+    "command": "cargo clippy --offline --workspace --all-targets --all-features --locked -- -D warnings",
+    "exit_code": 0,
+    "log": "clippy-final.log",
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3"
+  },
+  {
+    "gate": "xtask",
+    "command": "cargo nextest run --config-file /tmp/codebasegraph-pr163-ci-investigation-20261030/verification/nextest-verification.toml --user-config-file none --profile pr163-verification --offline --locked -p xtask --test-threads 1 --no-tests fail",
+    "exit_code": 0,
+    "log": "xtask-final.log",
+    "source_sha256_before": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3",
+    "junit": "xtask-final.junit.xml",
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3"
+  },
+  {
+    "gate": "narrow-native-integration-compile",
+    "command": "cargo test --offline --locked --profile native-tests -p codebase-graph --test refresh_recovery_process --no-run --message-format=json-render-diagnostics",
+    "exit_code": 0,
+    "compiler_artifacts": "integration-compiler-artifacts.jsonl",
+    "log": "integration-compile.log",
+    "source_sha256_before": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3",
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3"
+  },
+  {
+    "gate": "narrow-native-integration-inventory",
+    "command": "cargo nextest list --config-file /tmp/codebasegraph-pr163-ci-investigation-20261030/verification/nextest-verification.toml --user-config-file none --profile pr163-verification --cargo-profile native-tests --offline --locked -p codebase-graph --test refresh_recovery_process -E 'test(=lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree) | test(=lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers) | test(=lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit) | test(=lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven)' --message-format json",
+    "exit_code": 0,
+    "inventory": "integration-discovered-inventory.json",
+    "matched_cases": [
+      "lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit",
+      "lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree",
+      "lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers",
+      "lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven"
+    ]
+  },
+  {
+    "gate": "narrow-native-integration",
+    "command": "cargo nextest run --config-file /tmp/codebasegraph-pr163-ci-investigation-20261030/verification/nextest-verification.toml --user-config-file none --profile pr163-verification --cargo-profile native-tests --offline --locked -p codebase-graph --test refresh_recovery_process -E 'test(=lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree) | test(=lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers) | test(=lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit) | test(=lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven)' --test-threads 1 --no-tests fail",
+    "exit_code": 0,
+    "log": "integration-selected.log",
+    "source_sha256_before": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3",
+    "CARGO_BIN_EXE_codebase-graph": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/codebase-graph",
+    "normal_cli_sha256": "edcfcc32ec76580dac215ed19a5323d2266cf379538a77c5d75f92b6e647fb98",
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3",
+    "junit": "integration-selected.junit.xml"
+  },
+  {
+    "gate": "diff-check",
+    "command": "git --no-optional-locks diff --check",
+    "exit_code": 0
+  }
+]

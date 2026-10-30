@@ -1,0 +1,32 @@
+[
+  {
+    "claim": "Only exact START gets 5s response budget",
+    "trace": "control exact string branch at571\u2013575; connect/write unchanged554\u2013560; helper read resets remaining timeout602",
+    "result": "holds"
+  },
+  {
+    "claim": "START is never replayed",
+    "trace": "one write_all570 then bounded frame read576; guardian nonce check470 and started guard472 preserved",
+    "result": "holds"
+  },
+  {
+    "claim": "Timeout does not erase unknown containment proof",
+    "trace": "run_guarded_phase249\u2013260 tries existing cancel, deletes only containment_empty; PreparedChild Drop319\u2013322 closes owner, unchanged recover_descriptor338\u2013374 retains unknown",
+    "result": "holds"
+  },
+  {
+    "claim": "Slow response cannot extend absolute deadline by trickle",
+    "trace": "read_socket_frame595\u2013615 recomputes deadline remaining each byte and rejects limit",
+    "result": "holds; same baseline machinery"
+  },
+  {
+    "claim": "Invalid nonce/malformed/closed input remains fail-closed",
+    "trace": "run_guardian467\u2013491 parse then nonce equality before start; read_socket_frame603\u2013615 errors on closed/oversize; unchanged",
+    "result": "holds statically; broader runtime evidence pending"
+  },
+  {
+    "claim": "Tests exercise production control and distinguish baseline",
+    "trace": "authenticated loopback receipt+commit765\u2013768, delayed350ms, exact nonce; backend baseline errno35 then final pass; independent evidence pending",
+    "result": "holds for actual control layer; not a real worker-start or original CI cause reproduction"
+  }
+]

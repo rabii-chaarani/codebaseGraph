@@ -1,0 +1,90 @@
+{
+  "compile_exit_code": 0,
+  "normal_cli": {
+    "path": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/codebase-graph",
+    "sha256": "edcfcc32ec76580dac215ed19a5323d2266cf379538a77c5d75f92b6e647fb98",
+    "compiler_artifact": {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///private/tmp/codebasegraph-pr163-ci-repair-20261030#codebase-graph@4.0.4",
+      "manifest_path": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/Cargo.toml",
+      "target": {
+        "kind": [
+          "bin"
+        ],
+        "crate_types": [
+          "bin"
+        ],
+        "name": "codebase-graph",
+        "src_path": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/src/bin/codebase-graph.rs",
+        "edition": "2021",
+        "doc": true,
+        "doctest": false,
+        "test": true
+      },
+      "profile": {
+        "opt_level": "3",
+        "debuginfo": 0,
+        "debug_assertions": true,
+        "overflow_checks": true,
+        "test": false
+      },
+      "features": [
+        "bundled-windows-extensions",
+        "default"
+      ],
+      "filenames": [
+        "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/codebase-graph"
+      ],
+      "executable": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/codebase-graph",
+      "fresh": false
+    }
+  },
+  "integration_test": {
+    "path": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/deps/refresh_recovery_process-96bc2be4dd6ed04f",
+    "sha256": "0cc8fdec8c79d36024bcebfd7d462136858bdc6aeb17192e3bff9cfe5f07c8c7",
+    "compiler_artifact": {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///private/tmp/codebasegraph-pr163-ci-repair-20261030#codebase-graph@4.0.4",
+      "manifest_path": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/Cargo.toml",
+      "target": {
+        "kind": [
+          "test"
+        ],
+        "crate_types": [
+          "bin"
+        ],
+        "name": "refresh_recovery_process",
+        "src_path": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/tests/refresh_recovery_process.rs",
+        "edition": "2021",
+        "doc": false,
+        "doctest": false,
+        "test": true
+      },
+      "profile": {
+        "opt_level": "3",
+        "debuginfo": 0,
+        "debug_assertions": true,
+        "overflow_checks": true,
+        "test": true
+      },
+      "features": [
+        "bundled-windows-extensions",
+        "default"
+      ],
+      "filenames": [
+        "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/deps/refresh_recovery_process-96bc2be4dd6ed04f"
+      ],
+      "executable": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/deps/refresh_recovery_process-96bc2be4dd6ed04f",
+      "fresh": false
+    }
+  },
+  "source_sha256_before_run": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3",
+  "CARGO_BIN_EXE_codebase-graph": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/codebase-graph",
+  "native_profile": "native-tests",
+  "selected_tests": [
+    "lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree",
+    "lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers",
+    "lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit",
+    "lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven"
+  ]
+}
