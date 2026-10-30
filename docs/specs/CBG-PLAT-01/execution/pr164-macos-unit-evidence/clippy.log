@@ -1,0 +1,134 @@
+    Blocking waiting for file lock on build directory
+    Checking tree-sitter-language v0.1.8
+    Checking memchr v2.8.2
+    Checking typenum v1.20.1
+    Checking windows-link v0.2.1
+    Checking windows-sys v0.61.2
+    Checking generic-array v0.14.7
+    Checking windows_x86_64_msvc v0.53.1
+    Checking aho-corasick v1.1.4
+    Checking serde_core v1.0.228
+    Checking winapi-util v0.1.11
+    Checking powerfmt v0.2.0
+    Checking regex-syntax v0.8.11
+    Checking deranged v0.3.11
+    Checking zmij v1.0.21
+    Checking same-file v1.0.6
+    Checking windows-targets v0.53.5
+    Checking regex-automata v0.4.14
+    Checking num-traits v0.2.19
+    Checking block-buffer v0.10.4
+    Checking crypto-common v0.1.7
+    Checking link-cplusplus v1.0.12
+    Checking time-core v0.1.2
+    Checking cty v0.2.2
+    Checking num-conv v0.1.0
+    Checking crc-catalog v2.5.0
+    Checking foldhash v0.1.5
+    Checking itoa v1.0.18
+    Checking cfg-if v1.0.4
+    Checking arrayvec v0.7.6
+    Checking regex v1.12.4
+    Checking rust_decimal v1.42.1
+    Checking serde_json v1.0.150
+    Checking cxx v1.0.138
+    Checking crc v3.4.0
+    Checking time v0.3.36
+    Checking libmimalloc-sys v0.1.49
+    Checking digest v0.10.7
+    Checking windows-sys v0.60.2
+    Checking walkdir v2.5.0
+    Checking winapi v0.3.9
+    Checking libc v0.2.189
+   Compiling codebase-graph v4.0.1 (C:\Users\rcha0053\Repositories\cbg-pr164)
+    Checking cpufeatures v0.2.17
+    Checking uuid v1.18.1
+    Checking notify-types v2.0.0
+    Checking log v0.4.32
+    Checking byteorder v1.5.0
+    Checking streaming-iterator v0.1.9
+    Checking lzma-rs v0.3.0
+    Checking tree-sitter v0.25.10
+    Checking notify v8.2.0
+    Checking lbug v0.19.0
+    Checking fs2 v0.4.3
+    Checking sha2 v0.10.9
+    Checking serde v1.0.228
+    Checking tree-sitter-rust v0.24.2
+    Checking tree-sitter-typescript v0.23.2
+    Checking tree-sitter-javascript v0.25.0
+    Checking tree-sitter-python v0.25.0
+    Checking tree-sitter-c v0.24.2
+    Checking tree-sitter-fortran v0.6.0
+    Checking tree-sitter-cpp v0.23.4
+    Checking tree-sitter-go v0.25.0
+    Checking tree-sitter-html v0.23.2
+    Checking tree-sitter-css v0.25.0
+    Checking getrandom v0.3.4
+    Checking mimalloc v0.1.52
+error: unneeded `return` statement
+   --> src\db_writer\access.rs:228:9
+    |
+228 |         return Ok(native_path);
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#needless_return
+    = note: `-D clippy::needless-return` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::needless_return)]`
+help: remove `return`
+    |
+228 -         return Ok(native_path);
+228 +         Ok(native_path)
+    |
+
+error: this `map_or` can be simplified
+   --> src\db_writer\access.rs:273:44
+    |
+273 |                 Component::Normal(name) if name.to_str().map_or(true, |name| name.ends_with('.') || name.ends_with(' '))))
+    |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#unnecessary_map_or
+    = note: `-D clippy::unnecessary-map-or` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::unnecessary_map_or)]`
+help: use `is_none_or` instead
+    |
+273 -                 Component::Normal(name) if name.to_str().map_or(true, |name| name.ends_with('.') || name.ends_with(' '))))
+273 +                 Component::Normal(name) if name.to_str().is_none_or(|name| name.ends_with('.') || name.ends_with(' '))))
+    |
+
+error: useless conversion to the same type: `std::io::Error`
+    --> src\storage\locks.rs:2718:32
+     |
+2718 |                       return Err(std::io::Error::from_raw_os_error(unsafe {
+     |  ________________________________^
+2719 | |                         windows_sys::Win32::Foundation::RtlNtStatusToDosError(result)
+2720 | |                     } as i32)
+2721 | |                     .into());
+     | |___________________________^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#useless_conversion
+     = note: `-D clippy::useless-conversion` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::useless_conversion)]`
+help: consider removing `.into()`
+     |
+2718 ~                     return Err(std::io::Error::from_raw_os_error(unsafe {
+2719 +                         windows_sys::Win32::Foundation::RtlNtStatusToDosError(result)
+2720 ~                     } as i32));
+     |
+
+error: could not compile `codebase-graph` (lib) due to 3 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: call to `set_readonly` with argument `false`
+    --> src\storage\maintenance_ownership.rs:3980:9
+     |
+3980 |         permissions.set_readonly(false);
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = note: on Unix platforms this results in the file being world writable
+     = help: you can set the desired permissions using `PermissionsExt`. For more information, see
+             https://doc.rust-lang.org/std/os/unix/fs/trait.PermissionsExt.html
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#permissions_set_readonly_false
+     = note: `-D clippy::permissions-set-readonly-false` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::permissions_set_readonly_false)]`
+
+error: could not compile `codebase-graph` (lib test) due to 4 previous errors

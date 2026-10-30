@@ -1,0 +1,237 @@
+{
+  "capture_seconds": 370.479385834,
+  "cli": "/var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native-test-cli-3955-1793330352537482000/codebase-graph",
+  "cli_sha256": "892050a6072751779afcc0043b1bf3184af380d727ddf7f8ccf35611971cfb6f",
+  "cli_unchanged": true,
+  "cohort": "unit",
+  "commands": [
+    [
+      "test",
+      "--workspace",
+      "--locked",
+      "--profile",
+      "native-tests",
+      "--lib",
+      "--bins",
+      "--examples"
+    ]
+  ],
+  "compiler_artifact": "/Users/runner/work/codebaseGraph/codebaseGraph/target/native-tests/codebase-graph",
+  "executions": [
+    {
+      "command": 0,
+      "error": "native test failed with status exit status: 101",
+      "seconds": 1515.485178708
+    }
+  ],
+  "inventory": [
+    {
+      "cohort": "unit",
+      "kind": "lib",
+      "package": "codebase-graph",
+      "target": "codebase_graph"
+    },
+    {
+      "cohort": "integration",
+      "kind": "doctest",
+      "package": "codebase-graph",
+      "target": "codebase_graph"
+    },
+    {
+      "cohort": "unit",
+      "kind": "bin",
+      "package": "codebase-graph",
+      "target": "codebase-graph"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "agent_hooks_process"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "auto_repo_root"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "coordinator_process"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "copy_phase_process"
+    },
+    {
+      "cohort": "generation",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "generation_storage"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "http_admission_process"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "http_daemon_process"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "native_request_identity"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "refresh_recovery_process"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "storage_foundation"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "storage_maintenance"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "codebase-graph",
+      "target": "windows_client_discovery"
+    },
+    {
+      "cohort": "unit",
+      "kind": "lib",
+      "package": "k-wiki",
+      "target": "k_wiki"
+    },
+    {
+      "cohort": "integration",
+      "kind": "doctest",
+      "package": "k-wiki",
+      "target": "k_wiki"
+    },
+    {
+      "cohort": "unit",
+      "kind": "bin",
+      "package": "k-wiki",
+      "target": "k-wiki"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "api_integration"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "authoring"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "bundle_reader"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "compilation"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "conformance"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "diagnostic_transports"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "diagnostics"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "memory"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "projection"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "refresh"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "rendering"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "search"
+    },
+    {
+      "cohort": "integration",
+      "kind": "test",
+      "package": "k-wiki",
+      "target": "transports"
+    },
+    {
+      "cohort": "unit",
+      "kind": "bin",
+      "package": "xtask",
+      "target": "xtask"
+    }
+  ],
+  "shard": null,
+  "source_sha": "ad040bd7aac026b56d327b0c02c86df1a8512c9d",
+  "target": "macos-arm64",
+  "total_seconds": 1887.032531875,
+  "unsharded_commands": [
+    [
+      "test",
+      "--workspace",
+      "--locked",
+      "--profile",
+      "native-tests",
+      "--lib",
+      "--bins",
+      "--examples"
+    ]
+  ]
+}

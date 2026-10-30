@@ -1,0 +1,38 @@
+{
+  "baseline": "8f25fde6659e9adbfee10f16a5f4d072bb2e8d91",
+  "local_os": "Windows11Enterprise23H2x64",
+  "source_hashes": {
+    "src\\adapters\\cli\\tests\\mcp.rs": "0b3fdd1a58939c3dc28ab04fd528fb68ea0dd893c1445c99815036f1e9f1f651",
+    "src\\coordinator\\tests.rs": "a57902231b187e47b48188156eeb9133d7d431470bd4a9c6bc17633a40515d75"
+  },
+  "final_build_exit": 0,
+  "format_policy_exit": 0,
+  "selected_units": 37,
+  "unit_not_selected": 808,
+  "new_cases": [
+    "adapters::cli::tests::mcp::mcp_test_busy_retry_requires_matching_typed_predispatch_error",
+    "coordinator::tests::maintenance_busy_health_is_rejected_before_dispatch_and_recovers_after_release"
+  ],
+  "pending": [],
+  "native_macOS": "newhostedCIrequired,notexecutedhere",
+  "original_root_cause": "unconfirmed;originalerrorpayloadmissing",
+  "product_constants_changed": false,
+  "test_policy_change": "15sonefixtureadmissionbudget,remainingtestsocketI/Olimits;notstrictwallclockcancellationbound",
+  "affectedtests": {
+    "exit": 0,
+    "passed": 37,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 808
+  },
+  "clippy_strict": {
+    "exit": 101,
+    "boundary": "fourdiagnosticsinunchangedpaths;notpassed"
+  },
+  "clippy_global4lintallowances": {
+    "exit": 0,
+    "boundary": "notstrictpass"
+  },
+  "completed_execution_review": "accept,no selectedruntime/sourceblocker;notstrictClippyormacOSpass",
+  "publication_boundary": "checksums/index/pushverifiedseparately;testrecordcomplete"
+}

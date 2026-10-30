@@ -1,0 +1,12 @@
+{
+  "unchanged_diagnostic_paths_diff_exit": 0,
+  "strict_exit": 101,
+  "allowances": [
+    "clippy::needless_return",
+    "clippy::unnecessary_map_or",
+    "clippy::useless_conversion",
+    "clippy::permissions_set_readonly_false"
+  ],
+  "scope": "command only global lintcategory allowances,includingchangedtestfiles;notstrictpassorcompletechangedtestlintproof",
+  "repo_lint_policy_changed": false
+}

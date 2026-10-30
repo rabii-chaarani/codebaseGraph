@@ -1,0 +1,58 @@
+
+running 37 tests
+test adapters::cli::tests::mcp::mcp_graph_query_binds_json_parameters ... ok
+test adapters::cli::tests::mcp::mcp_http_enforces_bearer_token_when_configured ... ok
+test adapters::cli::tests::mcp::mcp_http_handles_initialize_list_call_and_protocol_errors ... ok
+test adapters::cli::tests::mcp::mcp_http_rejects_remote_bind_without_auth_token ... ok
+test adapters::cli::tests::mcp::mcp_options_reject_removed_memory_flags ... ok
+test adapters::cli::tests::mcp::mcp_options_resolve_config_defaults_and_cli_overrides ... ok
+test adapters::cli::tests::mcp::mcp_stdio_refresh_policy_off_is_watcher_free ... ok
+test adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors ... ok
+test adapters::cli::tests::mcp::mcp_test_busy_retry_requires_matching_typed_predispatch_error ... ok
+test coordinator::tests::ambiguous_operation_disconnect_is_not_replayed_or_retryable ... ok
+test coordinator::tests::caller_deadline_does_not_release_the_real_execution_permit ... ok
+test coordinator::tests::concurrent_clients_share_one_repository_coordinator ... ok
+test coordinator::tests::deadline_calls_fail_promptly_when_owner_state_is_legacy ... ok
+test coordinator::tests::drain_waits_for_active_execution_after_the_caller_times_out ... ok
+test coordinator::tests::elapsed_receive_deadline_is_not_extended_by_trickled_frame_bytes ... ok
+test coordinator::tests::expired_request_received_as_trickled_bytes_never_dispatches ... ok
+test coordinator::tests::follower_refreshes_a_stale_authenticated_route ... ok
+test coordinator::tests::follower_takes_over_after_owner_release ... ok
+test coordinator::tests::joined_maintenance_driver::dc_joined_driver_advisory_finish_allows_real_requests_then_drops_work_before_recovery ... ok
+test coordinator::tests::joined_maintenance_driver::dc_joined_driver_rebind_and_stop_during_preparation_prevent_mutation ... ok
+test coordinator::tests::joined_maintenance_driver::dc_joined_driver_releases_real_permit_before_slow_drop_on_success_error_and_panic ... 
+thread '<unnamed>' (35668) panicked at src\coordinator\tests.rs:880:22:
+fixture mutation panic
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+ok
+test coordinator::tests::joined_maintenance_driver::dc_joined_driver_start_limit_and_factory_failure_are_truthful ... ok
+test coordinator::tests::joined_maintenance_driver::dc_joined_driver_stop_or_rebind_winning_postpermit_gate_has_no_mutation ... ok
+test coordinator::tests::maintenance_busy_health_is_rejected_before_dispatch_and_recovers_after_release ... ok
+test coordinator::tests::maintenance_cannot_bypass_queued_or_active_real_execution ... ok
+test coordinator::tests::maintenance_panic_releases_slot_without_resurrecting_stopped_admission ... 
+thread 'coordinator::tests::maintenance_panic_releases_slot_without_resurrecting_stopped_admission' (34504) panicked at src\coordinator\tests.rs:807:13:
+fixture maintenance panic
+ok
+test coordinator::tests::maintenance_permit_blocks_real_execution_until_actual_drop ... ok
+test coordinator::tests::maintenance_permit_is_exclusive_during_simultaneous_grant_requests ... ok
+test coordinator::tests::managed_coordinator_acquisition_preserves_real_fresh_root_enrollment ... ok
+test coordinator::tests::ping_stays_responsive_and_graph_requests_are_rejected_while_busy ... ok
+test coordinator::tests::refresh_owned_join::refresh_join_self_identity_survives_handle_taken_by_another_drainer ... ok
+test coordinator::tests::refresh_owned_join::refresh_join_two_drainers_wait_for_payload_drop_and_wake_after_unwind ... 
+thread '<unnamed>' (26004) panicked at src\coordinator\tests.rs:1328:17:
+Box<dyn Any>
+
+thread '<unnamed>' (22820) panicked at src\coordinator\tests.rs:1328:17:
+Box<dyn Any>
+
+thread '<unnamed>' (30072) panicked at src\coordinator\tests.rs:1318:17:
+fixture join payload destructor
+ok
+test coordinator::tests::refresh_owned_join::refresh_monitor_final_self_drop_exits_before_another_wait_or_work ... ok
+test coordinator::tests::refresh_owned_join::refresh_owner_and_monitor_release_state_and_route_mutexes_before_join ... ok
+test coordinator::tests::refresh_owned_join::refresh_owner_executor_start_failure_and_stop_before_api_start_join_refresh ... ok
+test coordinator::tests::request_receive_failure_is_retryable_before_dispatch ... ok
+test coordinator::tests::retryable_receive_failure_retries_the_same_owner ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 808 filtered out; finished in 159.60s
+
