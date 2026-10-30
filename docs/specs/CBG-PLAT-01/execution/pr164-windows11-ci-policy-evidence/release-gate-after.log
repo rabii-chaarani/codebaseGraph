@@ -1,0 +1,3 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running `C:\Users\rcha0053\pr164-qualification\target\debug\xtask.exe release-gate`
+release gate passed
