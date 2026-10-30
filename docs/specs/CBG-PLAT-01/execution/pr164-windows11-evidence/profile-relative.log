@@ -1,0 +1,76 @@
+{
+  "action": "dry_run",
+  "agent_hooks": {
+    "action": "skipped",
+    "clients": [],
+    "reason": "disabled",
+    "selection": "none"
+  },
+  "client": "generic",
+  "command": null,
+  "daemon": null,
+  "descriptor": {
+    "args": [
+      "mcp",
+      "start",
+      "--config",
+      "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+    ],
+    "command": "codebase-graph",
+    "cwd": null,
+    "env": {},
+    "name": "cod55_supplemental",
+    "repo_root": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space",
+    "setup_config_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json",
+    "timeout": 60,
+    "tool_policy": "graph_query_read_only",
+    "transport": "stdio"
+  },
+  "entry": {
+    "args": [
+      "mcp",
+      "start",
+      "--config",
+      "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+    ],
+    "command": "codebase-graph"
+  },
+  "legacy_cleanup": {
+    "action": "unchanged",
+    "removed": [],
+    "requested": [],
+    "text": "{\n  \"mcpServers\": {\n    \"cod55_supplemental\": {\n      \"args\": [\n        \"mcp\",\n        \"start\",\n        \"--config\",\n        \"\\\\\\\\?\\\\C:\\\\Users\\\\rcha0053\\\\pr164-qualification\\\\supplemental\\\\repo space\\\\.codebaseGraph\\\\config.json\"\n      ],\n      \"command\": \"codebase-graph\"\n    }\n  }\n}\n"
+  },
+  "method": "file_adapter",
+  "patch": {
+    "mcpServers": {
+      "cod55_supplemental": {
+        "args": [
+          "mcp",
+          "start",
+          "--config",
+          "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+        ],
+        "command": "codebase-graph"
+      }
+    }
+  },
+  "path": "C:\\Users\\rcha0053\\.config/mcp/mcp.json",
+  "payload": {
+    "mcpServers": {
+      "cod55_supplemental": {
+        "args": [
+          "mcp",
+          "start",
+          "--config",
+          "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+        ],
+        "command": "codebase-graph"
+      }
+    }
+  },
+  "scope": "user",
+  "server_name": "cod55_supplemental",
+  "target_locality": "shared"
+}
+NATIVE_EXIT_STATUS=0

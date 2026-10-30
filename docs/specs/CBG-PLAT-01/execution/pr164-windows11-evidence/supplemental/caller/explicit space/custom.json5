@@ -1,0 +1,16 @@
+{
+  "mcp": {
+    "servers": {
+      "cod55_supplemental": {
+        "args": [
+          "mcp",
+          "start",
+          "--config",
+          "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+        ],
+        "command": "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\openclaw bin\\openclaw.exe",
+        "type": "stdio"
+      }
+    }
+  }
+}

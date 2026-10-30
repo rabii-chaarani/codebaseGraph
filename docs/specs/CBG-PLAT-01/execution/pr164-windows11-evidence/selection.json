@@ -1,0 +1,36 @@
+{
+  "unit_available": 843,
+  "unit_selected": [
+    "api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments",
+    "api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments",
+    "api::lifecycle::tests::native_client_commands_preserve_every_server_argument",
+    "api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets",
+    "api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared",
+    "api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths",
+    "client_config::tests::non_windows_keeps_home_default_behavior",
+    "client_config::tests::repository_targets_and_client_overrides_do_not_resolve_a_profile",
+    "client_config::tests::unsupported_windows_config_files_are_skipped_without_environment_changes",
+    "client_config::tests::windows_claude_project_visibility_uses_the_selected_project_directory",
+    "client_config::tests::windows_command_projects_relative_targets_before_child_cwd_changes",
+    "client_config::tests::windows_fails_when_profile_is_unavailable_or_not_absolute",
+    "client_config::tests::windows_uses_native_profile_after_invalid_userprofile",
+    "client_config::tests::windows_uses_native_profile_when_userprofile_is_an_absolute_file",
+    "client_config::tests::windows_uses_userprofile_and_ignores_home",
+    "client_process::tests::cod55_windows_batch_shims_forward_exact_argv_and_block_injection",
+    "client_process::tests::cod55_windows_explicit_paths_are_supported_and_pinned",
+    "client_process::tests::cod55_windows_native_exe_preserves_arguments_without_batch_restrictions",
+    "client_process::tests::cod55_windows_path_precedence_and_fixed_suffix_order",
+    "client_process::tests::cod55_windows_rejects_unsafe_batch_paths_and_arguments_before_spawn",
+    "client_process::tests::cod55_windows_rejects_unsupported_suffixes_and_ambiguous_commands"
+  ],
+  "unit_not_selected": 822,
+  "integration_selected": [
+    "cod55_windows_claude_project_visibility_runs_in_selected_project",
+    "cod55_windows_exe_cmd_bat_add_and_list_use_selected_target",
+    "cod55_windows_explicit_file_visibility_never_checks_other_target",
+    "cod55_windows_profile_override_explicit_and_project_targets",
+    "cod55_windows_relative_override_and_native_failure_keep_target",
+    "cod55_windows_unsafe_batch_input_preserves_existing_configuration"
+  ],
+  "selection_basis": "native client config/process modules and 6 lifecycle argv/path units only; all windows_client_discovery integration cases"
+}

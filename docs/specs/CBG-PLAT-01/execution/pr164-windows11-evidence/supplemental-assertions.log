@@ -1,0 +1,1 @@
+6/6 supplemental CLI scenarios passed: 3 profile fallback + missing client + OpenClaw relative failure/fallback/visibility + explicit custom-file visibility skip; no real-profile writes

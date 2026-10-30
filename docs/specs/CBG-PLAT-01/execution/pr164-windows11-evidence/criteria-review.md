@@ -1,0 +1,78 @@
+# PR164 focused Windows qualification criteria review
+
+## Scope, authority and limits
+
+- Exact task snapshot: PR164 head `4e42468d904c18a5f3fd58c0809212977a561727`; corrected product revision `84cdb27386ea4d86166135d82736a62deb2bd1ba`; worktree `C:\Users\rcha0053\Repositories\cbg-pr164`.
+- Governing scope: **CBG-PLAT-01/S04, R04, A07–A08 / COD-55 only**. Approved spec rev0.11 at `8a410c7a22f5291f06a1cece5cd9e7c0be255e72`, exact approval `docs/specs/CBG-PLAT-01/approvals/cod55-windows-client-discovery.md`. Settled D03a and corrected D03b option B apply; neither acceptance nor platform scope is changed here.
+- Read-only independent criteria/evidence review. Main `AGENTS.md` read; k-wiki bundle/search/recall and semantic graph discovery plus explicit runtime/change-impact context completed. Graph health identifies the older `codebaseGraph` checkout, not this worktree; no branch graph is available or rebuild authorized. **No undiscovered product/test source was read.** Exact case names below come from native harness inventory/selection and PR execution reports, not an independent inspection of their assertions.
+- Evidence: local spec/decisions/approval; `execution/pr164-ci-repair.md`, `execution/pr164-unix-path-review.md` and their review/JUnit evidence; coordinator-supplied `pr-and-ci.json`, `handoff.json`, `native-inputs.json`, `focused-build.log`, `selection.json`, native inventory and run logs in this qualification directory. Test-name mapping alone does not prove every assertion or all hostile inputs.
+- No source, constants, global environment, services, tracker, GitHub or Git changes by this reviewer. This scratch report is for coordinator inclusion on the **existing PR branch**, not a new PR or separate push.
+
+## Required observable outcomes
+
+| Criterion | Focused native evidence required | Failure/preservation oracle |
+|---|---|---|
+| A07 precedence | Real CLI install/dry-run: explicit `--client-config-path` wins over an applicable client override; override wins over native Windows profile. Test conflicting HOME/profile/override values and absent HOME. | Report selected scope and exact path. Never select HOME/CWD/repository by accidental fallback; project and explicit paths remain deliberate. |
+| A07 invalid/missing profile | Valid native profile is used when USERPROFILE is absent/invalid; clearly reject when no valid user directory can resolve. | A relative value or absolute file is not a profile directory. The real native-token fallback should be exercised separately from injected helper outcomes. No writes for dry-run; no corruption or alternate target on failure. |
+| A08 discovery/argv | Supported `.exe`, `.cmd`, `.bat` on controlled PATH and explicit command paths; spaced paths; fixed suffix/PATH precedence; exact argv capture. | Discovery, add/invocation and list/visibility use the same pinned command kind. Native arguments remain literal, separate from stricter batch policy; no generic shell command evaluation. |
+| A08 unsafe boundaries | Controlled cmd/bat capture and injection marker; quoting/metacharacter/unsupported command/path/argument rejection before spawn. | Unsafe input fails clearly; no launch/injection sentinel, config mutation or blind shell fallback. Successful harmless arguments retain exact boundaries. |
+| A08 selected-target continuity | Relative overrides when child CWD changes; native add failure then same-target file fallback; explicit-file visibility; both supported Claude project spellings. | Add, fallback and list/visibility must refer to the **same exact selected target**, not another profile/default/project. Snapshot unrelated existing config and confirm unchanged. |
+| A07/A08 missing client | User/explicit target with unavailable controlled PATH client. | Clear failure or documented same-target file adapter, never changed user/project target; unrelated config stays unchanged. Missing command is not permission to select another target. |
+
+A dry-run is useful for path policy but cannot qualify actual launch, native argv, batch quoting, file fallback after native failure or visibility. Unit tests that spawn controlled native processes provide real Windows adapter execution even though their Cargo target is `--lib`.
+
+## Precise focused selection and invocation
+
+Native inventory contains **843 unit cases**. Select **21**, not22: client_config9 + client_process6 + lifecycle6. **822 other unit cases are unselected**, not passing evidence. All **6** discovered `windows_client_discovery` cases are selected; no other integration target is part of this task.
+
+The coordinator's focused build is:
+
+```text
+cargo test --locked --offline --profile native-tests --features bundled-windows-extensions --lib --test windows_client_discovery --no-run --message-format json
+```
+
+Use its native-test artifacts in the same isolated native toolchain/cache environment; debug assertions are enabled in the captured Cargo JSON. Ordinary `--release` must not replace this profile. These are recommended exact harness invocations, **not commands executed by this reviewer**:
+
+```text
+"C:\Users\rcha0053\pr164-qualification\target\native-tests\deps\codebase_graph-7ed996dfd9332328.exe" --test-threads=1 --exact "api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments" "api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments" "api::lifecycle::tests::native_client_commands_preserve_every_server_argument" "api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets" "api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared" "api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths" "client_config::tests::non_windows_keeps_home_default_behavior" "client_config::tests::repository_targets_and_client_overrides_do_not_resolve_a_profile" "client_config::tests::unsupported_windows_config_files_are_skipped_without_environment_changes" "client_config::tests::windows_claude_project_visibility_uses_the_selected_project_directory" "client_config::tests::windows_command_projects_relative_targets_before_child_cwd_changes" "client_config::tests::windows_fails_when_profile_is_unavailable_or_not_absolute" "client_config::tests::windows_uses_native_profile_after_invalid_userprofile" "client_config::tests::windows_uses_native_profile_when_userprofile_is_an_absolute_file" "client_config::tests::windows_uses_userprofile_and_ignores_home" "client_process::tests::cod55_windows_batch_shims_forward_exact_argv_and_block_injection" "client_process::tests::cod55_windows_explicit_paths_are_supported_and_pinned" "client_process::tests::cod55_windows_native_exe_preserves_arguments_without_batch_restrictions" "client_process::tests::cod55_windows_path_precedence_and_fixed_suffix_order" "client_process::tests::cod55_windows_rejects_unsafe_batch_paths_and_arguments_before_spawn" "client_process::tests::cod55_windows_rejects_unsupported_suffixes_and_ambiguous_commands"
+```
+
+```text
+"C:\Users\rcha0053\pr164-qualification\target\native-tests\deps\windows_client_discovery-c769dfec1010c183.exe" --test-threads=1 --exact "cod55_windows_claude_project_visibility_runs_in_selected_project" "cod55_windows_exe_cmd_bat_add_and_list_use_selected_target" "cod55_windows_explicit_file_visibility_never_checks_other_target" "cod55_windows_profile_override_explicit_and_project_targets" "cod55_windows_relative_override_and_native_failure_keep_target" "cod55_windows_unsafe_batch_input_preserves_existing_configuration"
+```
+
+Each binary runs serially (`--test-threads=1`). The two independent binaries may run in parallel with isolated fixture directories. Retain the exact executable/CLI hashes and `CARGO_BIN_EXE_codebase-graph` binding used by the coordinator; do not substitute the installed older CLI. The build's root CLI is `C:\Users\rcha0053\pr164-qualification\target\native-tests\codebase-graph.exe`.
+
+### Mapping the discovered cases
+
+- A07 profile/precedence, injected errors and context: `client_config::tests::windows_uses_userprofile_and_ignores_home`, `windows_uses_native_profile_after_invalid_userprofile`, `windows_uses_native_profile_when_userprofile_is_an_absolute_file`, `windows_fails_when_profile_is_unavailable_or_not_absolute`, `repository_targets_and_client_overrides_do_not_resolve_a_profile`, `windows_command_projects_relative_targets_before_child_cwd_changes`, `windows_claude_project_visibility_uses_the_selected_project_directory`, `unsupported_windows_config_files_are_skipped_without_environment_changes`; actual CLI case `cod55_windows_profile_override_explicit_and_project_targets`.
+- A08 Windows adapter: all6 `client_process::tests::cod55_windows_*` names in the exact unit command cover native literal argv; cmd/bat capture/injection; unsafe pre-spawn rejection; unsupported/ambiguous commands; explicit pinning; PATH/suffix policy. Names support this focused selection, but exact asserted unsafe-input set is not independently audited here.
+- A08 end-to-end: `cod55_windows_exe_cmd_bat_add_and_list_use_selected_target`, `cod55_windows_relative_override_and_native_failure_keep_target`, `cod55_windows_explicit_file_visibility_never_checks_other_target`, `cod55_windows_claude_project_visibility_runs_in_selected_project`, `cod55_windows_unsafe_batch_input_preserves_existing_configuration`.
+- Adjacent preservation: six selected lifecycle argv/format/target cases; `client_config::tests::non_windows_keeps_home_default_behavior` is a portable policy unit running on Windows, **not native macOS execution**. Existing macOS61/61 evidence stays separate.
+
+## Recommended process-only additions and remaining limits
+
+1. **Real invalid USERPROFILE fallback:** dry-run with USERPROFILE an absolute existing file, then relative/invalid input; HOME points elsewhere and applicable override is absent. Confirm the real native profile is selected and no HOME/CWD config is created. This is not proved solely by injected profile helpers or the existing absent-USERPROFILE process case.
+2. **Non-Codex/full-file override:** use a supported non-Codex client and verified `--client-config-path`/documented override form with relative/spaced spelling. Confirm explicit precedence, failure/fallback target and visibility; keep unrelated default config byte-identical. Do **not invent** an OPENCLAW environment variable merely to complete a matrix. Existing integration is reported to exercise CODEX override only.
+3. **Unavailable client:** controlled PATH lacking the requested client; compare selected path/scope and unrelated config. This closes the explicit A08 missing-client preservation condition beyond successful controlled client discovery.
+4. **Coverage limit, not a demand for unsafe environment mutation:** an ordinary logged-in Windows process has a real native profile. Truly unavailable native-profile resolution remains injected helper negative coverage unless a safe real-process method is available. Do not change global profiles, registry, user settings or services to force it.
+5. The native adapter unit processes already cover controlled exe/cmd/bat argv/injection. Do not duplicate their fixtures unnecessarily. A matrix over every supported client, every string and every shell is not required by this bounded task; state exact exercised clients/boundaries and avoid a universal compatibility claim.
+
+The coordinator accepted additions1–3 and is checking supported CLI/options. Until their actual outputs are captured, these are **recommended/unexecuted**, not a new product finding or asserted passing coverage.
+
+## Review findings resolution and evidence status
+
+- **Fixture JSON compile failure:** PR execution report records five invalid format strings fixed by shared standalone fixture; host unit include compiles the same source. Review found no P0–P3 in the bounded three-file repair. Windows metadata compile was compile-only; the later native process rerun, not that compile, must establish behavior.
+- **Canonical project-path expectation:** report records canonical existing repository parent plus exact `.mcp.json` leaf, preserving target identity rather than weakening to suffix-only comparison. Independently reviewed as test-only correction.
+- **Historical COPY PID uniqueness:** separate approved COD98 oracle transplant is documented and reviewed with Mac13/13 phase +5/5 native cases. It is not S04 functionality and is not rerun or widened here.
+- **Unix PATH execute-permission regression:** review4396573116 is documented resolved by Unix executable-candidate filtering/pinning; red3 then green3, affected Mac61/61 and strict checks. Windows/explicit branches unchanged per its independent source review. This Windows run cannot re-prove Unix execution; do not reopen broader execvp/setuid support.
+- Supplied `pr-and-ci.json` records all **22** check runs successful for current head, run40632555501, including required/native artifact/native test cohorts. This updates historical “CI pending” statements **for the supplied current snapshot only**. This reviewer did not retrieve per-case hosted logs or independently rebind its synthetic merge/source hashes; status alone is not detailed local A07/A08 assertion proof.
+- Initial local native run: units **19 passed,2 failed**; integration **1 passed,5 failed**. All seven failures show the embedded fixture `rustc` selecting **Git `usr/bin/link.exe`**, which rejects MSVC linker arguments before the intended fixture assertion. Preserve this attempt. It is a native qualification/toolchain blocker, not by itself a product regression. Correct **child-local** native PATH/LIB/INCLUDE so embedded bare rustc sees MSVC link.exe; no source change or global PATH edit is needed. Rerun the exact same artifacts/selection and retain both logs.
+- Corrected native **unit** rerun is complete: `focused-unit-native-env.log` records **21 passed,0 failed,0 ignored,822 filtered**, `NATIVE_EXIT_STATUS=0`. All21 selected names match the retained inventory, including native exe argv, both batch shims/injection and unsafe pre-spawn rejection. Coordinator reports unchanged source/binaries and child-local native environment restoration through `run-native.ps1`; no source edit was needed. This review read the completed log, not the wrapper or undiscovered source.
+- Final integration rerun and the external profile/missing-client/non-Codex checks were still in flight at handoff. Their final outcomes are deliberately left to the **separate completed-execution reviewer**. This criteria report is a docs/inventory/selection audit plus the inspected unit-log result, not the final execution verdict.
+
+## Honest qualification boundary
+
+The coordinator records Windows10.0.22631.7652 and rustc/cargo1.96.0, target x86_64-pc-windows-msvc, native-tests, bundled-windows-extensions. Record actual edition/release/support status before claiming the spec's Microsoft-supported Windows11 client baseline. The local test setup supplies Ladybug/OpenSSL sibling DLLs from developer prerequisites so PATH-isolated tests can launch. That is acceptable **test execution setup**, but not S02 bundled-runtime, clean installed-archive, plain Cargo install or S10 consumer qualification. No installer/PowerShell5.1/7 requirement is added to S04's dedicated cmd/bat adapter.
+
+No other slice, aggregate closure, issue completion, PR creation, merge/release/deploy/service authorization follows from this focused result. All generated publication docs belong on existing PR164's branch, coordinator-owned. Durable-memory assessment: this is transient qualification/review status already tied to canonical spec/execution docs; no new repository memory candidate is warranted.

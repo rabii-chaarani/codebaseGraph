@@ -1,0 +1,23 @@
+{
+  "unit_prefixes": [
+    "client_config::tests::",
+    "client_process::tests::"
+  ],
+  "unit_exact": [
+    "api::lifecycle::tests::native_client_commands_preserve_every_server_argument",
+    "api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments",
+    "api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments",
+    "api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths",
+    "api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared",
+    "api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets"
+  ],
+  "integration_target": "windows_client_discovery",
+  "integration_cases": [
+    "cod55_windows_profile_override_explicit_and_project_targets",
+    "cod55_windows_exe_cmd_bat_add_and_list_use_selected_target",
+    "cod55_windows_relative_override_and_native_failure_keep_target",
+    "cod55_windows_explicit_file_visibility_never_checks_other_target",
+    "cod55_windows_claude_project_visibility_runs_in_selected_project",
+    "cod55_windows_unsafe_batch_input_preserves_existing_configuration"
+  ]
+}

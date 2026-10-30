@@ -1,0 +1,90 @@
+{
+  "head": "4e42468d904c18a5f3fd58c0809212977a561727",
+  "files": [
+    {
+      "path": "Cargo.lock",
+      "sha256": "8c011b1d5f6de5e5323284ade91b0c0ec2f1c8bd249523569159e6c1aa193df3",
+      "bytes": 54607
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "8059faaf6d97b66bd91ae285cc00bdd84c56c6308e4fd7fec3e406bd16c3ee37",
+      "bytes": 2376
+    },
+    {
+      "path": "build.rs",
+      "sha256": "fd85ba9ab8e63f5d772cc9d92180d86f6f62ac6bb46126a10597dea4e892e9c4",
+      "bytes": 1979
+    },
+    {
+      "path": "docs/specs/CBG-PLAT-01/evidence/filesystem-current-source-probes.rs",
+      "sha256": "8ba91c65c3108e5b0de6668370ba6693fb41e1f4db058d66f69e5a4676dd86ae",
+      "bytes": 1214
+    },
+    {
+      "path": "docs/specs/CBG-PLAT-01/evidence/head-lifecycle-helper-probe.rs",
+      "sha256": "6430df363737abf96c4d0c24816217a58ca4ad53bf7ad96e5be616b38008c821",
+      "bytes": 2256
+    },
+    {
+      "path": "src/adapters/cli/install/verify.rs",
+      "sha256": "f6cda0a90403cfddd808fb6460a09ea1e7fc29ee9b8c3a0c7df63d7a341aefd8",
+      "bytes": 14767
+    },
+    {
+      "path": "src/adapters/mcp/daemon.rs",
+      "sha256": "9b1f6ff9c8c5fbbf6fd8183323602d387585a20ed77fe3579b454132b10a34d5",
+      "bytes": 78817
+    },
+    {
+      "path": "src/api/lifecycle.rs",
+      "sha256": "d898b23fc6acf91c1dcee9daa436cbc5aa94db9ec1762f117b71e8fc9ef491ae",
+      "bytes": 226893
+    },
+    {
+      "path": "src/client_config.rs",
+      "sha256": "63ab7e34a5c18876cb9489afaaacdb7c52bcd83d11aee642748b62bbdfc573de",
+      "bytes": 21777
+    },
+    {
+      "path": "src/client_process.rs",
+      "sha256": "16e53003605121eac1e0208e6f50f9e9082eb57806139eb1178ba5aa4655b262",
+      "bytes": 27229
+    },
+    {
+      "path": "src/db_writer/phase.rs",
+      "sha256": "fdb90007cfeb6bb143c3afa452752d00bb2899a6089275dfb5e5f89094729a90",
+      "bytes": 48126
+    },
+    {
+      "path": "src/lib.rs",
+      "sha256": "3568e69ee021e50755aa1d202eb2af8be8ca7fbcef1c2b2e7015a7e1efddd28d",
+      "bytes": 1077
+    },
+    {
+      "path": "src/storage/maintenance_controls.rs",
+      "sha256": "34ecb0aa0f0c2900038f8b1078b5605bd502eb5343d389fade572035c3f9104e",
+      "bytes": 143101
+    },
+    {
+      "path": "tests/copy_phase_process.rs",
+      "sha256": "a9d9d803f12a88d220f7350b74f66f15d075bd11d6c3fde01012cb6be97a3de2",
+      "bytes": 21499
+    },
+    {
+      "path": "tests/generation_storage.rs",
+      "sha256": "ef95918122557332fcec40ef4d51dbc37acc07a435f02a66e70b994a704c7572",
+      "bytes": 22242
+    },
+    {
+      "path": "tests/support/mcp_client_fixture.rs",
+      "sha256": "0b499995b9aee06ff55a1dbf694d0baee9d9a29b0df9a9f86dc5605483bc6142",
+      "bytes": 2614
+    },
+    {
+      "path": "tests/windows_client_discovery.rs",
+      "sha256": "d24f6f72c41046cadc5044b85b2058b0df2dd0cd30c2a2460ac418d6fa824b9f",
+      "bytes": 13573
+    }
+  ]
+}

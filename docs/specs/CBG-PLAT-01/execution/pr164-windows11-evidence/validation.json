@@ -1,0 +1,14 @@
+{
+  "source_identity": "unchanged (all recorded source hashes match)",
+  "binary_identity": "unchanged (all3binary hashes match)",
+  "selected_unit_count": 21,
+  "selected_integration_count": 6,
+  "unit_unselected": 822,
+  "selected_ignored": 0,
+  "supplemental_scenarios": 6,
+  "native_assets_committed": false,
+  "credential_environment_keys_committed": false,
+  "pending": [],
+  "independent_execution_review": "no blocking evidence findings; final review included",
+  "publication_boundary": "docs-only commit/push verification is separate from executed test evidence"
+}

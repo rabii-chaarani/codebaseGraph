@@ -1,0 +1,18 @@
+codebase-graph mcp install
+
+USAGE:
+  codebase-graph mcp install [--client <client>] [--scope local|user|project] [--name <name>] [--mcp-transport auto|stdio|http-daemon] [--mcp-daemon-port <port>] [--config-path <path>] [--client-config-path <path>] [--repo-root <path>] [--agent-hooks auto|none|codex|claude|github-copilot|all] [--dry-run] [--verify] [--json]
+
+OPTIONS:
+  --client <client>             codex, claude, claude-project, lmstudio, github-copilot, hermes, openclaw, generic, copilot-studio, microsoft-copilot, or all
+  --scope <scope>               local, user, or project; defaults to local
+  --name <name>                 MCP server name; defaults to codebase_graph_<repo>
+  --mcp-transport <transport>   auto, stdio, or http-daemon; defaults to auto
+  --mcp-daemon-port <port>      Override the stable repository daemon port
+  --config-path <path>          Path to .codebaseGraph/config.json
+  --client-config-path <path>   Override the target MCP client config path
+  --repo-root <path>            Repository root override; auto-detected when omitted
+  --agent-hooks <selection>     auto, none, codex, claude, github-copilot, or all; defaults to auto
+  --dry-run                     Show install action without writing files or invoking CLIs
+  --verify                      Verify the registered transport, tool schemas, and agent hooks
+  --json                        Emit JSON output
