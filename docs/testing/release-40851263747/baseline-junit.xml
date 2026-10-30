@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="immutable-release-assets-baseline" tests="24" failures="0" errors="0" uuid="cfa5be04-9b21-4518-b432-6a7e42b7da09" timestamp="2026-10-30T09:24:46.406+09:30" time="6.834">
+    <testsuite name="xtask::bin/xtask" tests="24" disabled="0" errors="0" failures="0">
+        <testcase name="release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:46.406+09:30" time="0.482">
+        </testcase>
+        <testcase name="release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:46.889+09:30" time="0.620">
+        </testcase>
+        <testcase name="release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:47.509+09:30" time="0.372">
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:47.882+09:30" time="0.350">
+        </testcase>
+        <testcase name="release::workflow_tests::publisher_targets_original_sha_and_is_idempotent" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:48.233+09:30" time="0.357">
+        </testcase>
+        <testcase name="release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:48.590+09:30" time="0.036">
+        </testcase>
+        <testcase name="release::workflow_tests::staged_assets_match_the_supported_native_targets" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:48.626+09:30" time="0.071">
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:48.697+09:30" time="1.742">
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:50.439+09:30" time="2.238">
+        </testcase>
+        <testcase name="release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:52.677+09:30" time="0.296">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_automatic_rebuild_recovery" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:52.973+09:30" time="0.017">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_direct_release_push_trigger" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:52.990+09:30" time="0.016">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_github_sha_for_release_identity" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.006+09:30" time="0.018">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_ci_success_guard" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.024+09:30" time="0.017">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_crate_publish_retry" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.041+09:30" time="0.030">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_crate_size_gates" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.071+09:30" time="0.022">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_repository_release_gate" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.093+09:30" time="0.016">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_missing_triggering_run_binding" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.109+09:30" time="0.015">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_release_queue_replacement" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.125+09:30" time="0.015">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_unconditional_release_publication" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.140+09:30" time="0.016">
+        </testcase>
+        <testcase name="tests::workflow_policy_rejects_unvalidated_publishers" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.156+09:30" time="0.030">
+        </testcase>
+        <testcase name="tests::workflow_policy_requires_ci_completion_release_trigger" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.186+09:30" time="0.016">
+        </testcase>
+        <testcase name="tests::workflow_policy_requires_publication_revalidation" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.202+09:30" time="0.029">
+        </testcase>
+        <testcase name="tests::workflow_yaml_validation_rejects_unindented_heredoc_body" classname="xtask::bin/xtask" timestamp="2026-10-30T09:24:53.231+09:30" time="0.009">
+        </testcase>
+    </testsuite>
+</testsuites>
