@@ -1,0 +1,38 @@
+{
+  "suite": {
+    "command": "cargo nextest run -p xtask --locked --offline --target-dir /private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target --config-file /private/tmp/codebasegraph-immutable-release-evidence-20261029/final-nextest-report.toml --user-config-file none --no-fail-fast --no-tests fail --test-threads 1",
+    "exit_code": 0,
+    "duration_seconds": 20.369360374985263,
+    "warnings": []
+  },
+  "check-workflows": {
+    "command": "cargo run -p xtask --locked --offline --target-dir /private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target -- check-workflows",
+    "exit_code": 0,
+    "duration_seconds": 0.7658287920057774,
+    "warnings": []
+  },
+  "release-gate": {
+    "command": "cargo run -p xtask --locked --offline --target-dir /private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target -- release-gate",
+    "exit_code": 0,
+    "duration_seconds": 0.5157336250413209,
+    "warnings": []
+  },
+  "fmt": {
+    "command": "cargo fmt --all -- --check",
+    "exit_code": 0,
+    "duration_seconds": 1.8797985001001507,
+    "warnings": []
+  },
+  "clippy": {
+    "command": "cargo clippy -p xtask --all-targets --locked --offline --target-dir /private/tmp/codebasegraph-immutable-release-evidence-20261029/cargo-target -- -D warnings",
+    "exit_code": 0,
+    "duration_seconds": 2.7779001658782363,
+    "warnings": []
+  },
+  "diff-check": {
+    "command": "git diff --check",
+    "exit_code": 0,
+    "duration_seconds": 0.02969975001178682,
+    "warnings": []
+  }
+}

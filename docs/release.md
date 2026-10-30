@@ -61,9 +61,12 @@ tests serially, and a target's release artifact is built only after all its test
    The merge SHA must still be in main history; it need not be the latest main commit.
 4. Immutable metadata must agree across the root package, wiki package/dependency, release manifest, and changelog.
    Production checks and both native artifacts are validated before any tag or release is created.
-5. The single publisher creates only `vX.Y.Z` at that SHA, uploads the validated archives, and publishes the crate.
-   Existing matching tags/releases can be resumed. Conflicting tags fail without being moved. Delayed older versions
-   do not replace newer versions as GitHub's latest release.
+5. The single publisher creates only `vX.Y.Z` at that SHA and creates or resumes its draft GitHub Release.
+   It uploads the validated archives and checksum sidecars, reads every expected asset back, and compares its size and
+   bytes with the staged validated set before publishing the draft. Only then may the crate publish.
+   Existing matching tags/releases can be resumed. A complete matching immutable release is verified without writes;
+   missing or mismatched immutable assets fail without attempting repair. Conflicting tags fail without being moved.
+   Latest-version selection occurs when the draft is published, so delayed older versions do not replace newer ones.
 6. After both publishers succeed, mark that PR `autorelease: tagged`, remove `autorelease: pending`, and run proposal
    maintenance if current main has successful CI. Ordinary runs never tag an outstanding release as a side effect.
 
@@ -170,7 +173,8 @@ Dispatch `Release` on `main` with exactly one target:
 - `resume-ci-run`: the successful main-push CI run of a trusted release PR merge. This can create a missing tag/release
   and resumes both native assets and crates.io. It reuses the exact CI run and requires `artifact-source: promote`.
 - `publish-existing-tag`: an existing strict `vX.Y.Z` tag. This legacy mode publishes native assets only and searches
-  for successful main-push CI at its exact SHA. It never publishes a crate or changes release PR labels.
+  for successful main-push CI at its exact SHA. It requires an existing GitHub Release, never publishes a draft or
+  crate, and never changes release PR labels. Immutable assets must already match the validated set.
 
 `dry-run` defaults to `true`. It resolves identity, runs the production gate, acquires artifacts, and validates the full
 archive/checksum/provenance set without creating tags, releases, labels, proposals, or publishing crates. After checking
@@ -182,7 +186,9 @@ recovery never substitute a run or rebuild missing artifacts.
 
 To recover a blocked release, locate its merge SHA and successful `CI` run, dispatch a `resume-ci-run` dry-run, then
 publish that exact target. Do not clear the pending label to bypass the block. Once finalization succeeds, later merged
-changes can enter the next release PR. Repeating the same target is safe after a partial upload or lost response.
+changes can enter the next release PR. Repeating the same target reconciles a partial draft upload or lost response;
+accepted writes are not retried automatically. A failed upload or readback leaves a draft unpublished and blocks crate
+publication and finalization. A published mutable release retains assets-only repair; a frozen release is verify-only.
 
 The packaged installer validates both binaries against `checksums.txt`, runs
 `codebase-graph --help` plus `k-wiki --version`, and only then atomically

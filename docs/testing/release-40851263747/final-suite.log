@@ -1,0 +1,59 @@
+   Compiling xtask v4.0.3 (/private/tmp/codebasegraph-immutable-release-assets-20261029/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.03s
+────────────
+ Nextest run ID 55d7263f-ab59-47b9-ad8d-8cbefe4fc455 with nextest profile: default
+    Starting 52 tests across 1 binary
+        PASS [   0.013s] ( 1/52) xtask::bin/xtask native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite
+        PASS [   0.017s] ( 2/52) xtask::bin/xtask native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases
+        PASS [   0.019s] ( 3/52) xtask::bin/xtask native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments
+        PASS [   0.011s] ( 4/52) xtask::bin/xtask native_tests::tests::captured_cli_survives_cargo_replacing_its_output
+        PASS [   0.009s] ( 5/52) xtask::bin/xtask native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets
+        PASS [   0.009s] ( 6/52) xtask::bin/xtask native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite
+        PASS [   0.011s] ( 7/52) xtask::bin/xtask release::tests::metadata_rejects_inconsistent_versions
+        PASS [   0.009s] ( 8/52) xtask::bin/xtask release::tests::notes_only_include_the_exact_release
+        PASS [   0.009s] ( 9/52) xtask::bin/xtask release::tests::notes_reject_missing_duplicate_and_empty_sections
+        PASS [   1.456s] (10/52) xtask::bin/xtask release::workflow_tests::accepted_writes_with_lost_responses_resume_without_replay
+        PASS [   0.311s] (11/52) xtask::bin/xtask release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication
+        PASS [   0.565s] (12/52) xtask::bin/xtask release::workflow_tests::draft_partial_upload_resumes_and_latest_is_selected_at_publication
+        PASS [   2.174s] (13/52) xtask::bin/xtask release::workflow_tests::existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases
+        PASS [   1.726s] (14/52) xtask::bin/xtask release::workflow_tests::immutable_missing_or_mismatched_assets_fail_without_mutation
+        PASS [   0.839s] (15/52) xtask::bin/xtask release::workflow_tests::immutable_release_uploads_before_publication_and_retries_without_writes
+        PASS [   0.697s] (16/52) xtask::bin/xtask release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can
+        PASS [   0.382s] (17/52) xtask::bin/xtask release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization
+        PASS [   0.770s] (18/52) xtask::bin/xtask release::workflow_tests::published_mutable_partial_assets_can_resume_without_republishing
+        PASS [   0.661s] (19/52) xtask::bin/xtask release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest
+        PASS [   0.662s] (20/52) xtask::bin/xtask release::workflow_tests::publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes
+        PASS [   0.836s] (21/52) xtask::bin/xtask release::workflow_tests::publisher_targets_original_sha_and_is_idempotent
+        PASS [   0.037s] (22/52) xtask::bin/xtask release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds
+        PASS [   0.075s] (23/52) xtask::bin/xtask release::workflow_tests::staged_assets_match_the_supported_native_targets
+        PASS [   1.397s] (24/52) xtask::bin/xtask release::workflow_tests::upload_or_remote_byte_failure_never_publishes
+        PASS [   1.913s] (25/52) xtask::bin/xtask release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity
+        PASS [   2.501s] (26/52) xtask::bin/xtask release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history
+        PASS [   0.340s] (27/52) xtask::bin/xtask release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases
+        PASS [   0.015s] (28/52) xtask::bin/xtask tests::archive_contract_rejects_unexpected_entries
+        PASS [   0.019s] (29/52) xtask::bin/xtask tests::complete_artifact_set_rejects_mixed_provenance
+        PASS [   0.010s] (30/52) xtask::bin/xtask tests::crate_size_validation_enforces_the_registry_limit
+        PASS [   0.338s] (31/52) xtask::bin/xtask tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations
+        PASS [   0.013s] (32/52) xtask::bin/xtask tests::native_capture_requires_unique_source_bound_normal_cli_artifact
+        PASS [   0.010s] (33/52) xtask::bin/xtask tests::native_capture_reuses_the_exact_test_profile_and_features
+        PASS [   0.009s] (34/52) xtask::bin/xtask tests::native_target_contract_maps_names_and_binaries
+        PASS [   0.023s] (35/52) xtask::bin/xtask tests::native_test_failure_cannot_authorize_artifact_production
+        PASS [   0.010s] (36/52) xtask::bin/xtask tests::release_identity_validation_is_strict
+        PASS [   0.009s] (37/52) xtask::bin/xtask tests::windows_native_tests_forward_bundled_extensions
+        PASS [   0.017s] (38/52) xtask::bin/xtask tests::workflow_policy_rejects_automatic_rebuild_recovery
+        PASS [   0.016s] (39/52) xtask::bin/xtask tests::workflow_policy_rejects_direct_release_push_trigger
+        PASS [   0.017s] (40/52) xtask::bin/xtask tests::workflow_policy_rejects_github_sha_for_release_identity
+        PASS [   0.016s] (41/52) xtask::bin/xtask tests::workflow_policy_rejects_missing_ci_success_guard
+        PASS [   0.031s] (42/52) xtask::bin/xtask tests::workflow_policy_rejects_missing_crate_publish_retry
+        PASS [   0.023s] (43/52) xtask::bin/xtask tests::workflow_policy_rejects_missing_crate_size_gates
+        PASS [   0.017s] (44/52) xtask::bin/xtask tests::workflow_policy_rejects_missing_repository_release_gate
+        PASS [   0.016s] (45/52) xtask::bin/xtask tests::workflow_policy_rejects_missing_triggering_run_binding
+        PASS [   0.017s] (46/52) xtask::bin/xtask tests::workflow_policy_rejects_release_queue_replacement
+        PASS [   0.016s] (47/52) xtask::bin/xtask tests::workflow_policy_rejects_unconditional_release_publication
+        PASS [   0.030s] (48/52) xtask::bin/xtask tests::workflow_policy_rejects_unvalidated_publishers
+        PASS [   0.016s] (49/52) xtask::bin/xtask tests::workflow_policy_requires_ci_completion_release_trigger
+        PASS [   0.030s] (50/52) xtask::bin/xtask tests::workflow_policy_requires_publication_revalidation
+        PASS [   0.009s] (51/52) xtask::bin/xtask tests::workflow_yaml_validation_rejects_unindented_heredoc_body
+        PASS [   0.023s] (52/52) xtask::bin/xtask tests::workflows_reject_removed_platform_targets
+────────────
+     Summary [  18.201s] 52 tests run: 52 passed, 0 skipped
