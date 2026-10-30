@@ -1,0 +1,85 @@
+{
+  "baseline": {
+    "command": "cargo test -p xtask --locked",
+    "pass": 43,
+    "skip": 0
+  },
+  "integrated": {
+    "command": "cargo nextest run --config-file /private/tmp/codebasegraph-cod54-review/nextest.toml --profile cod54 -p xtask --locked --test-threads 1 --no-fail-fast",
+    "pass": 55,
+    "skip": 0,
+    "revision": "a2005dbb37a9ab914ea97b2735825b5286af5b6e",
+    "source_hashes": {
+      "crates/xtask/src/main.rs": "6610d3c571b2a39af7f50cc2703cb9a5cb5431573c0dd46af43dcb9669bd35dd",
+      "crates/xtask/src/macos.rs": "1f4f650bd0ae0227de998c13f1659ade6485c8cad5e56d2c6602a0820c09299f",
+      "crates/xtask/src/macos_installer_tests.rs": "10646723ce3db83a5a70e51769957214801d4ef7533362eab1035c31ce7fab17",
+      "release/install/install.sh": "7ae5c7c5e08fa4c025b0fe5f5b2da605caccdde1a0aefcec148a272530c260e9",
+      "src/materialization_worker.rs": "5124af6f9df654761bfd09cd46fbf68f9dacb4efc7d0dfc11b9b9ddcb9bc386e",
+      "README.md": "0f784e2a63656208ae19137e3d745dcc7c3f3132a404f417a3697d836c620323",
+      "docs/release.md": "6c673b23376ad03a2c1c26c2c7ab01351a56c54ed71cbbfe084b1c073d1d05db"
+    }
+  },
+  "failed_attempts": [
+    "first-compile.log",
+    "second-compile.log",
+    "xtask-attempt-3.log",
+    "pax-compile-failure.log",
+    "artifact-attempt-1.log"
+  ],
+  "limits": [
+    "DeveloperMac26.6.2notcleanconsumer13.3",
+    "NativeWindowsCInotyet",
+    "NoDeveloperIDnotarization",
+    "No merge/release/deploy/restart"
+  ],
+  "artifact_attempt_2": {
+    "result": "pass",
+    "exit": 0,
+    "duration_seconds": 348.5107852909714,
+    "archive_sha256": "aaf4b6ca5eb8e7c5b2d510b83102c28a2125bd4e601105eaaf6c451238227e77",
+    "source_product_sha": "a2005dbb37a9ab914ea97b2735825b5286af5b6e",
+    "metadata_sha_argument": "71dc27e92857c4215bbbe583f104de7f341dc816",
+    "qualification": "excluded from finalsourceboundqualification: approvalSHA argument provisional",
+    "verified": [
+      "sourceOpenSSLhash",
+      "ARM64 minos<=13.3 fourMachO",
+      "strict signatures",
+      "8files/5payloadhashes",
+      "relocatedrealinstall",
+      "graphbuild/reopen/diskBM25search",
+      "realLOADfts/officialbytes",
+      "wikiCLIHTTPMCP",
+      "missing/corrupt/incompatiblebothdryrealrejectpreserveinstalledbytes"
+    ]
+  },
+  "final_source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "final_local_checks": {
+    "xtask": {
+      "passed": 55,
+      "skipped": 0
+    },
+    "fmt": 0,
+    "strict_workspace_clippy": 0,
+    "source_bound_archive_pipeline": 0
+  },
+  "final_review": "final-review.md GREEN boundedhandoff",
+  "full_native_suite": {
+    "status": "passed",
+    "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+    "exit": 0,
+    "passed": 1356,
+    "failed": 0,
+    "ignored": 4,
+    "measured": 0,
+    "filtered_out": 0,
+    "report": "native-full-report.json",
+    "summary": "native-full-summary.json"
+  },
+  "hosted_ci": {
+    "status": "failed",
+    "run_id": 40474966274,
+    "head_sha": "1f6859618140b3f434475b56ab2f2fa470976519",
+    "both_native_artifact_jobs": "skipped",
+    "summary": "ci-40474966274-summary.json"
+  }
+}

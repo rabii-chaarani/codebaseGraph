@@ -159,9 +159,33 @@ Each native archive must contain:
 
 - `codebase-graph` / `codebase-graph.exe`
 - `k-wiki` / `k-wiki.exe`
-- `checksums.txt` for the packaged binaries
+- `checksums.txt` for the complete target payload
 - `install.sh`
 - `install.ps1`
+
+The macOS ARM64 archive additionally includes the version-qualified
+`libcodebasegraph-ssl-3.6.2.dylib`, `libcodebasegraph-crypto-3.6.2.dylib`, and
+`openssl-3.6.2-LICENSE.txt`. These three files are covered by `checksums.txt`
+and installed beside both binaries. Do not copy a binary without its matching
+runtime payload. Windows archive contents are unchanged by this macOS repair.
+
+The macOS artifact builder verifies the official OpenSSL 3.6.2 source archive
+SHA-256, source-builds its dynamic libraries for ARM64 with deployment target
+13.3, and uses that library directory for both release builds. Packaging rewrites
+the binary imports to executable-relative names and the SSL-to-crypto import
+to a loader-relative name. It rejects unexpected non-system imports, runpaths,
+architectures or minimum-OS metadata above 13.3. After load-command edits it
+renews and verifies ad-hoc code signatures, then hashes the final files. This
+is not Developer ID signing or notarization.
+
+Qualification covers only the current stable macOS release on Apple Silicon.
+The exact installed archive must run on that release without relying on
+separately installed Homebrew/OpenSSL. Current-release hosted CI can supply this
+evidence when it records the actual OS/build and demonstrates those conditions;
+a `macos-latest` label or deployment metadata alone is not proof. The earlier
+macOS13.3 execution requirement is dropped. The existing13.3 deployment target
+remains build metadata, not an older-version support guarantee. See the
+[current-only policy amendment](https://github.com/rabii-chaarani/codebaseGraph/blob/8a410c7a22f5291f06a1cece5cd9e7c0be255e72/docs/specs/CBG-PLAT-01/decisions/d05a-current-macos-only.md).
 
 The internal Actions artifact also carries `provenance.json`, which binds the public archive checksum to the exact
 commit SHA, version, and target. `provenance.json` is validation metadata and is not uploaded as a public release asset.
@@ -190,9 +214,22 @@ changes can enter the next release PR. Repeating the same target reconciles a pa
 accepted writes are not retried automatically. A failed upload or readback leaves a draft unpublished and blocks crate
 publication and finalization. A published mutable release retains assets-only repair; a frozen release is verify-only.
 
-The packaged installer validates both binaries against `checksums.txt`, runs
-`codebase-graph --help` plus `k-wiki --version`, and only then atomically
-replaces the selected target binaries.
+The macOS installer validates the exact five-file payload and every checksum,
+then probes `codebase-graph --help` and `k-wiki --version` without inherited
+runtime-library overrides. All validation precedes destination writes. Missing,
+corrupt or incompatible runtime files fail without replacing the existing
+installation. Dry run writes no destination. Real installation copies the two
+dylibs and license before the binaries, using a temporary file and rename for
+each file; this is not an all-file transaction or rollback guarantee. Older
+version-qualified runtime files are retained. Windows installer behavior is
+unchanged by this slice.
+
+The macOS artifact smoke performs a real install into a relocated directory
+with spaces. Every runtime child receives an isolated home, no inherited
+`DYLD_*` or OpenSSL configuration overrides, and a system-only PATH. It checks
+graph build/reopen/search, bundled JSON/FTS bytes, wiki/MCP and invalid runtime
+preflight while preserving an installed payload. These are local/native checks,
+not, by themselves, proof of the required current-release runtime isolation.
 
 After upgrading from a release archive:
 

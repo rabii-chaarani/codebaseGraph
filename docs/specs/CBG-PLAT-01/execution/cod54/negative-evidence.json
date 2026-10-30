@@ -1,0 +1,15 @@
+{
+  "source_sha": "855c7e282a27de4afbad2d4252d7692de4b42ecb",
+  "success_semantics": "artifactpipelineexit0afterexpectingnegativeinstallerfailures",
+  "negative_cases": [
+    "missingruntimefile",
+    "hashcorruptedruntime",
+    "checksumvalidincompatibleMachO"
+  ],
+  "modes": [
+    "dryrun",
+    "real"
+  ],
+  "invariant": "allfiveinstalledpayloadSHAcomparedaftereachfailure",
+  "scope": "sourceboundartifact currentnativehostonly"
+}

@@ -1,0 +1,9 @@
+{
+  "reason": "worker stopped responding to queued diagnostics; coordinator explicitly stopped child before edits",
+  "writable_files": [
+    "release/install/install.sh",
+    "crates/xtask/src/macos_installer_tests.rs"
+  ],
+  "fix": "fixture version helper extracts exact SSL prefix/suffix, no production behavior change",
+  "time": "2026-10-27T08:04Z"
+}

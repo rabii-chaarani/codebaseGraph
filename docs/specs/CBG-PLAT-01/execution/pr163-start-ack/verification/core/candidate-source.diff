@@ -1,0 +1,107 @@
+diff --git a/src/process_lifecycle/mod.rs b/src/process_lifecycle/mod.rs
+index 7763c0b..dce3237 100644
+--- a/src/process_lifecycle/mod.rs
++++ b/src/process_lifecycle/mod.rs
+@@ -568,7 +568,12 @@ fn control(d: &BuildDescriptorV2, command: &str) -> Result<(), String> {
+     }
+     payload.push(b'\n');
+     stream.write_all(&payload).map_err(err)?;
+-    if read_socket_frame(&mut stream, Instant::now() + Duration::from_millis(250))? == b"OK" {
++    let response_deadline = if command == "START" {
++        Instant::now() + DEADLINE
++    } else {
++        Instant::now() + Duration::from_millis(250)
++    };
++    if read_socket_frame(&mut stream, response_deadline)? == b"OK" {
+         Ok(())
+     } else {
+         Err("guardian rejected control capability or command".into())
+@@ -741,6 +746,88 @@ pub(crate) fn write_private_json_new(path: &Path, value: &impl Serialize) -> Res
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++
++    fn control_with_delayed_ack(
++        command: &str,
++    ) -> (Result<(), String>, usize, Control, Option<Control>) {
++        use std::sync::atomic::AtomicUsize;
++
++        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
++        let address = listener.local_addr().unwrap();
++        let nonce = random_id().unwrap();
++        let server_nonce = nonce.clone();
++        let commits = Arc::new(AtomicUsize::new(0));
++        let server_commits = commits.clone();
++        let server = thread::spawn(move || {
++            let (mut stream, _) = listener.accept().unwrap();
++            let request =
++                serde_json::from_slice::<Control>(&read_frame(&mut stream).unwrap()).unwrap();
++            assert_eq!(request.nonce, server_nonce);
++            if request.command == "START" {
++                server_commits.fetch_add(1, Ordering::SeqCst);
++            }
++
++            listener.set_nonblocking(true).unwrap();
++            thread::sleep(Duration::from_millis(350));
++            let second = match listener.accept() {
++                Ok((mut stream, _)) => {
++                    let request =
++                        serde_json::from_slice::<Control>(&read_frame(&mut stream).unwrap())
++                            .unwrap();
++                    if request.command == "START" {
++                        server_commits.fetch_add(1, Ordering::SeqCst);
++                    }
++                    Some(request)
++                }
++                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => None,
++                Err(error) => panic!("failed to check for a repeated control request: {error}"),
++            };
++            let _ = stream.write_all(b"OK\n");
++            (request, second)
++        });
++        let descriptor = BuildDescriptorV2 {
++            version: 2,
++            build_id: "delayed-ack".into(),
++            lifecycle_dir: PathBuf::new(),
++            endpoint: address.to_string(),
++            nonce,
++            worker_pid: 0,
++            guardian_pid: 0,
++            proof: ContainmentProof::Pending,
++        };
++        let result = control(&descriptor, command);
++        let (request, second) = server.join().unwrap();
++        (result, commits.load(Ordering::SeqCst), request, second)
++    }
++
++    #[test]
++    fn start_accepts_delayed_ack_after_one_committed_request() {
++        let (result, commits, request, second) = control_with_delayed_ack("START");
++
++        assert_eq!(request.command, "START");
++        assert_eq!(commits, 1);
++        assert!(second.is_none(), "control sent a repeated request");
++        assert!(
++            result.is_ok(),
++            "delayed START acknowledgement failed: {result:?}"
++        );
++    }
++
++    #[test]
++    fn delayed_non_start_acknowledgements_keep_the_short_deadline() {
++        for command in ["PING", "CANCEL timeout-test"] {
++            let (result, commits, request, second) = control_with_delayed_ack(command);
++
++            assert_eq!(request.command, command);
++            assert_eq!(commits, 0);
++            assert!(second.is_none(), "control sent a repeated request");
++            assert!(
++                result.is_err(),
++                "delayed {command} acknowledgement unexpectedly succeeded"
++            );
++        }
++    }
++
+     #[test]
+     fn accepted_nonblocking_socket_is_normalized_for_control_frames() {
+         #[cfg(unix)]

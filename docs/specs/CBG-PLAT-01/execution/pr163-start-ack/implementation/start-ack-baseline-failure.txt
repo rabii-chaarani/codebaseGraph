@@ -1,0 +1,29 @@
+   Compiling codebase-graph v4.0.4 (/private/tmp/codebasegraph-pr163-ci-repair-20261030)
+    Finished `native-tests` profile [optimized] target(s) in 50.39s
+────────────
+ Nextest run ID 0dfbf996-360e-4c05-9183-eff3eb2f4d27 with nextest profile: default
+    Starting 1 test across 1 binary (847 tests skipped)
+        FAIL [   0.375s] (1/1) codebase-graph process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request
+  stdout ───
+
+    running 1 test
+    test process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request ... FAILED
+
+    failures:
+
+    failures:
+        process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request
+
+    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 847 filtered out; finished in 0.36s
+
+  stderr ───
+
+    thread 'process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request' (38506363) panicked at src/process_lifecycle/mod.rs:805:9:
+    delayed START acknowledgement failed: Err("Resource temporarily unavailable (os error 35)")
+    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+  Cancelling due to test failure:
+────────────
+     Summary [   0.380s] 1 test run: 0 passed, 1 failed, 847 skipped
+        FAIL [   0.375s] (1/1) codebase-graph process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request
+error: test run failed

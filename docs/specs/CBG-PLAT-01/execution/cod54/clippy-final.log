@@ -1,0 +1,4 @@
+    Checking k-wiki v4.0.0 (/private/tmp/codebasegraph-cod54-macos-distribution/crates/k-wiki)
+    Checking xtask v4.0.0 (/private/tmp/codebasegraph-cod54-macos-distribution/crates/xtask)
+    Checking codebase-graph v4.0.0 (/private/tmp/codebasegraph-cod54-macos-distribution)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.94s

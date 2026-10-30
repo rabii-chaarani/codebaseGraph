@@ -1,0 +1,46 @@
+2026-10-30T07:54:39.6385000Z validated codebase-graph, k-wiki, and OpenSSL payloads from /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native_artifact_macos-arm64_1793346359210451000/extracted
+2026-10-30T07:54:40.6856540Z installed codebase-graph, k-wiki, and OpenSSL payloads to /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native_artifact_macos-arm64_1793346359210451000/installed bin with spaces
+2026-10-30T07:55:33.7209640Z command failed with status exit status: 1: /private/var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native_artifact_macos-arm64_1793346359210451000/installed bin with spaces/codebase-graph
+2026-10-30T07:55:33.7215720Z stdout:
+2026-10-30T07:55:33.7223940Z
+2026-10-30T07:55:33.7248810Z stderr:
+2026-10-30T07:55:33.7250290Z failed to start guarded Ladybug phase: Resource temporarily unavailable (os error 35); cleanup: Ok(ExitOutcome { success: false, code: None, signal: Some(9), high_water_bytes: 5474560, cancelled: true, containment_empty: true, supervision_error: None })
+2026-10-30T07:55:33.7251460Z
+2026-10-30T07:55:33.7341420Z ##[error]Process completed with exit code 1.
+2026-10-30T07:55:33.7842650Z Post job cleanup.
+2026-10-30T07:55:33.7853460Z ##[start-action display=Restore Ladybug dependency;id=__59eadbcc-bef6-4014-a025-59f238fcb1e6.ladybug-cache]
+2026-10-30T07:55:33.7876500Z ##[end-action id=__59eadbcc-bef6-4014-a025-59f238fcb1e6.ladybug-cache;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-10-30T07:55:33.8178480Z Post job cleanup.
+2026-10-30T07:55:34.5595140Z [command]/opt/homebrew/bin/git version
+2026-10-30T07:55:34.6317770Z git version 2.56.0
+2026-10-30T07:55:34.6377150Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/b8c9ee74-2638-46c1-9d3a-cf39fd828d3d/.gitconfig'
+2026-10-30T07:55:34.6416130Z Temporarily overriding HOME='/Users/runner/work/_temp/b8c9ee74-2638-46c1-9d3a-cf39fd828d3d' before making global git config changes
+2026-10-30T07:55:34.6420070Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-30T07:55:34.6420700Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/codebaseGraph/codebaseGraph
+2026-10-30T07:55:34.6705870Z Removing SSH command configuration
+2026-10-30T07:55:34.6706690Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-30T07:55:34.6880660Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-30T07:55:34.8928050Z Removing HTTP extra header
+2026-10-30T07:55:34.8937680Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-30T07:55:34.9030760Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-30T07:55:35.0637970Z Removing includeIf entries pointing to credentials config files
+2026-10-30T07:55:35.0740470Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-30T07:55:35.0843520Z includeif.gitdir:/Users/runner/work/codebaseGraph/codebaseGraph/.git.path
+2026-10-30T07:55:35.0942680Z includeif.gitdir:/Users/runner/work/codebaseGraph/codebaseGraph/.git/worktrees/*.path
+2026-10-30T07:55:35.1044260Z includeif.gitdir:/github/workspace/.git.path
+2026-10-30T07:55:35.1146350Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-10-30T07:55:35.1449620Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/Users/runner/work/codebaseGraph/codebaseGraph/.git.path
+2026-10-30T07:55:35.1530910Z /Users/runner/work/_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config
+2026-10-30T07:55:35.1571230Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/Users/runner/work/codebaseGraph/codebaseGraph/.git.path /Users/runner/work/_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config
+2026-10-30T07:55:35.1573560Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/Users/runner/work/codebaseGraph/codebaseGraph/.git/worktrees/*.path
+2026-10-30T07:55:35.1574370Z /Users/runner/work/_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config
+2026-10-30T07:55:35.1576030Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/Users/runner/work/codebaseGraph/codebaseGraph/.git/worktrees/*.path /Users/runner/work/_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config
+2026-10-30T07:55:35.1577570Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-10-30T07:55:35.1578210Z /github/runner_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config
+2026-10-30T07:55:35.1579530Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config
+2026-10-30T07:55:35.1581090Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-10-30T07:55:35.1581780Z /github/runner_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config
+2026-10-30T07:55:35.1583780Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config
+2026-10-30T07:55:35.1585310Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-30T07:55:35.3307110Z Removing credentials config '/Users/runner/work/_temp/git-credentials-e46730ab-4502-48e7-b58f-2bbc91dfd3d2.config'
+2026-10-30T07:55:35.3863740Z Cleaning up orphan processes

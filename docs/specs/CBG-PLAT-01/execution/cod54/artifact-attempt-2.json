@@ -1,0 +1,15 @@
+{
+  "command": "cargo run -p xtask --locked -- native-artifact --target macos-arm64 --commit-sha 71dc27e92857c4215bbbe583f104de7f341dc816 --output /private/tmp/codebasegraph-cod54-macos-distribution/dist/cod54-local",
+  "built_source_sha": "a2005dbb37a9ab914ea97b2735825b5286af5b6e",
+  "provenance_commit_arg": "71dc27e92857c4215bbbe583f104de7f341dc816",
+  "status": "passed",
+  "classification": "historical provisional test; source commit argument not final; excluded from final-archive qualification",
+  "native_env": {
+    "os": "macOS26.6.2",
+    "build": "25G83",
+    "arch": "arm64"
+  },
+  "exit": 0,
+  "duration_seconds": 348.5107852909714,
+  "archive_sha256": "aaf4b6ca5eb8e7c5b2d510b83102c28a2125bd4e601105eaaf6c451238227e77"
+}

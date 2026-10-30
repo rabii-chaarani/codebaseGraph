@@ -1,0 +1,20 @@
+{
+  "decision": "2026-10-27 user: \"well then just drop it and keep only current\", answering recommendation to add macOS13.3qualificationrunner vs existingcurrentmacOShostedCI.",
+  "spec_revision": "0.11",
+  "spec_sha": "8a410c7a22f5291f06a1cece5cd9e7c0be255e72",
+  "spec_url": "https://github.com/rabii-chaarani/codebaseGraph/blob/8a410c7a22f5291f06a1cece5cd9e7c0be255e72/docs/specs/CBG-PLAT-01/spec.md",
+  "approval_sha": "5c2e9a56d0fa87779fb31312562f4e53f902f0ac",
+  "approval_url": "https://github.com/rabii-chaarani/codebaseGraph/blob/5c2e9a56d0fa87779fb31312562f4e53f902f0ac/docs/specs/CBG-PLAT-01/approvals/d05a-current-macos-only.md",
+  "qualification": "currentstablemacOSAppleSilicononly",
+  "dropped": "macOS13.3execution/oldersupportqualification",
+  "unchanged": [
+    "13.3deploymenttarget/buildmetadata",
+    "productsource855c7e2",
+    "OpenSSL/Ladybug/extensionversions/bytes",
+    "Windowsrequirements",
+    "allactualruntime/failureandCIgates",
+    "maintainerclosureowner"
+  ],
+  "passing_evidence": "no new test/CIpass assertedbypolicyamendment",
+  "scryer": "chg-p0s0ar"
+}

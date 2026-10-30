@@ -1,0 +1,46 @@
+{
+  "files": [
+    [
+      "codebase-graph",
+      48024240,
+      "0o755"
+    ],
+    [
+      "k-wiki",
+      6776576,
+      "0o755"
+    ],
+    [
+      "libcodebasegraph-ssl-3.6.2.dylib",
+      996384,
+      "0o644"
+    ],
+    [
+      "libcodebasegraph-crypto-3.6.2.dylib",
+      5172016,
+      "0o644"
+    ],
+    [
+      "openssl-3.6.2-LICENSE.txt",
+      10175,
+      "0o644"
+    ],
+    [
+      "checksums.txt",
+      447,
+      "0o644"
+    ],
+    [
+      "install.sh",
+      6442,
+      "0o755"
+    ],
+    [
+      "install.ps1",
+      3086,
+      "0o644"
+    ]
+  ],
+  "checksum_text": "5b4c952d07b8f5a280a8c307e9e396b0e3a750c67558020edfd163f05bd6ebed  codebase-graph\nb5598844dbe362438d3a7ce06cfc0cc99fc08622c539a4b000589a6ef4e4b7cd  k-wiki\nbf8b550949bf3695242555c5f2282332435f1ba00202cfcc5ad2411a5268c714  libcodebasegraph-ssl-3.6.2.dylib\n88c5646e625be69572b2810f3a1e0a55f7b3a9f9c29d6900d36f1bf17a12da34  libcodebasegraph-crypto-3.6.2.dylib\n7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a  openssl-3.6.2-LICENSE.txt\n",
+  "archive_sha256": "aaf4b6ca5eb8e7c5b2d510b83102c28a2125bd4e601105eaaf6c451238227e77"
+}

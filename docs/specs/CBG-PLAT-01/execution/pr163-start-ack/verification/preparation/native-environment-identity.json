@@ -1,0 +1,57 @@
+{
+  "source_root": "/private/tmp/codebasegraph-pr163-ci-repair-20261030",
+  "official_release": "https://github.com/LadybugDB/ladybug/releases/tag/v0.19.0",
+  "official_assets": [
+    {
+      "name": "liblbug-static-osx-arm64.tar.gz",
+      "browser_download_url": "https://github.com/LadybugDB/ladybug/releases/download/v0.19.0/liblbug-static-osx-arm64.tar.gz",
+      "size": 22549116,
+      "digest": "sha256:6bee40babdf837bb6aa4d271047dfe5ed3dacf022f16af84952ca4c22d034d62",
+      "id": 494781478,
+      "created_at": "2026-07-30T02:00:19Z",
+      "updated_at": "2026-07-30T02:00:22Z"
+    }
+  ],
+  "cached_archive": "/private/tmp/codebasegraph-copy153-evidence/liblbug-static-osx-arm64.tar.gz",
+  "cached_archive_sha256": "6bee40babdf837bb6aa4d271047dfe5ed3dacf022f16af84952ca4c22d034d62",
+  "cached_archive_members": [
+    {
+      "name": "lbug.h",
+      "size": 77406,
+      "regular": true
+    },
+    {
+      "name": "lbug.hpp",
+      "size": 333665,
+      "regular": true
+    },
+    {
+      "name": "liblbug.a",
+      "size": 81722416,
+      "regular": true
+    }
+  ],
+  "cached_member_sha256": {
+    "lbug.h": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3",
+    "lbug.hpp": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d",
+    "liblbug.a": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142"
+  },
+  "native_dir": "/private/tmp/codebasegraph-copy153-evidence/native019",
+  "extracted_sha256": {
+    "liblbug.a": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142",
+    "lbug.h": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3",
+    "lbug.hpp": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d"
+  },
+  "recommendation": {
+    "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_VERSION": "0.19.0",
+    "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+    "MACOSX_DEPLOYMENT_TARGET": "13.3",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "native_profile": "native-tests",
+  "target_dir": "unset/default isolated target",
+  "builds_executed": false,
+  "downloads_installs_executed": false
+}

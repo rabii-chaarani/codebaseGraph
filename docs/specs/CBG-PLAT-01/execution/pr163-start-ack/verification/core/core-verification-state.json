@@ -1,0 +1,57 @@
+{
+  "status": "core_pass_hosted_qualification_pending",
+  "head": "84f860cbee741dbcbd0b66eb78c6640e924a6fef",
+  "tree": "7227569d6b58da7c65011a2b0fffbd28c339bd84",
+  "dirty": {
+    "src/process_lifecycle/mod.rs": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3"
+  },
+  "focused": {
+    "exit_code": 0,
+    "tests_run": 13,
+    "passed": 13,
+    "skipped": 835,
+    "junit": "focused-process-lifecycle.junit.xml",
+    "nextest_run_id": "f8cad167-f2ee-426e-b864-b4a9a053d1c1"
+  },
+  "fmt": {
+    "exit_code": 0
+  },
+  "clippy": {
+    "exit_code": 0,
+    "warnings": [],
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3"
+  },
+  "xtask": {
+    "exit_code": 0,
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3",
+    "log": "xtask-final.log",
+    "junit": "xtask-final.junit.xml"
+  },
+  "integration": {
+    "exit_code": 0,
+    "tests_run": 4,
+    "passed": 4,
+    "filtered": 20,
+    "log": "integration-selected.log",
+    "junit": "integration-selected.junit.xml",
+    "run_id": "5a2de630-81bd-4656-b678-f073e08ba333",
+    "source_sha256_after": "59c66cb5906eeb13e32c4daa0ca08d26fb416b3e86c14a1b004b930959284fc3"
+  },
+  "full_native_cohorts": "pending hosted CI, not started locally",
+  "native_artifact": "pending hosted CI, not started locally",
+  "integration_discovered": {
+    "total_target_cases": 24,
+    "matched": [
+      "lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit",
+      "lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree",
+      "lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers",
+      "lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven"
+    ],
+    "filtered": 20,
+    "source_normal_cli_sha256": "edcfcc32ec76580dac215ed19a5323d2266cf379538a77c5d75f92b6e647fb98",
+    "test_executable_sha256": "0cc8fdec8c79d36024bcebfd7d462136858bdc6aeb17192e3bff9cfe5f07c8c7"
+  },
+  "final_identity": "/private/tmp/codebasegraph-pr163-ci-repair-20261030\n84f860cbee741dbcbd0b66eb78c6640e924a6fef\n7227569d6b58da7c65011a2b0fffbd28c339bd84\n",
+  "final_status": " M src/process_lifecycle/mod.rs\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/README.md\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/authenticated_delayed_ack.rs\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/authenticated_delayed_ack.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/darwin_socket_timeout.rs\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/darwin_socket_timeout.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/diagnosis.md\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/diagnosis/recommendation.md\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/backend-handoff.md\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/final-test-logs.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/native-test-provenance.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/source-diff.patch\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/source-sha256.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/implementation/start-ack-baseline-failure.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/inventory.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/original-ci/failure-tail.log\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/original-ci/job-123951179128.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/original-ci/run-41013561222.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/candidate-source.diff\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/clippy-final.exit\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/clippy-final.log\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/core-commands.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/core-verification-report.md\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/core-verification-state.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/fmt-final.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/focused-process-lifecycle.junit.xml\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/focused-process-lifecycle.log\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/junit-audit-core.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/nextest-verification.toml\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/xtask-final.exit\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/xtask-final.junit.xml\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/core/xtask-final.log\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/candidate-start-identity.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/cargo.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/clang.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/host-arch.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/host-os.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/ladybug-official-release-api.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/native-cache-direct-checks.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/native-environment-identity.json\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/native-environment-readiness.md\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/nextest.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/rust.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/sdk.txt\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/verification-preparation.md\n?? docs/specs/CBG-PLAT-01/execution/pr163-start-ack/verification/preparation/xcode.txt\n",
+  "diff_check_exit_code": 0
+}

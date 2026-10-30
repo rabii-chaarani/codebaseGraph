@@ -1,0 +1,3 @@
+$ xcode-select -p
+exit_code=0
+/Library/Developer/CommandLineTools

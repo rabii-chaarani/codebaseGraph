@@ -1,0 +1,25 @@
+{
+  "implementation_sha": "a2005dbb37a9ab914ea97b2735825b5286af5b6e",
+  "baseline": "34eac4f8644adc046093babd84ee1fdbffdae853",
+  "approval_sha": "71dc27e92857c4215bbbe583f104de7f341dc816",
+  "spec_sha": "1a9db7b558b60248888408daa6268a3b45f2f0df",
+  "files": {
+    "crates/xtask/src/main.rs": "6610d3c571b2a39af7f50cc2703cb9a5cb5431573c0dd46af43dcb9669bd35dd",
+    "crates/xtask/src/macos.rs": "1f4f650bd0ae0227de998c13f1659ade6485c8cad5e56d2c6602a0820c09299f",
+    "crates/xtask/src/macos_installer_tests.rs": "10646723ce3db83a5a70e51769957214801d4ef7533362eab1035c31ce7fab17",
+    "release/install/install.sh": "7ae5c7c5e08fa4c025b0fe5f5b2da605caccdde1a0aefcec148a272530c260e9",
+    "src/materialization_worker.rs": "5124af6f9df654761bfd09cd46fbf68f9dacb4efc7d0dfc11b9b9ddcb9bc386e",
+    "README.md": "0f784e2a63656208ae19137e3d745dcc7c3f3132a404f417a3697d836c620323",
+    "docs/release.md": "6c673b23376ad03a2c1c26c2c7ab01351a56c54ed71cbbfe084b1c073d1d05db"
+  },
+  "tests": {
+    "xtask55": {
+      "exit": 0,
+      "skipped": 0,
+      "log": "xtask-55-pass.log",
+      "junit": "xtask-55-pass.junit.xml"
+    }
+  },
+  "artifact": "retry2 provisional metadata - not final source-bound until rerun",
+  "qualification": "actual clean13.3/currentunexecuted"
+}

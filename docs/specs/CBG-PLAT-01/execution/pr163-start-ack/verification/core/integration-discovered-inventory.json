@@ -1,0 +1,264 @@
+{
+  "rust-build-meta": {
+    "target-directory": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target",
+    "build-directory": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target",
+    "base-output-directories": [
+      "native-tests"
+    ],
+    "non-test-binaries": {
+      "path+file:///private/tmp/codebasegraph-pr163-ci-repair-20261030#codebase-graph@4.0.4": [
+        {
+          "name": "codebase-graph",
+          "kind": "bin-exe",
+          "path": "native-tests/codebase-graph"
+        }
+      ]
+    },
+    "build-script-out-dirs": {
+      "path+file:///private/tmp/codebasegraph-pr163-ci-repair-20261030#codebase-graph@4.0.4": "native-tests/build/codebase-graph-7ae068f1472eca5d/out"
+    },
+    "build-script-info": {},
+    "linked-paths": [
+      "native-tests/build/codebase-graph-7ae068f1472eca5d/out",
+      "native-tests/build/cxx-3afdbb227ddf9822/out",
+      "native-tests/build/lbug-1be4db90be4f838a/out",
+      "native-tests/build/libmimalloc-sys-cfd1c0348b5288f3/out",
+      "native-tests/build/link-cplusplus-358d63a3b8b7744f/out",
+      "native-tests/build/tree-sitter-523ea8ca99fd69fa/out",
+      "native-tests/build/tree-sitter-c-bdaf42c89f8b83b1/out",
+      "native-tests/build/tree-sitter-cpp-fe7483b02252480e/out",
+      "native-tests/build/tree-sitter-css-a448cc9e0fccd139/out",
+      "native-tests/build/tree-sitter-fortran-7c3d4c848e151d71/out",
+      "native-tests/build/tree-sitter-go-a2ecb1450c1c8eb3/out",
+      "native-tests/build/tree-sitter-html-ee30b09790710447/out",
+      "native-tests/build/tree-sitter-javascript-33d62d7c3816baf3/out",
+      "native-tests/build/tree-sitter-python-c13bd45e6fe41d61/out",
+      "native-tests/build/tree-sitter-rust-462d51efcdf2eceb/out",
+      "native-tests/build/tree-sitter-typescript-22b87b92bc206fac/out"
+    ],
+    "platforms": {
+      "host": {
+        "platform": {
+          "triple": "aarch64-apple-darwin",
+          "target-features": "unknown"
+        },
+        "libdir": {
+          "status": "available",
+          "path": "/Users/rabii/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib"
+        }
+      },
+      "targets": []
+    },
+    "target-platforms": [
+      {
+        "triple": "aarch64-apple-darwin",
+        "target-features": "unknown"
+      }
+    ],
+    "target-platform": null
+  },
+  "test-count": 24,
+  "rust-suites": {
+    "codebase-graph::refresh_recovery_process": {
+      "package-name": "codebase-graph",
+      "binary-id": "codebase-graph::refresh_recovery_process",
+      "binary-name": "refresh_recovery_process",
+      "package-id": "path+file:///private/tmp/codebasegraph-pr163-ci-repair-20261030#codebase-graph@4.0.4",
+      "kind": "test",
+      "binary-path": "/private/tmp/codebasegraph-pr163-ci-repair-20261030/target/native-tests/deps/refresh_recovery_process-96bc2be4dd6ed04f",
+      "build-platform": "target",
+      "cwd": "/private/tmp/codebasegraph-pr163-ci-repair-20261030",
+      "status": "listed",
+      "testcases": {
+        "config_hot_reload_applies_excludes_while_cli_policy_and_backend_overrides_persist": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "initial_build_retry_requires_exact_transient_and_empty_cleanup": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "legacy_memory_fields_do_not_block_refresh_of_larger_source": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "lifecycle_faults::control_reply_does_not_wait_for_connection_eof": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::fixture_cleanup_accepts_only_unlocked_empty_preexecution_lease": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::fixture_cleanup_accepts_retired_startup_without_terminal_receipt": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::fixture_cleanup_keeps_unproven_or_locked_containment": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::loader_allocation_is_observed_without_resource_budget_cancellation": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::manual_publication_waits_for_failed_phase_tree_to_exit": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::missing_guardian_closes_the_build_tree_and_automatic_refresh_retries": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::owner_exit_after_state_before_start_cleans_gated_tree": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "lifecycle_faults::owner_exit_before_guardian_readiness_cleans_gated_tree": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::owner_exit_cleans_paused_worker_and_loader_before_recovery": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::paused_database_loader_exits_after_outer_worker_failure_and_refresh_recovers": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "lifecycle_faults::standalone_owner_loss_preserves_candidate_while_guardian_is_unavailable": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::timing_wrapper_keeps_loader_in_build_containment": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "matches"
+          }
+        },
+        "lifecycle_faults::verified_abandoned_guardian_is_terminated_before_automatic_refresh": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "manual_publication_does_not_prevent_later_legacy_pid_recovery": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "recovery_wait_requires_ready_reconciliation_not_a_clock_window": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "retired_internal_roles_require_restart_before_reading_requests": {
+          "kind": "test",
+          "ignored": false,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "expression"
+          }
+        },
+        "unrelated_worker_pid_fixture": {
+          "kind": "test",
+          "ignored": true,
+          "filter-match": {
+            "status": "mismatch",
+            "reason": "ignored"
+          }
+        }
+      }
+    }
+  }
+}
