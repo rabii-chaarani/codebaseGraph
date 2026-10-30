@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.3...v4.0.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* **release:** upload verified assets before immutable publication ([#169](https://github.com/rabii-chaarani/codebaseGraph/issues/169)) ([a07e6d1](https://github.com/rabii-chaarani/codebaseGraph/commit/a07e6d1e322622b7cee5b5358816cb3d54c17647))
+
 ## [4.0.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.2...v4.0.3) (2026-10-29)
 
 
