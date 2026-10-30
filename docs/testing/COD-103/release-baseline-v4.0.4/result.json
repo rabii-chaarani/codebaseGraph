@@ -1,0 +1,1115 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-103",
+  "role": "evidence_verifier",
+  "verification_type": "independent_public_release_baseline_read_only",
+  "observed_at_utc": "2026-10-30T23:45:12.487968+00:00",
+  "status": "verified_published_baseline_two_targets",
+  "publication_baseline_verified": true,
+  "fully_published_baseline": {
+    "version": "4.0.4",
+    "tag": "v4.0.4",
+    "source_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+    "repository": "rabii-chaarani/codebaseGraph",
+    "verified": true,
+    "approved_native_targets": [
+      "macos-arm64",
+      "windows-x86_64"
+    ],
+    "scope": "Actual public native/crate bytes and publication/finalization for these two approved targets only. Not new platform acceptance or aggregate/queue closure."
+  },
+  "repository_root": "/Users/rabii/Projects/Repositories/codebaseGraph",
+  "canonical_inputs": {
+    "spec_path": "docs/specs/COD-103/spec.md",
+    "spec_revision": "0.2",
+    "approved_full_sha": "7e79f7e924536f29d3212e83899b01c38afd39de",
+    "spec_url": "https://github.com/rabii-chaarani/codebaseGraph/blob/7e79f7e924536f29d3212e83899b01c38afd39de/docs/specs/COD-103/spec.md",
+    "approval_record_path": "docs/specs/COD-103/approvals/2026-10-29-combined.md",
+    "approval_record_full_sha": "383a481bd5a71c58dab7dd796ace92a365760da5",
+    "approval_record_url": "https://github.com/rabii-chaarani/codebaseGraph/blob/383a481bd5a71c58dab7dd796ace92a365760da5/docs/specs/COD-103/approvals/2026-10-29-combined.md",
+    "acceptance_relation": "C103-R06/C103-A06 baseline reconciliation prerequisite only; final complete-queue release is not being verified or authorized.",
+    "read_receipts": [
+      {
+        "kind": "approved_spec",
+        "command": "git show 7e79f7e924536f29d3212e83899b01c38afd39de:docs/specs/COD-103/spec.md",
+        "exit_code": 0,
+        "sha256": "7dfb3e6ca61eec09ab6fdc7508c5fd61602acfef31e61026e01144753b12386e",
+        "scope_excerpt": "Only current approved native targets **macOS ARM64 and Windows x86_64** apply. Stale four-target skill/wiki wording must be reconciled as procedure, not used to expand platform support."
+      },
+      {
+        "kind": "separate_approval_record",
+        "command": "git show 383a481bd5a71c58dab7dd796ace92a365760da5:docs/specs/COD-103/approvals/2026-10-29-combined.md",
+        "exit_code": 0,
+        "sha256": "d75fa4084e84941373c3d6f62f2bd3c6e1ea8b827266a635eb10968749db4c6b",
+        "approved_full_sha": "7e79f7e924536f29d3212e83899b01c38afd39de",
+        "decision_reference": "2026-10-29 Engineer chat user \u201capprove\u201d, as preserved in combined approval record"
+      }
+    ]
+  },
+  "checks": {
+    "approved_two_target_scope_verified": true,
+    "tag_exact_selected_commit": true,
+    "latest_public_release_is_selected_v4_0_4": true,
+    "source_ci_exact_successful_main_push_attempt1": true,
+    "governed_publisher_exact_successful_workflow_run_attempt1": true,
+    "complete_approved_asset_inventory": true,
+    "all_public_bytes_match_original_ci_and_publisher": true,
+    "public_sidecars_match_archive_bytes_and_names": true,
+    "native_internal_binary_checksums_match": true,
+    "source_bound_native_provenance_matches": true,
+    "retained_publisher_zip_digests_match": true,
+    "release_metadata_source_version_tag_matches": true,
+    "crate_actual_bytes_version_source_registry_checksum_match": true,
+    "release_finalized_public_immutable": true
+  },
+  "release": {
+    "id": 428697860,
+    "tag_name": "v4.0.4",
+    "target_commitish": "7125900c740297be5c60821dbeb9811f32a5894a",
+    "html_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/tag/v4.0.4",
+    "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/releases/428697860",
+    "draft": false,
+    "prerelease": false,
+    "immutable": true,
+    "created_at": "2026-10-30T03:31:46Z",
+    "published_at": "2026-10-30T05:56:11Z",
+    "updated_at": "2026-10-30T05:56:11Z"
+  },
+  "tag": {
+    "ref": "refs/tags/v4.0.4",
+    "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/git/refs/tags/v4.0.4",
+    "object": {
+      "type": "commit",
+      "sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+      "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/git/commits/7125900c740297be5c60821dbeb9811f32a5894a"
+    },
+    "node_id": "REF_kwDOSZ0WurByZWZzL3RhZ3MvdjQuMC40"
+  },
+  "source_ci_run": {
+    "id": 40997892360,
+    "run_attempt": 1,
+    "name": "CI",
+    "head_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+    "head_branch": "main",
+    "path": ".github/workflows/ci.yml",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40997892360",
+    "created_at": "2026-10-30T03:31:49Z",
+    "updated_at": "2026-10-30T05:44:25Z"
+  },
+  "source_ci_job_inventory": {
+    "total_count": 22,
+    "received": 22,
+    "all_success": true,
+    "artifact_jobs": [
+      {
+        "id": 123891081922,
+        "name": "native (macos-arm64) / native artifact (macos-arm64)",
+        "head_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+        "run_attempt": 1,
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40997892360/job/123891081922",
+        "build_smoke_step": {
+          "name": "Build and smoke release artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T05:04:45Z",
+          "completed_at": "2026-10-30T05:10:05Z"
+        }
+      },
+      {
+        "id": 123894546428,
+        "name": "native (windows-x86_64) / native artifact (windows-x86_64)",
+        "head_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+        "run_attempt": 1,
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40997892360/job/123894546428",
+        "build_smoke_step": {
+          "name": "Build and smoke release artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-30T05:21:39Z",
+          "completed_at": "2026-10-30T05:32:42Z"
+        }
+      }
+    ]
+  },
+  "publish_run": {
+    "id": 41010094891,
+    "run_attempt": 1,
+    "name": "Release",
+    "head_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+    "head_branch": "main",
+    "path": ".github/workflows/release.yml",
+    "event": "workflow_run",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891",
+    "created_at": "2026-10-30T05:44:27Z",
+    "updated_at": "2026-10-30T05:58:09Z"
+  },
+  "publish_job_summary": [
+    {
+      "id": 123913795161,
+      "name": "resolve verified release target",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123913795161"
+    },
+    {
+      "id": 123916746159,
+      "name": "exact-SHA CI gate",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123916746159"
+    },
+    {
+      "id": 123916777700,
+      "name": "production release gate",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123916777700"
+    },
+    {
+      "id": 123916876745,
+      "name": "select artifact source",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123916876745"
+    },
+    {
+      "id": 123916911539,
+      "name": "validate complete native artifact set",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123916911539"
+    },
+    {
+      "id": 123916912981,
+      "name": "rebuild (${{ matrix.target }})",
+      "conclusion": "skipped",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123916912981"
+    },
+    {
+      "id": 123917063480,
+      "name": "publish release assets",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123917063480"
+    },
+    {
+      "id": 123917159886,
+      "name": "publish crates.io package",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123917159886"
+    },
+    {
+      "id": 123917600667,
+      "name": "finalize verified release PR",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123917600667"
+    },
+    {
+      "id": 123917629132,
+      "name": "maintain release proposal",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41010094891/job/123917629132"
+    }
+  ],
+  "source_ci_artifacts": [
+    {
+      "id": 12957135488,
+      "name": "native-windows-x86_64",
+      "download_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/12957135488/zip",
+      "download_exit_code": 0,
+      "size_bytes": 28858457,
+      "sha256": "32ea41fc0010c3131647fa17ff3e38eba864e21889aa239c4d2d88cc6c426010",
+      "github_digest": "sha256:32ea41fc0010c3131647fa17ff3e38eba864e21889aa239c4d2d88cc6c426010",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/source-ci-artifact-12957135488.zip",
+      "workflow_run": {
+        "id": 40997892360,
+        "repository_id": 1235031738,
+        "head_repository_id": 1235031738,
+        "head_branch": "main",
+        "head_sha": "7125900c740297be5c60821dbeb9811f32a5894a"
+      },
+      "digest_matches": true,
+      "entries": [
+        {
+          "name": "codebase-graph-4.0.4-windows-x86_64.tar.gz",
+          "size_bytes": 29238014,
+          "sha256": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347",
+          "matches_public_bytes": true
+        },
+        {
+          "name": "codebase-graph-4.0.4-windows-x86_64.tar.gz.sha256",
+          "size_bytes": 109,
+          "sha256": "938bb6c02f1b9cf183fadc726adbb70743a1f1d6f1ef5aab4a0fec0ed603408a",
+          "matches_public_bytes": true
+        },
+        {
+          "name": "provenance.json",
+          "size_bytes": 284,
+          "sha256": "562ef16b5786516992743ff578704b768ce920c8bf6271b8ea04969cffe09984"
+        }
+      ],
+      "provenance": {
+        "schema_version": 1,
+        "commit_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+        "version": "4.0.4",
+        "target": "windows-x86_64",
+        "archive": "codebase-graph-4.0.4-windows-x86_64.tar.gz",
+        "archive_sha256": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347"
+      }
+    },
+    {
+      "id": 12955489108,
+      "name": "native-macos-arm64",
+      "download_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/12955489108/zip",
+      "download_exit_code": 0,
+      "size_bytes": 14181074,
+      "sha256": "ed1b418516a87169edb1721b03833a5cf5186e57ab96341b48b6ec76ebaf0b57",
+      "github_digest": "sha256:ed1b418516a87169edb1721b03833a5cf5186e57ab96341b48b6ec76ebaf0b57",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/source-ci-artifact-12955489108.zip",
+      "workflow_run": {
+        "id": 40997892360,
+        "repository_id": 1235031738,
+        "head_repository_id": 1235031738,
+        "head_branch": "main",
+        "head_sha": "7125900c740297be5c60821dbeb9811f32a5894a"
+      },
+      "digest_matches": true,
+      "entries": [
+        {
+          "name": "codebase-graph-4.0.4-macos-arm64.tar.gz",
+          "size_bytes": 14386632,
+          "sha256": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a",
+          "matches_public_bytes": true
+        },
+        {
+          "name": "codebase-graph-4.0.4-macos-arm64.tar.gz.sha256",
+          "size_bytes": 106,
+          "sha256": "c7544f00ac51506485dc2a626a83a1cbe8bb3cc67573b5cb7b3f1e99c970b553",
+          "matches_public_bytes": true
+        },
+        {
+          "name": "provenance.json",
+          "size_bytes": 278,
+          "sha256": "14b190ee88640e14e704e5488e37b8bd60bd443b22ab3e4e21c6606da6c96316"
+        }
+      ],
+      "provenance": {
+        "schema_version": 1,
+        "commit_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+        "version": "4.0.4",
+        "target": "macos-arm64",
+        "archive": "codebase-graph-4.0.4-macos-arm64.tar.gz",
+        "archive_sha256": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a"
+      }
+    }
+  ],
+  "publisher_artifacts": [
+    {
+      "id": 12958080289,
+      "name": "release-metadata",
+      "download_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/12958080289/zip",
+      "download_exit_code": 0,
+      "size_bytes": 443,
+      "sha256": "86c334e62ec89ecaab42bbfce1dcbd69bf4cf6013bbca259845249c466eefdce",
+      "github_digest": "sha256:86c334e62ec89ecaab42bbfce1dcbd69bf4cf6013bbca259845249c466eefdce",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/publish-artifact-12958080289.zip",
+      "workflow_run": {
+        "id": 41010094891,
+        "repository_id": 1235031738,
+        "head_repository_id": 1235031738,
+        "head_branch": "main",
+        "head_sha": "7125900c740297be5c60821dbeb9811f32a5894a"
+      },
+      "digest_matches": true,
+      "entries": [
+        {
+          "name": "release-metadata.json",
+          "size_bytes": 470,
+          "sha256": "8bfd8059fd8ca801617ce529992d397344a4ed48650515a3eabbe26109418c3c"
+        }
+      ]
+    },
+    {
+      "id": 12957666252,
+      "name": "validated-release-assets",
+      "download_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/artifacts/12957666252/zip",
+      "download_exit_code": 0,
+      "size_bytes": 43038888,
+      "sha256": "357cc46b1d6e6752e68a288f131beeec52aaa0872eb1d2de9875021b07937bf2",
+      "github_digest": "sha256:357cc46b1d6e6752e68a288f131beeec52aaa0872eb1d2de9875021b07937bf2",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/publish-artifact-12957666252.zip",
+      "workflow_run": {
+        "id": 41010094891,
+        "repository_id": 1235031738,
+        "head_repository_id": 1235031738,
+        "head_branch": "main",
+        "head_sha": "7125900c740297be5c60821dbeb9811f32a5894a"
+      },
+      "digest_matches": true,
+      "entries": [
+        {
+          "name": "codebase-graph-4.0.4-macos-arm64.tar.gz",
+          "size_bytes": 14386632,
+          "sha256": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a",
+          "matches_public_bytes": true
+        },
+        {
+          "name": "codebase-graph-4.0.4-windows-x86_64.tar.gz",
+          "size_bytes": 29238014,
+          "sha256": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347",
+          "matches_public_bytes": true
+        },
+        {
+          "name": "codebase-graph-4.0.4-macos-arm64.tar.gz.sha256",
+          "size_bytes": 106,
+          "sha256": "c7544f00ac51506485dc2a626a83a1cbe8bb3cc67573b5cb7b3f1e99c970b553",
+          "matches_public_bytes": true
+        },
+        {
+          "name": "codebase-graph-4.0.4-windows-x86_64.tar.gz.sha256",
+          "size_bytes": 109,
+          "sha256": "938bb6c02f1b9cf183fadc726adbb70743a1f1d6f1ef5aab4a0fec0ed603408a",
+          "matches_public_bytes": true
+        }
+      ]
+    }
+  ],
+  "public_assets": [
+    {
+      "name": "codebase-graph-4.0.4-macos-arm64.tar.gz",
+      "asset_id": 691107455,
+      "download_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-macos-arm64.tar.gz",
+      "github_digest": "sha256:f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a",
+      "actual_sha256": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a",
+      "actual_size_bytes": 14386632,
+      "digest_matches_github_metadata": true,
+      "sidecar_contents": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a  codebase-graph-4.0.4-macos-arm64.tar.gz\n",
+      "checksum_matches": true,
+      "sidecar_name_matches": true,
+      "archive_members": [
+        {
+          "name": "codebase-graph",
+          "size_bytes": 48787376,
+          "type": "\u0000"
+        },
+        {
+          "name": "k-wiki",
+          "size_bytes": 7221088,
+          "type": "\u0000"
+        },
+        {
+          "name": "checksums.txt",
+          "size_bytes": 154,
+          "type": "\u0000"
+        },
+        {
+          "name": "install.sh",
+          "size_bytes": 3285,
+          "type": "\u0000"
+        },
+        {
+          "name": "install.ps1",
+          "size_bytes": 3086,
+          "type": "\u0000"
+        }
+      ],
+      "original_ci_run_id": 40997892360,
+      "original_ci_run_attempt": 1,
+      "original_ci_artifact_id": 12955489108,
+      "original_ci_sha256": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a",
+      "publisher_artifact_id": 12957666252,
+      "publisher_sha256": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a",
+      "matches_original_ci_bytes": true,
+      "matches_publisher_staged_bytes": true,
+      "result": "verified"
+    },
+    {
+      "name": "codebase-graph-4.0.4-macos-arm64.tar.gz.sha256",
+      "asset_id": 691107454,
+      "download_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-macos-arm64.tar.gz.sha256",
+      "github_digest": "sha256:c7544f00ac51506485dc2a626a83a1cbe8bb3cc67573b5cb7b3f1e99c970b553",
+      "actual_sha256": "c7544f00ac51506485dc2a626a83a1cbe8bb3cc67573b5cb7b3f1e99c970b553",
+      "actual_size_bytes": 106,
+      "digest_matches_github_metadata": true,
+      "original_ci_run_id": 40997892360,
+      "original_ci_run_attempt": 1,
+      "original_ci_artifact_id": 12955489108,
+      "original_ci_sha256": "c7544f00ac51506485dc2a626a83a1cbe8bb3cc67573b5cb7b3f1e99c970b553",
+      "publisher_artifact_id": 12957666252,
+      "publisher_sha256": "c7544f00ac51506485dc2a626a83a1cbe8bb3cc67573b5cb7b3f1e99c970b553",
+      "matches_original_ci_bytes": true,
+      "matches_publisher_staged_bytes": true,
+      "result": "verified"
+    },
+    {
+      "name": "codebase-graph-4.0.4-windows-x86_64.tar.gz",
+      "asset_id": 691107451,
+      "download_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-windows-x86_64.tar.gz",
+      "github_digest": "sha256:b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347",
+      "actual_sha256": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347",
+      "actual_size_bytes": 29238014,
+      "digest_matches_github_metadata": true,
+      "sidecar_contents": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347  codebase-graph-4.0.4-windows-x86_64.tar.gz\n",
+      "checksum_matches": true,
+      "sidecar_name_matches": true,
+      "archive_members": [
+        {
+          "name": "codebase-graph.exe",
+          "size_bytes": 53151232,
+          "type": "\u0000"
+        },
+        {
+          "name": "k-wiki.exe",
+          "size_bytes": 41682944,
+          "type": "\u0000"
+        },
+        {
+          "name": "checksums.txt",
+          "size_bytes": 162,
+          "type": "\u0000"
+        },
+        {
+          "name": "install.sh",
+          "size_bytes": 3408,
+          "type": "\u0000"
+        },
+        {
+          "name": "install.ps1",
+          "size_bytes": 3175,
+          "type": "\u0000"
+        }
+      ],
+      "original_ci_run_id": 40997892360,
+      "original_ci_run_attempt": 1,
+      "original_ci_artifact_id": 12957135488,
+      "original_ci_sha256": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347",
+      "publisher_artifact_id": 12957666252,
+      "publisher_sha256": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347",
+      "matches_original_ci_bytes": true,
+      "matches_publisher_staged_bytes": true,
+      "result": "verified"
+    },
+    {
+      "name": "codebase-graph-4.0.4-windows-x86_64.tar.gz.sha256",
+      "asset_id": 691107453,
+      "download_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-windows-x86_64.tar.gz.sha256",
+      "github_digest": "sha256:938bb6c02f1b9cf183fadc726adbb70743a1f1d6f1ef5aab4a0fec0ed603408a",
+      "actual_sha256": "938bb6c02f1b9cf183fadc726adbb70743a1f1d6f1ef5aab4a0fec0ed603408a",
+      "actual_size_bytes": 109,
+      "digest_matches_github_metadata": true,
+      "original_ci_run_id": 40997892360,
+      "original_ci_run_attempt": 1,
+      "original_ci_artifact_id": 12957135488,
+      "original_ci_sha256": "938bb6c02f1b9cf183fadc726adbb70743a1f1d6f1ef5aab4a0fec0ed603408a",
+      "publisher_artifact_id": 12957666252,
+      "publisher_sha256": "938bb6c02f1b9cf183fadc726adbb70743a1f1d6f1ef5aab4a0fec0ed603408a",
+      "matches_original_ci_bytes": true,
+      "matches_publisher_staged_bytes": true,
+      "result": "verified"
+    }
+  ],
+  "provenance_checks": [
+    {
+      "target": "windows-x86_64",
+      "artifact_id": 12957135488,
+      "artifact_zip_digest_verified": true,
+      "source_sha_matches": true,
+      "version_matches": true,
+      "target_approved": true,
+      "archive_name_matches": true,
+      "public_digest_matches": true,
+      "provenance": {
+        "schema_version": 1,
+        "commit_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+        "version": "4.0.4",
+        "target": "windows-x86_64",
+        "archive": "codebase-graph-4.0.4-windows-x86_64.tar.gz",
+        "archive_sha256": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347"
+      }
+    },
+    {
+      "target": "macos-arm64",
+      "artifact_id": 12955489108,
+      "artifact_zip_digest_verified": true,
+      "source_sha_matches": true,
+      "version_matches": true,
+      "target_approved": true,
+      "archive_name_matches": true,
+      "public_digest_matches": true,
+      "provenance": {
+        "schema_version": 1,
+        "commit_sha": "7125900c740297be5c60821dbeb9811f32a5894a",
+        "version": "4.0.4",
+        "target": "macos-arm64",
+        "archive": "codebase-graph-4.0.4-macos-arm64.tar.gz",
+        "archive_sha256": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a"
+      }
+    }
+  ],
+  "internal_checksum_results": [
+    {
+      "archive": "codebase-graph-4.0.4-macos-arm64.tar.gz",
+      "checksums_text": "4bf7b302b5502121a840655c0998f8316ce90ba9993a4f29614a5de89bf292e1  codebase-graph\n9172d3d1dfab6c3a379a2cb5117cfb542dd8aa53f5be871e0cd84973f80e46f6  k-wiki\n",
+      "results": [
+        {
+          "filename": "codebase-graph",
+          "expected_sha256": "4bf7b302b5502121a840655c0998f8316ce90ba9993a4f29614a5de89bf292e1",
+          "actual_sha256": "4bf7b302b5502121a840655c0998f8316ce90ba9993a4f29614a5de89bf292e1",
+          "matches": true
+        },
+        {
+          "filename": "k-wiki",
+          "expected_sha256": "9172d3d1dfab6c3a379a2cb5117cfb542dd8aa53f5be871e0cd84973f80e46f6",
+          "actual_sha256": "9172d3d1dfab6c3a379a2cb5117cfb542dd8aa53f5be871e0cd84973f80e46f6",
+          "matches": true
+        }
+      ],
+      "all_match": true
+    },
+    {
+      "archive": "codebase-graph-4.0.4-windows-x86_64.tar.gz",
+      "checksums_text": "feec0aff0d835a2339d4fbc09ed77902b3e27c6e965cf4d4d1a1d6c8bf78a644  codebase-graph.exe\nbea8590aff9dfd3013a7332d3a17eddd16b6aa36982a345cfc72b1facd44aa82  k-wiki.exe\n",
+      "results": [
+        {
+          "filename": "codebase-graph.exe",
+          "expected_sha256": "feec0aff0d835a2339d4fbc09ed77902b3e27c6e965cf4d4d1a1d6c8bf78a644",
+          "actual_sha256": "feec0aff0d835a2339d4fbc09ed77902b3e27c6e965cf4d4d1a1d6c8bf78a644",
+          "matches": true
+        },
+        {
+          "filename": "k-wiki.exe",
+          "expected_sha256": "bea8590aff9dfd3013a7332d3a17eddd16b6aa36982a345cfc72b1facd44aa82",
+          "actual_sha256": "bea8590aff9dfd3013a7332d3a17eddd16b6aa36982a345cfc72b1facd44aa82",
+          "matches": true
+        }
+      ],
+      "all_match": true
+    }
+  ],
+  "crate": {
+    "requested_url": "https://crates.io/api/v1/crates/codebase-graph/4.0.4/download",
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/codebase-graph-4.0.4.crate",
+    "method": "anonymous HTTPS GET, streamed; no retries",
+    "observed_at": "2026-10-30T23:42:16.233928+00:00",
+    "http_status": 200,
+    "redirects": [
+      {
+        "status": 302,
+        "url": "https://crates.io/api/v1/crates/codebase-graph/4.0.4/download"
+      }
+    ],
+    "final_url_without_query": "https://static.crates.io/crates/codebase-graph/codebase-graph-4.0.4.crate",
+    "content_type": "application/gzip",
+    "content_length": "8458919",
+    "result": "downloaded",
+    "sha256": "7cb5ff382352669cd1d0129c0a27ae2d4302d7edd8eb880cd6c20413557783ea",
+    "size_bytes": 8458919,
+    "vcs_info": {
+      "git": {
+        "sha1": "7125900c740297be5c60821dbeb9811f32a5894a"
+      },
+      "path_in_vcs": ""
+    },
+    "package_metadata": {
+      "edition": "2021",
+      "rust-version": "1.82",
+      "name": "codebase-graph",
+      "version": "4.0.4",
+      "build": "build.rs",
+      "include": [
+        "src/**",
+        "!src/**/.DS_Store",
+        "tests/**",
+        "assets/*.json",
+        "assets/ladybug-extensions/0.19.0/**/*.xz",
+        "vendor/tree-sitter-wat/**",
+        "build.rs",
+        "README.md",
+        "LICENSE"
+      ],
+      "autolib": false,
+      "autobins": false,
+      "autoexamples": false,
+      "autotests": false,
+      "autobenches": false,
+      "description": "Native codebaseGraph CLI and MCP server for local code knowledge graphs.",
+      "homepage": "https://github.com/rabii-chaarani/codebaseGraph",
+      "readme": "README.md",
+      "keywords": [
+        "codebase",
+        "graph",
+        "mcp",
+        "cli",
+        "analysis"
+      ],
+      "categories": [
+        "command-line-utilities",
+        "development-tools"
+      ],
+      "license": "MIT",
+      "repository": "https://github.com/rabii-chaarani/codebaseGraph"
+    },
+    "registry_index_record": {
+      "name": "codebase-graph",
+      "vers": "4.0.4",
+      "deps": [
+        {
+          "name": "cc",
+          "req": "^1.2",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "build"
+        },
+        {
+          "name": "fs2",
+          "req": "^0.4.3",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "getrandom",
+          "req": "^0.3.4",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "lbug",
+          "req": "^0.19.0",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "libc",
+          "req": "^0.2",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "libmimalloc-sys",
+          "req": "^0.1.49",
+          "features": [
+            "extended"
+          ],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "lzma-rs",
+          "req": "^0.3.0",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "mimalloc",
+          "req": "^0.1.52",
+          "features": [
+            "extended"
+          ],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "notify",
+          "req": "^8.2",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "serde",
+          "req": "^1",
+          "features": [
+            "derive"
+          ],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "serde_json",
+          "req": "^1",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "sha2",
+          "req": "^0.10.9",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter",
+          "req": "^0.25",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-c",
+          "req": "^0.24.2",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-cpp",
+          "req": "^0.23.4",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-css",
+          "req": "^0.25.0",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-fortran",
+          "req": "^0.6.0",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-go",
+          "req": "^0.25.0",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-html",
+          "req": "^0.23.2",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-javascript",
+          "req": "^0.25.0",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-language",
+          "req": "^0.1",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-python",
+          "req": "^0.25.0",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-rust",
+          "req": "^0.24.2",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "tree-sitter-typescript",
+          "req": "^0.23.2",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "walkdir",
+          "req": "^2",
+          "features": [],
+          "optional": false,
+          "default_features": true,
+          "target": null,
+          "kind": "normal"
+        },
+        {
+          "name": "windows-sys",
+          "req": "^0.61",
+          "features": [
+            "Win32_Foundation",
+            "Win32_Globalization",
+            "Win32_System_ProcessStatus",
+            "Win32_System_Threading",
+            "Win32_System_JobObjects",
+            "Win32_System_SystemServices",
+            "Win32_Security",
+            "Win32_Security_Authorization",
+            "Win32_System_Memory",
+            "Win32_Storage_FileSystem",
+            "Win32_System_Pipes",
+            "Win32_System_Console",
+            "Win32_System_Diagnostics_ToolHelp",
+            "Win32_System_IO",
+            "Wdk_Foundation",
+            "Wdk_Storage_FileSystem"
+          ],
+          "optional": false,
+          "default_features": true,
+          "target": "cfg(windows)",
+          "kind": "normal"
+        }
+      ],
+      "cksum": "7cb5ff382352669cd1d0129c0a27ae2d4302d7edd8eb880cd6c20413557783ea",
+      "features": {
+        "bundled-windows-extensions": [],
+        "default": [
+          "bundled-windows-extensions"
+        ]
+      },
+      "yanked": false,
+      "rust_version": "1.82",
+      "pubtime": "2026-10-30T05:57:42Z"
+    },
+    "checksum_matches_registry_index": true,
+    "vcs_sha_matches_selected_source": true,
+    "name_and_version_match": true
+  },
+  "finalization": {
+    "release_public": true,
+    "immutable": true,
+    "release_pr": 170,
+    "release_pr_url": "https://github.com/rabii-chaarani/codebaseGraph/pull/170",
+    "release_pr_merged": true,
+    "release_pr_labels": [
+      "autorelease: tagged"
+    ],
+    "finalize_job_id": 123917600667,
+    "finalize_job_conclusion": "success"
+  },
+  "http_downloads": [
+    {
+      "requested_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-windows-x86_64.tar.gz.sha256",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/codebase-graph-4.0.4-windows-x86_64.tar.gz.sha256",
+      "method": "anonymous HTTPS GET, streamed; no retries",
+      "observed_at": "2026-10-30T23:42:16.229358+00:00",
+      "http_status": 200,
+      "redirects": [
+        {
+          "status": 302,
+          "url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-windows-x86_64.tar.gz.sha256"
+        }
+      ],
+      "final_url_without_query": "https://release-assets.githubusercontent.com/github-production-release-asset/1235031738/a3269cfa-f8f0-4ce5-a835-4220868551ee",
+      "content_type": "application/octet-stream",
+      "content_length": "109",
+      "result": "downloaded",
+      "sha256": "938bb6c02f1b9cf183fadc726adbb70743a1f1d6f1ef5aab4a0fec0ed603408a",
+      "size_bytes": 109
+    },
+    {
+      "requested_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-macos-arm64.tar.gz.sha256",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/codebase-graph-4.0.4-macos-arm64.tar.gz.sha256",
+      "method": "anonymous HTTPS GET, streamed; no retries",
+      "observed_at": "2026-10-30T23:42:16.219799+00:00",
+      "http_status": 200,
+      "redirects": [
+        {
+          "status": 302,
+          "url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-macos-arm64.tar.gz.sha256"
+        }
+      ],
+      "final_url_without_query": "https://release-assets.githubusercontent.com/github-production-release-asset/1235031738/faccf5a5-9adc-4c51-b025-74959bc4bf0d",
+      "content_type": "application/octet-stream",
+      "content_length": "106",
+      "result": "downloaded",
+      "sha256": "c7544f00ac51506485dc2a626a83a1cbe8bb3cc67573b5cb7b3f1e99c970b553",
+      "size_bytes": 106
+    },
+    {
+      "requested_url": "https://index.crates.io/co/de/codebase-graph",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/codebase-graph-sparse-index.jsonl",
+      "method": "anonymous HTTPS GET, streamed; no retries",
+      "observed_at": "2026-10-30T23:42:16.238455+00:00",
+      "http_status": 200,
+      "redirects": [],
+      "final_url_without_query": "https://index.crates.io/co/de/codebase-graph",
+      "content_type": "text/plain",
+      "content_length": "70349",
+      "result": "downloaded",
+      "sha256": "6cc460540d77f4c68ccf4df6b0964ca6ed97b75a31eaf9bac71ae8feb124104c",
+      "size_bytes": 70349
+    },
+    {
+      "requested_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-windows-x86_64.tar.gz",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/codebase-graph-4.0.4-windows-x86_64.tar.gz",
+      "method": "anonymous HTTPS GET, streamed; no retries",
+      "observed_at": "2026-10-30T23:42:16.224610+00:00",
+      "http_status": 200,
+      "redirects": [
+        {
+          "status": 302,
+          "url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-windows-x86_64.tar.gz"
+        }
+      ],
+      "final_url_without_query": "https://release-assets.githubusercontent.com/github-production-release-asset/1235031738/be4fad97-4073-46ce-a956-55a70cb4a735",
+      "content_type": "application/octet-stream",
+      "content_length": "29238014",
+      "result": "downloaded",
+      "sha256": "b01d0645d05f17f5b0dc8ebe57292449ef63da2ae82ab816e61f2833c7918347",
+      "size_bytes": 29238014
+    },
+    {
+      "requested_url": "https://crates.io/api/v1/crates/codebase-graph/4.0.4/download",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/codebase-graph-4.0.4.crate",
+      "method": "anonymous HTTPS GET, streamed; no retries",
+      "observed_at": "2026-10-30T23:42:16.233928+00:00",
+      "http_status": 200,
+      "redirects": [
+        {
+          "status": 302,
+          "url": "https://crates.io/api/v1/crates/codebase-graph/4.0.4/download"
+        }
+      ],
+      "final_url_without_query": "https://static.crates.io/crates/codebase-graph/codebase-graph-4.0.4.crate",
+      "content_type": "application/gzip",
+      "content_length": "8458919",
+      "result": "downloaded",
+      "sha256": "7cb5ff382352669cd1d0129c0a27ae2d4302d7edd8eb880cd6c20413557783ea",
+      "size_bytes": 8458919
+    },
+    {
+      "requested_url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-macos-arm64.tar.gz",
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4/codebase-graph-4.0.4-macos-arm64.tar.gz",
+      "method": "anonymous HTTPS GET, streamed; no retries",
+      "observed_at": "2026-10-30T23:42:16.163314+00:00",
+      "http_status": 200,
+      "redirects": [
+        {
+          "status": 302,
+          "url": "https://github.com/rabii-chaarani/codebaseGraph/releases/download/v4.0.4/codebase-graph-4.0.4-macos-arm64.tar.gz"
+        }
+      ],
+      "final_url_without_query": "https://release-assets.githubusercontent.com/github-production-release-asset/1235031738/d539fc02-713b-45dd-be4e-4fbb1a174ad6",
+      "content_type": "application/octet-stream",
+      "content_length": "14386632",
+      "result": "downloaded",
+      "sha256": "f879194913e1e9b92494483ca7a79626792465531f5fcacfea7b2ffe37a7a75a",
+      "size_bytes": 14386632
+    }
+  ],
+  "limitations": [
+    {
+      "classification": "scope",
+      "detail": "No native binaries, installers, tests, builds, package builds, CI reruns or new supported-platform acceptance were executed by this audit. Existing exact-source native CI job/step conclusions were inspected; downloaded bytes were independently hashed and archive/package metadata inspected."
+    },
+    {
+      "classification": "resolved_procedure_drift",
+      "detail": "k_wiki architecture/release-verification and verifier reference retain stale four-target prose. Approved COD-103 rev0.2 at 7e79f7e924536f29d3212e83899b01c38afd39de and separate approval record restrict scope to macos-arm64/windows-x86_64. No four-target qualification is claimed; wiki not edited."
+    },
+    {
+      "classification": "nonblocking_tool_limit",
+      "detail": "the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway Exact CI-gate log request was not repeated. Original CI was identified independently by unique successful exact-SHA ci.yml main-push run and all corresponding artifact/provenance bytes; no gate-log content was used."
+    },
+    {
+      "classification": "authority",
+      "detail": "No Scryer binding/claim/ledger, Linear, memory, Git refs/settings/credentials, or repository writes. Parent-reported pending exact-root Scryer limitation remains unchanged, not represented as resolved."
+    },
+    {
+      "classification": "out_of_scope",
+      "detail": "Old partial v4.0.3 release/run 40851263747 attempt6 untouched and not reverified; prior registry version API403 is not absence evidence. Later main c60a00c/COD-54 and COD-103 future complete queue, Windows desktop qualification, COD-110 preparation and aggregate closure are not qualified by this baseline audit."
+    }
+  ],
+  "assumptions": [
+    "Selected source/version and baseline-audit endpoint are the parent assignment; native target scope was independently checked against committed approved spec and approval record. No product or delivery constants were changed."
+  ],
+  "execution_settings": {
+    "role_map_file": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+    "role_map_entry": "agents.evidence_verifier",
+    "mapped_model": "inherit",
+    "mapped_reasoning_effort": "inherit",
+    "host_dispatch": "Parent reports no explicit model or effort override; inherited settings accepted.",
+    "runtime_model_metadata": "unexposed",
+    "runtime_reasoning_metadata": "unexposed",
+    "other_roles_dispatched": false
+  },
+  "environment": {
+    "platform": "Darwin",
+    "machine": "arm64",
+    "python": "orchestration and standard-library archive/hash inspection only",
+    "network": "Public assets/crate/index downloaded anonymously by HTTPS; GitHub metadata/artifacts read with configured MCP/gh interfaces."
+  },
+  "writes": {
+    "allowed": "Network-download and diagnostic artifacts only under own session artifact directory",
+    "artifact_directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/release-baseline-v4.0.4",
+    "repository_writes": false,
+    "external_writes": false,
+    "credential_writes": false
+  },
+  "reusable_memory_assessment": "No memory write warranted or authorized: this is transient baseline evidence; existing procedure/contract already covers the method.",
+  "next_owner": "Engineer may consume the verified v4.0.4 two-target publication baseline for authorized reconciliation. Future queue/candidate/platform/release gates and existing aggregate closure remain with their assigned owners."
+}
