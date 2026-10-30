@@ -1,0 +1,28 @@
+{
+  "baseline": "5f68b41cebc327072cf71be770c9e5a9d1c0dad2",
+  "working_files": {
+    "Cargo.lock": {
+      "sha256": "0dad64ba6cbc462ff960c2c0ea645cb792013f5cadf2bad06723a05417ceb9a8",
+      "bytes": 52538
+    },
+    "crates/k-wiki/Cargo.toml": {
+      "sha256": "ae33600ffc67273b640969feb9cc0d9ad76128c02150034f2ba303cc432c811b",
+      "bytes": 1011
+    },
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification.md": {
+      "sha256": "e03319dd7611d19d43650ad3df0c5e8a78c28071c8ed9252683be0ee9a512736",
+      "bytes": 12438
+    },
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/archived-inputs.json": {
+      "sha256": "fed1f963d456b8634542f0f8c13649f9aa383c00d7dd2f7b034978de7bc5ac42",
+      "bytes": 1114
+    },
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/historical-reject-proxy.tar.gz": {
+      "sha256": "d37b3c86d978018d137375e7a30316b3ce779b2787df5037237032bdec892752",
+      "bytes": 998
+    }
+  },
+  "deleted_files": [
+    "docs/specs/CBG-PLAT-01/execution/cod53-windows-qualification-evidence/reject-proxy.py"
+  ]
+}

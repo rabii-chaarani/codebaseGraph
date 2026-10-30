@@ -1,0 +1,16 @@
+{
+  "baseline": "7038e66ff8271ffddc511f879cf8d28353a09b2d",
+  "files": {
+    "src/storage/locks.rs": "3334713035db60f24a86c34e3fbdaed0724943fcbdf96103c7bf1a39e163f25c",
+    "src/storage/maintenance_candidate.rs": "8e539db80a81de8fb674270adaf608a551954db86352b3e87ad674d6badac765"
+  },
+  "approval": "9bf9212d9266c33b389829925b456c1da7320886",
+  "evidence": {
+    "final_receipt_old_production": "FAIL",
+    "final_fixed_regressions": "15/15PASS"
+  },
+  "command_environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target"
+  },
+  "native_library_sha256": "a840ea7c538e67a8b9fc0d58495b5226dc9c0a5f2f144ff0c48c0f6ca1193ae6"
+}

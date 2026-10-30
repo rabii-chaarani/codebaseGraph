@@ -19,6 +19,19 @@ const ARTIFACT_KEY_BYTES: usize = 32;
 const ARTIFACT_KEY_HEX_LEN: usize = ARTIFACT_KEY_BYTES * 2;
 const ARTIFACT_IO_BUFFER_BYTES: usize = 64 * 1024;
 
+// Optional tracking errors must not change primary publication semantics.
+// Tests retain the precise stage in CI's log when a receipt precondition fails.
+macro_rules! trace_origin_result {
+    ($stage:literal, $operation:expr) => {{
+        let result = $operation;
+        #[cfg(test)]
+        if let Err(error) = &result {
+            eprintln!("artifact origin {} failed: {error}", $stage);
+        }
+        result
+    }};
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ArtifactWriteOutcome {
     Written,
@@ -160,13 +173,27 @@ impl ArtifactStore {
         use crate::storage::maintenance_controls::try_begin_root_publication;
         use crate::storage::maintenance_origin::{OriginWriter, ORIGIN_NAME};
         let root = RootedDirectory::open(&self.root, path_identity(&self.root)?)?;
-        let mut capability = mutation.artifact_root_producer_capability().unwrap_or(None);
+        let mut capability =
+            trace_origin_result!("capability", mutation.artifact_root_producer_capability())
+                .unwrap_or(None);
+        #[cfg(test)]
+        if capability.is_none() {
+            eprintln!(
+                "artifact origin capability unavailable: {:?}",
+                mutation.pending_reason()
+            );
+        }
         // Tracking is optional. Primary no-replace/equality semantics and actual
         // anchored transport are identical when controls are missing or busy.
         let publication = match capability.as_mut() {
-            Some(cap) => try_begin_root_publication(cap).unwrap_or(None),
+            Some(cap) => trace_origin_result!("publication lease", try_begin_root_publication(cap))
+                .unwrap_or(None),
             None => None,
         };
+        #[cfg(test)]
+        if publication.is_none() {
+            eprintln!("artifact origin publication lease unavailable");
+        }
         let prefix_name = &artifact_key.as_bytes()[..2];
         let prefix = match root.create_directory(prefix_name) {
             Ok(dir) => {
@@ -196,11 +223,15 @@ impl ArtifactStore {
         #[cfg(test)]
         producer_hook("created", &temp);
         let mut origin = publication.as_ref().and_then(|lease| {
-            OriginWriter::create(lease, &temp, &payload, key_bytes, true, true).ok()
+            trace_origin_result!(
+                "creation",
+                OriginWriter::create(lease, &temp, &payload, key_bytes, true, true)
+            )
+            .ok()
         });
         let receipt_identity = origin.as_ref().map(OriginWriter::receipt_identity);
         if let Some(origin) = origin.as_mut() {
-            let _ = origin.writing();
+            let _ = trace_origin_result!("writing", origin.writing());
         }
         let prepared = (|| -> Result<(u64, [u8; 32]), NativeError> {
             let bytes = write_envelope_file_and_sync(
@@ -212,7 +243,10 @@ impl ArtifactStore {
             temp.sync_namespace()?;
             root.sync_namespace()?;
             if let Some(origin) = origin.as_mut() {
-                let _ = origin.complete(&temp, &payload, bytes.0, bytes.1);
+                let _ = trace_origin_result!(
+                    "completion",
+                    origin.complete(&temp, &payload, bytes.0, bytes.1)
+                );
             }
             Ok(bytes)
         })();
@@ -280,7 +314,7 @@ impl ArtifactStore {
                 root.sync_namespace()?;
                 if let Some(lease) = publication.as_ref() {
                     if let Some(origin) = origin_publication {
-                        let _ = origin.published(lease, &temp);
+                        let _ = trace_origin_result!("publication", origin.published(lease, &temp));
                     }
                 }
                 Ok(ArtifactWriteOutcome::Written)

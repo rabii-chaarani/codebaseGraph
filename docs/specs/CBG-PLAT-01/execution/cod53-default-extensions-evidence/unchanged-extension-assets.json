@@ -1,0 +1,6 @@
+{
+  "assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension.xz": "a8a9d74be93a54482b6bb6df7c44ead6cb751f398b87b10c990d63e2da77910d",
+  "assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension.xz": "adf5e05d5a63c181a1be3e1e6c90a8ffb9901118171e7caf8f860af055868ada",
+  "assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension.xz": "e34b00df38ced0b09993112a6d3a2d76735ecea639bb7deaf4e804351343f891",
+  "assets/ladybug-extensions/0.19.0/osx_arm64/json/libjson.lbug_extension.xz": "7d39d0ba2fe3eb41364febc09fb45aca02b37bb64a06e3a3666bfb70f49792cd"
+}

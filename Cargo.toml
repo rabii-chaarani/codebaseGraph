@@ -1,6 +1,6 @@
 [package]
 name = "codebase-graph"
-version = "4.0.0"
+version = "4.0.4"
 edition = "2021"
 rust-version = "1.82"
 description = "Native codebaseGraph CLI and MCP server for local code knowledge graphs."
@@ -36,6 +36,7 @@ panic = "unwind"
 name = "codebase_graph"
 
 [features]
+default = ["bundled-windows-extensions"]
 bundled-windows-extensions = []
 
 [dependencies]

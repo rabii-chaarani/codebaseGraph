@@ -1,0 +1,215 @@
+{
+  "source_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+  "default_extension_tests": {
+    "pass": 2,
+    "failed": 0,
+    "filtered": 799,
+    "features": "defaults only",
+    "native_prerequisite": "official Ladybug0.19.0 shared"
+  },
+  "cargo_source_install": {
+    "pass": true,
+    "command": "cargo install --path exact-head-worktree --locked --offline --root private --bin codebase-graph",
+    "not_registry_install": true
+  },
+  "native_json_copy_fts": {
+    "create_pass": true,
+    "fresh_process_reopen_pass": true,
+    "positive_proxy_requests": 0,
+    "cache_hashes_match": true
+  },
+  "negative_download": {
+    "assertion_pass": true,
+    "observed_connect": [
+      {
+        "at": "2026-10-28T11:46:30.323676+00:00",
+        "request": "CONNECT extension.ladybugdb.com:443 HTTP/1.1\r\nAccept: */*\r\nHost: extension.ladybugdb.com\r\nUser-Agent: cpp-httplib/0.14.2\r\n\r\n",
+        "peer": [
+          "127.0.0.1",
+          63660
+        ]
+      }
+    ],
+    "no_payloads": true
+  },
+  "installed_graph_first": {
+    "pass": false,
+    "failure": "guardian READY timeout",
+    "state_preserved": "C:\\Users\\rcha0053\\pr158-qualification\\smoke-repo"
+  },
+  "installed_graph_short": {
+    "status": "passed",
+    "repo": "C:\\Users\\rcha0053\\q158",
+    "build_native_exit": 0,
+    "search_native_exit": 0,
+    "nodes": 23,
+    "edges": 35,
+    "search_result": "SampleService",
+    "barrier_limit": "kernel restart interrupted listener lifetime; see installed-short-build-binding.json"
+  },
+  "missing_compiler": {
+    "assertion": "missing-compiler-source-install",
+    "expected_head": "47808ac34bcff79882abee4ab796c16c0621ed05",
+    "worktree": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+    "command_argv": [
+      "cargo",
+      "install",
+      "--path",
+      "C:\\Users\\rcha0053\\Repositories\\cbg-pr158",
+      "--locked",
+      "--offline",
+      "--root",
+      "C:\\Users\\rcha0053\\pr158-qualification\\negative-compiler-install",
+      "--bin",
+      "codebase-graph"
+    ],
+    "bash_command": "cargo install --path 'C:/Users/rcha0053/Repositories/cbg-pr158' --locked --offline --root 'C:/Users/rcha0053/pr158-qualification/negative-compiler-install' --bin codebase-graph > 'C:/Users/rcha0053/pr158-qualification/missing-compiler-install.log' 2>&1",
+    "env_source": "C:\\Users\\rcha0053\\pr158-qualification\\native-shared-environment.json",
+    "env": {
+      "PRIME_AGENT_BASH_SHELL": "C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\bin\\bash.exe",
+      "PATH": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0;C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\VCPackages;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TestWindow;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\bin\\Roslyn;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Team Tools\\DiagnosticsHub\\Collector;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22621.0\\\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\\\MSBuild\\Current\\Bin\\amd64;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\Tools\\;C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\mingw64\\bin;C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\usr\\bin;C:\\Users\\rcha0053\\bin;C:\\Users\\rcha0053\\pr158-qualification\\rust-1.96.0\\bin;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\OpenSSH\\;C:\\Program Files (x86)\\Lithnet\\Lithnet.MpUpdate;%JAVA_HOME%\\bin;C:\\Program Files\\dotnet\\;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\NVIDIA Corporation\\NVIDIA app\\NvDLISR;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\WSL\\;C:\\Users\\rcha0053\\.local\\bin;C:\\Users\\rcha0053\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\rcha0053\\AppData\\Local\\GitHubDesktop\\bin;C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\cmd;C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Microsoft VS Code\\bin\\copilot-shim;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\bin;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\Ninja;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\Common7\\IDE\\VC\\Linux\\bin\\ConnectionManagerExe;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\vcpkg",
+      "LIB": "C:\\Users\\rcha0053\\pr158-qualification\\openssl-link;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\ATLMFC\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\lib\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.22621.0\\ucrt\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\\\lib\\10.0.22621.0\\\\um\\x64",
+      "INCLUDE": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\ATLMFC\\include;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\VS\\include;C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.22621.0\\ucrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.22621.0\\\\um;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.22621.0\\\\shared;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.22621.0\\\\winrt;C:\\Program Files (x86)\\Windows Kits\\10\\\\include\\10.0.22621.0\\\\cppwinrt",
+      "LIBPATH": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\ATLMFC\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\lib\\x64;C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\lib\\x86\\store\\references;C:\\Program Files (x86)\\Windows Kits\\10\\UnionMetadata\\10.0.22621.0;C:\\Program Files (x86)\\Windows Kits\\10\\References\\10.0.22621.0;C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319",
+      "VCToolsInstallDir": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\",
+      "WindowsSdkDir": "C:\\Program Files (x86)\\Windows Kits\\10\\",
+      "WindowsSDKVersion": "10.0.22621.0\\",
+      "VCINSTALLDIR": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\",
+      "VSINSTALLDIR": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\",
+      "CARGO_HOME": "C:\\Users\\rcha0053\\pr158-qualification\\cargo-home",
+      "CARGO_TARGET_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\negative-compiler-target",
+      "LBUG_LIBRARY_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0",
+      "LBUG_INCLUDE_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0",
+      "LIBCLANG_PATH": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin",
+      "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\Hostx64\\x64\\link.exe",
+      "CC": "C:\\Users\\rcha0053\\pr158-qualification\\missing-compiler\\cl.exe",
+      "CXX": "C:\\Users\\rcha0053\\pr158-qualification\\missing-compiler\\cl.exe",
+      "CARGO_BUILD_JOBS": "2",
+      "LBUG_SHARED": "1",
+      "OPENSSL_ROOT_DIR": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library",
+      "CMAKE_PREFIX_PATH": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library"
+    },
+    "started_utc": "2026-10-28T11:45:33.275761+00:00",
+    "finished_utc": "2026-10-28T11:46:12.690109+00:00",
+    "exit_code": 101,
+    "no_installed_exe": true,
+    "log": "C:\\Users\\rcha0053\\pr158-qualification\\missing-compiler-install.log",
+    "finished_time_basis": "completion notification observed",
+    "duration_seconds": 27.95300000000134,
+    "expected_negative_passed": true,
+    "failure_identity": "link-cplusplus v1.0.12 custom build -> cc-rs ToolNotFound -> explicit missing CXX cl.exe (Windows os error 3)",
+    "missing_compiler_exists_before": false,
+    "missing_compiler_exists_after": false,
+    "installed_exes": [],
+    "expected_installed_exe": "C:\\Users\\rcha0053\\pr158-qualification\\negative-compiler-install\\bin\\codebase-graph.exe",
+    "expected_installed_exe_exists": false,
+    "product_target_exe_exists": false,
+    "head_before": "47808ac34bcff79882abee4ab796c16c0621ed05",
+    "head_after": "47808ac34bcff79882abee4ab796c16c0621ed05",
+    "git_status_porcelain_before": "",
+    "git_status_porcelain_after": "",
+    "worktree_unchanged": true,
+    "log_sha256": "de2c40a4305d8087a5546c45ddd9318c84567ad55e8d2f253cd00ab09734ed0c",
+    "offline": true,
+    "download_lines_observed": false,
+    "compiler_fallback_observed": false,
+    "prerequisite_env_overrides": {
+      "CARGO_TARGET_DIR": "C:\\Users\\rcha0053\\pr158-qualification\\negative-compiler-target",
+      "CC": "C:\\Users\\rcha0053\\pr158-qualification\\missing-compiler\\cl.exe",
+      "CXX": "C:\\Users\\rcha0053\\pr158-qualification\\missing-compiler\\cl.exe"
+    },
+    "scope": "One expected-negative compiler assertion only; no missing-runtime or missing-native-library category qualification.",
+    "durable_memory_decision": "No wiki memory recorded: this is transient PR qualification evidence, not a new reusable repository fact."
+  },
+  "missing_runtime": {
+    "native_status": -1073741515,
+    "windows_status": "STATUS_DLL_NOT_FOUND",
+    "shell_exit": 127,
+    "scope": "absence of documented shared/OpenSSL prerequisite dirs; not VC absence"
+  },
+  "A16": "partial only: clear missing-runtime prerequisite diagnostic/category scope; guarded positive source-install/native/installed workflow verified",
+  "A03_A04": "not implemented/qualified by this PR subset",
+  "missing_native_library": {
+    "source_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+    "expected_negative_pass": true,
+    "exit_code": 101,
+    "error": "missing external lbug_shared.lib",
+    "configured_external_directory": "C:\\Users\\rcha0053\\pr158-qualification\\missing-native-library",
+    "directory_empty": true,
+    "no_installed_exe": true,
+    "log_sha256": "019ca3ae30d695dfa0fd2fbb2fa9db4d885823d9233a35cf93f054cf2bbe3358",
+    "scope": "explicit absent native import library supplied through declared LBUG external override; no source/compiler/runtime absence inferred"
+  },
+  "guarded_installed_build": {
+    "source_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+    "installed_exe_sha256": "95ad3781beadab8842c137a884a1e8d8f534b1d3c1af1288bffd968ba3fdf665",
+    "build": {
+      "native_exit": 0,
+      "outer_exit": 0,
+      "database_written": true,
+      "nodes": 23,
+      "edges": 35,
+      "cleanup_pending": false,
+      "search_backend": "disk_bm25_v1"
+    },
+    "search": {
+      "native_exit": 0,
+      "outer_exit": 0,
+      "expected_label": "SampleService",
+      "found": true,
+      "fresh_process": true
+    },
+    "cache": [
+      {
+        "extension": "json",
+        "path": "C:\\Users\\rcha0053\\q158bh\\.lbdb\\extension\\0.19.0\\win_amd64\\json\\libjson.lbug_extension",
+        "exists": true,
+        "sha256": "bdecb5201dd6abccc06ddc1f6cb4fcf0be3adb7aa3ddaac2f383ed129fca2b1f",
+        "expected_sha256": "bdecb5201dd6abccc06ddc1f6cb4fcf0be3adb7aa3ddaac2f383ed129fca2b1f"
+      },
+      {
+        "extension": "fts",
+        "path": "C:\\Users\\rcha0053\\q158bh\\.lbdb\\extension\\0.19.0\\win_amd64\\fts\\libfts.lbug_extension",
+        "exists": false,
+        "sha256": null,
+        "expected_sha256": "7f82059c8149bb7851420a9bfd0c46859e92efaeda0bcd5c65418d8f174edac4"
+      }
+    ],
+    "proxy": {
+      "ready": {
+        "port": 55319,
+        "pid": 29812,
+        "at": "2026-10-29T01:10:46.188294+00:00",
+        "policy": "loopback only, always502, no forwarding code"
+      },
+      "requests": [
+        {
+          "at": "2026-10-29T01:11:14.417133+00:00",
+          "method": "CONNECT",
+          "target": "extension.ladybugdb.com:443",
+          "client": [
+            "127.0.0.1",
+            54277
+          ]
+        },
+        {
+          "at": "2026-10-29T01:14:33.394695+00:00",
+          "method": "CONNECT",
+          "target": "extension.ladybugdb.com:443",
+          "client": [
+            "127.0.0.1",
+            53188
+          ]
+        }
+      ],
+      "positive_request_count": 0,
+      "negative_before_exit": 0,
+      "negative_after_exit": 0,
+      "empty_negative_profiles_after": true,
+      "guard_running_after_search": true,
+      "guard_stopped_by_owner_at": "2026-10-29T01:14:33.828140+00:00"
+    },
+    "scope": "installed product graph JSON build/reopen/diskBM25search under verified continuously owned rejecting downloader guard; real native FTS is separate same-candidate public-library fixture"
+  },
+  "D05d": "native Windows default-byte execution verified for documented prepared environment"
+}

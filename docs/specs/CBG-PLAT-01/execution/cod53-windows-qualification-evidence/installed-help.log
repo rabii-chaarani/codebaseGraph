@@ -1,0 +1,25 @@
+codebase-graph native CLI
+
+USAGE:
+  codebase-graph <command> [options]
+
+COMMANDS:
+  install                     Perform first-time graph setup and write .codebaseGraph/config.json
+  reinstall                   Remove existing graph state and run install again
+  uninstall                   Remove repo graph state, instructions, and MCP registrations
+  agent-hooks                 Install, remove, verify, or run repository agent-loop hooks
+  build                       Materialize a graph through the Rust native engine
+  plan                        Preview files that would rebuild, delete, skip, or ignore
+  watch                       Watch for file changes and refresh after a debounce window
+  check-health                Check whether the native graph database is readable
+  schema                      Return ontology schema, indexes, profiles, and helpers
+  syntax                      Return a language syntax catalog
+  query-helpers               Return named read-only graph query helpers
+  codebase-architecture-queries  Return the architecture-discovery query catalog
+  codebase-search             Search the code graph with compact context
+  codebase-context            Return compact graph context
+  graph-query                 Execute a restricted read-only graph query
+  mcp                         Serve codebaseGraph MCP over stdio or HTTP
+
+Run `codebase-graph <command> --help` for command options.
+NATIVE_EXIT_STATUS=0

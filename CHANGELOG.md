@@ -1,5 +1,43 @@
 # Changelog
 
+## [4.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.3...v4.0.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* **release:** upload verified assets before immutable publication ([#169](https://github.com/rabii-chaarani/codebaseGraph/issues/169)) ([a07e6d1](https://github.com/rabii-chaarani/codebaseGraph/commit/a07e6d1e322622b7cee5b5358816cb3d54c17647))
+
+## [4.0.3](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.2...v4.0.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **extensions:** enable default Windows bundled bytes (COD-53 subset) ([#158](https://github.com/rabii-chaarani/codebaseGraph/issues/158)) ([c4e9767](https://github.com/rabii-chaarani/codebaseGraph/commit/c4e9767d8f3ec92c40dd2f809b8421b8f9c78742))
+
+## [4.0.2](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.1...v4.0.2) (2026-10-28)
+
+
+### Bug Fixes
+
+* **storage:** isolate macOS nested directory scan cursors (COD-52) ([#157](https://github.com/rabii-chaarani/codebaseGraph/issues/157)) ([62dcb10](https://github.com/rabii-chaarani/codebaseGraph/commit/62dcb10305af07e24be7b1a960407f47135bf93c))
+
+## [4.0.1](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.1) (2026-10-27)
+
+This release replaces the unpublished 4.0.0 proposal ([#156](https://github.com/rabii-chaarani/codebaseGraph/pull/156)). Its production gate failed before any tag or release was created. The storage changes below are included because 3.0.4 remains the last published release.
+
+### ⚠ BREAKING CHANGES
+
+* **storage:** database open helpers return GuardedDatabase and reject path forms whose native resource identity cannot be proven. Connections borrow the guarded handle; canonical Windows extended paths retain their namespace.
+
+### Features
+
+* **storage:** automate graph disk cleanup and controlled legacy retirement ([#153](https://github.com/rabii-chaarani/codebaseGraph/pull/153)) ([75a99c8](https://github.com/rabii-chaarani/codebaseGraph/commit/75a99c840aa53e75a3f14df8dab41979c9efa19c))
+
+### Bug Fixes
+
+* **ci:** archive historical Python evidence helpers without changing their bytes, and check repository release policy in ordinary CI ([#159](https://github.com/rabii-chaarani/codebaseGraph/pull/159)) ([34eac4f](https://github.com/rabii-chaarani/codebaseGraph/commit/34eac4f8644adc046093babd84ee1fdbffdae853))
+* **release:** stop replaying old release overrides when a manifest version has no published tag, and stage the four public archive/checksum files for the two supported native targets ([#162](https://github.com/rabii-chaarani/codebaseGraph/pull/162)).
+
 ## [4.0.0](https://github.com/rabii-chaarani/codebaseGraph/compare/v3.0.4...v4.0.0) (2026-10-27)
 
 

@@ -1,0 +1,37 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.43s
+────────────
+ Nextest run ID ee57fc68-a85c-4d2d-a2b6-cd9600702fed with nextest profile: pr157
+    Starting 27 tests across 1 binary (819 tests skipped)
+        PASS [   0.510s] ( 1/27) codebase-graph artifact_store::tests::dc_origin_actual_fresh_publication_reuse_bounded_receipt_and_old_load_no_attestation
+        PASS [   0.241s] ( 2/27) codebase-graph artifact_store::tests::dc_origin_completed_receipt_remains_origin_only_for_nonfinite_loader_failure
+        PASS [   0.205s] ( 3/27) codebase-graph artifact_store::tests::dc_origin_created_temp_foreign_neighbor_stays_at_original_name_on_failure
+        PASS [   0.296s] ( 4/27) codebase-graph artifact_store::tests::dc_origin_missing_payload_is_republished_without_adopting_retained_directory
+        PASS [   0.356s] ( 5/27) codebase-graph artifact_store::tests::dc_origin_missing_payload_refuses_unstamped_or_spoofed_receipt_birth
+        PASS [   0.288s] ( 6/27) codebase-graph artifact_store::tests::dc_origin_optional_busy_publisher_still_writes_rooted_untracked_payload
+        PASS [   0.244s] ( 7/27) codebase-graph artifact_store::tests::dc_origin_optional_receipt_completion_failure_preserves_actual_published_payload
+        PASS [   0.299s] ( 8/27) codebase-graph artifact_store::tests::dc_origin_parallel_parser_publications_both_retain_real_creation_receipts
+        PASS [   0.376s] ( 9/27) codebase-graph artifact_store::tests::dc_origin_unproven_empty_or_different_canonical_is_never_moved_or_overwritten
+        PASS [   0.044s] (10/27) codebase-graph storage::locks::rooted_directory_tests::dc_directory_hints_keep_verified_directories_and_reject_file_aliases
+        PASS [   0.032s] (11/27) codebase-graph storage::locks::rooted_directory_tests::dc_fifo_creation_pin_blocks_inode_aba_and_rejects_aliases
+        PASS [   0.023s] (12/27) codebase-graph storage::locks::rooted_directory_tests::dc_fifo_creation_pin_never_adopts_pin_collision_or_regular_file
+        PASS [   0.035s] (13/27) codebase-graph storage::locks::rooted_directory_tests::dc_nonce_promotion_requires_the_exact_existing_creation_tag
+        PASS [   0.021s] (14/27) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_component_validation_is_noncreating_and_accepts_exact_key64
+        PASS [   0.022s] (15/27) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity
+        PASS [   0.032s] (16/27) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_namespace_no_replace_and_exact_empty_removal_preserve_foreign_entries
+        PASS [   0.028s] (17/27) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_nonfollowing_open_rejects_symlinks_and_hardlinked_controls
+        PASS [   0.021s] (18/27) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_operations_remain_on_actual_parent_after_public_name_substitution
+        PASS [   0.027s] (19/27) codebase-graph storage::locks::rooted_directory_tests::dc_rooted_readonly_payload_access_needs_no_payload_write_permission
+        PASS [   0.057s] (20/27) codebase-graph storage::locks::rooted_directory_tests::interrupted_directory_scan_restarts_on_the_pinned_root_after_name_replacement
+        PASS [   0.025s] (21/27) codebase-graph storage::locks::rooted_directory_tests::metadata_validation_preserves_private_creator_sharing_and_identity
+        PASS [   0.030s] (22/27) codebase-graph storage::locks::rooted_directory_tests::namespace_flush_accepts_an_existing_readonly_directory_anchor
+        PASS [   0.266s] (23/27) codebase-graph storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor
+        PASS [   8.803s] (24/27) codebase-graph storage::maintenance_candidate::tests::terminal_receipt_selection_reaches_late_directory_after_child_receipt_veto
+        PASS [  18.395s] (25/27) codebase-graph storage::maintenance_collector_tests::dc_s5_canonical_only_durable_detach_interruption_resumes_without_source_edit
+        PASS [  20.382s] (26/27) codebase-graph storage::maintenance_collector_tests::dc_s5_canonical_only_payload_unlink_interruption_resumes_without_source_edit
+        PASS [  20.069s] (27/27) codebase-graph storage::maintenance_collector_tests::dc_s5_canonical_only_real_producer_spare_key_is_collected_without_source_edit
+────────────
+     Summary [  71.149s] 27 tests run: 27 passed, 819 skipped

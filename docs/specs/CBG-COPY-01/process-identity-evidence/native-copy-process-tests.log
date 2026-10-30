@@ -1,0 +1,15 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+────────────
+ Nextest run ID c2454682-b32f-485d-81d6-a9c7e6c6cc75 with nextest profile: copy-pid
+    Starting 5 tests across 1 binary
+        SLOW [> 60.000s] (───) codebase-graph::copy_phase_process bounded_production_chunks_reopen_with_primary_keys_connectors_and_search
+        SLOW [>120.000s] (───) codebase-graph::copy_phase_process bounded_production_chunks_reopen_with_primary_keys_connectors_and_search
+        PASS [ 121.218s] (1/5) codebase-graph::copy_phase_process bounded_production_chunks_reopen_with_primary_keys_connectors_and_search
+        PASS [  26.980s] (2/5) codebase-graph::copy_phase_process jumbo_staged_row_survives_real_copy_and_fresh_process_read
+        SLOW [> 60.000s] (───) codebase-graph::copy_phase_process native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles
+        SLOW [>120.000s] (───) codebase-graph::copy_phase_process native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles
+        PASS [ 153.320s] (3/5) codebase-graph::copy_phase_process native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles
+        PASS [   0.021s] (4/5) codebase-graph::copy_phase_process phase_process_oracle_accepts_reused_pid_but_rejects_reused_process
+        PASS [   0.018s] (5/5) codebase-graph::copy_phase_process phase_process_oracle_rejects_missing_or_invalid_evidence
+────────────
+     Summary [ 301.558s] 5 tests run: 5 passed (2 slow), 0 skipped

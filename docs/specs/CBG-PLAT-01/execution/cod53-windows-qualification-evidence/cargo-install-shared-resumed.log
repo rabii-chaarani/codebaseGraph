@@ -1,0 +1,29 @@
+  Installing codebase-graph v4.0.0 (C:\Users\rcha0053\Repositories\cbg-pr158)
+   Compiling codebase-graph v4.0.0 (C:\Users\rcha0053\Repositories\cbg-pr158)
+warning: unused import: `crate::storage::atomic::write_json_atomically`
+  --> src\materialization_worker.rs:13:5
+   |
+13 | use crate::storage::atomic::write_json_atomically;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `home_dir` is never used
+    --> src\adapters\mcp\daemon.rs:1838:4
+     |
+1838 | fn home_dir() -> PathBuf {
+     |    ^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `workspace_fifo_pin_name` is never used
+    --> src\storage\maintenance_controls.rs:3434:15
+     |
+3434 | pub(crate) fn workspace_fifo_pin_name(binding: &WorkspaceOutputBinding) -> [u8; 69] {
+     |               ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `codebase-graph` (lib) generated 3 warnings (run `cargo fix --lib -p codebase-graph` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 2m 35s
+  Installing C:\Users\rcha0053\pr158-qualification\installed\bin\codebase-graph.exe
+   Installed package `codebase-graph v4.0.0 (C:\Users\rcha0053\Repositories\cbg-pr158)` (executable `codebase-graph.exe`)
+warning: be sure to add `C:\Users\rcha0053\pr158-qualification\installed\bin` to your PATH to be able to run the installed binaries

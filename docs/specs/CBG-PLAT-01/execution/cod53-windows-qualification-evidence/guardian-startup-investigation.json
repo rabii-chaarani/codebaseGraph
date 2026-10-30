@@ -1,0 +1,76 @@
+{
+  "source_head_from_existing_snapshot": "47808ac34bcff79882abee4ab796c16c0621ed05",
+  "failed_tree": "C:\\Users\\rcha0053\\pr158-qualification\\smoke-repo",
+  "failed_phase": "C:\\Users\\rcha0053\\pr158-qualification\\smoke-repo\\.codebaseGraph\\.direct-workers-b70a25bbaa526988\\phases\\phase-24060-2",
+  "receipt": {
+    "success": false,
+    "code": 1,
+    "signal": null,
+    "high_water_bytes": 0,
+    "cancelled": true,
+    "containment_empty": true,
+    "supervision_error": null
+  },
+  "phase_proof_timing": [
+    {
+      "phase": "phase-24060-0",
+      "created_utc": "2026-10-28T11:47:17.937195+00:00",
+      "last_written_utc": "2026-10-28T11:47:18.121571+00:00",
+      "creation_to_last_write_seconds": 0.1843763,
+      "has_ready": true,
+      "proof_path_chars_without_extended_prefix": 204,
+      "receipt": {
+        "success": true,
+        "code": 0,
+        "signal": null,
+        "high_water_bytes": 77639680,
+        "cancelled": false,
+        "containment_empty": true,
+        "supervision_error": null
+      },
+      "proof_sha256": "5f680bb542941b2ae8ae4600f2bc1ad0b1c04d878dd417289fde9f2016ead56d",
+      "receipt_sha256": "4ef79b4458ad733a89e6d99d958810f8218ecffbc8ad3bdab4fd6e8a05030500"
+    },
+    {
+      "phase": "phase-24060-1",
+      "created_utc": "2026-10-28T11:47:22.811939+00:00",
+      "last_written_utc": "2026-10-28T11:47:22.969610+00:00",
+      "creation_to_last_write_seconds": 0.1576713,
+      "has_ready": true,
+      "proof_path_chars_without_extended_prefix": 204,
+      "receipt": {
+        "success": true,
+        "code": 0,
+        "signal": null,
+        "high_water_bytes": 154697728,
+        "cancelled": false,
+        "containment_empty": true,
+        "supervision_error": null
+      },
+      "proof_sha256": "9aa2e94e2f53b1c88618a20b0486f0ae25636c10d559bb04c40d3a2bfcaa7d59",
+      "receipt_sha256": "db0ae12f558596985d4a16c5ab7e60be4b166847df65fec31115f8c72e8e8b05"
+    },
+    {
+      "phase": "phase-24060-2",
+      "created_utc": "2026-10-28T11:47:26.871749+00:00",
+      "last_written_utc": "2026-10-28T12:10:51.336008+00:00",
+      "creation_to_last_write_seconds": 1404.4642587,
+      "has_ready": false,
+      "proof_path_chars_without_extended_prefix": 204,
+      "receipt": {
+        "success": false,
+        "code": 1,
+        "signal": null,
+        "high_water_bytes": 0,
+        "cancelled": true,
+        "containment_empty": true,
+        "supervision_error": null
+      },
+      "proof_sha256": "2deed8b6f5783dee6b330026f4ddf5e613b6c48f708351ef1781d02ca0af1417",
+      "receipt_sha256": "f1334b5f8905be54b732438cf00214a8b8bac43590dcf4bf11d56c860facdbf9"
+    }
+  ],
+  "conclusion": "Guardian startup/control-publication delay followed by owner cancellation; receipt code 1 is teardown status, not evidence of a native loader or Ladybug worker failure.",
+  "root_cause": "Unproven. Wall timestamps jumped across recent tool calls; process/host suspension is possible. File timestamp gaps do not prove active I/O time. Path length, filesystem delay, suspension, and blocking coordination cannot be distinguished from preserved artifacts alone.",
+  "changes": "No source edits, timeout changes, reruns, or cleanup performed by investigation."
+}

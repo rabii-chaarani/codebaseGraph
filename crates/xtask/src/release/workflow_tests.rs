@@ -21,11 +21,30 @@ impl Fixture {
         let root = crate::unique_temp_dir("release_workflow").unwrap();
         fs::create_dir_all(root.join("bin")).unwrap();
         fs::create_dir_all(root.join("dist/metadata")).unwrap();
+        fs::create_dir_all(root.join("dist/release-assets")).unwrap();
+        fs::create_dir_all(root.join("assets")).unwrap();
+        fs::write(root.join("calls"), "").unwrap();
+        for target in crate::NATIVE_TARGETS {
+            let archive = target.archive_name("2.0.0");
+            fs::write(
+                root.join("dist/release-assets").join(&archive),
+                b"validated archive",
+            )
+            .unwrap();
+            fs::write(
+                root.join("dist/release-assets")
+                    .join(format!("{archive}.sha256")),
+                b"validated sidecar",
+            )
+            .unwrap();
+        }
         fs::write(
             root.join("bin/gh"),
             r##"#!/bin/bash
 set -euo pipefail
 echo "$*" >> "$RUNNER_TEMP/calls"
+release_file="$RUNNER_TEMP/release"
+assets="$RUNNER_TEMP/assets"
 case "$*" in
   *"actions/runs/42") printf '%s' "$MOCK_RUN" ;;
   *"git/ref/heads/main"*) printf '%s' "$MOCK_MAIN" ;;
@@ -43,13 +62,47 @@ case "$*" in
     elif [[ "$MOCK_REF" != 'null' ]]; then printf '%s' "$MOCK_REF"
     else printf '{"status":"404"}'; exit 1; fi ;;
   *"--method POST"*"/releases --input "*)
+    [[ ! -e "$release_file" ]] || { echo 'Duplicate release' >&2; exit 95; }
     cp "${!#}" "$RUNNER_TEMP/request"
-    printf '{"tag_name":"v2.0.0","draft":false,"prerelease":false}' > "$RUNNER_TEMP/release"
-    cat "$RUNNER_TEMP/release" ;;
+    jq --argjson freeze "$MOCK_FREEZE" '. + {id:7,immutable:((.draft | not) and $freeze)}' "$RUNNER_TEMP/request" > "$release_file"
+    [[ "$MOCK_LOST_CREATE" != true ]] || exit 92
+    cat "$release_file" ;;
+  *"--method PATCH"*"/releases/7 --input "*)
+    [[ "$(jq -r .immutable "$release_file")" != true ]] || exit 94
+    cp "${!#}" "$RUNNER_TEMP/publish-request"
+    jq --slurpfile patch "$RUNNER_TEMP/publish-request" --argjson freeze "$MOCK_FREEZE" '. + $patch[0] | .immutable = ((.draft | not) and $freeze)' "$release_file" > "$RUNNER_TEMP/updated"
+    mv "$RUNNER_TEMP/updated" "$release_file"
+    [[ "$MOCK_LOST_PUBLISH" != true ]] || exit 91
+    cat "$release_file" ;;
   *"releases/tags/v2.0.0")
-    if [[ -e "$RUNNER_TEMP/release" ]]; then cat "$RUNNER_TEMP/release"
+    # The real tag endpoint does not establish whether a draft exists.
+    if [[ -e "$release_file" && "$(jq -r .draft "$release_file")" == false ]]; then cat "$release_file"
     else printf '{"status":"404"}'; exit 1; fi ;;
-  *"releases?per_page=100") printf '%s' "$MOCK_RELEASES" ;;
+  *"releases/7/assets?per_page=100")
+    for asset in "$assets"/*; do
+      [[ -f "$asset" ]] || continue
+      jq -n --arg name "$(basename "$asset")" --argjson size "$(wc -c < "$asset")" '{id:$name,name:$name,size:$size}'
+    done | jq -s '[.]' ;;
+  *"releases/assets/"*)
+    name="${!#}"
+    name="${name##*/}"
+    cat "$assets/$name" ;;
+  *"releases/7") cat "$release_file" ;;
+  *"releases?per_page=100")
+    # Separate pages exercise authenticated paginated draft discovery.
+    pages="$MOCK_RELEASES"
+    if [[ -e "$RUNNER_TEMP/uploaded" ]]; then pages="$(jq --argjson late "$MOCK_LATE_RELEASES" '. + $late' <<<"$pages")"; fi
+    jq --slurpfile release <(if [[ -e "$release_file" ]]; then cat "$release_file"; fi) '. + [$release]' <<<"$pages" ;;
+  "release upload "*)
+    [[ "$(jq -r .immutable "$release_file")" != true ]] || { echo 'Immutable release rejects asset upload' >&2; exit 93; }
+    [[ "$MOCK_UPLOAD_FAIL" != true ]] || exit 90
+    shift 3
+    for file in "$@"; do
+      [[ "$file" != --* ]] || break
+      cp "$file" "$assets/$(basename "$file")"
+    done
+    touch "$RUNNER_TEMP/uploaded"
+    if [[ -n "$MOCK_CORRUPT" ]]; then printf 'invalidated bytes' > "$assets/$MOCK_CORRUPT"; fi ;;
   *) echo "Unexpected GitHub request: $*" >&2; exit 97 ;;
 esac
 "##,
@@ -81,6 +134,10 @@ esac
             ("MOCK_RUN",self.run.to_string()),("MOCK_PULLS",self.pulls.to_string()),
             ("MOCK_MAIN",MAIN.into()),("MOCK_COMPARISON","ahead".into()),
             ("MOCK_REF","null".into()),("MOCK_RELEASES","[]".into()),
+            ("AUTOMATIC","true".into()),("MOCK_FREEZE","true".into()),
+            ("MOCK_UPLOAD_FAIL","false".into()),("MOCK_CORRUPT","".into()),
+            ("MOCK_LOST_CREATE","false".into()),("MOCK_LOST_PUBLISH","false".into()),
+            ("MOCK_LATE_RELEASES","[]".into()),
             ("MOCK_PENDING_PULLS",self.pulls.to_string()),
             ("MOCK_PROPOSAL_RUNS",json!([{"workflow_runs":[{"path":".github/workflows/ci.yml","head_sha":MAIN,"head_branch":"main","event":"push","status":"completed","conclusion":"success"}]}]).to_string()),
             ("SOURCE_SHA",SHA.into()),("RELEASE_TAG","v2.0.0".into()),
@@ -90,6 +147,45 @@ esac
             ("GITHUB_STEP_SUMMARY",self.root.join("summary").display().to_string()),
         ]).env_remove("GH_TOKEN").env_remove("GITHUB_TOKEN");
         command.envs(overrides.iter().copied()).output().unwrap()
+    }
+
+    fn release(&self) -> Value {
+        serde_json::from_slice(&fs::read(self.root.join("release")).unwrap()).unwrap()
+    }
+
+    fn seed_release(&self, draft: bool, immutable: bool) {
+        fs::write(
+            self.root.join("ref"),
+            json!({"object":{"type":"commit","sha":SHA}}).to_string(),
+        )
+        .unwrap();
+        fs::write(self.root.join("release"), json!({"id":7,"tag_name":"v2.0.0","draft":draft,"prerelease":false,"immutable":immutable}).to_string()).unwrap();
+    }
+
+    fn seed_assets(&self) {
+        for entry in fs::read_dir(self.root.join("dist/release-assets")).unwrap() {
+            let entry = entry.unwrap();
+            fs::copy(
+                entry.path(),
+                self.root.join("assets").join(entry.file_name()),
+            )
+            .unwrap();
+        }
+    }
+
+    fn calls(&self) -> String {
+        fs::read_to_string(self.root.join("calls")).unwrap()
+    }
+
+    fn assert_no_writes(&self) {
+        let calls = self.calls();
+        assert!(
+            !calls.contains("--method POST")
+                && !calls.contains("--method PATCH")
+                && !calls.contains("--method DELETE")
+                && !calls.contains("release upload"),
+            "{calls}"
+        );
     }
 
     fn output(&self) -> String {
@@ -123,6 +219,33 @@ fn step(job: &str, name: &str) -> String {
         .as_str()
         .unwrap()
         .into()
+}
+
+fn publisher() -> String {
+    step("publish-release-assets", "Create only the verified release")
+}
+
+#[test]
+fn immutable_release_uploads_before_publication_and_retries_without_writes() {
+    let f = Fixture::new();
+    assert_success(&f.execute(&publisher(), &[]));
+    let release: Value =
+        serde_json::from_slice(&fs::read(f.root.join("release")).unwrap()).unwrap();
+    assert_eq!(release["draft"], false);
+    assert_eq!(release["immutable"], true);
+    assert_eq!(
+        fs::read_dir(f.root.join("assets")).unwrap().count(),
+        crate::NATIVE_TARGETS.len() * 2
+    );
+    fs::write(f.root.join("calls"), "").unwrap();
+    assert_success(&f.execute(&publisher(), &[]));
+    let calls = fs::read_to_string(f.root.join("calls")).unwrap();
+    assert!(
+        !calls.contains("--method POST")
+            && !calls.contains("--method PATCH")
+            && !calls.contains("release upload"),
+        "{calls}"
+    );
 }
 
 fn assert_success(output: &Output) {
@@ -209,7 +332,10 @@ fn publisher_targets_original_sha_and_is_idempotent() {
         serde_json::from_slice(&fs::read(f.root.join("request")).unwrap()).unwrap();
     assert_eq!(request["target_commitish"], SHA);
     assert_eq!(request["tag_name"], "v2.0.0");
-    assert_eq!(request["make_latest"], "true");
+    assert_eq!(request["draft"], true);
+    let published: Value =
+        serde_json::from_slice(&fs::read(f.root.join("publish-request")).unwrap()).unwrap();
+    assert_eq!(published["make_latest"], "true");
     assert!(!f.root.join("injected").exists());
     fs::write(f.root.join("calls"), "").unwrap();
     assert_success(&f.execute(&script, &[]));
@@ -233,8 +359,177 @@ fn publisher_rejects_conflicting_tags_and_does_not_regress_latest() {
         )],
     ));
     let request: Value =
-        serde_json::from_slice(&fs::read(f.root.join("request")).unwrap()).unwrap();
+        serde_json::from_slice(&fs::read(f.root.join("publish-request")).unwrap()).unwrap();
     assert_eq!(request["make_latest"], "false");
+}
+
+#[test]
+fn draft_partial_upload_resumes_and_latest_is_selected_at_publication() {
+    let f = Fixture::new();
+    f.seed_release(true, false);
+    let asset = crate::NATIVE_TARGETS[0].archive_name("2.0.0");
+    fs::write(f.root.join("assets").join(asset), b"partial old bytes").unwrap();
+    assert_success(&f.execute(
+        &publisher(),
+        &[(
+            "MOCK_LATE_RELEASES",
+            r#"[[{"tag_name":"v3.0.0","draft":false,"prerelease":false}]]"#,
+        )],
+    ));
+    assert_eq!(f.release()["draft"], false);
+    assert!(!f.calls().contains("--method POST"));
+    let patch: Value =
+        serde_json::from_slice(&fs::read(f.root.join("publish-request")).unwrap()).unwrap();
+    assert_eq!(patch["make_latest"], "false");
+}
+
+#[test]
+fn upload_or_remote_byte_failure_never_publishes() {
+    let archive = crate::NATIVE_TARGETS[0].archive_name("2.0.0");
+    let sidecar = format!("{archive}.sha256");
+    for overrides in [
+        vec![("MOCK_UPLOAD_FAIL", "true")],
+        vec![("MOCK_CORRUPT", archive.as_str())],
+        vec![("MOCK_CORRUPT", sidecar.as_str())],
+    ] {
+        let f = Fixture::new();
+        assert!(!f.execute(&publisher(), &overrides).status.success());
+        assert_eq!(f.release()["draft"], true);
+        assert!(!f.calls().contains("--method PATCH"));
+    }
+}
+
+#[test]
+fn immutable_missing_or_mismatched_assets_fail_without_mutation() {
+    for corrupt in [false, true] {
+        for sidecar in [false, true] {
+            let f = Fixture::new();
+            f.seed_release(false, true);
+            f.seed_assets();
+            let name = crate::NATIVE_TARGETS[0].archive_name("2.0.0");
+            let name = if sidecar {
+                format!("{name}.sha256")
+            } else {
+                name
+            };
+            let path = f.root.join("assets").join(name);
+            if corrupt {
+                // Keep size unchanged: matching metadata alone must not hide corruption.
+                let size = fs::metadata(&path).unwrap().len();
+                fs::write(path, vec![b'x'; size as usize]).unwrap();
+            } else {
+                fs::remove_file(path).unwrap();
+            }
+            assert!(!f.execute(&publisher(), &[]).status.success());
+            f.assert_no_writes();
+        }
+    }
+}
+
+#[test]
+fn accepted_writes_with_lost_responses_resume_without_replay() {
+    for lost in ["MOCK_LOST_CREATE", "MOCK_LOST_PUBLISH"] {
+        let f = Fixture::new();
+        assert!(!f.execute(&publisher(), &[(lost, "true")]).status.success());
+        let calls = f.calls();
+        assert_eq!(
+            calls
+                .matches("--method POST repos/owner/repo/releases --input")
+                .count(),
+            1
+        );
+        if lost == "MOCK_LOST_CREATE" {
+            assert_eq!(f.release()["draft"], true);
+            assert!(!calls.contains("release upload"));
+        } else {
+            assert_eq!(f.release()["immutable"], true);
+            assert_eq!(calls.matches("--method PATCH").count(), 1);
+        }
+        fs::write(f.root.join("calls"), "").unwrap();
+        assert_success(&f.execute(&publisher(), &[]));
+        assert!(!f.calls().contains("--method POST"));
+        if lost == "MOCK_LOST_PUBLISH" {
+            f.assert_no_writes();
+        }
+    }
+}
+
+#[test]
+fn existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases() {
+    for (draft, immutable) in [(true, false), (false, false), (false, true)] {
+        let f = Fixture::new();
+        f.seed_release(draft, immutable);
+        if immutable {
+            f.seed_assets();
+        }
+        assert_success(&f.execute(&publisher(), &[("AUTOMATIC", "false")]));
+        assert_eq!(f.release()["draft"], draft);
+        assert!(!f.calls().contains("--method POST") && !f.calls().contains("--method PATCH"));
+        if immutable {
+            f.assert_no_writes();
+        }
+    }
+    let f = Fixture::new();
+    f.seed_release(false, true);
+    assert!(!f
+        .execute(&publisher(), &[("AUTOMATIC", "false")])
+        .status
+        .success());
+    f.assert_no_writes();
+    let f = Fixture::new();
+    assert!(!f
+        .execute(&publisher(), &[("AUTOMATIC", "false")])
+        .status
+        .success());
+    f.assert_no_writes();
+}
+
+#[test]
+fn published_mutable_partial_assets_can_resume_without_republishing() {
+    let f = Fixture::new();
+    f.seed_release(false, false);
+    assert_success(&f.execute(&publisher(), &[]));
+    assert_eq!(f.release()["draft"], false);
+    assert!(f.calls().contains("release upload"));
+    assert!(!f.calls().contains("--method POST") && !f.calls().contains("--method PATCH"));
+    fs::write(f.root.join("calls"), "").unwrap();
+    assert_success(&f.execute(&publisher(), &[]));
+    f.assert_no_writes();
+}
+
+#[test]
+fn publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes() {
+    for kind in ["pr", "metadata", "prerelease", "ambiguous"] {
+        let f = Fixture::new();
+        f.seed_release(true, false);
+        let extra;
+        let overrides = match kind {
+            "pr" => vec![("VERIFIED_PR", "125")],
+            "metadata" => {
+                fs::write(
+                    f.root.join("dist/metadata/release-metadata.json"),
+                    json!({"source_sha":MAIN,"tag_name":"v2.0.0"}).to_string(),
+                )
+                .unwrap();
+                vec![]
+            }
+            "prerelease" => {
+                let mut release = f.release();
+                release["prerelease"] = json!(true);
+                fs::write(f.root.join("release"), release.to_string()).unwrap();
+                vec![]
+            }
+            _ => {
+                extra = json!([[f.release()]]).to_string();
+                vec![("MOCK_RELEASES", extra.as_str())]
+            }
+        };
+        assert!(
+            !f.execute(&publisher(), &overrides).status.success(),
+            "{kind}"
+        );
+        f.assert_no_writes();
+    }
 }
 
 #[test]
@@ -253,6 +548,41 @@ fn proposal_reports_pending_release_then_proceeds_after_finalization() {
     assert!(f.output().contains("ready=true"));
     assert_success(&f.execute(&script, &[("MOCK_PROPOSAL_RUNS", "[]")]));
     assert!(!f.output().contains("ready=true"));
+}
+
+#[test]
+fn staged_assets_match_the_supported_native_targets() {
+    let script = step("validate-artifacts", "Stage complete validated set");
+    for complete in [true, false] {
+        let f = Fixture::new();
+        let native = f.root.join("dist/native");
+        fs::create_dir_all(&native).unwrap();
+        for target in crate::NATIVE_TARGETS {
+            let archive = target.archive_name("2.0.0");
+            fs::write(native.join(&archive), b"validated archive").unwrap();
+            fs::write(native.join(format!("{archive}.sha256")), b"checksum").unwrap();
+        }
+        if !complete {
+            let archive = crate::NATIVE_TARGETS[0].archive_name("2.0.0");
+            fs::remove_file(native.join(format!("{archive}.sha256"))).unwrap();
+        }
+        fs::remove_dir_all(f.root.join("dist/release-assets")).unwrap();
+        let output = f.execute(&format!("set -euo pipefail\n{script}"), &[]);
+        assert_eq!(
+            output.status.success(),
+            complete,
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        if complete {
+            assert_eq!(
+                fs::read_dir(f.root.join("dist/release-assets"))
+                    .unwrap()
+                    .count(),
+                crate::NATIVE_TARGETS.len() * 2
+            );
+        }
+    }
 }
 
 #[test]

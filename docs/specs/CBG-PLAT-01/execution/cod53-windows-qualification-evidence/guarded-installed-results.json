@@ -1,0 +1,71 @@
+{
+  "source_sha": "47808ac34bcff79882abee4ab796c16c0621ed05",
+  "installed_exe_sha256": "95ad3781beadab8842c137a884a1e8d8f534b1d3c1af1288bffd968ba3fdf665",
+  "build": {
+    "native_exit": 0,
+    "outer_exit": 0,
+    "database_written": true,
+    "nodes": 23,
+    "edges": 35,
+    "cleanup_pending": false,
+    "search_backend": "disk_bm25_v1"
+  },
+  "search": {
+    "native_exit": 0,
+    "outer_exit": 0,
+    "expected_label": "SampleService",
+    "found": true,
+    "fresh_process": true
+  },
+  "cache": [
+    {
+      "extension": "json",
+      "path": "C:\\Users\\rcha0053\\q158bh\\.lbdb\\extension\\0.19.0\\win_amd64\\json\\libjson.lbug_extension",
+      "exists": true,
+      "sha256": "bdecb5201dd6abccc06ddc1f6cb4fcf0be3adb7aa3ddaac2f383ed129fca2b1f",
+      "expected_sha256": "bdecb5201dd6abccc06ddc1f6cb4fcf0be3adb7aa3ddaac2f383ed129fca2b1f"
+    },
+    {
+      "extension": "fts",
+      "path": "C:\\Users\\rcha0053\\q158bh\\.lbdb\\extension\\0.19.0\\win_amd64\\fts\\libfts.lbug_extension",
+      "exists": false,
+      "sha256": null,
+      "expected_sha256": "7f82059c8149bb7851420a9bfd0c46859e92efaeda0bcd5c65418d8f174edac4"
+    }
+  ],
+  "proxy": {
+    "ready": {
+      "port": 55319,
+      "pid": 29812,
+      "at": "2026-10-29T01:10:46.188294+00:00",
+      "policy": "loopback only, always502, no forwarding code"
+    },
+    "requests": [
+      {
+        "at": "2026-10-29T01:11:14.417133+00:00",
+        "method": "CONNECT",
+        "target": "extension.ladybugdb.com:443",
+        "client": [
+          "127.0.0.1",
+          54277
+        ]
+      },
+      {
+        "at": "2026-10-29T01:14:33.394695+00:00",
+        "method": "CONNECT",
+        "target": "extension.ladybugdb.com:443",
+        "client": [
+          "127.0.0.1",
+          53188
+        ]
+      }
+    ],
+    "positive_request_count": 0,
+    "negative_before_exit": 0,
+    "negative_after_exit": 0,
+    "empty_negative_profiles_after": true,
+    "guard_running_after_search": true,
+    "guard_stopped_by_owner_at": "2026-10-29T01:14:33.828140+00:00"
+  },
+  "scope": "installed product graph JSON build/reopen/diskBM25search under verified continuously owned rejecting downloader guard; real native FTS is separate same-candidate public-library fixture"
+}

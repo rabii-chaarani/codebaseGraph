@@ -61,9 +61,12 @@ tests serially, and a target's release artifact is built only after all its test
    The merge SHA must still be in main history; it need not be the latest main commit.
 4. Immutable metadata must agree across the root package, wiki package/dependency, release manifest, and changelog.
    Production checks and both native artifacts are validated before any tag or release is created.
-5. The single publisher creates only `vX.Y.Z` at that SHA, uploads the validated archives, and publishes the crate.
-   Existing matching tags/releases can be resumed. Conflicting tags fail without being moved. Delayed older versions
-   do not replace newer versions as GitHub's latest release.
+5. The single publisher creates only `vX.Y.Z` at that SHA and creates or resumes its draft GitHub Release.
+   It uploads the validated archives and checksum sidecars, reads every expected asset back, and compares its size and
+   bytes with the staged validated set before publishing the draft. Only then may the crate publish.
+   Existing matching tags/releases can be resumed. A complete matching immutable release is verified without writes;
+   missing or mismatched immutable assets fail without attempting repair. Conflicting tags fail without being moved.
+   Latest-version selection occurs when the draft is published, so delayed older versions do not replace newer ones.
 6. After both publishers succeed, mark that PR `autorelease: tagged`, remove `autorelease: pending`, and run proposal
    maintenance if current main has successful CI. Ordinary runs never tag an outstanding release as a side effect.
 
@@ -117,6 +120,41 @@ package-owned fixture smoke results. Templates and assets must be loaded from
 the packaged artifact; a smoke run that relies on the repository checkout is
 not sufficient. Generated `.kwiki/` state is never included in an archive.
 
+## Windows Cargo source installs
+
+For Windows x86_64, ordinary `cargo install codebase-graph` uses the default
+`bundled-windows-extensions` feature. The binary carries the existing Ladybug
+0.19.0 JSON and FTS extension bytes; no extension feature flag or runtime
+extension download is needed. Explicit `--no-default-features` opts out of these
+bytes. The workspace `k-wiki` build inherits the root dependency's defaults;
+`k-wiki` is not published as a separate crates.io package.
+
+Cargo is still a native source build, not a self-contained Windows distribution.
+It needs Rust and an MSVC C/C++ build environment, including the Windows SDK,
+for the vendored grammar. Ladybug's source-build fallback additionally uses
+CMake and Ninja and needs compatible native headers/libraries. The final
+native link needs OpenSSL libraries; runtime extension loading needs compatible
+OpenSSL 3 (`libssl-3-x64.dll`, `libcrypto-3-x64.dll`) and the required Visual C++
+runtime libraries. Bundled extension bytes do not supply those DLLs. Missing
+compiler, native-library or DLL prerequisites are errors, not permission to
+download extensions or switch installation routes silently.
+
+The default-feature change is tracked by [COD-53](https://linear.app/codebasegraph/issue/COD-53)
+under [CBG-PLAT-01 revision 0.10, R02/A16](https://github.com/rabii-chaarani/codebaseGraph/blob/1a9db7b558b60248888408daa6268a3b45f2f0df/docs/specs/CBG-PLAT-01/spec.md#a16).
+Before claiming source-install qualification, execute the plain install on a
+documented supported Windows 11 x86_64 build environment. Record the exact
+source/package, compiler, native-library and DLL prerequisites. Then use an
+isolated empty extension cache with runtime extension downloads disabled and
+verify real JSON/FTS loading, graph build, reopen and search. A prepared Windows
+Server CI build or a feature-selection check alone is not this qualification.
+
+Prefer the official prebuilt route if you do not want a native build environment.
+The separate D01 prebuilt-runtime work remains gated on permitted compatible
+runtime supply and controlled loading. This source-install guidance neither
+replaces that policy nor claims that the current prebuilt archive is qualified.
+No exact Windows source-build recipe or clean-consumer execution is claimed by
+the default-feature change alone.
+
 Each native archive must contain:
 
 - `codebase-graph` / `codebase-graph.exe`
@@ -159,7 +197,8 @@ Dispatch `Release` on `main` with exactly one target:
 - `resume-ci-run`: the successful main-push CI run of a trusted release PR merge. This can create a missing tag/release
   and resumes both native assets and crates.io. It reuses the exact CI run and requires `artifact-source: promote`.
 - `publish-existing-tag`: an existing strict `vX.Y.Z` tag. This legacy mode publishes native assets only and searches
-  for successful main-push CI at its exact SHA. It never publishes a crate or changes release PR labels.
+  for successful main-push CI at its exact SHA. It requires an existing GitHub Release, never publishes a draft or
+  crate, and never changes release PR labels. Immutable assets must already match the validated set.
 
 `dry-run` defaults to `true`. It resolves identity, runs the production gate, acquires artifacts, and validates the full
 archive/checksum/provenance set without creating tags, releases, labels, proposals, or publishing crates. After checking
@@ -171,7 +210,9 @@ recovery never substitute a run or rebuild missing artifacts.
 
 To recover a blocked release, locate its merge SHA and successful `CI` run, dispatch a `resume-ci-run` dry-run, then
 publish that exact target. Do not clear the pending label to bypass the block. Once finalization succeeds, later merged
-changes can enter the next release PR. Repeating the same target is safe after a partial upload or lost response.
+changes can enter the next release PR. Repeating the same target reconciles a partial draft upload or lost response;
+accepted writes are not retried automatically. A failed upload or readback leaves a draft unpublished and blocks crate
+publication and finalization. A published mutable release retains assets-only repair; a frozen release is verify-only.
 
 The macOS installer validates the exact five-file payload and every checksum,
 then probes `codebase-graph --help` and `k-wiki --version` without inherited
@@ -197,6 +238,23 @@ After upgrading from a release archive:
 3. Restart Codex or the relevant MCP client so it reloads the updated repository-local registration.
 
 To force a specific next version, merge a commit whose body contains a `Release-As: X.Y.Z` trailer.
+
+### Unpublished 4.0.0 recovery
+
+Release PR #156 merged as 4.0.0, but its immutable source failed the production repository gate before publication.
+PR #159 corrected that gate on later main; it cannot change the old release source. PR #162 therefore proposes 4.0.1
+from corrected main instead of retrying or tagging the failed 4.0.0 source. The old proposal remains unpublished, not tagged.
+
+`release-please-config.json` uses that failed merge, `7038e66ff8271ffddc511f879cf8d28353a09b2d`, as its
+`bootstrap-sha` commit cutoff. When the manifest's tag is missing, this prevents a full-history scan from replaying
+an old `Release-As: 1.2.2` trailer. The cutoff is not evidence of publication and does not authorize a tag, CI run,
+or artifact source. Once the manifest version has a real release tag, release-please ignores the bootstrap cutoff.
+No permanent `release-as` version pin is used. The 4.0.1 notes explicitly include the unpublished storage change;
+all existing exact-SHA CI, production, artifact, and crate-publication gates still apply to the new release merge.
+
+Until this correction reaches main, another ordinary main merge can make the old generator overwrite the open PR.
+Reapply the reviewed correction if that happens; do not publish a placeholder 4.0.0 tag or clear pending labels to
+work around proposal generation. Publication and maintainer merge approval remain separate from this repair.
 
 ## Conda-Forge Release Path
 

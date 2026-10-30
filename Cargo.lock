@@ -187,7 +187,7 @@ dependencies = [
 
 [[package]]
 name = "codebase-graph"
-version = "4.0.0"
+version = "4.0.4"
 dependencies = [
  "cc",
  "fs2",
@@ -777,7 +777,7 @@ dependencies = [
 
 [[package]]
 name = "k-wiki"
-version = "4.0.0"
+version = "4.0.4"
 dependencies = [
  "ammonia",
  "axum",
@@ -1118,9 +1118,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.13.4"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9f068eba8e7071c5f9511831b44f32c740d5adf574e990f946ddb53db2f314e"
+checksum = "278e9268c93b9e498a2da46c34d90ba93a3255eb99009646398f34bc73ab36eb"
 dependencies = [
  "bitflags",
  "memchr",
@@ -1956,7 +1956,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "4.0.0"
+version = "4.0.4"
 dependencies = [
  "flate2",
  "serde",

@@ -1,0 +1,52 @@
+[
+  {
+    "path": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158\\Cargo.toml",
+    "size": 2400,
+    "sha256": "3d6d1f94a1dc5333d921ddf81785989585fefa7488d3c548c2796a0ac14a82f5"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158\\Cargo.lock",
+    "size": 54607,
+    "sha256": "872a1ae44699845609e9c585b3da8e701a31b037acb700707162239fb76ef5df"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\Repositories\\cbg-pr158\\src\\db_writer\\extensions.rs",
+    "size": 5406,
+    "sha256": "69abf1ca8854fc0d21dd5bfec00e08e54b19a0b339bd897bec31ec4dc45d0c2c"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-0.19.0\\lbug.lib",
+    "size": 1418467394,
+    "sha256": "70bbc4245929e0d34a1645b2bb8113d78b49ba903dc3cde5e6be33d50fc42dd3"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-0.19.0\\lbug.hpp",
+    "size": 342729,
+    "sha256": "daed54339332e19487ae7ae211c82c88b1f639275feb331ce8015aa1f1381495"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-0.19.0\\lbug.h",
+    "size": 79108,
+    "sha256": "3d5114d0863b3dab3b28bd2fec97a52e6cf669213739921a01814a5bbf5525eb"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\lib\\libssl.lib",
+    "size": 141838,
+    "sha256": "5dcc575b82a79afff40a6c809fb3a7a09cbc1e0623f1c363a0ff1b0d30501cf0"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\lib\\libcrypto.lib",
+    "size": 1280338,
+    "sha256": "f19b0befaf9db067fbffef93f3bebaa5bb93bfb680e9c4d5516f42d3613e6164"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin\\libssl-3-x64.dll",
+    "size": 1247744,
+    "sha256": "4158ad85699d9c5428b62778883b16b6c21b3b7da11fe60a0cc24ea37687a9fd"
+  },
+  {
+    "path": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin\\libcrypto-3-x64.dll",
+    "size": 6459392,
+    "sha256": "124c5f40a6cf0e642f9d92784dd66314fd548b4fdf93c543bf478e71e1209f9d"
+  }
+]

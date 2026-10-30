@@ -375,7 +375,7 @@ jobs:
           mkdir -p dist/release-assets
           while IFS= read -r -d '' artifact; do cp "$artifact" dist/release-assets/; done < <(find dist/native -type f -name 'codebase-graph-*.tar.gz' -print0)
           while IFS= read -r -d '' checksum; do cp "$checksum" dist/release-assets/; done < <(find dist/native -type f -name 'codebase-graph-*.tar.gz.sha256' -print0)
-          test "$(find dist/release-assets -type f | wc -l | tr -d ' ')" = '8'
+          test "$(find dist/release-assets -type f | wc -l | tr -d ' ')" = '4'
       - name: Upload validated release set
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -433,18 +433,20 @@ jobs:
           name: validated-release-assets
           path: dist/release-assets
       - name: Create only the verified release
-        if: needs.release-target.outputs.automatic == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PUBLISH_TOKEN || github.token }}
+          AUTOMATIC: ${{ needs.release-target.outputs.automatic }}
           SOURCE_SHA: ${{ needs.release-target.outputs.source-sha }}
           RELEASE_TAG: ${{ needs.release-target.outputs.tag-name }}
           RELEASE_PR: ${{ needs.release-target.outputs.release-pr }}
           VERIFIED_PR: ${{ steps.verified.outputs.release-pr }}
         run: |
           set -euo pipefail
-          [[ "$VERIFIED_PR" == "$RELEASE_PR" ]] || { echo 'Release PR identity changed.' >&2; exit 1; }
-          jq -e --arg sha "$SOURCE_SHA" --arg tag "$RELEASE_TAG" '.source_sha == $sha and .tag_name == $tag' dist/metadata/release-metadata.json >/dev/null
+          if [[ "$AUTOMATIC" == 'true' ]]; then
+            [[ "$VERIFIED_PR" == "$RELEASE_PR" ]] || { echo 'Release PR identity changed.' >&2; exit 1; }
+            jq -e --arg sha "$SOURCE_SHA" --arg tag "$RELEASE_TAG" '.source_sha == $sha and .tag_name == $tag' dist/metadata/release-metadata.json >/dev/null
+          fi
           optional_get() {
             local response
             if response="$(gh api "$1" 2>"$RUNNER_TEMP/release-api-error")"; then
@@ -456,8 +458,14 @@ jobs:
               return 1
             fi
           }
+          # Authenticated listing includes drafts that get-release-by-tag can omit.
+          releases="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100")"
+          matches="$(jq --arg tag "$RELEASE_TAG" '[.[][] | select(.tag_name == $tag)]' <<<"$releases")"
+          [[ "$(jq length <<<"$matches")" -le 1 ]] || { echo 'Ambiguous release tag.' >&2; exit 1; }
+          release="$(jq '.[0] // null' <<<"$matches")"
           ref="$(optional_get "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG")"
           if [[ "$ref" == 'null' ]]; then
+            [[ "$AUTOMATIC" == 'true' && "$release" == 'null' ]] || { echo 'Existing release tag is missing.' >&2; exit 1; }
             gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$RELEASE_TAG" -f "sha=$SOURCE_SHA" >/dev/null || {
               echo 'Cannot create the exact tag. Historical workflow changes may require RELEASE_PUBLISH_TOKEN with Contents and Workflows write permissions.' >&2; exit 1;
             }
@@ -468,27 +476,51 @@ jobs:
             tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" --jq '.object.sha')"
           fi
           [[ "$tag_sha" == "$SOURCE_SHA" ]] || { echo 'Existing release tag points to a different commit.' >&2; exit 1; }
-          release="$(optional_get "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG")"
           if [[ "$release" == 'null' ]]; then
+            [[ "$AUTOMATIC" == 'true' ]] || { echo 'Existing-tag recovery requires an existing release.' >&2; exit 1; }
+            jq '{tag_name, target_commitish: .source_sha, name: .tag_name, body: .notes,
+                 draft: true, prerelease: false}' dist/metadata/release-metadata.json > "$RUNNER_TEMP/release-request.json"
+            release="$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases" --input "$RUNNER_TEMP/release-request.json")"
+          fi
+          jq -e --arg tag "$RELEASE_TAG" '.tag_name == $tag and .prerelease == false and (.draft | type == "boolean") and (.id | type == "number")' <<<"$release" >/dev/null
+          release_id="$(jq -r .id <<<"$release")"
+          assets=(dist/release-assets/codebase-graph-*.tar.gz dist/release-assets/codebase-graph-*.tar.gz.sha256)
+          verify_assets() {
+            local listing asset name entry asset_id expected_size
+            listing="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases/$release_id/assets?per_page=100")" || return 1
+            for asset in "${assets[@]}"; do
+              [[ -f "$asset" ]] || return 1
+              name="$(basename "$asset")"
+              expected_size="$(wc -c < "$asset" | tr -d ' ')"
+              entry="$(jq --arg name "$name" --argjson size "$expected_size" '[.[][] | select(.name == $name)] | select(length == 1 and .[0].size == $size) | .[0]' <<<"$listing")"
+              [[ -n "$entry" ]] || { echo "Missing or wrong-sized release asset: $name" >&2; return 1; }
+              asset_id="$(jq -r .id <<<"$entry")"
+              gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" > "$RUNNER_TEMP/release-asset" || return 1
+              cmp -s "$asset" "$RUNNER_TEMP/release-asset" || { echo "Release asset bytes differ: $name" >&2; return 1; }
+            done
+          }
+          if [[ "$(jq -r .draft <<<"$release")" == 'false' ]]; then
+            if [[ "$(jq -r .immutable <<<"$release")" == 'true' ]]; then
+              verify_assets || { echo 'Immutable release is incomplete or mismatched; no mutation attempted.' >&2; exit 1; }
+              exit 0
+            fi
+            # Preserve mutable published-release recovery, but skip matching assets.
+            if verify_assets; then exit 0; fi
+          fi
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          verify_assets || { echo 'Remote asset verification failed; release was not published.' >&2; exit 1; }
+          if [[ "$AUTOMATIC" == 'true' && "$(jq -r .draft <<<"$release")" == 'true' ]]; then
+            # Decide latest at publication, not when the draft was first created.
             releases="$(gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100")"
             latest="$(jq -r --arg tag "$RELEASE_TAG" \
               '($tag | ltrimstr("v") | split(".") | map(tonumber)) as $version |
                [.[][] | select(.draft == false and .prerelease == false)
                 | .tag_name | select(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$"))
                 | ltrimstr("v") | split(".") | map(tonumber)] | all(. < $version)' <<<"$releases")"
-            jq --arg latest "$latest" \
-              '{tag_name, target_commitish: .source_sha, name: .tag_name, body: .notes,
-                draft: false, prerelease: false, make_latest: $latest}' \
-              dist/metadata/release-metadata.json > "$RUNNER_TEMP/release-request.json"
-            gh api --method POST "repos/$GITHUB_REPOSITORY/releases" --input "$RUNNER_TEMP/release-request.json" >/dev/null
-          else
-            jq -e --arg tag "$RELEASE_TAG" '.tag_name == $tag and .draft == false and .prerelease == false' <<<"$release" >/dev/null
+            jq -n --arg latest "$latest" '{draft:false,make_latest:$latest}' > "$RUNNER_TEMP/release-publish.json"
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" --input "$RUNNER_TEMP/release-publish.json" >/dev/null
+            gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" | jq -e --arg tag "$RELEASE_TAG" '.tag_name == $tag and .draft == false and .prerelease == false' >/dev/null
           fi
-      - name: Upload complete native asset set
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ needs.release-target.outputs.tag-name }}" dist/release-assets/codebase-graph-*.tar.gz dist/release-assets/codebase-graph-*.tar.gz.sha256 --clobber --repo "$GITHUB_REPOSITORY"
 
   publish-crate:
     name: publish crates.io package

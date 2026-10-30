@@ -169,6 +169,67 @@ fn traces(directory: &Path) -> Vec<Value> {
         .collect()
 }
 
+fn process_instance(event: &Value) -> Result<&str, &'static str> {
+    if !event["pid"]
+        .as_u64()
+        .is_some_and(|pid| pid > 0 && pid <= u32::MAX as u64)
+    {
+        return Err("phase trace has no valid diagnostic PID");
+    }
+    let instance = event["process_instance"]
+        .as_str()
+        .ok_or("phase trace has no process instance")?;
+    if instance.len() != 64
+        || !instance
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err("phase trace has an invalid process instance");
+    }
+    Ok(instance)
+}
+
+fn distinct_phase_processes(events: &[&Value]) -> Result<(), &'static str> {
+    if events.len() < 2 {
+        return Err("process isolation needs multiple phase records");
+    }
+    let mut instances = BTreeSet::new();
+    for event in events {
+        if !instances.insert(process_instance(event)?) {
+            return Err("multiple phases executed in one process instance");
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn phase_process_oracle_accepts_reused_pid_but_rejects_reused_process() {
+    let first = json!({"pid": 42, "process_instance": "a".repeat(64)});
+    let next = json!({"pid": 42, "process_instance": "b".repeat(64)});
+    assert!(distinct_phase_processes(&[&first, &next]).is_ok());
+    assert!(distinct_phase_processes(&[&first, &first]).is_err());
+    let changed_pid = json!({"pid": 43, "process_instance": "a".repeat(64)});
+    assert!(distinct_phase_processes(&[&first, &changed_pid]).is_err());
+}
+
+#[test]
+fn phase_process_oracle_rejects_missing_or_invalid_evidence() {
+    let valid = json!({"pid": 42, "process_instance": "a".repeat(64)});
+    assert!(distinct_phase_processes(&[]).is_err());
+    assert!(distinct_phase_processes(&[&valid]).is_err());
+    for invalid in [
+        json!({"pid": 43}),
+        json!({"process_instance": "b".repeat(64)}),
+        json!({"pid": 0, "process_instance": "b".repeat(64)}),
+        json!({"pid": "43", "process_instance": "b".repeat(64)}),
+        json!({"pid": 43, "process_instance": ""}),
+        json!({"pid": 43, "process_instance": "B".repeat(64)}),
+        json!({"pid": 43, "process_instance": "g".repeat(64)}),
+    ] {
+        assert!(distinct_phase_processes(&[&valid, &invalid]).is_err());
+    }
+}
+
 fn bundle_hashes(db: &Path, manifest: &Path) -> BTreeMap<PathBuf, String> {
     let mut paths = vec![db.to_path_buf(), manifest.to_path_buf()];
     let value: Value = serde_json::from_slice(&fs::read(manifest).unwrap()).unwrap();
@@ -236,10 +297,7 @@ fn native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles() {
         assert!(events[1].get("buffer_pool_bytes").is_none());
         assert!(events[1].get("worker_memory_bytes").is_none());
         assert!(events[1]["staged_file_bytes"].as_u64().unwrap() > 0);
-        assert_ne!(
-            events[0]["pid"], events[1]["pid"],
-            "phases must actually be isolated"
-        );
+        assert_eq!(distinct_phase_processes(&[&events[0], &events[1]]), Ok(()));
         assert_eq!(fixture.paths(), (db.clone(), manifest.clone()));
         assert_eq!(bundle_hashes(&db, &manifest), before);
         assert!(fixture
@@ -258,7 +316,11 @@ fn native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles() {
         assert!(!fixture
             .search("failed_marker")
             .contains(&"failed_marker".to_owned()));
-        assert_ne!(traces(&recovery_trace)[0]["pid"], events[0]["pid"]);
+        let recovered_events = traces(&recovery_trace);
+        assert_eq!(
+            distinct_phase_processes(&[&recovered_events[0], &events[0]]),
+            Ok(())
+        );
         fs::remove_dir_all(&fixture.root).unwrap();
     }
 }
@@ -414,14 +476,7 @@ fn bounded_production_chunks_reopen_with_primary_keys_connectors_and_search() {
     assert!(!events[first_connector..]
         .iter()
         .any(|event| event["phase_kind"] == "index"));
-    assert_eq!(
-        copies
-            .iter()
-            .map(|event| event["pid"].as_u64().unwrap())
-            .collect::<BTreeSet<_>>()
-            .len(),
-        copies.len()
-    );
+    assert_eq!(distinct_phase_processes(&copies), Ok(()));
 
     let (db_path, _) = fixture.paths();
     let database = lbug::Database::new(

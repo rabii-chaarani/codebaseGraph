@@ -1,0 +1,10 @@
+49d14691a82567d05d52dd8707db786ee59778ea
+100644 320cbc6ac3c734475ab1e3e9525cb7b2b972e7fd 1	crates/k-wiki/Cargo.toml
+100644 c6e56b9e7976c26b1efe5e5ac9ee238ad2b7cd7b 2	crates/k-wiki/Cargo.toml
+100644 6d43dcbd25fab4f244ac22cd28d77935500cdcd6 3	crates/k-wiki/Cargo.toml
+
+Auto-merging Cargo.lock
+Auto-merging Cargo.toml
+Auto-merging crates/k-wiki/Cargo.toml
+CONFLICT (content): Merge conflict in crates/k-wiki/Cargo.toml
+Auto-merging docs/release.md

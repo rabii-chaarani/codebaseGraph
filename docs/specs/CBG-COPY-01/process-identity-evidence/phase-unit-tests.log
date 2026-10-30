@@ -1,0 +1,19 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s
+────────────
+ Nextest run ID d548c202-96ad-4f3e-830b-09a527a7bddb with nextest profile: copy-pid
+    Starting 13 tests across 1 binary (833 tests skipped)
+        PASS [   0.036s] ( 1/13) codebase-graph db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes
+        PASS [   0.021s] ( 2/13) codebase-graph db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit
+        PASS [   0.020s] ( 3/13) codebase-graph db_writer::phase::tests::error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily
+        PASS [   0.024s] ( 4/13) codebase-graph db_writer::phase::tests::isolated_error_keeps_context_inside_the_cap
+        PASS [   0.021s] ( 5/13) codebase-graph db_writer::phase::tests::oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary
+        PASS [   0.019s] ( 6/13) codebase-graph db_writer::phase::tests::phase_protocol_requires_v2_containment_contract
+        PASS [   0.141s] ( 7/13) codebase-graph db_writer::phase::tests::phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error
+        PASS [   0.023s] ( 8/13) codebase-graph db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts
+        PASS [   0.024s] ( 9/13) codebase-graph db_writer::phase::tests::phase_request_v2_preserves_thread_setting
+        PASS [   0.020s] (10/13) codebase-graph db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader
+        PASS [   0.019s] (11/13) codebase-graph db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory
+        PASS [   0.020s] (12/13) codebase-graph db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads
+        PASS [   0.019s] (13/13) codebase-graph db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path
+────────────
+     Summary [   0.410s] 13 tests run: 13 passed, 833 skipped

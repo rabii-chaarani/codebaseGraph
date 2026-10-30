@@ -1,0 +1,2 @@
+failed to open graph database \\?\C:\Users\rcha0053\pr158-qualification\smoke-repo\.codebaseGraph\smoke-repo_graph.ldb: Cannot create an empty database under READ ONLY mode.
+NATIVE_EXIT_STATUS=1
