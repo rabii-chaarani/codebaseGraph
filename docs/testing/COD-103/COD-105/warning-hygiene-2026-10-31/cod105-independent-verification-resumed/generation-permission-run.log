@@ -1,0 +1,7 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.11s
+────────────
+ Nextest run ID a8ed3ddf-66f4-45ba-91b6-b1d05fb2ea32 with nextest profile: cod105
+    Starting 1 test across 1 binary (4 tests skipped)
+        PASS [  11.703s] (1/1) codebase-graph::generation_storage managed_publish_failure_preserves_active_generation
+────────────
+     Summary [  11.703s] 1 test run: 1 passed, 4 skipped

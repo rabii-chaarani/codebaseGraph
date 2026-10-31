@@ -1,0 +1,16 @@
+{
+  "log_warning_lines": {
+    "xtask-inventory-build.log": [],
+    "xtask-run.log": [],
+    "native-compile.log": [],
+    "native-focused-inventory.log": [],
+    "native-focused-run.log": [],
+    "fifo-focused-inventory.log": [],
+    "fifo-focused-run.log": [],
+    "affected-integration-build.log": [],
+    "affected-integration-run.log": []
+  },
+  "native_compiler_warning_messages": [],
+  "observed_warning_count": 0,
+  "strict_clippy": "not_run; blocked pending reconciliation of interrupted integration. No all-target warning-free gate claimed."
+}

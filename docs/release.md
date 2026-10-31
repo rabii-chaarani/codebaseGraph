@@ -31,7 +31,9 @@ asset and crate publication. Never copy a local CLI login token into repository 
 
 ## CI
 
-Pull requests targeting `main` and pushes to `main` run:
+Pull requests targeting `main` and the approved COD-103 staging branches run the same full verification. The staged PR bases are exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`, `cod103-stack/cod-56`, and `cod103-stack/cod-107`; pull-request activities are opened, synchronize, reopened, and edited. Pushes remain restricted to `main`. Staging checks are full CI, not release qualification; a changed head/base needs a fresh event and result. No privileged PR trigger or PR artifact retention is added.
+
+Every qualifying pull request and every push to `main` runs:
 
 - `cargo fmt --check`
 - platform-aligned workspace tests on macOS ARM64 and Windows x86_64

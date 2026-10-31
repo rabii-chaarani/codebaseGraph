@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "purpose": "Production index of unchanged selected Verifier text; not replacement of original manifest",
+  "source_root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification",
+  "destination": "docs/testing/COD-103/COD-105/integration-2026-10-31/verification",
+  "file_count": 30,
+  "total_bytes": 670798,
+  "files": [
+    {
+      "path": "release-gate.log",
+      "size": 139,
+      "sha256": "5899714f6181a86b883602a3dd9b321883ca9e4084db16c902cf56856e633340"
+    },
+    {
+      "path": "native-environment.json",
+      "size": 1941,
+      "sha256": "82ad44d9ac7cd1005e5e78be990317909b6273439bfb059ff6b9f12c64f1c6ce"
+    },
+    {
+      "path": "separate-approval-byte-audit.json",
+      "size": 371,
+      "sha256": "5f555f768157c2c640cf27106258ca5d6f7c791b17a3dcbd89dd8e2fb07185c8"
+    },
+    {
+      "path": "xtask-inventory-build.log",
+      "size": 1301,
+      "sha256": "97fc884643f0afaecead8592fc1ce596ea4ed789abcd06403f52b62cc88405b2"
+    },
+    {
+      "path": "result.json",
+      "size": 25665,
+      "sha256": "427e2d64698e4fa61bcc9786a2a4bb0ba7e9c7ac1bfe12429dd366c7a9c1b7ce"
+    },
+    {
+      "path": "evidence-file-manifest.json",
+      "size": 8902,
+      "sha256": "14573f987eb069ee279d254518c185f5afe0d02d99a7a10b5cfe3677a2750f9c"
+    },
+    {
+      "path": "report.md",
+      "size": 6003,
+      "sha256": "4d51f702cf90237a07ac267c5dccad611518c468f0bc16e2998580b9c1395886"
+    },
+    {
+      "path": "versions.txt",
+      "size": 348,
+      "sha256": "d6f26d5e4f2cbf8129c5f609e640dbfaa0a8a2d50a0ae0a7fa9363db444a9db3"
+    },
+    {
+      "path": "assignment-manifest-copy.json",
+      "size": 136293,
+      "sha256": "2f5102d26b3b528c00c338c0a892e5edc44a45812918403e75cf86c1bebd604f"
+    },
+    {
+      "path": "nextest.toml",
+      "size": 237,
+      "sha256": "31a899caa281068fe0cfbc93bbd29f23cd1b972898bc6dfa9937c328581c260a"
+    },
+    {
+      "path": "xtask-junit.xml",
+      "size": 14673,
+      "sha256": "d41a8b53e7a5536def1c9e61fb8bf6e6962e925992accd7d791a941214a46b71"
+    },
+    {
+      "path": "discovery.json",
+      "size": 900,
+      "sha256": "31b7f3ffaa42d03daf21bb12f0354c470636042bfad960f3d71ceacfa4cde457"
+    },
+    {
+      "path": "initial-state.txt",
+      "size": 142,
+      "sha256": "9d41cc11ecd26b85a347247712d36a32b4a620e141626918e735a4542dd92a34"
+    },
+    {
+      "path": "source-five-before.json",
+      "size": 744,
+      "sha256": "77a01d747b584b054bc22a073136c394bbdd1faebb428a20dc1a13c5da976f7c"
+    },
+    {
+      "path": "warning-audit.json",
+      "size": 395,
+      "sha256": "9c11b91ce053d7ee05a593ea46053f099ed5f359c332ebd9857f516bd89e2505"
+    },
+    {
+      "path": "fmt-check.log",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "strict-workspace-clippy.log",
+      "size": 5975,
+      "sha256": "e04447427f3952d6011ca355a11ecb05ae1398b80e947ff7d487b69e6760b142"
+    },
+    {
+      "path": "check-workflows.log",
+      "size": 1379,
+      "sha256": "55ffec63adbc136cdd89c7b9a4a06b8da43e600d152a8399a5fb692a1099c649"
+    },
+    {
+      "path": "tree-current.txt",
+      "size": 130182,
+      "sha256": "61fc759a0e0064a6fae8d955e02269678c75b98548102fd2f4aff3ce8be1a1b5"
+    },
+    {
+      "path": "final-state.txt",
+      "size": 142,
+      "sha256": "9d41cc11ecd26b85a347247712d36a32b4a620e141626918e735a4542dd92a34"
+    },
+    {
+      "path": "execution-source-identity.json",
+      "size": 763,
+      "sha256": "6abd815769c88dbea7af30c557f0402b611e39bb91c99bf8e6fadedfb4f82e85"
+    },
+    {
+      "path": "xtask-inventory.json",
+      "size": 11282,
+      "sha256": "6620259efda1a03cbbe300b604ca1b0f0075bfb040bad58a43a83332b88b810f"
+    },
+    {
+      "path": "version-metadata-audit.json",
+      "size": 2409,
+      "sha256": "f7d360783943eb7ba7bc0e2505df984b6e3012d6fa1c3b0041d501c43e25c930"
+    },
+    {
+      "path": "command-records.json",
+      "size": 6741,
+      "sha256": "11310bbb6f2911d78e60b52929bc9b98fa0b48a3dfa974a5536cd6672b138290"
+    },
+    {
+      "path": "source-five-after.json",
+      "size": 1219,
+      "sha256": "da4814460c05b27e0714c637d65cfd555d60c706d5234e902fb5193d163dc969"
+    },
+    {
+      "path": "tree-tested-ef798.txt",
+      "size": 115437,
+      "sha256": "e9e45d3f7e396ca6b1f711348496b7f19db135357c4d8b51053659544b40a21c"
+    },
+    {
+      "path": "blob-and-doc-audit.json",
+      "size": 179204,
+      "sha256": "6b06f324aad12b575b445aa519d69126412cefeb7e2643ae4ba93ed94d646998"
+    },
+    {
+      "path": "xtask-run.log",
+      "size": 8992,
+      "sha256": "a9b929bf13f3278dc3c027b7e28b8480bc5e04548e1ffc900d39dc7ca2a8970c"
+    },
+    {
+      "path": "metadata-diff.txt",
+      "size": 2879,
+      "sha256": "0ee990785447e845a03afc376923ac6110b217bfd1771fa0445d4f6730159684"
+    },
+    {
+      "path": "xtask-junit-audit.json",
+      "size": 6140,
+      "sha256": "d520259562485973fff1d8c91a29b0dcdde4466df99467c23d00ef9cbcc1f308"
+    }
+  ],
+  "excluded": [],
+  "credential_scan_matches": [],
+  "limits": "Only small UTF8 text copied. Original relative/external references remain original references. New71xtask overlap prior136; no207unique/newfullnative or Windows/hosted qualification. No commit/push authorized yet.",
+  "accepted_final_review": {
+    "path": "final-review.md",
+    "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-e274dc3f/cod105-qualified-integration-review.md",
+    "sha256": "670b909f1e13e9d5517a0b192daabc28eccd78f7c918dd9a78c31d1b546614d2",
+    "scope": "5989dae source plus exact32persisted documents; noP0-P3; local push-for-hosted-qualification readiness only"
+  }
+}

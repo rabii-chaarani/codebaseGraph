@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="52" failures="0" errors="0" uuid="3662d514-a286-45a3-afe3-1ed59206f72e" timestamp="2026-10-31T09:48:04.203+09:30" time="2.098">
+    <testsuite name="codebase-graph" tests="52" disabled="0" errors="0" failures="0">
+        <testcase name="adapters::mcp::daemon::tests::failure_snapshot_is_bounded_private_and_replaced_atomically" classname="codebase-graph" timestamp="2026-10-31T09:48:04.204+09:30" time="0.032">
+        </testcase>
+        <testcase name="adapters::mcp::daemon::tests::launchd_status_parser_reports_running_and_failed_jobs" classname="codebase-graph" timestamp="2026-10-31T09:48:04.236+09:30" time="0.014">
+        </testcase>
+        <testcase name="adapters::mcp::daemon::tests::manager_missing_messages_are_recognized_without_localized_status_parsing" classname="codebase-graph" timestamp="2026-10-31T09:48:04.250+09:30" time="0.013">
+        </testcase>
+        <testcase name="adapters::mcp::daemon::tests::older_daemon_state_without_start_timestamp_remains_readable" classname="codebase-graph" timestamp="2026-10-31T09:48:04.263+09:30" time="0.014">
+        </testcase>
+        <testcase name="adapters::mcp::daemon::tests::reconciliation_is_idempotent_and_fails_closed_on_identity_mismatch" classname="codebase-graph" timestamp="2026-10-31T09:48:04.277+09:30" time="0.013">
+        </testcase>
+        <testcase name="adapters::mcp::daemon::tests::service_manifests_quote_paths_and_request_single_instance_restart" classname="codebase-graph" timestamp="2026-10-31T09:48:04.290+09:30" time="0.013">
+        </testcase>
+        <testcase name="adapters::mcp::daemon::tests::stable_ports_and_service_ids_are_repository_scoped" classname="codebase-graph" timestamp="2026-10-31T09:48:04.304+09:30" time="0.016">
+        </testcase>
+        <testcase name="adapters::mcp::daemon::tests::systemd_status_parser_reports_running_failed_and_missing_fields" classname="codebase-graph" timestamp="2026-10-31T09:48:04.320+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::claude_desktop_path_is_rejected_for_loopback_http" classname="codebase-graph" timestamp="2026-10-31T09:48:04.335+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::cloud_targets_require_public_https_without_exposing_loopback" classname="codebase-graph" timestamp="2026-10-31T09:48:04.349+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments" classname="codebase-graph" timestamp="2026-10-31T09:48:04.364+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::codex_toml_reject_different_leaves_existing_file_byte_identical" classname="codebase-graph" timestamp="2026-10-31T09:48:04.377+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::daemon_port_selection_migrates_collisions_but_rejects_unavailable_overrides" classname="codebase-graph" timestamp="2026-10-31T09:48:04.392+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::dry_run_language_detection_recognizes_webassembly_case_insensitively" classname="codebase-graph" timestamp="2026-10-31T09:48:04.406+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::hermes_install_migrates_singular_marker_blocks_without_dropping_existing_entries" classname="codebase-graph" timestamp="2026-10-31T09:48:04.419+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments" classname="codebase-graph" timestamp="2026-10-31T09:48:04.434+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::hermes_reject_different_leaves_existing_file_byte_identical" classname="codebase-graph" timestamp="2026-10-31T09:48:04.448+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::http_registration_can_be_inspected_renamed_and_removed" classname="codebase-graph" timestamp="2026-10-31T09:48:04.462+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::lifecycle::tests::http_registration_migrates_only_the_recognized_stdio_entry" classname="codebase-graph" timestamp="2026-10-31T09:48:04.478+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::http_registration_shapes_match_every_loopback_harness" classname="codebase-graph" timestamp="2026-10-31T09:48:04.493+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::install_removes_legacy_k_wiki_entry_in_the_same_file_update" classname="codebase-graph" timestamp="2026-10-31T09:48:04.508+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::json_reject_different_leaves_existing_file_byte_identical" classname="codebase-graph" timestamp="2026-10-31T09:48:04.524+09:30" time="0.016">
+        </testcase>
+        <testcase name="api::lifecycle::tests::managed_instruction_block_replaces_stale_guidance_and_preserves_surrounding_text" classname="codebase-graph" timestamp="2026-10-31T09:48:04.540+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::matching_entries_remain_idempotent_across_json_codex_and_hermes_configs" classname="codebase-graph" timestamp="2026-10-31T09:48:04.555+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::lifecycle::tests::mcp_agent_hook_persistence_unions_existing_clients" classname="codebase-graph" timestamp="2026-10-31T09:48:04.572+09:30" time="0.024">
+        </testcase>
+        <testcase name="api::lifecycle::tests::native_client_commands_preserve_every_server_argument" classname="codebase-graph" timestamp="2026-10-31T09:48:04.595+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::refresh_failure_classifier_retries_source_changes_and_worker_exit" classname="codebase-graph" timestamp="2026-10-31T09:48:04.610+09:30" time="0.013">
+        </testcase>
+        <testcase name="api::lifecycle::tests::registration_rename_deduplicates_matching_json_destination_atomically" classname="codebase-graph" timestamp="2026-10-31T09:48:04.623+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::registration_rename_preserves_codex_entry_and_rejects_conflicting_destination" classname="codebase-graph" timestamp="2026-10-31T09:48:04.637+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::reinstall_activation_boundary_keeps_new_state_on_post_activation_failure" classname="codebase-graph" timestamp="2026-10-31T09:48:04.652+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::reinstall_activation_boundary_restores_backup_on_activation_failure" classname="codebase-graph" timestamp="2026-10-31T09:48:04.668+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::remove_mcp_server_dry_run_reports_previous_without_writing_and_write_removes_entry" classname="codebase-graph" timestamp="2026-10-31T09:48:04.682+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::remove_partial_state_tree_rejects_symlinks" classname="codebase-graph" timestamp="2026-10-31T09:48:04.697+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets" classname="codebase-graph" timestamp="2026-10-31T09:48:04.711+09:30" time="0.014">
+        </testcase>
+        <testcase name="api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared" classname="codebase-graph" timestamp="2026-10-31T09:48:04.726+09:30" time="0.015">
+        </testcase>
+        <testcase name="api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths" classname="codebase-graph" timestamp="2026-10-31T09:48:04.740+09:30" time="0.014">
+        </testcase>
+        <testcase name="process_lifecycle::tests::accepted_nonblocking_socket_is_normalized_for_control_frames" classname="codebase-graph" timestamp="2026-10-31T09:48:04.755+09:30" time="0.014">
+        </testcase>
+        <testcase name="process_lifecycle::tests::bounded_protocol_rejects_unterminated_control_frame" classname="codebase-graph" timestamp="2026-10-31T09:48:04.768+09:30" time="0.014">
+        </testcase>
+        <testcase name="process_lifecycle::tests::capability_json_is_private_at_creation_and_after_replacement" classname="codebase-graph" timestamp="2026-10-31T09:48:04.782+09:30" time="0.025">
+        </testcase>
+        <testcase name="process_lifecycle::tests::delayed_non_start_acknowledgements_keep_the_short_deadline" classname="codebase-graph" timestamp="2026-10-31T09:48:04.807+09:30" time="0.723">
+        </testcase>
+        <testcase name="process_lifecycle::tests::retired_startup_rejects_late_guardian_before_child_creation" classname="codebase-graph" timestamp="2026-10-31T09:48:05.531+09:30" time="0.030">
+        </testcase>
+        <testcase name="process_lifecycle::tests::slow_trickle_cannot_extend_control_frame_deadline" classname="codebase-graph" timestamp="2026-10-31T09:48:05.561+09:30" time="0.144">
+        </testcase>
+        <testcase name="process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request" classname="codebase-graph" timestamp="2026-10-31T09:48:05.705+09:30" time="0.371">
+        </testcase>
+        <testcase name="process_lifecycle::tests::workspace_without_global_state_remains_protected_by_guardian_lease" classname="codebase-graph" timestamp="2026-10-31T09:48:06.077+09:30" time="0.023">
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::absent_proof_never_establishes_emptiness" classname="codebase-graph" timestamp="2026-10-31T09:48:06.100+09:30" time="0.017">
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::fifo_writer_controls_empty_proof" classname="codebase-graph" timestamp="2026-10-31T09:48:06.117+09:30" time="0.015">
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::proof_without_ready_retains_live_writers_then_allows_empty_recovery" classname="codebase-graph" timestamp="2026-10-31T09:48:06.132+09:30" time="0.024">
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::recovery_rejects_regular_files_symlinks_and_replaced_fifo_identity" classname="codebase-graph" timestamp="2026-10-31T09:48:06.156+09:30" time="0.014">
+        </testcase>
+        <testcase name="process_lifecycle::unix::tests::stopped_owned_child_is_not_an_exit_and_resume_or_cancellation_still_completes" classname="codebase-graph" timestamp="2026-10-31T09:48:06.171+09:30" time="0.052">
+        </testcase>
+        <testcase name="storage::maintenance_controls::tests::dc_control_codec_reserves_before_bytes_and_preserves_full_intended_slot" classname="codebase-graph" timestamp="2026-10-31T09:48:06.223+09:30" time="0.014">
+        </testcase>
+        <testcase name="storage::maintenance_controls::tests::dc_control_independent_regions_recover_every_partial_write_cut" classname="codebase-graph" timestamp="2026-10-31T09:48:06.237+09:30" time="0.049">
+        </testcase>
+        <testcase name="storage::maintenance_controls::tests::dc_control_invalid_witnesses_and_unrelated_generations_stay_unknown" classname="codebase-graph" timestamp="2026-10-31T09:48:06.286+09:30" time="0.015">
+        </testcase>
+    </testsuite>
+</testsuites>

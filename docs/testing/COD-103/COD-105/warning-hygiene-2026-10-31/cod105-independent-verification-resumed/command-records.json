@@ -1,0 +1,121 @@
+[
+  {
+    "name": "strict-workspace-clippy",
+    "command": "cargo clippy --offline --workspace --all-targets --all-features --locked -- -D warnings > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/strict-workspace-clippy.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "started_at": "2026-10-31T00:42:28.520928+00:00",
+    "status": "completed",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2",
+      "CARGO_BIN_EXE_codebase-graph": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph"
+    },
+    "scope": "whole workspace,all targets,all features,strict -D warnings; normal documented Clippy dev profile; no tests run by this command",
+    "pid": 52242,
+    "exit_code": 0,
+    "duration_seconds": 71.3397793341428
+  },
+  {
+    "name": "check-workflows",
+    "command": "cargo run --offline --locked -p xtask -- check-workflows > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/check-workflows.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "started_at": "2026-10-31T00:43:46.301089+00:00",
+    "status": "completed",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "pid": 56173,
+    "exit_code": 0,
+    "duration_seconds": 10.946370874997228
+  },
+  {
+    "name": "release-gate",
+    "command": "cargo run --offline --locked -p xtask -- release-gate > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/release-gate.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "started_at": "2026-10-31T00:44:04.696025+00:00",
+    "status": "completed",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "scope": "ordinary source policy gate only; no production flags or external publication",
+    "exit_code": 0,
+    "duration_seconds": 0.5102118330541998
+  },
+  {
+    "name": "unfinished-integration-inventory",
+    "command": "cargo nextest list --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/nextest-inventory.toml' --user-config-file none --profile cod105 -p codebase-graph --test generation_storage -p k-wiki --test bundle_reader -E 'test(=managed_materialization_survives_ten_updates_without_generation_leaks) | test(=managed_publish_failure_preserves_active_generation) | test(=closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof) | test(=invalid_bundle_root_error_omits_absolute_host_path) | test(=parser_diagnostics_exclude_source_values_and_keep_relative_locations) | test(=resp_168_discovers_bundle_boundaries_and_metadata) | test(=resp_169_parses_standard_fields_and_preserves_extensions) | test(=resp_170_classifies_reserved_files_without_promoting_them_to_concepts) | test(=resp_171_records_root_okf_version_from_bundle_index) | test(=resp_172_rejects_markdown_entries_that_escape_the_bundle_root) | test(=unterminated_frontmatter_is_invalid_even_when_yaml_is_valid) | test(=walk_errors_keep_relative_location_and_safe_io_category)' --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/unfinished-integration-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/unfinished-integration-inventory.log' ",
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "started_at": "2026-10-31T00:44:11.451946+00:00",
+    "status": "completed",
+    "cargo_profile": "native-tests",
+    "scope": "two unfinished generation cases + all10 bundle_reader; three prior passing cases not selected",
+    "filter": "test(=managed_materialization_survives_ten_updates_without_generation_leaks) | test(=managed_publish_failure_preserves_active_generation) | test(=closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof) | test(=invalid_bundle_root_error_omits_absolute_host_path) | test(=parser_diagnostics_exclude_source_values_and_keep_relative_locations) | test(=resp_168_discovers_bundle_boundaries_and_metadata) | test(=resp_169_parses_standard_fields_and_preserves_extensions) | test(=resp_170_classifies_reserved_files_without_promoting_them_to_concepts) | test(=resp_171_records_root_okf_version_from_bundle_index) | test(=resp_172_rejects_markdown_entries_that_escape_the_bundle_root) | test(=unterminated_frontmatter_is_invalid_even_when_yaml_is_valid) | test(=walk_errors_keep_relative_location_and_safe_io_category)",
+    "exit_code": 0,
+    "duration_seconds": 0.5700733328703791
+  },
+  {
+    "name": "bundle-reader-run",
+    "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-nextest.toml' --user-config-file none --profile cod105 -p k-wiki --test bundle_reader --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-reader-run.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "started_at": "2026-10-31T00:44:22.280661+00:00",
+    "status": "completed",
+    "expected_tests": 10,
+    "cargo_profile": "native-tests",
+    "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-reader-junit.xml",
+    "scope": "all10 previously unrun bundle_reader cases; no filter",
+    "exit_code": 0,
+    "duration_seconds": 0.5486369170248508
+  },
+  {
+    "name": "generation-permission-run",
+    "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/permission-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --test generation_storage -E 'test(=managed_publish_failure_preserves_active_generation)' --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-permission-run.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "started_at": "2026-10-31T00:44:28.496231+00:00",
+    "status": "completed",
+    "expected_tests": 1,
+    "cargo_profile": "native-tests",
+    "test_name": "managed_publish_failure_preserves_active_generation",
+    "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-permission-junit.xml",
+    "pid": 56400,
+    "exit_code": 0,
+    "duration_seconds": 13.563230708008632
+  },
+  {
+    "name": "generation-churn-run",
+    "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/churn-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --test generation_storage -E 'test(=managed_materialization_survives_ten_updates_without_generation_leaks)' --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-churn-run.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "started_at": "2026-10-31T00:44:52.468125+00:00",
+    "status": "completed",
+    "expected_tests": 1,
+    "cargo_profile": "native-tests",
+    "test_name": "managed_materialization_survives_ten_updates_without_generation_leaks",
+    "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-churn-junit.xml",
+    "continuation_authority": "Coordinator explicit safe continuation after interrupted invocation and absence of owned processes; not a second full15 rerun; no added timeout or test policy changes",
+    "pid": 56539,
+    "exit_code": 0,
+    "duration_seconds": 1122.6414350001141
+  },
+  {
+    "name": "final-diff-identity-check",
+    "command": "git --no-optional-locks diff --check; status; rev-parse; diff --stat and exact five-file diff",
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "exit_code": 0,
+    "duration_seconds": 0.09552945895120502,
+    "scope": "read-only final whitespace/source identity; all five hashes and complete initial status/diff unchanged",
+    "log_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/source-snapshot-final.txt"
+  }
+]

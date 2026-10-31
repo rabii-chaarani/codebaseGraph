@@ -1,0 +1,58 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running unittests src/main.rs (target/debug/deps/xtask-127b23cd8a31e256)
+
+running 51 tests
+test native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite ... ok
+test native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases ... ok
+test native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments ... ok
+test native_tests::tests::captured_cli_survives_cargo_replacing_its_output ... ok
+test native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets ... ok
+test native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite ... ok
+test release::tests::metadata_rejects_inconsistent_versions ... ok
+test release::tests::notes_only_include_the_exact_release ... ok
+test release::tests::notes_reject_missing_duplicate_and_empty_sections ... ok
+test release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication ... ok
+test release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can ... ok
+test release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization ... ok
+test release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest ... ok
+test release::workflow_tests::publisher_targets_original_sha_and_is_idempotent ... ok
+test release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds ... ok
+test release::workflow_tests::staged_assets_match_the_supported_native_targets ... ok
+test release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity ... ok
+test release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history ... ok
+test release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases ... ok
+test tests::archive_contract_rejects_unexpected_entries ... ok
+test tests::complete_artifact_set_rejects_mixed_provenance ... ok
+test tests::crate_size_validation_enforces_the_registry_limit ... ok
+test tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations ... ok
+test tests::mcp_smoke_accepts_valid_initialize_and_tools ... ok
+test tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses ... ok
+test tests::mcp_smoke_rejects_nonzero_child_with_success_payload ... ok
+test tests::native_capture_requires_unique_source_bound_normal_cli_artifact ... ok
+test tests::native_capture_reuses_the_exact_test_profile_and_features ... ok
+test tests::native_target_contract_maps_names_and_binaries ... ok
+test tests::native_test_failure_cannot_authorize_artifact_production ... ok
+test tests::release_identity_validation_is_strict ... ok
+test tests::windows_native_tests_forward_bundled_extensions ... ok
+test tests::workflow_policy_accepts_exact_cod103_stack_bases ... ok
+test tests::workflow_policy_rejects_automatic_rebuild_recovery ... ok
+test tests::workflow_policy_rejects_direct_release_push_trigger ... ok
+test tests::workflow_policy_rejects_github_sha_for_release_identity ... ok
+test tests::workflow_policy_rejects_missing_ci_success_guard ... ok
+test tests::workflow_policy_rejects_missing_crate_publish_retry ... ok
+test tests::workflow_policy_rejects_missing_crate_size_gates ... ok
+test tests::workflow_policy_rejects_missing_repository_release_gate ... ok
+test tests::workflow_policy_rejects_missing_triggering_run_binding ... ok
+test tests::workflow_policy_rejects_privileged_pr_event ... ok
+test tests::workflow_policy_rejects_release_queue_replacement ... ok
+test tests::workflow_policy_rejects_unapproved_pull_request_activity ... ok
+test tests::workflow_policy_rejects_unconditional_release_publication ... ok
+test tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace ... ok
+test tests::workflow_policy_rejects_unvalidated_publishers ... ok
+test tests::workflow_policy_requires_ci_completion_release_trigger ... ok
+test tests::workflow_policy_requires_publication_revalidation ... ok
+test tests::workflow_yaml_validation_rejects_unindented_heredoc_body ... ok
+test tests::workflows_reject_removed_platform_targets ... ok
+
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.53s
+

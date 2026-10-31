@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-105",
+  "role": "evidence_verifier",
+  "status": "stopped_formatting_failure",
+  "snapshot": {
+    "worktree": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "head": "e06d7404955abeb7a002b54ad740399dfe10c931",
+    "head_tree": "7e4fbdb7834dbed308a233c40d2af6acaa09a82c",
+    "base": "c60a00c1d747b73789cd6edc7ee20601182a35ca",
+    "dirty_paths": [
+      "src/adapters/mcp/daemon.rs",
+      "src/storage/maintenance_controls.rs",
+      "src/api/lifecycle.rs",
+      "tests/generation_storage.rs",
+      "crates/k-wiki/tests/bundle_reader.rs"
+    ],
+    "before": {
+      "src/adapters/mcp/daemon.rs": {
+        "path": "src/adapters/mcp/daemon.rs",
+        "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+        "size_bytes": 76723
+      },
+      "src/storage/maintenance_controls.rs": {
+        "path": "src/storage/maintenance_controls.rs",
+        "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+        "size_bytes": 139563
+      },
+      "src/api/lifecycle.rs": {
+        "path": "src/api/lifecycle.rs",
+        "sha256": "de43c2c62b92c8989a8ed701356ebb959eb499f19bcf1ac16fda47df75e37e65",
+        "size_bytes": 221255
+      },
+      "tests/generation_storage.rs": {
+        "path": "tests/generation_storage.rs",
+        "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+        "size_bytes": 21659
+      },
+      "crates/k-wiki/tests/bundle_reader.rs": {
+        "path": "crates/k-wiki/tests/bundle_reader.rs",
+        "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+        "size_bytes": 11751
+      }
+    },
+    "after": {
+      "src/adapters/mcp/daemon.rs": {
+        "path": "src/adapters/mcp/daemon.rs",
+        "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+        "size_bytes": 76723
+      },
+      "src/storage/maintenance_controls.rs": {
+        "path": "src/storage/maintenance_controls.rs",
+        "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+        "size_bytes": 139563
+      },
+      "src/api/lifecycle.rs": {
+        "path": "src/api/lifecycle.rs",
+        "sha256": "de43c2c62b92c8989a8ed701356ebb959eb499f19bcf1ac16fda47df75e37e65",
+        "size_bytes": 221255
+      },
+      "tests/generation_storage.rs": {
+        "path": "tests/generation_storage.rs",
+        "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+        "size_bytes": 21659
+      },
+      "crates/k-wiki/tests/bundle_reader.rs": {
+        "path": "crates/k-wiki/tests/bundle_reader.rs",
+        "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+        "size_bytes": 11751
+      }
+    },
+    "five_source_files_preserved": true,
+    "full_git_status_and_diff_preserved": true,
+    "initial_snapshot_file": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification/source-snapshot-initial.txt",
+    "final_snapshot_file": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification/source-snapshot-final.txt"
+  },
+  "authority": {
+    "approved_spec": "docs/specs/COD-103/spec.md",
+    "approved_revision": "0.2",
+    "approved_full_sha": "7e79f7e924536f29d3212e83899b01c38afd39de",
+    "approval_record_full_sha": "383a481bd5a71c58dab7dd796ace92a365760da5",
+    "changes": [
+      "chg-ahwwmf",
+      "chg-cgjfa4"
+    ],
+    "isolated_brief": "chg-ndhhtx",
+    "scope": "Exactly five cfg/import warning-cleanup edits; no new behavior/acceptance/claims. All further execution blocked by mandatory formatting failure."
+  },
+  "executed_commands": [
+    {
+      "command": "cargo fmt --all --check",
+      "shell_command": "cargo fmt --all --check > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification/cargo-fmt-check.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-30T23:53:53.072633+00:00",
+      "exit_code": 1,
+      "duration_seconds": 1.851607499876991,
+      "log_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification/cargo-fmt-check.log",
+      "result": "failed",
+      "source_sha": "e06d7404955abeb7a002b54ad740399dfe10c931",
+      "dirty_source_hashes": {
+        "src/adapters/mcp/daemon.rs": {
+          "path": "src/adapters/mcp/daemon.rs",
+          "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+          "size_bytes": 76723
+        },
+        "src/storage/maintenance_controls.rs": {
+          "path": "src/storage/maintenance_controls.rs",
+          "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+          "size_bytes": 139563
+        },
+        "src/api/lifecycle.rs": {
+          "path": "src/api/lifecycle.rs",
+          "sha256": "de43c2c62b92c8989a8ed701356ebb959eb499f19bcf1ac16fda47df75e37e65",
+          "size_bytes": 221255
+        },
+        "tests/generation_storage.rs": {
+          "path": "tests/generation_storage.rs",
+          "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+          "size_bytes": 21659
+        },
+        "crates/k-wiki/tests/bundle_reader.rs": {
+          "path": "crates/k-wiki/tests/bundle_reader.rs",
+          "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+          "size_bytes": 11751
+        }
+      }
+    }
+  ],
+  "failure": {
+    "file": "src/api/lifecycle.rs",
+    "range": "tests module imports, approximately5113-5128",
+    "actual_result": "rustfmt diff: move #[cfg(unix)] use super::remove_partial_state_tree before grouped super import; reflow grouped imports",
+    "fix_owner": "Original implementation worker; verifier made no source changes",
+    "automatic_retry": false
+  },
+  "remaining_checks": [
+    {
+      "check": "full xtask suite",
+      "status": "not_run_blocked_by_formatting"
+    },
+    {
+      "check": "k-wiki bundle_reader",
+      "status": "not_run_blocked_by_formatting"
+    },
+    {
+      "check": "generation_storage + discovered relevant lifecycle/platform native radius",
+      "status": "not_run_blocked_by_formatting"
+    },
+    {
+      "check": "strict workspace/all-target Clippy",
+      "status": "not_run_blocked_by_formatting"
+    },
+    {
+      "check": "focused nextest inventory + genuine JUnit",
+      "status": "not_run_blocked_by_formatting"
+    },
+    {
+      "check": "native prebuilt environment/config inspection",
+      "status": "not_assessed_after_required_stop"
+    },
+    {
+      "check": "both-target hosted full CI + actual packaged artifact smoke",
+      "status": "pending_future_authorized_push; local macOS would not qualify Windows"
+    },
+    {
+      "check": "fresh Final Reviewer",
+      "status": "pending_after_source_correction_and_independent_evidence"
+    }
+  ],
+  "warnings": "No compiler/test/native commands ran. No warning-free compilation or passing acceptance asserted. cargo fmt produced a formatting diff, not compiler diagnostics.",
+  "junit": {
+    "produced": false,
+    "reason": "No tests executed after formatting failure; no synthetic XML created."
+  },
+  "discovery": {
+    "graph_root": "/Users/rabii/Projects/Repositories/codebaseGraph",
+    "candidate_root": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "graph_use": "Discovery only; semantic searches and explicit dependencies/change_impact context captured. Named src/storage/mod.rs declaration independently resolved maintenance_controls. No graph refresh/rebuild.",
+    "graph_evidence_file": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification/graph-discovery.json",
+    "scryer": "Read governing rules only; no binding, attachment, ingestion, fold, force or model reconciliation against wrong-root older dirty6aa5.",
+    "worktree_agents": "No AGENTS.md present at isolated worktree; followed supplied main repository instructions/current role skills."
+  },
+  "execution_settings": {
+    "map": "agents.evidence_verifier",
+    "model": "inherit",
+    "reasoning_effort": "inherit",
+    "host": "Original accepted dispatch reused; no overrides or model/effort change",
+    "actual_runtime_model_effort": "unexposed",
+    "other_roles_dispatched": false
+  },
+  "writes": {
+    "artifact_directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification",
+    "repository_source_tests": false,
+    "git_refs": false,
+    "linear": false,
+    "scryer": false,
+    "memory": false,
+    "settings_credentials": false,
+    "ci_reruns_push_pr": false,
+    "native_test_build_install": false
+  },
+  "reusable_memory_assessment": "No durable new fact/procedure warranted; transient formatter failure recorded only in session artifacts.",
+  "next_owner": "Engineer returns formatting correction to original source owner. Reassignment after source is stopped/new hashes established is required before independent checks resume. No Done/stage/merge/release conclusion."
+}

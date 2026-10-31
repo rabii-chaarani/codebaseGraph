@@ -1,0 +1,38 @@
+{
+  "command": "cargo fmt --all --check",
+  "shell_command": "cargo fmt --all --check > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification/cargo-fmt-check.log' 2>&1",
+  "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+  "started_at": "2026-10-30T23:53:53.072633+00:00",
+  "exit_code": 1,
+  "duration_seconds": 1.851607499876991,
+  "log_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification/cargo-fmt-check.log",
+  "result": "failed",
+  "source_sha": "e06d7404955abeb7a002b54ad740399dfe10c931",
+  "dirty_source_hashes": {
+    "src/adapters/mcp/daemon.rs": {
+      "path": "src/adapters/mcp/daemon.rs",
+      "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+      "size_bytes": 76723
+    },
+    "src/storage/maintenance_controls.rs": {
+      "path": "src/storage/maintenance_controls.rs",
+      "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+      "size_bytes": 139563
+    },
+    "src/api/lifecycle.rs": {
+      "path": "src/api/lifecycle.rs",
+      "sha256": "de43c2c62b92c8989a8ed701356ebb959eb499f19bcf1ac16fda47df75e37e65",
+      "size_bytes": 221255
+    },
+    "tests/generation_storage.rs": {
+      "path": "tests/generation_storage.rs",
+      "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+      "size_bytes": 21659
+    },
+    "crates/k-wiki/tests/bundle_reader.rs": {
+      "path": "crates/k-wiki/tests/bundle_reader.rs",
+      "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+      "size_bytes": 11751
+    }
+  }
+}

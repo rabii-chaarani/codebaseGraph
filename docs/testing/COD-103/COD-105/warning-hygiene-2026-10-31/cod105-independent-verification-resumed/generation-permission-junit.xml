@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="1" failures="0" errors="0" uuid="a8ed3ddf-66f4-45ba-91b6-b1d05fb2ea32" timestamp="2026-10-31T10:14:30.347+09:30" time="11.703">
+    <testsuite name="codebase-graph::generation_storage" tests="1" disabled="0" errors="0" failures="0">
+        <testcase name="managed_publish_failure_preserves_active_generation" classname="codebase-graph::generation_storage" timestamp="2026-10-31T10:14:30.347+09:30" time="11.703">
+        </testcase>
+    </testsuite>
+</testsuites>

@@ -1,0 +1,102 @@
+diff --git a/.release-please-manifest.json b/.release-please-manifest.json
+index b3c3305..824fecd 100644
+--- a/.release-please-manifest.json
++++ b/.release-please-manifest.json
+@@ -1,3 +1,3 @@
+ {
+-  ".": "4.0.4"
++  ".": "4.0.5"
+ }
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index afcc3c5..ac441b3 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,12 @@
+ # Changelog
+ 
++## [4.0.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.4...v4.0.5) (2026-10-31)
++
++
++### Bug Fixes
++
++* **release:** bundle relocatable macOS OpenSSL runtimes (COD-54) ([#163](https://github.com/rabii-chaarani/codebaseGraph/issues/163)) ([c60a00c](https://github.com/rabii-chaarani/codebaseGraph/commit/c60a00c1d747b73789cd6edc7ee20601182a35ca))
++
+ ## [4.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.3...v4.0.4) (2026-10-30)
+ 
+ 
+diff --git a/Cargo.lock b/Cargo.lock
+index bd0afae..26a3c2b 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -187,7 +187,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "codebase-graph"
+-version = "4.0.4"
++version = "4.0.5"
+ dependencies = [
+  "cc",
+  "fs2",
+@@ -777,7 +777,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "k-wiki"
+-version = "4.0.4"
++version = "4.0.5"
+ dependencies = [
+  "ammonia",
+  "axum",
+@@ -1956,7 +1956,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "xtask"
+-version = "4.0.4"
++version = "4.0.5"
+ dependencies = [
+  "flate2",
+  "serde",
+diff --git a/Cargo.toml b/Cargo.toml
+index 5448434..edc36c8 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "codebase-graph"
+-version = "4.0.4"
++version = "4.0.5"
+ edition = "2021"
+ rust-version = "1.82"
+ description = "Native codebaseGraph CLI and MCP server for local code knowledge graphs."
+diff --git a/crates/k-wiki/Cargo.toml b/crates/k-wiki/Cargo.toml
+index 9f4646b..daefc13 100644
+--- a/crates/k-wiki/Cargo.toml
++++ b/crates/k-wiki/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "k-wiki"
+-version = "4.0.4"
++version = "4.0.5"
+ edition = "2021"
+ rust-version = "1.82"
+ description = "OKF knowledge wiki, projection builder, and MCP service."
+@@ -24,7 +24,7 @@ bundled-windows-extensions = ["codebase-graph/bundled-windows-extensions"]
+ # The patched 4.1 backport preserves the workspace's Rust 1.82 MSRV.
+ ammonia = "~4.1.8"
+ axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio"] }
+-codebase-graph = { version = "4.0.4", path = "../.." }
++codebase-graph = { version = "4.0.5", path = "../.." }
+ pulldown-cmark = { version = "0.13.5", default-features = false, features = ["html"] }
+ serde = { version = "1", features = ["derive"] }
+ serde_json = "1"
+diff --git a/crates/xtask/Cargo.toml b/crates/xtask/Cargo.toml
+index 1d3c176..33dd4a8 100644
+--- a/crates/xtask/Cargo.toml
++++ b/crates/xtask/Cargo.toml
+@@ -1,6 +1,6 @@
+ [package]
+ name = "xtask"
+-version = "4.0.4"
++version = "4.0.5"
+ edition = "2021"
+ publish = false
+ 

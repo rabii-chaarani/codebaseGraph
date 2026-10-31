@@ -1,0 +1,25 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.09s
+────────────
+ Nextest run ID 9b26f4b0-f13e-4455-bfe7-2ed870672999 with nextest profile: cod105
+    Starting 1 test across 1 binary (4 tests skipped)
+        SLOW [> 60.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>120.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>180.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>240.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>300.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>360.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>420.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>480.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>540.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>600.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>660.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>720.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>780.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>840.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>900.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>960.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>1020.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        SLOW [>1080.000s] (───) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+        PASS [1122.295s] (1/1) codebase-graph::generation_storage managed_materialization_survives_ten_updates_without_generation_leaks
+────────────
+     Summary [1122.296s] 1 test run: 1 passed (1 slow), 4 skipped

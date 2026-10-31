@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-105",
+  "source_commit": "ef7988439bb26f1d9914ea8d007196f638c2f33b",
+  "source_parent": "e06d7404955abeb7a002b54ad740399dfe10c931",
+  "source_tree": "d30a3fb4bcbb5593d7d3be5cfa0f7ead145eac49",
+  "tested_snapshot": "e06d7404955abeb7a002b54ad740399dfe10c931 plus exact five-file dirty correction",
+  "source_files": {
+    "src/adapters/mcp/daemon.rs": {
+      "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+      "git_blob": "266975ce09927a1d17461ec68773217b36d6b778",
+      "matches_tested_sha256": true
+    },
+    "src/storage/maintenance_controls.rs": {
+      "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+      "git_blob": "8e1b7e40a1d3c3fd0eb9da5181a60841fbd452bb",
+      "matches_tested_sha256": true
+    },
+    "src/api/lifecycle.rs": {
+      "sha256": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+      "git_blob": "d2e4678a3562bbbb289ac26e2d0296f02409a273",
+      "matches_tested_sha256": true
+    },
+    "tests/generation_storage.rs": {
+      "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+      "git_blob": "2b111ff8ed093e90173bf1d43082217576c087d8",
+      "matches_tested_sha256": true
+    },
+    "crates/k-wiki/tests/bundle_reader.rs": {
+      "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+      "git_blob": "69e1b21ad662cdd8c1a16adbf6961ca11b3b24cb",
+      "matches_tested_sha256": true
+    }
+  },
+  "review": {
+    "report": "final-review.md",
+    "sha256": "3a1049c36ab0f88f52a15f228091c330187bc18ab65bd1cb4af24f9a1c37c2b1",
+    "result": "No confirmed P0-P3; integrated source and current local evidence accepted; later integration and hosted gates pending"
+  },
+  "executed_evidence": {
+    "junit_passed_cases": 136,
+    "earlier_raw_log_passes": 3,
+    "limitation": "Original15-case invocation interrupted without final exit/JUnit. Three recorded raw passes preserved, not repeated/fabricated into XML; unfinished12 continued with genuine reports. No single full15-run pass asserted. No new execution by committing.",
+    "verifier_text_files_byte_equal": 79,
+    "production_copy_manifest": "production-copy-manifest.json"
+  },
+  "remaining_gates": [
+    "Affected new integration/version rechecks and focused review",
+    "Final-head full two-target hosted CI and packaged artifact smoke/warning evidence",
+    "Current-source Scryer reconciliation",
+    "Non-bypass strict-freshness actual main merge and later own-main CI",
+    "Applicable Windows user post-PR qualification, queue/release gates"
+  ],
+  "scope": "Source commit only five reviewed files; no bodies/assertions/features/manifests/profile/native runner changed; prior reviews and approvals preserved.",
+  "raw_artifact_whitespace": {
+    "full_staged_diff_check_exit": 2,
+    "meaning": "Byte-preserved raw tool output; not source/compiler warnings. Full raw diff not whitespace-clean. No Git policy change or raw-byte normalization.",
+    "affected_files": [
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/nextest-run-help.txt",
+        "sha256": "773136ceb158c651cfabd075f7c7bd5d59013961978ed781dfeafa809da2d0ab"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-final.txt",
+        "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-initial.txt",
+        "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/source-snapshot-final.txt",
+        "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/cargo-fmt-check.log",
+        "sha256": "1ad656755c7b016869b27c819798de33f9359d9281808f2384a93be323626d40"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-final.txt",
+        "sha256": "3b08ebbb0a0bf924498cc54e1e00394a335dc23a98a5536917123ed1b5bc3e18"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-initial.txt",
+        "sha256": "3b08ebbb0a0bf924498cc54e1e00394a335dc23a98a5536917123ed1b5bc3e18"
+      }
+    ],
+    "scoped_authored_and_source_check": "required clean independently; no claim full raw diff clean"
+  }
+}

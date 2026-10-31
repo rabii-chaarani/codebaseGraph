@@ -1,0 +1,81 @@
+{
+  "values": {
+    "root": "4.0.5",
+    "k-wiki": "4.0.5",
+    "xtask": "4.0.5",
+    "wiki-root-dependency": "4.0.5",
+    "release-please": "4.0.5",
+    "lock_workspace": {
+      "codebase-graph": "4.0.5",
+      "k-wiki": "4.0.5",
+      "xtask": "4.0.5"
+    }
+  },
+  "consistent_4_0_5": true,
+  "old_workspace_lock_versions": [
+    [
+      "codebase-graph",
+      "4.0.4"
+    ],
+    [
+      "k-wiki",
+      "4.0.4"
+    ],
+    [
+      "xtask",
+      "4.0.4"
+    ]
+  ],
+  "new_workspace_lock_versions": [
+    [
+      "codebase-graph",
+      "4.0.5"
+    ],
+    [
+      "k-wiki",
+      "4.0.5"
+    ],
+    [
+      "xtask",
+      "4.0.5"
+    ]
+  ],
+  "lock_equal_after_only_workspace_version_mask": true,
+  "mask_scope": "Only version field of exact3 no-source workspace packages; all other package/dependency/checksum/source/feature values compared unchanged",
+  "changelog_new_heading": "## [4.0.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.4...v4.0.5) (2026-10-31)",
+  "approved_spec_and_evidence_docs": "Independent hashes in blob-and-doc-audit.json;83 evidence+10 approved docs unchanged",
+  "metadata_diff_file": "metadata-diff.txt",
+  "manifest_version_masks": {
+    "Cargo.toml": {
+      "parsed_equal_after_exact_version_mask": true,
+      "masked_fields": [
+        "package.version"
+      ],
+      "old_version": "4.0.4",
+      "new_version": "4.0.5",
+      "new_sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+      "source_old_sha256": "9681d4d82882637d3bd616905a35fb75548cc053326cc409217b7aa37a2714d0"
+    },
+    "crates/k-wiki/Cargo.toml": {
+      "parsed_equal_after_exact_version_mask": true,
+      "masked_fields": [
+        "package.version",
+        "dependencies.codebase-graph.version"
+      ],
+      "old_version": "4.0.4",
+      "new_version": "4.0.5",
+      "new_sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+      "source_old_sha256": "8f7a2e58a4d239bcbab315209f89d9435bee3131cfd9dd9d82dcad71a952db22"
+    },
+    "crates/xtask/Cargo.toml": {
+      "parsed_equal_after_exact_version_mask": true,
+      "masked_fields": [
+        "package.version"
+      ],
+      "old_version": "4.0.4",
+      "new_version": "4.0.5",
+      "new_sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+      "source_old_sha256": "115b7239069681758d3bc24ebeaf956deb8b1ad7eefa3be1f73df81b72d98abf"
+    }
+  }
+}

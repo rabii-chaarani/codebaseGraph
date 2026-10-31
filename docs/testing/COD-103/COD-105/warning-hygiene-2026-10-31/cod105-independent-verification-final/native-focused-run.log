@@ -1,0 +1,58 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.09s
+────────────
+ Nextest run ID 3662d514-a286-45a3-afe3-1ed59206f72e with nextest profile: cod105
+    Starting 52 tests across 1 binary (796 tests skipped)
+        PASS [   0.032s] ( 1/52) codebase-graph adapters::mcp::daemon::tests::failure_snapshot_is_bounded_private_and_replaced_atomically
+        PASS [   0.014s] ( 2/52) codebase-graph adapters::mcp::daemon::tests::launchd_status_parser_reports_running_and_failed_jobs
+        PASS [   0.013s] ( 3/52) codebase-graph adapters::mcp::daemon::tests::manager_missing_messages_are_recognized_without_localized_status_parsing
+        PASS [   0.014s] ( 4/52) codebase-graph adapters::mcp::daemon::tests::older_daemon_state_without_start_timestamp_remains_readable
+        PASS [   0.013s] ( 5/52) codebase-graph adapters::mcp::daemon::tests::reconciliation_is_idempotent_and_fails_closed_on_identity_mismatch
+        PASS [   0.013s] ( 6/52) codebase-graph adapters::mcp::daemon::tests::service_manifests_quote_paths_and_request_single_instance_restart
+        PASS [   0.016s] ( 7/52) codebase-graph adapters::mcp::daemon::tests::stable_ports_and_service_ids_are_repository_scoped
+        PASS [   0.014s] ( 8/52) codebase-graph adapters::mcp::daemon::tests::systemd_status_parser_reports_running_failed_and_missing_fields
+        PASS [   0.015s] ( 9/52) codebase-graph api::lifecycle::tests::claude_desktop_path_is_rejected_for_loopback_http
+        PASS [   0.014s] (10/52) codebase-graph api::lifecycle::tests::cloud_targets_require_public_https_without_exposing_loopback
+        PASS [   0.014s] (11/52) codebase-graph api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments
+        PASS [   0.015s] (12/52) codebase-graph api::lifecycle::tests::codex_toml_reject_different_leaves_existing_file_byte_identical
+        PASS [   0.014s] (13/52) codebase-graph api::lifecycle::tests::daemon_port_selection_migrates_collisions_but_rejects_unavailable_overrides
+        PASS [   0.014s] (14/52) codebase-graph api::lifecycle::tests::dry_run_language_detection_recognizes_webassembly_case_insensitively
+        PASS [   0.014s] (15/52) codebase-graph api::lifecycle::tests::hermes_install_migrates_singular_marker_blocks_without_dropping_existing_entries
+        PASS [   0.014s] (16/52) codebase-graph api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments
+        PASS [   0.014s] (17/52) codebase-graph api::lifecycle::tests::hermes_reject_different_leaves_existing_file_byte_identical
+        PASS [   0.016s] (18/52) codebase-graph api::lifecycle::tests::http_registration_can_be_inspected_renamed_and_removed
+        PASS [   0.015s] (19/52) codebase-graph api::lifecycle::tests::http_registration_migrates_only_the_recognized_stdio_entry
+        PASS [   0.015s] (20/52) codebase-graph api::lifecycle::tests::http_registration_shapes_match_every_loopback_harness
+        PASS [   0.015s] (21/52) codebase-graph api::lifecycle::tests::install_removes_legacy_k_wiki_entry_in_the_same_file_update
+        PASS [   0.016s] (22/52) codebase-graph api::lifecycle::tests::json_reject_different_leaves_existing_file_byte_identical
+        PASS [   0.015s] (23/52) codebase-graph api::lifecycle::tests::managed_instruction_block_replaces_stale_guidance_and_preserves_surrounding_text
+        PASS [   0.017s] (24/52) codebase-graph api::lifecycle::tests::matching_entries_remain_idempotent_across_json_codex_and_hermes_configs
+        PASS [   0.024s] (25/52) codebase-graph api::lifecycle::tests::mcp_agent_hook_persistence_unions_existing_clients
+        PASS [   0.014s] (26/52) codebase-graph api::lifecycle::tests::native_client_commands_preserve_every_server_argument
+        PASS [   0.013s] (27/52) codebase-graph api::lifecycle::tests::refresh_failure_classifier_retries_source_changes_and_worker_exit
+        PASS [   0.014s] (28/52) codebase-graph api::lifecycle::tests::registration_rename_deduplicates_matching_json_destination_atomically
+        PASS [   0.015s] (29/52) codebase-graph api::lifecycle::tests::registration_rename_preserves_codex_entry_and_rejects_conflicting_destination
+        PASS [   0.015s] (30/52) codebase-graph api::lifecycle::tests::reinstall_activation_boundary_keeps_new_state_on_post_activation_failure
+        PASS [   0.015s] (31/52) codebase-graph api::lifecycle::tests::reinstall_activation_boundary_restores_backup_on_activation_failure
+        PASS [   0.014s] (32/52) codebase-graph api::lifecycle::tests::remove_mcp_server_dry_run_reports_previous_without_writing_and_write_removes_entry
+        PASS [   0.014s] (33/52) codebase-graph api::lifecycle::tests::remove_partial_state_tree_rejects_symlinks
+        PASS [   0.014s] (34/52) codebase-graph api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets
+        PASS [   0.015s] (35/52) codebase-graph api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared
+        PASS [   0.014s] (36/52) codebase-graph api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths
+        PASS [   0.014s] (37/52) codebase-graph process_lifecycle::tests::accepted_nonblocking_socket_is_normalized_for_control_frames
+        PASS [   0.014s] (38/52) codebase-graph process_lifecycle::tests::bounded_protocol_rejects_unterminated_control_frame
+        PASS [   0.025s] (39/52) codebase-graph process_lifecycle::tests::capability_json_is_private_at_creation_and_after_replacement
+        PASS [   0.723s] (40/52) codebase-graph process_lifecycle::tests::delayed_non_start_acknowledgements_keep_the_short_deadline
+        PASS [   0.030s] (41/52) codebase-graph process_lifecycle::tests::retired_startup_rejects_late_guardian_before_child_creation
+        PASS [   0.144s] (42/52) codebase-graph process_lifecycle::tests::slow_trickle_cannot_extend_control_frame_deadline
+        PASS [   0.371s] (43/52) codebase-graph process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request
+        PASS [   0.023s] (44/52) codebase-graph process_lifecycle::tests::workspace_without_global_state_remains_protected_by_guardian_lease
+        PASS [   0.017s] (45/52) codebase-graph process_lifecycle::unix::tests::absent_proof_never_establishes_emptiness
+        PASS [   0.015s] (46/52) codebase-graph process_lifecycle::unix::tests::fifo_writer_controls_empty_proof
+        PASS [   0.024s] (47/52) codebase-graph process_lifecycle::unix::tests::proof_without_ready_retains_live_writers_then_allows_empty_recovery
+        PASS [   0.014s] (48/52) codebase-graph process_lifecycle::unix::tests::recovery_rejects_regular_files_symlinks_and_replaced_fifo_identity
+        PASS [   0.052s] (49/52) codebase-graph process_lifecycle::unix::tests::stopped_owned_child_is_not_an_exit_and_resume_or_cancellation_still_completes
+        PASS [   0.014s] (50/52) codebase-graph storage::maintenance_controls::tests::dc_control_codec_reserves_before_bytes_and_preserves_full_intended_slot
+        PASS [   0.049s] (51/52) codebase-graph storage::maintenance_controls::tests::dc_control_independent_regions_recover_every_partial_write_cut
+        PASS [   0.015s] (52/52) codebase-graph storage::maintenance_controls::tests::dc_control_invalid_witnesses_and_unrelated_generations_stay_unknown
+────────────
+     Summary [   2.098s] 52 tests run: 52 passed, 796 skipped

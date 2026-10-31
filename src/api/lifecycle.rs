@@ -5110,17 +5110,19 @@ fn install_safe_name(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
+    use super::remove_partial_state_tree;
     use super::{
         codex_toml_block, descriptor_signature, hermes_yaml_block_from_entries, inspect_mcp_server,
         install_mcp_endpoint, install_mcp_server, instruction_block, is_retryable_refresh_failure,
         language_for_path, native_client_command, parse_hermes_managed_entries,
         parse_toml_stdio_entry, persist_agent_hooks_config, reinstall_state, remove_mcp_server,
-        remove_partial_state_tree, rename_mcp_server, render_client_http_config,
-        resolve_mcp_target, run_reinstall_activation_boundary, select_available_daemon_port,
-        upsert_instruction_text, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
-        McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
-        McpEndpointDescriptor, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
-        McpTargetLocality, ResolvedMcpTarget,
+        rename_mcp_server, render_client_http_config, resolve_mcp_target,
+        run_reinstall_activation_boundary, select_available_daemon_port, upsert_instruction_text,
+        yaml_scalar, GraphStatePaths, ManagedStdioEntry, McpClientInstallOptions,
+        McpClientRemovalOptions, McpClientRenameOptions, McpEndpointDescriptor,
+        McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor, McpTargetLocality,
+        ResolvedMcpTarget,
     };
     use serde_json::json;
     use std::collections::BTreeMap;

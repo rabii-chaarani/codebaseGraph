@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "reviewed_tested_head": "5989dae3040d2bc17fc6c0b62cb62c5f0377c8c4",
+  "reviewed_tested_tree": "bca8192ae9a14317dff4b2184c03e326dc3a9e88",
+  "purpose": "Source/metadata equality proof for later evidence-only descendant. This file does not embed its own containing commit SHA.",
+  "source_and_config_blob_count": 378,
+  "source_and_config_equality": "All378relevant non-doc/non-version-metadata blobs match accepted ef798behavior candidate and reviewed5989; sixmetadata match6a98. Evidence-only commit may change only this integration directory.",
+  "source_five_sha256": {
+    "src/adapters/mcp/daemon.rs": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+    "src/storage/maintenance_controls.rs": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+    "src/api/lifecycle.rs": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+    "tests/generation_storage.rs": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+    "crates/k-wiki/tests/bundle_reader.rs": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015"
+  },
+  "approved10_sha256": {
+    "docs/specs/COD-103/spec.md": "c562044be5de7f8c8063dca0ee7f66cd18f0b66f79607f8267fe1893f8f7942c",
+    "docs/specs/COD-103/design.md": "8ae7be05e8dafe6865656dbdcbbbdf13d270cf92e51a327a58884bea8abab8a8",
+    "docs/specs/COD-103/architecture.md": "fdb897070bd811438124e55e6962887c0c6907fa37594a0350da76e32767fb97",
+    "docs/specs/COD-103/verification.md": "c7385cca0eea633112114417f01623b09042451df484d91c4c4e92aa783a239d",
+    "docs/specs/COD-103/delivery.md": "03f67df37a809e0e03512febb950785ddfa8080d2a04895fedf2e0ca523ff155",
+    "docs/specs/COD-103/decisions/2026-10-30-cod110-preparation.md": "027abc9525ed61f57d13b0ee002acb1037aabaf833ea0bbd6d50b784458e72dc",
+    "docs/testing/COD-103/release-baseline-v4.0.4/README.md": "1993ae408bd051850613a5d3a9ccdea67b4d8ed065b3886f7a7a3fb7c91ac6f8",
+    "docs/testing/COD-103/release-baseline-v4.0.4/report.md": "cf453431aba6f9f5466d577ddf62ef0d2f2ff06ee3022f442a4fc9ce5ba915c4",
+    "docs/testing/COD-103/release-baseline-v4.0.4/result.json": "1e21f9a9b977685e78a00779c3b2b542cf61ce9ee2cfb903461a8090079ef791",
+    "docs/testing/COD-103/release-baseline-v4.0.4/evidence-file-manifest.json": "85151fcd2274b8878fceedfa37935f3b607d02dc0305df3bc7fa9089bb4e2b44"
+  },
+  "approval_record_sha": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+  "approval_record_file_sha256": "b5fff18a43e3349805f448a4b42f0f4e6f2efe85b407a2caea79246fe932966a",
+  "final_review_sha256": "670b909f1e13e9d5517a0b192daabc28eccd78f7c918dd9a78c31d1b546614d2",
+  "verifier_report_sha256": "4d51f702cf90237a07ac267c5dccad611518c468f0bc16e2998580b9c1395886",
+  "verifier_result_sha256": "427e2d64698e4fa61bcc9786a2a4bb0ba7e9c7ac1bfe12429dd366c7a9c1b7ce",
+  "verifier_manifest_sha256": "14573f987eb069ee279d254518c185f5afe0d02d99a7a10b5cfe3677a2750f9c",
+  "tests": "New71xtask executions overlap prior136JUnit. Prior136JUnit+3raw reused under byteproof; no207unique or newfullnative pass. Interrupted15case attempt has no final exit/JUnit. No new execution for evidence copy.",
+  "remaining_gates": [
+    "fresh final-head hosted two-target fullCI/native artifact smoke and compiler warning scan",
+    "correct-root Scryer reconciliation",
+    "deferred true first COD106 child non-main-base A05 proof",
+    "applicable Windows user post-push acceptance and non-bypass strict freshness/own-main/release gates"
+  ],
+  "raw_whitespace": "Original raw output preserved. Full raw artifact whitespace is not claimed clean; scoped Production-authored/review/source checks required clean."
+}

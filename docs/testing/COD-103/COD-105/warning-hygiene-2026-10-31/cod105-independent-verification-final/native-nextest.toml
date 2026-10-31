@@ -1,0 +1,6 @@
+[profile.cod105]
+retries = 0
+test-threads = 1
+
+[profile.cod105.junit]
+path = "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-junit.xml"

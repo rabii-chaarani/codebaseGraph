@@ -1,0 +1,13 @@
+{
+  "log_warning_lines": {
+    "release-gate.log": [],
+    "xtask-inventory-build.log": [],
+    "fmt-check.log": [],
+    "strict-workspace-clippy.log": [],
+    "check-workflows.log": [],
+    "xtask-run.log": []
+  },
+  "warning_count": 0,
+  "strict_clippy_exit_code": 0,
+  "scope": "Observed local5989 macOS workspace/all-target/all-feature build/check; not Windows-host warning qualification"
+}

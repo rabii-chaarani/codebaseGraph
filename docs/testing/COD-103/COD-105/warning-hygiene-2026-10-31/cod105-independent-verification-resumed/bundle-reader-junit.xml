@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="10" failures="0" errors="0" uuid="1574e1a9-23ac-48df-9a71-88b78c7e80fd" timestamp="2026-10-31T10:14:22.671+09:30" time="0.150">
+    <testsuite name="k-wiki::bundle_reader" tests="10" disabled="0" errors="0" failures="0">
+        <testcase name="closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.672+09:30" time="0.015">
+        </testcase>
+        <testcase name="invalid_bundle_root_error_omits_absolute_host_path" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.687+09:30" time="0.013">
+        </testcase>
+        <testcase name="parser_diagnostics_exclude_source_values_and_keep_relative_locations" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.701+09:30" time="0.014">
+        </testcase>
+        <testcase name="resp_168_discovers_bundle_boundaries_and_metadata" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.714+09:30" time="0.013">
+        </testcase>
+        <testcase name="resp_169_parses_standard_fields_and_preserves_extensions" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.728+09:30" time="0.013">
+        </testcase>
+        <testcase name="resp_170_classifies_reserved_files_without_promoting_them_to_concepts" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.740+09:30" time="0.017">
+        </testcase>
+        <testcase name="resp_171_records_root_okf_version_from_bundle_index" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.758+09:30" time="0.013">
+        </testcase>
+        <testcase name="resp_172_rejects_markdown_entries_that_escape_the_bundle_root" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.771+09:30" time="0.021">
+        </testcase>
+        <testcase name="unterminated_frontmatter_is_invalid_even_when_yaml_is_valid" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.792+09:30" time="0.015">
+        </testcase>
+        <testcase name="walk_errors_keep_relative_location_and_safe_io_category" classname="k-wiki::bundle_reader" timestamp="2026-10-31T10:14:22.808+09:30" time="0.014">
+        </testcase>
+    </testsuite>
+</testsuites>

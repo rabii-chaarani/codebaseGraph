@@ -2,8 +2,17 @@ name: CI
 
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
     branches:
       - main
+      - cod103-stack/cod-105
+      - cod103-stack/cod-106
+      - cod103-stack/cod-56
+      - cod103-stack/cod-107
   push:
     branches:
       - main

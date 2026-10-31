@@ -1,0 +1,16 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.14s
+────────────
+ Nextest run ID 1574e1a9-23ac-48df-9a71-88b78c7e80fd with nextest profile: cod105
+    Starting 10 tests across 1 binary
+        PASS [   0.015s] ( 1/10) k-wiki::bundle_reader closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof
+        PASS [   0.013s] ( 2/10) k-wiki::bundle_reader invalid_bundle_root_error_omits_absolute_host_path
+        PASS [   0.014s] ( 3/10) k-wiki::bundle_reader parser_diagnostics_exclude_source_values_and_keep_relative_locations
+        PASS [   0.013s] ( 4/10) k-wiki::bundle_reader resp_168_discovers_bundle_boundaries_and_metadata
+        PASS [   0.013s] ( 5/10) k-wiki::bundle_reader resp_169_parses_standard_fields_and_preserves_extensions
+        PASS [   0.017s] ( 6/10) k-wiki::bundle_reader resp_170_classifies_reserved_files_without_promoting_them_to_concepts
+        PASS [   0.013s] ( 7/10) k-wiki::bundle_reader resp_171_records_root_okf_version_from_bundle_index
+        PASS [   0.021s] ( 8/10) k-wiki::bundle_reader resp_172_rejects_markdown_entries_that_escape_the_bundle_root
+        PASS [   0.015s] ( 9/10) k-wiki::bundle_reader unterminated_frontmatter_is_invalid_even_when_yaml_is_valid
+        PASS [   0.014s] (10/10) k-wiki::bundle_reader walk_errors_keep_relative_location_and_safe_io_category
+────────────
+     Summary [   0.150s] 10 tests run: 10 passed, 0 skipped

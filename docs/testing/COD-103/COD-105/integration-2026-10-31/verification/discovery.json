@@ -1,0 +1,18 @@
+{
+  "context": "error tool=graph_context type=ValueError message=\"graph executor is busy; retry the request\"\n",
+  "limitations": [
+    {
+      "tool": "graph_search",
+      "query": "crates/xtask/src/main.rs",
+      "result": "graph executor is busy; current read unavailable",
+      "fallback": "Reuse this session previously successful exact same-path semantic discovery plus explicit contexts; source identity independently audited with Git blobs, no graph refresh."
+    },
+    {
+      "tool": "graph_context",
+      "query": "native_test_command",
+      "result": "error tool=graph_context type=ValueError message=\"graph executor is busy; retry the request\"\n"
+    }
+  ],
+  "registered_root": "/Users/rabii/Projects/Repositories/codebaseGraph",
+  "source_identity": "Isolated source equality will be verified through actual Git blob/tree and working file hashes; no model binding claimed"
+}

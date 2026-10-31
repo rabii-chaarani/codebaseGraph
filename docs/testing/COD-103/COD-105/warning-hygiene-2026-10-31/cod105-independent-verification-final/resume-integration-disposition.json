@@ -1,0 +1,8 @@
+{
+  "ps_exit_code": 0,
+  "matching_process_lines": [],
+  "integration_log_size": 2925,
+  "integration_log_mtime_ns": 1793407091648615446,
+  "integration_junit_exists": false,
+  "conclusion": "no_related_process_observed_no_final_result"
+}

@@ -1,0 +1,112 @@
+[
+  {
+    "name": "format",
+    "command": "cargo fmt --all --check > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/fmt-check.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031",
+    "started_at": "2026-10-31T02:17:18.340918+00:00",
+    "status": "completed",
+    "exit_code": 0,
+    "duration_seconds": 2.0089467079378664
+  },
+  {
+    "name": "xtask-inventory",
+    "command": "cargo nextest list --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/nextest.toml' --user-config-file none --profile qualified --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/xtask-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/xtask-inventory-build.log' ",
+    "cwd": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031",
+    "started_at": "2026-10-31T02:18:00.160940+00:00",
+    "status": "completed",
+    "cargo_profile": "native-tests",
+    "scope": "entire xtask71 suite; no test filter; new isolated target",
+    "pid": 69793,
+    "exit_code": 0,
+    "duration_seconds": null,
+    "duration_limitation": "Completion exit0 received after kernel restore; final handle/duration unavailable. Initial10.009s running snapshot retained; no retry."
+  },
+  {
+    "name": "full-xtask-run",
+    "command": "cargo nextest run --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/nextest.toml' --user-config-file none --profile qualified --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/xtask-run.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031",
+    "started_at": "2026-10-31T02:18:38.601994+00:00",
+    "status": "completed",
+    "expected_tests": 71,
+    "cargo_profile": "native-tests",
+    "reporting_profile": "qualified;retries0;one thread",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/xtask-junit.xml",
+    "scope": "new execution on5989; previous71 among136 prior cases reused separately, not added as new unique tests",
+    "pid": 70153,
+    "exit_code": 0,
+    "duration_seconds": 19.301937459036708
+  },
+  {
+    "name": "check-workflows",
+    "command": "cargo run --offline --locked -p xtask -- check-workflows > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/check-workflows.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031",
+    "started_at": "2026-10-31T02:19:15.868660+00:00",
+    "status": "completed",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "pid": 73536,
+    "exit_code": 0,
+    "duration_seconds": 12.337522540939972
+  },
+  {
+    "name": "ordinary-release-gate",
+    "command": "cargo run --offline --locked -p xtask -- release-gate > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/release-gate.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031",
+    "started_at": "2026-10-31T02:19:41.689382+00:00",
+    "status": "completed",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "scope": "ordinary repository source gate; no production confirmations/publication",
+    "exit_code": 0,
+    "duration_seconds": 0.4550351658836007
+  },
+  {
+    "name": "strict-workspace-clippy",
+    "command": "cargo clippy --offline --workspace --all-targets --all-features --locked -- -D warnings > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/strict-workspace-clippy.log' 2>&1",
+    "cwd": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031",
+    "started_at": "2026-10-31T02:19:49.400582+00:00",
+    "status": "completed",
+    "environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "scope": "new5989 workspace/all-target/all-feature warnings gate; no native behavior execution; default new worktree target",
+    "pid": 73838,
+    "exit_code": 0,
+    "duration_seconds": 66.23760504205711
+  },
+  {
+    "name": "final-whitespace-and-state",
+    "command": "git --no-optional-locks diff --check; status --porcelain=v1 -uall; rev-parse root/HEAD/tree; diff --stat HEAD",
+    "cwd": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031",
+    "exit_code": 0,
+    "duration_seconds": 0.05464529199525714,
+    "status": "completed",
+    "identity": "Clean tracked/untracked status; unchanged5989/treebca819; before/after all5 hashes unchanged",
+    "log_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-qualified-integration-verification/final-state.txt"
+  }
+]
