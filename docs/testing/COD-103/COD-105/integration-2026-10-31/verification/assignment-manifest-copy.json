@@ -1,0 +1,2750 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-105",
+  "worktree": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031",
+  "branch": "fix/cod-105-qualified-resume",
+  "head": "5989dae3040d2bc17fc6c0b62cb62c5f0377c8c4",
+  "tree": "bca8192ae9a14317dff4b2184c03e326dc3a9e88",
+  "base": "b355d3d3751fdb5aa846181e6a4a49a5d140ada7",
+  "main": "6a98fb0ef4a6bbde02f1556683401eeded49574e",
+  "commits": [
+    {
+      "commit": "088d30aec36f4db879058fe79cf86346d1f6d7a2",
+      "parent": "b355d3d3751fdb5aa846181e6a4a49a5d140ada7",
+      "cherry_pick_of": "ef7988439bb26f1d9914ea8d007196f638c2f33b"
+    },
+    {
+      "commit": "02461b615617d5f4e0a15551712db8b549c45cdf",
+      "parent": "088d30aec36f4db879058fe79cf86346d1f6d7a2",
+      "cherry_pick_of": "73be89faef57d18e9c986c44b18d8e709d9237bb"
+    },
+    {
+      "commit": "3136dba7d302085dd818d5a769efb09ca559a50c",
+      "parent": "02461b615617d5f4e0a15551712db8b549c45cdf",
+      "cherry_pick_of": "316be4c4bb81d4f6e025016b12374836b4dcc1a8"
+    },
+    {
+      "commit": "5989dae3040d2bc17fc6c0b62cb62c5f0377c8c4",
+      "parent": "3136dba7d302085dd818d5a769efb09ca559a50c",
+      "cherry_pick_of": "0e6008a1f46679a86aba85ac513beb05af94b0c0"
+    }
+  ],
+  "preserved_original_source_commit": "ef7988439bb26f1d9914ea8d007196f638c2f33b",
+  "preserved_original_evidence_commit": "73be89faef57d18e9c986c44b18d8e709d9237bb",
+  "original_evidence_parent": "ef7988439bb26f1d9914ea8d007196f638c2f33b",
+  "source_five": {
+    "src/adapters/mcp/daemon.rs": {
+      "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+      "git_blob": "266975ce09927a1d17461ec68773217b36d6b778",
+      "matches_tested_sha256": true
+    },
+    "src/storage/maintenance_controls.rs": {
+      "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+      "git_blob": "8e1b7e40a1d3c3fd0eb9da5181a60841fbd452bb",
+      "matches_tested_sha256": true
+    },
+    "src/api/lifecycle.rs": {
+      "sha256": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+      "git_blob": "d2e4678a3562bbbb289ac26e2d0296f02409a273",
+      "matches_tested_sha256": true
+    },
+    "tests/generation_storage.rs": {
+      "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+      "git_blob": "2b111ff8ed093e90173bf1d43082217576c087d8",
+      "matches_tested_sha256": true
+    },
+    "crates/k-wiki/tests/bundle_reader.rs": {
+      "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+      "git_blob": "69e1b21ad662cdd8c1a16adbf6961ca11b3b24cb",
+      "matches_tested_sha256": true
+    }
+  },
+  "five_hashes_match_verifier_and_review": true,
+  "review_sha256": "3a1049c36ab0f88f52a15f228091c330187bc18ab65bd1cb4af24f9a1c37c2b1",
+  "evidence83": [
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/production-copy-manifest.json",
+      "bytes": 31014,
+      "sha256": "caa32042e9633f157e3b87fd30d9050e79ee8311a2106f72c7c2510fc867d353",
+      "git_blob": "6b9f381d56a0b41aaa22523a8abaeadc397fa9c6"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/README.md",
+      "bytes": 7089,
+      "sha256": "224d30b10dbce3ce3e769ead749bf9aedd3cece744e750b64b4969eadd64abb3",
+      "git_blob": "1f0ea672a013e68f25742887c58543981b0fd7e5"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/final-review.md",
+      "bytes": 26809,
+      "sha256": "3a1049c36ab0f88f52a15f228091c330187bc18ab65bd1cb4af24f9a1c37c2b1",
+      "git_blob": "76fae634f03a2980e7ca4178b1cd4de8fd960001"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/committed-byte-proof.json",
+      "bytes": 4815,
+      "sha256": "63fec49395cc667d2f343cdd6c91b0f0ed438fb1592276bac38fe4a4ede6420c",
+      "git_blob": "35b43a0302360d20fd8bfb5edefa87bb54a2b175"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-run.log",
+      "bytes": 7465,
+      "sha256": "750a3fff50dcf2d12d1dae2baf35eaade2a5a934885547070e8bd5e8421e4d5d",
+      "git_blob": "d090c64a0f753956a8815501ae7f8390bffb630b"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-inventory.log",
+      "bytes": 67,
+      "sha256": "b8141da71aee413fa4d5cd2f16ca3bd5fe7a1b1c21086d431935fdc71d7d27b4",
+      "git_blob": "240c31269b123ba73ebe92914335dd01898d439c"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-executable-provenance.json",
+      "bytes": 7599,
+      "sha256": "8b2720c60d82eebbe0a8e7fcd64b5bc6085050ab0a2eadf3be831fdf05a2af1c",
+      "git_blob": "d67d936ade55fff6d121af1f8d34bd30e8d5c0d2"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-compile.log",
+      "bytes": 2435,
+      "sha256": "1eb21e195cac2634ccea6d232dceb07089e88c192a96d747465419547faa7842",
+      "git_blob": "d200dbf941451678f8c876dfefb559c8021645be"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-final.txt",
+      "bytes": 4111,
+      "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980",
+      "git_blob": "d2d3af5b8bf721e436b9d1d8ec17a41c2e061c27"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-inventory-build.log",
+      "bytes": 1291,
+      "sha256": "b4ce7d9489e27ce19b26828ead39d0461022db6155c5e140ee2300bc9f3b9039",
+      "git_blob": "385d2807410d3b83f96a9189f74bc8aceb834804"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/result.json",
+      "bytes": 49281,
+      "sha256": "39a4d1fe66eb39d6ecff033c98d4ed5435000c48cb7a4a60abef606ac26cd090",
+      "git_blob": "77988125ad87c789f209903735bcde3eb399ea4b"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-junit.xml",
+      "bytes": 559,
+      "sha256": "25d41e9ebd1fd2c032f793f05dfcfb4a99b437020a632310a68acbf568706a39",
+      "git_blob": "1e5285a9a96a410aaf755d9917cccfc2207ce19f"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-run.log",
+      "bytes": 2925,
+      "sha256": "217aaf21d05b9b4f082e8daf0b3bffd240435fc064511c013417b3bf6806b2cf",
+      "git_blob": "8b9bc157e01a2680829b8472513bd985ecbcc2c8"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-run.log",
+      "bytes": 493,
+      "sha256": "ae94ab14d0850959a82a640d159e353fb484b7936bbf0a154b4824e055c58913",
+      "git_blob": "a23085c2773cb9f4d30a8187d2c8d7179238bf0f"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/integration-nextest.toml",
+      "bytes": 242,
+      "sha256": "3217042ac66d2251ffdab9e6895908555b60bb0ca052355d5c309afb3f74bf32",
+      "git_blob": "435c4cfa742b5aca1148f6e01df20b10880622ff"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/lifecycle-fmt-repair-handoff-copy.md",
+      "bytes": 1506,
+      "sha256": "43a398623cebe1f5a72900b9c3b0c15d18294ae3cbbc5d8287b92f7f32a4d77a",
+      "git_blob": "aa398b1312982cf66d2d90a491ad4717ad4cebd8"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/nextest.toml",
+      "bytes": 227,
+      "sha256": "641c04134efc1fd5db3c9f174fd118080c1a1ffe1186cb06c51b28a2830d5e5e",
+      "git_blob": "5c566694f1f0b149c32491a5529b6e0ff4d3d2d5"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-environment-identity-current.json",
+      "bytes": 1567,
+      "sha256": "e5d0bab9c21acbcc86ec0836ad84d7d0aa7f4122aa2e0c5d47efc76bc21908e7",
+      "git_blob": "80bae8e1a49589ff3c6981483e0b6edcf7fb1707"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-inventory.log",
+      "bytes": 67,
+      "sha256": "2f3bdd0136ca20f98984967a184cc529eefdd1851d15ed060f05aaad35bdaefe",
+      "git_blob": "e175de37f26bfb40936043acbce113267efb82b3"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/prior-native-environment-documents.json",
+      "bytes": 3723,
+      "sha256": "b82d3833a08ad695e665c0a16934125359094a6b638da2d394240a11c54a8fc8",
+      "git_blob": "5fadfd6c7909e875ca663f35ac4aa04aa530d9b6"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-junit.xml",
+      "bytes": 14673,
+      "sha256": "f0d4efbc9c009e5c6a961565a6034832a5e4d984b177be70425d128f7d7df1f5",
+      "git_blob": "692dce11bbb186fec1c3fe58b99a87580de347cb"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-compiler-artifacts.jsonl",
+      "bytes": 117219,
+      "sha256": "7a96ca858b5bacc8b9aca3a794f19c13c971b49fba5ac358ecab4a242a69854a",
+      "git_blob": "7176c92897bb346b4b1d8814a951c55ad425d34b"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/environment-current.json",
+      "bytes": 1387,
+      "sha256": "db25de0c3dc05128eb0230c031571994fc7ecd10cbf51ec4a62891ab29668806",
+      "git_blob": "0f54368229ed9b36de1636bab9492a3fe5eca6ea"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-process-check.txt",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "git_blob": "8b137891791fe96927ad78e64b0aad7bded08bdc"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-five-before.json",
+      "bytes": 968,
+      "sha256": "f682d6f75aed5d5144cf6cd9fe86166d260b6cc780e70d7c18d72ed8c6771c7a",
+      "git_blob": "5d284369c1b7fa0bafeef6d4293b8b565bfe848c"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-nextest.toml",
+      "bytes": 234,
+      "sha256": "61b9a2db4db6ea4c403164aad534f8fc0b963e6cc4e927f968d2fa5dd7c5d4ec",
+      "git_blob": "619376b6e0c61af72e9ae1cefaac89011351459d"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-inventory.json",
+      "bytes": 159059,
+      "sha256": "45d6d2911d576911eca4bd3c3a10cdefd2c0d26f783d7fe87b334b4701ce83c5",
+      "git_blob": "ed5adf176556d528c18e57c80744dc58dca953c7"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-initial.txt",
+      "bytes": 4111,
+      "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980",
+      "git_blob": "d2d3af5b8bf721e436b9d1d8ec17a41c2e061c27"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-inventory.json",
+      "bytes": 5014,
+      "sha256": "894297de947b9f93f2d804a139c55f951efedd05366217a1d542981f65cdae2f",
+      "git_blob": "85373b9ff91ebf676587c298d800a9222e4b130e"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/environment-versions.txt",
+      "bytes": 348,
+      "sha256": "d6f26d5e4f2cbf8129c5f609e640dbfaa0a8a2d50a0ae0a7fa9363db444a9db3",
+      "git_blob": "9caa1cadc2f2e26711a12e362af27c37f4a4f8d6"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-junit.xml",
+      "bytes": 11604,
+      "sha256": "5ee9fc153bf6fe00129f95f6bc324da9cadcc29ee6366e0ab16a40b37871b718",
+      "git_blob": "ab007ebc13524827a90fe1a8b09346843f5ce97f"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/junit-audit.json",
+      "bytes": 13242,
+      "sha256": "47994190b25241ca6be4523b324bb0c527c10bdd501ff48da8d6c8c3c5083782",
+      "git_blob": "7be2e49f55ee32becf6a5692977adf3fb70a62a3"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-inventory.json",
+      "bytes": 160232,
+      "sha256": "ca58279c07f145979955829afea494a4c7b1804b45a28182d5618ab5ec488432",
+      "git_blob": "e677485cdb0b8103693ebfa90aec6336ecedf4e5"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/nextest-run-help.txt",
+      "bytes": 16791,
+      "sha256": "773136ceb158c651cfabd075f7c7bd5d59013961978ed781dfeafa809da2d0ab",
+      "git_blob": "1bb8f8a843d834aa7274afa896c81cccaa87c84f"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/graph-native-discovery.json",
+      "bytes": 7869,
+      "sha256": "2d677ae852ba4eaac3d5d3b91db0a799d0889577c0b80be005189bdeb306e22b",
+      "git_blob": "cefe5a880691e9d825015e0c5018b184de245f54"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-build.log",
+      "bytes": 3415,
+      "sha256": "af76a590a77f533ec6c0a4500ecab4907148806127f89b6d284b4497bc0d36e4",
+      "git_blob": "b1e1329b47d92e7b6abfc699a44328cb93b8e619"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-inventory.json",
+      "bytes": 11232,
+      "sha256": "052f0039ea0be89a6ad323fb7ca03ac7a62c647fc18d502ce3e4e768891e1312",
+      "git_blob": "25a775bb79d3acf0ce14fe13a97a0da788ce1fcc"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/command-records.json",
+      "bytes": 15250,
+      "sha256": "406a6d5604ca0796b36a3dfb213ff289d0600208fdc1570a44f0006b0fc89699",
+      "git_blob": "24d0c3932d7c5cdf436ad85c7ae61d88780f03fb"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-integration-disposition.json",
+      "bytes": 239,
+      "sha256": "cb62a8f5c3e3692721aa8e37a1aaefcf189427aa9ba7277b0948754720a2523f",
+      "git_blob": "94103c27bdbec970dc13e7d17116c86ef5b2a026"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/cargo-fmt-check.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-five-after.json",
+      "bytes": 968,
+      "sha256": "f682d6f75aed5d5144cf6cd9fe86166d260b6cc780e70d7c18d72ed8c6771c7a",
+      "git_blob": "5d284369c1b7fa0bafeef6d4293b8b565bfe848c"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/warning-observations.json",
+      "bytes": 554,
+      "sha256": "21b482b0e01d5dfb47a4218c00da344587ce1250308d0bde5d6526d114dee547",
+      "git_blob": "ad2c0abae0f3b4834ddd3626c16d5a702351a88c"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-junit-summary.json",
+      "bytes": 6180,
+      "sha256": "9294398c88dc599d7d0351d9d5cd6fb27637eefbf7c8c2ff566eede0d76f0fef",
+      "git_blob": "22af6c95ec6b5f696bfaf6666b3398a8ad698e8d"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-checkpoint.json",
+      "bytes": 17029,
+      "sha256": "ed263af4338f894bba17bceb59a1745239327fa02767487b2e9c91a72d1db730",
+      "git_blob": "1c4d1af4136323675ca7d8bf31c7154c3dcb7f7d"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-run.log",
+      "bytes": 8989,
+      "sha256": "88fa5580933a6be20364ebaab227253d00e5c9b25ee249688e36c53dbb1e3776",
+      "git_blob": "1506e5a1043bbcc4bdb880bd9c108a747c79e92b"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/inventory-selection-note.json",
+      "bytes": 1197,
+      "sha256": "2c25de46a25d38678488b6669b00953dbfdaa66ed41045605c8353e3b2aadedb",
+      "git_blob": "51c76ebcc5b115daf9d542e494da2afb3903e5de"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-nextest.toml",
+      "bytes": 236,
+      "sha256": "fed231fc734e52c564c656ee7decb877ffe55aa0a4f0b4ed42273fb7f5bc4f46",
+      "git_blob": "9945fbd2fea9af84f9466b4265d3a35adc2828dc"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/release-gate.log",
+      "bytes": 139,
+      "sha256": "34e6864c29bc919a905a444afa3856b4e8ab048059651d414cb6c43a107024b6",
+      "git_blob": "99d331eb6af510c2b09586ba5cd12d67053d0b9c"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-permission-junit.xml",
+      "bytes": 542,
+      "sha256": "8ed056b38c672f4173055cc77caf8a0ca2552d9a52d5cf954d80229cb50e980f",
+      "git_blob": "30520014627a231e2a79877498822bd6ef03841c"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/approved-rev0.3-spec-copy.md",
+      "bytes": 36482,
+      "sha256": "c562044be5de7f8c8063dca0ee7f66cd18f0b66f79607f8267fe1893f8f7942c",
+      "git_blob": "207e0bf394f737dbe083dfeccc0505176589f31f"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/permission-nextest.toml",
+      "bytes": 245,
+      "sha256": "2d66cb70bf7b03cdb548752bc2c37d80ff6dc0dc5f2fe1bc1456f0f8551fdba0",
+      "git_blob": "5e2219a635e0ca312547888046e2bdab8bc19180"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/source-snapshot-final.txt",
+      "bytes": 4111,
+      "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980",
+      "git_blob": "d2d3af5b8bf721e436b9d1d8ec17a41c2e061c27"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-permission-run.log",
+      "bytes": 452,
+      "sha256": "52fd5552b240a64c648eb79af8a85856dea191cbfb76d0ceb079cef958f6d499",
+      "git_blob": "6992ed52fc730fa869a4586a94e4f0dae1408b60"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/result.json",
+      "bytes": 54912,
+      "sha256": "9087d052e13117e5ed419042ef0202225cb3a8c973b172ce19eadcfc8d42aa86",
+      "git_blob": "645d4783f1678dce2bed38608e2853aa7d8555f2"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/evidence-file-manifest.json",
+      "bytes": 20522,
+      "sha256": "e209722736cb233eb0a5d1f0ab8b01e697035f5811132d8f51c3cbb748fef24e",
+      "git_blob": "4b1ba4266aa11753f8975d0db85dcf5f907e2755"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/nextest-inventory.toml",
+      "bytes": 46,
+      "sha256": "32b56fcd21f8a6a2e59f7ed56a2c714c4ccd422b9004f49f0646885c4f0602d1",
+      "git_blob": "d340ffb1e65be1555ac08160e6eb7b26ec983402"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/unfinished-integration-inventory.json",
+      "bytes": 5083,
+      "sha256": "5b4d9454aac050c8850b0ea8f9be7ecf9f805ec4358a30225eda4a10c89138a0",
+      "git_blob": "64f17006202dc7f1730d99014fa85b1aea8a9aa7"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/report.md",
+      "bytes": 8695,
+      "sha256": "d524266f76662f54ca05fd66a7b199db630e9bda3d44f412ed1291cf00080d58",
+      "git_blob": "f7dd6362665c83f47e03f725e32c7b1922e7cf73"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-churn-junit.xml",
+      "bytes": 564,
+      "sha256": "a0c76183662dbb9daf828bd6b920c0baf1524d271f122cd44297e86fcdae7531",
+      "git_blob": "9f6a645131a9712e2dfaedda7d8f1ff67394e417"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-churn-run.log",
+      "bytes": 3037,
+      "sha256": "4a5e5f9324d7ea825bcca41c6a6fbf3a1524949bf6374d079b640b46ceaf5d0d",
+      "git_blob": "a5ceff62cf2dd87f4fd6e8f4b2201ed9c2dd8364"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/junit-audit.json",
+      "bytes": 15940,
+      "sha256": "39b587b33cedf4ac32b7875216a0c78e74b653e7ab17df1dc6e622b64fc218fb",
+      "git_blob": "637bf3b78451f34f22ef2646df15c9aabf35c6f6"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/unfinished-integration-inventory.log",
+      "bytes": 67,
+      "sha256": "a12dac603addbc0b4f03dcf2819c1f14570b7b396225772aa2cb26848742b0e6",
+      "git_blob": "8a58764d782f5b488dd512bd1b306fb3f335bd82"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/strict-workspace-clippy.log",
+      "bytes": 6014,
+      "sha256": "9909223d9ce640dacde4707933778e50237e158ae7c914e4de3f1e0b0de1d0c0",
+      "git_blob": "aaf70222a29b07ef2d3d4fcf32041197ceb726da"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-reader-junit.xml",
+      "bytes": 2270,
+      "sha256": "31709887f6692e20edc4bfb3bbe750c29a4ec663759e33a26c9867068072885d",
+      "git_blob": "5b07bed154a11f03ae74adfec113d1d480e40d6b"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/check-workflows.log",
+      "bytes": 1300,
+      "sha256": "13a3df677f25bc05d57abcf5d5e8d08c40e06320bd143311b8b412ea5147a029",
+      "git_blob": "ed6fb201b117b6673b0b27f6ed97633e6b8d4d8e"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/safe-resume-process-check.json",
+      "bytes": 1034,
+      "sha256": "1e56ed884bd289892858be3d71acaa39778889e512b750addb48377a372f2226",
+      "git_blob": "a31717193c3607ee22a3c81e441255cd5201d59a"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-reader-run.log",
+      "bytes": 1462,
+      "sha256": "15ed5ed9e3330865fb754f62beeda783eeb378f60ece0e1165c756e7a5e82d1e",
+      "git_blob": "da3e0e9723711f8797f8cbb476af2f95df6c029b"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/command-records.json",
+      "bytes": 10200,
+      "sha256": "657e7790389f946b3caffaf39f5fc59abbeab5aa3341b5ebe6219945785ef5c1",
+      "git_blob": "f76b6c867e2a2d7de364434c63cb7192dac35e0e"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/source-five-after.json",
+      "bytes": 968,
+      "sha256": "f682d6f75aed5d5144cf6cd9fe86166d260b6cc780e70d7c18d72ed8c6771c7a",
+      "git_blob": "5d284369c1b7fa0bafeef6d4293b8b565bfe848c"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/churn-nextest.toml",
+      "bytes": 240,
+      "sha256": "ecf2ee6ec4b50b5f4c0ec61cf63bebda73e8a5d479b2c21426e478ccb6ad9c60",
+      "git_blob": "e105d9bd1d5487ff5691882399725e9e2a5abd02"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-nextest.toml",
+      "bytes": 237,
+      "sha256": "683c5a66eddf72ffec0d501c551540268788a272dd670d6fc1174e953166acc5",
+      "git_blob": "2847e907a4961ae1d861bc9df9ab083ecbe2366e"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/warning-observations.json",
+      "bytes": 530,
+      "sha256": "511ecfd9bbc1cb8a57d796e30378a6c4646274c8e6af39e82359c20f6b6d88f0",
+      "git_blob": "81452ab939e924445f651a1ea974c8f371423706"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-final.txt",
+      "bytes": 3530,
+      "sha256": "3b08ebbb0a0bf924498cc54e1e00394a335dc23a98a5536917123ed1b5bc3e18",
+      "git_blob": "df07e388c65f490e47e8c74bfd486555a8b163f6"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/result.json",
+      "bytes": 9286,
+      "sha256": "d174906ebf5e238cf8ef85a2bfcf137986345a34e5d6228db88311a27f57bfe6",
+      "git_blob": "4971dd98f8550c97bc243885520d2a30445ca1b1"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/implementation-handoff-copy.md",
+      "bytes": 4259,
+      "sha256": "e0bed40c848023a0b7668f77155c6df9f7c40d1ccf74c333888888eec86ea270",
+      "git_blob": "eae219b647082d1843f31b7f082f455431375283"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/evidence-file-manifest.json",
+      "bytes": 1695,
+      "sha256": "968dcc31524633ba0f7ace78d41f69d87fb07a1bb52a50bbf67e8fb5a491590b",
+      "git_blob": "7dd9856726020d01c31896fdcca9bccb32b12059"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/report.md",
+      "bytes": 4900,
+      "sha256": "e267620c8921c0d7561e7e26a868282fdaa876531a0820283683d69aa588db13",
+      "git_blob": "6850a7445c946a507ab7af47e401f11ee47dc19e"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/cargo-fmt-check-command.json",
+      "bytes": 1708,
+      "sha256": "792f8ff76de6eeacd63899acbcac217ca1b87f435ea8ec1fa18a6560f715f4a8",
+      "git_blob": "7bd6ed119e80427756dc1a15a708ff042a242793"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-five-before.json",
+      "bytes": 968,
+      "sha256": "f9e27791afb3f7212289d8a03fc2c2d6c1eae78494e5ff4f7d47f5047a0c8eb6",
+      "git_blob": "ed73ba3ea2bdb8c0450501693d55ea1fdf38f2ed"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-initial.txt",
+      "bytes": 3530,
+      "sha256": "3b08ebbb0a0bf924498cc54e1e00394a335dc23a98a5536917123ed1b5bc3e18",
+      "git_blob": "df07e388c65f490e47e8c74bfd486555a8b163f6"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/graph-discovery.json",
+      "bytes": 14521,
+      "sha256": "60cabc193662b67efb677bc6668e901270fd671dc0df90d23595531e51965250",
+      "git_blob": "79437d7b0d9ebed424a1e83eeade8c40856a3606"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/cargo-fmt-check.log",
+      "bytes": 1718,
+      "sha256": "1ad656755c7b016869b27c819798de33f9359d9281808f2384a93be323626d40",
+      "git_blob": "6569c7d2f8526e4750aba14b3f8a9f63bfb27f5d"
+    },
+    {
+      "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-five-after.json",
+      "bytes": 968,
+      "sha256": "f9e27791afb3f7212289d8a03fc2c2d6c1eae78494e5ff4f7d47f5047a0c8eb6",
+      "git_blob": "ed73ba3ea2bdb8c0450501693d55ea1fdf38f2ed"
+    }
+  ],
+  "approved_revision_sha": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+  "approval_record_sha": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+  "approved10_hashes": {
+    "docs/specs/COD-103/spec.md": "c562044be5de7f8c8063dca0ee7f66cd18f0b66f79607f8267fe1893f8f7942c",
+    "docs/specs/COD-103/design.md": "8ae7be05e8dafe6865656dbdcbbbdf13d270cf92e51a327a58884bea8abab8a8",
+    "docs/specs/COD-103/architecture.md": "fdb897070bd811438124e55e6962887c0c6907fa37594a0350da76e32767fb97",
+    "docs/specs/COD-103/verification.md": "c7385cca0eea633112114417f01623b09042451df484d91c4c4e92aa783a239d",
+    "docs/specs/COD-103/delivery.md": "03f67df37a809e0e03512febb950785ddfa8080d2a04895fedf2e0ca523ff155",
+    "docs/specs/COD-103/decisions/2026-10-30-cod110-preparation.md": "027abc9525ed61f57d13b0ee002acb1037aabaf833ea0bbd6d50b784458e72dc",
+    "docs/testing/COD-103/release-baseline-v4.0.4/README.md": "1993ae408bd051850613a5d3a9ccdea67b4d8ed065b3886f7a7a3fb7c91ac6f8",
+    "docs/testing/COD-103/release-baseline-v4.0.4/report.md": "cf453431aba6f9f5466d577ddf62ef0d2f2ff06ee3022f442a4fc9ce5ba915c4",
+    "docs/testing/COD-103/release-baseline-v4.0.4/result.json": "1e21f9a9b977685e78a00779c3b2b542cf61ce9ee2cfb903461a8090079ef791",
+    "docs/testing/COD-103/release-baseline-v4.0.4/evidence-file-manifest.json": "85151fcd2274b8878fceedfa37935f3b607d02dc0305df3bc7fa9089bb4e2b44"
+  },
+  "approved_bytes_preserved": true,
+  "direct_tree_changed_paths_vs_tested_ef798": [
+    ".release-please-manifest.json",
+    "CHANGELOG.md",
+    "Cargo.lock",
+    "Cargo.toml",
+    "crates/k-wiki/Cargo.toml",
+    "crates/xtask/Cargo.toml",
+    "docs/specs/COD-103/approvals/2026-10-31-revision-0.3.md",
+    "docs/specs/COD-103/architecture.md",
+    "docs/specs/COD-103/decisions/2026-10-30-cod110-preparation.md",
+    "docs/specs/COD-103/delivery.md",
+    "docs/specs/COD-103/design.md",
+    "docs/specs/COD-103/spec.md",
+    "docs/specs/COD-103/verification.md",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/README.md",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-build.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-inventory.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-run.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/cargo-fmt-check.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/command-records.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/environment-current.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/environment-versions.txt",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-inventory.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-inventory.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-junit.xml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-run.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-nextest.toml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/graph-native-discovery.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/integration-nextest.toml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/inventory-selection-note.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/junit-audit.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/lifecycle-fmt-repair-handoff-copy.md",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-compile.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-compiler-artifacts.jsonl",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-environment-identity-current.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-executable-provenance.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-inventory.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-inventory.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-junit.xml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-run.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-nextest.toml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/nextest-run-help.txt",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/nextest.toml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/prior-native-environment-documents.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/result.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-checkpoint.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-integration-disposition.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-process-check.txt",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-five-after.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-five-before.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-final.txt",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-initial.txt",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/warning-observations.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-inventory-build.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-inventory.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-junit-summary.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-junit.xml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-run.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/approved-rev0.3-spec-copy.md",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-nextest.toml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-reader-junit.xml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-reader-run.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/check-workflows.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/churn-nextest.toml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/command-records.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/evidence-file-manifest.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-churn-junit.xml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-churn-run.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-permission-junit.xml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-permission-run.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/junit-audit.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/nextest-inventory.toml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/permission-nextest.toml",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/release-gate.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/report.md",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/result.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/safe-resume-process-check.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/source-five-after.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/source-snapshot-final.txt",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/strict-workspace-clippy.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/unfinished-integration-inventory.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/unfinished-integration-inventory.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/warning-observations.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/cargo-fmt-check-command.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/cargo-fmt-check.log",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/evidence-file-manifest.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/graph-discovery.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/implementation-handoff-copy.md",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/report.md",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/result.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-five-after.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-five-before.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-final.txt",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-initial.txt",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/committed-byte-proof.json",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/final-review.md",
+    "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/production-copy-manifest.json",
+    "docs/testing/COD-103/release-baseline-v4.0.4/README.md",
+    "docs/testing/COD-103/release-baseline-v4.0.4/evidence-file-manifest.json",
+    "docs/testing/COD-103/release-baseline-v4.0.4/report.md",
+    "docs/testing/COD-103/release-baseline-v4.0.4/result.json"
+  ],
+  "expected_change_partition": {
+    "metadata": [
+      ".release-please-manifest.json",
+      "CHANGELOG.md",
+      "Cargo.lock",
+      "Cargo.toml",
+      "crates/k-wiki/Cargo.toml",
+      "crates/xtask/Cargo.toml"
+    ],
+    "docs_evidence_paths": [
+      "docs/specs/COD-103/approvals/2026-10-31-revision-0.3.md",
+      "docs/specs/COD-103/architecture.md",
+      "docs/specs/COD-103/decisions/2026-10-30-cod110-preparation.md",
+      "docs/specs/COD-103/delivery.md",
+      "docs/specs/COD-103/design.md",
+      "docs/specs/COD-103/spec.md",
+      "docs/specs/COD-103/verification.md",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/README.md",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-build.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-inventory.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/affected-integration-run.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/cargo-fmt-check.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/command-records.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/environment-current.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/environment-versions.txt",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-inventory.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-inventory.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-junit.xml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-focused-run.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/fifo-nextest.toml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/graph-native-discovery.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/integration-nextest.toml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/inventory-selection-note.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/junit-audit.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/lifecycle-fmt-repair-handoff-copy.md",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-compile.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-compiler-artifacts.jsonl",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-environment-identity-current.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-executable-provenance.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-inventory.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-inventory.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-junit.xml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-focused-run.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/native-nextest.toml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/nextest-run-help.txt",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/nextest.toml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/prior-native-environment-documents.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/result.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-checkpoint.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-integration-disposition.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/resume-process-check.txt",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-five-after.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-five-before.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-final.txt",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-initial.txt",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/warning-observations.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-inventory-build.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-inventory.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-junit-summary.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-junit.xml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/xtask-run.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/approved-rev0.3-spec-copy.md",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-nextest.toml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-reader-junit.xml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/bundle-reader-run.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/check-workflows.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/churn-nextest.toml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/command-records.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/evidence-file-manifest.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-churn-junit.xml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-churn-run.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-permission-junit.xml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/generation-permission-run.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/junit-audit.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/nextest-inventory.toml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/permission-nextest.toml",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/release-gate.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/report.md",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/result.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/safe-resume-process-check.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/source-five-after.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/source-snapshot-final.txt",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/strict-workspace-clippy.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/unfinished-integration-inventory.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/unfinished-integration-inventory.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/warning-observations.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/cargo-fmt-check-command.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/cargo-fmt-check.log",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/evidence-file-manifest.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/graph-discovery.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/implementation-handoff-copy.md",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/report.md",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/result.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-five-after.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-five-before.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-final.txt",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-initial.txt",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/committed-byte-proof.json",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/final-review.md",
+      "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/production-copy-manifest.json",
+      "docs/testing/COD-103/release-baseline-v4.0.4/README.md",
+      "docs/testing/COD-103/release-baseline-v4.0.4/evidence-file-manifest.json",
+      "docs/testing/COD-103/release-baseline-v4.0.4/report.md",
+      "docs/testing/COD-103/release-baseline-v4.0.4/result.json"
+    ]
+  },
+  "metadata_main_blob_matches": {
+    ".release-please-manifest.json": "824fecd7d6fcc70bd0d4a99fd41227a3a852112a",
+    "CHANGELOG.md": "ac441b32456697a40cc19423edb7f8cd9ccf972a",
+    "Cargo.lock": "26a3c2b212c40fd20d8994379b52a062c6b36151",
+    "Cargo.toml": "edc36c806feeac102c6a7023710fc6af78aafa5f",
+    "crates/k-wiki/Cargo.toml": "daefc138a978ae8d04bb88d4df3492302e610e73",
+    "crates/xtask/Cargo.toml": "33dd4a867b9d66e4aa9c815ac212eda7787e5d06"
+  },
+  "lock_package_version_changes": [
+    {
+      "name": "codebase-graph",
+      "old_version": "4.0.4",
+      "new_version": "4.0.5"
+    },
+    {
+      "name": "k-wiki",
+      "old_version": "4.0.4",
+      "new_version": "4.0.5"
+    },
+    {
+      "name": "xtask",
+      "old_version": "4.0.4",
+      "new_version": "4.0.5"
+    }
+  ],
+  "cargo_lock_equal_after_only_workspace_package_version_mask": true,
+  "relevant_nondoc_nonmetadata_blobs": {
+    ".cargo/config.toml": {
+      "tested_ef798": "d7045001c8887b89671ec5f197bbe3d33396d97c",
+      "integrated": "d7045001c8887b89671ec5f197bbe3d33396d97c",
+      "unchanged": true
+    },
+    ".github/actions/setup-native/action.yml": {
+      "tested_ef798": "f8bea73be6c59c4a000e3da372b49ab5fc99bea4",
+      "integrated": "f8bea73be6c59c4a000e3da372b49ab5fc99bea4",
+      "unchanged": true
+    },
+    ".github/actions/verified-release/action.yml": {
+      "tested_ef798": "26ab134e82182f58213eebe707aab98d19d47931",
+      "integrated": "26ab134e82182f58213eebe707aab98d19d47931",
+      "unchanged": true
+    },
+    ".github/dependabot.yml": {
+      "tested_ef798": "784df2519dd7f1ce2db1d9b55cdf02d836bc7594",
+      "integrated": "784df2519dd7f1ce2db1d9b55cdf02d836bc7594",
+      "unchanged": true
+    },
+    ".github/workflows/ci.yml": {
+      "tested_ef798": "66e3cc1430c82d09dac6c25cd0a70deb8f7d9383",
+      "integrated": "66e3cc1430c82d09dac6c25cd0a70deb8f7d9383",
+      "unchanged": true
+    },
+    ".github/workflows/native.yml": {
+      "tested_ef798": "fee3466c099be7b1cf2d44705bdeedd4cc32d0d8",
+      "integrated": "fee3466c099be7b1cf2d44705bdeedd4cc32d0d8",
+      "unchanged": true
+    },
+    ".github/workflows/release.yml": {
+      "tested_ef798": "0ac2727bec28401929ede40adacae97dff4ff2cb",
+      "integrated": "0ac2727bec28401929ede40adacae97dff4ff2cb",
+      "unchanged": true
+    },
+    ".gitignore": {
+      "tested_ef798": "82d2e08985284d4aaf510da63d82c46e48cabf70",
+      "integrated": "82d2e08985284d4aaf510da63d82c46e48cabf70",
+      "unchanged": true
+    },
+    "LICENSE": {
+      "tested_ef798": "82f2e194940f277e07276c5c5f534f30777f6f17",
+      "integrated": "82f2e194940f277e07276c5c5f534f30777f6f17",
+      "unchanged": true
+    },
+    "README.md": {
+      "tested_ef798": "5b19a98c97c6037cc8b7194d4af2ae10d375ebfa",
+      "integrated": "5b19a98c97c6037cc8b7194d4af2ae10d375ebfa",
+      "unchanged": true
+    },
+    "SECURITY.md": {
+      "tested_ef798": "54260526e75ae796223fcc5e768b61411c0715fd",
+      "integrated": "54260526e75ae796223fcc5e768b61411c0715fd",
+      "unchanged": true
+    },
+    "assets/architecture_queries.json": {
+      "tested_ef798": "39942acc5eb64c25a278ff7b2a7b4244233254c8",
+      "integrated": "39942acc5eb64c25a278ff7b2a7b4244233254c8",
+      "unchanged": true
+    },
+    "assets/graph_schema.json": {
+      "tested_ef798": "1069d82e9f5924e8f040dab3d37a80d500dd4d55",
+      "integrated": "1069d82e9f5924e8f040dab3d37a80d500dd4d55",
+      "unchanged": true
+    },
+    "assets/ladybug-extensions/0.19.0/osx_arm64/fts/libfts.lbug_extension.xz": {
+      "tested_ef798": "727844e7f202c0e0ce984b7c98b0a8869859d8ea",
+      "integrated": "727844e7f202c0e0ce984b7c98b0a8869859d8ea",
+      "unchanged": true
+    },
+    "assets/ladybug-extensions/0.19.0/osx_arm64/json/libjson.lbug_extension.xz": {
+      "tested_ef798": "8acf0d1dcf6f8e49d9a12ad47577c1cb43f40905",
+      "integrated": "8acf0d1dcf6f8e49d9a12ad47577c1cb43f40905",
+      "unchanged": true
+    },
+    "assets/ladybug-extensions/0.19.0/win_amd64/fts/libfts.lbug_extension.xz": {
+      "tested_ef798": "a3255228403953a56a5082400777e5548d4c93d3",
+      "integrated": "a3255228403953a56a5082400777e5548d4c93d3",
+      "unchanged": true
+    },
+    "assets/ladybug-extensions/0.19.0/win_amd64/json/libjson.lbug_extension.xz": {
+      "tested_ef798": "750571aaff766996315baa53747ce25e091ce5ad",
+      "integrated": "750571aaff766996315baa53747ce25e091ce5ad",
+      "unchanged": true
+    },
+    "assets/mcp_tool_specs.json": {
+      "tested_ef798": "8d2a1dbd7a08363ee05bd7b38b763e65f07f4c5e",
+      "integrated": "8d2a1dbd7a08363ee05bd7b38b763e65f07f4c5e",
+      "unchanged": true
+    },
+    "assets/query_helpers.json": {
+      "tested_ef798": "18e95bd935952ac44c5632d4c21e036a48e22914",
+      "integrated": "18e95bd935952ac44c5632d4c21e036a48e22914",
+      "unchanged": true
+    },
+    "build.rs": {
+      "tested_ef798": "5fad76c76f14278a1a5dd2485a9705222424cf4a",
+      "integrated": "5fad76c76f14278a1a5dd2485a9705222424cf4a",
+      "unchanged": true
+    },
+    "conda-forge/recipe/meta.yaml": {
+      "tested_ef798": "aac03ada492e2e61f7832ad631dc754a58738309",
+      "integrated": "aac03ada492e2e61f7832ad631dc754a58738309",
+      "unchanged": true
+    },
+    "crates/k-wiki/assets/wiki.css": {
+      "tested_ef798": "f32bbc3681a64a2aad53de875acc6c1ac604e2bf",
+      "integrated": "f32bbc3681a64a2aad53de875acc6c1ac604e2bf",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/adapters/cli.rs": {
+      "tested_ef798": "a523ffaee8c6fe86ffb4c5525e03c4ffd1bc3e98",
+      "integrated": "a523ffaee8c6fe86ffb4c5525e03c4ffd1bc3e98",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/adapters/http.rs": {
+      "tested_ef798": "3317dbde71956423afe8f739637a0c12c1f1760e",
+      "integrated": "3317dbde71956423afe8f739637a0c12c1f1760e",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/adapters/install.rs": {
+      "tested_ef798": "4d499bbced4191b2076a7f84c13fab1b422c0249",
+      "integrated": "4d499bbced4191b2076a7f84c13fab1b422c0249",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/adapters/mcp.rs": {
+      "tested_ef798": "da836d962b3f3e60918ded8145dc421f5fe0f543",
+      "integrated": "da836d962b3f3e60918ded8145dc421f5fe0f543",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/adapters/mod.rs": {
+      "tested_ef798": "e325e4743821b25142b57f11d292d4e3cd96c63b",
+      "integrated": "e325e4743821b25142b57f11d292d4e3cd96c63b",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/api/contracts.rs": {
+      "tested_ef798": "48ac4b6018f21b77c0ca82161d58762ac0d9800a",
+      "integrated": "48ac4b6018f21b77c0ca82161d58762ac0d9800a",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/api/facade.rs": {
+      "tested_ef798": "1fa56847fe85af328d0155d30514a3018ac6132b",
+      "integrated": "1fa56847fe85af328d0155d30514a3018ac6132b",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/api/mod.rs": {
+      "tested_ef798": "967b872282247b829f2cf4a1868da2836cbec454",
+      "integrated": "967b872282247b829f2cf4a1868da2836cbec454",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/api/registry.rs": {
+      "tested_ef798": "578febbc971d672300665fe5a999d7aeb0562d7f",
+      "integrated": "578febbc971d672300665fe5a999d7aeb0562d7f",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/authoring/bundle.rs": {
+      "tested_ef798": "ae36e6d540974413f77d8681774b6ac3b56a618c",
+      "integrated": "ae36e6d540974413f77d8681774b6ac3b56a618c",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/authoring/mod.rs": {
+      "tested_ef798": "0590c7d8fb2015cdf725f74a689eab9e05eaed82",
+      "integrated": "0590c7d8fb2015cdf725f74a689eab9e05eaed82",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/authoring/page.rs": {
+      "tested_ef798": "64b96ab543db5e0175e456bba72ae994a12e2e61",
+      "integrated": "64b96ab543db5e0175e456bba72ae994a12e2e61",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/authoring/write.rs": {
+      "tested_ef798": "a0d7c1e963f33fbcc2031b34bc6cd54c7bb5a400",
+      "integrated": "a0d7c1e963f33fbcc2031b34bc6cd54c7bb5a400",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/bin/k-wiki.rs": {
+      "tested_ef798": "7e06ac0ccb33775ebcd14ddf8b051fb49a6aa797",
+      "integrated": "7e06ac0ccb33775ebcd14ddf8b051fb49a6aa797",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/bundle/mod.rs": {
+      "tested_ef798": "ce8ff224d2eea21bfa7b3e42c9af3934e9c276f6",
+      "integrated": "ce8ff224d2eea21bfa7b3e42c9af3934e9c276f6",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/compiler/mod.rs": {
+      "tested_ef798": "52f23b3a1d534d636857a64ee7325973faa1ae36",
+      "integrated": "52f23b3a1d534d636857a64ee7325973faa1ae36",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/conformance.rs": {
+      "tested_ef798": "d9d0bf2c3df563029f6c6c06e20cb36f5e75e8a0",
+      "integrated": "d9d0bf2c3df563029f6c6c06e20cb36f5e75e8a0",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/diagnostic.rs": {
+      "tested_ef798": "edf428c558a1bbe67422b2daa170dfe9ce1493fe",
+      "integrated": "edf428c558a1bbe67422b2daa170dfe9ce1493fe",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/graph_context.rs": {
+      "tested_ef798": "630a5177faeb5131c41ea9181220bd373ec4d41b",
+      "integrated": "630a5177faeb5131c41ea9181220bd373ec4d41b",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/lib.rs": {
+      "tested_ef798": "06797722f5700ad4b5462585b8fea125731c3d81",
+      "integrated": "06797722f5700ad4b5462585b8fea125731c3d81",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/memory.rs": {
+      "tested_ef798": "ad01b25921d88a12c87fd2ac5953d410fc2da60d",
+      "integrated": "ad01b25921d88a12c87fd2ac5953d410fc2da60d",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/model.rs": {
+      "tested_ef798": "fa19ff9562e06c1cc58bfaadd947a6a4950a1d21",
+      "integrated": "fa19ff9562e06c1cc58bfaadd947a6a4950a1d21",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/projection/mod.rs": {
+      "tested_ef798": "fd29fa8e765082590d7bab5d9164bc350bf5d340",
+      "integrated": "fd29fa8e765082590d7bab5d9164bc350bf5d340",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/refresh.rs": {
+      "tested_ef798": "f14a99992b1b76f01e19cc688867bb60be1bd431",
+      "integrated": "f14a99992b1b76f01e19cc688867bb60be1bd431",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/render/mod.rs": {
+      "tested_ef798": "795ce5e7ef7b727883f66ebccb60eecdf15ab6c9",
+      "integrated": "795ce5e7ef7b727883f66ebccb60eecdf15ab6c9",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/search/mod.rs": {
+      "tested_ef798": "ccc54183ed27ece542d8bb2c8f93bdc2b431c171",
+      "integrated": "ccc54183ed27ece542d8bb2c8f93bdc2b431c171",
+      "unchanged": true
+    },
+    "crates/k-wiki/src/service.rs": {
+      "tested_ef798": "f943673a8e7ba7ef363e8f3a0cc2bebd03310415",
+      "integrated": "f943673a8e7ba7ef363e8f3a0cc2bebd03310415",
+      "unchanged": true
+    },
+    "crates/k-wiki/templates/page.html": {
+      "tested_ef798": "083036b98b4ba80a3d428eacfa955c4ea9690e9f",
+      "integrated": "083036b98b4ba80a3d428eacfa955c4ea9690e9f",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/api_integration.rs": {
+      "tested_ef798": "44b440925fc44a9353385f298c2553da6b3329d5",
+      "integrated": "44b440925fc44a9353385f298c2553da6b3329d5",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/authoring.rs": {
+      "tested_ef798": "39e4dddabb031946e60b5ed57f92c1327730a765",
+      "integrated": "39e4dddabb031946e60b5ed57f92c1327730a765",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/bundle_reader.rs": {
+      "tested_ef798": "69e1b21ad662cdd8c1a16adbf6961ca11b3b24cb",
+      "integrated": "69e1b21ad662cdd8c1a16adbf6961ca11b3b24cb",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/compilation.rs": {
+      "tested_ef798": "8f43a9af106fba8a40e877130c23d6c9182c9ba8",
+      "integrated": "8f43a9af106fba8a40e877130c23d6c9182c9ba8",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/conformance.rs": {
+      "tested_ef798": "93dae539a48e9a9e698ddf603610b8f8033341ce",
+      "integrated": "93dae539a48e9a9e698ddf603610b8f8033341ce",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/diagnostic_transports.rs": {
+      "tested_ef798": "642cd243f7cd5fabaa57ada8c104300efcc44dad",
+      "integrated": "642cd243f7cd5fabaa57ada8c104300efcc44dad",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/diagnostics.rs": {
+      "tested_ef798": "99c0ca5d229a18fb25ced0a4a17ee59f0ef3ab3e",
+      "integrated": "99c0ca5d229a18fb25ced0a4a17ee59f0ef3ab3e",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/comprehensive/decisions/adr-002.md": {
+      "tested_ef798": "2e98f6452ec3a8fd5e83603049f1c21b8beb32e5",
+      "integrated": "2e98f6452ec3a8fd5e83603049f1c21b8beb32e5",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/comprehensive/guides/index.md": {
+      "tested_ef798": "805d36c1f6602a043c25afc5414fe02daa94ef59",
+      "integrated": "805d36c1f6602a043c25afc5414fe02daa94ef59",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/comprehensive/guides/log.md": {
+      "tested_ef798": "15c3065bf4eed6f1d0a91392d84f183bdc0c04e3",
+      "integrated": "15c3065bf4eed6f1d0a91392d84f183bdc0c04e3",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/comprehensive/guides/overview.md": {
+      "tested_ef798": "10f70671d44d3196c927b6afef1a7d6e5b938d0f",
+      "integrated": "10f70671d44d3196c927b6afef1a7d6e5b938d0f",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/comprehensive/index.md": {
+      "tested_ef798": "35aff309235de93bf3f0325f1e6ebc7efee35633",
+      "integrated": "35aff309235de93bf3f0325f1e6ebc7efee35633",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/malformed/invalid-frontmatter.md": {
+      "tested_ef798": "5ed32c35da67f369e9cf6e58409ce3bbb153bd4c",
+      "integrated": "5ed32c35da67f369e9cf6e58409ce3bbb153bd4c",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/malformed/log.md": {
+      "tested_ef798": "ba1aea53b52addb7797ab209dd99b4a8955bd6e2",
+      "integrated": "ba1aea53b52addb7797ab209dd99b4a8955bd6e2",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/malformed/missing-type.md": {
+      "tested_ef798": "ec2b1f12797a81c8e32a9fc5f8a96ce273c2146f",
+      "integrated": "ec2b1f12797a81c8e32a9fc5f8a96ce273c2146f",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/malformed/nested/index.md": {
+      "tested_ef798": "f2245d82c8040308de97affb41c398bfe5d6a8bf",
+      "integrated": "f2245d82c8040308de97affb41c398bfe5d6a8bf",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/malformed/no-frontmatter.md": {
+      "tested_ef798": "7d5b8fde2b52941daa654fd87464ee4ca4a455ec",
+      "integrated": "7d5b8fde2b52941daa654fd87464ee4ca4a455ec",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/malformed/stray-version.md": {
+      "tested_ef798": "0a29154cb0c808b1be0cc95a35fa410626633018",
+      "integrated": "0a29154cb0c808b1be0cc95a35fa410626633018",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/malformed/tagged-extension.md": {
+      "tested_ef798": "5a757998354c065cf248c1ec0cc06f3ae0aef4cc",
+      "integrated": "5a757998354c065cf248c1ec0cc06f3ae0aef4cc",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/minimal/decisions/adr-001.md": {
+      "tested_ef798": "442d5b0da96cd5623dbd9ec80f8d9be2238b3dc5",
+      "integrated": "442d5b0da96cd5623dbd9ec80f8d9be2238b3dc5",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/minimal/index.md": {
+      "tested_ef798": "b6c0ad4a59a8b4c009a8262743f6d32a8ffa199f",
+      "integrated": "b6c0ad4a59a8b4c009a8262743f6d32a8ffa199f",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/multi_bundle/alpha/index.md": {
+      "tested_ef798": "aee9ada4c6d38c82e436667b06f42f27514d1537",
+      "integrated": "aee9ada4c6d38c82e436667b06f42f27514d1537",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/multi_bundle/alpha/page.md": {
+      "tested_ef798": "128fae41a03560f77512246ce29a32d74f2e9a01",
+      "integrated": "128fae41a03560f77512246ce29a32d74f2e9a01",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/multi_bundle/beta/index.md": {
+      "tested_ef798": "fe149d90bff2585d0166c3c932d90af64c3643c8",
+      "integrated": "fe149d90bff2585d0166c3c932d90af64c3643c8",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/fixtures/multi_bundle/beta/page.md": {
+      "tested_ef798": "b73099c345d4c021432fb4317cbd71590f5a856b",
+      "integrated": "b73099c345d4c021432fb4317cbd71590f5a856b",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/memory.rs": {
+      "tested_ef798": "abf7496b5c9c6a9b1382825e9d18aff3259e0d97",
+      "integrated": "abf7496b5c9c6a9b1382825e9d18aff3259e0d97",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/projection.rs": {
+      "tested_ef798": "995798e0d79af27972323c33f9e2e9c2a2b61287",
+      "integrated": "995798e0d79af27972323c33f9e2e9c2a2b61287",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/refresh.rs": {
+      "tested_ef798": "3b2690a1d012465c52bf2e41520f1bd6277aca0d",
+      "integrated": "3b2690a1d012465c52bf2e41520f1bd6277aca0d",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/rendering.rs": {
+      "tested_ef798": "4124e5b87da1f072eb4745f6937f2409853dc0b9",
+      "integrated": "4124e5b87da1f072eb4745f6937f2409853dc0b9",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/search.rs": {
+      "tested_ef798": "f090f55ccaf37a6266c035c8f1d5e46c1a860d0a",
+      "integrated": "f090f55ccaf37a6266c035c8f1d5e46c1a860d0a",
+      "unchanged": true
+    },
+    "crates/k-wiki/tests/transports.rs": {
+      "tested_ef798": "883ca9b11286e193684af3808ef2370a883fed63",
+      "integrated": "883ca9b11286e193684af3808ef2370a883fed63",
+      "unchanged": true
+    },
+    "crates/xtask/src/macos.rs": {
+      "tested_ef798": "39b700b69c7b17e07b2abdfbf7bfe559e34478ac",
+      "integrated": "39b700b69c7b17e07b2abdfbf7bfe559e34478ac",
+      "unchanged": true
+    },
+    "crates/xtask/src/macos_installer_tests.rs": {
+      "tested_ef798": "98828f79f7443e0dbb5acfbdf9b3a22c6411689d",
+      "integrated": "98828f79f7443e0dbb5acfbdf9b3a22c6411689d",
+      "unchanged": true
+    },
+    "crates/xtask/src/main.rs": {
+      "tested_ef798": "f7d34092b61c27918a299a087af21c284b527fd3",
+      "integrated": "f7d34092b61c27918a299a087af21c284b527fd3",
+      "unchanged": true
+    },
+    "crates/xtask/src/native_tests.rs": {
+      "tested_ef798": "5d0b21124cf9eb8cd716904ae1b8417112b2d2c9",
+      "integrated": "5d0b21124cf9eb8cd716904ae1b8417112b2d2c9",
+      "unchanged": true
+    },
+    "crates/xtask/src/native_tests/shards.rs": {
+      "tested_ef798": "98a1211999eefc3724349c3cc3fe3d4ed24373a8",
+      "integrated": "98a1211999eefc3724349c3cc3fe3d4ed24373a8",
+      "unchanged": true
+    },
+    "crates/xtask/src/release.rs": {
+      "tested_ef798": "45e1d324db5f86f5152b825f0f114e99fa85990e",
+      "integrated": "45e1d324db5f86f5152b825f0f114e99fa85990e",
+      "unchanged": true
+    },
+    "crates/xtask/src/release/workflow_tests.rs": {
+      "tested_ef798": "a759b2a90c78141f2197a3d1a47098d67cf47a13",
+      "integrated": "a759b2a90c78141f2197a3d1a47098d67cf47a13",
+      "unchanged": true
+    },
+    "knowledge/architecture/agent-loop-hooks.md": {
+      "tested_ef798": "d657a156a9b48c93bfd6d4922c93f47ab5cd296f",
+      "integrated": "d657a156a9b48c93bfd6d4922c93f47ab5cd296f",
+      "unchanged": true
+    },
+    "knowledge/architecture/agent-memory.md": {
+      "tested_ef798": "75916b900990ab71614c18c2b24e6b7a5d83f2fb",
+      "integrated": "75916b900990ab71614c18c2b24e6b7a5d83f2fb",
+      "unchanged": true
+    },
+    "knowledge/architecture/graph-disk-cleanup-contract.md": {
+      "tested_ef798": "f6500278c826fa0e4327104e4127b6b447747e06",
+      "integrated": "f6500278c826fa0e4327104e4127b6b447747e06",
+      "unchanged": true
+    },
+    "knowledge/architecture/graph-disk-cleanup-spec-reviews-2026-10-20.md": {
+      "tested_ef798": "d0f8b06fd005c3acbbf1190c95bb75062ac0f301",
+      "integrated": "d0f8b06fd005c3acbbf1190c95bb75062ac0f301",
+      "unchanged": true
+    },
+    "knowledge/architecture/graph-disk-retention-review-2026-10-20.md": {
+      "tested_ef798": "06fddfec79d7850477900f358f72ef0f8ed61747",
+      "integrated": "06fddfec79d7850477900f358f72ef0f8ed61747",
+      "unchanged": true
+    },
+    "knowledge/architecture/graph-freshness-recovery.md": {
+      "tested_ef798": "c97081a8ce3883e6c7978babee0abb16a120d5e9",
+      "integrated": "c97081a8ce3883e6c7978babee0abb16a120d5e9",
+      "unchanged": true
+    },
+    "knowledge/architecture/graph-runtime.md": {
+      "tested_ef798": "af57c4afe38b4a6222b98fcf627d5921828fd688",
+      "integrated": "af57c4afe38b4a6222b98fcf627d5921828fd688",
+      "unchanged": true
+    },
+    "knowledge/architecture/graph-storage-lifecycle.md": {
+      "tested_ef798": "c7fe407f0ce40f900ca4e439f31274a277e907bf",
+      "integrated": "c7fe407f0ce40f900ca4e439f31274a277e907bf",
+      "unchanged": true
+    },
+    "knowledge/architecture/invariants.md": {
+      "tested_ef798": "259fb327715a939f6d62fb00d56fd8027724ff2b",
+      "integrated": "259fb327715a939f6d62fb00d56fd8027724ff2b",
+      "unchanged": true
+    },
+    "knowledge/architecture/knowledge-wiki.md": {
+      "tested_ef798": "27433b9deae29eccbf9c654b23853bc6c63dbc44",
+      "integrated": "27433b9deae29eccbf9c654b23853bc6c63dbc44",
+      "unchanged": true
+    },
+    "knowledge/architecture/language-css.md": {
+      "tested_ef798": "4366afc9354ec40938898044585254d9d8ef41ea",
+      "integrated": "4366afc9354ec40938898044585254d9d8ef41ea",
+      "unchanged": true
+    },
+    "knowledge/architecture/language-html.md": {
+      "tested_ef798": "93ce18ba4c5504960ba4d655254bb98cea4ce991",
+      "integrated": "93ce18ba4c5504960ba4d655254bb98cea4ce991",
+      "unchanged": true
+    },
+    "knowledge/architecture/language-javascript.md": {
+      "tested_ef798": "40fc06abf898f5ba9a7d709498810c87c8141f4e",
+      "integrated": "40fc06abf898f5ba9a7d709498810c87c8141f4e",
+      "unchanged": true
+    },
+    "knowledge/architecture/language-typescript-tsx.md": {
+      "tested_ef798": "6cb7470a0fe65cda4f7c67a6ecc936048d923c6c",
+      "integrated": "6cb7470a0fe65cda4f7c67a6ecc936048d923c6c",
+      "unchanged": true
+    },
+    "knowledge/architecture/language-webassembly.md": {
+      "tested_ef798": "200ac74b0f9e735198b34f358f1befc0057187de",
+      "integrated": "200ac74b0f9e735198b34f358f1befc0057187de",
+      "unchanged": true
+    },
+    "knowledge/architecture/materialization-pipeline.md": {
+      "tested_ef798": "63baf5c6f420265f11baacd595cada8cb0ca8a22",
+      "integrated": "63baf5c6f420265f11baacd595cada8cb0ca8a22",
+      "unchanged": true
+    },
+    "knowledge/architecture/operation-paths.md": {
+      "tested_ef798": "a8aadf47cdba9207358d9314bd3e04833215d4a4",
+      "integrated": "a8aadf47cdba9207358d9314bd3e04833215d4a4",
+      "unchanged": true
+    },
+    "knowledge/architecture/overview.md": {
+      "tested_ef798": "4d296f4921c0284576058f1baf8a7920ab30f755",
+      "integrated": "4d296f4921c0284576058f1baf8a7920ab30f755",
+      "unchanged": true
+    },
+    "knowledge/architecture/release-verification.md": {
+      "tested_ef798": "953d3c0e1143db483cafd3bb7d1a06c3afd64a58",
+      "integrated": "953d3c0e1143db483cafd3bb7d1a06c3afd64a58",
+      "unchanged": true
+    },
+    "knowledge/architecture/repository-map.md": {
+      "tested_ef798": "daf3baa5ad1e03d163b1f2fff6ba3b70f3a35223",
+      "integrated": "daf3baa5ad1e03d163b1f2fff6ba3b70f3a35223",
+      "unchanged": true
+    },
+    "knowledge/architecture/worker-recovery-regression-contract.md": {
+      "tested_ef798": "d6d2cdce071a2f5651df7613bfd3967de31e2630",
+      "integrated": "d6d2cdce071a2f5651df7613bfd3967de31e2630",
+      "unchanged": true
+    },
+    "knowledge/index.md": {
+      "tested_ef798": "a589a3b74656a29d9203b940b7470dd470a14e76",
+      "integrated": "a589a3b74656a29d9203b940b7470dd470a14e76",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/agent-hook-live-mcp-budget-eagain-2026-09-23.md": {
+      "tested_ef798": "4b3b51ea108f8614482f69212325d67b7d80b12f",
+      "integrated": "4b3b51ea108f8614482f69212325d67b7d80b12f",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/atomic-temp-path-process-scope-2026-08-21.md": {
+      "tested_ef798": "fc93873e995ee92d8669f0159fb7487b3b26897e",
+      "integrated": "fc93873e995ee92d8669f0159fb7487b3b26897e",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/ci-release-artifact-recipe-drift-2026-08-13.md": {
+      "tested_ef798": "3246f406edfe06d3cc1be33664a3cab097e94c5e",
+      "integrated": "3246f406edfe06d3cc1be33664a3cab097e94c5e",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/config-root-loss-stops-refresher-2026-09-08.md": {
+      "tested_ef798": "a0a4b9da25c48c2bcfd00ef06f05060c007b0bdf",
+      "integrated": "a0a4b9da25c48c2bcfd00ef06f05060c007b0bdf",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/containment-proof-must-survive-candidate-cleanup-2026-10-15.md": {
+      "tested_ef798": "b8585ce02fb57d9aa969d434d8b1c9115ffaf9a2",
+      "integrated": "b8585ce02fb57d9aa969d434d8b1c9115ffaf9a2",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/coordinator-frame-timeout-retry-2026-08-21.md": {
+      "tested_ef798": "5077839b1f169390719228ae94939b0b8ccb815a",
+      "integrated": "5077839b1f169390719228ae94939b0b8ccb815a",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/coordinator-stale-route-authentication-recovery-2026-08-20.md": {
+      "tested_ef798": "acc88ff33e1cdf3de3a7ae71c84e8c88a94dcf63",
+      "integrated": "acc88ff33e1cdf3de3a7ae71c84e8c88a94dcf63",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/coordinator-watcher-readiness-race-2026-08-21.md": {
+      "tested_ef798": "2a48deb7d1d5d9e053178c91b66553dc50ab0967",
+      "integrated": "2a48deb7d1d5d9e053178c91b66553dc50ab0967",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/copilot-cli-native-hook-payload-omits-event-2026-09-22.md": {
+      "tested_ef798": "26aa456c7fb05f6e6a7d103bb88528856ac5027d",
+      "integrated": "26aa456c7fb05f6e6a7d103bb88528856ac5027d",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/database-use-unicode-alias-parent-family-2026-10-21.md": {
+      "tested_ef798": "f47f1bc796310642d778c22ff4e94d5f065330c8",
+      "integrated": "f47f1bc796310642d778c22ff4e94d5f065330c8",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/direct-destination-spelling-recovery-identity-2026-09-08.md": {
+      "tested_ef798": "c7cd151116a81a2f26d9e654af50150c8dad2a40",
+      "integrated": "c7cd151116a81a2f26d9e654af50150c8dad2a40",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/direct-prepared-replay-deletes-promoted-sidecar-2026-09-23.md": {
+      "tested_ef798": "68f0b64ac6a2e9150901cadce2300a1a478d1ce6",
+      "integrated": "68f0b64ac6a2e9150901cadce2300a1a478d1ce6",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/guard-native-resource-after-sdk-path-projection-2026-10-21.md": {
+      "tested_ef798": "f62eb45072030283601ff24e5d654bc34db1137d",
+      "integrated": "f62eb45072030283601ff24e5d654bc34db1137d",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/index.md": {
+      "tested_ef798": "7b440bc0b01dd35e0a7358c3bdf9b0f7d89333db",
+      "integrated": "7b440bc0b01dd35e0a7358c3bdf9b0f7d89333db",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/k-wiki-domain-errors-need-wire-boundary-regressions-2026-10-16.md": {
+      "tested_ef798": "89cc33070125fe74e40a162c7b9b33a91816ccee",
+      "integrated": "89cc33070125fe74e40a162c7b9b33a91816ccee",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/k-wiki-yaml-errors-need-origin-redaction-2026-10-16.md": {
+      "tested_ef798": "278a5ae151694c5a057adddb9af8eae3deb66337",
+      "integrated": "278a5ae151694c5a057adddb9af8eae3deb66337",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/lifecycle-fixtures-must-recognize-retired-startups-2026-10-16.md": {
+      "tested_ef798": "bcc86c1f1f8dad6fc931fce02920092ed06b6d74",
+      "integrated": "bcc86c1f1f8dad6fc931fce02920092ed06b6d74",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/macos-current-rss-materialization-supervision-2026-08-18.md": {
+      "tested_ef798": "df7965891b495ff1cbdcca63e835c205ace76f8d",
+      "integrated": "df7965891b495ff1cbdcca63e835c205ace76f8d",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/materialization-reference-memory-gates-2026-08-18.md": {
+      "tested_ef798": "f7785ac6e1c45c17827146ea8ec89a7a1d43ef82",
+      "integrated": "f7785ac6e1c45c17827146ea8ec89a7a1d43ef82",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/mcp-daemon-client-disconnect-broken-pipe-2026-09-22.md": {
+      "tested_ef798": "be1fdae7a1c0b808886632bdc2e36a844b981efd",
+      "integrated": "be1fdae7a1c0b808886632bdc2e36a844b981efd",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/mcp-refresh-rebuild-convoy-memory-overload-2026-08-14.md": {
+      "tested_ef798": "ed1b05879497dfa6d8e7546a61c3a4b312afcc40",
+      "integrated": "ed1b05879497dfa6d8e7546a61c3a4b312afcc40",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/native-startup-backend-label-ci-2026-09-08.md": {
+      "tested_ef798": "e5221f3cfc62d5c0b839abbeb6ee6ed8756d33f6",
+      "integrated": "e5221f3cfc62d5c0b839abbeb6ee6ed8756d33f6",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/native-wiki-smoke-needs-recommended-metadata-2026-10-16.md": {
+      "tested_ef798": "8f1dc3923288256e89d993839248a16f62a365f5",
+      "integrated": "8f1dc3923288256e89d993839248a16f62a365f5",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/recovery-fixture-caller-and-handoff-preconditions-2026-10-20.md": {
+      "tested_ef798": "4a8e1458678349f84ca44bab1c07e7aef3d51fae",
+      "integrated": "4a8e1458678349f84ca44bab1c07e7aef3d51fae",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/recovery-review-branch-and-live-version-alignment-2026-10-20.md": {
+      "tested_ef798": "f992a8ef62ff389b774f6d6231a082bb4daf3ee2",
+      "integrated": "f992a8ef62ff389b774f6d6231a082bb4daf3ee2",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/slow-reader-test-waits-for-response-transmission-2026-09-24.md": {
+      "tested_ef798": "6138c9e69103bf87fb0fb95e6fda5a32c219b1fe",
+      "integrated": "6138c9e69103bf87fb0fb95e6fda5a32c219b1fe",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/stopped-http-daemon-transport-send-error-2026-08-24.md": {
+      "tested_ef798": "f91dc5012931e59580a6de4633fb357d3d5afac5",
+      "integrated": "f91dc5012931e59580a6de4633fb357d3d5afac5",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/successful-release-merge-starved-by-main-tip-guard-2026-09-23.md": {
+      "tested_ef798": "a06e0744aeef5d085cfb7b18f2bc0a305a9d19a5",
+      "integrated": "a06e0744aeef5d085cfb7b18f2bc0a305a9d19a5",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/untagged-release-pr-blocks-later-proposals-2026-09-24.md": {
+      "tested_ef798": "dec2a54636eb9d27b8219f81c591fdc112164dea",
+      "integrated": "dec2a54636eb9d27b8219f81c591fdc112164dea",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/wiki-recall-utf8-snippet-panic-2026-10-01.md": {
+      "tested_ef798": "578e2883f67a2e62b29669c0d97c38fff754926b",
+      "integrated": "578e2883f67a2e62b29669c0d97c38fff754926b",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/windows-direct-materialization-path-limit-2026-08-13.md": {
+      "tested_ef798": "30e0c8bb68f5cb349af687fe1c0a23eb71495ef3",
+      "integrated": "30e0c8bb68f5cb349af687fe1c0a23eb71495ef3",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/windows-emptiness-probe-must-not-terminate-jobs-2026-10-15.md": {
+      "tested_ef798": "4c9590b185aa419db63d10f5bb275a96f18334d7",
+      "integrated": "4c9590b185aa419db63d10f5bb275a96f18334d7",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/windows-mcp-daemon-state-publishes-before-api-readiness-2026-09-21.md": {
+      "tested_ef798": "c4b9ac00f1a4c405253a44ba1a5c306246ab3598",
+      "integrated": "c4b9ac00f1a4c405253a44ba1a5c306246ab3598",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/windows-notify-verbatim-watch-paths-2026-08-21.md": {
+      "tested_ef798": "2b2fc69b0a185f988f9d23b58352d1c0fabd2a21",
+      "integrated": "2b2fc69b0a185f988f9d23b58352d1c0fabd2a21",
+      "unchanged": true
+    },
+    "knowledge/memory/episodic/windows-watch-test-marker-lock-2026-08-20.md": {
+      "tested_ef798": "bd9130639d9363ca455c826c4903067591a4d989",
+      "integrated": "bd9130639d9363ca455c826c4903067591a4d989",
+      "unchanged": true
+    },
+    "knowledge/memory/index.md": {
+      "tested_ef798": "1bca1808799b9b82bf811fce6d0f65ac32dcf90a",
+      "integrated": "1bca1808799b9b82bf811fce6d0f65ac32dcf90a",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/agent-hook-lifecycle-stale-ownership-and-daemon-2026-09-22.md": {
+      "tested_ef798": "1989bd32c07e8bc85d4a53c53a2cff12d973e9f8",
+      "integrated": "1989bd32c07e8bc85d4a53c53a2cff12d973e9f8",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/agent-hook-lifecycle-transaction-and-ownership-2026-09-22.md": {
+      "tested_ef798": "586a84926749a33f4dd618a2f97e14c5c199d977",
+      "integrated": "586a84926749a33f4dd618a2f97e14c5c199d977",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/agent-hook-verification-per-event-and-portable-temp-paths-2026-09-22.md": {
+      "tested_ef798": "01c6470ce72dc90d822a96df24327ecb0a9fc9d5",
+      "integrated": "01c6470ce72dc90d822a96df24327ecb0a9fc9d5",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/canonical-temp-parents-for-owned-workspace-fixtures-2026-10-24.md": {
+      "tested_ef798": "2cf4018f681208d237ed16da6dbb7d2e49834e2d",
+      "integrated": "2cf4018f681208d237ed16da6dbb7d2e49834e2d",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/cargo-package-ignored-metadata-clean-worktree-2026-08-25.md": {
+      "tested_ef798": "6e5835e9a310664f019645389a4c32ab1297f4a2",
+      "integrated": "6e5835e9a310664f019645389a4c32ab1297f4a2",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/checkout-free-gh-release-repository-context-2026-08-17.md": {
+      "tested_ef798": "04e423fba46280973336e69e48296629bb054c88",
+      "integrated": "04e423fba46280973336e69e48296629bb054c88",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/crates-io-package-size-gate-2026-08-24.md": {
+      "tested_ef798": "4c06feb4f0dc593a687bfc2ae68a90f971e96584",
+      "integrated": "4c06feb4f0dc593a687bfc2ae68a90f971e96584",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/crates-io-publish-idempotent-retry-2026-08-24.md": {
+      "tested_ef798": "b7546951ba7b467663ac2c96b5984002afb370b5",
+      "integrated": "b7546951ba7b467663ac2c96b5984002afb370b5",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/exact-commit-release-publication-and-recovery-2026-09-24.md": {
+      "tested_ef798": "7ade784dc761493f7e6f6d183f53eee62b778f14",
+      "integrated": "7ade784dc761493f7e6f6d183f53eee62b778f14",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/index.md": {
+      "tested_ef798": "73771329a4680b0b358731f26d3fa8b336479a7d",
+      "integrated": "73771329a4680b0b358731f26d3fa8b336479a7d",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/ladybug-0183-link-and-extension-alignment-2026-08-14.md": {
+      "tested_ef798": "7db6f1bcf3899cecbf52c8da9fa931b2a7d56f03",
+      "integrated": "7db6f1bcf3899cecbf52c8da9fa931b2a7d56f03",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/ladybug-macos-x86-compiler-runtime-2026-08-14.md": {
+      "tested_ef798": "e635e9cb2f559bd0857c4a6087ab21924fc681e6",
+      "integrated": "e635e9cb2f559bd0857c4a6087ab21924fc681e6",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/ladybug-release-extension-cache-variants-2026-08-13.md": {
+      "tested_ef798": "f97c777adc0db8376724c74d1376f092de21b7ba",
+      "integrated": "f97c777adc0db8376724c74d1376f092de21b7ba",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/large-self-hosting-rebuild-memory-budget-2026-08-28.md": {
+      "tested_ef798": "f8102103c50c94cd9084fe122c68e820865ae319",
+      "integrated": "f8102103c50c94cd9084fe122c68e820865ae319",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/mcp-restart-session-aliasing-regression-2026-09-24.md": {
+      "tested_ef798": "9ff1b4c03ae7c723213bf391a1f11518f08a85a0",
+      "integrated": "9ff1b4c03ae7c723213bf391a1f11518f08a85a0",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/missing-manifest-release-replays-version-overrides-2026-10-27.md": {
+      "tested_ef798": "edc0af4f6da15d07fc4c658d88988a2fae85ca5c",
+      "integrated": "edc0af4f6da15d07fc4c658d88988a2fae85ca5c",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/refresh-context-metrics-clippy-2026-08-17.md": {
+      "tested_ef798": "679d2a603124a50249764851f15f926fe89780df",
+      "integrated": "679d2a603124a50249764851f15f926fe89780df",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/release-please-stale-pending-tag-guard-2026-08-17.md": {
+      "tested_ef798": "205325fe6362eb2cf74ce42d8c295936dd922acf",
+      "integrated": "205325fe6362eb2cf74ce42d8c295936dd922acf",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/release-publication-skipped-ancestor-chain-2026-08-17.md": {
+      "tested_ef798": "974270cbe93e5ee8f2525f87c2e1b31f1533f264",
+      "integrated": "974270cbe93e5ee8f2525f87c2e1b31f1533f264",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/rust-modular-code-procedure.md": {
+      "tested_ef798": "cdfd09d52e34905e21f87b6e19b83941dee6ee5d",
+      "integrated": "cdfd09d52e34905e21f87b6e19b83941dee6ee5d",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/rust-performance-memory-efficiency-procedure.md": {
+      "tested_ef798": "bba37b9295a3fa66973ca70cbb01da817b642a40",
+      "integrated": "bba37b9295a3fa66973ca70cbb01da817b642a40",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/rust-secure-coding-procedure.md": {
+      "tested_ef798": "efe065b1c16814eb038b6c66f198234e0eb0758b",
+      "integrated": "efe065b1c16814eb038b6c66f198234e0eb0758b",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/shared-cargo-target-frozen-binary-provenance-2026-10-21.md": {
+      "tested_ef798": "cec15d20bfaa0cedc6e5f9a717b4cc6a0a6a2a3c",
+      "integrated": "cec15d20bfaa0cedc6e5f9a717b4cc6a0a6a2a3c",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/shared-http-daemon-upgrade-requires-registration-migration-2026-08-21.md": {
+      "tested_ef798": "61676cc4d887b5533bce6faf4e656d83c3f4d9b7",
+      "integrated": "61676cc4d887b5533bce6faf4e656d83c3f4d9b7",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/stable-nonblocking-hook-cache-claim-lock-2026-09-24.md": {
+      "tested_ef798": "2719f32d8e0a0570dc6bc9cda540af6db41ce1c5",
+      "integrated": "2719f32d8e0a0570dc6bc9cda540af6db41ce1c5",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/vendored-tree-sitter-scanner-callback-contract-2026-08-25.md": {
+      "tested_ef798": "6087c8dfb8af715fa0edf49e02346add6805aeca",
+      "integrated": "6087c8dfb8af715fa0edf49e02346add6805aeca",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/windows-ci-bundled-extension-feature-2026-08-13.md": {
+      "tested_ef798": "cf263b48dd648ff0cfdd5fc5f415ba50a810911b",
+      "integrated": "cf263b48dd648ff0cfdd5fc5f415ba50a810911b",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/windows-managed-run-cleanup-disappearance-race-2026-09-22.md": {
+      "tested_ef798": "61d5b8e7734132ce8b43f91e885d604a8a99c8b5",
+      "integrated": "61d5b8e7734132ce8b43f91e885d604a8a99c8b5",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/windows-native-lifecycle-test-profile-2026-10-15.md": {
+      "tested_ef798": "a0627589d4b1937b5dc431e4f5e4a6b7881217df",
+      "integrated": "a0627589d4b1937b5dc431e4f5e4a6b7881217df",
+      "unchanged": true
+    },
+    "knowledge/memory/procedural/workflow-run-release-exact-run-binding-2026-08-14.md": {
+      "tested_ef798": "14727f3293bd5557dcbb4946aa994bfe261555d7",
+      "integrated": "14727f3293bd5557dcbb4946aa994bfe261555d7",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/coordinator-predispatch-only-replay-2026-09-23.md": {
+      "tested_ef798": "b50aa66253ad7a905d45c47d57b1fee799f93234",
+      "integrated": "b50aa66253ad7a905d45c47d57b1fee799f93234",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/index.md": {
+      "tested_ef798": "ed9ff987c296b2e29b9800837ed14d956ec37dea",
+      "integrated": "ed9ff987c296b2e29b9800837ed14d956ec37dea",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/k-wiki-graph-layer-contract-2026-08-13.md": {
+      "tested_ef798": "bbf643d3ef44fe17804018060491a0249795eb44",
+      "integrated": "bbf643d3ef44fe17804018060491a0249795eb44",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/mcp-coordinator-worker-ownership-boundary.md": {
+      "tested_ef798": "a63a677a70720a3bfacf454dfb965bebbc70c719",
+      "integrated": "a63a677a70720a3bfacf454dfb965bebbc70c719",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/mcp-stdio-no-idle-exit-2026-08-20.md": {
+      "tested_ef798": "32ba3012d7f5836c4b6229901b8cebb2c8ef2cf6",
+      "integrated": "32ba3012d7f5836c4b6229901b8cebb2c8ef2cf6",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/raw-artifact-reuse-rebuild-boundary-2026-09-23.md": {
+      "tested_ef798": "dd455531abdef5666380020e74de3e3e7f439c76",
+      "integrated": "dd455531abdef5666380020e74de3e3e7f439c76",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/refresh-status-dirty-epoch-foundation-2026-09-08.md": {
+      "tested_ef798": "f5abfb48b4bf2e2aa8304606c41cbb0f134c1c1c",
+      "integrated": "f5abfb48b4bf2e2aa8304606c41cbb0f134c1c1c",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/semantic-artifact-reuse-schema-upgrade-boundary.md": {
+      "tested_ef798": "94afe4eed4b65547a9d3ac5c67ae6d566442c749",
+      "integrated": "94afe4eed4b65547a9d3ac5c67ae6d566442c749",
+      "unchanged": true
+    },
+    "knowledge/memory/semantic/shared-managed-mcp-http-daemon-per-repository-2026-08-20.md": {
+      "tested_ef798": "5c7f0ac7d2163e6dbaa504aff9640e4001fd89b7",
+      "integrated": "5c7f0ac7d2163e6dbaa504aff9640e4001fd89b7",
+      "unchanged": true
+    },
+    "knowledge/stability-backlog.md": {
+      "tested_ef798": "1240fae0393b903e5146d76606cf06d20f6d63e7",
+      "integrated": "1240fae0393b903e5146d76606cf06d20f6d63e7",
+      "unchanged": true
+    },
+    "release-please-config.json": {
+      "tested_ef798": "5a539cc2efc42a8af73f94e3c2bf9dd6513d4ec4",
+      "integrated": "5a539cc2efc42a8af73f94e3c2bf9dd6513d4ec4",
+      "unchanged": true
+    },
+    "release/install/install.ps1": {
+      "tested_ef798": "05950595ee08f9e277bea432faa90410925509fa",
+      "integrated": "05950595ee08f9e277bea432faa90410925509fa",
+      "unchanged": true
+    },
+    "release/install/install.sh": {
+      "tested_ef798": "5964c616335452dac07cfd44679fa20c5ea15901",
+      "integrated": "5964c616335452dac07cfd44679fa20c5ea15901",
+      "unchanged": true
+    },
+    "src/adapters/cli/agent_hooks.rs": {
+      "tested_ef798": "0f10a82c66b98f0094dc6dd0560846e360e00e70",
+      "integrated": "0f10a82c66b98f0094dc6dd0560846e360e00e70",
+      "unchanged": true
+    },
+    "src/adapters/cli/dispatch.rs": {
+      "tested_ef798": "9712cc062a81ee7f7d79f4df6b86f7a042bdefbd",
+      "integrated": "9712cc062a81ee7f7d79f4df6b86f7a042bdefbd",
+      "unchanged": true
+    },
+    "src/adapters/cli/format/help.rs": {
+      "tested_ef798": "395398ecfb25df8036d9c91ae5cbf24ce0e6eaea",
+      "integrated": "395398ecfb25df8036d9c91ae5cbf24ce0e6eaea",
+      "unchanged": true
+    },
+    "src/adapters/cli/format/mod.rs": {
+      "tested_ef798": "3fa8b6a95efbac0978ec4d3db3fc85c9d5c7df63",
+      "integrated": "3fa8b6a95efbac0978ec4d3db3fc85c9d5c7df63",
+      "unchanged": true
+    },
+    "src/adapters/cli/graph/mod.rs": {
+      "tested_ef798": "a5ec597917d3839c9bbd664a91d329f10b2f1fd0",
+      "integrated": "a5ec597917d3839c9bbd664a91d329f10b2f1fd0",
+      "unchanged": true
+    },
+    "src/adapters/cli/graph/options.rs": {
+      "tested_ef798": "dda3b9107b7355000cdaeeaed6b828f2659ca093",
+      "integrated": "dda3b9107b7355000cdaeeaed6b828f2659ca093",
+      "unchanged": true
+    },
+    "src/adapters/cli/install/command.rs": {
+      "tested_ef798": "63d01a9666650d8160dfddc4d847ab85b4d8080b",
+      "integrated": "63d01a9666650d8160dfddc4d847ab85b4d8080b",
+      "unchanged": true
+    },
+    "src/adapters/cli/install/mod.rs": {
+      "tested_ef798": "cd170d1cf2bef245fcaf42eaad682c3c60a311a8",
+      "integrated": "cd170d1cf2bef245fcaf42eaad682c3c60a311a8",
+      "unchanged": true
+    },
+    "src/adapters/cli/install/options.rs": {
+      "tested_ef798": "fa0cc82625e920ad18a9f8d1739782bfc589b94e",
+      "integrated": "fa0cc82625e920ad18a9f8d1739782bfc589b94e",
+      "unchanged": true
+    },
+    "src/adapters/cli/install/verify.rs": {
+      "tested_ef798": "d0034b19574a08ebb7cd085195738ddfcc03be67",
+      "integrated": "d0034b19574a08ebb7cd085195738ddfcc03be67",
+      "unchanged": true
+    },
+    "src/adapters/cli/materialization/command.rs": {
+      "tested_ef798": "e485093d00e9e38bf94824ba1b0b529706298664",
+      "integrated": "e485093d00e9e38bf94824ba1b0b529706298664",
+      "unchanged": true
+    },
+    "src/adapters/cli/materialization/mod.rs": {
+      "tested_ef798": "bd85de8385c47b06179618017280cf2efa05b239",
+      "integrated": "bd85de8385c47b06179618017280cf2efa05b239",
+      "unchanged": true
+    },
+    "src/adapters/cli/materialization_input.rs": {
+      "tested_ef798": "3543786b807354bdd50f1c2e49f5149a5f167e0d",
+      "integrated": "3543786b807354bdd50f1c2e49f5149a5f167e0d",
+      "unchanged": true
+    },
+    "src/adapters/cli/mcp_command.rs": {
+      "tested_ef798": "be2d42d209f845a6934c3f7f50a0e387ec1d6324",
+      "integrated": "be2d42d209f845a6934c3f7f50a0e387ec1d6324",
+      "unchanged": true
+    },
+    "src/adapters/cli/mod.rs": {
+      "tested_ef798": "6a95d9e12f941acf33a69f64d816cf9c93362778",
+      "integrated": "6a95d9e12f941acf33a69f64d816cf9c93362778",
+      "unchanged": true
+    },
+    "src/adapters/cli/reinstall.rs": {
+      "tested_ef798": "e184c46a3e6d9892c52c490f931ea4aa302f7c45",
+      "integrated": "e184c46a3e6d9892c52c490f931ea4aa302f7c45",
+      "unchanged": true
+    },
+    "src/adapters/cli/setup.rs": {
+      "tested_ef798": "0b7327eb221a63afa2d50293e8e8fc76ed330a89",
+      "integrated": "0b7327eb221a63afa2d50293e8e8fc76ed330a89",
+      "unchanged": true
+    },
+    "src/adapters/cli/tests/dispatch_materialize.rs": {
+      "tested_ef798": "e22e49ce3fb7523491e3f7647a6a66ac1706aac6",
+      "integrated": "e22e49ce3fb7523491e3f7647a6a66ac1706aac6",
+      "unchanged": true
+    },
+    "src/adapters/cli/tests/fixtures.rs": {
+      "tested_ef798": "81dbafac29b5ffa478efd07a60351d0c5c334f26",
+      "integrated": "81dbafac29b5ffa478efd07a60351d0c5c334f26",
+      "unchanged": true
+    },
+    "src/adapters/cli/tests/graph.rs": {
+      "tested_ef798": "f911311db2fb0b1f8cb49c9fc2ce86526d6adcb3",
+      "integrated": "f911311db2fb0b1f8cb49c9fc2ce86526d6adcb3",
+      "unchanged": true
+    },
+    "src/adapters/cli/tests/install.rs": {
+      "tested_ef798": "9df7e6e71430af8d777a7ae1317dd03a7fd3f92b",
+      "integrated": "9df7e6e71430af8d777a7ae1317dd03a7fd3f92b",
+      "unchanged": true
+    },
+    "src/adapters/cli/tests/mcp.rs": {
+      "tested_ef798": "036619cf5b36ab0317b5d92af7ea8e990337a7ba",
+      "integrated": "036619cf5b36ab0317b5d92af7ea8e990337a7ba",
+      "unchanged": true
+    },
+    "src/adapters/cli/tests/mod.rs": {
+      "tested_ef798": "0fe540a4356139c25b6998bc2247fc98fcb62e48",
+      "integrated": "0fe540a4356139c25b6998bc2247fc98fcb62e48",
+      "unchanged": true
+    },
+    "src/adapters/cli/tests/watch.rs": {
+      "tested_ef798": "f5c700d9f6f7ce33c8589d707a8cf83c8c456be2",
+      "integrated": "f5c700d9f6f7ce33c8589d707a8cf83c8c456be2",
+      "unchanged": true
+    },
+    "src/adapters/cli/uninstall.rs": {
+      "tested_ef798": "553cabf06c3811ac1a579b6232d6115246ff6b37",
+      "integrated": "553cabf06c3811ac1a579b6232d6115246ff6b37",
+      "unchanged": true
+    },
+    "src/adapters/cli/util.rs": {
+      "tested_ef798": "794cda3994a20c85ddd0bccd2e3614358151641f",
+      "integrated": "794cda3994a20c85ddd0bccd2e3614358151641f",
+      "unchanged": true
+    },
+    "src/adapters/cli/watch/command.rs": {
+      "tested_ef798": "a46b57d473d39c9404cb3c17763b62eaeb85b446",
+      "integrated": "a46b57d473d39c9404cb3c17763b62eaeb85b446",
+      "unchanged": true
+    },
+    "src/adapters/cli/watch/mod.rs": {
+      "tested_ef798": "23c4e8383e0d94f1ceba94803288d1700de20923",
+      "integrated": "23c4e8383e0d94f1ceba94803288d1700de20923",
+      "unchanged": true
+    },
+    "src/adapters/cli/watch/options.rs": {
+      "tested_ef798": "925a448fe28d1436ecfd7feee7aae59c2876659b",
+      "integrated": "925a448fe28d1436ecfd7feee7aae59c2876659b",
+      "unchanged": true
+    },
+    "src/adapters/cli/watch/output.rs": {
+      "tested_ef798": "2094f6707a65b4d172c963dabb0a82e8374d8480",
+      "integrated": "2094f6707a65b4d172c963dabb0a82e8374d8480",
+      "unchanged": true
+    },
+    "src/adapters/mcp/block.rs": {
+      "tested_ef798": "cf6b63c9c08fe6755b411e47763fef28b3996586",
+      "integrated": "cf6b63c9c08fe6755b411e47763fef28b3996586",
+      "unchanged": true
+    },
+    "src/adapters/mcp/daemon.rs": {
+      "tested_ef798": "266975ce09927a1d17461ec68773217b36d6b778",
+      "integrated": "266975ce09927a1d17461ec68773217b36d6b778",
+      "unchanged": true
+    },
+    "src/adapters/mcp/dispatcher.rs": {
+      "tested_ef798": "32a760fc46c34b4f2a08900b7b048aeabffc56bc",
+      "integrated": "32a760fc46c34b4f2a08900b7b048aeabffc56bc",
+      "unchanged": true
+    },
+    "src/adapters/mcp/http.rs": {
+      "tested_ef798": "0afdfb6a4336a8f852bc3fbd7af049fb4c497d7e",
+      "integrated": "0afdfb6a4336a8f852bc3fbd7af049fb4c497d7e",
+      "unchanged": true
+    },
+    "src/adapters/mcp/mod.rs": {
+      "tested_ef798": "9265850e2faff3f71a4ebde46e5ac4c4077365c4",
+      "integrated": "9265850e2faff3f71a4ebde46e5ac4c4077365c4",
+      "unchanged": true
+    },
+    "src/adapters/mcp/options.rs": {
+      "tested_ef798": "842abb31d234129bbee244fa505ccc3951402ea7",
+      "integrated": "842abb31d234129bbee244fa505ccc3951402ea7",
+      "unchanged": true
+    },
+    "src/adapters/mcp/protocol.rs": {
+      "tested_ef798": "79ef6ca22aa9077e6e405f2e415e830de62d8c25",
+      "integrated": "79ef6ca22aa9077e6e405f2e415e830de62d8c25",
+      "unchanged": true
+    },
+    "src/adapters/mcp/refresh.rs": {
+      "tested_ef798": "2a9fca4d0a483a8fd8db40d83ad786aacbd67b55",
+      "integrated": "2a9fca4d0a483a8fd8db40d83ad786aacbd67b55",
+      "unchanged": true
+    },
+    "src/adapters/mcp/state.rs": {
+      "tested_ef798": "06b4f613c48d4fc6578007a4fa142a3b30bec767",
+      "integrated": "06b4f613c48d4fc6578007a4fa142a3b30bec767",
+      "unchanged": true
+    },
+    "src/adapters/mcp/stdio.rs": {
+      "tested_ef798": "a67dd2c296db2fddc75753a8fb6cb29f8506ebc3",
+      "integrated": "a67dd2c296db2fddc75753a8fb6cb29f8506ebc3",
+      "unchanged": true
+    },
+    "src/adapters/mcp/tools.rs": {
+      "tested_ef798": "ab63eededdaf3427857d68961f97bee8227b1677",
+      "integrated": "ab63eededdaf3427857d68961f97bee8227b1677",
+      "unchanged": true
+    },
+    "src/adapters/mod.rs": {
+      "tested_ef798": "14979e0e464738c466d11147e3b87a8bdd2f6e14",
+      "integrated": "14979e0e464738c466d11147e3b87a8bdd2f6e14",
+      "unchanged": true
+    },
+    "src/agent_hooks.rs": {
+      "tested_ef798": "d7f1cc62766bb988654f4847ddb6ed5f963e4b7c",
+      "integrated": "d7f1cc62766bb988654f4847ddb6ed5f963e4b7c",
+      "unchanged": true
+    },
+    "src/api/boundary_tests.rs": {
+      "tested_ef798": "e69ab88a8926b220bffdbeeed393f73a08aea0a7",
+      "integrated": "e69ab88a8926b220bffdbeeed393f73a08aea0a7",
+      "unchanged": true
+    },
+    "src/api/catalog.rs": {
+      "tested_ef798": "2a7ded3cbaaff55542f95c6dc9558f2b8103a013",
+      "integrated": "2a7ded3cbaaff55542f95c6dc9558f2b8103a013",
+      "unchanged": true
+    },
+    "src/api/catalog_support.rs": {
+      "tested_ef798": "4da57c318e8ade6f588989bc02f8929f1025271e",
+      "integrated": "4da57c318e8ade6f588989bc02f8929f1025271e",
+      "unchanged": true
+    },
+    "src/api/context.rs": {
+      "tested_ef798": "6f5d256d7a1421bc21c8d6d28a1450ce23eb224d",
+      "integrated": "6f5d256d7a1421bc21c8d6d28a1450ce23eb224d",
+      "unchanged": true
+    },
+    "src/api/contracts.rs": {
+      "tested_ef798": "137668b2015e13531269d9b16c415ea4cba712f0",
+      "integrated": "137668b2015e13531269d9b16c415ea4cba712f0",
+      "unchanged": true
+    },
+    "src/api/core.rs": {
+      "tested_ef798": "6f055d3b30f39dbb772ae6eda1063e021f460752",
+      "integrated": "6f055d3b30f39dbb772ae6eda1063e021f460752",
+      "unchanged": true
+    },
+    "src/api/execution_context.rs": {
+      "tested_ef798": "e85ea9e730c12dafd3ac7f7c9fdaf725edca258f",
+      "integrated": "e85ea9e730c12dafd3ac7f7c9fdaf725edca258f",
+      "unchanged": true
+    },
+    "src/api/facade.rs": {
+      "tested_ef798": "f902dd9b0ce9e75e953040835816a70d66edb05a",
+      "integrated": "f902dd9b0ce9e75e953040835816a70d66edb05a",
+      "unchanged": true
+    },
+    "src/api/graph_read.rs": {
+      "tested_ef798": "11a2d9dbac29025b8b14a5469f14b641be3fff1e",
+      "integrated": "11a2d9dbac29025b8b14a5469f14b641be3fff1e",
+      "unchanged": true
+    },
+    "src/api/lifecycle.rs": {
+      "tested_ef798": "d2e4678a3562bbbb289ac26e2d0296f02409a273",
+      "integrated": "d2e4678a3562bbbb289ac26e2d0296f02409a273",
+      "unchanged": true
+    },
+    "src/api/materialization.rs": {
+      "tested_ef798": "a6c834d5b2c978eec9cbab05220be71ef9053bc7",
+      "integrated": "a6c834d5b2c978eec9cbab05220be71ef9053bc7",
+      "unchanged": true
+    },
+    "src/api/mod.rs": {
+      "tested_ef798": "88ee61526b2f29d5d2fec54d99e777265235ed77",
+      "integrated": "88ee61526b2f29d5d2fec54d99e777265235ed77",
+      "unchanged": true
+    },
+    "src/api/normalization.rs": {
+      "tested_ef798": "498c4b0d42940059a99962df856258ee215a74cf",
+      "integrated": "498c4b0d42940059a99962df856258ee215a74cf",
+      "unchanged": true
+    },
+    "src/api/presentation_support.rs": {
+      "tested_ef798": "49f9f9fe127271343a253267c2e078c7269e04ce",
+      "integrated": "49f9f9fe127271343a253267c2e078c7269e04ce",
+      "unchanged": true
+    },
+    "src/api/presenter.rs": {
+      "tested_ef798": "ea4886ec9dedcca08a25e19dfb7292f36bf512bb",
+      "integrated": "ea4886ec9dedcca08a25e19dfb7292f36bf512bb",
+      "unchanged": true
+    },
+    "src/api/refresh.rs": {
+      "tested_ef798": "88bea20bf465cfedd28cacbb70bf5e2c34b13c3b",
+      "integrated": "88bea20bf465cfedd28cacbb70bf5e2c34b13c3b",
+      "unchanged": true
+    },
+    "src/artifact_store.rs": {
+      "tested_ef798": "d062849f09a73d227067ad8f5e896cbd8e3ee2e6",
+      "integrated": "d062849f09a73d227067ad8f5e896cbd8e3ee2e6",
+      "unchanged": true
+    },
+    "src/bin/codebase-graph.rs": {
+      "tested_ef798": "9ce91d0cc256bd9f61d4187ca884efe861d420a0",
+      "integrated": "9ce91d0cc256bd9f61d4187ca884efe861d420a0",
+      "unchanged": true
+    },
+    "src/bootstrap.rs": {
+      "tested_ef798": "8ca05a8182e6ef48e4263672b57d0975bd086a97",
+      "integrated": "8ca05a8182e6ef48e4263672b57d0975bd086a97",
+      "unchanged": true
+    },
+    "src/coordinator.rs": {
+      "tested_ef798": "634661488c9a8152e9f717f79cbf4e66e7b4a6ec",
+      "integrated": "634661488c9a8152e9f717f79cbf4e66e7b4a6ec",
+      "unchanged": true
+    },
+    "src/coordinator/tests.rs": {
+      "tested_ef798": "34c3b70485c6cea1810dab79d9143e1d42d73173",
+      "integrated": "34c3b70485c6cea1810dab79d9143e1d42d73173",
+      "unchanged": true
+    },
+    "src/daemon_service.rs": {
+      "tested_ef798": "9bdaa0781e14d4d740c5a2d200609844c9aa8319",
+      "integrated": "9bdaa0781e14d4d740c5a2d200609844c9aa8319",
+      "unchanged": true
+    },
+    "src/db_writer/access.rs": {
+      "tested_ef798": "d336093133579ad4fae6a45adc5c28db64680847",
+      "integrated": "d336093133579ad4fae6a45adc5c28db64680847",
+      "unchanged": true
+    },
+    "src/db_writer/extensions.rs": {
+      "tested_ef798": "5a4f4cd39a822ddbd10c65a36a53d5df7ff7c62c",
+      "integrated": "5a4f4cd39a822ddbd10c65a36a53d5df7ff7c62c",
+      "unchanged": true
+    },
+    "src/db_writer/mod.rs": {
+      "tested_ef798": "36636c835623911d07c5e363434c4edb3d36ee27",
+      "integrated": "36636c835623911d07c5e363434c4edb3d36ee27",
+      "unchanged": true
+    },
+    "src/db_writer/phase.rs": {
+      "tested_ef798": "dbcf24040706a4bf144c3ecb2db7a00f6961a41a",
+      "integrated": "dbcf24040706a4bf144c3ecb2db7a00f6961a41a",
+      "unchanged": true
+    },
+    "src/db_writer/request.rs": {
+      "tested_ef798": "924720d726fa0e55c0ab35b05010954b1ce005cf",
+      "integrated": "924720d726fa0e55c0ab35b05010954b1ce005cf",
+      "unchanged": true
+    },
+    "src/db_writer/rss.rs": {
+      "tested_ef798": "12b427bac65d543a2759dc4270fd59124c63d762",
+      "integrated": "12b427bac65d543a2759dc4270fd59124c63d762",
+      "unchanged": true
+    },
+    "src/db_writer/schema.rs": {
+      "tested_ef798": "b9445dc01be877e4cc9b59b579340bc33a0ee9a6",
+      "integrated": "b9445dc01be877e4cc9b59b579340bc33a0ee9a6",
+      "unchanged": true
+    },
+    "src/db_writer/tests.rs": {
+      "tested_ef798": "3b9c95201d4cf90de1e0b998dca1b2af1e4e49af",
+      "integrated": "3b9c95201d4cf90de1e0b998dca1b2af1e4e49af",
+      "unchanged": true
+    },
+    "src/db_writer/write.rs": {
+      "tested_ef798": "f887a97b7454bce025f97336f61936b5c293394c",
+      "integrated": "f887a97b7454bce025f97336f61936b5c293394c",
+      "unchanged": true
+    },
+    "src/error.rs": {
+      "tested_ef798": "39482602effbe2a88d4c2dcebc08312c06445288",
+      "integrated": "39482602effbe2a88d4c2dcebc08312c06445288",
+      "unchanged": true
+    },
+    "src/execution/mod.rs": {
+      "tested_ef798": "fc7c3d0b29c38e0fe82e0ce1c03940f1e27b0509",
+      "integrated": "fc7c3d0b29c38e0fe82e0ce1c03940f1e27b0509",
+      "unchanged": true
+    },
+    "src/execution/parallel.rs": {
+      "tested_ef798": "85ace916bba7a7ae90ca911c8604c53d3fd8ec3a",
+      "integrated": "85ace916bba7a7ae90ca911c8604c53d3fd8ec3a",
+      "unchanged": true
+    },
+    "src/execution/plan.rs": {
+      "tested_ef798": "6b537ffc43714cbb39179be8a413c0526eb15f21",
+      "integrated": "6b537ffc43714cbb39179be8a413c0526eb15f21",
+      "unchanged": true
+    },
+    "src/execution/run.rs": {
+      "tested_ef798": "428309c5fa29c195184a1e67ab1e7f25ae442ebe",
+      "integrated": "428309c5fa29c195184a1e67ab1e7f25ae442ebe",
+      "unchanged": true
+    },
+    "src/execution/timing.rs": {
+      "tested_ef798": "e782e13a5f722e331110dd96c48642ace6cfc600",
+      "integrated": "e782e13a5f722e331110dd96c48642ace6cfc600",
+      "unchanged": true
+    },
+    "src/hash.rs": {
+      "tested_ef798": "db4c90d1341541cc8852f7defdce21cb7d82cc42",
+      "integrated": "db4c90d1341541cc8852f7defdce21cb7d82cc42",
+      "unchanged": true
+    },
+    "src/lib.rs": {
+      "tested_ef798": "c0325c2ff1c6d67824c0d34b0cb0d5c10733840d",
+      "integrated": "c0325c2ff1c6d67824c0d34b0cb0d5c10733840d",
+      "unchanged": true
+    },
+    "src/materialization_worker.rs": {
+      "tested_ef798": "15393cf4ef5c33d8cd67b9d25d2dd49290bd5f08",
+      "integrated": "15393cf4ef5c33d8cd67b9d25d2dd49290bd5f08",
+      "unchanged": true
+    },
+    "src/mcp_client.rs": {
+      "tested_ef798": "596f4912fac0bf4b228d48a8d64c7caeda371cb4",
+      "integrated": "596f4912fac0bf4b228d48a8d64c7caeda371cb4",
+      "unchanged": true
+    },
+    "src/normalize.rs": {
+      "tested_ef798": "df26c2605f9700fccfdbae0b455a445e9ebc21db",
+      "integrated": "df26c2605f9700fccfdbae0b455a445e9ebc21db",
+      "unchanged": true
+    },
+    "src/parser/captures.rs": {
+      "tested_ef798": "01b7e0db605aac2bdb13edfd127206255d14c75f",
+      "integrated": "01b7e0db605aac2bdb13edfd127206255d14c75f",
+      "unchanged": true
+    },
+    "src/parser/fields.rs": {
+      "tested_ef798": "a1bc4a531c0f6caad79a3affc6db05ebd7af98dd",
+      "integrated": "a1bc4a531c0f6caad79a3affc6db05ebd7af98dd",
+      "unchanged": true
+    },
+    "src/parser/markdown.rs": {
+      "tested_ef798": "88bfd08c0df872c066361861717012d670145c3f",
+      "integrated": "88bfd08c0df872c066361861717012d670145c3f",
+      "unchanged": true
+    },
+    "src/parser/mod.rs": {
+      "tested_ef798": "1ce2b292318d6ffa7cf717d512dfcb32d2e2b33f",
+      "integrated": "1ce2b292318d6ffa7cf717d512dfcb32d2e2b33f",
+      "unchanged": true
+    },
+    "src/parser/tree_sitter.rs": {
+      "tested_ef798": "899ebecf873e59d4e136a7b9938723faddc51c0b",
+      "integrated": "899ebecf873e59d4e136a7b9938723faddc51c0b",
+      "unchanged": true
+    },
+    "src/parser/wat.rs": {
+      "tested_ef798": "8e6f0704bd821c6cc5358a2379fdc222e4d6734b",
+      "integrated": "8e6f0704bd821c6cc5358a2379fdc222e4d6734b",
+      "unchanged": true
+    },
+    "src/partition_builder.rs": {
+      "tested_ef798": "ab7abcfc2e1e11d6a18d73366bbde2d0edf536b4",
+      "integrated": "ab7abcfc2e1e11d6a18d73366bbde2d0edf536b4",
+      "unchanged": true
+    },
+    "src/process_lifecycle/mod.rs": {
+      "tested_ef798": "dce323711f2e90ee5aab02a7ad6c6b402ae8206d",
+      "integrated": "dce323711f2e90ee5aab02a7ad6c6b402ae8206d",
+      "unchanged": true
+    },
+    "src/process_lifecycle/unix.rs": {
+      "tested_ef798": "5d794be895a4e8902c0fb699f651d336eb985bc5",
+      "integrated": "5d794be895a4e8902c0fb699f651d336eb985bc5",
+      "unchanged": true
+    },
+    "src/process_lifecycle/windows.rs": {
+      "tested_ef798": "e608da2748c247e42aba34d41371ee33e6dbee01",
+      "integrated": "e608da2748c247e42aba34d41371ee33e6dbee01",
+      "unchanged": true
+    },
+    "src/profiles.rs": {
+      "tested_ef798": "0e2834ec2afaaee5d7cbfb86481fa2e5a1d8da01",
+      "integrated": "0e2834ec2afaaee5d7cbfb86481fa2e5a1d8da01",
+      "unchanged": true
+    },
+    "src/protocol.rs": {
+      "tested_ef798": "bbf055cf325cb1f4830d9b0c1cb168f22a154cb0",
+      "integrated": "bbf055cf325cb1f4830d9b0c1cb168f22a154cb0",
+      "unchanged": true
+    },
+    "src/scan.rs": {
+      "tested_ef798": "d1e89f48076887f72ab1e3f0d5dd2bf12edfa36c",
+      "integrated": "d1e89f48076887f72ab1e3f0d5dd2bf12edfa36c",
+      "unchanged": true
+    },
+    "src/search_index/build.rs": {
+      "tested_ef798": "9a314949fefb1edc14924657e641978353b4968a",
+      "integrated": "9a314949fefb1edc14924657e641978353b4968a",
+      "unchanged": true
+    },
+    "src/search_index/io.rs": {
+      "tested_ef798": "a45721993932edad34fdaf5fb6a58827ad93dacd",
+      "integrated": "a45721993932edad34fdaf5fb6a58827ad93dacd",
+      "unchanged": true
+    },
+    "src/search_index/mod.rs": {
+      "tested_ef798": "fd679fd56cab5799cba3832f8c4702652011c2e5",
+      "integrated": "fd679fd56cab5799cba3832f8c4702652011c2e5",
+      "unchanged": true
+    },
+    "src/search_index/model.rs": {
+      "tested_ef798": "87ef787c42c57c203b3fdd86aef56c8f67a0d19b",
+      "integrated": "87ef787c42c57c203b3fdd86aef56c8f67a0d19b",
+      "unchanged": true
+    },
+    "src/search_index/read.rs": {
+      "tested_ef798": "53b229db7c3dd0275c1beeb2a6c016c4556aa35b",
+      "integrated": "53b229db7c3dd0275c1beeb2a6c016c4556aa35b",
+      "unchanged": true
+    },
+    "src/search_index/tests.rs": {
+      "tested_ef798": "be32cb65ae5d3cefae924c2730cc76f8768802d1",
+      "integrated": "be32cb65ae5d3cefae924c2730cc76f8768802d1",
+      "unchanged": true
+    },
+    "src/source_selection.rs": {
+      "tested_ef798": "030f217135ca7c05f564e8e4b06e7536f2fb7527",
+      "integrated": "030f217135ca7c05f564e8e4b06e7536f2fb7527",
+      "unchanged": true
+    },
+    "src/staging_writer/accumulator.rs": {
+      "tested_ef798": "293c53cb20270363b0f3d1abc15fb12b44c3aef9",
+      "integrated": "293c53cb20270363b0f3d1abc15fb12b44c3aef9",
+      "unchanged": true
+    },
+    "src/staging_writer/files.rs": {
+      "tested_ef798": "d0009cc644ba7544e629d6c2f54a28d85fa1c579",
+      "integrated": "d0009cc644ba7544e629d6c2f54a28d85fa1c579",
+      "unchanged": true
+    },
+    "src/staging_writer/merge.rs": {
+      "tested_ef798": "4f7558f36ec470ff87ca15661b5f6118e34d2d14",
+      "integrated": "4f7558f36ec470ff87ca15661b5f6118e34d2d14",
+      "unchanged": true
+    },
+    "src/staging_writer/mod.rs": {
+      "tested_ef798": "1039a7324ff3dad8ca02b2d43d87fd3adf07d042",
+      "integrated": "1039a7324ff3dad8ca02b2d43d87fd3adf07d042",
+      "unchanged": true
+    },
+    "src/staging_writer/result.rs": {
+      "tested_ef798": "13694106cda6a6f257e805fbddb69e2daf0c25a2",
+      "integrated": "13694106cda6a6f257e805fbddb69e2daf0c25a2",
+      "unchanged": true
+    },
+    "src/staging_writer/rows.rs": {
+      "tested_ef798": "1f49b833ed935ff0435eb0b274e84bcd91404c26",
+      "integrated": "1f49b833ed935ff0435eb0b274e84bcd91404c26",
+      "unchanged": true
+    },
+    "src/staging_writer/spill.rs": {
+      "tested_ef798": "a1afe995c716417b98d5cd86a50186d4614a65be",
+      "integrated": "a1afe995c716417b98d5cd86a50186d4614a65be",
+      "unchanged": true
+    },
+    "src/staging_writer/tests.rs": {
+      "tested_ef798": "6d6e949382c213b3ea5d77ef06533a966edc1390",
+      "integrated": "6d6e949382c213b3ea5d77ef06533a966edc1390",
+      "unchanged": true
+    },
+    "src/staging_writer/writer.rs": {
+      "tested_ef798": "f0f304c7aaa83397af6b33defea20a72f1049b3a",
+      "integrated": "f0f304c7aaa83397af6b33defea20a72f1049b3a",
+      "unchanged": true
+    },
+    "src/storage/atomic.rs": {
+      "tested_ef798": "d607fccd76549960997d928762525110a53eaa65",
+      "integrated": "d607fccd76549960997d928762525110a53eaa65",
+      "unchanged": true
+    },
+    "src/storage/containment.rs": {
+      "tested_ef798": "1ac954cb80e774c20218688dde279bfd89c8e3c0",
+      "integrated": "1ac954cb80e774c20218688dde279bfd89c8e3c0",
+      "unchanged": true
+    },
+    "src/storage/direct.rs": {
+      "tested_ef798": "838d94c7e15ab96cdbe5794bea98a4699aac314b",
+      "integrated": "838d94c7e15ab96cdbe5794bea98a4699aac314b",
+      "unchanged": true
+    },
+    "src/storage/inventory.rs": {
+      "tested_ef798": "885f865451746fb4ca135256b5dc812c98083709",
+      "integrated": "885f865451746fb4ca135256b5dc812c98083709",
+      "unchanged": true
+    },
+    "src/storage/layout.rs": {
+      "tested_ef798": "7432de5daba5385d4c34473e104f180867d3a7e5",
+      "integrated": "7432de5daba5385d4c34473e104f180867d3a7e5",
+      "unchanged": true
+    },
+    "src/storage/locks.rs": {
+      "tested_ef798": "754de2feacc4a39210b3c77912b231f0a2ff06a6",
+      "integrated": "754de2feacc4a39210b3c77912b231f0a2ff06a6",
+      "unchanged": true
+    },
+    "src/storage/maintenance.rs": {
+      "tested_ef798": "8e6854a9758d024de9ee044f94caaeebae03e5a9",
+      "integrated": "8e6854a9758d024de9ee044f94caaeebae03e5a9",
+      "unchanged": true
+    },
+    "src/storage/maintenance_admission.rs": {
+      "tested_ef798": "d364b3228d01221b21f751e89865a1d45516f128",
+      "integrated": "d364b3228d01221b21f751e89865a1d45516f128",
+      "unchanged": true
+    },
+    "src/storage/maintenance_automatic_direct.rs": {
+      "tested_ef798": "f63105301e8a33485ccae7e02a282b044f089274",
+      "integrated": "f63105301e8a33485ccae7e02a282b044f089274",
+      "unchanged": true
+    },
+    "src/storage/maintenance_backup.rs": {
+      "tested_ef798": "b3eb47953f26a6262093b821f5174c85cb5e075f",
+      "integrated": "b3eb47953f26a6262093b821f5174c85cb5e075f",
+      "unchanged": true
+    },
+    "src/storage/maintenance_budget.rs": {
+      "tested_ef798": "d0e577e947b62209926c15dfee57a543e9213eab",
+      "integrated": "d0e577e947b62209926c15dfee57a543e9213eab",
+      "unchanged": true
+    },
+    "src/storage/maintenance_candidate.rs": {
+      "tested_ef798": "9c862a466898c6d04ec7e98ae8d85d22738e88dc",
+      "integrated": "9c862a466898c6d04ec7e98ae8d85d22738e88dc",
+      "unchanged": true
+    },
+    "src/storage/maintenance_controls.rs": {
+      "tested_ef798": "8e1b7e40a1d3c3fd0eb9da5181a60841fbd452bb",
+      "integrated": "8e1b7e40a1d3c3fd0eb9da5181a60841fbd452bb",
+      "unchanged": true
+    },
+    "src/storage/maintenance_generation_engine.rs": {
+      "tested_ef798": "8e8253b2166cfa0ab7f7ed735bd24e3aafe828e7",
+      "integrated": "8e8253b2166cfa0ab7f7ed735bd24e3aafe828e7",
+      "unchanged": true
+    },
+    "src/storage/maintenance_generation_gate.rs": {
+      "tested_ef798": "e5429ddbe194cfe3c640a2cdad12a336e9781609",
+      "integrated": "e5429ddbe194cfe3c640a2cdad12a336e9781609",
+      "unchanged": true
+    },
+    "src/storage/maintenance_generations.rs": {
+      "tested_ef798": "466203de2b616c2d27f41ee4742ca1e7c3a246ab",
+      "integrated": "466203de2b616c2d27f41ee4742ca1e7c3a246ab",
+      "unchanged": true
+    },
+    "src/storage/maintenance_journal.rs": {
+      "tested_ef798": "5a5cb9c64517ad6d4604777f48b4d5d32eeb2c1b",
+      "integrated": "5a5cb9c64517ad6d4604777f48b4d5d32eeb2c1b",
+      "unchanged": true
+    },
+    "src/storage/maintenance_json.rs": {
+      "tested_ef798": "38c28dccba55b74b910392db1f7fb3d4e866e7cb",
+      "integrated": "38c28dccba55b74b910392db1f7fb3d4e866e7cb",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_association.rs": {
+      "tested_ef798": "527766ddc2ee6ac615846c7ed098231a9016dfbe",
+      "integrated": "527766ddc2ee6ac615846c7ed098231a9016dfbe",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_bootstrap.rs": {
+      "tested_ef798": "0c58ea5927b5c68369f8d1bea68ff6733e662504",
+      "integrated": "0c58ea5927b5c68369f8d1bea68ff6733e662504",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_coverage.rs": {
+      "tested_ef798": "dea2a2d7b9dad453e4103608cb2712bacc5c1abc",
+      "integrated": "dea2a2d7b9dad453e4103608cb2712bacc5c1abc",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_engine.rs": {
+      "tested_ef798": "f8ba25584f932be3d3364a0ec0bc8465c4325295",
+      "integrated": "f8ba25584f932be3d3364a0ec0bc8465c4325295",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_generations_engine.rs": {
+      "tested_ef798": "25e0298ab6c7371549e63ed34308192b5950e5f9",
+      "integrated": "25e0298ab6c7371549e63ed34308192b5950e5f9",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_guard.rs": {
+      "tested_ef798": "1b02c272b7d333e0d8cf819561d39750ee1a8ac5",
+      "integrated": "1b02c272b7d333e0d8cf819561d39750ee1a8ac5",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_source_recovery_tests.rs": {
+      "tested_ef798": "99f91041b24469fd11bc61c87515f707e9d23a6d",
+      "integrated": "99f91041b24469fd11bc61c87515f707e9d23a6d",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_staging.rs": {
+      "tested_ef798": "be4a83976e4c2f3500cfab1e1f77ac6e4015cc77",
+      "integrated": "be4a83976e4c2f3500cfab1e1f77ac6e4015cc77",
+      "unchanged": true
+    },
+    "src/storage/maintenance_legacy_stream.rs": {
+      "tested_ef798": "aef467cb9c16f9fab5ca5edfc2885166f912b6e9",
+      "integrated": "aef467cb9c16f9fab5ca5edfc2885166f912b6e9",
+      "unchanged": true
+    },
+    "src/storage/maintenance_native_projection.rs": {
+      "tested_ef798": "c8b422cb7993e5f311223c74c76b9033aa33a19e",
+      "integrated": "c8b422cb7993e5f311223c74c76b9033aa33a19e",
+      "unchanged": true
+    },
+    "src/storage/maintenance_origin.rs": {
+      "tested_ef798": "392b1ef8e903b5009f091eae8339d762aca43bae",
+      "integrated": "392b1ef8e903b5009f091eae8339d762aca43bae",
+      "unchanged": true
+    },
+    "src/storage/maintenance_ownership.rs": {
+      "tested_ef798": "cd73405548fe454d199cd00ec35387bbed6f1747",
+      "integrated": "cd73405548fe454d199cd00ec35387bbed6f1747",
+      "unchanged": true
+    },
+    "src/storage/maintenance_projection.rs": {
+      "tested_ef798": "b8246d31bf60eb56fc685ab10595cdb79f6d5b51",
+      "integrated": "b8246d31bf60eb56fc685ab10595cdb79f6d5b51",
+      "unchanged": true
+    },
+    "src/storage/maintenance_references.rs": {
+      "tested_ef798": "6d755f51b918c43ceb9d2518b662740b6f6cf531",
+      "integrated": "6d755f51b918c43ceb9d2518b662740b6f6cf531",
+      "unchanged": true
+    },
+    "src/storage/maintenance_retirement.rs": {
+      "tested_ef798": "7971ddde6e8e4ad4bd07960ba39fb94fa6c042b1",
+      "integrated": "7971ddde6e8e4ad4bd07960ba39fb94fa6c042b1",
+      "unchanged": true
+    },
+    "src/storage/maintenance_scheduler.rs": {
+      "tested_ef798": "075e013fb9fb279e7b8ac514171aa027cd099fe6",
+      "integrated": "075e013fb9fb279e7b8ac514171aa027cd099fe6",
+      "unchanged": true
+    },
+    "src/storage/maintenance_validation.rs": {
+      "tested_ef798": "620d384fd0ef0d37a95554689499600d352321be",
+      "integrated": "620d384fd0ef0d37a95554689499600d352321be",
+      "unchanged": true
+    },
+    "src/storage/maintenance_workspace_gate.rs": {
+      "tested_ef798": "40fd8b3e699d82fdc7134f3201ac919f49800c69",
+      "integrated": "40fd8b3e699d82fdc7134f3201ac919f49800c69",
+      "unchanged": true
+    },
+    "src/storage/managed.rs": {
+      "tested_ef798": "171ce4eda92df6bce00abd5fe5cc67481d7e8f92",
+      "integrated": "171ce4eda92df6bce00abd5fe5cc67481d7e8f92",
+      "unchanged": true
+    },
+    "src/storage/mod.rs": {
+      "tested_ef798": "030a57d2bdb7e99030ab999b6d1d767711396489",
+      "integrated": "030a57d2bdb7e99030ab999b6d1d767711396489",
+      "unchanged": true
+    },
+    "src/storage/run_workspace.rs": {
+      "tested_ef798": "fe0f8342dab9c7029f12fca6a69bad5bb71a05e8",
+      "integrated": "fe0f8342dab9c7029f12fca6a69bad5bb71a05e8",
+      "unchanged": true
+    },
+    "src/storage/test_harness.rs": {
+      "tested_ef798": "ef21ce4236abe311b497fea5b854edda370ecfd5",
+      "integrated": "ef21ce4236abe311b497fea5b854edda370ecfd5",
+      "unchanged": true
+    },
+    "src/syntax_materializer/arena.rs": {
+      "tested_ef798": "a148b544673092767a9bdd566f24bd73c55e2296",
+      "integrated": "a148b544673092767a9bdd566f24bd73c55e2296",
+      "unchanged": true
+    },
+    "src/syntax_materializer/builder/edges.rs": {
+      "tested_ef798": "fd8e9128e075b38e3ca9d559c2eef606a46576bc",
+      "integrated": "fd8e9128e075b38e3ca9d559c2eef606a46576bc",
+      "unchanged": true
+    },
+    "src/syntax_materializer/builder/mod.rs": {
+      "tested_ef798": "a70bd4d68305ef62aae45ced7f54fcadce7f7708",
+      "integrated": "a70bd4d68305ef62aae45ced7f54fcadce7f7708",
+      "unchanged": true
+    },
+    "src/syntax_materializer/builder/nodes.rs": {
+      "tested_ef798": "f8ad1ca0939fa64dd1b4e1acc45a4d8e9ac47a7a",
+      "integrated": "f8ad1ca0939fa64dd1b4e1acc45a4d8e9ac47a7a",
+      "unchanged": true
+    },
+    "src/syntax_materializer/builder/semantic.rs": {
+      "tested_ef798": "8db63286833210ce8a7ee00c4843f9f20e4e3867",
+      "integrated": "8db63286833210ce8a7ee00c4843f9f20e4e3867",
+      "unchanged": true
+    },
+    "src/syntax_materializer/builder/traversal.rs": {
+      "tested_ef798": "c352fc18e180833b8e9b33b9df59281d3ff898e0",
+      "integrated": "c352fc18e180833b8e9b33b9df59281d3ff898e0",
+      "unchanged": true
+    },
+    "src/syntax_materializer/capture.rs": {
+      "tested_ef798": "bfa040aacbd06092d65c52f997526bf21e0c0b55",
+      "integrated": "bfa040aacbd06092d65c52f997526bf21e0c0b55",
+      "unchanged": true
+    },
+    "src/syntax_materializer/ids.rs": {
+      "tested_ef798": "e75ea24ccf5f1287f0bad6faf1cf80312ff932be",
+      "integrated": "e75ea24ccf5f1287f0bad6faf1cf80312ff932be",
+      "unchanged": true
+    },
+    "src/syntax_materializer/mod.rs": {
+      "tested_ef798": "2cd9af5e988aafb8b183d37aa8d8e996eea45b5c",
+      "integrated": "2cd9af5e988aafb8b183d37aa8d8e996eea45b5c",
+      "unchanged": true
+    },
+    "src/syntax_materializer/relations.rs": {
+      "tested_ef798": "7616cb29c7c49a1c7965b35f783146212a948d50",
+      "integrated": "7616cb29c7c49a1c7965b35f783146212a948d50",
+      "unchanged": true
+    },
+    "src/syntax_materializer/rows.rs": {
+      "tested_ef798": "ce90ef224cd938a74ab829e49e3a1d39c81caa45",
+      "integrated": "ce90ef224cd938a74ab829e49e3a1d39c81caa45",
+      "unchanged": true
+    },
+    "src/syntax_materializer/tests.rs": {
+      "tested_ef798": "69a910ffa40e3e6a439cc5bd053a32b3ad0193d2",
+      "integrated": "69a910ffa40e3e6a439cc5bd053a32b3ad0193d2",
+      "unchanged": true
+    },
+    "tests/agent_hooks_process.rs": {
+      "tested_ef798": "29a27f49251511dc897a59ea75985968a1ca5791",
+      "integrated": "29a27f49251511dc897a59ea75985968a1ca5791",
+      "unchanged": true
+    },
+    "tests/auto_repo_root.rs": {
+      "tested_ef798": "067cff2f9788be05ddcbfedb895b546e3ddebe11",
+      "integrated": "067cff2f9788be05ddcbfedb895b546e3ddebe11",
+      "unchanged": true
+    },
+    "tests/coordinator_process.rs": {
+      "tested_ef798": "7ef73a179d03b2b19d20a649aec3157b7eae580c",
+      "integrated": "7ef73a179d03b2b19d20a649aec3157b7eae580c",
+      "unchanged": true
+    },
+    "tests/copy_phase_process.rs": {
+      "tested_ef798": "dcc20dde4d842109af38b8ed1d4abd2f4b714a0e",
+      "integrated": "dcc20dde4d842109af38b8ed1d4abd2f4b714a0e",
+      "unchanged": true
+    },
+    "tests/generation_storage.rs": {
+      "tested_ef798": "2b111ff8ed093e90173bf1d43082217576c087d8",
+      "integrated": "2b111ff8ed093e90173bf1d43082217576c087d8",
+      "unchanged": true
+    },
+    "tests/http_admission_process.rs": {
+      "tested_ef798": "6072b545fde309bd2eb720a8169e437945724cec",
+      "integrated": "6072b545fde309bd2eb720a8169e437945724cec",
+      "unchanged": true
+    },
+    "tests/http_daemon_process.rs": {
+      "tested_ef798": "80024ca0ae8e39f2c24a9ce358a8ae2b1230de52",
+      "integrated": "80024ca0ae8e39f2c24a9ce358a8ae2b1230de52",
+      "unchanged": true
+    },
+    "tests/native_request_identity.rs": {
+      "tested_ef798": "7b08169f42864280c4d15e12e554f87a3d318b24",
+      "integrated": "7b08169f42864280c4d15e12e554f87a3d318b24",
+      "unchanged": true
+    },
+    "tests/refresh_recovery_process.rs": {
+      "tested_ef798": "243b69062506369cd7bda99c898fc2417b4310f6",
+      "integrated": "243b69062506369cd7bda99c898fc2417b4310f6",
+      "unchanged": true
+    },
+    "tests/storage_maintenance.rs": {
+      "tested_ef798": "cb37c5d2a8559fa60d258cbb770c72feaddbad4e",
+      "integrated": "cb37c5d2a8559fa60d258cbb770c72feaddbad4e",
+      "unchanged": true
+    },
+    "tests/support/lifecycle_faults.rs": {
+      "tested_ef798": "55be97d316c5617b04257b18cab538f5e2091242",
+      "integrated": "55be97d316c5617b04257b18cab538f5e2091242",
+      "unchanged": true
+    },
+    "tests/support/storage_maintenance/collector.rs": {
+      "tested_ef798": "c1f1511cfcfcdf030be624987a5525ea8a532487",
+      "integrated": "c1f1511cfcfcdf030be624987a5525ea8a532487",
+      "unchanged": true
+    },
+    "tests/support/storage_maintenance/mod.rs": {
+      "tested_ef798": "a145b9b3cd375ee1d70e0d9296c6ed34648d8d44",
+      "integrated": "a145b9b3cd375ee1d70e0d9296c6ed34648d8d44",
+      "unchanged": true
+    },
+    "tests/support/storage_maintenance/process.rs": {
+      "tested_ef798": "2f52ae59026899b95873e593004234c91301fa0a",
+      "integrated": "2f52ae59026899b95873e593004234c91301fa0a",
+      "unchanged": true
+    },
+    "tests/support/storage_maintenance/workload.rs": {
+      "tested_ef798": "4e89c727320bbe34e485eefbff09439976bba92e",
+      "integrated": "4e89c727320bbe34e485eefbff09439976bba92e",
+      "unchanged": true
+    },
+    "vendor/tree-sitter-wat/LICENSE": {
+      "tested_ef798": "646ca39a0f16eb2b3430ee371dd7cfb42190f60e",
+      "integrated": "646ca39a0f16eb2b3430ee371dd7cfb42190f60e",
+      "unchanged": true
+    },
+    "vendor/tree-sitter-wat/UPSTREAM.md": {
+      "tested_ef798": "d306839019469f259778dfb7db993de417444e2f",
+      "integrated": "d306839019469f259778dfb7db993de417444e2f",
+      "unchanged": true
+    },
+    "vendor/tree-sitter-wat/src/node-types.json": {
+      "tested_ef798": "f5b612fde28aaed103d23c5f960acfbda986308a",
+      "integrated": "f5b612fde28aaed103d23c5f960acfbda986308a",
+      "unchanged": true
+    },
+    "vendor/tree-sitter-wat/src/parser.c": {
+      "tested_ef798": "6eefc9c219437c0f198fa98ed35594a4ffef0a00",
+      "integrated": "6eefc9c219437c0f198fa98ed35594a4ffef0a00",
+      "unchanged": true
+    },
+    "vendor/tree-sitter-wat/src/scanner.c": {
+      "tested_ef798": "6923cf168c29f7f69365a664f60053aff85304b8",
+      "integrated": "6923cf168c29f7f69365a664f60053aff85304b8",
+      "unchanged": true
+    },
+    "vendor/tree-sitter-wat/src/tree_sitter/alloc.h": {
+      "tested_ef798": "1abdd1201578605b8d05a3001f01ebc0d58826d9",
+      "integrated": "1abdd1201578605b8d05a3001f01ebc0d58826d9",
+      "unchanged": true
+    },
+    "vendor/tree-sitter-wat/src/tree_sitter/array.h": {
+      "tested_ef798": "a17a574f04e0c20c38463149640badc5126063f8",
+      "integrated": "a17a574f04e0c20c38463149640badc5126063f8",
+      "unchanged": true
+    },
+    "vendor/tree-sitter-wat/src/tree_sitter/parser.h": {
+      "tested_ef798": "858107deb9e4a1ffcd2ed5e6ffe98a5fcab3e1f6",
+      "integrated": "858107deb9e4a1ffcd2ed5e6ffe98a5fcab3e1f6",
+      "unchanged": true
+    }
+  },
+  "whitespace": {
+    "full_staged_evidence_check_exit": 2,
+    "raw_paths_sha256": [
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/nextest-run-help.txt",
+        "sha256": "773136ceb158c651cfabd075f7c7bd5d59013961978ed781dfeafa809da2d0ab"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-final.txt",
+        "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-final/source-snapshot-initial.txt",
+        "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification-resumed/source-snapshot-final.txt",
+        "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/cargo-fmt-check.log",
+        "sha256": "1ad656755c7b016869b27c819798de33f9359d9281808f2384a93be323626d40"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-final.txt",
+        "sha256": "3b08ebbb0a0bf924498cc54e1e00394a335dc23a98a5536917123ed1b5bc3e18"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-105/warning-hygiene-2026-10-31/cod105-independent-verification/source-snapshot-initial.txt",
+        "sha256": "3b08ebbb0a0bf924498cc54e1e00394a335dc23a98a5536917123ed1b5bc3e18"
+      }
+    ],
+    "scoped_authored_source_exit": 0,
+    "raw_original_bytes_unchanged": true
+  },
+  "writes": {
+    "evidence_commit": "success first attempt",
+    "new_worktree": "created first attempt",
+    "four_cherry_picks": "success no conflicts",
+    "retries": 0,
+    "pushes": 0,
+    "tests_builds_ci_actions": 0
+  },
+  "qualification": "No new-head behavior pass asserted. Reuse unchanged native behavior136JUnit+3raw under byte proof, interrupted15-run limits preserved. Need assigned affected version/xtask/policy/fmt/Clippy verification, focused final integration review and fresh final-head hosted two-target native/artifact/warnings. No Scryer reconciliation claimed.",
+  "preservation": "Original recovery clean at evidence73be89; old1051a17; root6aa5 dirty work unchanged; proposal0e6008 unchanged; no old refs reset/rewrite. Stop before push."
+}

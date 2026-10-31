@@ -1,0 +1,12 @@
+{
+  "new_xtask_binary": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031/target/native-tests/deps/xtask-eed5a74c0d8f01ef",
+  "new_xtask_binary_sha256": "a2ae5535a9477016f52efad0e40083f1d287fa103d8ffe0314f0bf52bbc15ac3",
+  "source_package_id": "path+file:///private/tmp/codebasegraph-cod105-qualified-resume-20261031/crates/xtask#4.0.5",
+  "source_cwd": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031/crates/xtask",
+  "binary_target_within_new_worktree": true,
+  "all378_working_blobs_preserved_after_execution": true,
+  "after_blob_mismatches": [],
+  "old_native_executable_reused": false,
+  "new_native_behavior_executed": false,
+  "no_shared_target": "CARGO_TARGET_DIR unset; default new worktree target was absent before commands."
+}

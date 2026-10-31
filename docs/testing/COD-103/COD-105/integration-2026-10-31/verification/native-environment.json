@@ -1,0 +1,40 @@
+{
+  "command_env": {
+    "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_VERSION": "0.19.0",
+    "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+    "MACOSX_DEPLOYMENT_TARGET": "13.3",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "unset_env": {
+    "LBUG_SHARED": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "LBUG_BUILD_FROM_SOURCE": null,
+    "LBUG_RUST_BUILD_FROM_SOURCE": null
+  },
+  "old_captured_cli_binding_removed": false,
+  "native_members": {
+    "liblbug.a": {
+      "path": "/private/tmp/codebasegraph-copy153-evidence/native019/liblbug.a",
+      "expected_sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142",
+      "actual_sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142"
+    },
+    "lbug.h": {
+      "path": "/private/tmp/codebasegraph-copy153-evidence/native019/lbug.h",
+      "expected_sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3",
+      "actual_sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3"
+    },
+    "lbug.hpp": {
+      "path": "/private/tmp/codebasegraph-copy153-evidence/native019/lbug.hpp",
+      "expected_sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d",
+      "actual_sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d"
+    }
+  },
+  "cargo_config": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n",
+  "effective_test_HOME": "/private/tmp/codebasegraph-cod105-qualified-resume-20261031/target/test-home",
+  "isolated_target_initially_absent": true,
+  "scope": "dev OpenSSL native library are build/test prerequisites only, not consumer qualification; jobs2 existing resource recipe, no changed product constant"
+}
