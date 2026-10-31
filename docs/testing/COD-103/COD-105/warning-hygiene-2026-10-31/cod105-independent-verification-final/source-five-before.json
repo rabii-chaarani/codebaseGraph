@@ -1,0 +1,27 @@
+{
+  "src/adapters/mcp/daemon.rs": {
+    "path": "src/adapters/mcp/daemon.rs",
+    "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+    "size_bytes": 76723
+  },
+  "src/storage/maintenance_controls.rs": {
+    "path": "src/storage/maintenance_controls.rs",
+    "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+    "size_bytes": 139563
+  },
+  "src/api/lifecycle.rs": {
+    "path": "src/api/lifecycle.rs",
+    "sha256": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+    "size_bytes": 221255
+  },
+  "tests/generation_storage.rs": {
+    "path": "tests/generation_storage.rs",
+    "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+    "size_bytes": 21659
+  },
+  "crates/k-wiki/tests/bundle_reader.rs": {
+    "path": "crates/k-wiki/tests/bundle_reader.rs",
+    "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+    "size_bytes": 11751
+  }
+}

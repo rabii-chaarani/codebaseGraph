@@ -1,0 +1,233 @@
+{
+  "observed_at": "2026-10-31T00:39:57.236501+00:00",
+  "commands": [
+    {
+      "name": "cargo-fmt-check",
+      "command": "cargo fmt --all --check",
+      "shell_command": "cargo fmt --all --check > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/cargo-fmt-check.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-30T23:57:21.943178+00:00",
+      "exit_code": 0,
+      "duration_seconds": 1.7647725839633495,
+      "log_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/cargo-fmt-check.log"
+    },
+    {
+      "name": "xtask-nextest-inventory",
+      "command": "cargo nextest list --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/nextest.toml' --user-config-file none --profile cod105 --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-inventory-build.log' ",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-30T23:59:30.887487+00:00",
+      "status": "completed",
+      "reporting_config": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/nextest.toml",
+      "cargo_profile": "native-tests",
+      "package_scope": "entire xtask binary; no test filter",
+      "pid": 33122,
+      "exit_code": 0,
+      "duration_seconds": null,
+      "duration_limitation": "Kernel restored after initial running snapshot; final completion notification exit0 retained, exact final duration unavailable."
+    },
+    {
+      "name": "full-xtask-nextest",
+      "command": "cargo nextest run --locked -p xtask --bin xtask --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/nextest.toml' --user-config-file none --profile cod105 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-run.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:00:01.383343+00:00",
+      "status": "completed",
+      "cargo_profile": "native-tests",
+      "package_scope": "entire xtask binary; no test filter; retries0; test-threads1",
+      "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-junit.xml",
+      "pid": 33449,
+      "exit_code": 0,
+      "duration_seconds": 19.438295542029664
+    },
+    {
+      "name": "source-bound-native-capture",
+      "command": "cargo test --offline --locked --profile native-tests -p codebase-graph --lib --test generation_storage --no-run --message-format=json-render-diagnostics > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-compiler-artifacts.jsonl' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-compile.log' ",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:14:05.188177+00:00",
+      "status": "completed",
+      "cargo_profile": "native-tests",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "scope": "codebase-graph lib and generation_storage; normal CLI compiler artifact captured as integration-test dependency; no tests yet",
+      "stdout": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-compiler-artifacts.jsonl",
+      "stderr": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-compile.log",
+      "pid": 36906,
+      "exit_code": 0,
+      "duration_seconds": 202.57843425008468
+    },
+    {
+      "name": "native-focused-inventory",
+      "command": "cargo nextest list --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --lib -E 'test(adapters::mcp::daemon::tests::) | test(api::lifecycle::tests::) | test(storage::maintenance_controls::tests::) | test(process_lifecycle::)' --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-inventory.log' ",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:17:39.904466+00:00",
+      "status": "completed",
+      "cargo_profile": "native-tests",
+      "filter": "test(adapters::mcp::daemon::tests::) | test(api::lifecycle::tests::) | test(storage::maintenance_controls::tests::) | test(process_lifecycle::)",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_BIN_EXE_codebase-graph": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph"
+      },
+      "exit_code": 0,
+      "duration_seconds": 1.699933708878234
+    },
+    {
+      "name": "native-focused-run",
+      "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --lib -E 'test(adapters::mcp::daemon::tests::) | test(api::lifecycle::tests::) | test(storage::maintenance_controls::tests::) | test(process_lifecycle::)' --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-run.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:18:03.879112+00:00",
+      "status": "completed",
+      "cargo_profile": "native-tests",
+      "expected_selected_tests": 52,
+      "filter": "test(adapters::mcp::daemon::tests::) | test(api::lifecycle::tests::) | test(storage::maintenance_controls::tests::) | test(process_lifecycle::)",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_BIN_EXE_codebase-graph": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph"
+      },
+      "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-junit.xml",
+      "exit_code": 0,
+      "duration_seconds": 2.4299300839193165
+    },
+    {
+      "name": "fifo-focused-inventory",
+      "command": "cargo nextest list --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --lib -E 'test(=storage::maintenance_collector_tests::dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root)' --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-inventory.log' ",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:18:29.693139+00:00",
+      "status": "completed",
+      "cargo_profile": "native-tests",
+      "filter": "test(=storage::maintenance_collector_tests::dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root)",
+      "exit_code": 0,
+      "duration_seconds": 0.3310040421783924
+    },
+    {
+      "name": "fifo-focused-run",
+      "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --lib -E 'test(=storage::maintenance_collector_tests::dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root)' --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-run.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:18:30.026755+00:00",
+      "status": "completed",
+      "cargo_profile": "native-tests",
+      "expected_selected_tests": 1,
+      "filter": "test(=storage::maintenance_collector_tests::dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root)",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_BIN_EXE_codebase-graph": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph"
+      },
+      "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-junit.xml",
+      "exit_code": 0,
+      "duration_seconds": 20.36127429199405
+    },
+    {
+      "name": "affected-integration-inventory",
+      "command": "cargo nextest list --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --test generation_storage -p k-wiki --test bundle_reader --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/affected-integration-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/affected-integration-build.log' ",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:18:57.344523+00:00",
+      "status": "completed",
+      "cargo_profile": "native-tests",
+      "scope": "complete actual generation_storage and k-wiki bundle_reader test binaries",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_BIN_EXE_codebase-graph": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph"
+      },
+      "exit_code": 0,
+      "duration_seconds": 138.27814783295617
+    },
+    {
+      "name": "affected-integration-run",
+      "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/integration-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --test generation_storage -p k-wiki --test bundle_reader --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/affected-integration-run.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:21:46.890692+00:00",
+      "status": "running",
+      "cargo_profile": "native-tests",
+      "expected_selected_tests": 15,
+      "scope": "all15 platform-compiled generation_storage(5) and bundle_reader(10) cases; Windows-only generation case absent by existing cfg, not filtered/weakened",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_BIN_EXE_codebase-graph": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph"
+      },
+      "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/affected-integration-junit.xml",
+      "pid": 41162,
+      "exit_code": null,
+      "duration_seconds": 10.011644791113213
+    }
+  ],
+  "handles": {},
+  "junit": [
+    {
+      "file": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-junit.xml",
+      "root_attributes": {
+        "name": "nextest-run",
+        "tests": "1",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "304de859-faf0-4a6a-8ea6-9dc7b0a935aa",
+        "timestamp": "2026-10-31T09:48:30.310+09:30",
+        "time": "20.071"
+      },
+      "testcases": 1,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "file": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-junit.xml",
+      "root_attributes": {
+        "name": "nextest-run",
+        "tests": "52",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "3662d514-a286-45a3-afe3-1ed59206f72e",
+        "timestamp": "2026-10-31T09:48:04.203+09:30",
+        "time": "2.098"
+      },
+      "testcases": 52,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    {
+      "file": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-junit.xml",
+      "root_attributes": {
+        "name": "nextest-run",
+        "tests": "71",
+        "failures": "0",
+        "errors": "0",
+        "uuid": "7c34f6f2-a8ac-45ef-bf25-5b7b3ec25ea0",
+        "timestamp": "2026-10-31T09:30:01.668+09:30",
+        "time": "19.141"
+      },
+      "testcases": 71,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    }
+  ]
+}

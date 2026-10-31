@@ -1,0 +1,14 @@
+{
+  "log_warning_lines": {
+    "release-gate.log": [],
+    "generation-permission-run.log": [],
+    "generation-churn-run.log": [],
+    "unfinished-integration-inventory.log": [],
+    "strict-workspace-clippy.log": [],
+    "check-workflows.log": [],
+    "bundle-reader-run.log": []
+  },
+  "strict_clippy_exit_code": 0,
+  "warning_count": 0,
+  "original_warning_file": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/warning-observations.json"
+}

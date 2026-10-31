@@ -1,0 +1,83 @@
+ M crates/k-wiki/tests/bundle_reader.rs
+ M src/adapters/mcp/daemon.rs
+ M src/api/lifecycle.rs
+ M src/storage/maintenance_controls.rs
+ M tests/generation_storage.rs
+/private/tmp/codebasegraph-cod105-resume-20261030
+e06d7404955abeb7a002b54ad740399dfe10c931
+7e4fbdb7834dbed308a233c40d2af6acaa09a82c
+ crates/k-wiki/tests/bundle_reader.rs | 1 +
+ src/adapters/mcp/daemon.rs           | 1 +
+ src/api/lifecycle.rs                 | 4 +++-
+ src/storage/maintenance_controls.rs  | 1 +
+ tests/generation_storage.rs          | 1 +
+ 5 files changed, 7 insertions(+), 1 deletion(-)
+diff --git a/crates/k-wiki/tests/bundle_reader.rs b/crates/k-wiki/tests/bundle_reader.rs
+index 0ad55a4..69e1b21 100644
+--- a/crates/k-wiki/tests/bundle_reader.rs
++++ b/crates/k-wiki/tests/bundle_reader.rs
+@@ -36,6 +36,7 @@ fn make_temp_dir(prefix: &str) -> PathBuf {
+     path
+ }
+ 
++#[cfg(unix)]
+ fn copy_dir_all(source: &Path, destination: &Path) {
+     fs::create_dir_all(destination).expect("create destination directory");
+     for entry in fs::read_dir(source).expect("read fixture directory") {
+diff --git a/src/adapters/mcp/daemon.rs b/src/adapters/mcp/daemon.rs
+index cfa28fe..266975c 100644
+--- a/src/adapters/mcp/daemon.rs
++++ b/src/adapters/mcp/daemon.rs
+@@ -1835,6 +1835,7 @@ fn executable_in_path(name: &str) -> Option<PathBuf> {
+     })
+ }
+ 
++#[cfg(any(target_os = "macos", target_os = "linux"))]
+ fn home_dir() -> PathBuf {
+     env::var_os("HOME")
+         .or_else(|| env::var_os("USERPROFILE"))
+diff --git a/src/api/lifecycle.rs b/src/api/lifecycle.rs
+index dc723ce..bfeb3f9 100644
+--- a/src/api/lifecycle.rs
++++ b/src/api/lifecycle.rs
+@@ -5115,13 +5115,15 @@ mod tests {
+         install_mcp_endpoint, install_mcp_server, instruction_block, is_retryable_refresh_failure,
+         language_for_path, native_client_command, parse_hermes_managed_entries,
+         parse_toml_stdio_entry, persist_agent_hooks_config, reinstall_state, remove_mcp_server,
+-        remove_partial_state_tree, rename_mcp_server, render_client_http_config,
++        rename_mcp_server, render_client_http_config,
+         resolve_mcp_target, run_reinstall_activation_boundary, select_available_daemon_port,
+         upsert_instruction_text, yaml_scalar, GraphStatePaths, ManagedStdioEntry,
+         McpClientInstallOptions, McpClientRemovalOptions, McpClientRenameOptions,
+         McpEndpointDescriptor, McpExistingEntryPolicy, McpInstallMode, McpServerDescriptor,
+         McpTargetLocality, ResolvedMcpTarget,
+     };
++    #[cfg(unix)]
++    use super::remove_partial_state_tree;
+     use serde_json::json;
+     use std::collections::BTreeMap;
+     use std::fs;
+diff --git a/src/storage/maintenance_controls.rs b/src/storage/maintenance_controls.rs
+index 0e557f1..8e1b7e4 100644
+--- a/src/storage/maintenance_controls.rs
++++ b/src/storage/maintenance_controls.rs
+@@ -3431,6 +3431,7 @@ impl PreparedTerminalWorkspace {
+ 
+ /// Private hardlink name is bound to the actual random creation operation.
+ /// This pin is special FIFO metadata, never a second link to a payload file.
++#[cfg(unix)]
+ pub(crate) fn workspace_fifo_pin_name(binding: &WorkspaceOutputBinding) -> [u8; 69] {
+     let mut name = [0; 69];
+     name[..5].copy_from_slice(b"fifo-");
+diff --git a/tests/generation_storage.rs b/tests/generation_storage.rs
+index edd1f03..2b111ff 100644
+--- a/tests/generation_storage.rs
++++ b/tests/generation_storage.rs
+@@ -424,6 +424,7 @@ fn materialize_ok(
+         .payload
+ }
+ 
++#[cfg(unix)]
+ fn materialize_err(
+     repo_root: &Path,
+     db_path: Option<PathBuf>,

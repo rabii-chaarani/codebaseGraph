@@ -1,0 +1,964 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-105",
+  "role": "evidence_verifier",
+  "status": "authorized_local_checks_complete_with_explicit_interrupted_attempt_limitation",
+  "completed_at_utc": "2026-10-31T01:05:38.465863+00:00",
+  "summary": {
+    "formatting": "pass",
+    "strict_workspace_clippy": "pass; all targets/all features, -D warnings; no warnings observed",
+    "source_policy": "check-workflows and ordinary release-gate pass",
+    "genuine_junit_passes": 136,
+    "additional_original_raw_log_passes": 3,
+    "macOS_integration_accounting": "All15 platform-compiled cases accounted as3 original raw-log passes+12 resumed genuine JUnit passes. Original full15 attempt stays interrupted/incomplete; no single complete15 exit/JUnit asserted.",
+    "source_unchanged": true,
+    "no_remaining_confirmed_local_failure": true,
+    "fully_qualified_or_done": false
+  },
+  "authority": {
+    "original_approved_revision": "0.2",
+    "original_approved_full_sha": "7e79f7e924536f29d3212e83899b01c38afd39de",
+    "original_approval_record_full_sha": "383a481bd5a71c58dab7dd796ace92a365760da5",
+    "current_queue_revision": "0.3",
+    "current_queue_full_sha": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+    "current_queue_approval_reference": "Coordinator correction relays user confirmed already approved exact rev0.3; Linear COD-103 comment c8690556-e836-428d-bc81-079c701d2395 records satisfied. Approval was not inferred from historical preparation prose in the immutable spec.",
+    "current_queue_spec_read_exit_code": 0,
+    "scope_relation": "Existing COD-105 oracle unchanged; no checks rerun solely for authority update.",
+    "spec_path": "docs/specs/COD-103/spec.md",
+    "changes": [
+      "chg-ahwwmf",
+      "chg-cgjfa4"
+    ],
+    "isolated_brief": "chg-ndhhtx"
+  },
+  "snapshot": {
+    "root": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "head": "e06d7404955abeb7a002b54ad740399dfe10c931",
+    "head_tree": "7e4fbdb7834dbed308a233c40d2af6acaa09a82c",
+    "base_at_assignment": "c60a00c1d747b73789cd6edc7ee20601182a35ca",
+    "source_identity": "HEAD plus exact five-file dirty diff/hashes, not HEAD alone",
+    "before": {
+      "src/adapters/mcp/daemon.rs": {
+        "path": "src/adapters/mcp/daemon.rs",
+        "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+        "size_bytes": 76723
+      },
+      "src/storage/maintenance_controls.rs": {
+        "path": "src/storage/maintenance_controls.rs",
+        "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+        "size_bytes": 139563
+      },
+      "src/api/lifecycle.rs": {
+        "path": "src/api/lifecycle.rs",
+        "sha256": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+        "size_bytes": 221255
+      },
+      "tests/generation_storage.rs": {
+        "path": "tests/generation_storage.rs",
+        "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+        "size_bytes": 21659
+      },
+      "crates/k-wiki/tests/bundle_reader.rs": {
+        "path": "crates/k-wiki/tests/bundle_reader.rs",
+        "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+        "size_bytes": 11751
+      }
+    },
+    "after": {
+      "src/adapters/mcp/daemon.rs": {
+        "path": "src/adapters/mcp/daemon.rs",
+        "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+        "size_bytes": 76723
+      },
+      "src/storage/maintenance_controls.rs": {
+        "path": "src/storage/maintenance_controls.rs",
+        "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+        "size_bytes": 139563
+      },
+      "src/api/lifecycle.rs": {
+        "path": "src/api/lifecycle.rs",
+        "sha256": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+        "size_bytes": 221255
+      },
+      "tests/generation_storage.rs": {
+        "path": "tests/generation_storage.rs",
+        "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+        "size_bytes": 21659
+      },
+      "crates/k-wiki/tests/bundle_reader.rs": {
+        "path": "crates/k-wiki/tests/bundle_reader.rs",
+        "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+        "size_bytes": 11751
+      }
+    },
+    "bytes_preserved": true,
+    "git_status_and_diff_preserved": true,
+    "diff_stat": "5 files,12 insertions,6 deletions; lifecycle rustfmt reflow included",
+    "source_snapshot_initial": "source-snapshot-initial.txt",
+    "source_snapshot_final": "source-snapshot-final.txt",
+    "final_source_record": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/source-snapshot-final.txt",
+    "final_diff_check_exit_code": 0
+  },
+  "environment": {
+    "command_environment": {
+      "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+      "LBUG_VERSION": "0.19.0",
+      "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "13.3",
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "unset_overrides": {
+      "LBUG_SHARED": null,
+      "CARGO_TARGET_DIR": null,
+      "RUSTFLAGS": null,
+      "CARGO_ENCODED_RUSTFLAGS": null,
+      "LBUG_BUILD_FROM_SOURCE": null,
+      "LBUG_RUST_BUILD_FROM_SOURCE": null
+    },
+    "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "cargo_config": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n",
+    "effective_test_HOME": "/private/tmp/codebasegraph-cod105-resume-20261030/target/test-home",
+    "cargo_profile": "native-tests",
+    "openssl": [
+      {
+        "path": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.dylib",
+        "exists": true
+      },
+      {
+        "path": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.dylib",
+        "exists": true
+      }
+    ],
+    "resource_note": "CARGO_BUILD_JOBS=2 matches existing verified local recipe and is test-resource concurrency only; no product constant changed.",
+    "openssl_note": "Developer build/test prerequisites only, not consumer archive-runtime qualification."
+  },
+  "versions_file": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/environment-versions.txt",
+  "native_cache": {
+    "library_directory": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "cached_archive_path_from_prior_evidence": "/private/tmp/codebasegraph-copy153-evidence/liblbug-static-osx-arm64.tar.gz",
+    "cached_archive_currently_present": false,
+    "prior_official_archive_sha256": "6bee40babdf837bb6aa4d271047dfe5ed3dacf022f16af84952ca4c22d034d62",
+    "members": [
+      {
+        "path": "/private/tmp/codebasegraph-copy153-evidence/native019/liblbug.a",
+        "exists": true,
+        "sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142",
+        "expected_sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142"
+      },
+      {
+        "path": "/private/tmp/codebasegraph-copy153-evidence/native019/lbug.h",
+        "exists": true,
+        "sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3",
+        "expected_sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3"
+      },
+      {
+        "path": "/private/tmp/codebasegraph-copy153-evidence/native019/lbug.hpp",
+        "exists": true,
+        "sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d",
+        "expected_sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d"
+      }
+    ],
+    "direct_members_match_committed_official_identity": true,
+    "limitation": "Cached archive is absent now; no current archive hash/comparison asserted. Actual extracted files all match exact committed verified official0.19.0 member hashes; these direct files are the build input, no acquisition/source fallback needed."
+  },
+  "captured_cli_provenance": {
+    "source_root": "/private/tmp/codebasegraph-cod105-resume-20261030",
+    "head": "e06d7404955abeb7a002b54ad740399dfe10c931",
+    "dirty_hashes": {
+      "src/adapters/mcp/daemon.rs": {
+        "path": "src/adapters/mcp/daemon.rs",
+        "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+        "size_bytes": 76723
+      },
+      "src/storage/maintenance_controls.rs": {
+        "path": "src/storage/maintenance_controls.rs",
+        "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+        "size_bytes": 139563
+      },
+      "src/api/lifecycle.rs": {
+        "path": "src/api/lifecycle.rs",
+        "sha256": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+        "size_bytes": 221255
+      },
+      "tests/generation_storage.rs": {
+        "path": "tests/generation_storage.rs",
+        "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+        "size_bytes": 21659
+      },
+      "crates/k-wiki/tests/bundle_reader.rs": {
+        "path": "crates/k-wiki/tests/bundle_reader.rs",
+        "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+        "size_bytes": 11751
+      }
+    },
+    "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+    "compiler_artifact": "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/codebase-graph",
+    "compiler_artifact_sha256": "b6e604c354a12d683ee9e0aa32f3b878c0f6d1049930da28f951a013f0cf0f12",
+    "captured_cli": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph",
+    "captured_cli_sha256": "b6e604c354a12d683ee9e0aa32f3b878c0f6d1049930da28f951a013f0cf0f12",
+    "capture_matches": true,
+    "root_compiler_artifact_messages": [
+      {
+        "reason": "compiler-artifact",
+        "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+        "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+        "target": {
+          "kind": [
+            "custom-build"
+          ],
+          "crate_types": [
+            "bin"
+          ],
+          "name": "build-script-build",
+          "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/build.rs",
+          "edition": "2021",
+          "doc": false,
+          "doctest": false,
+          "test": false
+        },
+        "profile": {
+          "opt_level": "0",
+          "debuginfo": 0,
+          "debug_assertions": true,
+          "overflow_checks": true,
+          "test": false
+        },
+        "features": [
+          "bundled-windows-extensions",
+          "default"
+        ],
+        "filenames": [
+          "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/build/codebase-graph-18f48a6a902bc3c2/build-script-build"
+        ],
+        "executable": null,
+        "fresh": false
+      },
+      {
+        "reason": "compiler-artifact",
+        "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+        "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+        "target": {
+          "kind": [
+            "lib"
+          ],
+          "crate_types": [
+            "lib"
+          ],
+          "name": "codebase_graph",
+          "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/src/lib.rs",
+          "edition": "2021",
+          "doc": true,
+          "doctest": true,
+          "test": true
+        },
+        "profile": {
+          "opt_level": "3",
+          "debuginfo": 0,
+          "debug_assertions": true,
+          "overflow_checks": true,
+          "test": false
+        },
+        "features": [
+          "bundled-windows-extensions",
+          "default"
+        ],
+        "filenames": [
+          "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/libcodebase_graph-ff647f8d8091db84.rlib",
+          "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/libcodebase_graph-ff647f8d8091db84.rmeta"
+        ],
+        "executable": null,
+        "fresh": false
+      },
+      {
+        "reason": "compiler-artifact",
+        "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+        "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+        "target": {
+          "kind": [
+            "bin"
+          ],
+          "crate_types": [
+            "bin"
+          ],
+          "name": "codebase-graph",
+          "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/src/bin/codebase-graph.rs",
+          "edition": "2021",
+          "doc": true,
+          "doctest": false,
+          "test": true
+        },
+        "profile": {
+          "opt_level": "3",
+          "debuginfo": 0,
+          "debug_assertions": true,
+          "overflow_checks": true,
+          "test": false
+        },
+        "features": [
+          "bundled-windows-extensions",
+          "default"
+        ],
+        "filenames": [
+          "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/codebase-graph"
+        ],
+        "executable": "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/codebase-graph",
+        "fresh": false
+      },
+      {
+        "reason": "compiler-artifact",
+        "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+        "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+        "target": {
+          "kind": [
+            "test"
+          ],
+          "crate_types": [
+            "bin"
+          ],
+          "name": "generation_storage",
+          "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/tests/generation_storage.rs",
+          "edition": "2021",
+          "doc": false,
+          "doctest": false,
+          "test": true
+        },
+        "profile": {
+          "opt_level": "3",
+          "debuginfo": 0,
+          "debug_assertions": true,
+          "overflow_checks": true,
+          "test": true
+        },
+        "features": [
+          "bundled-windows-extensions",
+          "default"
+        ],
+        "filenames": [
+          "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/generation_storage-d89725f3c76c81e6"
+        ],
+        "executable": "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/generation_storage-d89725f3c76c81e6",
+        "fresh": false
+      },
+      {
+        "reason": "compiler-artifact",
+        "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+        "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+        "target": {
+          "kind": [
+            "lib"
+          ],
+          "crate_types": [
+            "lib"
+          ],
+          "name": "codebase_graph",
+          "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/src/lib.rs",
+          "edition": "2021",
+          "doc": true,
+          "doctest": true,
+          "test": true
+        },
+        "profile": {
+          "opt_level": "3",
+          "debuginfo": 0,
+          "debug_assertions": true,
+          "overflow_checks": true,
+          "test": true
+        },
+        "features": [
+          "bundled-windows-extensions",
+          "default"
+        ],
+        "filenames": [
+          "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/codebase_graph-792670d37182af45"
+        ],
+        "executable": "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/codebase_graph-792670d37182af45",
+        "fresh": false
+      }
+    ],
+    "environment_binding": "CARGO_BIN_EXE_codebase-graph points to immutable diagnostic copy, matched source-bound Cargo artifact; same profile native-tests; no other checkout executable used."
+  },
+  "captured_cli_unchanged": true,
+  "execution_settings": {
+    "role_map": "agents.evidence_verifier",
+    "mapped_model": "inherit",
+    "mapped_reasoning_effort": "inherit",
+    "host_dispatch": "Original accepted dispatch reused; no explicit overrides or model switch",
+    "actual_runtime_model_effort": "unexposed",
+    "other_roles_dispatched": false
+  },
+  "original_command_records": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/command-records.json",
+  "resumed_command_records": [
+    {
+      "name": "strict-workspace-clippy",
+      "command": "cargo clippy --offline --workspace --all-targets --all-features --locked -- -D warnings > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/strict-workspace-clippy.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:42:28.520928+00:00",
+      "status": "completed",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2",
+        "CARGO_BIN_EXE_codebase-graph": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph"
+      },
+      "scope": "whole workspace,all targets,all features,strict -D warnings; normal documented Clippy dev profile; no tests run by this command",
+      "pid": 52242,
+      "exit_code": 0,
+      "duration_seconds": 71.3397793341428
+    },
+    {
+      "name": "check-workflows",
+      "command": "cargo run --offline --locked -p xtask -- check-workflows > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/check-workflows.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:43:46.301089+00:00",
+      "status": "completed",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "pid": 56173,
+      "exit_code": 0,
+      "duration_seconds": 10.946370874997228
+    },
+    {
+      "name": "release-gate",
+      "command": "cargo run --offline --locked -p xtask -- release-gate > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/release-gate.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:44:04.696025+00:00",
+      "status": "completed",
+      "environment": {
+        "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+        "LBUG_VERSION": "0.19.0",
+        "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+        "MACOSX_DEPLOYMENT_TARGET": "13.3",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "scope": "ordinary source policy gate only; no production flags or external publication",
+      "exit_code": 0,
+      "duration_seconds": 0.5102118330541998
+    },
+    {
+      "name": "unfinished-integration-inventory",
+      "command": "cargo nextest list --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/nextest-inventory.toml' --user-config-file none --profile cod105 -p codebase-graph --test generation_storage -p k-wiki --test bundle_reader -E 'test(=managed_materialization_survives_ten_updates_without_generation_leaks) | test(=managed_publish_failure_preserves_active_generation) | test(=closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof) | test(=invalid_bundle_root_error_omits_absolute_host_path) | test(=parser_diagnostics_exclude_source_values_and_keep_relative_locations) | test(=resp_168_discovers_bundle_boundaries_and_metadata) | test(=resp_169_parses_standard_fields_and_preserves_extensions) | test(=resp_170_classifies_reserved_files_without_promoting_them_to_concepts) | test(=resp_171_records_root_okf_version_from_bundle_index) | test(=resp_172_rejects_markdown_entries_that_escape_the_bundle_root) | test(=unterminated_frontmatter_is_invalid_even_when_yaml_is_valid) | test(=walk_errors_keep_relative_location_and_safe_io_category)' --message-format json > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/unfinished-integration-inventory.json' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/unfinished-integration-inventory.log' ",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:44:11.451946+00:00",
+      "status": "completed",
+      "cargo_profile": "native-tests",
+      "scope": "two unfinished generation cases + all10 bundle_reader; three prior passing cases not selected",
+      "filter": "test(=managed_materialization_survives_ten_updates_without_generation_leaks) | test(=managed_publish_failure_preserves_active_generation) | test(=closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof) | test(=invalid_bundle_root_error_omits_absolute_host_path) | test(=parser_diagnostics_exclude_source_values_and_keep_relative_locations) | test(=resp_168_discovers_bundle_boundaries_and_metadata) | test(=resp_169_parses_standard_fields_and_preserves_extensions) | test(=resp_170_classifies_reserved_files_without_promoting_them_to_concepts) | test(=resp_171_records_root_okf_version_from_bundle_index) | test(=resp_172_rejects_markdown_entries_that_escape_the_bundle_root) | test(=unterminated_frontmatter_is_invalid_even_when_yaml_is_valid) | test(=walk_errors_keep_relative_location_and_safe_io_category)",
+      "exit_code": 0,
+      "duration_seconds": 0.5700733328703791
+    },
+    {
+      "name": "bundle-reader-run",
+      "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-nextest.toml' --user-config-file none --profile cod105 -p k-wiki --test bundle_reader --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-reader-run.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:44:22.280661+00:00",
+      "status": "completed",
+      "expected_tests": 10,
+      "cargo_profile": "native-tests",
+      "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-reader-junit.xml",
+      "scope": "all10 previously unrun bundle_reader cases; no filter",
+      "exit_code": 0,
+      "duration_seconds": 0.5486369170248508
+    },
+    {
+      "name": "generation-permission-run",
+      "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/permission-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --test generation_storage -E 'test(=managed_publish_failure_preserves_active_generation)' --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-permission-run.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:44:28.496231+00:00",
+      "status": "completed",
+      "expected_tests": 1,
+      "cargo_profile": "native-tests",
+      "test_name": "managed_publish_failure_preserves_active_generation",
+      "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-permission-junit.xml",
+      "pid": 56400,
+      "exit_code": 0,
+      "duration_seconds": 13.563230708008632
+    },
+    {
+      "name": "generation-churn-run",
+      "command": "cargo nextest run --offline --locked --cargo-profile native-tests --config-file '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/churn-nextest.toml' --user-config-file none --profile cod105 -p codebase-graph --test generation_storage -E 'test(=managed_materialization_survives_ten_updates_without_generation_leaks)' --test-threads 1 --no-tests fail > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-churn-run.log' 2>&1",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "started_at": "2026-10-31T00:44:52.468125+00:00",
+      "status": "completed",
+      "expected_tests": 1,
+      "cargo_profile": "native-tests",
+      "test_name": "managed_materialization_survives_ten_updates_without_generation_leaks",
+      "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-churn-junit.xml",
+      "continuation_authority": "Coordinator explicit safe continuation after interrupted invocation and absence of owned processes; not a second full15 rerun; no added timeout or test policy changes",
+      "pid": 56539,
+      "exit_code": 0,
+      "duration_seconds": 1122.6414350001141
+    },
+    {
+      "name": "final-diff-identity-check",
+      "command": "git --no-optional-locks diff --check; status; rev-parse; diff --stat and exact five-file diff",
+      "cwd": "/private/tmp/codebasegraph-cod105-resume-20261030",
+      "exit_code": 0,
+      "duration_seconds": 0.09552945895120502,
+      "scope": "read-only final whitespace/source identity; all five hashes and complete initial status/diff unchanged",
+      "log_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/source-snapshot-final.txt"
+    }
+  ],
+  "junit": {
+    "genuine_passing_testcases": 136,
+    "reports": [
+      {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-junit.xml",
+        "sha256": "f0d4efbc9c009e5c6a961565a6034832a5e4d984b177be70425d128f7d7df1f5",
+        "run_id": "7c34f6f2-a8ac-45ef-bf25-5b7b3ec25ea0",
+        "testcases": 71,
+        "failures": 0,
+        "errors": 0,
+        "skipped_testcases": 0,
+        "selected_inventory_matches": true,
+        "selected_case_names": [
+          "macos::tests::dependency_parser_preserves_paths_with_spaces",
+          "macos::tests::dylib_dependency_parser_filters_only_matching_install_id",
+          "macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands",
+          "macos::tests::rpath_parser_reads_and_rejects_malformed_entries",
+          "macos::tests::source_archive_accepts_comment_metadata_without_extracting_it",
+          "macos_installer_tests::dry_run_validates_all_payloads_without_creating_destination",
+          "macos_installer_tests::invalid_inventory_rows_and_mixed_versions_preserve_destination",
+          "macos_installer_tests::missing_corrupt_and_symlink_payloads_preserve_existing_destination_files",
+          "macos_installer_tests::nonzero_binary_probe_preserves_existing_destination_files",
+          "macos_installer_tests::real_install_places_verified_runtime_license_and_binaries_in_spaced_directory",
+          "native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite",
+          "native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases",
+          "native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments",
+          "native_tests::tests::captured_cli_survives_cargo_replacing_its_output",
+          "native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets",
+          "native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite",
+          "release::tests::metadata_rejects_inconsistent_versions",
+          "release::tests::notes_only_include_the_exact_release",
+          "release::tests::notes_reject_missing_duplicate_and_empty_sections",
+          "release::workflow_tests::accepted_writes_with_lost_responses_resume_without_replay",
+          "release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication",
+          "release::workflow_tests::draft_partial_upload_resumes_and_latest_is_selected_at_publication",
+          "release::workflow_tests::existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases",
+          "release::workflow_tests::immutable_missing_or_mismatched_assets_fail_without_mutation",
+          "release::workflow_tests::immutable_release_uploads_before_publication_and_retries_without_writes",
+          "release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can",
+          "release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization",
+          "release::workflow_tests::published_mutable_partial_assets_can_resume_without_republishing",
+          "release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest",
+          "release::workflow_tests::publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes",
+          "release::workflow_tests::publisher_targets_original_sha_and_is_idempotent",
+          "release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds",
+          "release::workflow_tests::staged_assets_match_the_supported_native_targets",
+          "release::workflow_tests::upload_or_remote_byte_failure_never_publishes",
+          "release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity",
+          "release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history",
+          "release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases",
+          "tests::archive_contract_rejects_unexpected_entries",
+          "tests::complete_artifact_set_rejects_mixed_provenance",
+          "tests::crate_size_validation_enforces_the_registry_limit",
+          "tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations",
+          "tests::macos_smoke_commands_use_a_fixture_home_and_system_path",
+          "tests::mcp_smoke_accepts_valid_initialize_and_tools",
+          "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+          "tests::mcp_smoke_rejects_nonzero_child_with_success_payload",
+          "tests::native_capture_requires_unique_source_bound_normal_cli_artifact",
+          "tests::native_capture_reuses_the_exact_test_profile_and_features",
+          "tests::native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory",
+          "tests::native_target_contract_maps_names_and_binaries",
+          "tests::native_test_failure_cannot_authorize_artifact_production",
+          "tests::release_identity_validation_is_strict",
+          "tests::windows_native_tests_forward_bundled_extensions",
+          "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+          "tests::workflow_policy_rejects_automatic_rebuild_recovery",
+          "tests::workflow_policy_rejects_direct_release_push_trigger",
+          "tests::workflow_policy_rejects_github_sha_for_release_identity",
+          "tests::workflow_policy_rejects_missing_ci_success_guard",
+          "tests::workflow_policy_rejects_missing_crate_publish_retry",
+          "tests::workflow_policy_rejects_missing_crate_size_gates",
+          "tests::workflow_policy_rejects_missing_repository_release_gate",
+          "tests::workflow_policy_rejects_missing_triggering_run_binding",
+          "tests::workflow_policy_rejects_privileged_pr_event",
+          "tests::workflow_policy_rejects_release_queue_replacement",
+          "tests::workflow_policy_rejects_unapproved_pull_request_activity",
+          "tests::workflow_policy_rejects_unconditional_release_publication",
+          "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+          "tests::workflow_policy_rejects_unvalidated_publishers",
+          "tests::workflow_policy_requires_ci_completion_release_trigger",
+          "tests::workflow_policy_requires_publication_revalidation",
+          "tests::workflow_yaml_validation_rejects_unindented_heredoc_body",
+          "tests::workflows_reject_removed_platform_targets"
+        ],
+        "reported_duration_seconds": "19.141",
+        "filter_note": "All71 xtask tests, no filter."
+      },
+      {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-junit.xml",
+        "sha256": "5ee9fc153bf6fe00129f95f6bc324da9cadcc29ee6366e0ab16a40b37871b718",
+        "run_id": "3662d514-a286-45a3-afe3-1ed59206f72e",
+        "testcases": 52,
+        "failures": 0,
+        "errors": 0,
+        "skipped_testcases": 0,
+        "selected_inventory_matches": true,
+        "selected_case_names": [
+          "adapters::mcp::daemon::tests::failure_snapshot_is_bounded_private_and_replaced_atomically",
+          "adapters::mcp::daemon::tests::launchd_status_parser_reports_running_and_failed_jobs",
+          "adapters::mcp::daemon::tests::manager_missing_messages_are_recognized_without_localized_status_parsing",
+          "adapters::mcp::daemon::tests::older_daemon_state_without_start_timestamp_remains_readable",
+          "adapters::mcp::daemon::tests::reconciliation_is_idempotent_and_fails_closed_on_identity_mismatch",
+          "adapters::mcp::daemon::tests::service_manifests_quote_paths_and_request_single_instance_restart",
+          "adapters::mcp::daemon::tests::stable_ports_and_service_ids_are_repository_scoped",
+          "adapters::mcp::daemon::tests::systemd_status_parser_reports_running_failed_and_missing_fields",
+          "api::lifecycle::tests::claude_desktop_path_is_rejected_for_loopback_http",
+          "api::lifecycle::tests::cloud_targets_require_public_https_without_exposing_loopback",
+          "api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments",
+          "api::lifecycle::tests::codex_toml_reject_different_leaves_existing_file_byte_identical",
+          "api::lifecycle::tests::daemon_port_selection_migrates_collisions_but_rejects_unavailable_overrides",
+          "api::lifecycle::tests::dry_run_language_detection_recognizes_webassembly_case_insensitively",
+          "api::lifecycle::tests::hermes_install_migrates_singular_marker_blocks_without_dropping_existing_entries",
+          "api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments",
+          "api::lifecycle::tests::hermes_reject_different_leaves_existing_file_byte_identical",
+          "api::lifecycle::tests::http_registration_can_be_inspected_renamed_and_removed",
+          "api::lifecycle::tests::http_registration_migrates_only_the_recognized_stdio_entry",
+          "api::lifecycle::tests::http_registration_shapes_match_every_loopback_harness",
+          "api::lifecycle::tests::install_removes_legacy_k_wiki_entry_in_the_same_file_update",
+          "api::lifecycle::tests::json_reject_different_leaves_existing_file_byte_identical",
+          "api::lifecycle::tests::managed_instruction_block_replaces_stale_guidance_and_preserves_surrounding_text",
+          "api::lifecycle::tests::matching_entries_remain_idempotent_across_json_codex_and_hermes_configs",
+          "api::lifecycle::tests::mcp_agent_hook_persistence_unions_existing_clients",
+          "api::lifecycle::tests::native_client_commands_preserve_every_server_argument",
+          "api::lifecycle::tests::refresh_failure_classifier_retries_source_changes_and_worker_exit",
+          "api::lifecycle::tests::registration_rename_deduplicates_matching_json_destination_atomically",
+          "api::lifecycle::tests::registration_rename_preserves_codex_entry_and_rejects_conflicting_destination",
+          "api::lifecycle::tests::reinstall_activation_boundary_keeps_new_state_on_post_activation_failure",
+          "api::lifecycle::tests::reinstall_activation_boundary_restores_backup_on_activation_failure",
+          "api::lifecycle::tests::remove_mcp_server_dry_run_reports_previous_without_writing_and_write_removes_entry",
+          "api::lifecycle::tests::remove_partial_state_tree_rejects_symlinks",
+          "api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets",
+          "api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared",
+          "api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths",
+          "process_lifecycle::tests::accepted_nonblocking_socket_is_normalized_for_control_frames",
+          "process_lifecycle::tests::bounded_protocol_rejects_unterminated_control_frame",
+          "process_lifecycle::tests::capability_json_is_private_at_creation_and_after_replacement",
+          "process_lifecycle::tests::delayed_non_start_acknowledgements_keep_the_short_deadline",
+          "process_lifecycle::tests::retired_startup_rejects_late_guardian_before_child_creation",
+          "process_lifecycle::tests::slow_trickle_cannot_extend_control_frame_deadline",
+          "process_lifecycle::tests::start_accepts_delayed_ack_after_one_committed_request",
+          "process_lifecycle::tests::workspace_without_global_state_remains_protected_by_guardian_lease",
+          "process_lifecycle::unix::tests::absent_proof_never_establishes_emptiness",
+          "process_lifecycle::unix::tests::fifo_writer_controls_empty_proof",
+          "process_lifecycle::unix::tests::proof_without_ready_retains_live_writers_then_allows_empty_recovery",
+          "process_lifecycle::unix::tests::recovery_rejects_regular_files_symlinks_and_replaced_fifo_identity",
+          "process_lifecycle::unix::tests::stopped_owned_child_is_not_an_exit_and_resume_or_cancellation_still_completes",
+          "storage::maintenance_controls::tests::dc_control_codec_reserves_before_bytes_and_preserves_full_intended_slot",
+          "storage::maintenance_controls::tests::dc_control_independent_regions_recover_every_partial_write_cut",
+          "storage::maintenance_controls::tests::dc_control_invalid_witnesses_and_unrelated_generations_stay_unknown"
+        ],
+        "reported_duration_seconds": "2.098",
+        "filter_note": "52 selected lib cases;796 non-selected cases are exclusions, not passes."
+      },
+      {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-junit.xml",
+        "sha256": "25d41e9ebd1fd2c032f793f05dfcfb4a99b437020a632310a68acbf568706a39",
+        "run_id": "304de859-faf0-4a6a-8ea6-9dc7b0a935aa",
+        "testcases": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped_testcases": 0,
+        "selected_inventory_matches": true,
+        "selected_case_names": [
+          "storage::maintenance_collector_tests::dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root"
+        ],
+        "reported_duration_seconds": "20.071",
+        "filter_note": "1 real FIFO producer/retirement case;847 non-selected cases are exclusions, not passes."
+      },
+      {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-reader-junit.xml",
+        "sha256": "31709887f6692e20edc4bfb3bbe750c29a4ec663759e33a26c9867068072885d",
+        "run_id": "1574e1a9-23ac-48df-9a71-88b78c7e80fd",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "expected_inventory_matches": true,
+        "actual_case_names": [
+          "closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof",
+          "invalid_bundle_root_error_omits_absolute_host_path",
+          "parser_diagnostics_exclude_source_values_and_keep_relative_locations",
+          "resp_168_discovers_bundle_boundaries_and_metadata",
+          "resp_169_parses_standard_fields_and_preserves_extensions",
+          "resp_170_classifies_reserved_files_without_promoting_them_to_concepts",
+          "resp_171_records_root_okf_version_from_bundle_index",
+          "resp_172_rejects_markdown_entries_that_escape_the_bundle_root",
+          "unterminated_frontmatter_is_invalid_even_when_yaml_is_valid",
+          "walk_errors_keep_relative_location_and_safe_io_category"
+        ],
+        "reported_duration_seconds": "0.150"
+      },
+      {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-permission-junit.xml",
+        "sha256": "8ed056b38c672f4173055cc77caf8a0ca2552d9a52d5cf954d80229cb50e980f",
+        "run_id": "a8ed3ddf-66f4-45ba-91b6-b1d05fb2ea32",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "expected_inventory_matches": true,
+        "actual_case_names": [
+          "managed_publish_failure_preserves_active_generation"
+        ],
+        "reported_duration_seconds": "11.703"
+      },
+      {
+        "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-churn-junit.xml",
+        "sha256": "a0c76183662dbb9daf828bd6b920c0baf1524d271f122cd44297e86fcdae7531",
+        "run_id": "9b26f4b0-f13e-4455-bfe7-2ed870672999",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "expected_inventory_matches": true,
+        "actual_case_names": [
+          "managed_materialization_survives_ten_updates_without_generation_leaks"
+        ],
+        "reported_duration_seconds": "1122.296"
+      }
+    ],
+    "additional_raw_log_passes": [
+      {
+        "name": "direct_materialization_uses_custom_paths_and_cleans_shadow_files",
+        "seconds": 3.314
+      },
+      {
+        "name": "direct_search_sidecars_publish_with_the_database_and_remain_queryable",
+        "seconds": 3.531
+      },
+      {
+        "name": "managed_materialization_activates_generations_atomically",
+        "seconds": 317.397
+      }
+    ],
+    "no_synthetic_junit": true,
+    "single_complete15_report": false
+  },
+  "original_interrupted_attempt": {
+    "command_record": "affected-integration-run",
+    "run_id": "44488b22-47f0-40bc-9549-c4291935121c",
+    "original_pid": 41162,
+    "expected_cases": 15,
+    "platform_inventory": {
+      "generation_storage": 5,
+      "bundle_reader": 10,
+      "windows_only_case": "managed_reads_survive_deferred_retired_generation_deletion is excluded by pre-existing #[cfg(windows)] on this macOS host"
+    },
+    "partial_raw_log_passes": [
+      {
+        "name": "direct_materialization_uses_custom_paths_and_cleans_shadow_files",
+        "seconds": 3.314
+      },
+      {
+        "name": "direct_search_sidecars_publish_with_the_database_and_remain_queryable",
+        "seconds": 3.531
+      },
+      {
+        "name": "managed_materialization_activates_generations_atomically",
+        "seconds": 317.397
+      }
+    ],
+    "last_in_progress": "managed_materialization_survives_ten_updates_without_generation_leaks",
+    "last_recorded_status": "SLOW>660s; SLOW is not failure",
+    "final_exit_code": null,
+    "junit_available": false,
+    "process_observation": {
+      "ps_exit_code": 0,
+      "matching_process_lines": [],
+      "integration_log_size": 2925,
+      "integration_log_mtime_ns": 1793407091648615446,
+      "integration_junit_exists": false,
+      "conclusion": "no_related_process_observed_no_final_result"
+    },
+    "interpretation": "No related active process observed after restore; final result unavailable. Invocation interrupted/incomplete, cause unknown; not a proven test failure/hang/crash. No arbitrary timeout, termination, replay or budget change.",
+    "duplicate_execution": false
+  },
+  "safe_continuation": {
+    "authorization": "Coordinator latest explicit continuation after no active original/owned process; unchanged isolated temp-fixture source; do not repeat3 passing cases.",
+    "process_checkpoint": {
+      "observed_at": "2026-10-31T00:42:14.151389+00:00",
+      "process_read_exit_code": 0,
+      "owned_process_matches": [],
+      "source_hashes": {
+        "src/adapters/mcp/daemon.rs": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+        "src/storage/maintenance_controls.rs": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+        "src/api/lifecycle.rs": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+        "tests/generation_storage.rs": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+        "crates/k-wiki/tests/bundle_reader.rs": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015"
+      },
+      "captured_cli_sha256": "b6e604c354a12d683ee9e0aa32f3b878c0f6d1049930da28f951a013f0cf0f12",
+      "prior_interruption_preserved": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/resume-integration-disposition.json",
+      "cleanup_performed": false,
+      "no_active_owned_descendants": true
+    },
+    "new_output_directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed",
+    "selected_unfinished_case_inventory": [
+      {
+        "binary": "codebase-graph::generation_storage",
+        "name": "managed_materialization_survives_ten_updates_without_generation_leaks",
+        "ignored": false
+      },
+      {
+        "binary": "codebase-graph::generation_storage",
+        "name": "managed_publish_failure_preserves_active_generation",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "closed_frontmatter_accepts_lf_crlf_and_closing_delimiter_at_eof",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "invalid_bundle_root_error_omits_absolute_host_path",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "parser_diagnostics_exclude_source_values_and_keep_relative_locations",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "resp_168_discovers_bundle_boundaries_and_metadata",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "resp_169_parses_standard_fields_and_preserves_extensions",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "resp_170_classifies_reserved_files_without_promoting_them_to_concepts",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "resp_171_records_root_okf_version_from_bundle_index",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "resp_172_rejects_markdown_entries_that_escape_the_bundle_root",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "unterminated_frontmatter_is_invalid_even_when_yaml_is_valid",
+        "ignored": false
+      },
+      {
+        "binary": "k-wiki::bundle_reader",
+        "name": "walk_errors_keep_relative_location_and_safe_io_category",
+        "ignored": false
+      }
+    ],
+    "actual_test_commands": "retries0,one thread,native-tests,locked/offline,captured CLI,no-tests fail; no new timeout or resource/test policy change",
+    "test_interruption_repeated": false,
+    "all_remaining_test_commands_exit_code_zero": true
+  },
+  "warning_evidence": {
+    "observed_warning_count_original": 0,
+    "observed_warning_count_resumed": 0,
+    "strict_clippy_exit_code": 0,
+    "files": [
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/warning-observations.json",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/warning-observations.json"
+    ]
+  },
+  "criterion_trace": [
+    {
+      "scope": "Retained COD105 MCP/policy/native contract, C103-R01/A01 and first-PR R05/A05 local checks",
+      "source": "crates/xtask/src/main.rs and native_tests modules unchanged in this warning-only diff",
+      "evidence": "complete71-test xtask native-tests run, genuine JUnit; check-workflows/release-gate exit0",
+      "limit": "not real final optimized packaged MCP smoke or hosted first-child stack proof"
+    },
+    {
+      "scope": "home_dir macOS/Linux-only gate",
+      "source": "src/adapters/mcp/daemon.rs:1838; unchanged production callsites",
+      "evidence": "8 daemon cases included in52-test native lib report; strict workspace Clippy",
+      "limit": "Windows-host compile/runtime remains hosted gate"
+    },
+    {
+      "scope": "Unix remove_partial_state_tree test import",
+      "source": "src/api/lifecycle.rs tests import near5113",
+      "evidence": "28 API lifecycle cases including remove_partial_state_tree_rejects_symlinks in52-test report; formatting/Clippy",
+      "limit": "no behavior change or new claim"
+    },
+    {
+      "scope": "Unix workspace_fifo_pin_name",
+      "source": "src/storage/maintenance_controls.rs:3434",
+      "evidence": "storage control cases in52-test report plus actual producer/collector dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root pass",
+      "limit": "macOS Unix execution only"
+    },
+    {
+      "scope": "Unix materialize_err",
+      "source": "tests/generation_storage.rs:427",
+      "evidence": "managed_publish_failure_preserves_active_generation genuine JUnit pass; ten-update/leak pass;3 other platform cases raw-log passes",
+      "limit": "original full5 generation invocation has no final exit/JUnit due interruption; Windows-only sixth source case not compiled here"
+    },
+    {
+      "scope": "Unix copy_dir_all",
+      "source": "crates/k-wiki/tests/bundle_reader.rs:39",
+      "evidence": "all10 bundle_reader cases passed, including symlink/root-escape case, genuine JUnit",
+      "limit": "no Windows/macOS consumer installer qualification"
+    }
+  ],
+  "remaining_gates": [
+    {
+      "gate": "fresh independent Final Reviewer",
+      "status": "pending; coordinator assigns against final unchanged five-file snapshot and this evidence"
+    },
+    {
+      "gate": "head-bound full macos-arm64/windows-x86_64 hosted CI and actual optimized native artifact smokes",
+      "status": "pending after future authorized push; local macOS native tests/Clippy do not qualify Windows or clean consumers"
+    },
+    {
+      "gate": "Scryer exact-root evidence reconciliation",
+      "status": "pending; no attachment/ingestion/fold against older dirty6aa5 registration; no force/global reconciliation"
+    },
+    {
+      "gate": "original uninterrupted full15 report if a later criterion expressly requires it",
+      "status": "no such report; all15 cases accounted across evidence; preserved3 raw passes lack JUnit, must not be invented or upgraded"
+    },
+    {
+      "gate": "stack staging/Done/merge/release/aggregate closure",
+      "status": "not established or authorized by this local handoff; retain original owner and downstream gates"
+    }
+  ],
+  "limitations": [
+    "Original15-case attempt interrupted after3 passes with no final outcome; cause unknown. SLOW output was never treated as failure. No blind retry: latest coordinator explicitly authorized isolated safe continuation after process check; only unfinished12 cases ran.",
+    "Ten-update continuation passed after1122.295s testcase time; existing SLOW display repeated, no deadlines/oracles/resource policies changed.",
+    "Outer cached Ladybug archive absent currently; actual direct static library and both headers independently match trusted previously verified official0.19.0 member hashes; no download/source fallback or old executable reuse.",
+    "xtask inventory exact final duration unavailable after early restore; actual exit0/inventory retained; no fabricated timing.",
+    "Current remote main advancement does not alter identified local HEAD+dirty source; integration/retarget/hosted freshness remain separate Production gates."
+  ],
+  "writes": {
+    "repository_source_tests": false,
+    "git_refs": false,
+    "model_scryer": false,
+    "linear": false,
+    "wiki_memory": false,
+    "ci_rerun_push_pr": false,
+    "credentials_settings": false,
+    "dependency_install": false,
+    "allowed": "own session diagnostics/config/captured executable and standard isolated target/test outputs generated by authorized commands"
+  },
+  "assumptions_and_constants": "Existing approved native env/profile/target contract reused; documented LBUG/OPENSSL/deployment env applied only to verifier command process; jobs2 resource concurrency reported, not product constant; no behavior/feature/profile/budget/config constants changed.",
+  "reusable_memory_assessment": "No memory write warranted or authorized for transient per-snapshot evidence.",
+  "next_owner": "Engineer consumes local evidence and assigns fresh Final Reviewer; Production may persist its substance unchanged with the related work under existing authorization. No further Cargo is running; exclusive slot released after explicit parent handoff."
+}

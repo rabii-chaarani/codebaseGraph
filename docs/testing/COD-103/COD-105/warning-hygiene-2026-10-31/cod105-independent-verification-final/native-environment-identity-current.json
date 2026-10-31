@@ -1,0 +1,28 @@
+{
+  "library_directory": "/private/tmp/codebasegraph-copy153-evidence/native019",
+  "cached_archive_path_from_prior_evidence": "/private/tmp/codebasegraph-copy153-evidence/liblbug-static-osx-arm64.tar.gz",
+  "cached_archive_currently_present": false,
+  "prior_official_archive_sha256": "6bee40babdf837bb6aa4d271047dfe5ed3dacf022f16af84952ca4c22d034d62",
+  "members": [
+    {
+      "path": "/private/tmp/codebasegraph-copy153-evidence/native019/liblbug.a",
+      "exists": true,
+      "sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142",
+      "expected_sha256": "d2e9a5c37617b0affb01f18f6ef48bb1531f5744f5ba06c849226842617ad142"
+    },
+    {
+      "path": "/private/tmp/codebasegraph-copy153-evidence/native019/lbug.h",
+      "exists": true,
+      "sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3",
+      "expected_sha256": "7da5b7e36d6610e43a1512e4997ac123ba0886cf5598ae44aca5449aa02a8aa3"
+    },
+    {
+      "path": "/private/tmp/codebasegraph-copy153-evidence/native019/lbug.hpp",
+      "exists": true,
+      "sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d",
+      "expected_sha256": "0b463bef0fa7a9ba1bb14cee12b23bf5bc7c2d6cfc4b3779d6f7cbe92bf4831d"
+    }
+  ],
+  "direct_members_match_committed_official_identity": true,
+  "limitation": "Cached archive is absent now; no current archive hash/comparison asserted. Actual extracted files all match exact committed verified official0.19.0 member hashes; these direct files are the build input, no acquisition/source fallback needed."
+}

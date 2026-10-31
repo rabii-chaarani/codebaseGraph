@@ -1,0 +1,3 @@
+[profile.cod105]
+retries = 0
+test-threads = 1

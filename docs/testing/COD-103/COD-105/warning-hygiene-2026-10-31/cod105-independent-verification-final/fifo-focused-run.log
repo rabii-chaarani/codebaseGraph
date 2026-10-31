@@ -1,0 +1,7 @@
+    Finished `native-tests` profile [optimized] target(s) in 0.08s
+────────────
+ Nextest run ID 304de859-faf0-4a6a-8ea6-9dc7b0a935aa with nextest profile: cod105
+    Starting 1 test across 1 binary (847 tests skipped)
+        PASS [  20.070s] (1/1) codebase-graph storage::maintenance_collector_tests::dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root
+────────────
+     Summary [  20.071s] 1 test run: 1 passed, 847 skipped

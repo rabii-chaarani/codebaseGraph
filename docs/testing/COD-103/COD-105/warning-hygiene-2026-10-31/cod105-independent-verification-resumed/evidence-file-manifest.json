@@ -1,0 +1,346 @@
+{
+  "final_report": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/report.md",
+  "final_machine_result": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/result.json",
+  "files": [
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/affected-integration-build.log",
+      "size_bytes": 3415,
+      "sha256": "af76a590a77f533ec6c0a4500ecab4907148806127f89b6d284b4497bc0d36e4"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/affected-integration-inventory.json",
+      "size_bytes": 5014,
+      "sha256": "894297de947b9f93f2d804a139c55f951efedd05366217a1d542981f65cdae2f"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/affected-integration-run.log",
+      "size_bytes": 2925,
+      "sha256": "217aaf21d05b9b4f082e8daf0b3bffd240435fc064511c013417b3bf6806b2cf"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph",
+      "size_bytes": 49764112,
+      "sha256": "b6e604c354a12d683ee9e0aa32f3b878c0f6d1049930da28f951a013f0cf0f12"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/cargo-fmt-check.log",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/command-records.json",
+      "size_bytes": 15250,
+      "sha256": "406a6d5604ca0796b36a3dfb213ff289d0600208fdc1570a44f0006b0fc89699"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/environment-current.json",
+      "size_bytes": 1387,
+      "sha256": "db25de0c3dc05128eb0230c031571994fc7ecd10cbf51ec4a62891ab29668806"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/environment-versions.txt",
+      "size_bytes": 348,
+      "sha256": "d6f26d5e4f2cbf8129c5f609e640dbfaa0a8a2d50a0ae0a7fa9363db444a9db3"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-inventory.json",
+      "size_bytes": 160232,
+      "sha256": "ca58279c07f145979955829afea494a4c7b1804b45a28182d5618ab5ec488432"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-inventory.log",
+      "size_bytes": 67,
+      "sha256": "2f3bdd0136ca20f98984967a184cc529eefdd1851d15ed060f05aaad35bdaefe"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-junit.xml",
+      "size_bytes": 559,
+      "sha256": "25d41e9ebd1fd2c032f793f05dfcfb4a99b437020a632310a68acbf568706a39"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-focused-run.log",
+      "size_bytes": 493,
+      "sha256": "ae94ab14d0850959a82a640d159e353fb484b7936bbf0a154b4824e055c58913"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/fifo-nextest.toml",
+      "size_bytes": 234,
+      "sha256": "61b9a2db4db6ea4c403164aad534f8fc0b963e6cc4e927f968d2fa5dd7c5d4ec"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/graph-native-discovery.json",
+      "size_bytes": 7869,
+      "sha256": "2d677ae852ba4eaac3d5d3b91db0a799d0889577c0b80be005189bdeb306e22b"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/integration-nextest.toml",
+      "size_bytes": 242,
+      "sha256": "3217042ac66d2251ffdab9e6895908555b60bb0ca052355d5c309afb3f74bf32"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/inventory-selection-note.json",
+      "size_bytes": 1197,
+      "sha256": "2c25de46a25d38678488b6669b00953dbfdaa66ed41045605c8353e3b2aadedb"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/junit-audit.json",
+      "size_bytes": 13242,
+      "sha256": "47994190b25241ca6be4523b324bb0c527c10bdd501ff48da8d6c8c3c5083782"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/lifecycle-fmt-repair-handoff-copy.md",
+      "size_bytes": 1506,
+      "sha256": "43a398623cebe1f5a72900b9c3b0c15d18294ae3cbbc5d8287b92f7f32a4d77a"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-compile.log",
+      "size_bytes": 2435,
+      "sha256": "1eb21e195cac2634ccea6d232dceb07089e88c192a96d747465419547faa7842"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-compiler-artifacts.jsonl",
+      "size_bytes": 117219,
+      "sha256": "7a96ca858b5bacc8b9aca3a794f19c13c971b49fba5ac358ecab4a242a69854a"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-environment-identity-current.json",
+      "size_bytes": 1567,
+      "sha256": "e5d0bab9c21acbcc86ec0836ad84d7d0aa7f4122aa2e0c5d47efc76bc21908e7"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-executable-provenance.json",
+      "size_bytes": 7599,
+      "sha256": "8b2720c60d82eebbe0a8e7fcd64b5bc6085050ab0a2eadf3be831fdf05a2af1c"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-inventory.json",
+      "size_bytes": 159059,
+      "sha256": "45d6d2911d576911eca4bd3c3a10cdefd2c0d26f783d7fe87b334b4701ce83c5"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-inventory.log",
+      "size_bytes": 67,
+      "sha256": "b8141da71aee413fa4d5cd2f16ca3bd5fe7a1b1c21086d431935fdc71d7d27b4"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-junit.xml",
+      "size_bytes": 11604,
+      "sha256": "5ee9fc153bf6fe00129f95f6bc324da9cadcc29ee6366e0ab16a40b37871b718"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-focused-run.log",
+      "size_bytes": 7465,
+      "sha256": "750a3fff50dcf2d12d1dae2baf35eaade2a5a934885547070e8bd5e8421e4d5d"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/native-nextest.toml",
+      "size_bytes": 236,
+      "sha256": "fed231fc734e52c564c656ee7decb877ffe55aa0a4f0b4ed42273fb7f5bc4f46"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/nextest-run-help.txt",
+      "size_bytes": 16791,
+      "sha256": "773136ceb158c651cfabd075f7c7bd5d59013961978ed781dfeafa809da2d0ab"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/nextest.toml",
+      "size_bytes": 227,
+      "sha256": "641c04134efc1fd5db3c9f174fd118080c1a1ffe1186cb06c51b28a2830d5e5e"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/prior-native-environment-documents.json",
+      "size_bytes": 3723,
+      "sha256": "b82d3833a08ad695e665c0a16934125359094a6b638da2d394240a11c54a8fc8"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/result.json",
+      "size_bytes": 49281,
+      "sha256": "39a4d1fe66eb39d6ecff033c98d4ed5435000c48cb7a4a60abef606ac26cd090"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/resume-checkpoint.json",
+      "size_bytes": 17029,
+      "sha256": "ed263af4338f894bba17bceb59a1745239327fa02767487b2e9c91a72d1db730"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/resume-integration-disposition.json",
+      "size_bytes": 239,
+      "sha256": "cb62a8f5c3e3692721aa8e37a1aaefcf189427aa9ba7277b0948754720a2523f"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/resume-process-check.txt",
+      "size_bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/source-five-after.json",
+      "size_bytes": 968,
+      "sha256": "f682d6f75aed5d5144cf6cd9fe86166d260b6cc780e70d7c18d72ed8c6771c7a"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/source-five-before.json",
+      "size_bytes": 968,
+      "sha256": "f682d6f75aed5d5144cf6cd9fe86166d260b6cc780e70d7c18d72ed8c6771c7a"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/source-snapshot-final.txt",
+      "size_bytes": 4111,
+      "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/source-snapshot-initial.txt",
+      "size_bytes": 4111,
+      "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/warning-observations.json",
+      "size_bytes": 554,
+      "sha256": "21b482b0e01d5dfb47a4218c00da344587ce1250308d0bde5d6526d114dee547"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-inventory-build.log",
+      "size_bytes": 1291,
+      "sha256": "b4ce7d9489e27ce19b26828ead39d0461022db6155c5e140ee2300bc9f3b9039"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-inventory.json",
+      "size_bytes": 11232,
+      "sha256": "052f0039ea0be89a6ad323fb7ca03ac7a62c647fc18d502ce3e4e768891e1312"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-junit-summary.json",
+      "size_bytes": 6180,
+      "sha256": "9294398c88dc599d7d0351d9d5cd6fb27637eefbf7c8c2ff566eede0d76f0fef"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-junit.xml",
+      "size_bytes": 14673,
+      "sha256": "f0d4efbc9c009e5c6a961565a6034832a5e4d984b177be70425d128f7d7df1f5"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/xtask-run.log",
+      "size_bytes": 8989,
+      "sha256": "88fa5580933a6be20364ebaab227253d00e5c9b25ee249688e36c53dbb1e3776"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/approved-rev0.3-spec-copy.md",
+      "size_bytes": 36482,
+      "sha256": "c562044be5de7f8c8063dca0ee7f66cd18f0b66f79607f8267fe1893f8f7942c"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-nextest.toml",
+      "size_bytes": 237,
+      "sha256": "683c5a66eddf72ffec0d501c551540268788a272dd670d6fc1174e953166acc5"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-reader-junit.xml",
+      "size_bytes": 2270,
+      "sha256": "31709887f6692e20edc4bfb3bbe750c29a4ec663759e33a26c9867068072885d"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/bundle-reader-run.log",
+      "size_bytes": 1462,
+      "sha256": "15ed5ed9e3330865fb754f62beeda783eeb378f60ece0e1165c756e7a5e82d1e"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/check-workflows.log",
+      "size_bytes": 1300,
+      "sha256": "13a3df677f25bc05d57abcf5d5e8d08c40e06320bd143311b8b412ea5147a029"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/churn-nextest.toml",
+      "size_bytes": 240,
+      "sha256": "ecf2ee6ec4b50b5f4c0ec61cf63bebda73e8a5d479b2c21426e478ccb6ad9c60"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/command-records.json",
+      "size_bytes": 10200,
+      "sha256": "657e7790389f946b3caffaf39f5fc59abbeab5aa3341b5ebe6219945785ef5c1"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-churn-junit.xml",
+      "size_bytes": 564,
+      "sha256": "a0c76183662dbb9daf828bd6b920c0baf1524d271f122cd44297e86fcdae7531"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-churn-run.log",
+      "size_bytes": 3037,
+      "sha256": "4a5e5f9324d7ea825bcca41c6a6fbf3a1524949bf6374d079b640b46ceaf5d0d"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-permission-junit.xml",
+      "size_bytes": 542,
+      "sha256": "8ed056b38c672f4173055cc77caf8a0ca2552d9a52d5cf954d80229cb50e980f"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/generation-permission-run.log",
+      "size_bytes": 452,
+      "sha256": "52fd5552b240a64c648eb79af8a85856dea191cbfb76d0ceb079cef958f6d499"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/junit-audit.json",
+      "size_bytes": 15940,
+      "sha256": "39b587b33cedf4ac32b7875216a0c78e74b653e7ab17df1dc6e622b64fc218fb"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/nextest-inventory.toml",
+      "size_bytes": 46,
+      "sha256": "32b56fcd21f8a6a2e59f7ed56a2c714c4ccd422b9004f49f0646885c4f0602d1"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/permission-nextest.toml",
+      "size_bytes": 245,
+      "sha256": "2d66cb70bf7b03cdb548752bc2c37d80ff6dc0dc5f2fe1bc1456f0f8551fdba0"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/release-gate.log",
+      "size_bytes": 139,
+      "sha256": "34e6864c29bc919a905a444afa3856b4e8ab048059651d414cb6c43a107024b6"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/report.md",
+      "size_bytes": 8695,
+      "sha256": "d524266f76662f54ca05fd66a7b199db630e9bda3d44f412ed1291cf00080d58"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/result.json",
+      "size_bytes": 54912,
+      "sha256": "9087d052e13117e5ed419042ef0202225cb3a8c973b172ce19eadcfc8d42aa86"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/safe-resume-process-check.json",
+      "size_bytes": 1034,
+      "sha256": "1e56ed884bd289892858be3d71acaa39778889e512b750addb48377a372f2226"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/source-five-after.json",
+      "size_bytes": 968,
+      "sha256": "f682d6f75aed5d5144cf6cd9fe86166d260b6cc780e70d7c18d72ed8c6771c7a"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/source-snapshot-final.txt",
+      "size_bytes": 4111,
+      "sha256": "9a6331b751df41c1342c8f08de10e5d922cfce890b2b6f32f084cfed1bc7f980"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/strict-workspace-clippy.log",
+      "size_bytes": 6014,
+      "sha256": "9909223d9ce640dacde4707933778e50237e158ae7c914e4de3f1e0b0de1d0c0"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/unfinished-integration-inventory.json",
+      "size_bytes": 5083,
+      "sha256": "5b4d9454aac050c8850b0ea8f9be7ecf9f805ec4358a30225eda4a10c89138a0"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/unfinished-integration-inventory.log",
+      "size_bytes": 67,
+      "sha256": "a12dac603addbc0b4f03dcf2819c1f14570b7b396225772aa2cb26848742b0e6"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-resumed/warning-observations.json",
+      "size_bytes": 530,
+      "sha256": "511ecfd9bbc1cb8a57d796e30378a6c4646274c8e6af39e82359c20f6b6d88f0"
+    }
+  ]
+}

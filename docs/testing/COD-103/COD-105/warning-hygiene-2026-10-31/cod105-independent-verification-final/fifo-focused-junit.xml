@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="1" failures="0" errors="0" uuid="304de859-faf0-4a6a-8ea6-9dc7b0a935aa" timestamp="2026-10-31T09:48:30.310+09:30" time="20.071">
+    <testsuite name="codebase-graph" tests="1" disabled="0" errors="0" failures="0">
+        <testcase name="storage::maintenance_collector_tests::dc_s5_real_containment_fifo_retires_with_pin_receipt_and_terminal_root" classname="codebase-graph" timestamp="2026-10-31T09:48:30.311+09:30" time="20.070">
+        </testcase>
+    </testsuite>
+</testsuites>

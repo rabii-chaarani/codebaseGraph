@@ -1,0 +1,216 @@
+{
+  "source_root": "/private/tmp/codebasegraph-cod105-resume-20261030",
+  "head": "e06d7404955abeb7a002b54ad740399dfe10c931",
+  "dirty_hashes": {
+    "src/adapters/mcp/daemon.rs": {
+      "path": "src/adapters/mcp/daemon.rs",
+      "sha256": "89fe617cff0e9fcaecb40d4ca726b738f5f99c53817bef04c23fed13317d6ea0",
+      "size_bytes": 76723
+    },
+    "src/storage/maintenance_controls.rs": {
+      "path": "src/storage/maintenance_controls.rs",
+      "sha256": "2ef7e403c9a991c485920ddebce89e047506ac48fa01a44b93b08b46b01973e4",
+      "size_bytes": 139563
+    },
+    "src/api/lifecycle.rs": {
+      "path": "src/api/lifecycle.rs",
+      "sha256": "83214d386bc9e99705a5e3a44a769f71e93f73933b4d80c2a2a9a041814929e8",
+      "size_bytes": 221255
+    },
+    "tests/generation_storage.rs": {
+      "path": "tests/generation_storage.rs",
+      "sha256": "4734dd94adfc61f4d1783731d7b655fa257a87937aa73866a3b0adcfc3d2a4a0",
+      "size_bytes": 21659
+    },
+    "crates/k-wiki/tests/bundle_reader.rs": {
+      "path": "crates/k-wiki/tests/bundle_reader.rs",
+      "sha256": "464d98c91303e9fb98a766a51f90b3084e2f9d759d9e3c104dcb63f1e92af015",
+      "size_bytes": 11751
+    }
+  },
+  "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+  "compiler_artifact": "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/codebase-graph",
+  "compiler_artifact_sha256": "b6e604c354a12d683ee9e0aa32f3b878c0f6d1049930da28f951a013f0cf0f12",
+  "captured_cli": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod105-independent-verification-final/captured-codebase-graph",
+  "captured_cli_sha256": "b6e604c354a12d683ee9e0aa32f3b878c0f6d1049930da28f951a013f0cf0f12",
+  "capture_matches": true,
+  "root_compiler_artifact_messages": [
+    {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+      "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+      "target": {
+        "kind": [
+          "custom-build"
+        ],
+        "crate_types": [
+          "bin"
+        ],
+        "name": "build-script-build",
+        "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/build.rs",
+        "edition": "2021",
+        "doc": false,
+        "doctest": false,
+        "test": false
+      },
+      "profile": {
+        "opt_level": "0",
+        "debuginfo": 0,
+        "debug_assertions": true,
+        "overflow_checks": true,
+        "test": false
+      },
+      "features": [
+        "bundled-windows-extensions",
+        "default"
+      ],
+      "filenames": [
+        "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/build/codebase-graph-18f48a6a902bc3c2/build-script-build"
+      ],
+      "executable": null,
+      "fresh": false
+    },
+    {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+      "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+      "target": {
+        "kind": [
+          "lib"
+        ],
+        "crate_types": [
+          "lib"
+        ],
+        "name": "codebase_graph",
+        "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/src/lib.rs",
+        "edition": "2021",
+        "doc": true,
+        "doctest": true,
+        "test": true
+      },
+      "profile": {
+        "opt_level": "3",
+        "debuginfo": 0,
+        "debug_assertions": true,
+        "overflow_checks": true,
+        "test": false
+      },
+      "features": [
+        "bundled-windows-extensions",
+        "default"
+      ],
+      "filenames": [
+        "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/libcodebase_graph-ff647f8d8091db84.rlib",
+        "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/libcodebase_graph-ff647f8d8091db84.rmeta"
+      ],
+      "executable": null,
+      "fresh": false
+    },
+    {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+      "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+      "target": {
+        "kind": [
+          "bin"
+        ],
+        "crate_types": [
+          "bin"
+        ],
+        "name": "codebase-graph",
+        "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/src/bin/codebase-graph.rs",
+        "edition": "2021",
+        "doc": true,
+        "doctest": false,
+        "test": true
+      },
+      "profile": {
+        "opt_level": "3",
+        "debuginfo": 0,
+        "debug_assertions": true,
+        "overflow_checks": true,
+        "test": false
+      },
+      "features": [
+        "bundled-windows-extensions",
+        "default"
+      ],
+      "filenames": [
+        "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/codebase-graph"
+      ],
+      "executable": "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/codebase-graph",
+      "fresh": false
+    },
+    {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+      "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+      "target": {
+        "kind": [
+          "test"
+        ],
+        "crate_types": [
+          "bin"
+        ],
+        "name": "generation_storage",
+        "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/tests/generation_storage.rs",
+        "edition": "2021",
+        "doc": false,
+        "doctest": false,
+        "test": true
+      },
+      "profile": {
+        "opt_level": "3",
+        "debuginfo": 0,
+        "debug_assertions": true,
+        "overflow_checks": true,
+        "test": true
+      },
+      "features": [
+        "bundled-windows-extensions",
+        "default"
+      ],
+      "filenames": [
+        "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/generation_storage-d89725f3c76c81e6"
+      ],
+      "executable": "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/generation_storage-d89725f3c76c81e6",
+      "fresh": false
+    },
+    {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///private/tmp/codebasegraph-cod105-resume-20261030#codebase-graph@4.0.4",
+      "manifest_path": "/private/tmp/codebasegraph-cod105-resume-20261030/Cargo.toml",
+      "target": {
+        "kind": [
+          "lib"
+        ],
+        "crate_types": [
+          "lib"
+        ],
+        "name": "codebase_graph",
+        "src_path": "/private/tmp/codebasegraph-cod105-resume-20261030/src/lib.rs",
+        "edition": "2021",
+        "doc": true,
+        "doctest": true,
+        "test": true
+      },
+      "profile": {
+        "opt_level": "3",
+        "debuginfo": 0,
+        "debug_assertions": true,
+        "overflow_checks": true,
+        "test": true
+      },
+      "features": [
+        "bundled-windows-extensions",
+        "default"
+      ],
+      "filenames": [
+        "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/codebase_graph-792670d37182af45"
+      ],
+      "executable": "/private/tmp/codebasegraph-cod105-resume-20261030/target/native-tests/deps/codebase_graph-792670d37182af45",
+      "fresh": false
+    }
+  ],
+  "environment_binding": "CARGO_BIN_EXE_codebase-graph points to immutable diagnostic copy, matched source-bound Cargo artifact; same profile native-tests; no other checkout executable used."
+}
