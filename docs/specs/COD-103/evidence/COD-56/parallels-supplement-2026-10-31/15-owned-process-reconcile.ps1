@@ -1,0 +1,1 @@
+Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'"|Where-Object {$_.ExecutablePath -eq 'C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\pwsh-x64\pwsh.exe'}|Select-Object ProcessId,ParentProcessId,ExecutablePath|ConvertTo-Json -Compress

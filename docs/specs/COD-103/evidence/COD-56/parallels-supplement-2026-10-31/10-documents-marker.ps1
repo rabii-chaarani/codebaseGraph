@@ -1,0 +1,1 @@
+$p='\\Mac\Home\Documents\codebasegraph-cod56-vm-11023706-4804-4438-b044-e9768538a0c8\marker.txt';[ordered]@{Exists=(Test-Path -LiteralPath $p);Hash=$(if(Test-Path -LiteralPath $p){(Get-FileHash -LiteralPath $p).Hash})}|ConvertTo-Json -Compress

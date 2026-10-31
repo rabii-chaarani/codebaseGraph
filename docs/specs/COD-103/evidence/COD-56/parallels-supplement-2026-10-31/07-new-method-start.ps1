@@ -1,0 +1,1 @@
+'C:\WINDOWS\TEMP\codebasegraph-cod56-11023706-4804-4438-b044-e9768538a0c8\baseline.ps1','C:\WINDOWS\TEMP\codebasegraph-cod56-11023706-4804-4438-b044-e9768538a0c8\candidate.ps1'|%{[pscustomobject]@{Path=$_;Exists=(Test-Path -LiteralPath $_)}}|ConvertTo-Json -Compress

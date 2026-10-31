@@ -1,0 +1,7 @@
+$ErrorActionPreference='Stop'
+$si=New-Object Diagnostics.ProcessStartInfo
+$si.FileName='C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\pwsh-x64\pwsh.exe'
+$si.Arguments='-NoLogo -NoProfile -NonInteractive -EncodedCommand WwBvAHIAZABlAHIAZQBkAF0AQAB7AFAAUwA9ACQAUABTAFYAZQByAHMAaQBvAG4AVABhAGIAbABlAC4AUABTAFYAZQByAHMAaQBvAG4ALgBUAG8AUwB0AHIAaQBuAGcAKAApADsATwBTAD0AWwBSAHUAbgB0AGkAbQBlAC4ASQBuAHQAZQByAG8AcABTAGUAcgB2AGkAYwBlAHMALgBSAHUAbgB0AGkAbQBlAEkAbgBmAG8AcgBtAGEAdABpAG8AbgBdADoAOgBPAFMAQQByAGMAaABpAHQAZQBjAHQAdQByAGUALgBUAG8AUwB0AHIAaQBuAGcAKAApADsAUAByAG8AYwBlAHMAcwA9AFsAUgB1AG4AdABpAG0AZQAuAEkAbgB0AGUAcgBvAHAAUwBlAHIAdgBpAGMAZQBzAC4AUgB1AG4AdABpAG0AZQBJAG4AZgBvAHIAbQBhAHQAaQBvAG4AXQA6ADoAUAByAG8AYwBlAHMAcwBBAHIAYwBoAGkAdABlAGMAdAB1AHIAZQAuAFQAbwBTAHQAcgBpAG4AZwAoACkAOwBQAG8AbABpAGMAeQA9ACgARwBlAHQALQBFAHgAZQBjAHUAdABpAG8AbgBQAG8AbABpAGMAeQApAC4AVABvAFMAdAByAGkAbgBnACgAKQB9AHwAQwBvAG4AdgBlAHIAdABUAG8ALQBKAHMAbwBuACAALQBDAG8AbQBwAHIAZQBzAHMA'
+$si.UseShellExecute=$false;$si.RedirectStandardOutput=$true;$si.RedirectStandardError=$true;$si.WorkingDirectory='C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f'
+$p=[Diagnostics.Process]::Start($si);$o=$p.StandardOutput.ReadToEnd();$e=$p.StandardError.ReadToEnd();$p.WaitForExit()
+[ordered]@{Exit=$p.ExitCode;Stdout=$o;Stderr=$e}|ConvertTo-Json -Depth 5|Set-Content '\\Mac\Home\Documents\codebasegraph-cod56-vm-11023706-4804-4438-b044-e9768538a0c8\16-child-architecture.json' -Encoding UTF8

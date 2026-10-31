@@ -1,0 +1,20 @@
+{
+  "unchanged_prior_sha256": {
+    "manifest.json": "4c2cc979f54d1c2625abbbae04d60f252c65cb3cfb1e0eec739bceea084e6bda",
+    "report.md": "e5f64a9d3dac31a210793f20be3774fe8c50e37e507b4010b3d290e91e44f1d1"
+  },
+  "files": {
+    "original-raw/18-strict-mechanism-result.json": {
+      "bytes": 17997,
+      "sha256": "6fdf2b79ac5ea662015e2ecf4dffb87e60b52502685344fa37de1d1d8f9feeae"
+    },
+    "original-raw/12-mechanism-result.json": {
+      "bytes": 17853,
+      "sha256": "639f0c7887e0ebc34d816a158bb07c9c72cefe1d4200980fa66f10200ff1ae1c"
+    },
+    "raw-provenance-addendum.md": {
+      "bytes": 3289,
+      "sha256": "2b084ea545f60dd20eae44b8a68420a9669ce1f180998a568b3b60a6525e5da9"
+    }
+  }
+}

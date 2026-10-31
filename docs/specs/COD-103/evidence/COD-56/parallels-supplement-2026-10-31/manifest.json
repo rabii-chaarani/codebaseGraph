@@ -1,0 +1,362 @@
+{
+  "01-readonly-identity.ps1": {
+    "sha256": "18cfa47fba162a85cac179691ff17ac4c3c37fc6b03ef06c61676c82a87909c9",
+    "bytes": 830
+  },
+  "06-readonly-known-tool-dirs.txt": {
+    "sha256": "4f64fbc1928147149ac1fdc988c344114057c2e0b2257de9c7b4ac242b05a455",
+    "bytes": 1163
+  },
+  "powershell-provenance.json": {
+    "sha256": "cb7636c28f0c5440db7b3fa50b0bc3d5c296e5be0c2f439fd3735c3e377cac7c",
+    "bytes": 425
+  },
+  "11-parser-guards.txt": {
+    "sha256": "a9ccfd451174eaceb5970744dd30981e1155883a67baca91a16aee50c9955160",
+    "bytes": 421
+  },
+  "12-memory-launch.txt": {
+    "sha256": "35bc6eceb3d844618d607af1f94628f88c20098c55e15f3f3f1ad654c29a7763",
+    "bytes": 870
+  },
+  "09-parser-guards.txt": {
+    "sha256": "7b140091a01b0efea3639c50eaf9e1a5dc2bdd788df023059cb4a84af45197f1",
+    "bytes": 365
+  },
+  "candidate.ps1": {
+    "sha256": "830d128241c90b6f224554dc49bfcf572a1d51107ded8b12823e71d97c58b7bb",
+    "bytes": 3248
+  },
+  "16-child-launch.txt": {
+    "sha256": "2ce70d6c8c9ad6726c794690c8b14a2b83673648cac88edf4ff1acc50ec46348",
+    "bytes": 616
+  },
+  "18-strict-launch.txt": {
+    "sha256": "35bc6eceb3d844618d607af1f94628f88c20098c55e15f3f3f1ad654c29a7763",
+    "bytes": 870
+  },
+  "17-memory-guards.ps1": {
+    "sha256": "b238e8bedef76be9b0a910b4d575cfb7ed1dcf5360a585b5d3a79e45011b6402",
+    "bytes": 1994
+  },
+  "14-x64-architecture.txt": {
+    "sha256": "50201bdc18a90ce0d1625f353b857ebf76d8110a827e45c0314f8722d6fcdfb7",
+    "bytes": 68
+  },
+  "04-transfer-baseline-0.txt": {
+    "sha256": "7bdf6af6e52aba57a408bc9f26a1cd21242f9617bb6c0fa25c1ffab9c07696b5",
+    "bytes": 210
+  },
+  "15-owned-process-reconcile.ps1": {
+    "sha256": "51da0ebbef4d1abe2f1a3ea4410006b86cc9b4faec33f8cc27339f124b16b4d8",
+    "bytes": 265
+  },
+  "13-extract-launch.txt": {
+    "sha256": "e4a5e8dec0fb1383163856a68ef097baf0fa3c712aac0804292185add6e16ed3",
+    "bytes": 242171
+  },
+  "08-small-baseline-09.ps1": {
+    "sha256": "2dd7f85e693fcc5ce227afd8bcbafd1ab6f2d83b8c96c05b20aec3ce3ab04a14",
+    "bytes": 513
+  },
+  "report.md": {
+    "sha256": "e5f64a9d3dac31a210793f20be3774fe8c50e37e507b4010b3d290e91e44f1d1",
+    "bytes": 5217
+  },
+  "13-extract-x64.ps1": {
+    "sha256": "295d3dcd2f4e600ec64f317896e5d7800ce0a4cd42ee352b07d91d50fb21b641",
+    "bytes": 726
+  },
+  "08-small-baseline-12.txt": {
+    "sha256": "d13a5751798636178507579602df779f0ca2e2de7110d654e8de33e5e99ab3ef",
+    "bytes": 398
+  },
+  "08-small-baseline-06.txt": {
+    "sha256": "ae333ada7a9d14be75b144efec3e8e3a5f3d921edffd4d608aba3bebbab80588",
+    "bytes": 397
+  },
+  "08-small-baseline-07.txt": {
+    "sha256": "68a3a0efc73857ec264358a98fb1dbadacf6daffe7ae375c9f9769c28a4c9ed5",
+    "bytes": 398
+  },
+  "scryer-pending.txt": {
+    "sha256": "a9d437c4897e7633db8fb60b3c26a74a506890e1e8b5006554149410d09b883d",
+    "bytes": 126561
+  },
+  "08-small-baseline-13.txt": {
+    "sha256": "1912523f783449b243fb449a5e4f53d58b028ea076c65c1e19f57c49527be645",
+    "bytes": 398
+  },
+  "08-small-baseline-08.ps1": {
+    "sha256": "4e95ad0a5e7adedc0f45c95b7291ecdf228aa907ae6bfdbc2d9018f420ef6e3b",
+    "bytes": 513
+  },
+  "05-readonly-shell-pe.txt": {
+    "sha256": "0a9cd1a7a325041bad96c8ccff8b7eef6bfff160bac427b037c8494cfe89734c",
+    "bytes": 957
+  },
+  "08-small-baseline-05.txt": {
+    "sha256": "cbc36f4f772ac2fab142f89216865648d525815c3c1d59e58c864a11fd06c399",
+    "bytes": 397
+  },
+  "08-small-baseline-11.txt": {
+    "sha256": "0e16169bee17526501cf63de57a844aa842e3fd84942a831d46d07075343256d",
+    "bytes": 398
+  },
+  "10-documents-marker.txt": {
+    "sha256": "eb3fa33a34075be2039234b02d1839656cd09948665eb73d761f2ac0288256ed",
+    "bytes": 707
+  },
+  "08-small-baseline-10.txt": {
+    "sha256": "8323811537374be77545586492ff261807edc2b1bfa8cba25df983b54b8c2ced",
+    "bytes": 398
+  },
+  "08-small-baseline-04.txt": {
+    "sha256": "be6efd424ceebe547aa33ed71e077a22530e66b0208b991160354ea1ef4103ce",
+    "bytes": 397
+  },
+  "powershell-release.json": {
+    "sha256": "d44f3f03771f24b3c839dcc468d2a08de4a162850df9a67a2f4a6fff7c86720e",
+    "bytes": 75219
+  },
+  "12-mechanism.ps1": {
+    "sha256": "99da5cc7523bf3ad4563da963b04b34ca80946321db59e37311bdca0b80285ca",
+    "bytes": 3195
+  },
+  "02-transfer-and-parse.ps1": {
+    "sha256": "550791c5548a0a2cd7a159c9489bf9fd8fd0fc3c694fd30bd977996e68359015",
+    "bytes": 10500
+  },
+  "17-guards-launch.txt": {
+    "sha256": "aa4c6b5187e8a52a4b02316c91eb0c7a4cfdce4cdea9b9d7ecfe2faa1d97cce4",
+    "bytes": 616
+  },
+  "powershell-hashes.sha256": {
+    "sha256": "638e954664d07a29190570faf862b8a50b35f7e1c10dbd0f0e8a7e0f70138b45",
+    "bytes": 7358
+  },
+  "08-small-baseline-00.txt": {
+    "sha256": "ca078d8f47f57070ffc534e2b0316449627962e641693b4ec43213a29a500106",
+    "bytes": 397
+  },
+  "08-small-baseline-14.txt": {
+    "sha256": "c5bd2330ea21ce4ef45de2f6564dd2ab0874f3cd5f63f04b75013bff9c7bc574",
+    "bytes": 398
+  },
+  "16-child-architecture.ps1": {
+    "sha256": "f91939019844021e8892f8a8a5220975abf665564750ac21357777f519dd49ea",
+    "bytes": 1501
+  },
+  "08-small-baseline-15.txt": {
+    "sha256": "909eca4c54c52cc1535869c495ca1e07bf5749eeb1e888a981e16f54640f74bc",
+    "bytes": 398
+  },
+  "08-small-baseline-01.txt": {
+    "sha256": "647c65e77f5ce51f40362b5eb6b78916d26292737643174ff09cef48f85a877a",
+    "bytes": 397
+  },
+  "07-new-method-start.ps1": {
+    "sha256": "e4c127a6264d104453320e2e1922f0c65e70217db22c2c9f8ce5a36907dfaa2a",
+    "bytes": 266
+  },
+  "08-small-baseline-17.txt": {
+    "sha256": "55d9d8d810f971073dbdcb34d7b3a17467111ba0c0d707e9da57ca752e8ad232",
+    "bytes": 69
+  },
+  "08-small-baseline-03.txt": {
+    "sha256": "3c4ab2de77ad1a433dfce4de1b0f4d8adb1c8e21942104038fc78d731fd223fa",
+    "bytes": 397
+  },
+  "08-small-baseline-02.txt": {
+    "sha256": "efb9862415c4844f7091b59fb61a8c39b9f3e7b57c081fd9e56cd1ee22906e6c",
+    "bytes": 397
+  },
+  "08-small-baseline-16.txt": {
+    "sha256": "713910106ae968355f870f11ad9871e522381697d493c463cdbb486437e7ba7d",
+    "bytes": 398
+  },
+  "03-recovery-create.ps1": {
+    "sha256": "b93c662cdddc61db896301af9936c70fc3e4a6976998f387fe4038466d827d2c",
+    "bytes": 343
+  },
+  "commands.json": {
+    "sha256": "9a1369eceb25fd5f3ab291eb8d46d99040d24e56270e4cbaddf984b342d77a22",
+    "bytes": 77223
+  },
+  "08-small-baseline-14.ps1": {
+    "sha256": "53982a1f7fcd683e6b8852f2d88b973166ad98d595d2146fefba98fcd892b619",
+    "bytes": 513
+  },
+  "08-small-baseline-00.ps1": {
+    "sha256": "5b2bb8ed347245aefac76096e3b5c87ec1c4ad3a852df2f9eee679a7c1714724",
+    "bytes": 507
+  },
+  "02-transfer-and-parse.txt": {
+    "sha256": "7bdf6af6e52aba57a408bc9f26a1cd21242f9617bb6c0fa25c1ffab9c07696b5",
+    "bytes": 210
+  },
+  "17-guards-launch.ps1": {
+    "sha256": "d7231117ea8a471b07b684a8bd5dfefa628072a1809940bfcd2c5071f5d3b802",
+    "bytes": 154
+  },
+  "08-small-baseline-01.ps1": {
+    "sha256": "c59d7ec66f9d4a921ea2eb68fa709c7f1032dcbeca422cff8b65574968c2418f",
+    "bytes": 511
+  },
+  "08-small-baseline-15.ps1": {
+    "sha256": "0e018f13963b9b979e8f590ca576a26d44d21224b5f0d06407f0fc4693ac0f06",
+    "bytes": 513
+  },
+  "07-new-method-start.txt": {
+    "sha256": "85f3c5b30ad0905294258f2c7ab6ec4eb6677bcee5a078a061088e55d3358954",
+    "bytes": 852
+  },
+  "08-small-baseline-03.ps1": {
+    "sha256": "02ff7485bcf902f3c8a80da16e400e9ffc11a0bd26707e437a93ca78575f21a7",
+    "bytes": 511
+  },
+  "08-small-baseline-17.ps1": {
+    "sha256": "4d801a91dfedbd9658775badb794650a90c74109a8fa8fd175f65e2d2396cfc2",
+    "bytes": 513
+  },
+  "graph-discovery.txt": {
+    "sha256": "02fa4616da94d3ae6a4a21767a5da86413dd9cc3c1f4e3cbffb3aec7bf3a950e",
+    "bytes": 7647
+  },
+  "18-strict-mechanism-result.json": {
+    "sha256": "abf93b48b642c36b9f5542b4aecca32f4b87284721095246875d378f2f03f7f1",
+    "bytes": 14769
+  },
+  "03-recovery-create.txt": {
+    "sha256": "6da8ac1eb9427d08ee204cc7ca3acf43f4233714575b7073070b6b485b0b2684",
+    "bytes": 690
+  },
+  "08-small-baseline-16.ps1": {
+    "sha256": "f84e787c9d3b8124a60f21746f2435a56d3c9d16283d1151cac5fddeefd3937f",
+    "bytes": 513
+  },
+  "08-small-baseline-02.ps1": {
+    "sha256": "9a9b77a974f4a342e27d80ab7a0189daa23254358c11be00f666bbeb8f57eb5d",
+    "bytes": 511
+  },
+  "08-small-baseline-06.ps1": {
+    "sha256": "78589c50e210fbfec73234aa2e5b72c18abdf1a56e9ce30ab7a3f353605a7f9e",
+    "bytes": 511
+  },
+  "08-small-baseline-12.ps1": {
+    "sha256": "e93d12e0d73e032ba11f678c2daf0d96d12c56b82f02e0732fec0cab658225da",
+    "bytes": 513
+  },
+  "chunk-log-reconciliation.json": {
+    "sha256": "44a947d5095720790aa8b0825730dbc779f264e7d96bf0c0369da6071172a6ae",
+    "bytes": 4932
+  },
+  "08-small-baseline-09.txt": {
+    "sha256": "b525af4edef9508f87fad6aaf5c5c760c89fc47fffb34c805d5b7bb4becd3713",
+    "bytes": 398
+  },
+  "08-small-baseline-08.txt": {
+    "sha256": "0bbd7173f3c9f28293a929244f1772ac9a966a9ecf73adbebc44aadf11497035",
+    "bytes": 398
+  },
+  "contracts.txt": {
+    "sha256": "9aa8ddf4279cc0bed7f883f57f31d7fec2b7f91d1e847eea932a67d07d09ddb9",
+    "bytes": 108615
+  },
+  "08-small-baseline-13.ps1": {
+    "sha256": "42180549f45112882acf1458977fa938197c20548b1bee7ee87c08cc3815ce73",
+    "bytes": 513
+  },
+  "08-small-baseline-07.ps1": {
+    "sha256": "5cc190fa4cc0f55f5bee4369c41b512f8e1d31cea6610110a232eb83b21302f6",
+    "bytes": 511
+  },
+  "05-readonly-shell-pe.ps1": {
+    "sha256": "0682e040195b9c7ef9c9a1018a65082a4478897db1b2856f65395ae87e488a1d",
+    "bytes": 474
+  },
+  "08-small-baseline-11.ps1": {
+    "sha256": "1525b487b5daf99df55cc016ffdedc76185268a3aa8a9b98415fdd5e0079b098",
+    "bytes": 513
+  },
+  "08-small-baseline-05.ps1": {
+    "sha256": "a643a04f500bbf1643a7ad380077a2a22e685baf03a6d0421e3d5009b91cc399",
+    "bytes": 511
+  },
+  "18-strict-mechanism.ps1": {
+    "sha256": "09586469dd280b0d1be61e7a4d902147d6cb21d25371e5bd95527efc2b6629e1",
+    "bytes": 3134
+  },
+  "inventory-checkpoint.json": {
+    "sha256": "cbf917844325df4985b9ec462ff87ee5632a5024d47de5230c15093043f36f5f",
+    "bytes": 1845
+  },
+  "10-documents-marker.ps1": {
+    "sha256": "ba61554ff0a4daea864f04db52d71bcbeff33d22fd68359d668d23583bd5ab3f",
+    "bytes": 243
+  },
+  "08-small-baseline-04.ps1": {
+    "sha256": "161ff292e564eb9de8b29f95e865aae1cae177e73ba8a7e50b2850fcfca0ccb3",
+    "bytes": 511
+  },
+  "08-small-baseline-10.ps1": {
+    "sha256": "3d390b6bffb1ea975eb26fba1666e81748238b1524af6dd72e6316a3f5776758",
+    "bytes": 513
+  },
+  "09-parser-guards.ps1": {
+    "sha256": "e4ad1dde87d2754474e48846bc6c579cb47a804c77ba7bb1c1f69c557265eb71",
+    "bytes": 3084
+  },
+  "18-strict-launch.ps1": {
+    "sha256": "2f1d458734fcb89a2ee6776cdfeb07a0417c3b86af162a0794f9f291de9347bb",
+    "bytes": 157
+  },
+  "16-child-launch.ps1": {
+    "sha256": "78454004d124d90134a602e045dfe0c23c9f391d367f680510ef1d9b64949d12",
+    "bytes": 159
+  },
+  "13-extract-launch.ps1": {
+    "sha256": "546726094f39d7207cd667331482c72d5f68219fd8d05695a6320a6dc671c584",
+    "bytes": 152
+  },
+  "04-transfer-baseline-0.ps1": {
+    "sha256": "d3c1ece49ed824c3b2fd6bab102b75478194524384a93726a766b3798d49f1dd",
+    "bytes": 1872
+  },
+  "16-child-architecture.json": {
+    "sha256": "61a1f073f43b2f2366c0221b8fcdfc2c855785a0375e66f6ab5146f350190d72",
+    "bytes": 134
+  },
+  "17-memory-guards.json": {
+    "sha256": "fe61bec1032a5f3277f267abc6eb61196ead2d5024d252cc2a4bbad15c9c7ed4",
+    "bytes": 15434
+  },
+  "15-owned-process-reconcile.txt": {
+    "sha256": "aa4c6b5187e8a52a4b02316c91eb0c7a4cfdce4cdea9b9d7ecfe2faa1d97cce4",
+    "bytes": 616
+  },
+  "12-mechanism-result.json": {
+    "sha256": "922962b1b6862a2f35ec6986b922362cc001fc464a96056977c30a846158da0c",
+    "bytes": 14625
+  },
+  "01-readonly-identity.txt": {
+    "sha256": "d4ff6eb50e2c4667151c66e9d2561e438f3914af230247f50067616b9006862c",
+    "bytes": 1444
+  },
+  "baseline.ps1": {
+    "sha256": "bdd6f0eace6fbd4ea25c9e09d2c6cb6c0b54a05955d024aa97d76443c58ae308",
+    "bytes": 3086
+  },
+  "06-readonly-known-tool-dirs.ps1": {
+    "sha256": "d3cbe6b84d3289402397d7cd1dc90951670b66110575e47d9ece43611469c59c",
+    "bytes": 445
+  },
+  "12-memory-launch.ps1": {
+    "sha256": "13f4c65305172f1d630b4b1ac19451d53b82f26438e79ef0496f4f3fb9991e3f",
+    "bytes": 150
+  },
+  "11-parser-guards.ps1": {
+    "sha256": "6ad5517457235efdbe40c24c066a67023eced2243df48e4565d997892274d0ea",
+    "bytes": 3040
+  }
+}
