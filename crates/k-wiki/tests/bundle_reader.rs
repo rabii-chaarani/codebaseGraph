@@ -36,6 +36,7 @@ fn make_temp_dir(prefix: &str) -> PathBuf {
     path
 }
 
+#[cfg(unix)]
 fn copy_dir_all(source: &Path, destination: &Path) {
     fs::create_dir_all(destination).expect("create destination directory");
     for entry in fs::read_dir(source).expect("read fixture directory") {

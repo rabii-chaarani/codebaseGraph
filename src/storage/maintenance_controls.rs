@@ -3431,6 +3431,7 @@ impl PreparedTerminalWorkspace {
 
 /// Private hardlink name is bound to the actual random creation operation.
 /// This pin is special FIFO metadata, never a second link to a payload file.
+#[cfg(unix)]
 pub(crate) fn workspace_fifo_pin_name(binding: &WorkspaceOutputBinding) -> [u8; 69] {
     let mut name = [0; 69];
     name[..5].copy_from_slice(b"fifo-");
