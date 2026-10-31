@@ -1,0 +1,22 @@
+{
+  "status": "PASS current hosted CI; platform/final archive qualification pending",
+  "run": 41192405055,
+  "attempt": 1,
+  "head": "72ec5bc7481491ea7cd964b711d2b98866425241",
+  "base": "2173d766c155583b1e8f979c303b560998cc7214",
+  "tested_merge": "4ffd5caf7cc35c34d68793afd1280d568e6d0311",
+  "head_and_tested_merge_tree": "a403771d1b6dd10da4b28526bbafb8d053dec8a9",
+  "job_success": 22,
+  "job_total": 22,
+  "pr_check_success": 22,
+  "native_reports": 15,
+  "genuine_hosted_junit_xml": 0,
+  "compiler_warnings": 0,
+  "harness_execution_counts_not_unique": {
+    "passed": 2764,
+    "failed": 0,
+    "ignored": 8
+  },
+  "archives_downloaded": 0,
+  "desktop_A09": "pending"
+}
