@@ -1,0 +1,199 @@
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:723:
+     }
+ }
+ 
+-
+ fn resolver_ref(sha: &str) -> String {
+     json!({"object":{"type":"commit","sha":sha}}).to_string()
+ }
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:771:
+     let compare = requests
+         .iter()
+         .position(|request| {
+-            *request == format!(
+-                "api repos/owner/repo/compare/{SHA}...{NEXT_MAIN} --jq .status"
+-            )
++            *request == format!("api repos/owner/repo/compare/{SHA}...{NEXT_MAIN} --jq .status")
+         })
+         .unwrap();
+     let upload = requests
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:780:
+         .iter()
+         .position(|request| request.starts_with("release upload v2.0.0 "))
+         .unwrap();
+-    assert!(tag_reads[0] < tag_reads[1] && tag_reads[1] < main && main < compare && compare < upload, "{calls}");
++    assert!(
++        tag_reads[0] < tag_reads[1] && tag_reads[1] < main && main < compare && compare < upload,
++        "{calls}"
++    );
+ }
+ 
+ fn prepare_legacy_draft(f: &Fixture, tag_ref: &str, complete_assets: bool) {
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:825:
+         assert!(outputs.contains("should-publish=true\n"), "{outputs}");
+         assert!(outputs.contains("automatic=false\n"), "{outputs}");
+         assert!(outputs.contains("publish_assets=true\n"), "{outputs}");
+-        assert!(outputs.contains(&format!("source-sha={SHA}\n")), "{outputs}");
++        assert!(
++            outputs.contains(&format!("source-sha={SHA}\n")),
++            "{outputs}"
++        );
+         assert!(outputs.contains("ci-run-id=\n"), "{outputs}");
+         let calls = f.calls();
+-        assert!(calls.contains(&format!(
+-            "api repos/owner/repo/compare/{SHA}...{main} --jq .status"
+-        )), "{calls}");
++        assert!(
++            calls.contains(&format!(
++                "api repos/owner/repo/compare/{SHA}...{main} --jq .status"
++            )),
++            "{calls}"
++        );
+         assert_eq!(
+             calls
+                 .lines()
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:863:
+         ("null".to_owned(), vec![]),
+         (malformed_source, vec![]),
+         ("not-json".to_owned(), vec![]),
+-        (
+-            resolver_ref(SHA),
+-            vec![("MOCK_TAG_FAIL", "true")],
+-        ),
++        (resolver_ref(SHA), vec![("MOCK_TAG_FAIL", "true")]),
+     ] {
+         let f = Fixture::new();
+-        let output = f.resolve(&[("MOCK_REF", ref_value.as_str())]
+-            .into_iter()
+-            .chain(extra)
+-            .collect::<Vec<_>>());
++        let output = f.resolve(
++            &[("MOCK_REF", ref_value.as_str())]
++                .into_iter()
++                .chain(extra)
++                .collect::<Vec<_>>(),
++        );
+         assert_resolver_rejected(&f, &output);
+         assert!(!f.calls().contains("git/ref/heads/main"));
+     }
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:883:
+         vec![("MOCK_ANNOTATED_TARGET", "malformed-target")],
+     ] {
+         let f = Fixture::new();
+-        let output = f.resolve(&[
+-            ("MOCK_REF", annotated.as_str()),
+-            ("MOCK_ANNOTATED_OBJECT", TAG_OBJECT),
+-        ].into_iter().chain(extra).collect::<Vec<_>>());
++        let output = f.resolve(
++            &[
++                ("MOCK_REF", annotated.as_str()),
++                ("MOCK_ANNOTATED_OBJECT", TAG_OBJECT),
++            ]
++            .into_iter()
++            .chain(extra)
++            .collect::<Vec<_>>(),
++        );
+         assert_resolver_rejected(&f, &output);
+         assert!(!f.calls().contains("git/ref/heads/main"));
+     }
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:900:
+     ] {
+         let f = Fixture::new();
+         let ref_value = resolver_ref(SHA);
+-        let output = f.resolve(&[("MOCK_REF", ref_value.as_str())]
+-            .into_iter()
+-            .chain(extra)
+-            .collect::<Vec<_>>());
++        let output = f.resolve(
++            &[("MOCK_REF", ref_value.as_str())]
++                .into_iter()
++                .chain(extra)
++                .collect::<Vec<_>>(),
++        );
+         assert_resolver_rejected(&f, &output);
+         if !f.calls().contains("compare/") {
+             assert!(!f.calls().contains("--method POST"));
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:915:
+ fn legacy_dry_run_resolves_without_scheduling_the_publisher() {
+     let f = Fixture::new();
+     let ref_value = resolver_ref(SHA);
+-    let output = f.resolve(&[
+-        ("MOCK_REF", ref_value.as_str()),
+-        ("MANUAL_DRY_RUN", "true"),
+-    ]);
++    let output = f.resolve(&[("MOCK_REF", ref_value.as_str()), ("MANUAL_DRY_RUN", "true")]);
+     assert_success(&output);
+     let outputs = f.output();
+     assert!(outputs.contains("should-publish=true\n"), "{outputs}");
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:928:
+     let workflow: yaml_serde::Value =
+         yaml_serde::from_str(include_str!("../../../../.github/workflows/release.yml")).unwrap();
+     let publisher_job = &workflow["jobs"]["publish-release-assets"];
+-    assert!(publisher_job["needs"].as_sequence().unwrap().iter().any(|job| {
+-        job.as_str() == Some("release-target")
+-    }));
++    assert!(publisher_job["needs"]
++        .as_sequence()
++        .unwrap()
++        .iter()
++        .any(|job| { job.as_str() == Some("release-target") }));
+     let condition = publisher_job["if"].as_str().unwrap();
+     assert!(condition.contains("needs.release-target.outputs.publish_assets == 'true'"));
+     assert!(!outputs.lines().any(|line| line == "publish_assets=true"));
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:986:
+     assert_success(&output);
+     assert_fresh_legacy_guard_precedes_upload(&f.calls());
+     let calls = f.calls();
+-    assert_eq!(calls.matches(&format!("git/tags/{TAG_OBJECT} --jq .object.sha")).count(), 2, "{calls}");
++    assert_eq!(
++        calls
++            .matches(&format!("git/tags/{TAG_OBJECT} --jq .object.sha"))
++            .count(),
++        2,
++        "{calls}"
++    );
+ }
+ 
+ #[test]
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:1011:
+         let mut overrides = vec![("AUTOMATIC", "false"), ("MOCK_MAIN", NEXT_MAIN)];
+         overrides.extend(extra);
+         let output = f.execute(&publisher(), &overrides);
+-        assert_publisher_rejected_without_mutation(
+-            &f,
+-            &output,
+-            &release_before,
+-            &assets_before,
+-        );
++        assert_publisher_rejected_without_mutation(&f, &output, &release_before, &assets_before);
+         assert!(!f.calls().contains("release upload"));
+         assert!(f.calls().contains("git/ref/heads/main"));
+     }
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:1039:
+                 ("MOCK_FINAL_REF", final_ref.as_str()),
+             ],
+         );
+-        assert_publisher_rejected_without_mutation(
+-            &f,
+-            &output,
+-            &release_before,
+-            &assets_before,
+-        );
++        assert_publisher_rejected_without_mutation(&f, &output, &release_before, &assets_before);
+         assert_eq!(f.calls().matches("git/ref/tags/v2.0.0").count(), 2);
+         assert!(!f.calls().contains("git/ref/heads/main"));
+     }
+Diff in /private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs:1068:
+             ("MOCK_FINAL_ANNOTATED_TARGET", MAIN),
+         ],
+     );
+-    assert_publisher_rejected_without_mutation(
+-        &f,
+-        &output,
+-        &release_before,
+-        &assets_before,
+-    );
++    assert_publisher_rejected_without_mutation(&f, &output, &release_before, &assets_before);
+     let calls = f.calls();
+     assert!(calls.contains(&format!("git/tags/{NEW_TAG_OBJECT} --jq .object.sha")));
+     assert!(!calls.contains("git/ref/heads/main"));

@@ -1,0 +1,627 @@
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index 0ac2727..bd87a44 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -120,6 +120,14 @@ jobs:
+             if [[ "$(jq -r .object.type <<<"$ref")" == 'tag' ]]; then
+               source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$source_sha" --jq '.object.sha')"
+             fi
++            [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid source SHA.' >&2; exit 1; }
++            main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
++            [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid current main SHA.' >&2; exit 1; }
++            ancestry="$(gh api "repos/$GITHUB_REPOSITORY/compare/$source_sha...$main_sha" --jq '.status')"
++            case "$ancestry" in
++              identical|ahead) ;;
++              *) echo 'Release source is not in current main history.' >&2; exit 1 ;;
++            esac
+             ci_run_id=''
+             should_publish=true
+             artifact_source="$MANUAL_SOURCE"
+@@ -507,6 +515,22 @@ jobs:
+             # Preserve mutable published-release recovery, but skip matching assets.
+             if verify_assets; then exit 0; fi
+           fi
++          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid source SHA.' >&2; exit 1; }
++          if [[ "$AUTOMATIC" == 'false' ]]; then
++            current_ref="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG")"
++            current_tag_sha="$(jq -r .object.sha <<<"$current_ref")"
++            if [[ "$(jq -r .object.type <<<"$current_ref")" == 'tag' ]]; then
++              current_tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$current_tag_sha" --jq '.object.sha')"
++            fi
++            [[ "$current_tag_sha" =~ ^[0-9a-f]{40}$ && "$current_tag_sha" == "$SOURCE_SHA" ]] || { echo 'Existing release tag points to a different commit.' >&2; exit 1; }
++          fi
++          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
++          [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid current main SHA.' >&2; exit 1; }
++          ancestry="$(gh api "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...$main_sha" --jq '.status')"
++          case "$ancestry" in
++            identical|ahead) ;;
++            *) echo 'Release source is not in current main history.' >&2; exit 1 ;;
++          esac
+           gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+           verify_assets || { echo 'Remote asset verification failed; release was not published.' >&2; exit 1; }
+           if [[ "$AUTOMATIC" == 'true' && "$(jq -r .draft <<<"$release")" == 'true' ]]; then
+diff --git a/crates/xtask/src/release/workflow_tests.rs b/crates/xtask/src/release/workflow_tests.rs
+index a759b2a..f6fea96 100644
+--- a/crates/xtask/src/release/workflow_tests.rs
++++ b/crates/xtask/src/release/workflow_tests.rs
+@@ -9,6 +9,9 @@ use std::{
+ 
+ const SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+ const MAIN: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
++const NEXT_MAIN: &str = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
++const TAG_OBJECT: &str = "cccccccccccccccccccccccccccccccccccccccc";
++const NEW_TAG_OBJECT: &str = "dddddddddddddddddddddddddddddddddddddddd";
+ 
+ struct Fixture {
+     root: PathBuf,
+@@ -47,8 +50,12 @@ release_file="$RUNNER_TEMP/release"
+ assets="$RUNNER_TEMP/assets"
+ case "$*" in
+   *"actions/runs/42") printf '%s' "$MOCK_RUN" ;;
+-  *"git/ref/heads/main"*) printf '%s' "$MOCK_MAIN" ;;
+-  *"compare/"*) printf '%s' "$MOCK_COMPARISON" ;;
++  "api repos/owner/repo/git/ref/heads/main --jq .object.sha")
++    [[ "$MOCK_MAIN_FAIL" != true ]] || { echo 'main lookup failed' >&2; exit 98; }
++    printf '%s' "$MOCK_MAIN" ;;
++  "api repos/owner/repo/compare/$MOCK_COMPARE_SOURCE...$MOCK_MAIN --jq .status")
++    [[ "$MOCK_COMPARE_FAIL" != true ]] || { echo 'comparison failed' >&2; exit 98; }
++    printf '%s' "$MOCK_COMPARISON" ;;
+   *"/commits/"*"/pulls?per_page=100") printf '%s' "$MOCK_PULLS" ;;
+   *"contents/.release-please-manifest.json?"*) printf 'eyIuIjoiMi4wLjAifQ==' ;;
+   *"actions/workflows/ci.yml/runs?"*) printf '%s' "$MOCK_PROPOSAL_RUNS" ;;
+@@ -57,10 +64,30 @@ case "$*" in
+     [[ "$*" == *"sha=$SOURCE_SHA"* ]] || exit 96
+     jq -n --arg sha "$SOURCE_SHA" '{object:{type:"commit",sha:$sha}}' > "$RUNNER_TEMP/ref"
+     cat "$RUNNER_TEMP/ref" ;;
+-  *"git/ref/tags/v2.0.0")
+-    if [[ -e "$RUNNER_TEMP/ref" ]]; then cat "$RUNNER_TEMP/ref"
++  "api repos/owner/repo/git/ref/tags/$MOCK_TAG_NAME")
++    tag_reads=0
++    [[ ! -f "$RUNNER_TEMP/tag-reads" ]] || tag_reads="$(cat "$RUNNER_TEMP/tag-reads")"
++    tag_reads=$((tag_reads + 1))
++    printf '%s' "$tag_reads" > "$RUNNER_TEMP/tag-reads"
++    if [[ "$MOCK_TAG_FAIL" == true || ( "$MOCK_TAG_FAIL_AFTER" != 0 && "$tag_reads" -ge "$MOCK_TAG_FAIL_AFTER" ) ]]; then
++      printf '{"status":"503"}'
++      exit 1
++    fi
++    if [[ -e "$RUNNER_TEMP/ref" ]]; then
++      if [[ "$MOCK_TAG_CHANGE_AFTER" != 0 && "$tag_reads" -ge "$MOCK_TAG_CHANGE_AFTER" ]]; then
++        if [[ "$MOCK_FINAL_REF" == 'null' ]]; then printf '{"status":"404"}'; exit 1; fi
++        printf '%s' "$MOCK_FINAL_REF"
++      else
++        cat "$RUNNER_TEMP/ref"
++      fi
+     elif [[ "$MOCK_REF" != 'null' ]]; then printf '%s' "$MOCK_REF"
+     else printf '{"status":"404"}'; exit 1; fi ;;
++  "api repos/owner/repo/git/tags/$MOCK_ANNOTATED_OBJECT --jq .object.sha")
++    [[ "$MOCK_ANNOTATION_FAIL" != true ]] || { echo 'annotation lookup failed' >&2; exit 98; }
++    printf '%s' "$MOCK_ANNOTATED_TARGET" ;;
++  "api repos/owner/repo/git/tags/$MOCK_FINAL_ANNOTATED_OBJECT --jq .object.sha")
++    [[ "$MOCK_ANNOTATION_FAIL" != true ]] || { echo 'annotation lookup failed' >&2; exit 98; }
++    printf '%s' "$MOCK_FINAL_ANNOTATED_TARGET" ;;
+   *"--method POST"*"/releases --input "*)
+     [[ ! -e "$release_file" ]] || { echo 'Duplicate release' >&2; exit 95; }
+     cp "${!#}" "$RUNNER_TEMP/request"
+@@ -133,7 +160,18 @@ esac
+             ("EXPECTED_SHA",SHA.into()),("REQUIRE_RELEASE","true".into()),
+             ("MOCK_RUN",self.run.to_string()),("MOCK_PULLS",self.pulls.to_string()),
+             ("MOCK_MAIN",MAIN.into()),("MOCK_COMPARISON","ahead".into()),
+-            ("MOCK_REF","null".into()),("MOCK_RELEASES","[]".into()),
++            ("MOCK_MAIN_FAIL","false".into()),("MOCK_COMPARE_FAIL","false".into()),
++            ("MOCK_COMPARE_SOURCE",SHA.into()),
++            ("MOCK_REF","null".into()),("MOCK_TAG_NAME","v2.0.0".into()),
++            ("MOCK_TAG_FAIL","false".into()),("MOCK_TAG_FAIL_AFTER","0".into()),
++            ("MOCK_TAG_CHANGE_AFTER","0".into()),
++            ("MOCK_FINAL_REF",json!({"object":{"type":"commit","sha":SHA}}).to_string()),
++            ("MOCK_ANNOTATION_FAIL","false".into()),
++            ("MOCK_ANNOTATED_OBJECT",TAG_OBJECT.into()),
++            ("MOCK_ANNOTATED_TARGET",SHA.into()),
++            ("MOCK_FINAL_ANNOTATED_OBJECT",NEW_TAG_OBJECT.into()),
++            ("MOCK_FINAL_ANNOTATED_TARGET",MAIN.into()),
++            ("MOCK_RELEASES","[]".into()),
+             ("AUTOMATIC","true".into()),("MOCK_FREEZE","true".into()),
+             ("MOCK_UPLOAD_FAIL","false".into()),("MOCK_CORRUPT","".into()),
+             ("MOCK_LOST_CREATE","false".into()),("MOCK_LOST_PUBLISH","false".into()),
+@@ -173,6 +211,15 @@ esac
+         }
+     }
+ 
++    fn seed_partial_assets(&self) {
++        let archive = crate::NATIVE_TARGETS[0].archive_name("2.0.0");
++        fs::copy(
++            self.root.join("dist/release-assets").join(&archive),
++            self.root.join("assets").join(archive),
++        )
++        .unwrap();
++    }
++
+     fn calls(&self) -> String {
+         fs::read_to_string(self.root.join("calls")).unwrap()
+     }
+@@ -191,6 +238,47 @@ esac
+     fn output(&self) -> String {
+         fs::read_to_string(self.root.join("output")).unwrap()
+     }
++
++    fn resolve(&self, overrides: &[(&str, &str)]) -> Output {
++        let mut env = vec![
++            ("GITHUB_EVENT_NAME", "workflow_dispatch"),
++            ("MANUAL_TAG", "v2.0.0"),
++            ("MANUAL_SOURCE", "promote"),
++            ("MANUAL_DRY_RUN", "false"),
++            ("CI_RUN_ID", ""),
++            ("VERIFIED_SHA", ""),
++            ("RELEASE_PR", ""),
++        ];
++        env.extend_from_slice(overrides);
++        self.execute(&step("release-target", "Resolve tag and source SHA"), &env)
++    }
++
++    fn clear_calls(&self) {
++        fs::write(self.root.join("calls"), "").unwrap();
++    }
++
++    fn reset_tag_reads(&self) {
++        let _ = fs::remove_file(self.root.join("tag-reads"));
++    }
++
++    fn assets_snapshot(&self) -> Vec<(String, Vec<u8>)> {
++        let mut assets = fs::read_dir(self.root.join("assets"))
++            .unwrap()
++            .map(|entry| {
++                let entry = entry.unwrap();
++                (
++                    entry.file_name().to_string_lossy().into_owned(),
++                    fs::read(entry.path()).unwrap(),
++                )
++            })
++            .collect::<Vec<_>>();
++        assets.sort_by(|left, right| left.0.cmp(&right.0));
++        assets
++    }
++
++    fn release_snapshot(&self) -> Vec<u8> {
++        fs::read(self.root.join("release")).unwrap()
++    }
+ }
+ 
+ impl Drop for Fixture {
+@@ -634,3 +722,438 @@ fn recovery_requires_one_target_and_forbids_ci_run_rebuilds() {
+         assert_eq!(result.status.success(), allowed, "{tag}/{run}/{source}");
+     }
+ }
++
++fn resolver_ref(sha: &str) -> String {
++    json!({"object":{"type":"commit","sha":sha}}).to_string()
++}
++
++fn assert_resolver_rejected(f: &Fixture, output: &Output) {
++    assert!(
++        !output.status.success(),
++        "unexpected authorization: {}",
++        String::from_utf8_lossy(&output.stdout)
++    );
++    assert!(f.output().is_empty(), "{}", f.output());
++    assert!(!f.root.join("summary").exists());
++    f.assert_no_writes();
++}
++
++fn assert_publisher_rejected_without_mutation(
++    f: &Fixture,
++    output: &Output,
++    release_before: &[u8],
++    assets_before: &[(String, Vec<u8>)],
++) {
++    assert!(
++        !output.status.success(),
++        "unexpected upload: {}",
++        String::from_utf8_lossy(&output.stdout)
++    );
++    assert_eq!(f.release_snapshot(), release_before);
++    assert_eq!(f.assets_snapshot(), assets_before);
++    f.assert_no_writes();
++}
++
++fn assert_fresh_legacy_guard_precedes_upload(calls: &str) {
++    let requests = calls.lines().collect::<Vec<_>>();
++    let tag_reads = requests
++        .iter()
++        .enumerate()
++        .filter(|(_, request)| **request == "api repos/owner/repo/git/ref/tags/v2.0.0")
++        .map(|(index, _)| index)
++        .collect::<Vec<_>>();
++    assert_eq!(tag_reads.len(), 2, "{calls}");
++    let main = requests
++        .iter()
++        .position(|request| *request == "api repos/owner/repo/git/ref/heads/main --jq .object.sha")
++        .unwrap();
++    let compare = requests
++        .iter()
++        .position(|request| {
++            *request == format!("api repos/owner/repo/compare/{SHA}...{NEXT_MAIN} --jq .status")
++        })
++        .unwrap();
++    let upload = requests
++        .iter()
++        .position(|request| request.starts_with("release upload v2.0.0 "))
++        .unwrap();
++    assert!(
++        tag_reads[0] < tag_reads[1] && tag_reads[1] < main && main < compare && compare < upload,
++        "{calls}"
++    );
++}
++
++fn prepare_legacy_draft(f: &Fixture, tag_ref: &str, complete_assets: bool) {
++    let output = f.resolve(&[("MOCK_REF", tag_ref)]);
++    assert_success(&output);
++    assert!(f.output().contains("should-publish=true\n"));
++    assert!(f.output().contains("publish_assets=true\n"));
++    f.seed_release(true, false);
++    fs::write(f.root.join("ref"), tag_ref).unwrap();
++    if complete_assets {
++        f.seed_assets();
++    } else {
++        f.seed_partial_assets();
++    }
++    f.clear_calls();
++    f.reset_tag_reads();
++}
++
++#[test]
++fn existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors() {
++    let annotated = json!({"object":{"type":"tag","sha":TAG_OBJECT}}).to_string();
++    for (ref_value, main, comparison, annotation) in [
++        (resolver_ref(SHA), SHA, "identical", false),
++        (resolver_ref(SHA), NEXT_MAIN, "ahead", false),
++        (annotated, NEXT_MAIN, "ahead", true),
++    ] {
++        let f = Fixture::new();
++        let mut overrides = vec![
++            ("MOCK_REF", ref_value.as_str()),
++            ("MOCK_MAIN", main),
++            ("MOCK_COMPARISON", comparison),
++        ];
++        if annotation {
++            overrides.extend([
++                ("MOCK_ANNOTATED_OBJECT", TAG_OBJECT),
++                ("MOCK_ANNOTATED_TARGET", SHA),
++            ]);
++        }
++        let output = f.resolve(&overrides);
++        assert_success(&output);
++        let outputs = f.output();
++        assert!(outputs.contains("should-publish=true\n"), "{outputs}");
++        assert!(outputs.contains("automatic=false\n"), "{outputs}");
++        assert!(outputs.contains("publish_assets=true\n"), "{outputs}");
++        assert!(
++            outputs.contains(&format!("source-sha={SHA}\n")),
++            "{outputs}"
++        );
++        assert!(outputs.contains("ci-run-id=\n"), "{outputs}");
++        let calls = f.calls();
++        assert!(
++            calls.contains(&format!(
++                "api repos/owner/repo/compare/{SHA}...{main} --jq .status"
++            )),
++            "{calls}"
++        );
++        assert_eq!(
++            calls
++                .lines()
++                .filter(|call| *call == "api repos/owner/repo/git/ref/tags/v2.0.0")
++                .count(),
++            1,
++            "{calls}"
++        );
++        f.assert_no_writes();
++    }
++}
++
++#[test]
++fn existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing() {
++    for comparison in ["behind", "diverged", "", "unknown-status"] {
++        let f = Fixture::new();
++        let ref_value = resolver_ref(SHA);
++        let output = f.resolve(&[
++            ("MOCK_REF", ref_value.as_str()),
++            ("MOCK_COMPARISON", comparison),
++        ]);
++        assert_resolver_rejected(&f, &output);
++        assert!(f.calls().contains(&format!(
++            "api repos/owner/repo/compare/{SHA}...{MAIN} --jq .status"
++        )));
++    }
++
++    let malformed_source = resolver_ref("not-a-full-source-sha");
++    for (ref_value, extra) in [
++        ("null".to_owned(), vec![]),
++        (malformed_source, vec![]),
++        ("not-json".to_owned(), vec![]),
++        (resolver_ref(SHA), vec![("MOCK_TAG_FAIL", "true")]),
++    ] {
++        let f = Fixture::new();
++        let output = f.resolve(
++            &[("MOCK_REF", ref_value.as_str())]
++                .into_iter()
++                .chain(extra)
++                .collect::<Vec<_>>(),
++        );
++        assert_resolver_rejected(&f, &output);
++        assert!(!f.calls().contains("git/ref/heads/main"));
++    }
++
++    let annotated = json!({"object":{"type":"tag","sha":TAG_OBJECT}}).to_string();
++    for extra in [
++        vec![("MOCK_ANNOTATION_FAIL", "true")],
++        vec![("MOCK_ANNOTATED_TARGET", "malformed-target")],
++    ] {
++        let f = Fixture::new();
++        let output = f.resolve(
++            &[
++                ("MOCK_REF", annotated.as_str()),
++                ("MOCK_ANNOTATED_OBJECT", TAG_OBJECT),
++            ]
++            .into_iter()
++            .chain(extra)
++            .collect::<Vec<_>>(),
++        );
++        assert_resolver_rejected(&f, &output);
++        assert!(!f.calls().contains("git/ref/heads/main"));
++    }
++
++    for extra in [
++        vec![("MOCK_MAIN", "malformed-main-sha")],
++        vec![("MOCK_MAIN_FAIL", "true")],
++        vec![("MOCK_COMPARE_FAIL", "true")],
++        vec![("GITHUB_REPOSITORY", "fork/repo")],
++        vec![("MOCK_COMPARE_SOURCE", MAIN)],
++    ] {
++        let f = Fixture::new();
++        let ref_value = resolver_ref(SHA);
++        let output = f.resolve(
++            &[("MOCK_REF", ref_value.as_str())]
++                .into_iter()
++                .chain(extra)
++                .collect::<Vec<_>>(),
++        );
++        assert_resolver_rejected(&f, &output);
++        if !f.calls().contains("compare/") {
++            assert!(!f.calls().contains("--method POST"));
++        }
++    }
++}
++
++fn publisher_job_scheduled_for_assets_output(
++    condition: &str,
++    publish_assets: Option<&str>,
++) -> Result<bool, &'static str> {
++    let condition = condition
++        .trim()
++        .strip_prefix("${{")
++        .and_then(|condition| condition.strip_suffix("}}"))
++        .ok_or("missing GitHub expression delimiters")?;
++    let mut clause_counts = [0; 4];
++    for clause in condition.split("&&").map(str::trim) {
++        let index = match clause {
++            "always()" => 0,
++            "needs.release-target.result == 'success'" => 1,
++            "needs.validate-artifacts.result == 'success'" => 2,
++            "needs.release-target.outputs.publish_assets == 'true'" => 3,
++            _ => return Err("unsupported publisher gate expression"),
++        };
++        clause_counts[index] += 1;
++    }
++    if clause_counts != [1; 4] {
++        return Err("publisher gate is missing or duplicates a required condition");
++    }
++    match publish_assets {
++        Some("true") => Ok(true),
++        Some("false") => Ok(false),
++        _ => Err("missing or invalid publish_assets output"),
++    }
++}
++
++#[test]
++fn legacy_dry_run_resolves_without_scheduling_the_publisher() {
++    let f = Fixture::new();
++    let ref_value = resolver_ref(SHA);
++    let output = f.resolve(&[("MOCK_REF", ref_value.as_str()), ("MANUAL_DRY_RUN", "true")]);
++    assert_success(&output);
++    let outputs = f.output();
++    assert!(outputs.contains("should-publish=true\n"), "{outputs}");
++    assert!(outputs.contains("dry-run=true\n"), "{outputs}");
++    assert!(outputs.contains("publish_assets=false\n"), "{outputs}");
++
++    let workflow: yaml_serde::Value =
++        yaml_serde::from_str(include_str!("../../../../.github/workflows/release.yml")).unwrap();
++    let publisher_job = &workflow["jobs"]["publish-release-assets"];
++    assert!(publisher_job["needs"]
++        .as_sequence()
++        .unwrap()
++        .iter()
++        .any(|job| { job.as_str() == Some("release-target") }));
++    let condition = publisher_job["if"].as_str().unwrap();
++    let publish_assets = outputs
++        .lines()
++        .find_map(|line| line.strip_prefix("publish_assets="));
++    assert_eq!(publish_assets, Some("false"));
++    assert_eq!(
++        publisher_job_scheduled_for_assets_output(condition, publish_assets),
++        Ok(false)
++    );
++    assert_eq!(
++        publisher_job_scheduled_for_assets_output(condition, Some("true")),
++        Ok(true)
++    );
++
++    let required_clauses = [
++        "always()",
++        "needs.release-target.result == 'success'",
++        "needs.validate-artifacts.result == 'success'",
++        "needs.release-target.outputs.publish_assets == 'true'",
++    ];
++    for clause in required_clauses {
++        let missing = condition.replacen(clause, "", 1);
++        assert_ne!(
++            missing, condition,
++            "missing-condition mutation did not apply"
++        );
++        assert!(
++            publisher_job_scheduled_for_assets_output(&missing, publish_assets).is_err(),
++            "missing required condition was accepted: {clause}"
++        );
++        let duplicated = condition.replace(clause, &format!("{clause} && {clause}"));
++        assert!(
++            publisher_job_scheduled_for_assets_output(&duplicated, publish_assets).is_err(),
++            "duplicate required condition was accepted: {clause}"
++        );
++    }
++    let bypassed = condition.replace(
++        required_clauses[3],
++        "true || needs.release-target.outputs.publish_assets == 'true'",
++    );
++    assert!(publisher_job_scheduled_for_assets_output(&bypassed, publish_assets).is_err());
++    let unsupported_after_false = condition.replace(
++        required_clauses[3],
++        "needs.release-target.outputs.publish_assets == 'true' && true",
++    );
++    assert!(
++        publisher_job_scheduled_for_assets_output(&unsupported_after_false, Some("false")).is_err()
++    );
++    assert!(publisher_job_scheduled_for_assets_output(condition, None).is_err());
++    f.assert_no_writes();
++}
++
++#[test]
++fn legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement() {
++    let light_ref = resolver_ref(SHA);
++    for (draft, complete_assets) in [(true, true), (false, false)] {
++        let f = Fixture::new();
++        prepare_legacy_draft(&f, &light_ref, complete_assets);
++        if !draft {
++            let mut release = f.release();
++            release["draft"] = json!(false);
++            fs::write(f.root.join("release"), release.to_string()).unwrap();
++        }
++        let release_before = f.release_snapshot();
++        let output = f.execute(
++            &publisher(),
++            &[
++                ("AUTOMATIC", "false"),
++                ("MOCK_MAIN", NEXT_MAIN),
++                ("MOCK_COMPARISON", "ahead"),
++            ],
++        );
++        assert_success(&output);
++        assert_fresh_legacy_guard_precedes_upload(&f.calls());
++        assert_eq!(f.release_snapshot(), release_before);
++        assert_eq!(f.release()["draft"], draft);
++        assert!(!f.calls().contains("--method POST"));
++        assert!(!f.calls().contains("--method PATCH"));
++        assert_eq!(f.calls().matches("release upload v2.0.0 ").count(), 1);
++    }
++
++    let annotated_ref = json!({"object":{"type":"tag","sha":TAG_OBJECT}}).to_string();
++    let f = Fixture::new();
++    prepare_legacy_draft(&f, &annotated_ref, true);
++    fs::write(f.root.join("ref"), &annotated_ref).unwrap();
++    let output = f.execute(
++        &publisher(),
++        &[
++            ("AUTOMATIC", "false"),
++            ("MOCK_FINAL_REF", annotated_ref.as_str()),
++            ("MOCK_ANNOTATED_OBJECT", TAG_OBJECT),
++            ("MOCK_ANNOTATED_TARGET", SHA),
++            ("MOCK_FINAL_ANNOTATED_OBJECT", TAG_OBJECT),
++            ("MOCK_FINAL_ANNOTATED_TARGET", SHA),
++            ("MOCK_MAIN", NEXT_MAIN),
++            ("MOCK_COMPARISON", "ahead"),
++        ],
++    );
++    assert_success(&output);
++    assert_fresh_legacy_guard_precedes_upload(&f.calls());
++    let calls = f.calls();
++    assert_eq!(
++        calls
++            .matches(&format!("git/tags/{TAG_OBJECT} --jq .object.sha"))
++            .count(),
++        2,
++        "{calls}"
++    );
++}
++
++#[test]
++fn legacy_publisher_rejects_late_history_and_tag_races_without_mutation() {
++    let light_ref = resolver_ref(SHA);
++    for (draft, complete_assets, extra) in [
++        (true, true, vec![("MOCK_COMPARISON", "diverged")]),
++        (false, false, vec![("MOCK_COMPARE_FAIL", "true")]),
++        (true, true, vec![("MOCK_COMPARISON", "malformed-status")]),
++        (true, true, vec![("MOCK_MAIN", "malformed-main-sha")]),
++        (true, true, vec![("MOCK_MAIN_FAIL", "true")]),
++    ] {
++        let f = Fixture::new();
++        prepare_legacy_draft(&f, &light_ref, complete_assets);
++        if !draft {
++            let mut release = f.release();
++            release["draft"] = json!(false);
++            fs::write(f.root.join("release"), release.to_string()).unwrap();
++        }
++        let release_before = f.release_snapshot();
++        let assets_before = f.assets_snapshot();
++        let mut overrides = vec![("AUTOMATIC", "false"), ("MOCK_MAIN", NEXT_MAIN)];
++        overrides.extend(extra);
++        let output = f.execute(&publisher(), &overrides);
++        assert_publisher_rejected_without_mutation(&f, &output, &release_before, &assets_before);
++        assert!(!f.calls().contains("release upload"));
++        assert!(f.calls().contains("git/ref/heads/main"));
++    }
++
++    for (final_ref, tag_fail_after) in [
++        (resolver_ref(MAIN), "0"),
++        ("null".to_owned(), "0"),
++        (light_ref.clone(), "2"),
++    ] {
++        let f = Fixture::new();
++        prepare_legacy_draft(&f, &light_ref, true);
++        let release_before = f.release_snapshot();
++        let assets_before = f.assets_snapshot();
++        let output = f.execute(
++            &publisher(),
++            &[
++                ("AUTOMATIC", "false"),
++                ("MOCK_TAG_CHANGE_AFTER", "2"),
++                ("MOCK_TAG_FAIL_AFTER", tag_fail_after),
++                ("MOCK_FINAL_REF", final_ref.as_str()),
++            ],
++        );
++        assert_publisher_rejected_without_mutation(&f, &output, &release_before, &assets_before);
++        assert_eq!(f.calls().matches("git/ref/tags/v2.0.0").count(), 2);
++        assert!(!f.calls().contains("git/ref/heads/main"));
++    }
++
++    let annotated_ref = json!({"object":{"type":"tag","sha":TAG_OBJECT}}).to_string();
++    let changed_annotation = json!({"object":{"type":"tag","sha":NEW_TAG_OBJECT}}).to_string();
++    let f = Fixture::new();
++    prepare_legacy_draft(&f, &annotated_ref, true);
++    fs::write(f.root.join("ref"), &annotated_ref).unwrap();
++    let release_before = f.release_snapshot();
++    let assets_before = f.assets_snapshot();
++    let output = f.execute(
++        &publisher(),
++        &[
++            ("AUTOMATIC", "false"),
++            ("MOCK_TAG_CHANGE_AFTER", "2"),
++            ("MOCK_FINAL_REF", changed_annotation.as_str()),
++            ("MOCK_ANNOTATED_OBJECT", TAG_OBJECT),
++            ("MOCK_ANNOTATED_TARGET", SHA),
++            ("MOCK_FINAL_ANNOTATED_OBJECT", NEW_TAG_OBJECT),
++            ("MOCK_FINAL_ANNOTATED_TARGET", MAIN),
++        ],
++    );
++    assert_publisher_rejected_without_mutation(&f, &output, &release_before, &assets_before);
++    let calls = f.calls();
++    assert!(calls.contains(&format!("git/tags/{NEW_TAG_OBJECT} --jq .object.sha")));
++    assert!(!calls.contains("git/ref/heads/main"));
++    assert!(!calls.contains("release upload"));
++}

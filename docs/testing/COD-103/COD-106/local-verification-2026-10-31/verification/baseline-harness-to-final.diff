@@ -1,0 +1,106 @@
+--- author-baseline-harness
++++ final-verified-harness
+@@ -932,30 +932,25 @@
+         .strip_prefix("${{")
+         .and_then(|condition| condition.strip_suffix("}}"))
+         .ok_or("missing GitHub expression delimiters")?;
+-    let mut has_assets_gate = false;
++    let mut clause_counts = [0; 4];
+     for clause in condition.split("&&").map(str::trim) {
+-        match clause {
+-            "always()"
+-            | "needs.release-target.result == 'success'"
+-            | "needs.validate-artifacts.result == 'success'" => {}
+-            "needs.release-target.outputs.publish_assets == 'true'" => {
+-                if has_assets_gate {
+-                    return Err("invalid publisher job gate");
+-                }
+-                has_assets_gate = true;
+-                match publish_assets {
+-                    Some("true") => {}
+-                    Some("false") => return Ok(false),
+-                    _ => return Err("missing or invalid publish_assets output"),
+-                }
+-            }
+-            _ => return Err("missing or invalid publish_assets output"),
+-        }
+-    }
+-    if !has_assets_gate {
+-        return Err("missing publish_assets predicate");
+-    }
+-    Ok(true)
++        let index = match clause {
++            "always()" => 0,
++            "needs.release-target.result == 'success'" => 1,
++            "needs.validate-artifacts.result == 'success'" => 2,
++            "needs.release-target.outputs.publish_assets == 'true'" => 3,
++            _ => return Err("unsupported publisher gate expression"),
++        };
++        clause_counts[index] += 1;
++    }
++    if clause_counts != [1; 4] {
++        return Err("publisher gate is missing or duplicates a required condition");
++    }
++    match publish_assets {
++        Some("true") => Ok(true),
++        Some("false") => Ok(false),
++        _ => Err("missing or invalid publish_assets output"),
++    }
+ }
+ 
+ #[test]
+@@ -991,20 +986,41 @@
+         Ok(true)
+     );
+ 
+-    let predicate = "needs.release-target.outputs.publish_assets == 'true'";
+-    for bypassed in [
+-        condition.replace(predicate, "true"),
+-        condition.replace(
+-            predicate,
+-            "true || needs.release-target.outputs.publish_assets == 'true'",
+-        ),
+-        condition.replace(predicate, ""),
+-    ] {
++    let required_clauses = [
++        "always()",
++        "needs.release-target.result == 'success'",
++        "needs.validate-artifacts.result == 'success'",
++        "needs.release-target.outputs.publish_assets == 'true'",
++    ];
++    for clause in required_clauses {
++        let missing = condition.replacen(clause, "", 1);
++        assert_ne!(
++            missing, condition,
++            "missing-condition mutation did not apply"
++        );
+         assert!(
+-            publisher_job_scheduled_for_assets_output(&bypassed, publish_assets).is_err(),
+-            "a missing or bypassed publication gate was accepted: {bypassed}"
+-        );
+-    }
++            publisher_job_scheduled_for_assets_output(&missing, publish_assets).is_err(),
++            "missing required condition was accepted: {clause}"
++        );
++        let duplicated = condition.replace(clause, &format!("{clause} && {clause}"));
++        assert!(
++            publisher_job_scheduled_for_assets_output(&duplicated, publish_assets).is_err(),
++            "duplicate required condition was accepted: {clause}"
++        );
++    }
++    let bypassed = condition.replace(
++        required_clauses[3],
++        "true || needs.release-target.outputs.publish_assets == 'true'",
++    );
++    assert!(publisher_job_scheduled_for_assets_output(&bypassed, publish_assets).is_err());
++    let unsupported_after_false = condition.replace(
++        required_clauses[3],
++        "needs.release-target.outputs.publish_assets == 'true' && true",
++    );
++    assert!(
++        publisher_job_scheduled_for_assets_output(&unsupported_after_false, Some("false")).is_err()
++    );
++    assert!(publisher_job_scheduled_for_assets_output(condition, None).is_err());
+     f.assert_no_writes();
+ }
+ 

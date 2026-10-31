@@ -1,0 +1,19 @@
+   Compiling xtask v4.0.5 (/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-99a339/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.54s
+     Running unittests src/main.rs (target/debug/deps/xtask-5f3103d4ea1a52fa)
+
+running 1 test
+
+thread 'release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing' (39596766) panicked at crates/xtask/src/release/workflow_tests.rs:731:5:
+unexpected authorization: 
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing ... FAILED
+
+failures:
+
+failures:
+    release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.43s
+
+error: test failed, to rerun pass `-p xtask --bin xtask`

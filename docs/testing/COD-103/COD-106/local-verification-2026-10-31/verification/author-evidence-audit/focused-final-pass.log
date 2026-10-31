@@ -1,0 +1,31 @@
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod106-20261031/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.75s
+     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)
+
+running 23 tests
+test release::workflow_tests::accepted_writes_with_lost_responses_resume_without_replay ... ok
+test release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication ... ok
+test release::workflow_tests::draft_partial_upload_resumes_and_latest_is_selected_at_publication ... ok
+test release::workflow_tests::existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases ... ok
+test release::workflow_tests::existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors ... ok
+test release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing ... ok
+test release::workflow_tests::immutable_missing_or_mismatched_assets_fail_without_mutation ... ok
+test release::workflow_tests::immutable_release_uploads_before_publication_and_retries_without_writes ... ok
+test release::workflow_tests::legacy_dry_run_resolves_without_scheduling_the_publisher ... ok
+test release::workflow_tests::legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement ... ok
+test release::workflow_tests::legacy_publisher_rejects_late_history_and_tag_races_without_mutation ... ok
+test release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can ... ok
+test release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization ... ok
+test release::workflow_tests::published_mutable_partial_assets_can_resume_without_republishing ... ok
+test release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest ... ok
+test release::workflow_tests::publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes ... ok
+test release::workflow_tests::publisher_targets_original_sha_and_is_idempotent ... ok
+test release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds ... ok
+test release::workflow_tests::staged_assets_match_the_supported_native_targets ... ok
+test release::workflow_tests::upload_or_remote_byte_failure_never_publishes ... ok
+test release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity ... ok
+test release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history ... ok
+test release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 23.66s
+
