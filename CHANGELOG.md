@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.5](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.4...v4.0.5) (2026-10-31)
+
+
+### Bug Fixes
+
+* **release:** bundle relocatable macOS OpenSSL runtimes (COD-54) ([#163](https://github.com/rabii-chaarani/codebaseGraph/issues/163)) ([c60a00c](https://github.com/rabii-chaarani/codebaseGraph/commit/c60a00c1d747b73789cd6edc7ee20601182a35ca))
+
 ## [4.0.4](https://github.com/rabii-chaarani/codebaseGraph/compare/v4.0.3...v4.0.4) (2026-10-30)
 
 
