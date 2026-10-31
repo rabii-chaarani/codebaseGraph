@@ -1,0 +1,106 @@
+{
+  "authority.log": {
+    "sha256": "a141c086f5e0d6424b809379c313098d1b27f9119f9d84dcbd48395472fc3452",
+    "bytes": 43781
+  },
+  "baseline-install.ps1": {
+    "sha256": "bdd6f0eace6fbd4ea25c9e09d2c6cb6c0b54a05955d024aa97d76443c58ae308",
+    "bytes": 3086
+  },
+  "candidate.diff": {
+    "sha256": "d73427d60108ad176c3f3737c2f5f337ac5d9d9bd03e954ece5c580231971e6c",
+    "bytes": 506
+  },
+  "check-workflows.log": {
+    "sha256": "e872de66b0a83de9d9b0bccd7b78c999912ac903ef081fc508ae935b6150d096",
+    "bytes": 1360
+  },
+  "clippy.log": {
+    "sha256": "7939946dca7d694b57b1704979b56ce3feff6eea785b190304e1022f086d380d",
+    "bytes": 1096
+  },
+  "commands.json": {
+    "sha256": "543f0eae5fb00d2954307ecc884a1583a0e9a96c678b844dcaecdd0a25cca932",
+    "bytes": 136724
+  },
+  "documentation.json": {
+    "sha256": "3f25bf133cea9d696817a15cffe34f6a147060086f988575df0a10ed193b364f",
+    "bytes": 2996
+  },
+  "environment-diffcheck.log": {
+    "sha256": "39e42043e6d58f4ec2d909b38898148acb9a43467a8d6ae2b2814ac59bc0161b",
+    "bytes": 453
+  },
+  "fmt.log": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "graph-context.txt": {
+    "sha256": "211d7c6ab9a3dc19599ea4505d7a1b87ef9d8e64a451d20c36338d2918bf3974",
+    "bytes": 257
+  },
+  "graph-search.txt": {
+    "sha256": "211d7c6ab9a3dc19599ea4505d7a1b87ef9d8e64a451d20c36338d2918bf3974",
+    "bytes": 257
+  },
+  "identity-after.log": {
+    "sha256": "cdf68121b3594f8e8a22170b13aec5ea7b00120d9625bf4da51e080c880313af",
+    "bytes": 154
+  },
+  "identity-before.log": {
+    "sha256": "43319c0529637da586401ce542296f819c0fe49131c18c8f9a1c0008d9860b92",
+    "bytes": 619
+  },
+  "memory-recall.txt": {
+    "sha256": "2702fdc11d028cba67bfb849814cb9b8d541f56feb22591b8febf1fd0615a7ab",
+    "bytes": 11782
+  },
+  "nextest-help.log": {
+    "sha256": "773136ceb158c651cfabd075f7c7bd5d59013961978ed781dfeafa809da2d0ab",
+    "bytes": 16791
+  },
+  "nextest.toml": {
+    "sha256": "93a48943411b3d628b40fac858870179ced018ed238959447a8bdfddff457d72",
+    "bytes": 170
+  },
+  "platform-spec.log": {
+    "sha256": "13a0bb40b57a64254f3899a28e69e663caf2901c3ffc5d12279984e8cb9f1754",
+    "bytes": 64834
+  },
+  "ps51-documentation.txt": {
+    "sha256": "92608ac34696c8452f20f772422e229bb8a9713f0ee73401817c5c0e93a61154",
+    "bytes": 31111
+  },
+  "ps75-documentation.txt": {
+    "sha256": "d06878d0a236decb96df8f7d8077da0d274bb4fb6b62130075bcf228371ba67f",
+    "bytes": 32150
+  },
+  "release-gate.log": {
+    "sha256": "1d46c88fc3fdd8b5f587c4e763df4355449dd5fd0d268908c6a058fe48faf57d",
+    "bytes": 139
+  },
+  "report.md": {
+    "sha256": "1667c5fa6453bf0d2cec9723af18e5f3c48c42bc49c00c035474f68c476199fd",
+    "bytes": 7354
+  },
+  "scryer-execution.txt": {
+    "sha256": "f45f219996c1fbf79198a9b8ca480148bb0fd6b3238c6eec5f251ebe76a3cbd8",
+    "bytes": 21795
+  },
+  "scryer-rules.txt": {
+    "sha256": "dadd4141fdd75e88ee3d648b6940692c8305d5074d35d094d686d6ab357dc36f",
+    "bytes": 1810
+  },
+  "wiki-search.txt": {
+    "sha256": "81eec27111d62a85e0a5e1a02fbee1f663c3988c31561f7a3a6b96e899f96d79",
+    "bytes": 1469
+  },
+  "xtask-junit.xml": {
+    "sha256": "9048440d45f0eaa20623860a831185f6a3f41d85388e27ed5c4909898d8cd480",
+    "bytes": 15812
+  },
+  "xtask-nextest.log": {
+    "sha256": "a3c1119574e12910d9eb7dbcee4e601c339d155c301ba99dda8ec9a31848ea4b",
+    "bytes": 10944
+  }
+}
