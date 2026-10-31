@@ -1,0 +1,77 @@
+{
+  "correction": "Earlier FIRST128-byte failure message was incorrect. Loop progressed through successful parts; failure was part17. Parent read-only reconciliation confirms baseline2176 bytes equals first2176 exact source bytes. No part17 write.",
+  "logs": [
+    {
+      "file": "08-small-baseline-00.txt",
+      "output": "#< CLIXML\n128\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObje"
+    },
+    {
+      "file": "08-small-baseline-01.txt",
+      "output": "#< CLIXML\n256\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObje"
+    },
+    {
+      "file": "08-small-baseline-02.txt",
+      "output": "#< CLIXML\n384\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObje"
+    },
+    {
+      "file": "08-small-baseline-03.txt",
+      "output": "#< CLIXML\n512\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObje"
+    },
+    {
+      "file": "08-small-baseline-04.txt",
+      "output": "#< CLIXML\n640\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObje"
+    },
+    {
+      "file": "08-small-baseline-05.txt",
+      "output": "#< CLIXML\n768\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObje"
+    },
+    {
+      "file": "08-small-baseline-06.txt",
+      "output": "#< CLIXML\n896\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObje"
+    },
+    {
+      "file": "08-small-baseline-07.txt",
+      "output": "#< CLIXML\n1024\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-08.txt",
+      "output": "#< CLIXML\n1152\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-09.txt",
+      "output": "#< CLIXML\n1280\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-10.txt",
+      "output": "#< CLIXML\n1408\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-11.txt",
+      "output": "#< CLIXML\n1536\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-12.txt",
+      "output": "#< CLIXML\n1664\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-13.txt",
+      "output": "#< CLIXML\n1792\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-14.txt",
+      "output": "#< CLIXML\n1920\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-15.txt",
+      "output": "#< CLIXML\n2048\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-16.txt",
+      "output": "#< CLIXML\n2176\n<Objs Version=\"1.1.0.1\" xmlns=\"http://schemas.microsoft.com/powershell/2004/04\"><Obj S=\"progress\" RefId=\"0\"><TN RefId=\"0\"><T>System.Management.Automation.PSCustomObj"
+    },
+    {
+      "file": "08-small-baseline-17.txt",
+      "output": "PrlJob_GetRetCode: Invalid argument. An invalid argument was passed.\n"
+    }
+  ]
+}

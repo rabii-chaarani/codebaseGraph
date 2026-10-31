@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuite name="COD-56-A09" tests="28" failures="8" errors="0" skipped="0">
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::success_both">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-DryRun-success_both</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::graph_probe_nonzero">
+    <failure message="Actual case assertions failed">[
+    {
+        "name":  "installer-status",
+        "passed":  false,
+        "expected":  "nonzero",
+        "actual":  0
+    },
+    {
+        "name":  "native-trace-count",
+        "passed":  false,
+        "expected":  1,
+        "actual":  2
+    }
+]</failure>
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-DryRun-graph_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::wiki_probe_nonzero">
+    <failure message="Actual case assertions failed">[
+    {
+        "name":  "installer-status",
+        "passed":  false,
+        "expected":  "nonzero",
+        "actual":  0
+    }
+]</failure>
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-DryRun-wiki_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::missing_graph">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-DryRun-missing_graph</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::missing_wiki">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-DryRun-missing_wiki</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::bad_manifest_graph_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-DryRun-bad_manifest_graph_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::bad_manifest_wiki_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-DryRun-bad_manifest_wiki_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::success_both">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-real-success_both</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::graph_probe_nonzero">
+    <failure message="Actual case assertions failed">[
+    {
+        "name":  "installer-status",
+        "passed":  false,
+        "expected":  "nonzero",
+        "actual":  0
+    },
+    {
+        "name":  "native-trace-count",
+        "passed":  false,
+        "expected":  1,
+        "actual":  2
+    },
+    {
+        "name":  "destination-codebase-graph.exe",
+        "passed":  false,
+        "expected":  "2a1d43f67f00d6c3649cc0dc2e3ef8fbe0b7e4b6654a568183ae55c3449e81be",
+        "actual":  "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    {
+        "name":  "destination-k-wiki.exe",
+        "passed":  false,
+        "expected":  "9daec541a959c05eef7c695532280df3e4a6912b014c811a9a74bd51ec9c6998",
+        "actual":  "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    }
+]</failure>
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-real-graph_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::wiki_probe_nonzero">
+    <failure message="Actual case assertions failed">[
+    {
+        "name":  "installer-status",
+        "passed":  false,
+        "expected":  "nonzero",
+        "actual":  0
+    },
+    {
+        "name":  "destination-codebase-graph.exe",
+        "passed":  false,
+        "expected":  "e66181d1913d03de0993a628dae856bddbaf16768b13508170b5fd1d4038ebf4",
+        "actual":  "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    {
+        "name":  "destination-k-wiki.exe",
+        "passed":  false,
+        "expected":  "f88c9ed0cc4bfd03047dd38b19a51d681b9710718b23d1fd93c2b79a03f46db8",
+        "actual":  "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    }
+]</failure>
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-real-wiki_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::missing_graph">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-real-missing_graph</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::missing_wiki">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-real-missing_wiki</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::bad_manifest_graph_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-real-bad_manifest_graph_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::bad_manifest_wiki_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\WinPS51-real-bad_manifest_wiki_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::success_both">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-DryRun-success_both</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::graph_probe_nonzero">
+    <failure message="Actual case assertions failed">[
+    {
+        "name":  "installer-status",
+        "passed":  false,
+        "expected":  "nonzero",
+        "actual":  0
+    },
+    {
+        "name":  "native-trace-count",
+        "passed":  false,
+        "expected":  1,
+        "actual":  2
+    }
+]</failure>
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-DryRun-graph_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::wiki_probe_nonzero">
+    <failure message="Actual case assertions failed">[
+    {
+        "name":  "installer-status",
+        "passed":  false,
+        "expected":  "nonzero",
+        "actual":  0
+    }
+]</failure>
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-DryRun-wiki_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::missing_graph">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-DryRun-missing_graph</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::missing_wiki">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-DryRun-missing_wiki</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::bad_manifest_graph_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-DryRun-bad_manifest_graph_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::bad_manifest_wiki_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-DryRun-bad_manifest_wiki_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::success_both">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-real-success_both</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::graph_probe_nonzero">
+    <failure message="Actual case assertions failed">[
+    {
+        "name":  "installer-status",
+        "passed":  false,
+        "expected":  "nonzero",
+        "actual":  0
+    },
+    {
+        "name":  "native-trace-count",
+        "passed":  false,
+        "expected":  1,
+        "actual":  2
+    },
+    {
+        "name":  "destination-codebase-graph.exe",
+        "passed":  false,
+        "expected":  "d51053e2d9d032f89c9ac85a7f6a9adb324200b9eb3e35813522481ced0dc713",
+        "actual":  "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    {
+        "name":  "destination-k-wiki.exe",
+        "passed":  false,
+        "expected":  "8ac7058f30cbf131d8bf6fdb2a21bd73f92f6ed96cb399747b56c2e017830120",
+        "actual":  "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    }
+]</failure>
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-real-graph_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::wiki_probe_nonzero">
+    <failure message="Actual case assertions failed">[
+    {
+        "name":  "installer-status",
+        "passed":  false,
+        "expected":  "nonzero",
+        "actual":  0
+    },
+    {
+        "name":  "destination-codebase-graph.exe",
+        "passed":  false,
+        "expected":  "2d4ab6a0bdf002cade693528754c15642f8ed9367ffaeaa5b9451089dc1a1ee8",
+        "actual":  "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    {
+        "name":  "destination-k-wiki.exe",
+        "passed":  false,
+        "expected":  "5e49e6ec916bcbee9f5cebc40978729b90d16ab656ccca87a36bb0754c33aa04",
+        "actual":  "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    }
+]</failure>
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-real-wiki_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::missing_graph">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-real-missing_graph</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::missing_wiki">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-real-missing_wiki</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::bad_manifest_graph_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-real-bad_manifest_graph_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::bad_manifest_wiki_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-baseline-beb76cc14c814272938352e7ab7b32f2\results\PS7-real-bad_manifest_wiki_hash</system-out>
+  </testcase>
+</testsuite>

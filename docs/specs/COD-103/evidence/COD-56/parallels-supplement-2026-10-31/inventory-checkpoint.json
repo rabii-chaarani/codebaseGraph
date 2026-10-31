@@ -1,0 +1,31 @@
+{
+  "status": "Read-only existing-tool discovery complete; transfer/test lease paused",
+  "observed": {
+    "native_os": "Windows 11 Pro 10.0.26300 Arm64",
+    "account_scope": "SYSTEM SID S-1-5-18",
+    "WinPS": "5.1.26100.9711",
+    "System32_PowerShell_PE": "0xAA64 ARM64",
+    "SysWOW64_PowerShell_PE": "0x014C x86 NOT x64",
+    "AMD64_shell": "not found in bounded inspected standard/portable paths",
+    "System32_where_PE": "0xAA64 ARM64",
+    "where_sha256": "7cf3631ebf7d5d8cefafbbd41d1ba9261a07eae1eaf5d4258db3acae7b0ca705",
+    "where_signature": "Valid"
+  },
+  "owned_guest_root": "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-11023706-4804-4438-b044-e9768538a0c8",
+  "root_state_from_parent_reconciliation": "Only owner-receipt.txt; candidate.ps1 and baseline.ps1 absent",
+  "missing_input": "Verified official portable PowerShell windows-x64 ZIP, pending separately authorized transfer recovery; no current download/write authority",
+  "limits": [
+    "No global absence claim; no full disk crawl or personal profile inspection",
+    "No actual x64 process exists in these observations",
+    "No parser/runtime/function/full installer tests executed",
+    "A09 Windows x86_64 desktop PS5.1/7 qualification remains pending",
+    "Read-only inventory commands below 2000 ASCII characters; private conservative transport bound, not product constant",
+    "No source/product constants changed; no guest policy/settings/account/VM changes"
+  ],
+  "source_sha256": {
+    "candidate": "830d128241c90b6f224554dc49bfcf572a1d51107ded8b12823e71d97c58b7bb",
+    "baseline": "bdd6f0eace6fbd4ea25c9e09d2c6cb6c0b54a05955d024aa97d76443c58ae308"
+  },
+  "settings": "EvidenceVerifier inherit/inherit; no model overrides; runtime self-metadata unexposed",
+  "memory_assessment": "No memory writes authorized or warranted from incomplete runtime evidence"
+}

@@ -1,0 +1,18 @@
+ M release/install/install.ps1
+2173d766c155583b1e8f979c303b560998cc7214
+baefd500ed61fb35bc0b0beb92184998cfb6bec9
+diff --git a/release/install/install.ps1 b/release/install/install.ps1
+index 0595059..9890b01 100644
+--- a/release/install/install.ps1
++++ b/release/install/install.ps1
+@@ -44,6 +44,10 @@ function Assert-Binary {
+         throw "SHA256 mismatch for $Name"
+     }
+     & $binaryPath $ProbeArgument | Out-Null
++    $probeExitCode = $LASTEXITCODE
++    if ($probeExitCode -ne 0) {
++        throw "Native probe failed for $Name ($ProbeArgument): exit code $probeExitCode"
++    }
+ }
+ 
+ function Install-Binary {

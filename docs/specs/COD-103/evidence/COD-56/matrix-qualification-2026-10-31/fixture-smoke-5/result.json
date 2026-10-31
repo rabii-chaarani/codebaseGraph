@@ -1,0 +1,130 @@
+﻿{
+    "Root":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4",
+    "OS":  "10.0.26300.0",
+    "OSArchitecture":  "Arm64",
+    "PS":  "5.1.26100.9711",
+    "Before":  {
+                   "build-report.md":  "E0712FFF7CE32DF883FF147E270B7D09B620FFDEEF70EE5272AE5462C1C12122",
+                   "native_probe_fixture.rs":  "7BFD7E558803824C5594335C350F317DEF747B338A80D7D3DEE0D59F30B7C314",
+                   "native_probe_fixture.exe":  "08E9773855C82DED4837968683CFA7895D17FB7D9D3283B9670CE4DC0F1FCA80"
+               },
+    "After":  {
+                  "codebase-graph.exe":  "08E9773855C82DED4837968683CFA7895D17FB7D9D3283B9670CE4DC0F1FCA80",
+                  "native_probe_fixture.rs":  "7BFD7E558803824C5594335C350F317DEF747B338A80D7D3DEE0D59F30B7C314",
+                  "k-wiki.exe":  "08E9773855C82DED4837968683CFA7895D17FB7D9D3283B9670CE4DC0F1FCA80",
+                  "native_probe_fixture.exe":  "08E9773855C82DED4837968683CFA7895D17FB7D9D3283B9670CE4DC0F1FCA80"
+              },
+    "Cases":  [
+                  {
+                      "Id":  "graph0",
+                      "Passed":  true,
+                      "GraphExit":  "0",
+                      "Stderr":  "",
+                      "Decoded":  {
+                                      "Version":  1,
+                                      "SelectedExit":  0,
+                                      "Length":  32,
+                                      "Role":  1,
+                                      "Argc":  1,
+                                      "Argument":  "--help"
+                                  },
+                      "Trace":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\graph0.trace",
+                      "ExpectedExit":  0,
+                      "Stdout":  "",
+                      "DecodeError":  null,
+                      "WikiExit":  "0",
+                      "Executable":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\codebase-graph.exe",
+                      "ActualExit":  0,
+                      "Argument":  "--help"
+                  },
+                  {
+                      "Id":  "graph23",
+                      "Passed":  true,
+                      "GraphExit":  "23",
+                      "Stderr":  "",
+                      "Decoded":  {
+                                      "Version":  1,
+                                      "SelectedExit":  23,
+                                      "Length":  32,
+                                      "Role":  1,
+                                      "Argc":  1,
+                                      "Argument":  "--help"
+                                  },
+                      "Trace":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\graph23.trace",
+                      "ExpectedExit":  23,
+                      "Stdout":  "",
+                      "DecodeError":  null,
+                      "WikiExit":  "0",
+                      "Executable":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\codebase-graph.exe",
+                      "ActualExit":  23,
+                      "Argument":  "--help"
+                  },
+                  {
+                      "Id":  "wiki0",
+                      "Passed":  true,
+                      "GraphExit":  "0",
+                      "Stderr":  "",
+                      "Decoded":  {
+                                      "Version":  1,
+                                      "SelectedExit":  0,
+                                      "Length":  38,
+                                      "Role":  2,
+                                      "Argc":  1,
+                                      "Argument":  "--version"
+                                  },
+                      "Trace":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\wiki0.trace",
+                      "ExpectedExit":  0,
+                      "Stdout":  "",
+                      "DecodeError":  null,
+                      "WikiExit":  "0",
+                      "Executable":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\k-wiki.exe",
+                      "ActualExit":  0,
+                      "Argument":  "--version"
+                  },
+                  {
+                      "Id":  "wiki29",
+                      "Passed":  true,
+                      "GraphExit":  "0",
+                      "Stderr":  "",
+                      "Decoded":  {
+                                      "Version":  1,
+                                      "SelectedExit":  29,
+                                      "Length":  38,
+                                      "Role":  2,
+                                      "Argc":  1,
+                                      "Argument":  "--version"
+                                  },
+                      "Trace":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\wiki29.trace",
+                      "ExpectedExit":  29,
+                      "Stdout":  "",
+                      "DecodeError":  null,
+                      "WikiExit":  "29",
+                      "Executable":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\k-wiki.exe",
+                      "ActualExit":  29,
+                      "Argument":  "--version"
+                  },
+                  {
+                      "Id":  "unexpected",
+                      "Passed":  true,
+                      "GraphExit":  "0",
+                      "Stderr":  "",
+                      "Decoded":  {
+                                      "Version":  1,
+                                      "SelectedExit":  64,
+                                      "Length":  44,
+                                      "Role":  1,
+                                      "Argc":  1,
+                                      "Argument":  "--unexpected"
+                                  },
+                      "Trace":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\unexpected.trace",
+                      "ExpectedExit":  64,
+                      "Stdout":  "",
+                      "DecodeError":  null,
+                      "WikiExit":  "0",
+                      "Executable":  "C:\\WINDOWS\\TEMP\\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\\fixture-smoke-880ef0541a174799b8e492a3fa9da6b4\\codebase-graph.exe",
+                      "ActualExit":  64,
+                      "Argument":  "--unexpected"
+                  }
+              ],
+    "StoppedAt":  null
+}

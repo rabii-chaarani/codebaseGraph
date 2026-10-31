@@ -1,0 +1,1 @@
+& ([scriptblock]::Create([IO.File]::ReadAllText('\\Mac\Home\Documents\codebasegraph-cod56-vm-11023706-4804-4438-b044-e9768538a0c8\12-mechanism.ps1')))

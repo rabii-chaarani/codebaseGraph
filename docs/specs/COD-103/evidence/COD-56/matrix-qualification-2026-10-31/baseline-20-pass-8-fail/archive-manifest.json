@@ -1,0 +1,2606 @@
+{
+  "archive": "raw-evidence.tar.xz",
+  "bytes": 39924,
+  "sha256": "1b4931747c8ec245dd8d400028975ba05fd663dc0aaa775d8b744df3137330d0",
+  "members": {
+    "collect-command.txt": {
+      "bytes": 626,
+      "sha256": "84aa8a27c60a708f1721f6145c8e81e88e881b94e85ddc6dc847068f5a34b28d"
+    },
+    "collect-output.txt": {
+      "bytes": 1303,
+      "sha256": "b31235de7f35d5f7f5d51b570801e1c0fa2b0494846c0b86448cf53ef4328130"
+    },
+    "collect.ps1": {
+      "bytes": 845,
+      "sha256": "4607c75c63d3433534748c6465411384499338ecb1edd3a73a86099ea1de2b54"
+    },
+    "command.txt": {
+      "bytes": 622,
+      "sha256": "3d771e8601737a04769e9f88ce9b4529c09dfe8738b915959f9d56693eb71d5d"
+    },
+    "independent-audit.json": {
+      "bytes": 8126,
+      "sha256": "9b7843af239cd4d4384e38f471ac56a5910c37d43778c529bfc665c70ea00c91"
+    },
+    "install.ps1": {
+      "bytes": 3086,
+      "sha256": "bdd6f0eace6fbd4ea25c9e09d2c6cb6c0b54a05955d024aa97d76443c58ae308"
+    },
+    "launch.ps1": {
+      "bytes": 1500,
+      "sha256": "28f9823ac5f7ee8547461de338197b3cf5cfc82cd6635b498bb1fd0e8d131e63"
+    },
+    "manifest.json": {
+      "bytes": 61995,
+      "sha256": "3745bf5ea4660dd1058d4872bd64abdede98b147cac2fd3f1fa0cb03531233bd"
+    },
+    "native_probe_fixture.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/bin/codebase-graph.exe": {
+      "bytes": 64,
+      "sha256": "997cee504f04e0edb1742391e79abbae5af558495e9540cbda5521923fd75003"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/bin/k-wiki.exe": {
+      "bytes": 56,
+      "sha256": "abe7900a3dfe6d747e1f8941bcfba17a751870b8ff8342c9edab55e2bd6e1f23"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/decoded-trace.json": {
+      "bytes": 6,
+      "sha256": "b423bb45501e0fa49d3b77e635f800a29f1fdcf5a58e00c7e04a7ff7833045f2"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/request.json": {
+      "bytes": 5683,
+      "sha256": "b6b5c11c6f8c5fd8fef62ee1e8277b6a7f589a3e1a221e003b792ca700b82df4"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/result.json": {
+      "bytes": 10753,
+      "sha256": "1931f8075aae69188c12f1053c9f01e91094c490c35fba13adcc85892313a97a"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "56ea76ddbe16f035887a8ce391766983d2e75c572dc6d6a9455b64a719bd59bd"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/stderr.bin": {
+      "bytes": 40,
+      "sha256": "1277bc0b1820fa7b02c048ab03ce7a68bb51950c3502f993ff561c11c85804dc"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/bin/codebase-graph.exe": {
+      "bytes": 63,
+      "sha256": "fd73a7de02512af9ca9e5ca3601b03361781ace952deb38c15bf72dff7cd7a99"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/bin/k-wiki.exe": {
+      "bytes": 55,
+      "sha256": "a60e619416a401d305be15c5a6cd172a0c322049d858b2eea1ef02541931ba0e"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/decoded-trace.json": {
+      "bytes": 144,
+      "sha256": "e15f6fa64e7adf8b67e1cdca6c6b1c5a310bb94e5747a9dcc744f542f702c7b2"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/native-trace.bin": {
+      "bytes": 32,
+      "sha256": "52e9b8393367157dc3770c33f461b44f9b3ff54f2132aa871bf92262cd857192"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/request.json": {
+      "bytes": 5883,
+      "sha256": "69f6e3be0668479631ae8a849f39e8a742a0e80e83b8deebe0b4586dd46c7c79"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/result.json": {
+      "bytes": 12129,
+      "sha256": "4ae8e84772ae2c9781316e2c94597c06448bf41fc70f912a83caa5ee71f31751"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "fe4d9bff06b37c750c171854de2625a3112a2b8a72821be6524643b19ad84515"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/stderr.bin": {
+      "bytes": 32,
+      "sha256": "83bde18788f5b4b1a918de70c5e82fa9a8b10fe9fa2072b04b157fe649be6686"
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/bin/codebase-graph.exe": {
+      "bytes": 60,
+      "sha256": "57a0ba134b351a57e60e2711ec4f2a726419d7996961e1a8218b8cd5034195b1"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/bin/k-wiki.exe": {
+      "bytes": 52,
+      "sha256": "ed275ba8b470dbeec50f0012bbed40c4d727d8bbba810d7d35ba7cdfe3bdf1df"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/decoded-trace.json": {
+      "bytes": 289,
+      "sha256": "fa9379a56382db5ff32e27942d6d792fa8634c3f095a4e0e7cf28ba12191b1e6"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "aa7406889cdd8bf42e3ff0f19263d1bcefd41a66e7da9e940f9e37a5e52b344d"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/request.json": {
+      "bytes": 5861,
+      "sha256": "d9b6177b39a6016ee1b415bd61014c8026667ed4c209f686d9581f68879f20ba"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/result.json": {
+      "bytes": 12404,
+      "sha256": "68cdc4d158ca45f54503872750e62b682a2585834e809ab1fd213f57874cc711"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/stderr.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/stdout.bin": {
+      "bytes": 218,
+      "sha256": "33e299fed6907790bbb8c7e8a9f2b51b89393d1c7df2b6bd45dfb9048be385c3"
+    },
+    "raw-results/PS7-DryRun-missing_graph/bin/codebase-graph.exe": {
+      "bytes": 54,
+      "sha256": "4b4fb8342ee7db6d2b78ddc4aa52261d554a5b2a476cc7e6b7bc5be540985850"
+    },
+    "raw-results/PS7-DryRun-missing_graph/bin/k-wiki.exe": {
+      "bytes": 46,
+      "sha256": "d0162a03126677083407d01cb55f37e9d2792c5f1427e85f11837d3badaec468"
+    },
+    "raw-results/PS7-DryRun-missing_graph/decoded-trace.json": {
+      "bytes": 6,
+      "sha256": "b423bb45501e0fa49d3b77e635f800a29f1fdcf5a58e00c7e04a7ff7833045f2"
+    },
+    "raw-results/PS7-DryRun-missing_graph/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/PS7-DryRun-missing_graph/request.json": {
+      "bytes": 5603,
+      "sha256": "0417ddee67f2c9a07deed5daa375b035c42067b3781af07a90b92fbb431d6bc9"
+    },
+    "raw-results/PS7-DryRun-missing_graph/result.json": {
+      "bytes": 10643,
+      "sha256": "1030c84fb9eec88a85da96e0c3027a0ffe60ffde3c3e72121de5da43ef02cc93"
+    },
+    "raw-results/PS7-DryRun-missing_graph/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-DryRun-missing_graph/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-DryRun-missing_graph/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-missing_graph/stderr.bin": {
+      "bytes": 200,
+      "sha256": "f821908d14dface77d990e0ae1c31f3eccac1500a1c9c61a3dd85aa89ea9f63c"
+    },
+    "raw-results/PS7-DryRun-missing_graph/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/bin/codebase-graph.exe": {
+      "bytes": 53,
+      "sha256": "5ac853afa6a31b14efe6172f113a49b951e5051897668aa5cddf945e46ec2609"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/bin/k-wiki.exe": {
+      "bytes": 45,
+      "sha256": "e179fc0fc8080486b6aa75eda7fd9b82542ddedee7bdf98116a13a69b711b20b"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/decoded-trace.json": {
+      "bytes": 144,
+      "sha256": "e15f6fa64e7adf8b67e1cdca6c6b1c5a310bb94e5747a9dcc744f542f702c7b2"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/native-trace.bin": {
+      "bytes": 32,
+      "sha256": "52e9b8393367157dc3770c33f461b44f9b3ff54f2132aa871bf92262cd857192"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/request.json": {
+      "bytes": 5803,
+      "sha256": "7f8d65d935acacea2a51d8380ed69e2313e5c58df8016f940e65152544dad693"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/result.json": {
+      "bytes": 12019,
+      "sha256": "6be1fd0ff20afd5b243df574926a8da7f50741ee4b0896bdd7671fdba8646a10"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/stderr.bin": {
+      "bytes": 191,
+      "sha256": "d051d7a9d48bbe41ec740fb61d2890d1b5d29adcc42d663613a2dbdb6f2cc49a"
+    },
+    "raw-results/PS7-DryRun-missing_wiki/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-DryRun-success_both/bin/codebase-graph.exe": {
+      "bytes": 53,
+      "sha256": "532e06f7f6378c4b7d5bafbd71cb7269de94d738fb9dbb2585cdf7bd50aa41f8"
+    },
+    "raw-results/PS7-DryRun-success_both/bin/k-wiki.exe": {
+      "bytes": 45,
+      "sha256": "5f80cc503f08c4010c3c50eabbad0c8aaf438674df4aa16b02fb6c458265c5fd"
+    },
+    "raw-results/PS7-DryRun-success_both/decoded-trace.json": {
+      "bytes": 288,
+      "sha256": "d3abb1cc9134ecb9e3bf28b2b6cb87ff80e5e01f6fc1156596850b5c8b4505a6"
+    },
+    "raw-results/PS7-DryRun-success_both/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "c37358fc455b50ad3112048417f2119821a2dbeb07a097149d54cd8c8cfb87a0"
+    },
+    "raw-results/PS7-DryRun-success_both/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/PS7-DryRun-success_both/request.json": {
+      "bytes": 6016,
+      "sha256": "abf82eb9421580d0f2b412f8620aa44cd180ef8f40823e79112bf56e89c42283"
+    },
+    "raw-results/PS7-DryRun-success_both/result.json": {
+      "bytes": 13420,
+      "sha256": "f89909a0bc67da7e368d967f73aa8a59b8616698054c94785ce4639af9370207"
+    },
+    "raw-results/PS7-DryRun-success_both/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-DryRun-success_both/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-DryRun-success_both/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-success_both/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-success_both/stderr.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-DryRun-success_both/stdout.bin": {
+      "bytes": 211,
+      "sha256": "cc0c53cb6cd349d914dd5069aecb1ae81417f4920c3d2e23caa8eb75782d4cf7"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/bin/codebase-graph.exe": {
+      "bytes": 59,
+      "sha256": "29ad869d80299b38d10c5aa50c2667cbade6abad3d40b056ceb7bf5c06570e41"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/bin/k-wiki.exe": {
+      "bytes": 51,
+      "sha256": "c286af33702f60786266c31d7394a91c1c1cc6a78dd47655bcb659289756f0c2"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/decoded-trace.json": {
+      "bytes": 289,
+      "sha256": "7d070b16d8242823330f287714dd86eb4a93db7745cb94af90f3530beb321766"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "bd0cc8df305e9fcca29c127c007eefbcace6a9d7cd14cc17df3d21177e2a2ffb"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/request.json": {
+      "bytes": 6067,
+      "sha256": "0f2367ef34bca9b0e1826490e869fac0b5843d6d6c5f78abd806db04405f6611"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/result.json": {
+      "bytes": 13499,
+      "sha256": "c9da5563372022bfc5b9394afdf7925f54d7818b27081dadedebbc0fe48bdb28"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/stderr.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/stdout.bin": {
+      "bytes": 217,
+      "sha256": "c4fb194bc95f618ef7b67ed35dad865c4d2e0468527d2d2e43112c6949ec8b3d"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/bin/codebase-graph.exe": {
+      "bytes": 62,
+      "sha256": "124f873004216e6435c58d930dbe7fb5dfbfbd7bab7b0f5f1241998e5b93814a"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/bin/k-wiki.exe": {
+      "bytes": 54,
+      "sha256": "eb56eda1d848bf123640a1a9fbd1db64729a47a28cd158fb98572bba3e7b2852"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/decoded-trace.json": {
+      "bytes": 6,
+      "sha256": "b423bb45501e0fa49d3b77e635f800a29f1fdcf5a58e00c7e04a7ff7833045f2"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/request.json": {
+      "bytes": 5667,
+      "sha256": "372818f5ca28bb9a4b9d67571621334a50babd9b0c4ff9b339cee8b4f0e7de45"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/result.json": {
+      "bytes": 10731,
+      "sha256": "593d43d1ccdad2e30114c8bd0a3e9aaf83bdef5d7f6ec65777a22a95cb3740f3"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "56ea76ddbe16f035887a8ce391766983d2e75c572dc6d6a9455b64a719bd59bd"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/stderr.bin": {
+      "bytes": 40,
+      "sha256": "1277bc0b1820fa7b02c048ab03ce7a68bb51950c3502f993ff561c11c85804dc"
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/bin/codebase-graph.exe": {
+      "bytes": 61,
+      "sha256": "9b83dd29c7de33998d023110672e4d2f693218b3b62921cf55219cebc7ad82d8"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/bin/k-wiki.exe": {
+      "bytes": 53,
+      "sha256": "697150fccf9496ce9cae460268edeb7004e810f37670b59a36919a08ab50bfd0"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/decoded-trace.json": {
+      "bytes": 144,
+      "sha256": "e15f6fa64e7adf8b67e1cdca6c6b1c5a310bb94e5747a9dcc744f542f702c7b2"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/native-trace.bin": {
+      "bytes": 32,
+      "sha256": "52e9b8393367157dc3770c33f461b44f9b3ff54f2132aa871bf92262cd857192"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/request.json": {
+      "bytes": 5867,
+      "sha256": "e4473121dfd62688f927ae6732f6fff063c56cfca126e7e4c4ebc58cdc3d8fa6"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/result.json": {
+      "bytes": 12107,
+      "sha256": "77e94b3f8216fd8075725456bc51d93c04cf9e9232b731b7313a88be6d38fa4c"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "fe4d9bff06b37c750c171854de2625a3112a2b8a72821be6524643b19ad84515"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/stderr.bin": {
+      "bytes": 32,
+      "sha256": "83bde18788f5b4b1a918de70c5e82fa9a8b10fe9fa2072b04b157fe649be6686"
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/bin/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/bin/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/decoded-trace.json": {
+      "bytes": 289,
+      "sha256": "fa9379a56382db5ff32e27942d6d792fa8634c3f095a4e0e7cf28ba12191b1e6"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "aa7406889cdd8bf42e3ff0f19263d1bcefd41a66e7da9e940f9e37a5e52b344d"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/request.json": {
+      "bytes": 5845,
+      "sha256": "f896db4eadaa6d27a0bbcf244e5031f6735c0760b4c6300f8b3fb483a3d15058"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/result.json": {
+      "bytes": 12384,
+      "sha256": "01064a558ec4afa9cec95d0f075668a3965b22999afd47821f00faf27d56f8a3"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/stderr.bin": {
+      "bytes": 554,
+      "sha256": "294645e76e1f77ac91901ae85c2095e44dd8bbc0598d71f08771941e87232bb4"
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/stdout.bin": {
+      "bytes": 211,
+      "sha256": "deee9fa3882c3f6c99c1f02457f67f7c6b207435d1c0233472b6fffeab1b89ba"
+    },
+    "raw-results/PS7-real-missing_graph/bin/codebase-graph.exe": {
+      "bytes": 52,
+      "sha256": "2f45368513830d0904d957c025f014f49ecf7cb1b7baa6b3fefc40a1034843a1"
+    },
+    "raw-results/PS7-real-missing_graph/bin/k-wiki.exe": {
+      "bytes": 44,
+      "sha256": "b25d44362e398ed924cfc7beb60eb4786d455420d1d477dfac0da07e33e058fa"
+    },
+    "raw-results/PS7-real-missing_graph/decoded-trace.json": {
+      "bytes": 6,
+      "sha256": "b423bb45501e0fa49d3b77e635f800a29f1fdcf5a58e00c7e04a7ff7833045f2"
+    },
+    "raw-results/PS7-real-missing_graph/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/PS7-real-missing_graph/request.json": {
+      "bytes": 5587,
+      "sha256": "30c11bd6278a21e406f7da0d54e8e0c9233060c31b972a33516f2621d472125c"
+    },
+    "raw-results/PS7-real-missing_graph/result.json": {
+      "bytes": 10621,
+      "sha256": "fd2f8dd50d2a7bb55116a47a73075b03957991de2ded917940e4a2564bd66f48"
+    },
+    "raw-results/PS7-real-missing_graph/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-real-missing_graph/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-real-missing_graph/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-missing_graph/stderr.bin": {
+      "bytes": 198,
+      "sha256": "2a5287c1e674cc68787a1f5269d2b9a274a52b00bca04944639397397e0ac2a1"
+    },
+    "raw-results/PS7-real-missing_graph/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-real-missing_wiki/bin/codebase-graph.exe": {
+      "bytes": 51,
+      "sha256": "27d32057aad34c32db0386eaacbfdd1e29925ce49b20378542c91d935c416893"
+    },
+    "raw-results/PS7-real-missing_wiki/bin/k-wiki.exe": {
+      "bytes": 43,
+      "sha256": "abbd9de57d40d1c5df66153ab7f19335a5905d5d5cd2a2e3290bc9ee1c4aa1ae"
+    },
+    "raw-results/PS7-real-missing_wiki/decoded-trace.json": {
+      "bytes": 144,
+      "sha256": "e15f6fa64e7adf8b67e1cdca6c6b1c5a310bb94e5747a9dcc744f542f702c7b2"
+    },
+    "raw-results/PS7-real-missing_wiki/native-trace.bin": {
+      "bytes": 32,
+      "sha256": "52e9b8393367157dc3770c33f461b44f9b3ff54f2132aa871bf92262cd857192"
+    },
+    "raw-results/PS7-real-missing_wiki/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/PS7-real-missing_wiki/request.json": {
+      "bytes": 5787,
+      "sha256": "2bc6ac30b28d44700aa842e6a174b6f5c3e831222c81a33d5e11357cfe75707e"
+    },
+    "raw-results/PS7-real-missing_wiki/result.json": {
+      "bytes": 11997,
+      "sha256": "d2617cb4b0adb0733d51270bb368806e122f626a78249a73afb3620ccba307ca"
+    },
+    "raw-results/PS7-real-missing_wiki/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-real-missing_wiki/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-real-missing_wiki/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-missing_wiki/stderr.bin": {
+      "bytes": 189,
+      "sha256": "b024bf275d0f36d1f43d6f267b8434602fe913737c02b99d581e828111557508"
+    },
+    "raw-results/PS7-real-missing_wiki/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/PS7-real-success_both/bin/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-success_both/bin/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-success_both/decoded-trace.json": {
+      "bytes": 288,
+      "sha256": "d3abb1cc9134ecb9e3bf28b2b6cb87ff80e5e01f6fc1156596850b5c8b4505a6"
+    },
+    "raw-results/PS7-real-success_both/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "c37358fc455b50ad3112048417f2119821a2dbeb07a097149d54cd8c8cfb87a0"
+    },
+    "raw-results/PS7-real-success_both/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/PS7-real-success_both/request.json": {
+      "bytes": 6000,
+      "sha256": "960cacbba4632587977634af098b140fe36c4e154c69aadf10272b234a470a04"
+    },
+    "raw-results/PS7-real-success_both/result.json": {
+      "bytes": 13398,
+      "sha256": "b6e9e6e85de266cb69f401286a89c4a503b9f826de50ba0f308d100e9e44dbb0"
+    },
+    "raw-results/PS7-real-success_both/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-real-success_both/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-real-success_both/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-success_both/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-success_both/stderr.bin": {
+      "bytes": 554,
+      "sha256": "294645e76e1f77ac91901ae85c2095e44dd8bbc0598d71f08771941e87232bb4"
+    },
+    "raw-results/PS7-real-success_both/stdout.bin": {
+      "bytes": 204,
+      "sha256": "83f3f5082546c007c205e2cce3ab9a16f3ff779bacd0d51c706fa04514a88456"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/bin/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/bin/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/decoded-trace.json": {
+      "bytes": 289,
+      "sha256": "7d070b16d8242823330f287714dd86eb4a93db7745cb94af90f3530beb321766"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "bd0cc8df305e9fcca29c127c007eefbcace6a9d7cd14cc17df3d21177e2a2ffb"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/request.json": {
+      "bytes": 6051,
+      "sha256": "067d89ac406edc877ec4fbb18172c740ec27e43c976336184c612de015d9a5ed"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/result.json": {
+      "bytes": 13479,
+      "sha256": "218f2499efe4c4657deea4242a54c084b4e19d2ff72113b4374ef12884ec706d"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/shell.json": {
+      "bytes": 319,
+      "sha256": "e7bce8ae3fee306adef5f8375f46081c75398a3e5f75f97704ebb83f10fed08f"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/stderr.bin": {
+      "bytes": 554,
+      "sha256": "294645e76e1f77ac91901ae85c2095e44dd8bbc0598d71f08771941e87232bb4"
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/stdout.bin": {
+      "bytes": 210,
+      "sha256": "f9b63d48eddad72abac597dc527ce2aee2695c7ed1c454976e1c30f1ecea995d"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/bin/codebase-graph.exe": {
+      "bytes": 68,
+      "sha256": "cf96ea01e0383430863eb6ce29b05d4fedc182697333d842f3005099157e407e"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/bin/k-wiki.exe": {
+      "bytes": 60,
+      "sha256": "2dcd514dfd93d77df4569ff0bdbc5a60313c02c13d0004c93bdb9daed37a72e7"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/decoded-trace.json": {
+      "bytes": 6,
+      "sha256": "b423bb45501e0fa49d3b77e635f800a29f1fdcf5a58e00c7e04a7ff7833045f2"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/request.json": {
+      "bytes": 5678,
+      "sha256": "40067efe4922620a2a6f19875334fe48c82b102abf1255f47a26aca40729f7ca"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/result.json": {
+      "bytes": 10718,
+      "sha256": "54ba8f104261a55c5214d73a8cfc74b55a713b1ce5f12763db3b351216fc32fa"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "56ea76ddbe16f035887a8ce391766983d2e75c572dc6d6a9455b64a719bd59bd"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/stderr.bin": {
+      "bytes": 656,
+      "sha256": "72f026c6726963f825166f014a1be7d1da1746fdbcee2c879349249dd4935ba0"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/bin/codebase-graph.exe": {
+      "bytes": 67,
+      "sha256": "4930692b7e596631ac181dbbcad505ce61bc29c642c71099b8fd3449d6646dd6"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/bin/k-wiki.exe": {
+      "bytes": 59,
+      "sha256": "a42e1c0abeb63d098f14224e2f604b8fb4f70d7c2635b1d48c3bf62435b68b4c"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/decoded-trace.json": {
+      "bytes": 144,
+      "sha256": "e15f6fa64e7adf8b67e1cdca6c6b1c5a310bb94e5747a9dcc744f542f702c7b2"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/native-trace.bin": {
+      "bytes": 32,
+      "sha256": "52e9b8393367157dc3770c33f461b44f9b3ff54f2132aa871bf92262cd857192"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/request.json": {
+      "bytes": 5878,
+      "sha256": "93800db9826470371153b1d6ab313df7b9c3125fdeab23c6fc8167ede5030590"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/result.json": {
+      "bytes": 12094,
+      "sha256": "004aa42b404460c02ae9f605fd8fb25837210eea261f26579e5da17d5397ff20"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "fe4d9bff06b37c750c171854de2625a3112a2b8a72821be6524643b19ad84515"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/stderr.bin": {
+      "bytes": 648,
+      "sha256": "314dd6f3b66a64ca5921ac9db45a76ff8485894e613973b0143d73cb90f2dd84"
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/bin/codebase-graph.exe": {
+      "bytes": 64,
+      "sha256": "787f74dbce7c755f96dabd7c811f14aee4117dfe9a54d18404639059fbf2d80f"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/bin/k-wiki.exe": {
+      "bytes": 56,
+      "sha256": "e5b4c6667c4146f2fd7dcc902073f44764918b6ef38bfb46b1c776695a289f34"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/decoded-trace.json": {
+      "bytes": 289,
+      "sha256": "fa9379a56382db5ff32e27942d6d792fa8634c3f095a4e0e7cf28ba12191b1e6"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "aa7406889cdd8bf42e3ff0f19263d1bcefd41a66e7da9e940f9e37a5e52b344d"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/request.json": {
+      "bytes": 5856,
+      "sha256": "34116d15f2152a4ad4a0f6b7d84215a8f013ec0c915f38b242b82ab5dbf3ff3b"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/result.json": {
+      "bytes": 12369,
+      "sha256": "e3820f1b2227248bbb7872deab7b317f3d0fe084b7be5c6aeaf11c2ea40b8ca8"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/stderr.bin": {
+      "bytes": 616,
+      "sha256": "aa4c6b5187e8a52a4b02316c91eb0c7a4cfdce4cdea9b9d7ecfe2faa1d97cce4"
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/stdout.bin": {
+      "bytes": 222,
+      "sha256": "614cb92d14021528fcaa13998b6d0c320f1c344f5e3466c9e586f2e35bf0e523"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/bin/codebase-graph.exe": {
+      "bytes": 58,
+      "sha256": "81a0d80a637ffda9bc6c198ab68543d08e95f8bf1ac2f77cce964155ff341c3e"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/bin/k-wiki.exe": {
+      "bytes": 50,
+      "sha256": "d2f383058f2140f935c322c388d15593615a06c7687d1501b9a3e35fb9a2c6b1"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/decoded-trace.json": {
+      "bytes": 6,
+      "sha256": "b423bb45501e0fa49d3b77e635f800a29f1fdcf5a58e00c7e04a7ff7833045f2"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/request.json": {
+      "bytes": 5598,
+      "sha256": "cb52ac85fd516e525731a4cace963a5411b02d2da4b79153e29f4705e5657295"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/result.json": {
+      "bytes": 10608,
+      "sha256": "2a7a990f8cb8216c29e5fced14ebfb2959d186b288a3b13f3c5249a5f12397a6"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/stderr.bin": {
+      "bytes": 820,
+      "sha256": "7245a6833af8f62e3149751149769acd0657c244699bb1b930da1185773d6dce"
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/bin/codebase-graph.exe": {
+      "bytes": 57,
+      "sha256": "583390ab1307a4fcfe7f8b581519f24366ce0e22ebc1c9d94e0b9618408b41e5"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/bin/k-wiki.exe": {
+      "bytes": 49,
+      "sha256": "26ce455d20e6835cdc25c93581160945084e004dc8c432c03d4a8780ef7abb7a"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/decoded-trace.json": {
+      "bytes": 144,
+      "sha256": "e15f6fa64e7adf8b67e1cdca6c6b1c5a310bb94e5747a9dcc744f542f702c7b2"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/native-trace.bin": {
+      "bytes": 32,
+      "sha256": "52e9b8393367157dc3770c33f461b44f9b3ff54f2132aa871bf92262cd857192"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/request.json": {
+      "bytes": 5798,
+      "sha256": "ed7e08da45b123f72ad8ce5183c3f8f34cf99c4f1e96bee5d0f34246b89cece6"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/result.json": {
+      "bytes": 11984,
+      "sha256": "b68b68402c2d53f3eac92a0b53adde749b3f000e942b4a4a6d4817d9efe45e83"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/stderr.bin": {
+      "bytes": 811,
+      "sha256": "6cec5a3bbc4cc728de1976afea5d5500e418aed339ce88111e52e6b7f02632a2"
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/WinPS51-DryRun-success_both/bin/codebase-graph.exe": {
+      "bytes": 57,
+      "sha256": "6acf1f330868a3ac68399580d1b543396beeba0c368dedd3908bf85ca4f53019"
+    },
+    "raw-results/WinPS51-DryRun-success_both/bin/k-wiki.exe": {
+      "bytes": 49,
+      "sha256": "e910b707e4c258d4bd9745deb92b4dc364cfc0ac04ecc25d62f25fa1665e3b00"
+    },
+    "raw-results/WinPS51-DryRun-success_both/decoded-trace.json": {
+      "bytes": 288,
+      "sha256": "d3abb1cc9134ecb9e3bf28b2b6cb87ff80e5e01f6fc1156596850b5c8b4505a6"
+    },
+    "raw-results/WinPS51-DryRun-success_both/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "c37358fc455b50ad3112048417f2119821a2dbeb07a097149d54cd8c8cfb87a0"
+    },
+    "raw-results/WinPS51-DryRun-success_both/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/WinPS51-DryRun-success_both/request.json": {
+      "bytes": 6011,
+      "sha256": "adea261d51bc0ee86d3c1b390fa2671c889fef3fdd6b9e086b6ac72623315011"
+    },
+    "raw-results/WinPS51-DryRun-success_both/result.json": {
+      "bytes": 13385,
+      "sha256": "93094e0479808d55730751dd6cb533cbf0013fe6fae6176b8638474300b7f91a"
+    },
+    "raw-results/WinPS51-DryRun-success_both/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-DryRun-success_both/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-DryRun-success_both/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-success_both/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-success_both/stderr.bin": {
+      "bytes": 616,
+      "sha256": "aa4c6b5187e8a52a4b02316c91eb0c7a4cfdce4cdea9b9d7ecfe2faa1d97cce4"
+    },
+    "raw-results/WinPS51-DryRun-success_both/stdout.bin": {
+      "bytes": 215,
+      "sha256": "95be3fb9b44366e7f734abcbf3aa26730082ddd5c831d823f8ca90f10a1a52ab"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/bin/codebase-graph.exe": {
+      "bytes": 63,
+      "sha256": "41a3a51a611d913f60e3c5192fae8c315d7c6f3c798bc89f66e57163fa12a96c"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/bin/k-wiki.exe": {
+      "bytes": 55,
+      "sha256": "7cbd819bd1715ea0ae1d67f0df840a70a0e1087410235be3681a1effd3654a4b"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/decoded-trace.json": {
+      "bytes": 289,
+      "sha256": "7d070b16d8242823330f287714dd86eb4a93db7745cb94af90f3530beb321766"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "bd0cc8df305e9fcca29c127c007eefbcace6a9d7cd14cc17df3d21177e2a2ffb"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/request.json": {
+      "bytes": 6062,
+      "sha256": "8284a5bc20ba5d73d5229853e2f54d1e7b7ce2c86d316edaede9dbc73e8f2bf4"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/result.json": {
+      "bytes": 13464,
+      "sha256": "5934b50b07518d6d5e1c77dca04626bfd505d12307bd8504c29dd1e90f379728"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/stderr.bin": {
+      "bytes": 616,
+      "sha256": "aa4c6b5187e8a52a4b02316c91eb0c7a4cfdce4cdea9b9d7ecfe2faa1d97cce4"
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/stdout.bin": {
+      "bytes": 221,
+      "sha256": "fd8f5ac2150c675eceece7b571e59873d24d94fa7114cc96705bf8f31e6ac202"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/bin/codebase-graph.exe": {
+      "bytes": 66,
+      "sha256": "88e5cb63b320b182c93e8b15161ce5dbefadc81e6591d332622b773c4b670d21"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/bin/k-wiki.exe": {
+      "bytes": 58,
+      "sha256": "67e7ec3b8484211db3790132443c2430f04975f8555dd7b1fc6c2dd6e51241f6"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/decoded-trace.json": {
+      "bytes": 6,
+      "sha256": "b423bb45501e0fa49d3b77e635f800a29f1fdcf5a58e00c7e04a7ff7833045f2"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/request.json": {
+      "bytes": 5662,
+      "sha256": "712c1619feb6c6c511779b51ef1e4bfd367ef7e349e5a6d03a379d202cf48bda"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/result.json": {
+      "bytes": 10696,
+      "sha256": "362862924dad87f37c5e67adaf5d7e1ce282c7a1f69c3eecdd8d9f6f587741c0"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "56ea76ddbe16f035887a8ce391766983d2e75c572dc6d6a9455b64a719bd59bd"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/stderr.bin": {
+      "bytes": 656,
+      "sha256": "72f026c6726963f825166f014a1be7d1da1746fdbcee2c879349249dd4935ba0"
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/bin/codebase-graph.exe": {
+      "bytes": 65,
+      "sha256": "9e632b2668b7027ee3f812bc6854a3de974b0362f5cd7761f057e08469759710"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/bin/k-wiki.exe": {
+      "bytes": 57,
+      "sha256": "84e17f43acd04af7fba6e6f0bbc34e24f9b54391bd0cf1f4dc270ab8951f0ca2"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/decoded-trace.json": {
+      "bytes": 144,
+      "sha256": "e15f6fa64e7adf8b67e1cdca6c6b1c5a310bb94e5747a9dcc744f542f702c7b2"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/native-trace.bin": {
+      "bytes": 32,
+      "sha256": "52e9b8393367157dc3770c33f461b44f9b3ff54f2132aa871bf92262cd857192"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/request.json": {
+      "bytes": 5862,
+      "sha256": "45fbe24e6b3055bc31610d5e42b2e67ac076b40f8bc996e50ca4cee1842f4892"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/result.json": {
+      "bytes": 12072,
+      "sha256": "783b93298831fc520a7bbf9bc06238cb5296bf4197692289d1378390d8f37841"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "fe4d9bff06b37c750c171854de2625a3112a2b8a72821be6524643b19ad84515"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/stderr.bin": {
+      "bytes": 648,
+      "sha256": "314dd6f3b66a64ca5921ac9db45a76ff8485894e613973b0143d73cb90f2dd84"
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/bin/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/bin/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/decoded-trace.json": {
+      "bytes": 289,
+      "sha256": "fa9379a56382db5ff32e27942d6d792fa8634c3f095a4e0e7cf28ba12191b1e6"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "aa7406889cdd8bf42e3ff0f19263d1bcefd41a66e7da9e940f9e37a5e52b344d"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/request.json": {
+      "bytes": 5840,
+      "sha256": "fa957926cf8d0bd0b27ca7e31e10e8856efb277de5f90b335ee66f3a206f05ad"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/result.json": {
+      "bytes": 12349,
+      "sha256": "b0be730f914ec691082243b078799d6484c3007d2efa604b2fadc15aa9af5454"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/stderr.bin": {
+      "bytes": 616,
+      "sha256": "aa4c6b5187e8a52a4b02316c91eb0c7a4cfdce4cdea9b9d7ecfe2faa1d97cce4"
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/stdout.bin": {
+      "bytes": 215,
+      "sha256": "846b30a8195f4e6e9d552498e569722a07c0a75a28e6ed46dfec70c1a73b0b63"
+    },
+    "raw-results/WinPS51-real-missing_graph/bin/codebase-graph.exe": {
+      "bytes": 56,
+      "sha256": "f5df8f5dd97b06458c666955c53f79ddef5a7dc25d0c0832ea3aa94d7e5fc2b1"
+    },
+    "raw-results/WinPS51-real-missing_graph/bin/k-wiki.exe": {
+      "bytes": 48,
+      "sha256": "038cc33563320b48a83af37263376dd06c1caa32b9ce7977b574530df8af248e"
+    },
+    "raw-results/WinPS51-real-missing_graph/decoded-trace.json": {
+      "bytes": 6,
+      "sha256": "b423bb45501e0fa49d3b77e635f800a29f1fdcf5a58e00c7e04a7ff7833045f2"
+    },
+    "raw-results/WinPS51-real-missing_graph/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/WinPS51-real-missing_graph/request.json": {
+      "bytes": 5582,
+      "sha256": "0551f2ae2913951bd3809bb765714b30197f381375e27a3729e8b386a30a428f"
+    },
+    "raw-results/WinPS51-real-missing_graph/result.json": {
+      "bytes": 10586,
+      "sha256": "17187fb1b43f7d894414a9de3d336562a6777d22f22e4c765ed2889b6f1e8d08"
+    },
+    "raw-results/WinPS51-real-missing_graph/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-real-missing_graph/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-real-missing_graph/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-missing_graph/stderr.bin": {
+      "bytes": 818,
+      "sha256": "04a38a5cde3db23867282a7c5e0626f3600d4697edf39ae171397eef90e8f040"
+    },
+    "raw-results/WinPS51-real-missing_graph/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/WinPS51-real-missing_wiki/bin/codebase-graph.exe": {
+      "bytes": 55,
+      "sha256": "fee13978026f5934bbeea4264c637902dd91b981be1f35f0b17cc2eed130465f"
+    },
+    "raw-results/WinPS51-real-missing_wiki/bin/k-wiki.exe": {
+      "bytes": 47,
+      "sha256": "6ad3ec57bbf0a2e40bf8385c215e069af2ee93e3fd7b852853939ee11cf8d82d"
+    },
+    "raw-results/WinPS51-real-missing_wiki/decoded-trace.json": {
+      "bytes": 144,
+      "sha256": "e15f6fa64e7adf8b67e1cdca6c6b1c5a310bb94e5747a9dcc744f542f702c7b2"
+    },
+    "raw-results/WinPS51-real-missing_wiki/native-trace.bin": {
+      "bytes": 32,
+      "sha256": "52e9b8393367157dc3770c33f461b44f9b3ff54f2132aa871bf92262cd857192"
+    },
+    "raw-results/WinPS51-real-missing_wiki/process-exit.json": {
+      "bytes": 25,
+      "sha256": "ab88f284498b256730972ea2f8d4333626df76a4510eae25b71c6b23bd59b06b"
+    },
+    "raw-results/WinPS51-real-missing_wiki/request.json": {
+      "bytes": 5782,
+      "sha256": "385dfba58b76956b86ff7269f498fdc03c04f7c7b09222e1c61a4b85fbaf3c82"
+    },
+    "raw-results/WinPS51-real-missing_wiki/result.json": {
+      "bytes": 11962,
+      "sha256": "7ba87ae5eca89f837216483539d66c21442a9b9ae0cd631e71d379cf49f68938"
+    },
+    "raw-results/WinPS51-real-missing_wiki/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-real-missing_wiki/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-real-missing_wiki/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-missing_wiki/stderr.bin": {
+      "bytes": 809,
+      "sha256": "a0309f763b2b6adb2ea64a413402b757e8458ede13ff21298355a6d1c5f7e0d7"
+    },
+    "raw-results/WinPS51-real-missing_wiki/stdout.bin": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "raw-results/WinPS51-real-success_both/bin/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-success_both/bin/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-success_both/decoded-trace.json": {
+      "bytes": 288,
+      "sha256": "d3abb1cc9134ecb9e3bf28b2b6cb87ff80e5e01f6fc1156596850b5c8b4505a6"
+    },
+    "raw-results/WinPS51-real-success_both/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "c37358fc455b50ad3112048417f2119821a2dbeb07a097149d54cd8c8cfb87a0"
+    },
+    "raw-results/WinPS51-real-success_both/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/WinPS51-real-success_both/request.json": {
+      "bytes": 5995,
+      "sha256": "3e214d82b8c49c732880719366bf6a9485d8e5499757782d2af0c2c9362a84ab"
+    },
+    "raw-results/WinPS51-real-success_both/result.json": {
+      "bytes": 13363,
+      "sha256": "633c43fc7ad542d270bd7bc2e93bbab1cae64d798079525c3e3e09d94c831f86"
+    },
+    "raw-results/WinPS51-real-success_both/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-real-success_both/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-real-success_both/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-success_both/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-success_both/stderr.bin": {
+      "bytes": 616,
+      "sha256": "aa4c6b5187e8a52a4b02316c91eb0c7a4cfdce4cdea9b9d7ecfe2faa1d97cce4"
+    },
+    "raw-results/WinPS51-real-success_both/stdout.bin": {
+      "bytes": 208,
+      "sha256": "654e709489d1eedeee4ff75d9c35f33e499ba4f04df2ea2e933023352af98458"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/bin/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/bin/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/decoded-trace.json": {
+      "bytes": 289,
+      "sha256": "7d070b16d8242823330f287714dd86eb4a93db7745cb94af90f3530beb321766"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/native-trace.bin": {
+      "bytes": 70,
+      "sha256": "bd0cc8df305e9fcca29c127c007eefbcace6a9d7cd14cc17df3d21177e2a2ffb"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/process-exit.json": {
+      "bytes": 25,
+      "sha256": "acb791619f69221f050f924fd0b0a3ed043411a3677f2140309128825bee4c46"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/request.json": {
+      "bytes": 6046,
+      "sha256": "5939bf622d78154a6f3d49694a3daf53508dae6bba2f4db183cc9a6cd7619f1a"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/result.json": {
+      "bytes": 13444,
+      "sha256": "85ec55a1730efc225220ad0d61f2b74b5bb79fdb69dccd595f0506a0b8cceac4"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/shell.json": {
+      "bytes": 315,
+      "sha256": "f97d076d0838f3ee81333299b4a3d59b511ada17b36d8d7692e9b1ca4f1cfd07"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/source/checksums.txt": {
+      "bytes": 162,
+      "sha256": "c76c80c9116d3f32848ff46be0e3e4aa3a87db1e106922e449746f23cea214cf"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/source/codebase-graph.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/source/k-wiki.exe": {
+      "bytes": 4608,
+      "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/stderr.bin": {
+      "bytes": 616,
+      "sha256": "aa4c6b5187e8a52a4b02316c91eb0c7a4cfdce4cdea9b9d7ecfe2faa1d97cce4"
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/stdout.bin": {
+      "bytes": 214,
+      "sha256": "24a1fbde9f97d44c7c708a24f2b3532519a21679e09de0842375a8b08f5db60e"
+    },
+    "raw-results/_inputs/child-control.ps1": {
+      "bytes": 1181,
+      "sha256": "03b5d46c75ce6ce6202fe990490dabdb33c11de91fc081670e185fed28fc8a88"
+    },
+    "raw-results/_inputs/derived-install.ps1": {
+      "bytes": 2996,
+      "sha256": "7a00a2107fd2709d2f9c0465ec5a7377441c6bdfa11b7c8f51d8328c8dbc66c0"
+    },
+    "raw-results/_inputs/original-install.ps1": {
+      "bytes": 3086,
+      "sha256": "bdd6f0eace6fbd4ea25c9e09d2c6cb6c0b54a05955d024aa97d76443c58ae308"
+    },
+    "raw-results/_inputs/removed-fragment.txt": {
+      "bytes": 90,
+      "sha256": "2960271b87b8a0cff680465e3c44f6c34576d7a19058f2ec53d7478305f26a18"
+    },
+    "raw-results/_inputs/runner-invoked.ps1": {
+      "bytes": 24926,
+      "sha256": "2e3b74fb8f5bd37a8f6e67ce48f8ce1382a80cf024d0982cf7c00b7689353cc3"
+    },
+    "raw-results/desktop-installer-junit.xml": {
+      "bytes": 12554,
+      "sha256": "9646e3da30960319eaff100339ee685facb0255dc090dca737df08439865892f"
+    },
+    "raw-results/identity.json": {
+      "bytes": 1413,
+      "sha256": "260b928d5c2b284641b97514a71c999bb2b90d90f3aff1a8c75d0b0f4ff84bf4"
+    },
+    "raw-results/plan.json": {
+      "bytes": 13177,
+      "sha256": "170fc4a2aa06f5490a2699a5f2efb5008fff1d2b1ae7c3552508b6ad434056ac"
+    },
+    "raw-results/results-partial.json": {
+      "bytes": 354893,
+      "sha256": "9da8af1db705ad57aeaf0d90ecbd801cdb52bd1e516d751a3dbda94e30170186"
+    },
+    "raw-results/results.json": {
+      "bytes": 354893,
+      "sha256": "9da8af1db705ad57aeaf0d90ecbd801cdb52bd1e516d751a3dbda94e30170186"
+    },
+    "raw-results/summary.json": {
+      "bytes": 351,
+      "sha256": "68d5caa11371148347c9a6ce4b42bc364fa44b9c687fd83240b71a50103ed04e"
+    },
+    "raw-transfer-manifest.json": {
+      "bytes": 62018,
+      "sha256": "61baa39b9fe5363008c231c0323aa802a148231a0b689d33c9b78b9529d83fd2"
+    },
+    "report.md": {
+      "bytes": 4679,
+      "sha256": "0dcd5d896c7051c8870379d1becb4c5c6f01b27943902046193c4d9551e0daa6"
+    },
+    "runner.ps1": {
+      "bytes": 24926,
+      "sha256": "2e3b74fb8f5bd37a8f6e67ce48f8ce1382a80cf024d0982cf7c00b7689353cc3"
+    }
+  },
+  "member_count": 371,
+  "all_members_byte_equal_safe_unique_exact": true,
+  "outside_readable_copies": [
+    "report.md",
+    "manifest.json",
+    "desktop-installer-junit.xml"
+  ],
+  "raw_format_preserved": {
+    "collect-output.txt": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/summary.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 11,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/plan.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 225,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/results.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 4049,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/identity.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 19,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/desktop-installer-junit.xml": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 222,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/results-partial.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 4049,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-success_both/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 36,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-success_both/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-success_both/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 170,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-success_both/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-success_both/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-success_both/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-success_both/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 142,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_wiki_hash/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 8,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_wiki/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_wiki/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 142,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_wiki/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_wiki/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_wiki/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_wiki/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 8,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 149,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-graph_probe_nonzero/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 27,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 116,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_graph_hash/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-success_both/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 36,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-success_both/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-success_both/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 170,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-success_both/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-success_both/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-success_both/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-success_both/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_wiki/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_wiki/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 142,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_wiki/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_wiki/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_wiki/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_wiki/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 8,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 36,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 170,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-wiki_probe_nonzero/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 142,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_wiki/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 8,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 142,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_wiki_hash/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 8,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 36,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 170,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-wiki_probe_nonzero/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-success_both/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 36,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-success_both/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-success_both/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 170,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-success_both/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-success_both/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-success_both/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-success_both/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 142,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_wiki_hash/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 8,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 27,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 116,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-bad_manifest_graph_hash/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_graph/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 27,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_graph/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 116,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_graph/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_graph/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_graph/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-missing_graph/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 36,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 170,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-wiki_probe_nonzero/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 142,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-bad_manifest_wiki_hash/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 8,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 149,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-graph_probe_nonzero/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_graph/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 27,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_graph/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 116,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_graph/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_graph/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_graph/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-missing_graph/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 27,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 116,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-bad_manifest_graph_hash/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 149,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-graph_probe_nonzero/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 149,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-real-graph_probe_nonzero/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_graph/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 27,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_graph/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 116,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_graph/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_graph/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_graph/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_graph/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_wiki/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 31,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_wiki/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 142,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_wiki/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_wiki/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_wiki/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-missing_wiki/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 8,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 27,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 116,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-DryRun-missing_graph/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 36,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 170,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/WinPS51-real-wiki_probe_nonzero/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-success_both/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 36,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-success_both/stdout.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-success_both/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 170,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-success_both/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-success_both/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-success_both/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 15,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/request.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 27,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/result.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 116,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/process-exit.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/stderr.bin": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 1,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/shell.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 7,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    },
+    "raw-results/PS7-DryRun-bad_manifest_graph_hash/decoded-trace.json": {
+      "trailing_space_tab_lines": [],
+      "CRLF_count": 2,
+      "UTF8_BOM": false,
+      "ANSI_escape": false
+    }
+  },
+  "bounded_credential_scan_no_matches": true,
+  "security_audit_claim": false
+}

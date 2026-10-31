@@ -1,0 +1,4 @@
+q native_artifact layer=semantic
+file path crates/xtask/src/main.rs
+- Function native_artifact L181-L202 rank_score=0.96 id=Function:8862bd4db9485ae57091 layer=semantic
+- Symbol native_artifact  rank_score=0.62 id=Symbol:96d4e69e20cf0309bbd4 layer=semantic

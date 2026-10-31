@@ -1,0 +1,1 @@
+$ErrorActionPreference='Stop'; $r='C:\WINDOWS\TEMP\codebasegraph-cod56-11023706-4804-4438-b044-e9768538a0c8'; if(Test-Path -LiteralPath $r){throw 'Root exists'}; [IO.Directory]::CreateDirectory($r)|Out-Null; [IO.File]::WriteAllText((Join-Path $r 'owner-receipt.txt'),'codebasegraph-cod56-11023706-4804-4438-b044-e9768538a0c8'); Write-Output $r

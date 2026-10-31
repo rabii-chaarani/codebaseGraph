@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuite name="COD-56-A09" tests="28" failures="0" errors="0" skipped="0">
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::success_both">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-DryRun-success_both</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::graph_probe_nonzero">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-DryRun-graph_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::wiki_probe_nonzero">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-DryRun-wiki_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::missing_graph">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-DryRun-missing_graph</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::missing_wiki">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-DryRun-missing_wiki</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::bad_manifest_graph_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-DryRun-bad_manifest_graph_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::DryRun::bad_manifest_wiki_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-DryRun-bad_manifest_wiki_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::success_both">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-real-success_both</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::graph_probe_nonzero">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-real-graph_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::wiki_probe_nonzero">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-real-wiki_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::missing_graph">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-real-missing_graph</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::missing_wiki">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-real-missing_wiki</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::bad_manifest_graph_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-real-bad_manifest_graph_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.WinPS51" name="a09::WinPS51::real::bad_manifest_wiki_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\WinPS51-real-bad_manifest_wiki_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::success_both">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-DryRun-success_both</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::graph_probe_nonzero">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-DryRun-graph_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::wiki_probe_nonzero">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-DryRun-wiki_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::missing_graph">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-DryRun-missing_graph</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::missing_wiki">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-DryRun-missing_wiki</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::bad_manifest_graph_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-DryRun-bad_manifest_graph_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::DryRun::bad_manifest_wiki_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-DryRun-bad_manifest_wiki_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::success_both">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-real-success_both</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::graph_probe_nonzero">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-real-graph_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::wiki_probe_nonzero">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-real-wiki_probe_nonzero</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::missing_graph">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-real-missing_graph</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::missing_wiki">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-real-missing_wiki</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::bad_manifest_graph_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-real-bad_manifest_graph_hash</system-out>
+  </testcase>
+  <testcase classname="COD56.A09.PS7" name="a09::PS7::real::bad_manifest_wiki_hash">
+    <system-out>C:\WINDOWS\TEMP\codebasegraph-cod56-2e9284b8-47f1-472a-9cdc-b6a24cc3d62f\matrix-corrected-fixed-e5f1887fd2b845c8868338506927a097\results\PS7-real-bad_manifest_wiki_hash</system-out>
+  </testcase>
+</testsuite>
