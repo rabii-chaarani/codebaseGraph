@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "purpose": "Faithful selected evidence persistence for the same future COD-106 stacked PR; not additional execution or acceptance.",
+  "selection_manifest": {
+    "original_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-11eee5d7/cod106-evidence-selected-files.json",
+    "bytes": 9351,
+    "sha256": "cb250e0c73897037861d1d0d8d333555531804d8b9c124b3b42426471b7ad799"
+  },
+  "source_root": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification",
+  "destination_root": "docs/testing/COD-103/COD-106/local-verification-2026-10-31",
+  "selected_file_count": 56,
+  "selected_bytes": 262107,
+  "identity": {
+    "head": "99a339c54df79cef0598905cde8c6ce4e5d62163",
+    "committed_baseline_tree": "8bc68d5e5018ca3b64f0a3ad4240431b9e5ac902",
+    "dirty_source_sha256": {
+      ".github/workflows/release.yml": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "crates/xtask/src/release/workflow_tests.rs": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450"
+    },
+    "dirty_diff_sha256": "c7b76fcb32d0943b426d1895194c1739d6e30a7bda1cd5f563996bb5d905996c"
+  },
+  "files": [
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/final-report.md",
+      "destination": "verification/final-report.md",
+      "bytes": 13342,
+      "sha256": "030204796ac687edd2c35dd5964eca72d09c63ac8af825a4e23c9c4a1d9e4279"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/result.json",
+      "destination": "verification/result.json",
+      "bytes": 14816,
+      "sha256": "c074191ba60e4022bdd6e2729d1d4be70e55de034e4f649cd04ac2e46d48f3a2"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/raw-manifest.json",
+      "destination": "verification/raw-manifest.json",
+      "bytes": 14755,
+      "sha256": "459d6922b9965f27d57a1ee670ce750afef6f86682fba311f4bbd4a0345fc2ee"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/commands.json",
+      "destination": "verification/commands.json",
+      "bytes": 13365,
+      "sha256": "5d7ee5aa8e8c0ac67cc41321804f891b0be093d627e0821c3effb890bea9bb3f"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/xtask-junit.xml",
+      "destination": "verification/xtask-junit.xml",
+      "bytes": 15812,
+      "sha256": "f7482e2d985ae6b794194000d9dbe4ac56f57efbaa5de442786caa87b396388f"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/case-inventory.json",
+      "destination": "verification/case-inventory.json",
+      "bytes": 9156,
+      "sha256": "8331591457b453277f2ad897104e90cc8562670b1bd6c08283dc8cd873c3663b"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/junit-summary.json",
+      "destination": "verification/junit-summary.json",
+      "bytes": 19138,
+      "sha256": "fce86b5c18bf7f92c0a23092209a4a027fb67255a6337ccc3b11c40c54cdcd85"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/xtask-inventory.json",
+      "destination": "verification/xtask-inventory.json",
+      "bytes": 18458,
+      "sha256": "a558342eb4d32a7060875e4a21fe675888613d15d93797997385b7302dbcbc7e"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/xtask-inventory.log",
+      "destination": "verification/xtask-inventory.log",
+      "bytes": 13319,
+      "sha256": "c496a5594fea3a96f85333412cff0723090c5e0c56998b2acb2f7705f99c48f5"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/xtask-full-nextest.log",
+      "destination": "verification/xtask-full-nextest.log",
+      "bytes": 9728,
+      "sha256": "a09d21fb2be37be8cff1ab8f536cabb4369fe2d741fb02cdd3fb54a4ed30d8d5"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/fmt.log",
+      "destination": "verification/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/clippy.log",
+      "destination": "verification/clippy.log",
+      "bytes": 72,
+      "sha256": "2461b00c8697c4189b2de92ca6fb05b5d72273c78a0a47b1ce4e83ccca077b70"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/check-workflows.log",
+      "destination": "verification/check-workflows.log",
+      "bytes": 145,
+      "sha256": "1b05d9b58bcf3bf45aad5a7c148e36444ad5b79ce823ae70f72031738f796983"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/release-gate.log",
+      "destination": "verification/release-gate.log",
+      "bytes": 139,
+      "sha256": "5899714f6181a86b883602a3dd9b321883ca9e4084db16c902cf56856e633340"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/resolver.sh",
+      "destination": "verification/resolver.sh",
+      "bytes": 2227,
+      "sha256": "c9833bda1387a3bbebd1661e959207f433740214ee418d5b77985fd83f726daa"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/publisher.sh",
+      "destination": "verification/publisher.sh",
+      "bytes": 6092,
+      "sha256": "7d7877f9427283df1d05d98ad543df76d3f255a02c138a575d5299649f71bbd6"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/resolver-bash-syntax.log",
+      "destination": "verification/resolver-bash-syntax.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/publisher-bash-syntax.log",
+      "destination": "verification/publisher-bash-syntax.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/source-inputs-before.json",
+      "destination": "verification/source-inputs-before.json",
+      "bytes": 1528,
+      "sha256": "a67d9e57fb415598c53a79ac60a87c8a93cb271debe5709b5d90a724d7b390b0"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/source-inputs-after.json",
+      "destination": "verification/source-inputs-after.json",
+      "bytes": 1528,
+      "sha256": "a67d9e57fb415598c53a79ac60a87c8a93cb271debe5709b5d90a724d7b390b0"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/git-head-before.log",
+      "destination": "verification/git-head-before.log",
+      "bytes": 82,
+      "sha256": "fecb9c03c2eaeb6a84d7eaf11ae1a977f06d3f937f25dc3703bab4b8e8659157"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/git-head-after.log",
+      "destination": "verification/git-head-after.log",
+      "bytes": 82,
+      "sha256": "fecb9c03c2eaeb6a84d7eaf11ae1a977f06d3f937f25dc3703bab4b8e8659157"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/git-status-before.log",
+      "destination": "verification/git-status-before.log",
+      "bytes": 79,
+      "sha256": "e711a41f9915a8b0edab0ee4368aa7d576ebff553a5e67ad604c9a552b1068e3"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/git-status-after.log",
+      "destination": "verification/git-status-after.log",
+      "bytes": 79,
+      "sha256": "e711a41f9915a8b0edab0ee4368aa7d576ebff553a5e67ad604c9a552b1068e3"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/git-diff-before.log",
+      "destination": "verification/git-diff-before.log",
+      "bytes": 25905,
+      "sha256": "c7b76fcb32d0943b426d1895194c1739d6e30a7bda1cd5f563996bb5d905996c"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/git-diff-after.log",
+      "destination": "verification/git-diff-after.log",
+      "bytes": 25905,
+      "sha256": "c7b76fcb32d0943b426d1895194c1739d6e30a7bda1cd5f563996bb5d905996c"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/git-diff-stat.log",
+      "destination": "verification/git-diff-stat.log",
+      "bytes": 185,
+      "sha256": "d439d527c1b5e40536a2becc4fc57723fd28fdcc9125e7b48ac00ef89c6a30fd"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/diff-check.log",
+      "destination": "verification/diff-check.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/test-binary-before.json",
+      "destination": "verification/test-binary-before.json",
+      "bytes": 205,
+      "sha256": "32b3af1770972f04c6549fee516b05f7e72e3195897cde8e524366001188ad86"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/test-binary-after.json",
+      "destination": "verification/test-binary-after.json",
+      "bytes": 205,
+      "sha256": "32b3af1770972f04c6549fee516b05f7e72e3195897cde8e524366001188ad86"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/native-tests-fingerprints.json",
+      "destination": "verification/native-tests-fingerprints.json",
+      "bytes": 1497,
+      "sha256": "671b542e264c253d5933038064c2f71cc3b068da9f127e91d1b4239b35766096"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/native-tests-depinfo.d",
+      "destination": "verification/native-tests-depinfo.d",
+      "bytes": 1927,
+      "sha256": "30f024ee599c1053666322998ebf8e6697d99cc0cc7264a5987cf9234fa3676a"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/nextest.toml",
+      "destination": "verification/nextest.toml",
+      "bytes": 221,
+      "sha256": "9c7235c94a16041e1d5e3c2952a7108e2af6046750f75282d7b4a8ad5b82c0b1"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/setup-events.json",
+      "destination": "verification/setup-events.json",
+      "bytes": 275,
+      "sha256": "85bf7fc4c61891e8a54cdb0eca61d35101bce6e904d1f3c7c12dc895c36374a9"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/sw-vers.log",
+      "destination": "verification/sw-vers.log",
+      "bytes": 65,
+      "sha256": "cd5d6399b3785b04ceaae75045a9ca9f80f0bbc3526eff9d0c36b170ed1ec348"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/uname.log",
+      "destination": "verification/uname.log",
+      "bytes": 149,
+      "sha256": "f82c992a706517457d0be6cb838a9419be1c388ec49e67480841cb7a258cf045"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/rustc.log",
+      "destination": "verification/rustc.log",
+      "bytes": 192,
+      "sha256": "aea7c77c2b0d24444d07240e4d785e4ba73b6c9e786748af2ddc22bbf4c104bf"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/cargo.log",
+      "destination": "verification/cargo.log",
+      "bytes": 336,
+      "sha256": "a5b097b85e0fd673e279506336908d10067d046169e5b274c6df4f6520cb1b7b"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/bash-version.log",
+      "destination": "verification/bash-version.log",
+      "bytes": 109,
+      "sha256": "bbb931c0afdf20554fcb03c4414a67092e2d8db87226567a6ad5be3c1bcc1a15"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/jq-version.log",
+      "destination": "verification/jq-version.log",
+      "bytes": 15,
+      "sha256": "8f0cb494827734c0ed992bd222c9888398f880757e9156f3f3264ff061480bb4"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/nextest-version.log",
+      "destination": "verification/nextest-version.log",
+      "bytes": 167,
+      "sha256": "6308c0cdee31234d945b3b2cbf7d56d9db80153d1015df1d3ccff75eaca8d498"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-inventory.json",
+      "destination": "verification/author-evidence-inventory.json",
+      "bytes": 11650,
+      "sha256": "ece9a9428a8643886be5a59323c211253307ec5f2c5c6037fc48139d1863bcb8"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/baseline-harness-to-final.diff",
+      "destination": "verification/baseline-harness-to-final.diff",
+      "bytes": 4076,
+      "sha256": "6dae81876c4f74d5b9c456d3c8846cbfebb7111da5277b5043d9c43e00c2f268"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/backend-handoff-summary.json",
+      "destination": "verification/author-evidence-audit/backend-handoff-summary.json",
+      "bytes": 2023,
+      "sha256": "a5212495d2ceb7f96eb392d262a6adcbfa1aac7e02c352fe5b8f61bf98363414"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/production-production-handoff.md",
+      "destination": "verification/author-evidence-audit/production-production-handoff.md",
+      "bytes": 6671,
+      "sha256": "b0b2111449a60a49aa011e0b90d35b1edfdeb31a9de9166714d59699d8faac85"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/production-release.yml.diff",
+      "destination": "verification/author-evidence-audit/production-release.yml.diff",
+      "bytes": 2730,
+      "sha256": "be3a14d53c838d1d04a77cc5cc4eb2702071605b61a675a46aabd835015c41c5"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-resolver.log",
+      "destination": "verification/author-evidence-audit/baseline-resolver.log",
+      "bytes": 1034,
+      "sha256": "137f0565f0e3207118b57f9eb574a188eb9c7f20a5bf37152336656063d6dd5d"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-publisher.log",
+      "destination": "verification/author-evidence-audit/baseline-publisher.log",
+      "bytes": 830,
+      "sha256": "34a1e097c8ec1fc7a08c779cbe52f916f81370e30d4f18f7ba1fc260ae80e779"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-locked-setup.log",
+      "destination": "verification/author-evidence-audit/baseline-locked-setup.log",
+      "bytes": 343,
+      "sha256": "b1421a4933c5adf232edf6d7e3226af39b1e2c2a7739455de35a2b8e823ba675"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/fmt-initial-formatting-diff.log",
+      "destination": "verification/author-evidence-audit/fmt-initial-formatting-diff.log",
+      "bytes": 8333,
+      "sha256": "50e582de0a1d51713ed2a5608cbbcbb8907346093f2e64b3eb6e5b1ba5b91cf9"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/review-clarification-failing-negative-mutation.log",
+      "destination": "verification/author-evidence-audit/review-clarification-failing-negative-mutation.log",
+      "bytes": 3179,
+      "sha256": "eb67234ac58750897d849b67b66e7879ef0a86ed97ac90f8f3a322ef248e9d5f"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/focused-final-pass.log",
+      "destination": "verification/author-evidence-audit/focused-final-pass.log",
+      "bytes": 2712,
+      "sha256": "76e336a18c5f5b8301cdb20945087484cef6c4d7f7e4a5a475209d29e29fe034"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/full-xtask-final-pass.log",
+      "destination": "verification/author-evidence-audit/full-xtask-final-pass.log",
+      "bytes": 6786,
+      "sha256": "5b1c09dd1ef9e6329e2cb2f394e56f336d976a3adb753337d998d632254767fe"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/strict-clippy-final.log",
+      "destination": "verification/author-evidence-audit/strict-clippy-final.log",
+      "bytes": 156,
+      "sha256": "04f434cda599f2b28de44dacb2462fc5118cfc435d180d078973b854524b4b85"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/check-workflows-final.log",
+      "destination": "verification/author-evidence-audit/check-workflows-final.log",
+      "bytes": 145,
+      "sha256": "f5fd04f4d1f073289008247873b67731071b08572c1f96c1440f1c9203e40f1c"
+    },
+    {
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/release-gate-final.log",
+      "destination": "verification/author-evidence-audit/release-gate-final.log",
+      "bytes": 139,
+      "sha256": "5899714f6181a86b883602a3dd9b321883ca9e4084db16c902cf56856e633340"
+    }
+  ],
+  "preservation": "All selected source bytes copied unchanged, including original verifier report/result/raw manifest/JUnit and failure logs. Original raw manifest may point outside Git; no path rewriting.",
+  "excluded": "No memory recall, wiki/model/tool discovery dumps, approved spec copies, general CLI help, baseline scratch source copies, compiled binaries or build targets. Raw manifest remains original and may reference external artifacts.",
+  "limitations": [
+    "No Final Reviewer report copied; acceptance/review remains pending at this persistence stage.",
+    "76 total xtask tests contains 23 workflow tests and 5 new tests as subsets, not additive counts.",
+    "Baseline two observed author failures audited, not independently re-executed; original failed setup raw stdout/exit/timings unavailable.",
+    "Fixture Drop removes per-case state/logs; runtime call/state claims are assertion-derived, not durable API transcripts.",
+    "Strict scoped xtask Clippy and zero observed warnings are not full-workspace/native qualification, hosted C103-A05 or Scryer evidence reconciliation."
+  ],
+  "credential_scan": {
+    "scope": "56 selected small UTF-8 evidence files plus Production README and this manifest",
+    "method": "Bounded pattern scan for GitHub tokens, private keys, AWS access keys, literal Authorization Bearer credentials, credential-bearing HTTP URLs and token environment literal assignments",
+    "findings": 0,
+    "limit": "Pattern scan only; not a general guarantee of absence of every possible secret."
+  },
+  "git_writes": "None. No staging, commit, push, PR, CI or publication action."
+}

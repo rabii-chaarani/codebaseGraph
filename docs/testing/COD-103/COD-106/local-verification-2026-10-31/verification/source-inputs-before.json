@@ -1,0 +1,46 @@
+{
+  "Cargo.toml": {
+    "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+    "size": 2320
+  },
+  "Cargo.lock": {
+    "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+    "size": 52538
+  },
+  ".cargo/config.toml": {
+    "sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+    "size": 99
+  },
+  "crates/xtask/Cargo.toml": {
+    "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+    "size": 219
+  },
+  "crates/xtask/src/macos.rs": {
+    "sha256": "810255a2714e8aed31b77b26ac5260747fb68d5c6c5f85bc3e17757a97c1f0cf",
+    "size": 34290
+  },
+  "crates/xtask/src/macos_installer_tests.rs": {
+    "sha256": "10646723ce3db83a5a70e51769957214801d4ef7533362eab1035c31ce7fab17",
+    "size": 9122
+  },
+  "crates/xtask/src/main.rs": {
+    "sha256": "88867a05e430c02645c1935ff548b4795c4d8388142f9fc724859d814156b7ff",
+    "size": 126949
+  },
+  "crates/xtask/src/native_tests/shards.rs": {
+    "sha256": "7420672dcfb926caf3e12c6483e3f0349e11ef11cb37a4d603811f43797c42f3",
+    "size": 5732
+  },
+  "crates/xtask/src/native_tests.rs": {
+    "sha256": "ada965856dbc889902c68a01c1e5fbe33c4a050dc84e915a5e07244162d7e5a4",
+    "size": 16415
+  },
+  "crates/xtask/src/release/workflow_tests.rs": {
+    "sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450",
+    "size": 44385
+  },
+  "crates/xtask/src/release.rs": {
+    "sha256": "dc74317037a68df27c98c24678d2b46589ef64fc1ef0d484b415cae33435ebd7",
+    "size": 5026
+  }
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "kind": "instruction-read",
+    "path": "/private/tmp/codebasegraph-cod106-20261031/AGENTS.md",
+    "result": "FileNotFoundError",
+    "impact": "Use provided governing repository instructions; inspect whether nested instructions exist after graph discovery."
+  }
+]

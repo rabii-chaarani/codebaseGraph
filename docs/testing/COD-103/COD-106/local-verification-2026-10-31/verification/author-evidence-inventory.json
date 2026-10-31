@@ -1,0 +1,149 @@
+[
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-locked-setup.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-locked-setup.log",
+    "sha256": "b1421a4933c5adf232edf6d7e3226af39b1e2c2a7739455de35a2b8e823ba675",
+    "size": 343,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-publisher.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-publisher.log",
+    "sha256": "34a1e097c8ec1fc7a08c779cbe52f916f81370e30d4f18f7ba1fc260ae80e779",
+    "size": 830,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-resolver.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-resolver.log",
+    "sha256": "137f0565f0e3207118b57f9eb574a188eb9c7f20a5bf37152336656063d6dd5d",
+    "size": 1034,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/check-workflows-final.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/check-workflows-final.log",
+    "sha256": "f5fd04f4d1f073289008247873b67731071b08572c1f96c1440f1c9203e40f1c",
+    "size": 145,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/fmt-initial-formatting-diff.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/fmt-initial-formatting-diff.log",
+    "sha256": "50e582de0a1d51713ed2a5608cbbcbb8907346093f2e64b3eb6e5b1ba5b91cf9",
+    "size": 8333,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/focused-final-pass.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/focused-final-pass.log",
+    "sha256": "76e336a18c5f5b8301cdb20945087484cef6c4d7f7e4a5a475209d29e29fe034",
+    "size": 2712,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/full-xtask-final-pass.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/full-xtask-final-pass.log",
+    "sha256": "5b1c09dd1ef9e6329e2cb2f394e56f336d976a3adb753337d998d632254767fe",
+    "size": 6786,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/initial-focused-pass.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/initial-focused-pass.log",
+    "sha256": "a30f6db48be73f989a3ab6769116181c62375b2723567e51fcbf162a67c3c0b4",
+    "size": 3844,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/initial-full-xtask-pass-before-review-edits.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/initial-full-xtask-pass-before-review-edits.log",
+    "sha256": "fe7ea10697164ea78fb8fa28b9f6c85e388e7d06a5fb6714c56f5573d9104dda",
+    "size": 6786,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/release-gate-final.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/release-gate-final.log",
+    "sha256": "5899714f6181a86b883602a3dd9b321883ca9e4084db16c902cf56856e633340",
+    "size": 139,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/review-clarification-failing-negative-mutation.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/review-clarification-failing-negative-mutation.log",
+    "sha256": "eb67234ac58750897d849b67b66e7879ef0a86ed97ac90f8f3a322ef248e9d5f",
+    "size": 3179,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/strict-clippy-final.log",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/strict-clippy-final.log",
+    "sha256": "04f434cda599f2b28de44dacb2462fc5118cfc435d180d078973b854524b4b85",
+    "size": 156,
+    "independence": "author execution; independently read/audited, not re-executed by verifier"
+  },
+  {
+    "source_path": "/private/tmp/cod106-production-20261031/production-handoff.md",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/production-production-handoff.md",
+    "sha256": "b0b2111449a60a49aa011e0b90d35b1edfdeb31a9de9166714d59699d8faac85",
+    "size": 6671,
+    "independence": "author artifact; independently read/audited"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/handoff-summary.json",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/backend-handoff-summary.json",
+    "sha256": "a5212495d2ceb7f96eb392d262a6adcbfa1aac7e02c352fe5b8f61bf98363414",
+    "size": 2023,
+    "independence": "author artifact; independently read/audited"
+  },
+  {
+    "source_path": "/private/tmp/cod106-production-20261031/release.yml.diff",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/production-release.yml.diff",
+    "sha256": "be3a14d53c838d1d04a77cc5cc4eb2702071605b61a675a46aabd835015c41c5",
+    "size": 2730,
+    "independence": "author artifact; independently read/audited"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-99a339/.github/workflows/release.yml",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-scratch-inputs/.github/workflows/release.yml",
+    "sha256": "aca94a20d46b2ecca85a9c112bb21daa7df1fb418e84f44d28bd35037c706bf3",
+    "size": 31741,
+    "independence": "retained author scratch source; not independent execution"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-99a339/crates/xtask/src/release/workflow_tests.rs",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-scratch-inputs/crates/xtask/src/release/workflow_tests.rs",
+    "sha256": "1facf9791e8ac5ec4a8bf4bc9d88436b60ac93f90a0be10a5f69f8d3aeccc7f2",
+    "size": 43579,
+    "independence": "retained author scratch source; not independent execution"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-99a339/crates/xtask/src/main.rs",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-scratch-inputs/crates/xtask/src/main.rs",
+    "sha256": "bbec8ba50a675406639f6687e5aa2fa731daeae6c69e673810c13fa30ee3fe11",
+    "size": 899,
+    "independence": "retained author scratch source; not independent execution"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-99a339/Cargo.toml",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-scratch-inputs/Cargo.toml",
+    "sha256": "f500774409b057b71c17919cb5f820b2e1bc5f85b305ba06058c84e60429ad1e",
+    "size": 54,
+    "independence": "retained author scratch source; not independent execution"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-99a339/crates/xtask/Cargo.toml",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-scratch-inputs/crates/xtask/Cargo.toml",
+    "sha256": "e341d09e2dad560f4091d97c9a22906421040377235df233fa8b725432db9d06",
+    "size": 129,
+    "independence": "retained author scratch source; not independent execution"
+  },
+  {
+    "source_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031/baseline-99a339/Cargo.lock",
+    "copy_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-audit/baseline-scratch-inputs/Cargo.lock",
+    "sha256": "16dc0974ad53fd3320eec35a36bfe758e75bf8457aeacae824dcf480dbf66149",
+    "size": 3931,
+    "independence": "retained author scratch source; not independent execution"
+  }
+]

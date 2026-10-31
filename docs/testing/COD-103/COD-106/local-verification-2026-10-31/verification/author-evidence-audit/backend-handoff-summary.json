@@ -1,0 +1,35 @@
+{
+  "workspace": "/private/tmp/codebasegraph-cod106-20261031",
+  "branch": "cod103-stack/cod-106",
+  "base_head": "99a339c54df79cef0598905cde8c6ce4e5d62163",
+  "owned_file": "/private/tmp/codebasegraph-cod106-20261031/crates/xtask/src/release/workflow_tests.rs",
+  "owned_sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450",
+  "workflow_sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+  "commands": {
+    "focused": "cargo test --offline --locked -p xtask release::workflow_tests:: -- --nocapture",
+    "full": "cargo test --offline --locked -p xtask",
+    "fmt": "cargo fmt --all --check",
+    "clippy": "cargo clippy --offline --locked -p xtask --all-targets -- -D warnings",
+    "workflow_policy": "cargo run --offline --locked -p xtask -- check-workflows",
+    "release_gate": "cargo run --offline --locked -p xtask -- release-gate"
+  },
+  "results": {
+    "focused": "23 passed",
+    "full": "76 passed",
+    "fmt": "pass",
+    "clippy": "pass no warnings",
+    "workflow_policy": "pass",
+    "release_gate": "pass"
+  },
+  "new_test_names": [
+    "existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors",
+    "existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing",
+    "legacy_dry_run_resolves_without_scheduling_the_publisher",
+    "legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement",
+    "legacy_publisher_rejects_late_history_and_tag_races_without_mutation"
+  ],
+  "baseline_resolver_exit": 101,
+  "baseline_publisher_exit": 101,
+  "artifact_dir": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-f0f8a56a/cod106-20261031",
+  "environment": "cargo 1.96.0 (30a34c682 2026-05-25)\nrustc 1.96.0 (ac68faa20 2026-05-25)\nGNU bash, version 3.2.57(1)-release (arm64-apple-darwin25)\njq-1.7.1-apple\nDarwin Rabiis-MacBook-Pro.local 25.6.0 Darwin Kernel Version 25.6.0: Fri Jul 31 19:16:20 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8142 arm64\n"
+}

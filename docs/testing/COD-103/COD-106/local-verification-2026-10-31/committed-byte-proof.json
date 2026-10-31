@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "tested_snapshot": {
+    "head": "99a339c54df79cef0598905cde8c6ce4e5d62163",
+    "committed_baseline_tree": "8bc68d5e5018ca3b64f0a3ad4240431b9e5ac902",
+    "dirty_diff_sha256": "c7b76fcb32d0943b426d1895194c1739d6e30a7bda1cd5f563996bb5d905996c",
+    "files": {
+      ".github/workflows/release.yml": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "crates/xtask/src/release/workflow_tests.rs": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450"
+    }
+  },
+  "technical_commit": {
+    "sha": "5a556cb2ff06e7b7f8d42ca9762d52863947a734",
+    "parent": "99a339c54df79cef0598905cde8c6ce4e5d62163",
+    "tree": "6046a6ebce821b94a197a9b61ab9caea0435d2c3",
+    "files": {
+      ".github/workflows/release.yml": {
+        "git_blob": "bd87a4495840cd5801138330be6833ff5dcb9d73",
+        "sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117"
+      },
+      "crates/xtask/src/release/workflow_tests.rs": {
+        "git_blob": "f6fea96536d774a4fd40fc4091cc6a2a002aab46",
+        "sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450"
+      }
+    },
+    "changed_paths": [
+      ".github/workflows/release.yml",
+      "crates/xtask/src/release/workflow_tests.rs"
+    ],
+    "committed_bytes_equal_tested_reviewed": true
+  },
+  "review": {
+    "path": "final-review.md",
+    "sha256": "1c92e22aeafe624b73a9d652d50c823d985ee159a2bbd25c6856d829386c0def",
+    "outcome": "No confirmed P0-P3 defects; accepted by Engineer for local commit/stacked PR opening; disclosed read-order deviation retained",
+    "settings": "Host-accepted gpt-6.1-sol/max supplied by Engineer; independently exposed runtime metadata unavailable"
+  },
+  "verification": {
+    "report": "verification/final-report.md",
+    "report_sha256": "030204796ac687edd2c35dd5964eca72d09c63ac8af825a4e23c9c4a1d9e4279",
+    "junit": "verification/xtask-junit.xml",
+    "junit_sha256": "f7482e2d985ae6b794194000d9dbe4ac56f57efbaa5de442786caa87b396388f",
+    "passed_total": 76,
+    "workflow_subset": 23,
+    "new_case_subset": 5,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "retries": 0,
+    "counts_are_subsets_not_additive": true,
+    "new_execution_at_commit": false
+  },
+  "preservation": {
+    "selected_original_files": 56,
+    "all_selected_bytes_unchanged": true,
+    "original_raw_manifest_external_paths_unchanged": true
+  },
+  "limitations": [
+    "Scoped xtask strict Clippy and zero observed warnings are not full-workspace/native/Windows qualification.",
+    "Baseline two author failures audited, not independently rerun; original failed setup raw stdout/exit/timings unavailable.",
+    "Fixture Drop removes per-case temporary state/logs; API order and preservation claims are assertion-derived, not durable successful API transcripts.",
+    "Hosted C103-A05/non-main full CI, exact-source Scryer reconciliation, per-PR retarget/current-main integration, own-merge main CI and later platform/release/aggregate gates remain pending."
+  ],
+  "git_operation_history": [
+    "Source staging returned exit1 with global-ignore warning for .github, but authoritative cached diff confirmed BOTH assigned tracked source files fully staged and no other path. No staging retry or -f/config change used.",
+    "Technical commit succeeded on first attempt; no failed/uncertain commit or retry."
+  ],
+  "whitespace": {
+    "source_diff_check_exit": 0,
+    "authored_document_check_exit": 0,
+    "full_evidence_check_exit": 2,
+    "command": "git diff --cached --check -- docs/testing/COD-103/COD-106/local-verification-2026-10-31",
+    "raw_diagnostics_sha256": "dcb5d4d74dac079fc52fc09eac09a909a77893a4f49fa9e87588861d83a021ba",
+    "preserved_paths": [
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/author-evidence-audit/baseline-publisher.log",
+        "sha256": "34a1e097c8ec1fc7a08c779cbe52f916f81370e30d4f18f7ba1fc260ae80e779"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/author-evidence-audit/baseline-resolver.log",
+        "sha256": "137f0565f0e3207118b57f9eb574a188eb9c7f20a5bf37152336656063d6dd5d"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/author-evidence-audit/fmt-initial-formatting-diff.log",
+        "sha256": "50e582de0a1d51713ed2a5608cbbcbb8907346093f2e64b3eb6e5b1ba5b91cf9"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/author-evidence-audit/focused-final-pass.log",
+        "sha256": "76e336a18c5f5b8301cdb20945087484cef6c4d7f7e4a5a475209d29e29fe034"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/author-evidence-audit/full-xtask-final-pass.log",
+        "sha256": "5b1c09dd1ef9e6329e2cb2f394e56f336d976a3adb753337d998d632254767fe"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/author-evidence-audit/review-clarification-failing-negative-mutation.log",
+        "sha256": "eb67234ac58750897d849b67b66e7879ef0a86ed97ac90f8f3a322ef248e9d5f"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/baseline-harness-to-final.diff",
+        "sha256": "6dae81876c4f74d5b9c456d3c8846cbfebb7111da5277b5043d9c43e00c2f268"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/git-diff-after.log",
+        "sha256": "c7b76fcb32d0943b426d1895194c1739d6e30a7bda1cd5f563996bb5d905996c"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/git-diff-before.log",
+        "sha256": "c7b76fcb32d0943b426d1895194c1739d6e30a7bda1cd5f563996bb5d905996c"
+      },
+      {
+        "path": "docs/testing/COD-103/COD-106/local-verification-2026-10-31/verification/publisher.sh",
+        "sha256": "7d7877f9427283df1d05d98ad543df76d3f255a02c138a575d5299649f71bbd6"
+      }
+    ],
+    "decision": "Preserve original raw logs/diff/script bytes. No trimming or Git policy change."
+  }
+}

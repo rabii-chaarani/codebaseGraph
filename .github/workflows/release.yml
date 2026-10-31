@@ -120,6 +120,14 @@ jobs:
             if [[ "$(jq -r .object.type <<<"$ref")" == 'tag' ]]; then
               source_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$source_sha" --jq '.object.sha')"
             fi
+            [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid source SHA.' >&2; exit 1; }
+            main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+            [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid current main SHA.' >&2; exit 1; }
+            ancestry="$(gh api "repos/$GITHUB_REPOSITORY/compare/$source_sha...$main_sha" --jq '.status')"
+            case "$ancestry" in
+              identical|ahead) ;;
+              *) echo 'Release source is not in current main history.' >&2; exit 1 ;;
+            esac
             ci_run_id=''
             should_publish=true
             artifact_source="$MANUAL_SOURCE"
@@ -507,6 +515,22 @@ jobs:
             # Preserve mutable published-release recovery, but skip matching assets.
             if verify_assets; then exit 0; fi
           fi
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid source SHA.' >&2; exit 1; }
+          if [[ "$AUTOMATIC" == 'false' ]]; then
+            current_ref="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG")"
+            current_tag_sha="$(jq -r .object.sha <<<"$current_ref")"
+            if [[ "$(jq -r .object.type <<<"$current_ref")" == 'tag' ]]; then
+              current_tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$current_tag_sha" --jq '.object.sha')"
+            fi
+            [[ "$current_tag_sha" =~ ^[0-9a-f]{40}$ && "$current_tag_sha" == "$SOURCE_SHA" ]] || { echo 'Existing release tag points to a different commit.' >&2; exit 1; }
+          fi
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid current main SHA.' >&2; exit 1; }
+          ancestry="$(gh api "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...$main_sha" --jq '.status')"
+          case "$ancestry" in
+            identical|ahead) ;;
+            *) echo 'Release source is not in current main history.' >&2; exit 1 ;;
+          esac
           gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
           verify_assets || { echo 'Remote asset verification failed; release was not published.' >&2; exit 1; }
           if [[ "$AUTOMATIC" == 'true' && "$(jq -r .draft <<<"$release")" == 'true' ]]; then

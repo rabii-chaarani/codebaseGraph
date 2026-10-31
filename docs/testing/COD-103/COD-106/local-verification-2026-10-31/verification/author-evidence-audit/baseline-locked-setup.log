@@ -1,0 +1,2 @@
+Initial scratch-only attempt with --locked failed: Cargo.lock would need update because scratch workspace differs; no project sources modified. Retried with --offline and no --locked (cached dependencies only, no install).
+Harness path setup first failed because the inline module path doubled release/; corrected scratch-only path and reran.

@@ -1,0 +1,6 @@
+[profile.cod103]
+retries = 0
+test-threads = 1
+
+[profile.cod103.junit]
+path = "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/xtask-junit.xml"

@@ -1,0 +1,275 @@
+{
+  "status": "LOCAL_ASSIGNED_VERIFICATION_PASSED; delivery and qualification gates remain pending",
+  "work": "COD-106",
+  "requirement": "C103-R02",
+  "criterion": "C103-A02",
+  "claim": "resp-259 (existing unchanged intent)",
+  "role": "Evidence Verifier",
+  "settings": {
+    "map_model": "inherit",
+    "map_reasoning_effort": "inherit",
+    "host_overrides": "none per assignment",
+    "exposed_actual_model_effort": "not independently exposed",
+    "independent_of_source_authors": true
+  },
+  "authority": {
+    "approved_revision": "0.3",
+    "approved_full_sha": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+    "canonical_spec": "docs/specs/COD-103/spec.md",
+    "separate_approval_full_sha": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+    "approval_path": "docs/specs/COD-103/approvals/2026-10-31-revision-0.3.md",
+    "decision_reference": "COD-103 comment c8690556-e836-428d-bc81-079c701d2395; user: i already approved revision 0.3",
+    "scryer_project": "/Users/rabii/Projects/Repositories/codebaseGraph",
+    "existing_change": "chg-9bqhd2",
+    "brief_node": "container-release-verifier",
+    "brief_whole_sha256": "2c1a58fb8882594137c391a846ab4194dc11daa8203b6b10d23d96a15e75f486"
+  },
+  "source": {
+    "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+    "branch": "cod103-stack/cod-106",
+    "head": "99a339c54df79cef0598905cde8c6ce4e5d62163",
+    "head_tree_not_dirty_tree": "8bc68d5e5018ca3b64f0a3ad4240431b9e5ac902",
+    "dirty_files_before": {
+      ".github/workflows/release.yml": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "crates/xtask/src/release/workflow_tests.rs": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450"
+    },
+    "dirty_files_after": {
+      ".github/workflows/release.yml": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+      "crates/xtask/src/release/workflow_tests.rs": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450"
+    },
+    "dirty_diff_sha256": "c7b76fcb32d0943b426d1895194c1739d6e30a7bda1cd5f563996bb5d905996c",
+    "tracked_diff_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/git-diff-after.log",
+    "status_before_after_identical": true,
+    "untracked_inventory": "none in actual git status --porcelain=v1 --untracked-files=all",
+    "source_inputs_before_after_identical": true,
+    "source_input_manifests": [
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/source-inputs-before.json",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/source-inputs-after.json"
+    ],
+    "test_binary_before_after_identical": true,
+    "test_binary": {
+      "path": "/private/tmp/codebasegraph-cod106-20261031/target/native-tests/deps/xtask-eed5a74c0d8f01ef",
+      "sha256": "2151a0b5e0cce95c8e91bb2195e0c2dea11fc7586d2a416ae6776a2ead5c424b",
+      "size": 2670800
+    },
+    "actual_yaml_bodies": {
+      "resolver": "c9833bda1387a3bbebd1661e959207f433740214ee418d5b77985fd83f726daa",
+      "publisher": "7d7877f9427283df1d05d98ad543df76d3f255a02c138a575d5299649f71bbd6"
+    }
+  },
+  "environment": {
+    "product": "macOS",
+    "version": "26.6.2",
+    "build": "25G83",
+    "kernel": "Darwin25.6.0",
+    "architecture": "arm64",
+    "rustc": "1.96.0 ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96",
+    "cargo": "1.96.0 30a34c6821b57de0aaec83a901aca39f88f6778c",
+    "nextest": "0.9.140 a9fef2964e34f64ed4fceeee7c0c3559ce560920",
+    "bash": "3.2.57(1)-release arm64-apple-darwin25",
+    "jq": "1.7.1-apple",
+    "native_tests_profile": "existing Cargo profile; release inheritance, debug assertions/overflow checks/unwind; no feature/profile/manifest/dependency changes",
+    "project_config": {
+      ".cargo/config.toml": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n"
+    },
+    "relevant_inherited_environment": {
+      "HOME": "/Users/rabii",
+      "CARGO_HOME": null,
+      "CARGO_TARGET_DIR": null,
+      "RUSTUP_TOOLCHAIN": null,
+      "RUSTC": null,
+      "RUSTC_WRAPPER": null,
+      "RUSTC_WORKSPACE_WRAPPER": null,
+      "RUSTFLAGS": null,
+      "RUSTDOCFLAGS": null,
+      "CARGO_BUILD_JOBS": null,
+      "CARGO_BUILD_TARGET": null,
+      "CARGO_PROFILE_DEV_DEBUG": null,
+      "CARGO_PROFILE_RELEASE_DEBUG": null
+    },
+    "target_directory": "/private/tmp/codebasegraph-cod106-20261031/target"
+  },
+  "execution": {
+    "commands_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/commands.json",
+    "checks": [
+      {
+        "label": "fmt",
+        "command": "cargo fmt --all --check",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:12:43.148854+00:00",
+        "pid": 27241,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 1.826605249894783,
+        "finished_at": "2026-10-31T07:12:44.976032+00:00"
+      },
+      {
+        "label": "xtask-inventory",
+        "command": "cargo nextest list --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/nextest.toml --user-config-file none --profile cod103 --message-format json",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:13:54.968563+00:00",
+        "pid": 27358,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 10.258807334117591,
+        "finished_at": "2026-10-31T07:14:18.690751+00:00"
+      },
+      {
+        "label": "xtask-full-nextest",
+        "command": "cargo nextest run --offline --locked -p xtask --bin xtask --cargo-profile native-tests --config-file /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/nextest.toml --user-config-file none --profile cod103 --no-tests fail --test-threads 1",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:14:43.617583+00:00",
+        "pid": 27741,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 33.501831457950175,
+        "finished_at": "2026-10-31T07:17:51.239743+00:00"
+      },
+      {
+        "label": "clippy",
+        "command": "cargo clippy --offline --locked -p xtask --all-targets -- -D warnings",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:17:51.245238+00:00",
+        "pid": 32221,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 0.49149204208515584,
+        "finished_at": "2026-10-31T07:17:51.737443+00:00"
+      },
+      {
+        "label": "check-workflows",
+        "command": "cargo run --offline --locked -p xtask -- check-workflows",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:19:07.018085+00:00",
+        "pid": 32259,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 0.9930652920156717,
+        "finished_at": "2026-10-31T07:19:08.011834+00:00"
+      },
+      {
+        "label": "release-gate",
+        "command": "cargo run --offline --locked -p xtask -- release-gate",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:19:08.012420+00:00",
+        "pid": 32267,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 0.5471374168992043,
+        "finished_at": "2026-10-31T07:19:08.560174+00:00"
+      },
+      {
+        "label": "resolver-bash-syntax",
+        "command": "bash -n /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/resolver.sh",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:32:37.830395+00:00",
+        "pid": 32463,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 0.014829500112682581,
+        "finished_at": "2026-10-31T07:32:37.845667+00:00"
+      },
+      {
+        "label": "publisher-bash-syntax",
+        "command": "bash -n /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/publisher.sh",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:32:37.846330+00:00",
+        "pid": 32468,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 0.014211250003427267,
+        "finished_at": "2026-10-31T07:32:37.860924+00:00"
+      },
+      {
+        "label": "diff-check",
+        "command": "git diff --check",
+        "cwd": "/private/tmp/codebasegraph-cod106-20261031",
+        "started_at": "2026-10-31T07:33:07.336154+00:00",
+        "pid": 32483,
+        "exit_code": 0,
+        "running": false,
+        "duration_seconds": 0.029254124965518713,
+        "finished_at": "2026-10-31T07:33:07.365958+00:00"
+      }
+    ],
+    "counts": {
+      "full_xtask": 76,
+      "workflow": 23,
+      "new_named_cases": 5
+    },
+    "full_xtask_passed": 76,
+    "workflow_subset_passed": 23,
+    "new_named_subset_passed": 5,
+    "skipped": 0,
+    "errors": 0,
+    "failures": 0,
+    "retries": 0,
+    "threads": 1,
+    "junit_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/xtask-junit.xml",
+    "junit_sha256": "f7482e2d985ae6b794194000d9dbe4ac56f57efbaa5de442786caa87b396388f",
+    "junit_run_id": "64ccee74-a225-4b2a-aa5a-e86f61a2b111",
+    "warnings": {
+      "observed_rust_compiler_warnings_in_scoped_inventory_run_clippy_policy_outputs": 0,
+      "scope": "xtask only; not a full-workspace or native product result"
+    },
+    "no_duplicate_cargo_test": "Whole 76-case genuine JUnit run contains all 23 workflow and 5 new cases; no count-only rerun."
+  },
+  "oracle_audit": {
+    "actual_yaml_bodies": true,
+    "strict_tag_main_compare_repository_source_direction_endpoints": true,
+    "unknown_requests_fail": true,
+    "early_rejection_before_authorization": true,
+    "late_guard_reachable_draft_and_incomplete_mutable": true,
+    "fresh_final_tag_resolution_not_cached": true,
+    "state_preservation": "Executed tests compare release bytes and every pre-existing asset name/bytes before/after, and assert zero POST/PATCH/DELETE/upload calls. These are assertion-derived outcomes.",
+    "call_order": "Executed positive cases assert first tag read < second fresh tag read < fresh main read < fixed SOURCE...freshMAIN compare < upload.",
+    "durable_per_case_api_transcripts": false,
+    "transcript_limit": "Fixture Drop removes per-case temp files; successful JUnit does not retain independent API-call/state files.",
+    "dry_run": "Actual resolver plus source-bound four-conjunct YAML gate recognizer; validates all required clauses and rejects missing/duplicate/unsupported/None even after false. Not a general GitHub evaluator or actual hosted scheduling."
+  },
+  "baseline": {
+    "method": "independently audited author-executed scratch logs; not independently rerun",
+    "yaml_exactly_matches_head": true,
+    "yaml_sha256": "aca94a20d46b2ecca85a9c112bb21daa7df1fb418e84f44d28bd35037c706bf3",
+    "two_failures": [
+      "resolver unexpected authorization",
+      "publisher unexpected upload"
+    ],
+    "exit_codes": {
+      "resolver": {
+        "value": 101,
+        "provenance": "author handoff; raw log confirms named test failure"
+      },
+      "publisher": {
+        "value": 101,
+        "provenance": "author handoff; raw log confirms named test failure"
+      }
+    },
+    "scratch_harness_sha256": "1facf9791e8ac5ec4a8bf4bc9d88436b60ac93f90a0be10a5f69f8d3aeccc7f2",
+    "harness_difference": "Only final dry-run gate recognizer/mutation assertions differ; resolver/publisher race oracles match. Exact diff preserved.",
+    "baseline_harness_diff_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/baseline-harness-to-final.diff",
+    "failed_setup": "Author prose-only baseline-locked-setup.log records altered scratch workspace lock rejection and doubled release/ module path correction; original setup stdout/exit/durations not retained. No independent reconstruction or fabricated measurements.",
+    "other_preserved_author_failures": [
+      "fmt-initial-formatting-diff.log",
+      "review-clarification-failing-negative-mutation.log"
+    ],
+    "audit_inventory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-bee0f574/cod106-independent-verification/author-evidence-inventory.json"
+  },
+  "limitations": [
+    "Local Unix fixtures only; not Windows qualification.",
+    "Scoped xtask checks are not full workspace Clippy/product native/cohort/archive or hosted CI/publication proof.",
+    "Registered graph/Scryer root contains old canonical dirty source (parent identifies6aa5), not this worktree. Graph served navigation only. No model selection/attachment/ingestion/fold/drift writes performed; exact-source binding remains pending.",
+    "Linear connection is pending/unavailable; no tracking writes or alternate project state used.",
+    "Fresh independent Final Reviewer and any focused fix verification remain due.",
+    "First fresh actual COD-106\u2192COD-105 non-main-base full CI/stable-required/C103-A05 proof is due after reviewed PR opens. Missing/stale/failed proof blocks full COD105 qualification, COD106\u2192COD56, main integration, Done and release.",
+    "No real publisher/CI rerun/Git write/source fix/install/dependency/settings/credentials/memory write."
+  ],
+  "assumptions_and_constants": {
+    "authority": "Reused exact separate approval and Engineer-confirmed COD105 limited staging acceptance/COD106 activation; did not infer approval from historical brief status.",
+    "changed_project_constants": "none",
+    "temporary_reporting_configuration": "Outside-repository cod103 nextest reporting profile; retries0, one thread, absolute genuine JUnit path only.",
+    "reusable_knowledge_assessment": "No new durable memory warranted beyond existing recalled ancestry/immutable-release procedures; no memory writes authorized or made."
+  },
+  "cargo": "RELEASED; all owned checks complete; no running handles; STOP",
+  "next_owner": "Engineer: fresh Final Reviewer against exact diff/report, then authorized Production evidence persistence/PR and later hosted proof. Existing closure owners and queue order unchanged."
+}
