@@ -1,0 +1,35 @@
+{
+  "status": "PASS_ASSIGNED_LOCAL_CHECKS_ONLY",
+  "head": "9ed7f117bc605d5a365ab5b669d54e56182d8e07",
+  "tree": "7a3ed8cb31c6937483f96a600c2b00bfba967b83",
+  "untracked_sources": {
+    "release/install/tests/native_probe_fixture.rs": "7bfd7e558803824c5594335c350f317def747b338a80d7d3dee0d59f30b7c314",
+    "release/install/tests/powershell_installer_a09.ps1": "2e3b74fb8f5bd37a8f6e67ce48f8ce1382a80cf024d0982cf7c00b7689353cc3"
+  },
+  "source_inventory_unchanged": true,
+  "source_inventory_files": 19,
+  "format_policy_clippy": "all exit0",
+  "nextest": {
+    "run_id": "68da2eb6-4c29-4ed2-922d-096040afe7a2",
+    "exit_code": 0,
+    "tests": 76,
+    "passed": 76,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "disabled": 0,
+    "retries": 0,
+    "threads": 1,
+    "seconds": "28.105",
+    "junit": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-2321aa47/cod56-integrated-local-checks/xtask-junit.xml",
+    "junit_sha256": "a1af5e48d0e2a2ab8ca6c1039ea71415515c8413efc8e73f8c5374e1d54382e9"
+  },
+  "compiler_warnings": 0,
+  "powershell_a09_coverage_claimed": false,
+  "new_windows_fixture_execution": false,
+  "no_source_mutation": true,
+  "constants_changed": false,
+  "cargo_lease": "STOPPED_RELEASED",
+  "settings": "inherit/inherit; runtime metadata unexposed",
+  "report_sha256": "0bb2489b263eba053f61c18de3e8ab01c6e6120eeef6ff294646eefaaee6aeb3"
+}

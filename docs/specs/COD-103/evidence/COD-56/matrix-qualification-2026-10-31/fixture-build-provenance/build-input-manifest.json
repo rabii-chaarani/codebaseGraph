@@ -1,0 +1,38 @@
+{
+  "cod56-native-fixture-build-report.md": {
+    "bytes": 6154,
+    "sha256": "e0712fff7ce32df883ff147e270b7d09b620ffdeef70ee5272ae5462c1c12122"
+  },
+  "native-fixture-build/attempt-002/rustc.stderr.txt": {
+    "bytes": 677,
+    "sha256": "bada5b8748c18fb25a0b370d4fa8758d1be65600fb6949ab3a4dbfdd92187b09"
+  },
+  "native-fixture-build/attempt-002/rustc.stdout.txt": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "native-fixture-build/attempt-003/native_probe_fixture.exe": {
+    "bytes": 4608,
+    "sha256": "08e9773855c82ded4837968683cfa7895d17fb7d9d3283b9670ce4dc0f1fca80"
+  },
+  "native-fixture-build/attempt-003/rustc.stderr.txt": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "native-fixture-build/attempt-003/rustc.stdout.txt": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "native-fixture-build/rustc.stderr.txt": {
+    "bytes": 1550,
+    "sha256": "19eba422b39a3fa76a2568c84b6252d0d131c7888351f18eaa30fc7ba291489c"
+  },
+  "native-fixture-build/rustc.stdout.txt": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "successful-source/native_probe_fixture.rs": {
+    "bytes": 11987,
+    "sha256": "7bfd7e558803824c5594335c350f317def747b338a80d7d3dee0d59f30b7c314"
+  }
+}

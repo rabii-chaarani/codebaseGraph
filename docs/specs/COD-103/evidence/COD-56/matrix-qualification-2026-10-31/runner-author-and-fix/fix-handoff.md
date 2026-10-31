@@ -1,0 +1,13 @@
+# COD-56 runner task-output fix
+
+Status: confirmed runtime bug fixed in ONE assigned runner; source lease STOPPED/released. No runtime rerun, parser, matrix pass or Git/VM/model/tracking/settings action.
+
+Actual failed report6dca6543f7f8098f746f6d8ddb61f838b9d0f10c42f2acf20574300f66fe0309 and manifest2f9f42332b15bd3a2575250eea0d67ecb4c9b4ad225102aacaa1643a4ae46eb3 read; all374 manifest entries verified. Failed28/28errors/JUnit/raw five-element child_exit arrays remain untouched. Prior fixture5/5 is unchanged prerequisite, not a rerun or matrix pass.
+
+Only release/install/tests/powershell_installer_a09.ps1 changed: **four `[void]` casts** suppress Task GetAwaiter().GetResult success output at119,120,129,130. Concurrent BaseStream drains, actualProcess.ExitCode return, await exceptions, wait/reap/drain/dispose and owned-child cleanup remain identical. No array-element selection or assertion/JUnit/guard/trace/matrix relaxation. Byte reversal of four inserted casts reproduces complete prior file exactly. Same-class method scan found no other task GetResult calls; Process.Start already assigned; WaitForExit/Kill/Dispose and generic List.Add have void return, no additional change needed.
+
+Before24902bytes/SHA50487202bd4779907149056877e94aa001ab20da67e8a3303f01ac77aa1268e0. After **24926bytes/SHA2e3b74fb8f5bd37a8f6e67ce48f8ce1382a80cf024d0982cf7c00b7689353cc3**,421lines unchanged. Exact four-line minimal diff in minimal.diff, SHA256df9c2e1b26e8ad58ee1ecdf7687dc755c556e34fe35b9f290ff32a060f032caf.
+
+`git diff --check` tracked exit0; newfile `git diff --no-index --check /dev/null …` exit1=file differs, no whitespace diagnostics. Direct static syntax inspection: four existing invocation expressions wrapped in PS5.1-compatible void casts, no surrounding edits. Host PowerShell unavailable, no parser/runtime execution/pass claimed. Installer830d/blob9890, frozenRust7bfd unchanged; HEAD9ed7f117bc605d5a365ab5b669d54e56182d8e07/tree7a3ed8cb31c6937483f96a600c2b00bfba967b83; only two existing untracked test files. No product/test-control constants changed.
+
+Next: independent guest new parser/full28 at exact new runner hash; retain failed attempt, return actual defects to owner, same fresh reviewer checks fix/affected paths against final source. Existing method653177/approval9ed7/source/externalauthority remains. No acceptance/nextissue/Done/main/release. ProductionSol/high existing assignment, no nesteddispatch, runtime selfmetadata unexposed. No new durable memory warranted; canonical evidence captures narrow lesson, no memory write. All source/private-report writes stop after this handoff.

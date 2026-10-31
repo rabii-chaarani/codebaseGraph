@@ -673,5 +673,98 @@
     },
     "reporting_limit": "One-time persistence of already accepted72ec CI; no containing documentary-head execution claim, no hostedJUnit/archive-byte/A09/final-completion claim.",
     "unchanged_risk": "Existing cxx/tokio audit advisories, notices and ignored results remain visible; zero compiler diagnostics is not global zero warnings."
+  },
+  "matrix_qualification_preparation": {
+    "prepared_only": false,
+    "source_head": "9ed7f117bc605d5a365ab5b669d54e56182d8e07",
+    "source_tree": "7a3ed8cb31c6937483f96a600c2b00bfba967b83",
+    "runner_sha256": "2e3b74fb8f5bd37a8f6e67ce48f8ce1382a80cf024d0982cf7c00b7689353cc3",
+    "fixture_source_sha256": "7bfd7e558803824c5594335c350f317def747b338a80d7d3dee0d59f30b7c314",
+    "installer_sha256": "830d128241c90b6f224554dc49bfcf572a1d51107ded8b12823e71d97c58b7bb",
+    "bundles": {
+      "corrected-28": {
+        "bytes": 44216,
+        "sha256": "d33fdba4cc43867b29dc6864527a614d9aae8923910b40509b3bc737b985eee4",
+        "member_count": 378,
+        "all_members_byte_equal_safe_unique_exact": true
+      },
+      "baseline-20-pass-8-fail": {
+        "bytes": 39924,
+        "sha256": "1b4931747c8ec245dd8d400028975ba05fd663dc0aaa775d8b744df3137330d0",
+        "member_count": 371,
+        "all_members_byte_equal_safe_unique_exact": true
+      },
+      "failed-runner-28-errors": {
+        "bytes": 40692,
+        "sha256": "71747844ed718484cdeeff8d074eb10d5054006dacf7e5c390ac4b575cbd418c",
+        "member_count": 375,
+        "all_members_byte_equal_safe_unique_exact": true
+      },
+      "fixture-smoke-5": {
+        "bytes": 11916,
+        "sha256": "0f081310ec2bf7d4647e33ff46da0fad76cbddd85885797e4718c1c45edd5ff6",
+        "member_count": 25,
+        "all_members_byte_equal_safe_unique_exact": true
+      },
+      "integrated-local-checks": {
+        "bytes": 20140,
+        "sha256": "6ce4dd856f75c2da14e6129b12b264ec29d9cf269202e642eecd21a66263eee2",
+        "member_count": 26,
+        "all_members_byte_equal_safe_unique_exact": true
+      },
+      "fixture-build-provenance": {
+        "bytes": 7964,
+        "sha256": "cfa9aeb864076256813874a79bd90be383ffacd614c1388040f3e61a4bb970e4",
+        "member_count": 10,
+        "all_members_byte_equal_safe_unique_exact": true
+      },
+      "runner-author-and-fix": {
+        "bytes": 11356,
+        "sha256": "95786db2743839422ea7e9207b8060ea9e131f797531787fc4a7db73cdb0ce3c",
+        "member_count": 6,
+        "all_members_byte_equal_safe_unique_exact": true
+      }
+    },
+    "junit": {
+      "corrected-28": {
+        "sha256": "72f755552d8cd016bf71b132f538d6f043a2c3b73cdfb67511533ddaccd092e5",
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "baseline-20-pass-8-fail": {
+        "sha256": "9646e3da30960319eaff100339ee685facb0255dc090dca737df08439865892f",
+        "tests": 28,
+        "failures": 8,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failed-runner-28-errors": {
+        "sha256": "4cdaf7647b6c39f18454e485d245aa5bf60937e807b04519b97e7b838cd5926d",
+        "tests": 28,
+        "failures": 0,
+        "errors": 28,
+        "skipped": 0
+      },
+      "integrated-local-checks": {
+        "sha256": "a1af5e48d0e2a2ab8ca6c1039ea71415515c8413efc8e73f8c5374e1d54382e9",
+        "tests": 76,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "fresh_final_review": {
+      "path": "final-review.md",
+      "sha256": "2f1ac914c56df819325b05ed9dc9a5c157ebb1684ce867a7bb5b1e5097db69a7",
+      "original_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-c17cb987/cod56-integrated-final-review.md",
+      "settings": "mapped/host-accepted gpt-6.1-sol/max; fresh/default/fork_turns none; independent runtime metadata unexposed",
+      "outcome": "FR-COD56-01 resolved; no remaining confirmed P0\u2013P3; Engineer accepted source/evidence boundary",
+      "source_fingerprint_sha256": "ebe564de14ade7088aab707d85c4f2269533226ecb26bbfb75277ce5cf27cdaf"
+    },
+    "build_source_gap": "Only actual existing logs/report/successful source included; no historical001/002 source snapshots or raw standalone command/PEinspection file present; no reconstruction.",
+    "no_stage_commit_push_execution": "Original preparation performed no staging/commit/push/execution; authorized delivery versions exact files separately. Versioning is not test execution.",
+    "delivery_scope": "Reviewed technical sources plus faithful executed evidence; no containing-head hosted CI pass or issue advancement."
   }
 }

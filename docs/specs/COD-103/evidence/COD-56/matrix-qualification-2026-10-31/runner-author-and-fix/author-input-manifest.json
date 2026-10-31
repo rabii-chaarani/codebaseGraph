@@ -1,0 +1,22 @@
+{
+  "runner-authoring/handoff.md": {
+    "bytes": 7571,
+    "sha256": "49beaed1f5e866c511b56173ad2b61b57f286cc1ea72f55e396d9a07c7f05ebc"
+  },
+  "runner-authoring/source-and-diff.log": {
+    "bytes": 25799,
+    "sha256": "ce9bf06ca5421da77f31640ab6b1f1ecfb3db39ce2ae234035134854cca9268f"
+  },
+  "runner-authoring/static-inspection.json": {
+    "bytes": 387,
+    "sha256": "e57219f553c52010fb1b7b74a02a66956e9a191027e5e94f69a74d2fe51e03f4"
+  },
+  "runner-output-fix/handoff.md": {
+    "bytes": 2622,
+    "sha256": "56ad6f15239995ab5f138a162cd7e451b78c5dbd7c482ce79496b58902eaeb12"
+  },
+  "runner-output-fix/minimal.diff": {
+    "bytes": 1023,
+    "sha256": "df9c2e1b26e8ad58ee1ecdf7687dc755c556e34fe35b9f290ff32a060f032caf"
+  }
+}

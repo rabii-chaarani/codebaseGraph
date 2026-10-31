@@ -1,0 +1,122 @@
+{
+  "archive": "raw-evidence.tar.xz",
+  "bytes": 20140,
+  "sha256": "6ce4dd856f75c2da14e6129b12b264ec29d9cf269202e642eecd21a66263eee2",
+  "members": {
+    "cargo-fmt.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cargo-version.log": {
+      "bytes": 36,
+      "sha256": "b6ef6807dd96d18b833474ad68e7a23a29e562a29c67afa71a59fb9a73df0068"
+    },
+    "check-workflows.log": {
+      "bytes": 145,
+      "sha256": "5ab375e6cd6d09b6b9aaeb26581d0d0b1aeb1f8f638877aaa214f8d256ea437e"
+    },
+    "commands.json": {
+      "bytes": 3278,
+      "sha256": "f633d593bbb6c2860a26d3c489d09c3956cb1a0ecb090fb5df91dca03f2d0506"
+    },
+    "environment-commands.json": {
+      "bytes": 324,
+      "sha256": "2e5514ed49971eaf2b638aa15bbca11f4fac92f7950bb824ccd0767b8f5c40fd"
+    },
+    "fixture-rustfmt.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "head-tree-after.log": {
+      "bytes": 82,
+      "sha256": "daef7dbfe745a4049862551a29fd4032f67eb97a52529e941fbd906ec0bfa778"
+    },
+    "head-tree.log": {
+      "bytes": 82,
+      "sha256": "daef7dbfe745a4049862551a29fd4032f67eb97a52529e941fbd906ec0bfa778"
+    },
+    "identity-after.log": {
+      "bytes": 103,
+      "sha256": "8f61fd5f126a54407519ee2dd259e624310667828b786c01d2d8d4978201d8ee"
+    },
+    "identity-before.log": {
+      "bytes": 103,
+      "sha256": "8f61fd5f126a54407519ee2dd259e624310667828b786c01d2d8d4978201d8ee"
+    },
+    "manifest.json": {
+      "bytes": 3632,
+      "sha256": "186980728f509f897124111f3ca1546b22434b2ac34f40b93b55572c75eac58a"
+    },
+    "nextest-version.log": {
+      "bytes": 167,
+      "sha256": "6308c0cdee31234d945b3b2cbf7d56d9db80153d1015df1d3ccff75eaca8d498"
+    },
+    "nextest.toml": {
+      "bytes": 173,
+      "sha256": "d94f3646482c882d140dbe5719c6850f08e5bb64fcf135b995c7b947fb59cd8a"
+    },
+    "os.log": {
+      "bytes": 65,
+      "sha256": "cd5d6399b3785b04ceaae75045a9ca9f80f0bbc3526eff9d0c36b170ed1ec348"
+    },
+    "product-identity-before.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "release-gate.log": {
+      "bytes": 139,
+      "sha256": "5899714f6181a86b883602a3dd9b321883ca9e4084db16c902cf56856e633340"
+    },
+    "report.md": {
+      "bytes": 7389,
+      "sha256": "0bb2489b263eba053f61c18de3e8ab01c6e6120eeef6ff294646eefaaee6aeb3"
+    },
+    "result.json": {
+      "bytes": 1404,
+      "sha256": "ac092a2b5002ec78e79fba50c522aa81ef725bc87e3400ec13871afd82a07f27"
+    },
+    "rust-environment.log": {
+      "bytes": 192,
+      "sha256": "aea7c77c2b0d24444d07240e4d785e4ba73b6c9e786748af2ddc22bbf4c104bf"
+    },
+    "source-freeze-after.json": {
+      "bytes": 3187,
+      "sha256": "235b0662efdea909da32ca6d332d9918c8cf3aa6b9bec5a6cd53117364b768df"
+    },
+    "source-freeze-before.json": {
+      "bytes": 3659,
+      "sha256": "5a885f28de2b4e5fa8e1386956e681edac1daa0512666d6f9ecb30486025ffc9"
+    },
+    "tracked-inventory.log": {
+      "bytes": 92560,
+      "sha256": "2fcef4d38ed73f849bed9d5810d2bb45ac359d3c89d2678d5961af827c3dde87"
+    },
+    "xtask-clippy.log": {
+      "bytes": 72,
+      "sha256": "fecede7c2157efe2f16c8c8b9dce94b0fb4dd384dca8207046c8bf7636eb0ffe"
+    },
+    "xtask-junit.xml": {
+      "bytes": 15812,
+      "sha256": "a1af5e48d0e2a2ab8ca6c1039ea71415515c8413efc8e73f8c5374e1d54382e9"
+    },
+    "xtask-nextest-complete.log": {
+      "bytes": 9729,
+      "sha256": "914bef40350b395de75180bcea7b662fd4489411d24f7ec6335225c040fe6552"
+    },
+    "xtask-nextest.log": {
+      "bytes": 3353,
+      "sha256": "9ce7f7b6cfcb29de33b4c6d5c40f87bf3fd047a334da71ff21da2247e280adb0"
+    }
+  },
+  "member_count": 26,
+  "all_members_byte_equal_safe_unique_exact": true,
+  "outside_readable_copies": [
+    "report.md",
+    "manifest.json",
+    "xtask-junit.xml",
+    "result.json"
+  ],
+  "raw_format_preserved": {},
+  "bounded_credential_scan_no_matches": true,
+  "security_audit_claim": false
+}
