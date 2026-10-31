@@ -1,0 +1,19 @@
+{
+  "host-and-source": {
+    "exit": 2,
+    "reason": "Git Bash converted cl.exe /Bv into a path; ungrouped chain redirected only last command. Entire Bash output retained in host-and-source-attempt-output.log; corrected host identity has separate complete log."
+  },
+  "focused-unit": {
+    "exit": 101,
+    "passed": 19,
+    "failed": 2,
+    "reason": "fixture rustc selected Git usr/bin/link.exe ahead of MSVC"
+  },
+  "focused-integration": {
+    "exit": 101,
+    "passed": 1,
+    "failed": 5,
+    "reason": "same raw-rustc fixture linker failure"
+  },
+  "correction": "run-native.ps1 restores full captured native PATH/LIB/INCLUDE after Bash startup. Same source and executables; source/binary hashes retained. No production constants changed."
+}

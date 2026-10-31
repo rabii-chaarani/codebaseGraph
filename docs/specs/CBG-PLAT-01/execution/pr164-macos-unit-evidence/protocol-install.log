@@ -1,0 +1,111 @@
+{
+  "active_generation": "41516-1793334407402741700-1",
+  "agent_hooks": {
+    "action": "not_applicable",
+    "clients": [],
+    "reason": "MCP client none has no local agent-hook adapter",
+    "selection": "auto"
+  },
+  "cleanup_pending": true,
+  "config_action": "created",
+  "config_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\config.json",
+  "connector_rows": 104,
+  "database_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\storage\\generations\\gen-41516-1793334407402741700-1\\graph.ldb",
+  "database_written": true,
+  "db_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\storage\\generations\\gen-41516-1793334407402741700-1\\graph.ldb",
+  "diagnostics": [],
+  "edge_rows": 52,
+  "instructions": {
+    "action": "created",
+    "path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\AGENTS.md"
+  },
+  "manifest_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\storage\\generations\\gen-41516-1793334407402741700-1\\manifest.json",
+  "materialization": {
+    "connector_rows": 104,
+    "database_written": true,
+    "deleted": 0,
+    "deleted_paths": [],
+    "diagnostics": [],
+    "edge_rows": 52,
+    "graph_summary": {
+      "edge_count": 52,
+      "node_count": 31
+    },
+    "ignored": 0,
+    "ignored_paths": [],
+    "manifest_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\manifest.json",
+    "mode": "full",
+    "node_rows": 31,
+    "phase_timings": {
+      "database_write_seconds": 166.3464565,
+      "graph_build_seconds": 0.0011316,
+      "native_cli_seconds": 176.1289137,
+      "parse_seconds": 0.025252,
+      "scan_seconds": 0.4640141,
+      "search_index_seconds": 0.0542947,
+      "staging_seconds": 8.9607189
+    },
+    "progress_events": [],
+    "rebuilt": 2,
+    "rebuilt_paths": [
+      "AGENTS.md",
+      "service.py"
+    ],
+    "scanned": 2,
+    "skipped": 0,
+    "skipped_paths": [],
+    "would_delete": [],
+    "would_rebuild": [
+      "AGENTS.md",
+      "service.py"
+    ],
+    "would_skip": []
+  },
+  "mcp_config": {
+    "action": "skipped",
+    "client": "none",
+    "command": null,
+    "daemon": null,
+    "descriptor": {
+      "args": [
+        "mcp",
+        "start",
+        "--config",
+        "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\config.json"
+      ],
+      "command": "codebase-graph",
+      "cwd": null,
+      "env": {},
+      "name": "codebase_graph",
+      "repo_root": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture",
+      "setup_config_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\config.json",
+      "timeout": 60,
+      "tool_policy": "graph_query_read_only",
+      "transport": "stdio"
+    },
+    "entry": {
+      "args": [
+        "mcp",
+        "start",
+        "--config",
+        "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\config.json"
+      ],
+      "command": "codebase-graph",
+      "startup_timeout_sec": 60
+    },
+    "method": null,
+    "path": null,
+    "scope": "local",
+    "server_name": "codebase_graph"
+  },
+  "node_rows": 31,
+  "ok": true,
+  "pending_runs": 0,
+  "repo_name": "protocol-fixture",
+  "repo_root": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture",
+  "skipped": 0,
+  "state_dir": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph",
+  "storage_format": "managed_v2",
+  "storage_root": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\macos-unit-fix\\protocol-fixture\\.codebaseGraph\\storage",
+  "writable": true
+}

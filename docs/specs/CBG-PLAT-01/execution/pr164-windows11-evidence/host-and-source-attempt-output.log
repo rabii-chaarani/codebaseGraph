@@ -1,0 +1,21 @@
+Microsoft Windows [Version 10.0.22631.7652]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Users\rcha0053\Repositories\cbg-pr164>rustc 1.96.0 (ac68faa20 2026-05-25)
+binary: rustc
+commit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96
+commit-date: 2026-05-25
+host: x86_64-pc-windows-msvc
+release: 1.96.0
+LLVM version: 22.1.2
+cargo 1.96.0 (30a34c682 2026-05-25)
+Microsoft (R) C/C++ Optimizing Compiler Version 19.39.33523 for x64
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+cl : Command line warning D9024 : unrecognized source file type 'C:/Users/rcha0053/AppData/Local/Programs/Git/Bv', object file assumed
+Microsoft (R) Incremental Linker Version 14.39.33523.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+/out:Bv.exe 
+C:/Users/rcha0053/AppData/Local/Programs/Git/Bv 
+LINK : fatal error LNK1181: cannot open input file 'C:\Users\rcha0053\AppData\Local\Programs\Git\Bv.obj'

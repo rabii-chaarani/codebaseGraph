@@ -1,0 +1,4 @@
+[mcp_servers.cod55_supplemental]
+command = "codebase-graph"
+args = ["mcp", "start", "--config", "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"]
+startup_timeout_sec = 60

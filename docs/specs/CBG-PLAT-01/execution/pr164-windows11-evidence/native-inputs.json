@@ -1,0 +1,30 @@
+{
+  "base_environment_source": "C:\\Users\\rcha0053\\pr158-qualification\\native-shared-environment.json",
+  "inputs": [
+    {
+      "name": "lbug_shared.dll",
+      "path": "C:\\Users\\rcha0053\\pr158-qualification\\ladybug-shared-0.19.0\\lbug_shared.dll",
+      "bytes": 20199424,
+      "sha256": "5b28bf744580c3a47aaeee7ece40a3511e2141268def5207e9beffe236c9b512"
+    },
+    {
+      "name": "libssl-3-x64.dll",
+      "path": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin\\libssl-3-x64.dll",
+      "bytes": 1247744,
+      "sha256": "4158ad85699d9c5428b62778883b16b6c21b3b7da11fe60a0cc24ea37687a9fd"
+    },
+    {
+      "name": "libcrypto-3-x64.dll",
+      "path": "C:\\Users\\rcha0053\\AppData\\Local\\anaconda3\\Library\\bin\\libcrypto-3-x64.dll",
+      "bytes": 6459392,
+      "sha256": "124c5f40a6cf0e642f9d92784dd66314fd548b4fdf93c543bf478e71e1209f9d"
+    }
+  ],
+  "setup": "local test-only sibling DLLs in target/native-tests and deps because cases intentionally replace PATH; no native bytes committed/distributed",
+  "rust": "1.96.0",
+  "msvc": "14.39.33519 cl19.39.33523",
+  "sdk": "10.0.22621.0",
+  "feature": "bundled-windows-extensions",
+  "profile": "native-tests",
+  "target": "x86_64-pc-windows-msvc"
+}

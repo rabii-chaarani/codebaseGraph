@@ -1,0 +1,71 @@
+
+running 21 tests
+test api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments ... ok
+test api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments ... ok
+test api::lifecycle::tests::native_client_commands_preserve_every_server_argument ... ok
+test api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets ... ok
+test api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared ... ok
+test api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths ... ok
+test client_config::tests::non_windows_keeps_home_default_behavior ... ok
+test client_config::tests::repository_targets_and_client_overrides_do_not_resolve_a_profile ... ok
+test client_config::tests::unsupported_windows_config_files_are_skipped_without_environment_changes ... ok
+test client_config::tests::windows_claude_project_visibility_uses_the_selected_project_directory ... ok
+test client_config::tests::windows_command_projects_relative_targets_before_child_cwd_changes ... ok
+test client_config::tests::windows_fails_when_profile_is_unavailable_or_not_absolute ... ok
+test client_config::tests::windows_uses_native_profile_after_invalid_userprofile ... ok
+test client_config::tests::windows_uses_native_profile_when_userprofile_is_an_absolute_file ... ok
+test client_config::tests::windows_uses_userprofile_and_ignores_home ... ok
+test client_process::tests::cod55_windows_batch_shims_forward_exact_argv_and_block_injection ... 
+thread 'client_process::tests::cod55_windows_batch_shims_forward_exact_argv_and_block_injection' (38984) panicked at src\client_process.rs:634:9:
+rustc failed: error: linking with `link.exe` failed: exit code: 1
+  |
+  = note: "C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\usr\\bin\\link.exe" "/NOLOGO" "C:\\Users\\rcha0053\\pr164-qualification\\tmp\\c55_24352_0\\rustcaVkAh7\\symbols.o" "<2 object files omitted>" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "kernel32.lib" "kernel32.lib" "kernel32.lib" "ntdll.lib" "userenv.lib" "ws2_32.lib" "dbghelp.lib" "/defaultlib:msvcrt" "/NXCOMPAT" "/OUT:C:\\Users\\rcha0053\\pr164-qualification\\tmp\\c55_24352_0\\argv capture.exe" "/OPT:REF,NOICF" "/DEBUG" "/PDBALTPATH:%_PDB%" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\intrinsic.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\liballoc.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libcore.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libstd.natvis"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: /usr/bin/link: extra operand 'C:\\Users\\rcha0053\\pr164-qualification\\tmp\\c55_24352_0\\argv capture.capture.76418ab8ec27d449-cgu.0.rcgu.o'
+          Try '/usr/bin/link --help' for more information.
+          
+
+note: `link.exe` returned an unexpected error
+
+note: the Visual Studio build tools may need to be repaired using the Visual Studio installer
+
+note: or a necessary component may be missing from the "C++ build tools" workload
+
+error: aborting due to 1 previous error
+
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test client_process::tests::cod55_windows_explicit_paths_are_supported_and_pinned ... ok
+test client_process::tests::cod55_windows_native_exe_preserves_arguments_without_batch_restrictions ... 
+thread 'client_process::tests::cod55_windows_native_exe_preserves_arguments_without_batch_restrictions' (11908) panicked at src\client_process.rs:634:9:
+rustc failed: error: linking with `link.exe` failed: exit code: 1
+  |
+  = note: "C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\usr\\bin\\link.exe" "/NOLOGO" "C:\\Users\\rcha0053\\pr164-qualification\\tmp\\c55_24352_2\\rustc7CmnNM\\symbols.o" "<2 object files omitted>" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "kernel32.lib" "kernel32.lib" "kernel32.lib" "ntdll.lib" "userenv.lib" "ws2_32.lib" "dbghelp.lib" "/defaultlib:msvcrt" "/NXCOMPAT" "/OUT:C:\\Users\\rcha0053\\pr164-qualification\\tmp\\c55_24352_2\\argv capture.exe" "/OPT:REF,NOICF" "/DEBUG" "/PDBALTPATH:%_PDB%" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\intrinsic.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\liballoc.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libcore.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libstd.natvis"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: /usr/bin/link: extra operand 'C:\\Users\\rcha0053\\pr164-qualification\\tmp\\c55_24352_2\\argv capture.capture.76418ab8ec27d449-cgu.0.rcgu.o'
+          Try '/usr/bin/link --help' for more information.
+          
+
+note: `link.exe` returned an unexpected error
+
+note: the Visual Studio build tools may need to be repaired using the Visual Studio installer
+
+note: or a necessary component may be missing from the "C++ build tools" workload
+
+error: aborting due to 1 previous error
+
+
+FAILED
+test client_process::tests::cod55_windows_path_precedence_and_fixed_suffix_order ... ok
+test client_process::tests::cod55_windows_rejects_unsafe_batch_paths_and_arguments_before_spawn ... ok
+test client_process::tests::cod55_windows_rejects_unsupported_suffixes_and_ambiguous_commands ... ok
+
+failures:
+
+failures:
+    client_process::tests::cod55_windows_batch_shims_forward_exact_argv_and_block_injection
+    client_process::tests::cod55_windows_native_exe_preserves_arguments_without_batch_restrictions
+
+test result: FAILED. 19 passed; 2 failed; 0 ignored; 0 measured; 822 filtered out; finished in 0.93s
+

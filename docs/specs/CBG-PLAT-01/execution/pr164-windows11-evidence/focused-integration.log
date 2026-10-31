@@ -1,0 +1,116 @@
+
+running 6 tests
+test cod55_windows_claude_project_visibility_runs_in_selected_project ... 
+thread 'cod55_windows_claude_project_visibility_runs_in_selected_project' (26032) panicked at tests\windows_client_discovery.rs:79:9:
+error: linking with `link.exe` failed: exit code: 1
+  |
+  = note: "C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\usr\\bin\\link.exe" "/NOLOGO" "C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329967436802800\\rustcFItt4O\\symbols.o" "<3 object files omitted>" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "kernel32.lib" "kernel32.lib" "kernel32.lib" "ntdll.lib" "userenv.lib" "ws2_32.lib" "dbghelp.lib" "/defaultlib:msvcrt" "/NXCOMPAT" "/OUT:C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329967436802800\\fixture.exe" "/OPT:REF,NOICF" "/DEBUG" "/PDBALTPATH:%_PDB%" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\intrinsic.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\liballoc.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libcore.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libstd.natvis"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: /usr/bin/link: extra operand 'C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329967436802800\\fixture.cod55_fixture.69cf6ac4f47d1cd8-cgu.0.rcgu.o'
+          Try '/usr/bin/link --help' for more information.
+          
+
+note: `link.exe` returned an unexpected error
+
+note: the Visual Studio build tools may need to be repaired using the Visual Studio installer
+
+note: or a necessary component may be missing from the "C++ build tools" workload
+
+error: aborting due to 1 previous error
+
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test cod55_windows_exe_cmd_bat_add_and_list_use_selected_target ... 
+thread 'cod55_windows_exe_cmd_bat_add_and_list_use_selected_target' (37000) panicked at tests\windows_client_discovery.rs:79:9:
+error: linking with `link.exe` failed: exit code: 1
+  |
+  = note: "C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\usr\\bin\\link.exe" "/NOLOGO" "C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329967798255800\\rustcEaHW3S\\symbols.o" "<3 object files omitted>" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "kernel32.lib" "kernel32.lib" "kernel32.lib" "ntdll.lib" "userenv.lib" "ws2_32.lib" "dbghelp.lib" "/defaultlib:msvcrt" "/NXCOMPAT" "/OUT:C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329967798255800\\fixture.exe" "/OPT:REF,NOICF" "/DEBUG" "/PDBALTPATH:%_PDB%" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\intrinsic.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\liballoc.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libcore.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libstd.natvis"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: /usr/bin/link: extra operand 'C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329967798255800\\fixture.cod55_fixture.69cf6ac4f47d1cd8-cgu.0.rcgu.o'
+          Try '/usr/bin/link --help' for more information.
+          
+
+note: `link.exe` returned an unexpected error
+
+note: the Visual Studio build tools may need to be repaired using the Visual Studio installer
+
+note: or a necessary component may be missing from the "C++ build tools" workload
+
+error: aborting due to 1 previous error
+
+
+FAILED
+test cod55_windows_explicit_file_visibility_never_checks_other_target ... 
+thread 'cod55_windows_explicit_file_visibility_never_checks_other_target' (6384) panicked at tests\windows_client_discovery.rs:79:9:
+error: linking with `link.exe` failed: exit code: 1
+  |
+  = note: "C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\usr\\bin\\link.exe" "/NOLOGO" "C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329968120571000\\rustcsNxFO5\\symbols.o" "<3 object files omitted>" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "kernel32.lib" "kernel32.lib" "kernel32.lib" "ntdll.lib" "userenv.lib" "ws2_32.lib" "dbghelp.lib" "/defaultlib:msvcrt" "/NXCOMPAT" "/OUT:C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329968120571000\\fixture.exe" "/OPT:REF,NOICF" "/DEBUG" "/PDBALTPATH:%_PDB%" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\intrinsic.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\liballoc.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libcore.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libstd.natvis"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: /usr/bin/link: extra operand 'C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329968120571000\\fixture.cod55_fixture.69cf6ac4f47d1cd8-cgu.0.rcgu.o'
+          Try '/usr/bin/link --help' for more information.
+          
+
+note: `link.exe` returned an unexpected error
+
+note: the Visual Studio build tools may need to be repaired using the Visual Studio installer
+
+note: or a necessary component may be missing from the "C++ build tools" workload
+
+error: aborting due to 1 previous error
+
+
+FAILED
+test cod55_windows_profile_override_explicit_and_project_targets ... ok
+test cod55_windows_relative_override_and_native_failure_keep_target ... 
+thread 'cod55_windows_relative_override_and_native_failure_keep_target' (36792) panicked at tests\windows_client_discovery.rs:79:9:
+error: linking with `link.exe` failed: exit code: 1
+  |
+  = note: "C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\usr\\bin\\link.exe" "/NOLOGO" "C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329969371695100\\rustcOvZXuQ\\symbols.o" "<3 object files omitted>" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "kernel32.lib" "kernel32.lib" "kernel32.lib" "ntdll.lib" "userenv.lib" "ws2_32.lib" "dbghelp.lib" "/defaultlib:msvcrt" "/NXCOMPAT" "/OUT:C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329969371695100\\fixture.exe" "/OPT:REF,NOICF" "/DEBUG" "/PDBALTPATH:%_PDB%" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\intrinsic.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\liballoc.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libcore.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libstd.natvis"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: /usr/bin/link: extra operand 'C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329969371695100\\fixture.cod55_fixture.69cf6ac4f47d1cd8-cgu.0.rcgu.o'
+          Try '/usr/bin/link --help' for more information.
+          
+
+note: `link.exe` returned an unexpected error
+
+note: the Visual Studio build tools may need to be repaired using the Visual Studio installer
+
+note: or a necessary component may be missing from the "C++ build tools" workload
+
+error: aborting due to 1 previous error
+
+
+FAILED
+test cod55_windows_unsafe_batch_input_preserves_existing_configuration ... 
+thread 'cod55_windows_unsafe_batch_input_preserves_existing_configuration' (36676) panicked at tests\windows_client_discovery.rs:79:9:
+error: linking with `link.exe` failed: exit code: 1
+  |
+  = note: "C:\\Users\\rcha0053\\AppData\\Local\\Programs\\Git\\usr\\bin\\link.exe" "/NOLOGO" "C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329969676728900\\rustcegtb2Z\\symbols.o" "<3 object files omitted>" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-msvc\\lib/{libstd-*,libpanic_unwind-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libunwind-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "kernel32.lib" "kernel32.lib" "kernel32.lib" "ntdll.lib" "userenv.lib" "ws2_32.lib" "dbghelp.lib" "/defaultlib:msvcrt" "/NXCOMPAT" "/OUT:C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329969676728900\\fixture.exe" "/OPT:REF,NOICF" "/DEBUG" "/PDBALTPATH:%_PDB%" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\intrinsic.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\liballoc.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libcore.natvis" "/NATVIS:<sysroot>\\lib\\rustlib\\etc\\libstd.natvis"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: /usr/bin/link: extra operand 'C:\\Users\\rcha0053\\pr164-qualification\\tmp\\cg55-12884-1793329969676728900\\fixture.cod55_fixture.69cf6ac4f47d1cd8-cgu.0.rcgu.o'
+          Try '/usr/bin/link --help' for more information.
+          
+
+note: `link.exe` returned an unexpected error
+
+note: the Visual Studio build tools may need to be repaired using the Visual Studio installer
+
+note: or a necessary component may be missing from the "C++ build tools" workload
+
+error: aborting due to 1 previous error
+
+
+FAILED
+
+failures:
+
+failures:
+    cod55_windows_claude_project_visibility_runs_in_selected_project
+    cod55_windows_exe_cmd_bat_add_and_list_use_selected_target
+    cod55_windows_explicit_file_visibility_never_checks_other_target
+    cod55_windows_relative_override_and_native_failure_keep_target
+    cod55_windows_unsafe_batch_input_preserves_existing_configuration
+
+test result: FAILED. 1 passed; 5 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.55s
+

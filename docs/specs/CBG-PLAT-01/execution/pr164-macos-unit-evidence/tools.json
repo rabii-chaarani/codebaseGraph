@@ -1,0 +1,11 @@
+{
+  "rustfmt": {
+    "url": "https://static.rust-lang.org/dist/2026-05-28/rustfmt-1.96.0-x86_64-pc-windows-msvc.tar.xz",
+    "sha256": "7ae6d141dfb844355c4756a41f39ed45b74ff9295fff86bd0bf9b559a83c5d5d"
+  },
+  "clippy": {
+    "url": "https://static.rust-lang.org/dist/2026-05-28/clippy-1.96.0-x86_64-pc-windows-msvc.tar.xz",
+    "sha256": "5fb4b2a8b345baa4542a2c09e6f7590a3bfc992968a9fcf4326146e055ce8b98"
+  },
+  "installation": "official Rust1.96.0 components unpacked external qualification directory; no repository/kernel dependency change"
+}

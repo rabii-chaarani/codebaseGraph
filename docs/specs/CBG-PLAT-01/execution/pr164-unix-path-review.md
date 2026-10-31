@@ -1,0 +1,24 @@
+# PR164 review — Unix PATH execute permissions
+
+## Identity and authorization
+
+- [COD-55](https://linear.app/codebasegraph/issue/COD-55), CBG-PLAT-01/S04 R04 A07–A08; same approved [rev0.11](https://github.com/rabii-chaarani/codebaseGraph/blob/8a410c7a22f5291f06a1cece5cd9e7c0be255e72/docs/specs/CBG-PLAT-01/spec.md#s04--use-explicit-windows-user-directory-and-executable-discovery-policy) and [exact approval](https://github.com/rabii-chaarani/codebaseGraph/blob/949db168fcf128cc1fe6e73cb70a14db832d50b5/docs/specs/CBG-PLAT-01/approvals/cod55-windows-client-discovery.md).
+- User request: “address the review comment in the PR”. Review [4396573116](https://github.com/rabii-chaarani/codebaseGraph/pull/164#discussion_r4396573116), baseline `afcb83feb98c7a9cffeb2a942dd6f30b6ed23271`.
+- Proportional Scryer `chg-sdzvsw`, signed off; no changed architecture claims. One writer owns `src/client_process.rs`; coordinator owns tests/build/Git/evidence. Previous [CI repairs](pr164-ci-repair.md) stay intact.
+- Branch-local graph was explicitly rebuilt; semantic search and explicit change-impact context discovered `discover_non_windows` before source inspection/edits. The connected MCP graph remains bound to the original older checkout, not this branch.
+
+## Confirmed regression and intended repair
+
+Baseline macOS reproduction: two PATH directories hold `codex`, first mode0644 and second0755. Bare `Command::new("codex")` executes the second; the new pinned helper selects the first and returns `PermissionDenied`. This is an introduced non-Windows regression, not changed approval scope.
+
+Repair only Unix PATH candidates: check ordinary-file status and `libc::access(X_OK)` using the same absolute native-byte path that will be pinned. Keep directory order, exact filenames, relative PATH pinning and explicit-path behavior. Windows suffix/batch policy, configuration, public APIs, resources and dependencies remain unchanged. No generic shell fallback, retries or timeout changes.
+
+`access` is a permission preflight, not a launch guarantee. It uses real credentials; differing real/effective credential (setuid) support is not part of the existing approved deployment contract. Interpreter errors, filesystem races and other spawn failures remain ordinary errors; this repair does not claim complete execvp failure-path emulation.
+
+## Verification and review
+
+Fresh GPT-6.1 Sol / High proposal review: proceed with specified conditions, no blockers. Require helper-level red-before-green; supplied PATH lists without global PATH mutation; skipped0644/later0755 and all-nonexec, first-executable order, actual script/argv execution, relative candidate and explicit-nonexec preservation. Tests-first baseline run on unchanged discovery logic fails all three new helper regressions: earlier0644 selected instead of later0755; all-nonexec incorrectly returns a candidate; relative-directory check inspects a different process directory before pinning. The permission assertions use absolute PATH entries to isolate the reported defect; relative handling is checked separately. Initial test attempt conflated those premises and is retained as failed-attempt evidence, not counted as the permission proof. [Corrected baseline red log](pr164-unix-path-evidence/regression-red.log). Implementation SHA256: `dae066b97109bd2aad214a43ab6c62836bc4952d3d0263b3f39940f3da231db3`. All three regressions now pass on macOS; [green log](pr164-unix-path-evidence/regression-green.log). Windows MSVC metadata compilation of the helper with `-D warnings` passes; compile-only, not Windows execution. The affected MCP/lifecycle/client suite passes **61/61**, zero selected failures/errors/skips; 796 other cases were not selected and are not claimed passing. [JUnit](pr164-unix-path-evidence/affected.junit.xml), [log](pr164-unix-path-evidence/affected-tests.log). `cargo fmt --all --check` and `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings` pass with zero warnings; full `&&` chain completed exit0. [Commands/results](pr164-unix-path-evidence/commands.json), [Clippy log](pr164-unix-path-evidence/clippy.log). Fresh GPT-6.1 Sol / Max final source and completed-evidence review found no confirmed P0–P3 in the exact recorded source snapshot. Reviewer verified baseline/unchanged Windows+explicit-path branches, native-byte/unsafe boundary, red/green results and affected61/61 + strict checks. [Final review](pr164-unix-path-evidence/final-review.md). Final-head native CI remains pending; the review does not imply platform or aggregate closure.
+
+## Handoff
+
+No completion, new-head native CI, supported-consumer or aggregate closure claimed. Previous Windows Server results at `afcb83f` are separate evidence. No merge/release/deploy/restart. Reusable-knowledge assessment: primary POSIX permission semantics and this bounded regression belong in this execution record; no new repository memory candidate warranted before verification.

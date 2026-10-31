@@ -1,0 +1,49 @@
+   Compiling codebase-graph v3.0.4 (/private/tmp/codebasegraph-pr153-ci-only-source)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 27.01s
+     Running unittests src/lib.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/codebase_graph-ffa80bf96221ee79)
+
+running 42 tests
+test adapters::cli::tests::dispatch_materialize::git_diff_plan_scopes_to_changed_paths ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_css_source_root_without_profiles ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_defaults_to_parallel_builds ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_empty_project_from_native_request ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_help_is_product_command_help ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_honors_config_excludes ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_html_source_root_without_profiles ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_javascript_source_root_without_profiles ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_parallel_flag_is_accepted_as_no_op ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_python_source_root_without_python_request ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_single_thread_disables_parallel_builds ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_typescript_and_tsx_source_root_without_profiles ... ok
+test adapters::cli::tests::dispatch_materialize::materialize_webassembly_source_root_without_profiles ... ok
+test adapters::cli::tests::dispatch_materialize::old_command_names_are_rejected ... ok
+test adapters::cli::tests::dispatch_materialize::parallel_materialize_reports_progress_events ... ok
+test adapters::cli::tests::dispatch_materialize::plan_includes_source_directories_named_build ... ok
+test adapters::cli::tests::dispatch_materialize::plan_lists_rebuild_delete_skip_and_ignore_paths ... ok
+test adapters::cli::tests::dispatch_materialize::prints_top_level_help ... ok
+test adapters::cli::tests::dispatch_materialize::prints_top_level_help_without_args ... ok
+test adapters::cli::tests::dispatch_materialize::reinstall_help_is_product_command_help ... ok
+test adapters::cli::tests::dispatch_materialize::retired_semantic_options_are_absent_from_all_materialization_help ... ok
+test adapters::cli::tests::dispatch_materialize::retired_semantic_options_are_rejected_by_each_affected_parser ... ok
+test adapters::cli::tests::dispatch_materialize::setup_defaults_repo_root_to_auto_detection ... ok
+test adapters::cli::tests::dispatch_materialize::setup_help_is_product_command_help ... ok
+test adapters::cli::tests::dispatch_materialize::setup_materializes_graph_and_writes_config ... ok
+test adapters::cli::tests::dispatch_materialize::setup_parses_agent_hook_selection ... ok
+test adapters::cli::tests::dispatch_materialize::setup_parses_explicit_mcp_transport_and_daemon_port ... ok
+test adapters::cli::tests::dispatch_materialize::watch_help_documents_parallel_default_and_opt_out ... ok
+test db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes ... ok
+test db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit ... ok
+test db_writer::phase::tests::error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily ... ok
+test db_writer::phase::tests::isolated_error_keeps_context_inside_the_cap ... ok
+test db_writer::phase::tests::oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary ... ok
+test db_writer::phase::tests::phase_protocol_requires_v2_containment_contract ... ok
+test db_writer::phase::tests::phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error ... ok
+test db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts ... ok
+test db_writer::phase::tests::phase_request_v2_preserves_thread_setting ... ok
+test db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader ... ok
+test db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory ... ok
+test db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path ... ok
+test staging_writer::tests::copy_path_normalizes_windows_separators_for_ladybug ... ok
+test staging_writer::tests::copy_path_strips_windows_extended_prefix_for_ladybug ... ok
+
+test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 800 filtered out; finished in 64.85s

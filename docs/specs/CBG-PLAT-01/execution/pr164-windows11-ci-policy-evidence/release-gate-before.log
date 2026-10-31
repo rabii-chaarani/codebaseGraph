@@ -1,0 +1,39 @@
+   Compiling proc-macro2 v1.0.106
+   Compiling version_check v0.9.5
+   Compiling generic-array v0.14.7
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.45
+   Compiling cfg-if v1.0.4
+   Compiling typenum v1.20.1
+   Compiling serde_core v1.0.228
+   Compiling syn v2.0.117
+   Compiling crc32fast v1.5.0
+   Compiling serde v1.0.228
+   Compiling zmij v1.0.21
+   Compiling serde_derive v1.0.228
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling itoa v1.0.18
+   Compiling simd-adler32 v0.3.10
+   Compiling equivalent v1.0.2
+   Compiling serde_json v1.0.150
+   Compiling hashbrown v0.15.5
+   Compiling adler2 v2.0.1
+   Compiling miniz_oxide v0.9.1
+   Compiling indexmap v2.7.1
+   Compiling digest v0.10.7
+   Compiling filetime v0.2.29
+   Compiling ryu v1.0.23
+   Compiling libyaml-rs v0.3.0
+   Compiling cpufeatures v0.2.17
+   Compiling memchr v2.8.2
+   Compiling yaml_serde v0.10.7
+   Compiling sha2 v0.10.9
+   Compiling tar v0.4.46
+   Compiling flate2 v1.1.10
+   Compiling xtask v4.0.1 (C:\Users\rcha0053\Repositories\cbg-pr164\crates\xtask)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 37.38s
+     Running `C:\Users\rcha0053\pr164-qualification\target\debug\xtask.exe release-gate`
+FAIL: python-file-present: docs\specs\CBG-PLAT-01\execution\pr164-windows11-evidence\assert-supplemental.py must not be maintained source.
+release gate failed
+error: process didn't exit successfully: `C:\Users\rcha0053\pr164-qualification\target\debug\xtask.exe release-gate` (exit code: 1)

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="5" failures="0" errors="0" uuid="db7b9e05-c89d-4837-92c2-0f89d1a898f0" timestamp="2026-10-28T12:42:30.516+09:30" time="297.627">
+    <testsuite name="codebase-graph::copy_phase_process" tests="5" disabled="0" errors="0" failures="0">
+        <testcase name="bounded_production_chunks_reopen_with_primary_keys_connectors_and_search" classname="codebase-graph::copy_phase_process" timestamp="2026-10-28T12:42:30.517+09:30" time="120.220">
+        </testcase>
+        <testcase name="jumbo_staged_row_survives_real_copy_and_fresh_process_read" classname="codebase-graph::copy_phase_process" timestamp="2026-10-28T12:44:30.737+09:30" time="28.961">
+        </testcase>
+        <testcase name="native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles" classname="codebase-graph::copy_phase_process" timestamp="2026-10-28T12:44:59.698+09:30" time="148.412">
+        </testcase>
+        <testcase name="phase_process_oracle_accepts_reused_pid_but_rejects_reused_process" classname="codebase-graph::copy_phase_process" timestamp="2026-10-28T12:47:28.109+09:30" time="0.017">
+        </testcase>
+        <testcase name="phase_process_oracle_rejects_missing_or_invalid_evidence" classname="codebase-graph::copy_phase_process" timestamp="2026-10-28T12:47:28.127+09:30" time="0.016">
+        </testcase>
+    </testsuite>
+</testsuites>

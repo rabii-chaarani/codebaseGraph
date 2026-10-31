@@ -1,0 +1,23 @@
+{
+  "head": "4e42468d904c18a5f3fd58c0809212977a561727",
+  "binaries": [
+    {
+      "path": "C:\\Users\\rcha0053\\pr164-qualification\\target\\native-tests\\deps\\windows_client_discovery-c769dfec1010c183.exe",
+      "bytes": 895488,
+      "sha256": "4aa146955896dc1bdd98e8966de61b39b931f6402b1f73b400dbf2d10480848f",
+      "role": "windows_client_discovery-test"
+    },
+    {
+      "path": "C:\\Users\\rcha0053\\pr164-qualification\\target\\native-tests\\codebase-graph.exe",
+      "bytes": 34801664,
+      "sha256": "0105a95522277f86786e54af0d8360406129fb8a48d36216bc6d45dab1633608",
+      "role": "codebase-graph"
+    },
+    {
+      "path": "C:\\Users\\rcha0053\\pr164-qualification\\target\\native-tests\\deps\\codebase_graph-7ed996dfd9332328.exe",
+      "bytes": 45928960,
+      "sha256": "3c00a5f6def9361db355f6a9c3da397f5950dcc0ef1cf114fe943fb48c6209cd",
+      "role": "codebase_graph-test"
+    }
+  ]
+}

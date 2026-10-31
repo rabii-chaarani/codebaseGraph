@@ -1,0 +1,49 @@
+# PR164 independent completed-execution review
+
+## Verdict and review boundary
+
+**No blocking execution-evidence finding** for the bounded CBG-PLAT-01/S04, R04 / A07–A08, COD-55 result at source `4e42468d904c18a5f3fd58c0809212977a561727`. The completed record supports **21 selected native unit passes, 6 native integration passes and 6 separately asserted supplemental CLI scenarios** on this Windows 11 host. It does not support a full-suite, clean-install, archive, real-vendor-client or aggregate-closure claim.
+
+This reviewer independently read the final report, exact approval/spec rev0.11 and D03a/D03b decisions; the original checkout's AGENTS.md; k-wiki recall/search; Cargo build JSON; inventories/selection; failed and corrected logs; process-only PowerShell harness/requests; native-input/source/binary records; supplemental fixture, outputs, call log, assertion script and retained configuration files; OS evidence and source guard. The connected graph provided orientation only, not branch-source verification. No undiscovered product/test source was read. Detailed test assertions remain supported by the retained execution reports/source reviews and named native cases, not a new independent assertion-by-assertion source audit.
+
+No builds, tests, commands, global environment changes, product/fixture edits, services, Git/GitHub/tracker writes or push were performed by this reviewer. This scratch review is the only new file produced. No product constants or acceptance requirements were changed.
+
+## Counts, selection and retained failures
+
+| Attempt | Unit result | Integration result |
+|---|---|---|
+| Initial Git Bash environment | 19 passed, 2 failed, 0 ignored, 822 filtered; exit101 | 1 passed, 5 failed, 0 ignored, 0 filtered; exit101 |
+| Corrected process-local native environment | **21 passed, 0 failed, 0 ignored, 822 filtered; exit0** | **6 passed, 0 failed, 0 ignored, 0 filtered; exit0** |
+
+- Independently parsed inventory: 843 unit names and 6 integration names. All selected names exist; the final logs contain exactly the 21 and 6 selected names, with no extras or missing cases. The unit split is client_config9, client_process6, lifecycle6. The other **822 units are unselected, not passing**. No other integration target was executed by this focused task.
+- Both final logs end with `NATIVE_EXIT_STATUS=0`; commands.json records completed exit0 outcomes. Supplemental scenarios are six CLI requests plus a separate completed assertion command, not six extra Rust tests.
+- All seven initial failures explicitly identify Git `usr/bin/link.exe` rejecting MSVC linker operands while bare `rustc` compiles fixture executables. The intended fixture assertions could not run in those failures. The initial failed logs and separate MSYS-mangled `cl /Bv` host-probe failure are retained; neither is relabeled green.
+- run-native.ps1 reads a request, sets environment variables at **Process** scope, selects the request CWD, invokes its exact executable/argument array and propagates `$LASTEXITCODE`. Both suite request environments equal native-environment.json. The corrected requests retain the exact original executable paths and selection; no filter reduction, test skip, timeout, dependency, resource-limit or product-code adjustment is recorded. The correction is harness-only.
+
+## Artifact, native-input and host identity
+
+- focused-build.log ends with Cargo `build-finished: success=true`. Its three executable artifacts are exactly those recorded in binaries.json: CLI, unit harness and windows_client_discovery harness. Cargo records opt_level3, debug_assertions=true, overflow_checks=true and bundled-windows-extensions. This is the native-tests build, not an ordinary release archive.
+- Independently recomputed size/SHA256 of all three current binaries; all match binaries.json. CLI SHA256: `0105a95522277f86786e54af0d8360406129fb8a48d36216bc6d45dab1633608`; unit: `3c00a5f6def9361db355f6a9c3da397f5950dcc0ef1cf114fe943fb48c6209cd`; integration: `4aa146955896dc1bdd98e8966de61b39b931f6402b1f73b400dbf2d10480848f`.
+- The retained command record contains one focused Cargo build, followed by original and corrected executions of those paths. host-and-source-complete.log identifies the source head and clean worktree at that point. Completed pre-doc-source-guard exit0 reports no product diff to the tested head; post-execution-identity.json records every listed source and binary hash still matching. This is consistent same-source/same-artifact retry evidence. The reviewer did not read undiscovered product files to repeat the producer's source hashing.
+- Independently recomputed the three native-input hashes and all six sibling DLL copies in native-tests/deps and native-tests; every copy matches native-inputs.json. These are developer prerequisite/test-only Ladybug and OpenSSL bytes, not distributed assets or a validated package layout. Rust1.96.0, MSVC14.39.33519 and SDK10.0.22621.0 are recorded separately from packaging claims.
+- Completed host-os.log identifies CIM Caption `Microsoft Windows 11 Enterprise`, x64, build22631; registry DisplayVersion23H2 and UBR7652 agree with `ver` build22631.7652. The legacy registry ProductName `Windows 10 Enterprise` does not negate the CIM/build identity. This establishes the actual desktop host, not all supported Windows cohorts.
+
+## Supplemental checks and safety
+
+All six CLI requests completed exit0. The standalone assertion script completed exit0 and its output records 6/6. This reviewer also directly checked their JSON, retained files and decoded call evidence.
+
+1. **Absent, absolute-file and relative-invalid USERPROFILE:** all three generic-client requests include `--dry-run`; all outputs report action=dry_run and the same absolute native token-profile target outside the synthetic tree. Conflicting HOME is not selected. No real-profile write was requested; these are lookup-only checks, not a destructive attempt to invalidate the host token. Truly unavailable native profile remains injected-helper negative coverage.
+2. **Missing Codex client:** empty controlled PATH yields `codex executable not found` and file_adapter at the selected synthetic profile's `.codex/config.toml`. The selected file contains the requested entry; the unrelated HOME-decoy file remains exactly its sentinel bytes.
+3. **OpenClaw relative override/native failure:** the fixture captures exactly two registration/list calls. Both receive absolute projected OPENCLAW_HOME under the caller directory while child CWD is the selected repository. Injected set exit23 is retained in native_error; file_adapter writes the same selected `mcp.json5`; list visibility reads that target. Synthetic profile/HOME default sentinels remain unchanged.
+4. **Explicit custom file:** the relative/spaced full-file option wins over OPENCLAW_HOME. The exact custom file contains the entry. There is no registration/list call log; visibility is explicitly `skipped=true` because this selected file cannot be inspected through the client CLI. This is a correct deliberate skip, **not a visibility pass**. The fixture is still launched in server mode for stdio plumbing. The final report now explicitly says registration/list client calls are absent and that canned stdio fixture verification still runs.
+
+The external OpenClaw fixture source was reviewed. It logs hex argv/environment/CWD, injects requested failures and reads/writes only its selected synthetic target in registration/list mode. In server mode it returns five fixed JSON-RPC responses. Therefore its stdio `ok=true` validates fixture/verification plumbing only: **not real graph health, real server behavior or actual OpenClaw compatibility**. The selected native process units/integration logs establish Windows execution of the controlled exe/cmd/bat cases; this review does not enlarge their finite quoted/metacharacter inputs into a universal shell-safety claim.
+
+## Reporting findings and limits
+
+- **Wording finding resolved:** the latest scratch and repository reports match and explicitly limit absent client calls to registration/list, while retaining canned stdio fixture execution and deliberate visibility skip. They also correctly distinguish the harness rerun from an unchanged product retry policy. No wording finding remains open.
+- No remaining unsupported green result was found in the final draft's bounded counts, host identity, harness retry or supplemental outcome claims. Initial failures remain visible. The final publication must include this review and regenerate SHA256SUMS after all evidence files are copied; publication/checksum/push are coordinator-owned, not completed by this reviewer.
+- Current pr-and-ci.json records22 successful checks at the supplied head/run40632555501. This review checked that snapshot only; it did not fetch hosted logs or independently rebind a synthetic CI merge. Hosted status is separate from this local desktop result. Earlier macOS61/61 and strict checks remain separate historical evidence; no new macOS, fmt or Clippy execution is claimed here.
+- No clean consumer installation, archive/installer/default Cargo recipe, complete dependency delivery, real vendor client release, other Windows version/architecture, full application/workspace test suite, issue completion, merge/release/deployment/service restart or aggregate CBG-PLAT-01 closure follows from this result.
+- Assumptions: producer command/result records and post-execution source guard are the source-identity evidence; retained prior source reviews support detailed test-assertion descriptions. These assumptions are explicit and do not replace a fresh source audit or package qualification.
+- Durable-memory assessment: this is transient revision-bound execution review already retained with canonical evidence. No new repository memory candidate is warranted; no wiki write was made.

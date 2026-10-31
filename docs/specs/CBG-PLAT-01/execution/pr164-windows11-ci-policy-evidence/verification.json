@@ -1,0 +1,17 @@
+{
+  "baseline": "f2936a4c956c3cd90a45089dc7f7f041e7aef477",
+  "job": 123869404257,
+  "run": 40996079962,
+  "reproduction_command": "cargo run -p xtask --locked --offline -- release-gate",
+  "before_exit": 1,
+  "after_exit": 0,
+  "archive_source_sha256": "796f0522664831dcdf79ab67e4e3f8e7c29470d6e4821283dac7c2461f33c17c",
+  "renamed_source_bytes_unchanged": true,
+  "original_evidence_checksums_match": true,
+  "package_list_command": "cargo package --locked --offline --list",
+  "package_list_exit": 0,
+  "root_package_excludes_evidence": true,
+  "hosted_after_status": "not yet pushed; no pass claimed",
+  "source_workflow_policy_changed": false,
+  "release_policy_source_sha256": "9e6cd94b73c66018acf683136bd61baaa9de09cee467cbb22b15638b8843b47f"
+}

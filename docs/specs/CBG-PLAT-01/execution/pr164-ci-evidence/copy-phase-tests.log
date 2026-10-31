@@ -1,0 +1,20 @@
+   Compiling codebase-graph v4.0.1 (/private/tmp/codebasegraph-pr164-ci-clean)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 9.45s
+────────────
+ Nextest run ID 9bacfb9a-d807-4711-8fbc-7b74cf09d642 with nextest profile: pr164-phase
+    Starting 13 tests across 1 binary (841 tests skipped)
+        PASS [   0.025s] ( 1/13) codebase-graph db_writer::phase::tests::copy_trace_metadata_reports_generated_file_bytes
+        PASS [   0.019s] ( 2/13) codebase-graph db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit
+        PASS [   0.020s] ( 3/13) codebase-graph db_writer::phase::tests::error_tail_reads_at_most_the_limit_and_decodes_utf8_lossily
+        PASS [   0.018s] ( 4/13) codebase-graph db_writer::phase::tests::isolated_error_keeps_context_inside_the_cap
+        PASS [   0.018s] ( 5/13) codebase-graph db_writer::phase::tests::oversized_native_error_preserves_query_vs_explicit_checkpoint_boundary
+        PASS [   0.018s] ( 6/13) codebase-graph db_writer::phase::tests::phase_protocol_requires_v2_containment_contract
+        PASS [   0.105s] ( 7/13) codebase-graph db_writer::phase::tests::phase_query_keeps_successful_if_not_exists_idempotence_but_surfaces_native_error
+        PASS [   0.021s] ( 8/13) codebase-graph db_writer::phase::tests::phase_registry_scope_restores_nested_and_unwound_contexts
+        PASS [   0.018s] ( 9/13) codebase-graph db_writer::phase::tests::phase_request_v2_preserves_thread_setting
+        PASS [   0.021s] (10/13) codebase-graph db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader
+        PASS [   0.020s] (11/13) codebase-graph db_writer::phase::tests::phase_test_allocation_requires_trigger_and_rejects_unbounded_memory
+        PASS [   0.019s] (12/13) codebase-graph db_writer::phase::tests::phase_trace_process_instance_is_stable_across_calls_and_threads
+        PASS [   0.020s] (13/13) codebase-graph db_writer::phase::tests::scoped_phase_request_lives_outside_candidate_and_preserves_database_path
+────────────
+     Summary [   0.349s] 13 tests run: 13 passed, 841 skipped

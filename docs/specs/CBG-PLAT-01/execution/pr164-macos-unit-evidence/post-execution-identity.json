@@ -1,0 +1,10 @@
+{
+  "sources": {
+    "src\\adapters\\cli\\tests\\mcp.rs": true,
+    "src\\coordinator\\tests.rs": true
+  },
+  "binary_unchanged": true,
+  "allselected_registered": true,
+  "final_results": "37passed0failed0ignored808filtered",
+  "originalcheckoutdirty_preserved": " M knowledge/memory/procedural/large-self-hosting-rebuild-memory-budget-2026-08-28.md\n?? knowledge/memory/procedural/self-hosting-build-v4-cli-single-worker-2026-10-27.md\n?? knowledge/memory/procedural/windows-task-scheduler-denial-direct-daemon-serve-fallback-2026-10-28.md\n"
+}

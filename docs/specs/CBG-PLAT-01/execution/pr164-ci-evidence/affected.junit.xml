@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="nextest-run" tests="58" failures="0" errors="0" uuid="6fe3ca2c-0d4a-49c5-bcb4-ff29b1e814ca" timestamp="2026-10-28T12:14:21.295+09:30" time="78.632">
+    <testsuite name="codebase-graph" tests="58" disabled="0" errors="0" failures="0">
+        <testcase name="adapters::cli::tests::install::mcp_install_agent_hooks_provisions_http_daemon_for_stdio_registration" classname="codebase-graph" timestamp="2026-10-28T12:14:21.296+09:30" time="6.832">
+        </testcase>
+        <testcase name="adapters::cli::tests::install::mcp_install_preserves_explicit_stdio_compatibility" classname="codebase-graph" timestamp="2026-10-28T12:14:28.128+09:30" time="6.249">
+        </testcase>
+        <testcase name="adapters::cli::tests::install::mcp_install_reports_copilot_studio_metadata" classname="codebase-graph" timestamp="2026-10-28T12:14:34.377+09:30" time="7.529">
+        </testcase>
+        <testcase name="adapters::cli::tests::install::mcp_install_writes_generic_client_config" classname="codebase-graph" timestamp="2026-10-28T12:14:41.906+09:30" time="7.495">
+        </testcase>
+        <testcase name="adapters::cli::tests::mcp::mcp_graph_query_binds_json_parameters" classname="codebase-graph" timestamp="2026-10-28T12:14:49.401+09:30" time="7.680">
+        </testcase>
+        <testcase name="adapters::cli::tests::mcp::mcp_http_enforces_bearer_token_when_configured" classname="codebase-graph" timestamp="2026-10-28T12:14:57.081+09:30" time="7.511">
+        </testcase>
+        <testcase name="adapters::cli::tests::mcp::mcp_http_handles_initialize_list_call_and_protocol_errors" classname="codebase-graph" timestamp="2026-10-28T12:15:04.592+09:30" time="8.917">
+        </testcase>
+        <testcase name="adapters::cli::tests::mcp::mcp_http_rejects_remote_bind_without_auth_token" classname="codebase-graph" timestamp="2026-10-28T12:15:13.509+09:30" time="0.018">
+        </testcase>
+        <testcase name="adapters::cli::tests::mcp::mcp_options_reject_removed_memory_flags" classname="codebase-graph" timestamp="2026-10-28T12:15:13.527+09:30" time="0.017">
+        </testcase>
+        <testcase name="adapters::cli::tests::mcp::mcp_options_resolve_config_defaults_and_cli_overrides" classname="codebase-graph" timestamp="2026-10-28T12:15:13.544+09:30" time="0.018">
+        </testcase>
+        <testcase name="adapters::cli::tests::mcp::mcp_stdio_refresh_policy_off_is_watcher_free" classname="codebase-graph" timestamp="2026-10-28T12:15:13.562+09:30" time="9.304">
+        </testcase>
+        <testcase name="adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors" classname="codebase-graph" timestamp="2026-10-28T12:15:22.868+09:30" time="15.644">
+        </testcase>
+        <testcase name="api::core::tests::generic_mcp_server_registration_preserves_configuration_with_short_arguments" classname="codebase-graph" timestamp="2026-10-28T12:15:38.512+09:30" time="0.037">
+        </testcase>
+        <testcase name="api::core::tests::mcp_install_operation_preserves_unrelated_client_configuration" classname="codebase-graph" timestamp="2026-10-28T12:15:38.553+09:30" time="0.032">
+        </testcase>
+        <testcase name="api::lifecycle::tests::claude_desktop_path_is_rejected_for_loopback_http" classname="codebase-graph" timestamp="2026-10-28T12:15:38.585+09:30" time="0.022">
+        </testcase>
+        <testcase name="api::lifecycle::tests::cloud_targets_require_public_https_without_exposing_loopback" classname="codebase-graph" timestamp="2026-10-28T12:15:38.608+09:30" time="0.021">
+        </testcase>
+        <testcase name="api::lifecycle::tests::codex_toml_block_round_trips_windows_style_arguments" classname="codebase-graph" timestamp="2026-10-28T12:15:38.632+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::lifecycle::tests::codex_toml_reject_different_leaves_existing_file_byte_identical" classname="codebase-graph" timestamp="2026-10-28T12:15:38.651+09:30" time="0.023">
+        </testcase>
+        <testcase name="api::lifecycle::tests::daemon_port_selection_migrates_collisions_but_rejects_unavailable_overrides" classname="codebase-graph" timestamp="2026-10-28T12:15:38.677+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::lifecycle::tests::dry_run_language_detection_recognizes_webassembly_case_insensitively" classname="codebase-graph" timestamp="2026-10-28T12:15:38.697+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::lifecycle::tests::hermes_install_migrates_singular_marker_blocks_without_dropping_existing_entries" classname="codebase-graph" timestamp="2026-10-28T12:15:38.714+09:30" time="0.019">
+        </testcase>
+        <testcase name="api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments" classname="codebase-graph" timestamp="2026-10-28T12:15:38.734+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::lifecycle::tests::hermes_reject_different_leaves_existing_file_byte_identical" classname="codebase-graph" timestamp="2026-10-28T12:15:38.752+09:30" time="0.019">
+        </testcase>
+        <testcase name="api::lifecycle::tests::http_registration_can_be_inspected_renamed_and_removed" classname="codebase-graph" timestamp="2026-10-28T12:15:38.774+09:30" time="0.031">
+        </testcase>
+        <testcase name="api::lifecycle::tests::http_registration_migrates_only_the_recognized_stdio_entry" classname="codebase-graph" timestamp="2026-10-28T12:15:38.806+09:30" time="0.022">
+        </testcase>
+        <testcase name="api::lifecycle::tests::http_registration_shapes_match_every_loopback_harness" classname="codebase-graph" timestamp="2026-10-28T12:15:38.830+09:30" time="0.018">
+        </testcase>
+        <testcase name="api::lifecycle::tests::install_removes_legacy_k_wiki_entry_in_the_same_file_update" classname="codebase-graph" timestamp="2026-10-28T12:15:38.851+09:30" time="0.022">
+        </testcase>
+        <testcase name="api::lifecycle::tests::json_reject_different_leaves_existing_file_byte_identical" classname="codebase-graph" timestamp="2026-10-28T12:15:38.874+09:30" time="0.022">
+        </testcase>
+        <testcase name="api::lifecycle::tests::managed_instruction_block_replaces_stale_guidance_and_preserves_surrounding_text" classname="codebase-graph" timestamp="2026-10-28T12:15:38.899+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::lifecycle::tests::matching_entries_remain_idempotent_across_json_codex_and_hermes_configs" classname="codebase-graph" timestamp="2026-10-28T12:15:38.918+09:30" time="0.030">
+        </testcase>
+        <testcase name="api::lifecycle::tests::mcp_agent_hook_persistence_unions_existing_clients" classname="codebase-graph" timestamp="2026-10-28T12:15:38.948+09:30" time="0.043">
+        </testcase>
+        <testcase name="api::lifecycle::tests::native_client_commands_preserve_every_server_argument" classname="codebase-graph" timestamp="2026-10-28T12:15:38.992+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::lifecycle::tests::refresh_failure_classifier_retries_source_changes_and_worker_exit" classname="codebase-graph" timestamp="2026-10-28T12:15:39.010+09:30" time="0.017">
+        </testcase>
+        <testcase name="api::lifecycle::tests::registration_rename_deduplicates_matching_json_destination_atomically" classname="codebase-graph" timestamp="2026-10-28T12:15:39.027+09:30" time="0.027">
+        </testcase>
+        <testcase name="api::lifecycle::tests::registration_rename_preserves_codex_entry_and_rejects_conflicting_destination" classname="codebase-graph" timestamp="2026-10-28T12:15:39.058+09:30" time="0.027">
+        </testcase>
+        <testcase name="api::lifecycle::tests::reinstall_activation_boundary_keeps_new_state_on_post_activation_failure" classname="codebase-graph" timestamp="2026-10-28T12:15:39.086+09:30" time="0.027">
+        </testcase>
+        <testcase name="api::lifecycle::tests::reinstall_activation_boundary_restores_backup_on_activation_failure" classname="codebase-graph" timestamp="2026-10-28T12:15:39.115+09:30" time="0.023">
+        </testcase>
+        <testcase name="api::lifecycle::tests::remove_mcp_server_dry_run_reports_previous_without_writing_and_write_removes_entry" classname="codebase-graph" timestamp="2026-10-28T12:15:39.138+09:30" time="0.023">
+        </testcase>
+        <testcase name="api::lifecycle::tests::remove_partial_state_tree_rejects_symlinks" classname="codebase-graph" timestamp="2026-10-28T12:15:39.163+09:30" time="0.028">
+        </testcase>
+        <testcase name="api::lifecycle::tests::resolve_mcp_target_rejects_aggregate_unknown_and_invalid_scope_targets" classname="codebase-graph" timestamp="2026-10-28T12:15:39.191+09:30" time="0.021">
+        </testcase>
+        <testcase name="api::lifecycle::tests::resolve_mcp_target_treats_explicit_paths_inside_repo_as_local_and_outside_as_shared" classname="codebase-graph" timestamp="2026-10-28T12:15:39.214+09:30" time="0.019">
+        </testcase>
+        <testcase name="api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths" classname="codebase-graph" timestamp="2026-10-28T12:15:39.235+09:30" time="0.017">
+        </testcase>
+        <testcase name="client_config::tests::non_windows_command_configuration_does_not_change_child_environment" classname="codebase-graph" timestamp="2026-10-28T12:15:39.252+09:30" time="0.017">
+        </testcase>
+        <testcase name="client_config::tests::non_windows_keeps_home_default_behavior" classname="codebase-graph" timestamp="2026-10-28T12:15:39.272+09:30" time="0.017">
+        </testcase>
+        <testcase name="client_config::tests::repository_targets_and_client_overrides_do_not_resolve_a_profile" classname="codebase-graph" timestamp="2026-10-28T12:15:39.292+09:30" time="0.016">
+        </testcase>
+        <testcase name="client_config::tests::unsupported_windows_config_files_are_skipped_without_environment_changes" classname="codebase-graph" timestamp="2026-10-28T12:15:39.311+09:30" time="0.017">
+        </testcase>
+        <testcase name="client_config::tests::windows_claude_project_visibility_uses_the_selected_project_directory" classname="codebase-graph" timestamp="2026-10-28T12:15:39.328+09:30" time="0.022">
+        </testcase>
+        <testcase name="client_config::tests::windows_command_projects_relative_targets_before_child_cwd_changes" classname="codebase-graph" timestamp="2026-10-28T12:15:39.350+09:30" time="0.018">
+        </testcase>
+        <testcase name="client_config::tests::windows_fails_when_profile_is_unavailable_or_not_absolute" classname="codebase-graph" timestamp="2026-10-28T12:15:39.370+09:30" time="0.016">
+        </testcase>
+        <testcase name="client_config::tests::windows_uses_native_profile_after_invalid_userprofile" classname="codebase-graph" timestamp="2026-10-28T12:15:39.387+09:30" time="0.017">
+        </testcase>
+        <testcase name="client_config::tests::windows_uses_native_profile_when_userprofile_is_an_absolute_file" classname="codebase-graph" timestamp="2026-10-28T12:15:39.404+09:30" time="0.027">
+        </testcase>
+        <testcase name="client_config::tests::windows_uses_userprofile_and_ignores_home" classname="codebase-graph" timestamp="2026-10-28T12:15:39.432+09:30" time="0.021">
+        </testcase>
+        <testcase name="client_process::tests::cod55_non_windows_discovery_keeps_exact_filename_semantics" classname="codebase-graph" timestamp="2026-10-28T12:15:39.455+09:30" time="0.020">
+        </testcase>
+        <testcase name="mcp_client::tests::endpoint_validation_rejects_non_loopback_and_wrong_path" classname="codebase-graph" timestamp="2026-10-28T12:15:39.476+09:30" time="0.017">
+        </testcase>
+        <testcase name="mcp_client::tests::expired_hook_budget_does_not_connect" classname="codebase-graph" timestamp="2026-10-28T12:15:39.495+09:30" time="0.017">
+        </testcase>
+        <testcase name="mcp_client::tests::hook_tool_calls_send_clamped_remaining_deadline_and_regular_calls_omit_it" classname="codebase-graph" timestamp="2026-10-28T12:15:39.514+09:30" time="0.019">
+        </testcase>
+        <testcase name="mcp_client::tests::trickled_response_cannot_extend_the_elapsed_deadline" classname="codebase-graph" timestamp="2026-10-28T12:15:39.534+09:30" time="0.369">
+        </testcase>
+        <testcase name="mcp_client::tests::zero_timeout_does_not_connect" classname="codebase-graph" timestamp="2026-10-28T12:15:39.906+09:30" time="0.018">
+        </testcase>
+    </testsuite>
+</testsuites>

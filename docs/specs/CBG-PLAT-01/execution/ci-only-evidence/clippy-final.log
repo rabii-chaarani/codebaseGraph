@@ -1,0 +1,5 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+    Checking codebase-graph v3.0.4 (/private/tmp/codebasegraph-pr153-ci-only-source)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.36s

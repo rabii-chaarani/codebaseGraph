@@ -1,0 +1,39 @@
+   Compiling codebase-graph v4.0.1 (/private/tmp/codebasegraph-pr164-ci-clean)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.50s
+     Running unittests src/lib.rs (/private/tmp/codebasegraph-pr164-target/debug/deps/codebase_graph-86ff53f7fb2e6ee1)
+
+running 3 tests
+test client_process::tests::unix_path_prefers_first_executable_candidate_and_pins_relative_directories ... FAILED
+test client_process::tests::unix_path_returns_none_for_all_non_executable_candidates_but_keeps_explicit_path_behavior ... FAILED
+test client_process::tests::unix_path_skips_non_executable_candidates_and_runs_selected_script_with_exact_arguments ... FAILED
+
+failures:
+
+---- client_process::tests::unix_path_prefers_first_executable_candidate_and_pins_relative_directories stdout ----
+
+thread 'client_process::tests::unix_path_prefers_first_executable_candidate_and_pins_relative_directories' (35944522) panicked at src/client_process.rs:416:14:
+executable candidate
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- client_process::tests::unix_path_returns_none_for_all_non_executable_candidates_but_keeps_explicit_path_behavior stdout ----
+
+thread 'client_process::tests::unix_path_returns_none_for_all_non_executable_candidates_but_keeps_explicit_path_behavior' (35944523) panicked at src/client_process.rs:389:9:
+assertion failed: ClientExecutable::discover_in_path("client", &path_entries,
+            current_dir).expect("PATH discovery").is_none()
+
+---- client_process::tests::unix_path_skips_non_executable_candidates_and_runs_selected_script_with_exact_arguments stdout ----
+
+thread 'client_process::tests::unix_path_skips_non_executable_candidates_and_runs_selected_script_with_exact_arguments' (35944524) panicked at src/client_process.rs:360:9:
+assertion `left == right` failed
+  left: "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/c55_87772_2/blocked/client"
+ right: "/var/folders/3y/n_wglyqn3bv8xy8s0b9p32d00000gn/T/c55_87772_2/runnable/client"
+
+
+failures:
+    client_process::tests::unix_path_prefers_first_executable_candidate_and_pins_relative_directories
+    client_process::tests::unix_path_returns_none_for_all_non_executable_candidates_but_keeps_explicit_path_behavior
+    client_process::tests::unix_path_skips_non_executable_candidates_and_runs_selected_script_with_exact_arguments
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 854 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

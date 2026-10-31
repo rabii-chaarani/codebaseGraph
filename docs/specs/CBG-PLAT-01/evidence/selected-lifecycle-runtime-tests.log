@@ -1,0 +1,10 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running tests/refresh_recovery_process.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/refresh_recovery_process-a831b40dcd3acc3b)
+
+running 4 tests
+test legacy_worker_pid_recovers_without_signalling_and_respects_writer_ownership ... ok
+test lifecycle_faults::authenticated_cancellation_cleans_loader_and_retries_pending_edit ... ok
+test lifecycle_faults::timing_wrapper_keeps_loader_in_build_containment ... ok
+test lifecycle_faults::unavailable_guardian_preserves_paused_tree_evidence_until_emptiness_is_proven ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 20 filtered out; finished in 499.03s

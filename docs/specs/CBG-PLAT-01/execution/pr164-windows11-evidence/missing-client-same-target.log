@@ -1,0 +1,66 @@
+{
+  "action": "created",
+  "agent_hooks": {
+    "action": "skipped",
+    "clients": [],
+    "reason": "disabled",
+    "selection": "none"
+  },
+  "client": "codex",
+  "command": null,
+  "daemon": null,
+  "descriptor": {
+    "args": [
+      "mcp",
+      "start",
+      "--config",
+      "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+    ],
+    "command": "codebase-graph",
+    "cwd": null,
+    "env": {},
+    "name": "cod55_supplemental",
+    "repo_root": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space",
+    "setup_config_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json",
+    "timeout": 60,
+    "tool_policy": "graph_query_read_only",
+    "transport": "stdio"
+  },
+  "entry": {
+    "args": [
+      "mcp",
+      "start",
+      "--config",
+      "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+    ],
+    "command": "codebase-graph",
+    "startup_timeout_sec": 60
+  },
+  "legacy_cleanup": {
+    "action": "unchanged",
+    "removed": [],
+    "requested": [],
+    "text": "[mcp_servers.cod55_supplemental]\ncommand = \"codebase-graph\"\nargs = [\"mcp\", \"start\", \"--config\", \"\\\\\\\\?\\\\C:\\\\Users\\\\rcha0053\\\\pr164-qualification\\\\supplemental\\\\repo space\\\\.codebaseGraph\\\\config.json\"]\nstartup_timeout_sec = 60\n"
+  },
+  "method": "file_adapter",
+  "native_command": [
+    "codex",
+    "mcp",
+    "add",
+    "cod55_supplemental",
+    "--",
+    "codebase-graph",
+    "mcp",
+    "start",
+    "--config",
+    "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+  ],
+  "native_error": "codex executable not found",
+  "patch": "[mcp_servers.cod55_supplemental]\ncommand = \"codebase-graph\"\nargs = [\"mcp\", \"start\", \"--config\", \"\\\\\\\\?\\\\C:\\\\Users\\\\rcha0053\\\\pr164-qualification\\\\supplemental\\\\repo space\\\\.codebaseGraph\\\\config.json\"]\nstartup_timeout_sec = 60\n",
+  "path": "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\profile space\\.codex/config.toml",
+  "payload": "[mcp_servers.cod55_supplemental]\ncommand = \"codebase-graph\"\nargs = [\"mcp\", \"start\", \"--config\", \"\\\\\\\\?\\\\C:\\\\Users\\\\rcha0053\\\\pr164-qualification\\\\supplemental\\\\repo space\\\\.codebaseGraph\\\\config.json\"]\nstartup_timeout_sec = 60\n",
+  "scope": "user",
+  "server_name": "cod55_supplemental",
+  "target_locality": "shared"
+}
+NATIVE_EXIT_STATUS=0

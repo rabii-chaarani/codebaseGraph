@@ -1,0 +1,34 @@
+{
+  "version": "3.0.4",
+  "head": "862a8f88d485d5bd257ebd9456c194156fd4ee94",
+  "supported_platforms": [
+    "macOS ARM64",
+    "Windows x86_64"
+  ],
+  "fresh_passing_tests_completed": {
+    "xtask": 42,
+    "platform_lifecycle_native_db": 58,
+    "storage_lock_family": 30,
+    "storage_integration": 10,
+    "copy_metadata_macos": 1,
+    "real_cli_recovery_cancellation": 4
+  },
+  "fresh_failed_tests_completed": [
+    "adapters::cli::tests::dispatch_materialize::watch_help_documents_parallel_default_and_opt_out"
+  ],
+  "hosted_ci_run": 40330652083,
+  "hosted_tested_merge_sha": "b7c1b3edf5d50508932b407d237452fafd100539",
+  "hosted_merge_source_difference": [
+    "CHANGELOG.md"
+  ],
+  "hosted_artifact_jobs": "skipped, not passed",
+  "old_findings_not_carried_forward": [
+    "build direct-child-only teardown",
+    "build PID-only recovery authority",
+    "unguarded raw lbug database handle lifetime",
+    "unchecked native Unicode projection"
+  ],
+  "fresh_selected_passing_total": 145,
+  "reviewer_probe": "new macOS multi-batch nested directory scan fails: baseline200, outer85, inner200",
+  "final_report": "/tmp/codebasegraph-pr153-platform-862a8f88d485/report.md"
+}

@@ -114,6 +114,123 @@ fn mcp_graph_query_binds_json_parameters() {
     let _ = fs::remove_dir_all(root);
 }
 
+fn mcp_test_graph_busy(request: &serde_json::Value, response: &serde_json::Value) -> bool {
+    request["method"] == "tools/call"
+        && response["id"] == request["id"]
+        && response["result"]["isError"] == true
+        && response["result"]["structuredContent"]["error"]["tool"] == request["params"]["name"]
+        && response["result"]["structuredContent"]["error"]["code"] == "graph_busy"
+        && response["result"]["structuredContent"]["error"]["retryable"] == true
+}
+
+fn mcp_test_stdio_requests(
+    options: &McpServeOptions,
+    requests: &[serde_json::Value],
+) -> Vec<serde_json::Value> {
+    use std::io::{BufRead, BufReader, Write};
+    use std::net::{Shutdown, TcpListener, TcpStream};
+
+    struct Client {
+        input: BufReader<TcpStream>,
+        output: TcpStream,
+    }
+    impl Drop for Client {
+        fn drop(&mut self) {
+            let _ = self.output.shutdown(Shutdown::Both);
+        }
+    }
+
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let stream = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+    let (mut server, _) = listener.accept().unwrap();
+    std::thread::scope(|scope| {
+        let worker = scope.spawn(move || {
+            let input = BufReader::new(server.try_clone().unwrap());
+            serve_mcp_stdio(options, input, &mut server)
+        });
+        // Declared after the worker so panic closes both directions before scope joins it.
+        let mut client = Client {
+            input: BufReader::new(stream.try_clone().unwrap()),
+            output: stream,
+        };
+        let deadline = Instant::now() + Duration::from_secs(15);
+        let mut last_busy = serde_json::Value::Null;
+        let mut responses = Vec::new();
+        for request in requests {
+            loop {
+                let remaining = deadline.saturating_duration_since(Instant::now());
+                assert!(
+                    !remaining.is_zero(),
+                    "MCP fixture admission deadline expired for {request}; last busy: {last_busy}"
+                );
+                client.output.set_write_timeout(Some(remaining)).unwrap();
+                client
+                    .input
+                    .get_ref()
+                    .set_read_timeout(Some(remaining))
+                    .unwrap();
+                serde_json::to_writer(&mut client.output, request).unwrap();
+                client.output.write_all(b"\n").unwrap();
+                client.output.flush().unwrap();
+                let mut line = String::new();
+                assert_ne!(
+                    client.input.read_line(&mut line).unwrap_or_else(|error| {
+                        panic!("MCP read failed for {request}: {error}; last busy: {last_busy}")
+                    }),
+                    0,
+                    "MCP closed before response"
+                );
+                let response: serde_json::Value = serde_json::from_str(&line).unwrap();
+                assert_eq!(response["id"], request["id"], "MCP response: {response}");
+                if !mcp_test_graph_busy(request, &response) {
+                    responses.push(response);
+                    break;
+                }
+                assert!(Instant::now() < deadline, "MCP stayed busy: {response}");
+                last_busy = response;
+            }
+        }
+        drop(client);
+        worker.join().unwrap().unwrap();
+        responses
+    })
+}
+
+#[test]
+fn mcp_test_busy_retry_requires_matching_typed_predispatch_error() {
+    let request = json!({"id": 3, "method": "tools/call", "params": {"name": "graph_health"}});
+    let busy = json!({"id": 3, "result": {"isError": true, "structuredContent": {"error": {
+        "tool": "graph_health", "code": "graph_busy", "retryable": true
+    }}}});
+    assert!(mcp_test_graph_busy(&request, &busy));
+    for (pointer, value) in [
+        ("/id", json!(4)),
+        ("/result/isError", json!(false)),
+        (
+            "/result/structuredContent/error/tool",
+            json!("graph_search"),
+        ),
+        (
+            "/result/structuredContent/error/code",
+            json!("coordinator_transport_error"),
+        ),
+        ("/result/structuredContent/error/retryable", json!(false)),
+        ("/result/structuredContent/error/retryable", json!(null)),
+        ("/result/structuredContent/error/retryable", json!("true")),
+    ] {
+        let mut other = busy.clone();
+        *other.pointer_mut(pointer).unwrap() = value;
+        assert!(
+            !mcp_test_graph_busy(&request, &other),
+            "unexpected retry: {other}"
+        );
+    }
+    assert!(!mcp_test_graph_busy(
+        &json!({"method": "initialize", "id": 3}),
+        &busy
+    ));
+}
+
 #[test]
 fn mcp_stdio_serves_tools_and_tool_errors() {
     let root = unique_temp_dir("codebase-graph-rust-mcp");
@@ -157,6 +274,7 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
                     "query": "SampleService",
                     "limit": 2,
                     "output_format": "json",
+                    "include_structured_content": true,
                 },
             },
         }),
@@ -173,13 +291,6 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
             },
         }),
     ];
-    let input = requests
-        .iter()
-        .map(serde_json::to_string)
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap()
-        .join("\n")
-        + "\n";
     let options = McpServeOptions {
         repo_root: Some(root.clone()),
         config: None,
@@ -191,13 +302,7 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         spill_chunk_mib: None,
         max_parallelism: None,
     };
-    let mut output = Vec::new();
-    serve_mcp_stdio(&options, std::io::Cursor::new(input), &mut output).unwrap();
-    let responses: Vec<serde_json::Value> = String::from_utf8(output)
-        .unwrap()
-        .lines()
-        .map(|line| serde_json::from_str(line).unwrap())
-        .collect();
+    let responses = mcp_test_stdio_requests(&options, &requests);
 
     assert_eq!(responses.len(), 5);
     assert_eq!(responses[0]["result"]["protocolVersion"], "2025-11-25");
@@ -217,7 +322,11 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
         .get("include_structured_content")
         .is_some()));
 
-    assert_eq!(responses[2]["result"]["isError"], false);
+    assert_eq!(
+        responses[2]["result"]["isError"], false,
+        "graph_health response: {}",
+        responses[2]
+    );
     assert_eq!(responses[2]["result"]["structuredContent"]["ok"], true);
     assert_eq!(
         responses[2]["result"]["structuredContent"]["refresh"]["enabled"],

@@ -1,0 +1,264 @@
+{
+  "pr": {
+    "number": 164,
+    "title": "fix(mcp): honor Windows client profiles and shim commands",
+    "body": "Windows user-scoped MCP installs can fall back to the current directory when HOME is absent and miss clients installed as .exe/.cmd/.bat files. This change resolves explicit paths, client overrides and the native Windows profile in order, then shares pinned executable discovery and command context across registration, same-target file fallback and visibility. Relative overrides retain their target when child CWD changes; both Claude project spellings keep their .mcp.json list check.\n\nRefs [COD-55](https://linear.app/codebasegraph/issue/COD-55), CBG-PLAT-01/S04 R04/A07\u2013A08 only. Fresh-main base: `9557b3806ce46cb1acadd95cfbf712c07ea8556d` (4.0.1). [Approved spec rev0.11](https://github.com/rabii-chaarani/codebaseGraph/blob/8a410c7a22f5291f06a1cece5cd9e7c0be255e72/docs/specs/CBG-PLAT-01/spec.md#s04--use-explicit-windows-user-directory-and-executable-discovery-policy); [exact approval](https://github.com/rabii-chaarani/codebaseGraph/blob/949db168fcf128cc1fe6e73cb70a14db832d50b5/docs/specs/CBG-PLAT-01/approvals/cod55-windows-client-discovery.md). Published canonical spec/evidence is imported unchanged because main lacked it. Scryer: chg-7vkjtj; cfg-only warning hygiene: chg-y5ahjy.\n\nCorrected product revision: `84cdb27386ea4d86166135d82736a62deb2bd1ba`.\n\n- Final affected macOS suite: **58/58 pass**, zero selected cases skipped; fmt and strict workspace/all-target/all-feature Clippy pass.\n- Windows-target isolated helper/fixture type check and strict Clippy pass; not native execution.\n- Fresh Sol High proposal and Sol Max integrated/focused source reviews pass with no remaining confirmed P0\u2013P3.\n- [Native CI40616153340](https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40616153340) is running for the corrected source. Earlier CI40613075649 caught a test-fixture private API call; corrected without widening the API. Four preexisting Windows warnings were resolved with reviewed platform guards. Failed attempts remain in the evidence.\n\nActual Windows argv/shim/configuration execution and complete native CI remain pending. Windows Server CI does not establish Windows 11 desktop consumer qualification. The original-checkout Scryer binding cannot record this isolated branch's test fingerprints; exact revision-bound evidence is retained with the canonical spec. COD-55 and aggregate closure remain open; no merge, release publication, deployment or restart is requested.",
+    "state": "open",
+    "draft": false,
+    "merged": false,
+    "mergeable_state": "behind",
+    "html_url": "https://github.com/rabii-chaarani/codebaseGraph/pull/164",
+    "user": {
+      "login": "rabii-chaarani",
+      "id": 50892556,
+      "profile_url": "https://github.com/rabii-chaarani",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50892556?v=4"
+    },
+    "head": {
+      "ref": "fix/cod-55-windows-client-discovery",
+      "sha": "4e42468d904c18a5f3fd58c0809212977a561727",
+      "repo": {
+        "full_name": "rabii-chaarani/codebaseGraph"
+      }
+    },
+    "base": {
+      "ref": "main",
+      "sha": "9557b3806ce46cb1acadd95cfbf712c07ea8556d",
+      "repo": {
+        "full_name": "rabii-chaarani/codebaseGraph"
+      }
+    },
+    "additions": 5864,
+    "deletions": 116,
+    "changed_files": 109,
+    "commits": 6,
+    "comments": 1,
+    "created_at": "2026-10-28T01:07:04Z",
+    "updated_at": "2026-10-28T04:28:50Z"
+  },
+  "checks": {
+    "total_count": 22,
+    "check_runs": [
+      {
+        "id": 122653820305,
+        "name": "required",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122653820305",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122653820305",
+        "started_at": "2026-10-28T05:41:08Z",
+        "completed_at": "2026-10-28T05:41:10Z"
+      },
+      {
+        "id": 122649699187,
+        "name": "native (windows-x86_64) / native artifact (windows-x86_64)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122649699187",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122649699187",
+        "started_at": "2026-10-28T05:28:29Z",
+        "completed_at": "2026-10-28T05:41:06Z"
+      },
+      {
+        "id": 122648471920,
+        "name": "native (macos-arm64) / native artifact (macos-arm64)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122648471920",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122648471920",
+        "started_at": "2026-10-28T05:27:36Z",
+        "completed_at": "2026-10-28T05:32:55Z"
+      },
+      {
+        "id": 122632501771,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 2)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501771",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501771",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T04:49:21Z"
+      },
+      {
+        "id": 122632501226,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 3)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501226",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501226",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T05:27:34Z"
+      },
+      {
+        "id": 122632501164,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 3)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501164",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501164",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T05:04:20Z"
+      },
+      {
+        "id": 122632501141,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 3)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501141",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501141",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T04:50:37Z"
+      },
+      {
+        "id": 122632501067,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 4)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501067",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632501067",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T05:27:20Z"
+      },
+      {
+        "id": 122632500963,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 4)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500963",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500963",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T04:55:18Z"
+      },
+      {
+        "id": 122632500920,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 1)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500920",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500920",
+        "started_at": "2026-10-28T04:30:22Z",
+        "completed_at": "2026-10-28T04:57:34Z"
+      },
+      {
+        "id": 122632500675,
+        "name": "native (macos-arm64) / native tests (macos-arm64, integration)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500675",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500675",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T05:23:38Z"
+      },
+      {
+        "id": 122632500668,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 1)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500668",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500668",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T05:14:26Z"
+      },
+      {
+        "id": 122632500625,
+        "name": "native (macos-arm64) / native tests (macos-arm64, generation)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500625",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500625",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T04:47:07Z"
+      },
+      {
+        "id": 122632500618,
+        "name": "native (macos-arm64) / native tests (macos-arm64, unit)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500618",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500618",
+        "started_at": "2026-10-28T04:30:22Z",
+        "completed_at": "2026-10-28T05:00:52Z"
+      },
+      {
+        "id": 122632500616,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500616",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500616",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T04:52:45Z"
+      },
+      {
+        "id": 122632500615,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 2)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500615",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500615",
+        "started_at": "2026-10-28T04:30:22Z",
+        "completed_at": "2026-10-28T04:58:35Z"
+      },
+      {
+        "id": 122632500605,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, integration, shard 4)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500605",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500605",
+        "started_at": "2026-10-28T04:30:22Z",
+        "completed_at": "2026-10-28T04:58:58Z"
+      },
+      {
+        "id": 122632500561,
+        "name": "native (windows-x86_64) / native tests (windows-x86_64, generation, shard 1)",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500561",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500561",
+        "started_at": "2026-10-28T04:30:22Z",
+        "completed_at": "2026-10-28T04:56:51Z"
+      },
+      {
+        "id": 122632500556,
+        "name": "cargo publish dry-run",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500556",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500556",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T04:31:32Z"
+      },
+      {
+        "id": 122632500538,
+        "name": "cargo fmt",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500538",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500538",
+        "started_at": "2026-10-28T04:30:22Z",
+        "completed_at": "2026-10-28T04:30:32Z"
+      },
+      {
+        "id": 122632500537,
+        "name": "cargo audit",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500537",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500537",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T04:30:33Z"
+      },
+      {
+        "id": 122632500280,
+        "name": "cargo clippy",
+        "status": "completed",
+        "conclusion": "success",
+        "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500280",
+        "details_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40632555501/job/122632500280",
+        "started_at": "2026-10-28T04:30:21Z",
+        "completed_at": "2026-10-28T04:31:37Z"
+      }
+    ]
+  }
+}

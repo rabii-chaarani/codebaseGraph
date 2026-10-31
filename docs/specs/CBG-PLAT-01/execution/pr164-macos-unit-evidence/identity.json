@@ -1,0 +1,24 @@
+{
+  "job_head_sha": "f2936a4c956c3cd90a45089dc7f7f041e7aef477",
+  "executed_merge_sha": "ad040bd7aac026b56d327b0c02c86df1a8512c9d",
+  "merge_parents": [
+    "a07e6d1e322622b7cee5b5358816cb3d54c17647",
+    "f2936a4c956c3cd90a45089dc7f7f041e7aef477"
+  ],
+  "current_branch_sha": "8f25fde6659e9adbfee10f16a5f4d072bb2e8d91",
+  "failed_test": "adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors",
+  "failure": "responses[2][result][isError] was true at mcp.rs220; full response not logged",
+  "ci_result": {
+    "passed": 857,
+    "failed": 1,
+    "ignored": 2
+  },
+  "test_source_identical_merge_and_branch": true,
+  "local_baseline_windows": {
+    "exit": 0,
+    "passed": 1,
+    "filtered": 842
+  },
+  "artifact_id": 12952368505,
+  "artifact_sha256": "d47b9fb4d1587a7ded7196f77328cf952e36dfd98a4abcf8a0d01f39d29435b8"
+}

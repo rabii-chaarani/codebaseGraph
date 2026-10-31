@@ -1,0 +1,31 @@
+{
+  "archive_digest_verified": true,
+  "archive_sha256": "d47b9fb4d1587a7ded7196f77328cf952e36dfd98a4abcf8a0d01f39d29435b8",
+  "files": [
+    {
+      "path": "platform-test.log",
+      "bytes": 125243,
+      "sha256": "4f79ba29f5205f877f4875a7f141805de1acb4c22a3d0966d92f810d3eded2d6"
+    },
+    {
+      "path": "tests/macos-arm64-unit/0-ignored.txt",
+      "bytes": 353,
+      "sha256": "a2fe139178113df66bc675ffca2a4cfffd24fec3db1370378ba07d5973e1eb06"
+    },
+    {
+      "path": "source-sha.txt",
+      "bytes": 41,
+      "sha256": "147f17d8c9f6e07942548c5b514660aae7c3c0fae8412820494dfefa77e3bb28"
+    },
+    {
+      "path": "tests/macos-arm64-unit/0-inventory.txt",
+      "bytes": 90424,
+      "sha256": "09c28055eee1ea2d2575c02df1d4271b4aa82e6390efca1573b677821312c573"
+    },
+    {
+      "path": "tests/macos-arm64-unit/report.json",
+      "bytes": 5178,
+      "sha256": "4b605cb8e30748dbe651d2a7c720939f73a0d318df5dcb2c0da4013c7fe29d24"
+    }
+  ]
+}

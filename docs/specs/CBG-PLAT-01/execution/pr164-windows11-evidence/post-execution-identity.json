@@ -1,0 +1,87 @@
+{
+  "head": "4e42468d904c18a5f3fd58c0809212977a561727",
+  "source": [
+    {
+      "path": "Cargo.lock",
+      "matches": true
+    },
+    {
+      "path": "Cargo.toml",
+      "matches": true
+    },
+    {
+      "path": "build.rs",
+      "matches": true
+    },
+    {
+      "path": "docs/specs/CBG-PLAT-01/evidence/filesystem-current-source-probes.rs",
+      "matches": true
+    },
+    {
+      "path": "docs/specs/CBG-PLAT-01/evidence/head-lifecycle-helper-probe.rs",
+      "matches": true
+    },
+    {
+      "path": "src/adapters/cli/install/verify.rs",
+      "matches": true
+    },
+    {
+      "path": "src/adapters/mcp/daemon.rs",
+      "matches": true
+    },
+    {
+      "path": "src/api/lifecycle.rs",
+      "matches": true
+    },
+    {
+      "path": "src/client_config.rs",
+      "matches": true
+    },
+    {
+      "path": "src/client_process.rs",
+      "matches": true
+    },
+    {
+      "path": "src/db_writer/phase.rs",
+      "matches": true
+    },
+    {
+      "path": "src/lib.rs",
+      "matches": true
+    },
+    {
+      "path": "src/storage/maintenance_controls.rs",
+      "matches": true
+    },
+    {
+      "path": "tests/copy_phase_process.rs",
+      "matches": true
+    },
+    {
+      "path": "tests/generation_storage.rs",
+      "matches": true
+    },
+    {
+      "path": "tests/support/mcp_client_fixture.rs",
+      "matches": true
+    },
+    {
+      "path": "tests/windows_client_discovery.rs",
+      "matches": true
+    }
+  ],
+  "binaries": [
+    {
+      "path": "C:\\Users\\rcha0053\\pr164-qualification\\target\\native-tests\\deps\\windows_client_discovery-c769dfec1010c183.exe",
+      "matches": true
+    },
+    {
+      "path": "C:\\Users\\rcha0053\\pr164-qualification\\target\\native-tests\\codebase-graph.exe",
+      "matches": true
+    },
+    {
+      "path": "C:\\Users\\rcha0053\\pr164-qualification\\target\\native-tests\\deps\\codebase_graph-7ed996dfd9332328.exe",
+      "matches": true
+    }
+  ]
+}

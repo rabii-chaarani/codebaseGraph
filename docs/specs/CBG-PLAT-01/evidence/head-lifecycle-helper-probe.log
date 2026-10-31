@@ -1,0 +1,5 @@
+resolved_home=.
+codex_user=./.codex/config.toml
+claude_user=./.claude.json
+codex_available=false
+codex_exe_available=true

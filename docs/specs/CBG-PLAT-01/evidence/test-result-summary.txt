@@ -1,0 +1,27 @@
+## xtask-tests.log
+     Running unittests src/main.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/xtask-c22ce753677b8c8b)
+running 42 tests
+test result: ok. 42 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.59s
+## selected-platform-tests.log
+     Running unittests src/lib.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/codebase_graph-ffa80bf96221ee79)
+running 58 tests
+test result: ok. 58 passed; 0 failed; 0 ignored; 0 measured; 784 filtered out; finished in 0.74s
+## storage-platform-unit-tests.log
+     Running unittests src/lib.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/codebase_graph-ffa80bf96221ee79)
+running 30 tests
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 812 filtered out; finished in 0.63s
+## storage-selected-integration-tests.log
+     Running src/storage/test_harness.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/storage_foundation-19729f82bc7a7900)
+running 10 tests
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 256 filtered out; finished in 1.19s
+## ci-failure-reproduction-macos.log
+     Running unittests src/lib.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/codebase_graph-ffa80bf96221ee79)
+running 2 tests
+test adapters::cli::tests::dispatch_materialize::watch_help_documents_parallel_default_and_opt_out ... FAILED
+assertion failed: text.contains("--parallel                Parse independent files concurrently; default behavior")
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 840 filtered out; finished in 0.00s
+error: test failed, to rerun pass `-p codebase-graph --lib`
+## selected-lifecycle-runtime-tests.log
+     Running tests/refresh_recovery_process.rs (/tmp/codebasegraph-pr153-platform-862a8f88d485/cargo-target/debug/deps/refresh_recovery_process-a831b40dcd3acc3b)
+running 4 tests
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 20 filtered out; finished in 499.03s

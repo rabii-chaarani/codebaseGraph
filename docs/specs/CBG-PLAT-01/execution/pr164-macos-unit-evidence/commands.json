@@ -1,0 +1,86 @@
+[
+  {
+    "label": "baseline-windows",
+    "command": "unitexe --exact adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors --test-threads=1 --nocapture",
+    "exit": 0,
+    "passed": 1,
+    "filtered": 842,
+    "source": "unchanged8f25fde tests"
+  },
+  {
+    "label": "diagnostic-build",
+    "command": "cargo test --locked --offline --profile native-tests --features bundled-windows-extensions --lib --no-run --message-format json",
+    "exit": 0
+  },
+  {
+    "label": "diagnostic-windows",
+    "command": "diagnosticunitexe --exact adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors --test-threads=1 --nocapture",
+    "exit": 0,
+    "passed": 1
+  },
+  {
+    "label": "diagnostic-repeat-1..4",
+    "command": "four finite serial exacttest invocations (all captured separately)",
+    "exit": 0,
+    "passed_executions": 4
+  },
+  {
+    "label": "protocol-probe",
+    "command": "exactbranchCLI installsyntheticfixture then sameCLI mcpstart with31inputframes",
+    "exit": 0,
+    "responses": 31,
+    "errors": 0
+  },
+  {
+    "label": "repair-build-intermediate",
+    "command": "cargo test --locked --offline --profile native-tests --features bundled-windows-extensions --lib --no-run --message-format json",
+    "exit": 0,
+    "boundary": "sourcechangedaftercapture;notfinalexecutionbuild"
+  },
+  {
+    "label": "fmt-policy",
+    "command": "cargo fmt --all --check && cargo run -p xtask --locked --offline -- release-gate && git diff --check -- src/adapters/cli/tests/mcp.rs src/coordinator/tests.rs",
+    "exit": 0
+  },
+  {
+    "label": "final-build",
+    "command": "cargo test --locked --offline --profile native-tests --features bundled-windows-extensions --lib --no-run --message-format json",
+    "exit": 0,
+    "duration": 153.23499999998603,
+    "source_hashes": {
+      "src\\adapters\\cli\\tests\\mcp.rs": "0b3fdd1a58939c3dc28ab04fd528fb68ea0dd893c1445c99815036f1e9f1f651",
+      "src\\coordinator\\tests.rs": "a57902231b187e47b48188156eeb9133d7d431470bd4a9c6bc17633a40515d75"
+    }
+  },
+  {
+    "label": "clippy-strict-windows",
+    "command": "cargo clippy --locked --offline --profile native-tests --features bundled-windows-extensions --lib --tests -- -D warnings",
+    "exit": 101,
+    "diagnostics": "fourwarnings in unchangedWindows-specificpreexistingcode;nochange totargettestfilesreported",
+    "no_pass_claim": true
+  },
+  {
+    "label": "final-inventory",
+    "command": "C:\\Users\\rcha0053\\pr164-qualification\\target\\native-tests\\deps\\codebase_graph-7ed996dfd9332328.exe --list --format terse",
+    "exit": 0,
+    "available": 845,
+    "selected": 37,
+    "not_selected": 808
+  },
+  {
+    "label": "clippy-explicit-category-allowances",
+    "command": "cargo clippy --locked --offline --profile native-tests --features bundled-windows-extensions --lib --tests -- -D warnings -A clippy::needless_return -A clippy::unnecessary_map_or -A clippy::useless_conversion -A clippy::permissions_set_readonly_false",
+    "exit": 0,
+    "boundary": "global4lintcategoryallowances,includingtestfiles;notstrictpass"
+  },
+  {
+    "label": "affected-tests",
+    "command": "C:\\Users\\rcha0053\\pr164-qualification\\target\\native-tests\\deps\\codebase_graph-7ed996dfd9332328.exe adapters::cli::tests::mcp:: coordinator::tests:: --test-threads=1 --nocapture",
+    "exit": 0,
+    "duration": 160.51500000001397,
+    "passed": 37,
+    "failed": 0,
+    "ignored": 0,
+    "filtered": 808
+  }
+]

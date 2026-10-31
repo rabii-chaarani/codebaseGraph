@@ -1,0 +1,167 @@
+{
+  "action": "created",
+  "agent_hooks": {
+    "action": "skipped",
+    "clients": [],
+    "reason": "disabled",
+    "selection": "none"
+  },
+  "agent_hooks_verification": {
+    "action": "not_applicable",
+    "clients": [],
+    "ok": true,
+    "selection": "none"
+  },
+  "client": "openclaw",
+  "command": null,
+  "daemon": null,
+  "descriptor": {
+    "args": [
+      "mcp",
+      "start",
+      "--config",
+      "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+    ],
+    "command": "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\openclaw bin\\openclaw.exe",
+    "cwd": null,
+    "env": {},
+    "name": "cod55_supplemental",
+    "repo_root": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space",
+    "setup_config_path": "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json",
+    "timeout": 60,
+    "tool_policy": "graph_query_read_only",
+    "transport": "stdio"
+  },
+  "entry": {
+    "args": [
+      "mcp",
+      "start",
+      "--config",
+      "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+    ],
+    "command": "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\openclaw bin\\openclaw.exe",
+    "type": "stdio"
+  },
+  "legacy_cleanup": {
+    "action": "unchanged",
+    "removed": [],
+    "requested": [],
+    "text": "{\n  \"mcp\": {\n    \"servers\": {\n      \"cod55_supplemental\": {\n        \"args\": [\n          \"mcp\",\n          \"start\",\n          \"--config\",\n          \"\\\\\\\\?\\\\C:\\\\Users\\\\rcha0053\\\\pr164-qualification\\\\supplemental\\\\repo space\\\\.codebaseGraph\\\\config.json\"\n        ],\n        \"command\": \"C:\\\\Users\\\\rcha0053\\\\pr164-qualification\\\\supplemental\\\\openclaw bin\\\\openclaw.exe\",\n        \"type\": \"stdio\"\n      }\n    }\n  }\n}\n"
+  },
+  "method": "file_adapter",
+  "native_command": [
+    "openclaw",
+    "mcp",
+    "set",
+    "cod55_supplemental",
+    "{\"args\":[\"mcp\",\"start\",\"--config\",\"\\\\\\\\?\\\\C:\\\\Users\\\\rcha0053\\\\pr164-qualification\\\\supplemental\\\\repo space\\\\.codebaseGraph\\\\config.json\"],\"command\":\"C:\\\\Users\\\\rcha0053\\\\pr164-qualification\\\\supplemental\\\\openclaw bin\\\\openclaw.exe\",\"type\":\"stdio\"}"
+  ],
+  "patch": {
+    "mcp": {
+      "servers": {
+        "cod55_supplemental": {
+          "args": [
+            "mcp",
+            "start",
+            "--config",
+            "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+          ],
+          "command": "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\openclaw bin\\openclaw.exe",
+          "type": "stdio"
+        }
+      }
+    }
+  },
+  "path": "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\caller\\explicit space/custom.json5",
+  "payload": {
+    "mcp": {
+      "servers": {
+        "cod55_supplemental": {
+          "args": [
+            "mcp",
+            "start",
+            "--config",
+            "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+          ],
+          "command": "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\openclaw bin\\openclaw.exe",
+          "type": "stdio"
+        }
+      }
+    }
+  },
+  "scope": "user",
+  "server_name": "cod55_supplemental",
+  "target_locality": "shared",
+  "verification": {
+    "client_visibility": {
+      "ok": true,
+      "path": "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\caller\\explicit space/custom.json5",
+      "reason": "client CLI cannot inspect the selected configuration file",
+      "skipped": true
+    },
+    "ok": true,
+    "stdio": {
+      "checks": {
+        "graph_health": true,
+        "graph_search": true,
+        "initialize": true,
+        "tool_error_result": true,
+        "tools_list": true
+      },
+      "command": [
+        "C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\openclaw bin\\openclaw.exe",
+        "mcp",
+        "start",
+        "--config",
+        "\\\\?\\C:\\Users\\rcha0053\\pr164-qualification\\supplemental\\repo space\\.codebaseGraph\\config.json"
+      ],
+      "ok": true,
+      "responses": [
+        {
+          "id": 1,
+          "jsonrpc": "2.0",
+          "result": {
+            "protocolVersion": "2025-11-25"
+          }
+        },
+        {
+          "id": 2,
+          "jsonrpc": "2.0",
+          "result": {
+            "tools": [
+              {
+                "name": "graph_health"
+              },
+              {
+                "name": "graph_search"
+              }
+            ]
+          }
+        },
+        {
+          "id": 3,
+          "jsonrpc": "2.0",
+          "result": {
+            "structuredContent": {
+              "ok": true
+            }
+          }
+        },
+        {
+          "id": 4,
+          "jsonrpc": "2.0",
+          "result": {}
+        },
+        {
+          "id": 5,
+          "jsonrpc": "2.0",
+          "result": {
+            "isError": true
+          }
+        }
+      ],
+      "stderr": ""
+    }
+  }
+}
+NATIVE_EXIT_STATUS=0

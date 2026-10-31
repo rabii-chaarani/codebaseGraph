@@ -1,0 +1,21 @@
+    Checking tree-sitter-language v0.1.8
+   Compiling tree-sitter v0.25.10
+   Compiling codebase-graph v4.0.1 (/private/tmp/codebasegraph-pr164-ci-clean)
+   Compiling web_atoms v0.2.6
+    Checking yaml_serde v0.10.7
+    Checking tree-sitter-python v0.25.0
+    Checking tree-sitter-css v0.25.0
+    Checking tree-sitter-typescript v0.23.2
+    Checking tree-sitter-javascript v0.25.0
+    Checking tree-sitter-fortran v0.6.0
+    Checking tree-sitter-rust v0.24.2
+    Checking tree-sitter-html v0.23.2
+    Checking tree-sitter-cpp v0.23.4
+    Checking tree-sitter-go v0.25.0
+    Checking tree-sitter-c v0.24.2
+    Checking xtask v4.0.1 (/private/tmp/codebasegraph-pr164-ci-clean/crates/xtask)
+    Checking markup5ever v0.39.0
+    Checking html5ever v0.39.0
+    Checking ammonia v4.1.8
+    Checking k-wiki v4.0.1 (/private/tmp/codebasegraph-pr164-ci-clean/crates/k-wiki)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 23.15s

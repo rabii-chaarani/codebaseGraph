@@ -1,0 +1,79 @@
+{
+  "retrievedAt": "2026-10-27T01:45:34.079687+00:00",
+  "run": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260",
+  "runId": 40426019260,
+  "headSha": "d6dd34493e9da6f80847240bafcc92dbcaed2c38",
+  "syntheticMergeSha": "af71103436086bff1189e67e0f5f03464e977bd4",
+  "logs": [
+    {
+      "jobId": 121931860962,
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860962",
+      "command": "gh run view 40426019260 --repo rabii-chaarani/codebaseGraph --job 121931860962 --log > \"/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931860962.log\"",
+      "exitCode": 0,
+      "path": "/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931860962.log",
+      "sha256": "f971ee4520c23e9f4a673160ddbd2b89d245eb7a4e31dd96aef71cad69e13b20",
+      "bytes": 322285,
+      "lines": 1859
+    },
+    {
+      "jobId": 121931860936,
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860936",
+      "command": "gh run view 40426019260 --repo rabii-chaarani/codebaseGraph --job 121931860936 --log > \"/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931860936.log\"",
+      "exitCode": 0,
+      "path": "/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931860936.log",
+      "sha256": "906d1322079416a37f86a6fc3a79540597269f1ec4b8941b9b581e111f5dcd17",
+      "bytes": 577347,
+      "lines": 2531
+    },
+    {
+      "jobId": 121931861177,
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861177",
+      "command": "gh run view 40426019260 --repo rabii-chaarani/codebaseGraph --job 121931861177 --log > \"/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931861177.log\"",
+      "exitCode": 0,
+      "path": "/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931861177.log",
+      "sha256": "ee5a142a2bd5f8a29476a4149ac26df73f8026682b1272e32e041882d80ff25e",
+      "bytes": 1387645,
+      "lines": 5497
+    },
+    {
+      "jobId": 121931861193,
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861193",
+      "command": "gh run view 40426019260 --repo rabii-chaarani/codebaseGraph --job 121931861193 --log > \"/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931861193.log\"",
+      "exitCode": 0,
+      "path": "/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931861193.log",
+      "sha256": "2dc4b119d2adc1f55012bc63ed6a7ecb12dbd1b8ab636fdc1bf1a732d76b5ec5",
+      "bytes": 228454,
+      "lines": 1284
+    },
+    {
+      "jobId": 121931860919,
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931860919",
+      "command": "gh run view 40426019260 --repo rabii-chaarani/codebaseGraph --job 121931860919 --log > \"/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931860919.log\"",
+      "exitCode": 0,
+      "path": "/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931860919.log",
+      "sha256": "23707309f748750146c415280b5a192bf061bdc34bcbebf77a5b45656a366a1b",
+      "bytes": 214266,
+      "lines": 1203
+    },
+    {
+      "jobId": 121931861031,
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861031",
+      "command": "gh run view 40426019260 --repo rabii-chaarani/codebaseGraph --job 121931861031 --log > \"/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931861031.log\"",
+      "exitCode": 0,
+      "path": "/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931861031.log",
+      "sha256": "67660f039f94538a01e42258ee3606119d4ba5676fa91fba53601e0859fd7f36",
+      "bytes": 223062,
+      "lines": 1229
+    },
+    {
+      "jobId": 121931861293,
+      "url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/40426019260/job/121931861293",
+      "command": "gh run view 40426019260 --repo rabii-chaarani/codebaseGraph --job 121931861293 --log > \"/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931861293.log\"",
+      "exitCode": 0,
+      "path": "/tmp/codebasegraph-pr153-ci-only-evidence/hosted-completed-logs/job-121931861293.log",
+      "sha256": "75b8034df38c20e0dfeaf7489268d3414301cc8282d80a3a0ec75a33cd187731",
+      "bytes": 216087,
+      "lines": 1206
+    }
+  ]
+}

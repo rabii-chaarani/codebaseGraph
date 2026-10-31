@@ -1,0 +1,16 @@
+   Compiling codebase-graph v4.0.1 (/private/tmp/codebasegraph-pr164-ci-clean)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.49s
+────────────
+ Nextest run ID db7b9e05-c89d-4837-92c2-0f89d1a898f0 with nextest profile: pr164-copy
+    Starting 5 tests across 1 binary
+        SLOW [> 60.000s] (───) codebase-graph::copy_phase_process bounded_production_chunks_reopen_with_primary_keys_connectors_and_search
+        SLOW [>120.000s] (───) codebase-graph::copy_phase_process bounded_production_chunks_reopen_with_primary_keys_connectors_and_search
+        PASS [ 120.220s] (1/5) codebase-graph::copy_phase_process bounded_production_chunks_reopen_with_primary_keys_connectors_and_search
+        PASS [  28.961s] (2/5) codebase-graph::copy_phase_process jumbo_staged_row_survives_real_copy_and_fresh_process_read
+        SLOW [> 60.000s] (───) codebase-graph::copy_phase_process native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles
+        SLOW [>120.000s] (───) codebase-graph::copy_phase_process native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles
+        PASS [ 148.412s] (3/5) codebase-graph::copy_phase_process native_copy_acknowledgement_failure_preserves_managed_and_direct_bundles
+        PASS [   0.017s] (4/5) codebase-graph::copy_phase_process phase_process_oracle_accepts_reused_pid_but_rejects_reused_process
+        PASS [   0.016s] (5/5) codebase-graph::copy_phase_process phase_process_oracle_rejects_missing_or_invalid_evidence
+────────────
+     Summary [ 297.627s] 5 tests run: 5 passed (2 slow), 0 skipped

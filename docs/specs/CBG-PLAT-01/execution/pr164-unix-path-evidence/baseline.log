@@ -1,0 +1,2 @@
+previous status=exit status: 0 stdout=runnable
+pinned error kind=PermissionDenied: Permission denied (os error 13)

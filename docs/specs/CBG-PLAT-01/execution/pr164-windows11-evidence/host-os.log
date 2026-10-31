@@ -1,0 +1,12 @@
+{
+    "Caption":  "Microsoft Windows 11 Enterprise",
+    "Version":  "10.0.22631",
+    "BuildNumber":  "22631",
+    "OSArchitecture":  "64-bit"
+}
+{
+    "ProductName":  "Windows 10 Enterprise",
+    "DisplayVersion":  "23H2",
+    "CurrentBuild":  "22631",
+    "UBR":  7652
+}

@@ -1,0 +1,24 @@
+{
+  "source_baseline": "563ba4a308715fc09d62892c6e71c5dce5b5b496",
+  "source_hashes": {
+    "src/db_writer/phase.rs": "889b005587d1ce59a63ae35fdcbb1d799ae5248cc910e65cb102e23b80ffa9fa",
+    "tests/copy_phase_process.rs": "bd6d263acba7364a2846b9cb52a669a5281026adadd7b347689e3a5bc0fdbf94"
+  },
+  "reused_source_commit": "5e3e42f48a55581ef75b25ba21732913089f664d",
+  "approval": "931c3ddaeccba9c3f94f75e3ae58be9e3016a4ef",
+  "captured_cli_path": "/tmp/pr164-ci-debug/copy-tested-codebase-graph",
+  "captured_cli_sha256": "0b3b9bca048662fd6f839b4d9047cf2611b044b4b989460bbcb91928e30ded93",
+  "command": "cd /private/tmp/codebasegraph-pr164-ci-clean && CARGO_TARGET_DIR=/private/tmp/codebasegraph-pr164-target cargo build --locked --bin codebase-graph > /tmp/pr164-ci-debug/copy-cli-build.log 2>&1 && cp /private/tmp/codebasegraph-pr164-target/debug/codebase-graph /tmp/pr164-ci-debug/copy-tested-codebase-graph && CARGO_TARGET_DIR=/private/tmp/codebasegraph-pr164-target cargo nextest run --locked --lib --profile pr164-phase --config-file /tmp/pr164-ci-debug/copy-nextest.toml -E 'test(db_writer::phase::tests)' > /tmp/pr164-ci-debug/copy-phase-tests.log 2>&1 && env 'CARGO_BIN_EXE_codebase-graph=/tmp/pr164-ci-debug/copy-tested-codebase-graph' CARGO_TARGET_DIR=/private/tmp/codebasegraph-pr164-target cargo nextest run --locked --test copy_phase_process --profile pr164-copy --config-file /tmp/pr164-ci-debug/copy-nextest.toml > /tmp/pr164-ci-debug/copy-native-tests.log 2>&1 && CARGO_TARGET_DIR=/private/tmp/codebasegraph-pr164-target cargo fmt --all --check > /tmp/pr164-ci-debug/copy-fmt.log 2>&1 && CARGO_TARGET_DIR=/private/tmp/codebasegraph-pr164-target cargo clippy --workspace --all-targets --all-features --locked -- -D warnings > /tmp/pr164-ci-debug/copy-clippy.log 2>&1",
+  "environment": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6.2\nBuildVersion:\t\t25G83\nrustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: aarch64-apple-darwin\nrelease: 1.96.0\nLLVM version: 22.1.2\n",
+  "status": "passed local macOS validation",
+  "cli_build_exit_code": 0,
+  "chain_exit_code": 0,
+  "phase_test_count": 13,
+  "phase_test_failures": 0,
+  "native_test_count": 5,
+  "native_test_failures": 0,
+  "native_test_skipped": 0,
+  "fmt": "pass",
+  "strict_clippy": "pass",
+  "native_windows": "not executed in local environment; final-head CI pending"
+}
