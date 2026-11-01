@@ -1,0 +1,13 @@
+COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo fmt && cargo test -p xtask --locked tests::ci_identity_body_executes_trusted_release_pr_and_fails_closed -- --nocapture
+EXIT: 0
+OUTPUT:
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.48s
+     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)
+
+running 1 test
+test tests::ci_identity_body_executes_trusted_release_pr_and_fails_closed ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 97 filtered out; finished in 2.05s
+
+

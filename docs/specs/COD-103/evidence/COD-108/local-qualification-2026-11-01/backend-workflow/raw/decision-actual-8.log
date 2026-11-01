@@ -1,0 +1,25 @@
+COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo fmt && cargo test -p xtask --locked tests::ci_decision_body_executes_protected_classifier_and_falls_back_full -- --nocapture
+EXIT: 101
+OUTPUT:
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.40s
+     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)
+
+running 1 test
+test tests::ci_decision_body_executes_protected_classifier_and_falls_back_full ... 
+thread 'tests::ci_decision_body_executes_protected_classifier_and_falls_back_full' (40823704) panicked at crates/xtask/src/main.rs:4981:9:
+mode=full
+decision={"base_sha":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","event_name":"pull_request","head_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mode":"full","positive_metadata":false,"pr_number":124,"reason_code":"classifier-acquisition-failed","repository":"owner/repo","repository_id":"12345","run_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","schema_version":1}
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    tests::ci_decision_body_executes_protected_classifier_and_falls_back_full
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 98 filtered out; finished in 0.33s
+
+error: test failed, to rerun pass `-p xtask --bin xtask`
+

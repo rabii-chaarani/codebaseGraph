@@ -31,31 +31,63 @@ asset and crate publication. Never copy a local CLI login token into repository 
 
 ## CI
 
-Pull requests targeting `main` and the approved COD-103 staging branches run the same full verification. The staged PR bases are exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`, `cod103-stack/cod-56`, and `cod103-stack/cod-107`; pull-request activities are opened, synchronize, reopened, and edited. Pushes remain restricted to `main`. Staging checks are full CI, not release qualification; a changed head/base needs a fresh event and result. No privileged PR trigger or PR artifact promotion/publication is added. The separate COD-107 A03 method permits internal retention of the already-built native archives, sidecars, and provenance only for its qualifying same-repository PR, so the exact-source payloads can be independently inventoried. It adds no public release authority or permissions and changes no unrelated PR retention. All other PR artifact retention remains disabled.
+Normal pull requests target exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`,
+`cod103-stack/cod-56`, `cod103-stack/cod-107`, or `cod103-stack/cod-108`. Activities are opened,
+synchronize, reopened, edited, labeled, and unlabeled. Pushes remain restricted to `main`.
+Staging checks are not release qualification; a changed head/base needs fresh qualification.
+No privileged PR trigger or PR artifact promotion/publication is added.
 
-Every qualifying pull request and every push to `main` runs:
+Every event requires successful `classify`, `fmt`, `supply-chain`, `repository-policy`, and
+`native_retention` jobs. The policy job is the single ordinary `release-gate` invocation and runs
+`cargo test -p xtask --locked` for classifier/workflow regressions. Formatting stays `cargo fmt --check`;
+the existing advisory scan and time-parsing feature guard remain unchanged.
 
-- `cargo fmt --check`
-- platform-aligned workspace tests on macOS ARM64 and Windows x86_64
-- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
-- Rust advisory scanning with `cargo audit`
-- `cargo run -p xtask --locked -- release-gate`, before the package dry-run, to reject repository-policy violations before release.
-- `cargo publish --dry-run --locked`
-- An exact-byte check that the generated `.crate` does not exceed crates.io's 10 MiB upload limit.
-- `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
-  unpublished wiki binary uses the in-tree codebase-graph registrar, while the preceding root
-  package check verifies that publishable shared API in isolation.
-- Release-ready package builds on macOS ARM64 and Windows x86_64. The normal COD-107 same-repository staging PR may
-  retain both already-built archives, sidecars, and provenance for independent A03 inventory; other PRs upload none.
-  `main` retains both artifacts for 90 days. Retention does not skip verification or promote PR artifacts for publication.
-- The dedicated COD-107 selector controls only retention; native verification remains required on every PR, and the
-  stable `required` aggregate still succeeds only when every mandatory job succeeds. Repository rules should require
-  that check after it has appeared on `main` once.
+Only a positively verified metadata-only release PR may use lightweight verification. Current API and
+event data must agree on the open, non-draft same-repository PR targeting current `main`, exact release
+branch `release-please--branches--main--components--codebase-graph`, `autorelease: pending` label, and
+creator ID41898282 / `github-actions[bot]` / Bot. Branch, label, author name, or token name alone is
+not admission. A different proposal principal stays full until separately verified and approved.
 
-macOS ARM64 runs unit, generation-storage, and remaining integration/doctest cohorts independently. Windows uses four
-serial groups per cohort, including generation-storage, so each case runs once. Groups are discovered from
-Cargo's test inventories, with complete and selected inventories retained in diagnostic artifacts. Each runner executes
-tests serially, and a target's release artifact is built only after all its test groups succeed.
+The schema1 classifier runs code, manifests, lockfile, cwd, and build context from immutable protected
+main base B. A separate Git object checkout supplies B→H data; H is never checked out or executed for
+admission. Checkouts do not persist credentials, classifier builds use a private target directory, and
+no untrusted compiler cache or publication secret is shared. The complete generated six-file version/
+changelog form must pass the conservative semantic proof; other fields, dependencies, layouts, files,
+or uncertain acquisition select explicit full mode. Missing/incompatible protected-base helper also
+selects full: COD-108's own PR cannot use its head helper to admit itself.
+
+Ordinary/untrusted/non-main-base PRs and every main push run full verification, including:
+
+- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`;
+- root `cargo publish --dry-run --locked`, exact-byte 10 MiB crate limit, and isolated wiki package checks;
+- platform-aligned workspace tests and release-ready packages on macOS ARM64 and Windows x86_64,
+  using the existing native CLI/profile/build/smoke recipes.
+
+Lightweight mode skips exactly those three heavy jobs (`clippy`, `publish-dry-run`, `native`), not the
+common policy/advisory/format/classification checks. It proves consistent metadata without building a
+package in disguise. The stable `required` job always runs and needs every selector/common/heavy job.
+It rejects missing, malformed, failed, cancelled, or unexpected results. Full requires all heavy jobs
+successful; lightweight requires all three exactly skipped plus fresh positive proof. Immediately before
+success, both PR modes re-read current identity and B/H; lightweight also rechecks current main and trust.
+API failure or stale identity fails required, even after a full fallback. Run summaries record mode,
+B/H, reason, and intentional skips. This final read is not a merge transaction: strict freshness through
+an authorized non-bypass actor remains required. PR-head-editable workflow YAML is not claimed tamper-proof.
+
+The separate COD-107 A03 selector is unchanged: only its qualifying same-repository head
+`cod103-stack/cod-107` targeting `cod103-stack/cod-56` or `main` on its original four activities may retain
+already-built native archives, sidecars, and provenance. Added bases/label events grant no COD-108 or
+other PR retention. Main pushes retain both artifacts for 90 days; existing 3-day diagnostic retention
+and native recipes are unchanged. Retention never skips required verification or promotes PR artifacts.
+
+macOS ARM64 runs unit, generation-storage, and remaining integration/doctest cohorts independently.
+Windows uses four serial groups per cohort, including generation-storage, so each case runs once.
+Groups come from Cargo inventories; complete/selected inventories remain in diagnostics. Tests run
+serially and release artifacts build only after all target test groups succeed.
+
+Actual hosted lightweight scheduling must be qualified after protected-main deployment and its own
+successful full main CI, before the final release-PR merge. Unit tests, configured jobs, and the full
+bootstrap PR do not establish that rollout evidence. Every release merge still runs full main-push CI
+and supplies its own exact-source native artifacts; there is no PR-artifact substitution.
 
 ## Release Flow
 

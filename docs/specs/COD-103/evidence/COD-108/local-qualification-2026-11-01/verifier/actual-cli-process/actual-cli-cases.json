@@ -1,0 +1,742 @@
+[
+  {
+    "case": "eligible-current-generated-six",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "ff032aa834e8a615c3de06be472bce3db19472ac"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha ff032aa834e8a615c3de06be472bce3db19472ac > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/eligible-current-generated-six.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/eligible-current-generated-six.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.06099887494929135,
+    "stdout": "{\"schema_version\":1,\"mode\":\"lightweight\",\"reason_code\":\"metadata-only-version-bump\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"ff032aa834e8a615c3de06be472bce3db19472ac\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "lightweight",
+      "reason_code": "metadata-only-version-bump",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "ff032aa834e8a615c3de06be472bce3db19472ac"
+    },
+    "expected": "lightweight",
+    "status": "PASS"
+  },
+  {
+    "case": "external-lock-version",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "7105e0e118ffc2ec91ed21125eb1a59b42113257"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 7105e0e118ffc2ec91ed21125eb1a59b42113257 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/external-lock-version.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/external-lock-version.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.0620702498126775,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"7105e0e118ffc2ec91ed21125eb1a59b42113257\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "7105e0e118ffc2ec91ed21125eb1a59b42113257"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "external-lock-checksum",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "d807ea7edf030cd219dd405e8ea7423e26f6da54"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha d807ea7edf030cd219dd405e8ea7423e26f6da54 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/external-lock-checksum.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/external-lock-checksum.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.06054974999278784,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"d807ea7edf030cd219dd405e8ea7423e26f6da54\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "d807ea7edf030cd219dd405e8ea7423e26f6da54"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "external-lock-source",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "028d6e28e620acd2b8772a02650e3a6f35d33dc0"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 028d6e28e620acd2b8772a02650e3a6f35d33dc0 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/external-lock-source.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/external-lock-source.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.05972366710193455,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"028d6e28e620acd2b8772a02650e3a6f35d33dc0\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "028d6e28e620acd2b8772a02650e3a6f35d33dc0"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "external-lock-edge",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "dba4d54646239e35d6d9282401eac9809045de06"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha dba4d54646239e35d6d9282401eac9809045de06 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/external-lock-edge.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/external-lock-edge.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.06209145812317729,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"dba4d54646239e35d6d9282401eac9809045de06\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "dba4d54646239e35d6d9282401eac9809045de06"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "arbitrary-package-field",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "24ffca75faaa4af598a0e407cda0bafae419aa11"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 24ffca75faaa4af598a0e407cda0bafae419aa11 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/arbitrary-package-field.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/arbitrary-package-field.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.056755500147119164,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"24ffca75faaa4af598a0e407cda0bafae419aa11\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "24ffca75faaa4af598a0e407cda0bafae419aa11"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "wiki-dependency-path",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "1833d2d66d67aeb001650a2e2f5c88bd140f46bd"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 1833d2d66d67aeb001650a2e2f5c88bd140f46bd > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/wiki-dependency-path.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/wiki-dependency-path.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.05560237495228648,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"1833d2d66d67aeb001650a2e2f5c88bd140f46bd\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "1833d2d66d67aeb001650a2e2f5c88bd140f46bd"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "duplicate-root-version",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "b3076462a3449472ec8e76664030e740454a5f32"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha b3076462a3449472ec8e76664030e740454a5f32 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/duplicate-root-version.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/duplicate-root-version.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.05588674987666309,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"b3076462a3449472ec8e76664030e740454a5f32\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "b3076462a3449472ec8e76664030e740454a5f32"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "duplicate-JSON-key",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "c04617f6b34ae62b3bf2019c2b5c89b39fa7d2f6"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha c04617f6b34ae62b3bf2019c2b5c89b39fa7d2f6 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/duplicate-JSON-key.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/duplicate-JSON-key.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.05591633287258446,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"c04617f6b34ae62b3bf2019c2b5c89b39fa7d2f6\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "c04617f6b34ae62b3bf2019c2b5c89b39fa7d2f6"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "old-changelog-history",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "79356aa07731ffdd4c6ca8a2e2a79bcd63621d74"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 79356aa07731ffdd4c6ca8a2e2a79bcd63621d74 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/old-changelog-history.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/old-changelog-history.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.059550292091444135,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"metadata-not-eligible\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"79356aa07731ffdd4c6ca8a2e2a79bcd63621d74\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "metadata-not-eligible",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "79356aa07731ffdd4c6ca8a2e2a79bcd63621d74"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "partial-fivefile-bump",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "a94600f99ae2e229dbcc3ad39d031c5b19c4bab0"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha a94600f99ae2e229dbcc3ad39d031c5b19c4bab0 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/partial-fivefile-bump.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/partial-fivefile-bump.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.025332249933853745,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"changed-path-set\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"a94600f99ae2e229dbcc3ad39d031c5b19c4bab0\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "changed-path-set",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "a94600f99ae2e229dbcc3ad39d031c5b19c4bab0"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "workspace-version-mismatch",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "5da765b16c40ed2737b4b4116aca8baf0b9abaf4"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 5da765b16c40ed2737b4b4116aca8baf0b9abaf4 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/workspace-version-mismatch.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/workspace-version-mismatch.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.059240082977339625,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"version-mismatch\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"5da765b16c40ed2737b4b4116aca8baf0b9abaf4\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "version-mismatch",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "5da765b16c40ed2737b4b4116aca8baf0b9abaf4"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "strict-version-decrease",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "4ffba8d2694c3ec4f0fa86acadb35f73c80f9718"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 4ffba8d2694c3ec4f0fa86acadb35f73c80f9718 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/strict-version-decrease.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/strict-version-decrease.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.05942016700282693,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"version-transition-invalid\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"4ffba8d2694c3ec4f0fa86acadb35f73c80f9718\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "version-transition-invalid",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "4ffba8d2694c3ec4f0fa86acadb35f73c80f9718"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "strict-leadingzero-version",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "d84cb2c0cd1556fd8cd1099d77813d3bc6eb9b11"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha d84cb2c0cd1556fd8cd1099d77813d3bc6eb9b11 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/strict-leadingzero-version.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/strict-leadingzero-version.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.05999062513001263,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"version-transition-invalid\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"d84cb2c0cd1556fd8cd1099d77813d3bc6eb9b11\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "version-transition-invalid",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "d84cb2c0cd1556fd8cd1099d77813d3bc6eb9b11"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "newline-shelllike-extra-path",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "7aa54a4a6968479bb7fb5763244e4ec7ffcf1c25"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 7aa54a4a6968479bb7fb5763244e4ec7ffcf1c25 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/newline-shelllike-extra-path.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/newline-shelllike-extra-path.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.022769416915252805,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"changed-path-set\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"7aa54a4a6968479bb7fb5763244e4ec7ffcf1c25\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "changed-path-set",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "7aa54a4a6968479bb7fb5763244e4ec7ffcf1c25"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "executable-metadata-mode",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "174d87156d110c4ceeaf6fa90f44965226e243ef"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 174d87156d110c4ceeaf6fa90f44965226e243ef > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/executable-metadata-mode.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/executable-metadata-mode.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.02333779213950038,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"unsafe-file-mode\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"174d87156d110c4ceeaf6fa90f44965226e243ef\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "unsafe-file-mode",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "174d87156d110c4ceeaf6fa90f44965226e243ef"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "symlink-metadata-mode",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "35343bd1b618ea9005648d69120ba5bf2d9c2ca3"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 35343bd1b618ea9005648d69120ba5bf2d9c2ca3 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/symlink-metadata-mode.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/symlink-metadata-mode.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.022806792054325342,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"changed-path-set\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"35343bd1b618ea9005648d69120ba5bf2d9c2ca3\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "changed-path-set",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "35343bd1b618ea9005648d69120ba5bf2d9c2ca3"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "renamed-metadata-file",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "cc46c3653b5b92e736ddda7f2942be6dac6ff48f"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha cc46c3653b5b92e736ddda7f2942be6dac6ff48f > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/renamed-metadata-file.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/renamed-metadata-file.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.0222632079385221,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"changed-path-set\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"cc46c3653b5b92e736ddda7f2942be6dac6ff48f\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "changed-path-set",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "cc46c3653b5b92e736ddda7f2942be6dac6ff48f"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "eligible-current-generated-six-major",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "e6afb86970730cd72b4b1731c340726a4e70d26b"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha e6afb86970730cd72b4b1731c340726a4e70d26b > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/eligible-current-generated-six-major.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/eligible-current-generated-six-major.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.0632709579076618,
+    "stdout": "{\"schema_version\":1,\"mode\":\"lightweight\",\"reason_code\":\"metadata-only-version-bump\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"e6afb86970730cd72b4b1731c340726a4e70d26b\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "lightweight",
+      "reason_code": "metadata-only-version-bump",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "e6afb86970730cd72b4b1731c340726a4e70d26b"
+    },
+    "expected": "lightweight",
+    "status": "PASS"
+  },
+  {
+    "case": "same-immutable-SHA",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha 4072d95949409430c656f02e701e6c5e2d2cb470 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/same-immutable-SHA.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/same-immutable-SHA.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.024563082959502935,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"changed-path-set\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "changed-path-set",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "4072d95949409430c656f02e701e6c5e2d2cb470"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "stale-nonancestor-base",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "ff032aa834e8a615c3de06be472bce3db19472ac",
+      "--head-sha",
+      "e6afb86970730cd72b4b1731c340726a4e70d26b"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha ff032aa834e8a615c3de06be472bce3db19472ac --head-sha e6afb86970730cd72b4b1731c340726a4e70d26b > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/stale-nonancestor-base.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/stale-nonancestor-base.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.019185459008440375,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"base-not-ancestor\",\"base_sha\":\"ff032aa834e8a615c3de06be472bce3db19472ac\",\"head_sha\":\"e6afb86970730cd72b4b1731c340726a4e70d26b\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "base-not-ancestor",
+      "base_sha": "ff032aa834e8a615c3de06be472bce3db19472ac",
+      "head_sha": "e6afb86970730cd72b4b1731c340726a4e70d26b"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "missing-Git-object",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "ffffffffffffffffffffffffffffffffffffffff",
+      "--head-sha",
+      "ff032aa834e8a615c3de06be472bce3db19472ac"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha ffffffffffffffffffffffffffffffffffffffff --head-sha ff032aa834e8a615c3de06be472bce3db19472ac > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/missing-Git-object.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/missing-Git-object.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.013011917006224394,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"git-acquisition-failed\",\"base_sha\":\"ffffffffffffffffffffffffffffffffffffffff\",\"head_sha\":\"ff032aa834e8a615c3de06be472bce3db19472ac\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "git-acquisition-failed",
+      "base_sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "head_sha": "ff032aa834e8a615c3de06be472bce3db19472ac"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "missing-Git-repository",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/absent-repo",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "ff032aa834e8a615c3de06be472bce3db19472ac"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/absent-repo --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha ff032aa834e8a615c3de06be472bce3db19472ac > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/missing-Git-repository.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/missing-Git-repository.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 0,
+    "duration_seconds": 0.009682249976322055,
+    "stdout": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"git-acquisition-failed\",\"base_sha\":\"4072d95949409430c656f02e701e6c5e2d2cb470\",\"head_sha\":\"ff032aa834e8a615c3de06be472bce3db19472ac\"}\n",
+    "stderr": "",
+    "parsed_decision": {
+      "schema_version": 1,
+      "mode": "full",
+      "reason_code": "git-acquisition-failed",
+      "base_sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "head_sha": "ff032aa834e8a615c3de06be472bce3db19472ac"
+    },
+    "expected": "full",
+    "status": "PASS"
+  },
+  {
+    "case": "invalid-short-SHA",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "abc",
+      "--head-sha",
+      "ff032aa834e8a615c3de06be472bce3db19472ac"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha abc --head-sha ff032aa834e8a615c3de06be472bce3db19472ac > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/invalid-short-SHA.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/invalid-short-SHA.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 1,
+    "duration_seconds": 0.009052916895598173,
+    "stdout": "",
+    "stderr": "ci-mode requires full 40-character hexadecimal commit SHAs\n",
+    "parsed_decision": null,
+    "expected": "nonzero/noJSON",
+    "status": "PASS"
+  },
+  {
+    "case": "invalid-repeated-arg",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "ff032aa834e8a615c3de06be472bce3db19472ac",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha ff032aa834e8a615c3de06be472bce3db19472ac --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/invalid-repeated-arg.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/invalid-repeated-arg.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 1,
+    "duration_seconds": 0.009008833207190037,
+    "stdout": "",
+    "stderr": "ci-mode option repeated: --base-sha\n",
+    "parsed_decision": null,
+    "expected": "nonzero/noJSON",
+    "status": "PASS"
+  },
+  {
+    "case": "invalid-unknown-arg",
+    "actual_argv": [
+      "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "ci-mode",
+      "--repo",
+      "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+      "--base-sha",
+      "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "--head-sha",
+      "ff032aa834e8a615c3de06be472bce3db19472ac",
+      "--unapproved",
+      "yes"
+    ],
+    "command": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask ci-mode --repo /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects --base-sha 4072d95949409430c656f02e701e6c5e2d2cb470 --head-sha ff032aa834e8a615c3de06be472bce3db19472ac --unapproved yes > /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/invalid-unknown-arg.stdout.json 2> /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/invalid-unknown-arg.stderr.txt",
+    "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+    "source_bound_CLI_SHA256": "75600f56bd042ddd517135e54b65480da2e2974eab7b1149a4c21deb37228c4f",
+    "exit_code": 1,
+    "duration_seconds": 0.009027916006743908,
+    "stdout": "",
+    "stderr": "unknown ci-mode option: --unapproved\n",
+    "parsed_decision": null,
+    "expected": "nonzero/noJSON",
+    "status": "PASS"
+  }
+]

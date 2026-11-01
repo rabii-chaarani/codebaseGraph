@@ -1,0 +1,3 @@
+#!/bin/sh
+printf "unexpected cargo call: %s\n" "$*" >> "$RUNNER_TEMP/unexpected-calls"
+exit 97

@@ -1,0 +1,14 @@
+{
+  "role": "Final Reviewer",
+  "map_model": "gpt-6.1-sol",
+  "map_effort": "max",
+  "host_accepted_model": "openai-codex/gpt-6.1-sol",
+  "host_accepted_reasoning_effort": "max",
+  "host_accepted_agent_type": "default",
+  "host_accepted_fork_turns": "none",
+  "fresh_context": true,
+  "context_provenance": "Fresh child sub-85e8e92c/session01a19759-2ad2-77d1-b9c7-a112aff1e3b6, created only for integrated COD108 review. No authorship/previous COD107 review, no dispatch/fallback.",
+  "accepted_host_provenance": "Coordinator assignment plus live COD108 comment d7fce99e-a7e0-44b6-98be-fe22c5cb67ee, retrieved read-only.",
+  "runtime_metadata_exposure": "agent_observe exposes session/root/status only; model, provider, effort and fork implementation metadata are not independently exposed. Do not infer these from generated text.",
+  "method": "codebasegraph-final-reviewer + adversarial-review-engineer and applicable engineering lenses, read from installed paths."
+}

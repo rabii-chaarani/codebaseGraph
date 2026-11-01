@@ -1,0 +1,80 @@
+[package]
+name = "codebase-graph"
+version = "4.0.6"
+edition = "2021"
+rust-version = "1.82"
+description = "Native codebaseGraph CLI and MCP server for local code knowledge graphs."
+license = "MIT"
+repository = "https://github.com/rabii-chaarani/codebaseGraph"
+homepage = "https://github.com/rabii-chaarani/codebaseGraph"
+readme = "README.md"
+keywords = ["codebase", "graph", "mcp", "cli", "analysis"]
+categories = ["command-line-utilities", "development-tools"]
+include = [
+    "src/**",
+    "!src/**/.DS_Store",
+    "tests/**",
+    "assets/*.json",
+    "assets/ladybug-extensions/0.19.0/**/*.xz",
+    "vendor/tree-sitter-wat/**",
+    "build.rs",
+    "README.md",
+    "LICENSE",
+]
+
+[workspace]
+members = [".", "crates/k-wiki", "crates/xtask"]
+resolver = "2"
+
+[profile.native-tests]
+inherits = "release"
+debug-assertions = true
+overflow-checks = true
+panic = "unwind"
+
+[lib]
+name = "codebase_graph"
+
+[features]
+default = ["bundled-windows-extensions"]
+bundled-windows-extensions = []
+
+[dependencies]
+fs2 = "0.4.3"
+getrandom = "0.3.4"
+lbug = "0.19.0"
+libc = "0.2"
+libmimalloc-sys = { version = "0.1.49", features = ["extended"] }
+lzma-rs = "0.3.0"
+mimalloc = { version = "0.1.52", features = ["extended"] }
+notify = "8.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10.9"
+tree-sitter = "0.25"
+tree-sitter-c = "0.24.2"
+tree-sitter-cpp = "0.23.4"
+tree-sitter-css = "0.25.0"
+tree-sitter-fortran = "0.6.0"
+tree-sitter-go = "0.25.0"
+tree-sitter-html = "0.23.2"
+tree-sitter-javascript = "0.25.0"
+tree-sitter-language = "0.1"
+tree-sitter-python = "0.25.0"
+tree-sitter-rust = "0.24.2"
+tree-sitter-typescript = "0.23.2"
+walkdir = "2"
+
+[build-dependencies]
+cc = "1.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Globalization", "Win32_System_ProcessStatus", "Win32_System_Threading", "Win32_System_JobObjects", "Win32_System_SystemServices", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Memory", "Win32_Storage_FileSystem", "Win32_System_Pipes", "Win32_System_Console", "Win32_System_Diagnostics_ToolHelp", "Win32_System_IO", "Wdk_Foundation", "Wdk_Storage_FileSystem"] }
+
+[[bin]]
+name = "codebase-graph"
+path = "src/bin/codebase-graph.rs"
+
+[[test]]
+name = "storage_foundation"
+path = "src/storage/test_harness.rs"

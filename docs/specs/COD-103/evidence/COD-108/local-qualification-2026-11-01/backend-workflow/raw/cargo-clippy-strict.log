@@ -1,0 +1,21 @@
+COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo clippy -p xtask --all-targets --all-features --locked -- -D warnings
+EXIT: 101
+OUTPUT:
+    Checking xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)
+error: using `contains()` instead of `iter().any()` is more efficient
+    --> crates/xtask/src/main.rs:1604:12
+     |
+1604 |           && policy_runs
+     |  ____________^
+1605 | |             .iter()
+1606 | |             .any(|run| *run == "cargo test -p xtask --locked")
+     | |______________________________________________________________^ help: try: `policy_runs.contains(&"cargo test -p xtask --locked")`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_contains
+     = note: `-D clippy::manual-contains` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::manual_contains)]`
+
+error: could not compile `xtask` (bin "xtask") due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `xtask` (bin "xtask" test) due to 1 previous error
+

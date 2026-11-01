@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-108",
+  "role": "independent-integrated-final-reviewer",
+  "status": "closed",
+  "verdict": "PASS",
+  "confirmed_findings": [],
+  "gate_satisfied": "Bounded local integrated implemented-change Final Reviewer assessment only",
+  "repository_root": "/private/tmp/codebasegraph-cod108-20261101",
+  "branch": "cod103-stack/cod-108",
+  "baseline_HEAD": "90af76d3453a6f5cc0f032045ed48c4fd09c275c",
+  "baseline_tree": "cd05bfb5ebdb9652dfa8b6af90ce867c733667bb",
+  "reviewed_files": {
+    "crates/xtask/src/ci.rs": {
+      "sha256": "b8971114c0ed2d79675b94cfb41133482c185c5ee8609a4282ed565c9136967f",
+      "bytes": 48671
+    },
+    "crates/xtask/src/main.rs": {
+      "sha256": "94e36cb3ceed27f45b552e42c9d6a52aa7cfef8dd70876f6e6ab4e562ec8891d",
+      "bytes": 235135
+    },
+    ".github/workflows/ci.yml": {
+      "sha256": "b59d7028101120f6885870cec054a65d9788f55d364dc0f2eb2b53bd4fd9c339",
+      "bytes": 21095
+    },
+    "docs/release.md": {
+      "sha256": "90d84f6614be6cd74b8340dd73b1a2c1000457af319475cf8939b1c316ebf486",
+      "bytes": 22125
+    }
+  },
+  "reviewed_untracked_new_module": true,
+  "frozen_hashes_rechecked": true,
+  "approved_contracts_sha": "316be4c4bb81d4f6e025016b12374836b4dcc1a8",
+  "approved_design_blob_SHA256": "8ae7be05e8dafe6865656dbdcbbbdf13d270cf92e51a327a58884bea8abab8a8",
+  "approval_record_sha": "0e6008a1f46679a86aba85ac513beb05af94b0c0",
+  "approval_path": "docs/specs/COD-103/approvals/2026-10-31-revision-0.3.md",
+  "decision_reference": "c8690556-e836-428d-bc81-079c701d2395",
+  "requirements": [
+    "C103-R04",
+    "C103-R05"
+  ],
+  "acceptance": [
+    "C103-A04",
+    "C103-A05"
+  ],
+  "scryer_intent_change": "chg-9xdkd4",
+  "claims": [
+    "resp-1rnbs9",
+    "resp-tddbkj"
+  ],
+  "execution_brief": "chg-cw9n3h",
+  "current_carrier_SHA256": "5f5a015b14521fc18f684e3c94f38c9723a01c59e855957376835032772c362d",
+  "closed_independent_verifier": {
+    "directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local",
+    "report_SHA256": "f98ed8b99184bbe50209d8306f7ac3f124d3f7946a12f3d62753bae4407ea4b7",
+    "result_SHA256": "c4baaa27cd33ade7131922276aa13471c6e08ec08dceb38b7a57aada3a265df7",
+    "files_SHA256": "ba83fb58191860586f271389d6108f49bc22ce3499566e8faef2f156a251b3b5",
+    "all_manifest_entries_verified": 349,
+    "manifest_mismatches": [],
+    "genuine_JUnit_SHA256": "279e267e4e1368dbca2050cd32671bfa5eab2fc6a06321eacdbfc453d4d64e87",
+    "run_uuid": "5cd13f30-8219-4810-b8e1-623fbf0e9b94",
+    "cases": 102,
+    "discovery_names_match": true,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "retries": 0,
+    "separate_CLI_supplement": 26,
+    "separate_required_body_supplement": 12
+  },
+  "settings": {
+    "role": "Final Reviewer",
+    "map_model": "gpt-6.1-sol",
+    "map_effort": "max",
+    "host_accepted_model": "openai-codex/gpt-6.1-sol",
+    "host_accepted_reasoning_effort": "max",
+    "host_accepted_agent_type": "default",
+    "host_accepted_fork_turns": "none",
+    "fresh_context": true,
+    "context_provenance": "Fresh child sub-85e8e92c/session01a19759-2ad2-77d1-b9c7-a112aff1e3b6, created only for integrated COD108 review. No authorship/previous COD107 review, no dispatch/fallback.",
+    "accepted_host_provenance": "Coordinator assignment plus live COD108 comment d7fce99e-a7e0-44b6-98be-fe22c5cb67ee, retrieved read-only.",
+    "runtime_metadata_exposure": "agent_observe exposes session/root/status only; model, provider, effort and fork implementation metadata are not independently exposed. Do not infer these from generated text.",
+    "method": "codebasegraph-final-reviewer + adversarial-review-engineer and applicable engineering lenses, read from installed paths."
+  },
+  "linear_read_only_queries_succeeded": true,
+  "reviewer_checks": "Read-only source/full tracked diff+new module/baseline/tool/metadata; offline hashes/XML/inventory/raw evidence. No Cargo/test rerun or network/product probe.",
+  "conditional_limits": [
+    "Hosted Actions/bot principal/scheduling/bootstrap qualification not established by local fixtures",
+    "Current-source legitimate canonical model binding and both assigned claim reconciliations remain pending",
+    "Actual protected-main lightweight/mixed-full rollout due after own full main CI and before final release-PR merge; affected COD110 recheck retained",
+    "Non-bypass strict server freshness/current-head-base/full native qualification/serial main/full queue release/public verification/aggregate owners unchanged"
+  ],
+  "open_behavior_approval_questions": [],
+  "constants_changed_by_reviewer": [],
+  "source_or_external_mutations": false,
+  "private_writes_stop_at_handoff": true,
+  "report": {
+    "path": "report.md",
+    "bytes": 13932,
+    "sha256": "d2781946727fdbcf1cf0218b2e6c36a69b9eb99bae17f4d07e7dab7df0ebe52e"
+  }
+}

@@ -1,0 +1,1966 @@
+{
+  "scope": "OwnprivatebareGitfixtureobjects only; no source-repo/ref mutation",
+  "commits": {
+    "base-real-sixfiles": {
+      "sha": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "tree": "868a6490f9b77d19d6539c57e6bdb151900d0391",
+      "parent": null,
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35",
+          "bytes": 23408,
+          "mode": "100644"
+        }
+      }
+    },
+    "positive-real-sixfiles-4.0.6": {
+      "sha": "ff032aa834e8a615c3de06be472bce3db19472ac",
+      "tree": "0bb85c9db5be380c4e2171fbce4fd6e40bf48a6b",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "external-lock-version": {
+      "sha": "7105e0e118ffc2ec91ed21125eb1a59b42113257",
+      "tree": "1db41b384746b7a93cca04957d69ab0c645a1d7b",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "fe8ffecd47e8fe88f0fd6b76465504399b577829d08f1a18ef2db7a89fb9473f",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "external-lock-checksum": {
+      "sha": "d807ea7edf030cd219dd405e8ea7423e26f6da54",
+      "tree": "0d3900ff0e93aaaed6a0eefc4962d5b3fc546abf",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "e4d72cc92e9b950fa6d5e0861542cd66da2f510ef16d34e3c49148e234fe8f0a",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "external-lock-source": {
+      "sha": "028d6e28e620acd2b8772a02650e3a6f35d33dc0",
+      "tree": "b1135b1f101c0de7c12db2455cac483d212ba1e9",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "8b7d62f332eda9b8793c34ee6a0ad16f7c1656c6946f1472304717f32071c811",
+          "bytes": 52526,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "external-lock-edge": {
+      "sha": "dba4d54646239e35d6d9282401eac9809045de06",
+      "tree": "fe4b0d91fec900598b82f5566c7347fde4e5b704",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "304ca755094fcc2257af57acadb6ea749ad58b0950ab99178d1bade09f58dc87",
+          "bytes": 52544,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "arbitrary-package-field": {
+      "sha": "24ffca75faaa4af598a0e407cda0bafae419aa11",
+      "tree": "df5530f309d452e6bc353d000e4bde48b7f07efc",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "74878e803deecdefc13b85fd887b5db63a8de7aa771c4f26920f9e6a03350849",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "wiki-dependency-path": {
+      "sha": "1833d2d66d67aeb001650a2e2f5c88bd140f46bd",
+      "tree": "c28ed7e2af9649e60d04e88fb8c314f6db8ea3b6",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "79168035c49864e6e25373a927f8d8eb20e0141fa3380ebd68d0ad382e883c72",
+          "bytes": 1019,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "duplicate-root-version": {
+      "sha": "b3076462a3449472ec8e76664030e740454a5f32",
+      "tree": "6517ff07b761b064be4b04029e18239067a7110e",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "b429e372469372e010ff94004fe6d7db25cd64f9b336017e8b7647a9bf9460c3",
+          "bytes": 2338,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "duplicate-JSON-key": {
+      "sha": "c04617f6b34ae62b3bf2019c2b5c89b39fa7d2f6",
+      "tree": "573cbf3527bd7ac1a38657f738de033d3aa3e3b0",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "e598740feea1facc79741ba7c87ea1b4b0e77cc6fc18f6149c8cbecefe3969de",
+          "bytes": 35,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "old-changelog-history": {
+      "sha": "79356aa07731ffdd4c6ca8a2e2a79bcd63621d74",
+      "tree": "be2589d4db6d7908985510fcf425c55ff30ede82",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "b368f0da297a91c572f64fe29f17db9cf377f55ac7c2ccd78e9174adba67e520",
+          "bytes": 23619,
+          "mode": "100644"
+        }
+      }
+    },
+    "partial-fivefile-bump": {
+      "sha": "a94600f99ae2e229dbcc3ad39d031c5b19c4bab0",
+      "tree": "31cad4e1faea1c1d24a06d4e0b431b385fa88eef",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "workspace-version-mismatch": {
+      "sha": "5da765b16c40ed2737b4b4116aca8baf0b9abaf4",
+      "tree": "ab28d6158b41a057e89406685a4ddd31f9d8e04e",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "020245b950e38d343447c6d5599de0fa659113208fcc9d828633731e53cfc813",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "strict-version-decrease": {
+      "sha": "4ffba8d2694c3ec4f0fa86acadb35f73c80f9718",
+      "tree": "d93d8d7d4c544e535e30bbd09ecdd3b86c4e7aff",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "5f5823615ad11dcc2657c85e7cbd59d7228d0d0e7eaf8ce875c2228ae99fef42",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "9681d4d82882637d3bd616905a35fb75548cc053326cc409217b7aa37a2714d0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "8f7a2e58a4d239bcbab315209f89d9435bee3131cfd9dd9d82dcad71a952db22",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "115b7239069681758d3bc24ebeaf956deb8b1ad7eefa3be1f73df81b72d98abf",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "85965cae5f32606e24ecc0acc8ac8dad0be2e36d99ca983cf56a54d8ab3c8454",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "2a807891c4e68fb498d5ea4c374eb387ebdf5e111a42beb52d6a06df9ababbcc",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "strict-leadingzero-version": {
+      "sha": "d84cb2c0cd1556fd8cd1099d77813d3bc6eb9b11",
+      "tree": "b094f3fa10c1b5348870fbad8fd18bf924a8dd90",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "2d7c56ffcd64fe87e9337157d754624419a3a4833bc3d9e2099b93408662068d",
+          "bytes": 20,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "fe80517b7a7deacadebf53031ad0b70d27b96469d48a50bfe3b447f372d67834",
+          "bytes": 2321,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "510a818021e5e87d60268f49e639d1261f4491bd4fac3b15b6b236db1c16640a",
+          "bytes": 1013,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "a5308925a18dc620fb2f58d2b08ef76f37bc731992383914348b0b14fbf8204d",
+          "bytes": 220,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "00fadf00fdcf915c1c5d6639176f3610268b29df9a77c680e1c2ef037a55f21a",
+          "bytes": 52541,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "f36b5c4fdfa1eb075c3063f7fe03cf9952db08be807e10cf06b1a170babcddfb",
+          "bytes": 23602,
+          "mode": "100644"
+        }
+      }
+    },
+    "newline-shelllike-extra-path": {
+      "sha": "7aa54a4a6968479bb7fb5763244e4ec7ffcf1c25",
+      "tree": "a849431a439af347bd9d4f6f2b8a56f078678c05",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        },
+        "extra\n$(touch SHOULD_NOT_EXIST).rs": {
+          "sha256": "e3a0e6dcaa5c8197d837c5f8b4d26be57cd6983e2937815a149e56dffcb14a57",
+          "bytes": 12,
+          "mode": "100644"
+        }
+      }
+    },
+    "executable-metadata-mode": {
+      "sha": "174d87156d110c4ceeaf6fa90f44965226e243ef",
+      "tree": "96b0bf7948b75235730c0f2c83d08cc29882ed4d",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100755"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "symlink-metadata-mode": {
+      "sha": "35343bd1b618ea9005648d69120ba5bf2d9c2ca3",
+      "tree": "b3f84b8ff009bde0d01fba79d732f32a64abe0fb",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "d2618a0327794763053fe297b9502f2c04ea6e36853d3b623185c50521fa2750",
+          "bytes": 14,
+          "mode": "120000"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    },
+    "renamed-metadata-file": {
+      "sha": "cc46c3653b5b92e736ddda7f2942be6dac6ff48f",
+      "tree": "58dc0132f3044e7f2ba488afea94d3c0d42bd7e7",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1",
+          "bytes": 23600,
+          "mode": "100644"
+        },
+        "RENAMED-Cargo.toml": {
+          "sha256": "2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+          "bytes": 2320,
+          "mode": "100644"
+        }
+      }
+    },
+    "eligible-real-six-major": {
+      "sha": "e6afb86970730cd72b4b1731c340726a4e70d26b",
+      "tree": "c2d5d942a219b01b4e8b75fa6020ec1130814578",
+      "parent": "4072d95949409430c656f02e701e6c5e2d2cb470",
+      "files": {
+        ".release-please-manifest.json": {
+          "sha256": "bb6bb3ee7cb2ba20b5acb68e979d5f273582fb241a8eb5785d9cc94ca1447af6",
+          "bytes": 19,
+          "mode": "100644"
+        },
+        "Cargo.toml": {
+          "sha256": "50a86d25ae2d616235c99bcc7ea6a31de5ee0660e72e311197b9d0fcd7c2ac72",
+          "bytes": 2320,
+          "mode": "100644"
+        },
+        "crates/k-wiki/Cargo.toml": {
+          "sha256": "648634fc0f4b2fda40edfd0f346ff9b6f8175a0dfc338f7b3308e22d6a8db097",
+          "bytes": 1011,
+          "mode": "100644"
+        },
+        "crates/xtask/Cargo.toml": {
+          "sha256": "3bc18296d815d3963797b3669e049e74ad484a2a84f399731ad84ff4d3c8a28f",
+          "bytes": 219,
+          "mode": "100644"
+        },
+        "Cargo.lock": {
+          "sha256": "60515b2fdccc66b249530ee83162bc31978f197d3c891a966669f1e4beb547ed",
+          "bytes": 52538,
+          "mode": "100644"
+        },
+        "CHANGELOG.md": {
+          "sha256": "1f09b0cae1bf2d114845dc9688cf10e7d3321d31173824b657560bb6e5c8b3fb",
+          "bytes": 23600,
+          "mode": "100644"
+        }
+      }
+    }
+  },
+  "commands": [
+    {
+      "label": "OWNprivatefixturegitinit_norepositoryrefs",
+      "argv": [
+        "git",
+        "init",
+        "--bare",
+        "--quiet",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "",
+      "duration_seconds": 0.04036220908164978
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/e9d8f4b19676132773870bcf7887f2ae48745890e9c84078336d1fcc3824abae",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/0d4f537befa5aea98e7ff6bb9cc4860219515803a7f0a58530f520c698e04f35"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "824fecd7d6fcc70bd0d4a99fd41227a3a852112a\nedc36c806feeac102c6a7023710fc6af78aafa5f\ndaefc138a978ae8d04bb88d4df3492302e610e73\n33dd4a867b9d66e4aa9c815ac212eda7787e5d06\n26a3c2b212c40fd20d8994379b52a062c6b36151\nac441b32456697a40cc19423edb7f8cd9ccf972a\n",
+      "duration_seconds": 0.021381125086918473
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/09763b25c30ce8a791f8519d51cca16eea4c58703fb2b827be7097b0f7cbe5af",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b6a25792aad430f939bc9b9309890864580cbd9e\n",
+      "duration_seconds": 0.012685458175837994
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/bed69bae392d4e2be659454ac0fcbdc8c1c03fab3f2472406be7142ddfb6c225",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "be02ae67cb90d3f816db3940f8c9f6a917d60c1e\n",
+      "duration_seconds": 0.011748583987355232
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/8fd18a0752c467ea5b5d3b4117f0d0303767852f65741be4451d3f9646889bb3",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "4271339240d464da9f42f7e623dd932e8f2a2125\n",
+      "duration_seconds": 0.01176241715438664
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/e06286f3d90ae79c1b8810301148890c309a2361aff683666dde40c080b52233",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "868a6490f9b77d19d6539c57e6bdb151900d0391\n",
+      "duration_seconds": 0.011002041166648269
+    },
+    {
+      "label": "privatefixturecommit_base-real-sixfiles",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "868a6490f9b77d19d6539c57e6bdb151900d0391",
+        "-m",
+        "COD108 independent fixture base-real-sixfiles"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "4072d95949409430c656f02e701e6c5e2d2cb470\n",
+      "duration_seconds": 0.01182170887477696
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/1b51495ae7155024ce95ac9f8311611916b51efabce300411517442eec7d5caf",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/2f1fb18d7d1301c80f00fc11f5dc4746245f713ab83e870f69fc9bae6d5489a0",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/39c4d61ad0feb580acd0710fbbed3fc5de984f6bb4631b3f514fb7e60530d57e",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/775da6add140417163c660b5dd89658c079b598df980fca24798d3cda981507b",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/1917644a42a540fe399bebf7d15e4c2297070d311ad39589e7b5810fd2b7a2be",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/28d11adc16b72927b9a60d92197ede8d469885d816b6c3cddc8438d46d2456b1"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "8a77bdac98ee1ce3f15a4728778e098b9ceb99ff\necc7161e201a033e0f8aab42a4c0e5fc95ef4547\n9b68f1419dd9e74a59970e51534f04a2f292fd5c\nb81ad449fa27956ee839f06e61aa855dd64cfc48\n33b3091a7ef3bea3e2168d6964b773461b1c1500\nd03d65f8fc696b711431e00f419b36009b18c578\n",
+      "duration_seconds": 0.012978958198800683
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/ca8e4e57606d441a92f9908d54d7cbcd43bff1b94ab13dc9501ee236438b17b9",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b291038b8cfbb3aaba14249d5ec33d55a6f59c8f\n",
+      "duration_seconds": 0.011164875002577901
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/0af05c4f3662f5202547de59740de7098165b315eaf546adc5bd5f1a1b427e6c",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "8ea7406d7afa4904a8e5c07efe6219d0d4086fa2\n",
+      "duration_seconds": 0.010863708099350333
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/f1808f148774db784911ba5e7988d14f834dfaf0e11401306aea85a69072df24",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "890da721642e71778ad19ec6eb77309e6a65c4f4\n",
+      "duration_seconds": 0.011280667036771774
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/ac5b87fb3739c075fa156cd2ed486925a4ff86121b600be492b08f2a2824bafa",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "0bb85c9db5be380c4e2171fbce4fd6e40bf48a6b\n",
+      "duration_seconds": 0.011207249946892262
+    },
+    {
+      "label": "privatefixturecommit_positive-real-sixfiles-4.0.6",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "0bb85c9db5be380c4e2171fbce4fd6e40bf48a6b",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture positive-real-sixfiles-4.0.6"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "ff032aa834e8a615c3de06be472bce3db19472ac\n",
+      "duration_seconds": 0.011363584082573652
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/fe8ffecd47e8fe88f0fd6b76465504399b577829d08f1a18ef2db7a89fb9473f"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b00c8f8226fcc989173ec988dfec553bee91984b\n",
+      "duration_seconds": 0.030876124976202846
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/28fba7138fec2cc4b1b0fa6aa67d4181bb9b81ff21a346118f910008cecf68df",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "1db41b384746b7a93cca04957d69ab0c645a1d7b\n",
+      "duration_seconds": 0.018675250001251698
+    },
+    {
+      "label": "privatefixturecommit_external-lock-version",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "1db41b384746b7a93cca04957d69ab0c645a1d7b",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture external-lock-version"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "7105e0e118ffc2ec91ed21125eb1a59b42113257\n",
+      "duration_seconds": 0.014743125066161156
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/e4d72cc92e9b950fa6d5e0861542cd66da2f510ef16d34e3c49148e234fe8f0a"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "518f90d0873ec4f1d16635e0782ce21142bb6cc5\n",
+      "duration_seconds": 0.012405083049088717
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/cdccaff08aa40dfa6a1c6422c96759c799f381a78d64130a8dcb7ff054ea3c21",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "0d3900ff0e93aaaed6a0eefc4962d5b3fc546abf\n",
+      "duration_seconds": 0.01123479101806879
+    },
+    {
+      "label": "privatefixturecommit_external-lock-checksum",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "0d3900ff0e93aaaed6a0eefc4962d5b3fc546abf",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture external-lock-checksum"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "d807ea7edf030cd219dd405e8ea7423e26f6da54\n",
+      "duration_seconds": 0.011728124925866723
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/8b7d62f332eda9b8793c34ee6a0ad16f7c1656c6946f1472304717f32071c811"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "5100fe50a8a6566d0abab32ce2035563ea8f4147\n",
+      "duration_seconds": 0.012300040805712342
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/ec5883d3b7f5716a8e7dd18aa462605e2fcf0c1974cee09bcac6417fc2441f93",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b1135b1f101c0de7c12db2455cac483d212ba1e9\n",
+      "duration_seconds": 0.011341999983415008
+    },
+    {
+      "label": "privatefixturecommit_external-lock-source",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "b1135b1f101c0de7c12db2455cac483d212ba1e9",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture external-lock-source"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "028d6e28e620acd2b8772a02650e3a6f35d33dc0\n",
+      "duration_seconds": 0.01160850003361702
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/304ca755094fcc2257af57acadb6ea749ad58b0950ab99178d1bade09f58dc87"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "db183ddda1a78f21a9ce036d8de1603879ea7fc6\n",
+      "duration_seconds": 0.012611458078026772
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/a76d34cc8d8631345b3d879f8a36817d0c8861709b13f3424a757eb5fe8b4df7",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "fe4b0d91fec900598b82f5566c7347fde4e5b704\n",
+      "duration_seconds": 0.01173612498678267
+    },
+    {
+      "label": "privatefixturecommit_external-lock-edge",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "fe4b0d91fec900598b82f5566c7347fde4e5b704",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture external-lock-edge"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "dba4d54646239e35d6d9282401eac9809045de06\n",
+      "duration_seconds": 0.011965791927650571
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/74878e803deecdefc13b85fd887b5db63a8de7aa771c4f26920f9e6a03350849"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b0b72f368bd817a124b421225e57a3de0d776d74\n",
+      "duration_seconds": 0.012313249986618757
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/9eadde94a2025e6d6dc40cbae209d6c5277abafbf47e6f929776f1ccfe0289da",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "df5530f309d452e6bc353d000e4bde48b7f07efc\n",
+      "duration_seconds": 0.01190362498164177
+    },
+    {
+      "label": "privatefixturecommit_arbitrary-package-field",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "df5530f309d452e6bc353d000e4bde48b7f07efc",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture arbitrary-package-field"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "24ffca75faaa4af598a0e407cda0bafae419aa11\n",
+      "duration_seconds": 0.011732249986380339
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/79168035c49864e6e25373a927f8d8eb20e0141fa3380ebd68d0ad382e883c72"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "df8a90b02351a6db3a3774280075235c9b187c01\n",
+      "duration_seconds": 0.01174066704697907
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/4b50acdb3355e3dea3705635f4021dddf1ae5ef604cc0304edd5e0b5e445bd79",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "5081a6b6cac793e021b51f75cd43a77723feb7c4\n",
+      "duration_seconds": 0.011238957988098264
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/ca33b3e65e90cc4940e1813e27d113cdd533dff4a469d3635eb6543b158dcdae",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "e3c9b2b0bd4f3dea3c2e76daea8b27228528f989\n",
+      "duration_seconds": 0.011218291008844972
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/1ece7c827aa6843e29b528beb2b3e5853d34807eb7b75f5cd686e1349dc798a0",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "c28ed7e2af9649e60d04e88fb8c314f6db8ea3b6\n",
+      "duration_seconds": 0.011155584128573537
+    },
+    {
+      "label": "privatefixturecommit_wiki-dependency-path",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "c28ed7e2af9649e60d04e88fb8c314f6db8ea3b6",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture wiki-dependency-path"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "1833d2d66d67aeb001650a2e2f5c88bd140f46bd\n",
+      "duration_seconds": 0.011642125202342868
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/b429e372469372e010ff94004fe6d7db25cd64f9b336017e8b7647a9bf9460c3"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "87c0f936350fcd6f3edc85c88f5094886de9bc00\n",
+      "duration_seconds": 0.011641334043815732
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/6c2066d3518f34ec2bf2ea1d7e233bdd2bacc274c0145e6e146c90bc9ee7e3f8",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "6517ff07b761b064be4b04029e18239067a7110e\n",
+      "duration_seconds": 0.011176500003784895
+    },
+    {
+      "label": "privatefixturecommit_duplicate-root-version",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "6517ff07b761b064be4b04029e18239067a7110e",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture duplicate-root-version"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b3076462a3449472ec8e76664030e740454a5f32\n",
+      "duration_seconds": 0.011308332905173302
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/e598740feea1facc79741ba7c87ea1b4b0e77cc6fc18f6149c8cbecefe3969de"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "e21626ea273d35651a71764fcc3481ba109a7bac\n",
+      "duration_seconds": 0.011686000041663647
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/61fa6efe7350ecf1943736c793779cadc63c9860796f210c370ca2ca065733aa",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "573cbf3527bd7ac1a38657f738de033d3aa3e3b0\n",
+      "duration_seconds": 0.011317915981635451
+    },
+    {
+      "label": "privatefixturecommit_duplicate-JSON-key",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "573cbf3527bd7ac1a38657f738de033d3aa3e3b0",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture duplicate-JSON-key"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "c04617f6b34ae62b3bf2019c2b5c89b39fa7d2f6\n",
+      "duration_seconds": 0.011255957884714007
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/b368f0da297a91c572f64fe29f17db9cf377f55ac7c2ccd78e9174adba67e520"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "888f3e132d94b89925605a15edf508160ef2f772\n",
+      "duration_seconds": 0.011847958900034428
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/bbe8e248cc56700eab95f30c295e3e1328e76c266bae932070257f81e5f0524e",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "be2589d4db6d7908985510fcf425c55ff30ede82\n",
+      "duration_seconds": 0.011468625161796808
+    },
+    {
+      "label": "privatefixturecommit_old-changelog-history",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "be2589d4db6d7908985510fcf425c55ff30ede82",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture old-changelog-history"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "79356aa07731ffdd4c6ca8a2e2a79bcd63621d74\n",
+      "duration_seconds": 0.011555999983102083
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/de992524d2b5ecd4cbe52b9085e1d2c59baf706fa10d5760cbe03f1eeaf0d4fd",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "c0cfe499d630517352e8bc05bddb3e58835e82f8\n",
+      "duration_seconds": 0.011678999988362193
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/c4d34157079b2c2a6a346ad33b80d9aec7a88f27220ab701deea860fa249d5d1",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "31cad4e1faea1c1d24a06d4e0b431b385fa88eef\n",
+      "duration_seconds": 0.011381041957065463
+    },
+    {
+      "label": "privatefixturecommit_partial-fivefile-bump",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "31cad4e1faea1c1d24a06d4e0b431b385fa88eef",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture partial-fivefile-bump"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "a94600f99ae2e229dbcc3ad39d031c5b19c4bab0\n",
+      "duration_seconds": 0.011434541083872318
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/020245b950e38d343447c6d5599de0fa659113208fcc9d828633731e53cfc813"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "5b5df139b958560733686157a585000b0dac1e6b\n",
+      "duration_seconds": 0.0127207909245044
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/094da1b9658a0829bf91732bde8fb42737d73de09a87efe904dbb9798dae12fe",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "6e094b08d52ffe41efeaff558d8af40911067d89\n",
+      "duration_seconds": 0.01476216595619917
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/b754285c5d5e0315395d2b23e2530862660b6b7b1340a6aba45877407fe4c9d3",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "171e128ec948d1ab6520c9ee51fc17a50ddbc7a4\n",
+      "duration_seconds": 0.011165082920342684
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/e96f4cb9cc08c665f378a501fe27ac31d45d5b1144a72573350bb029f05d2411",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "ab28d6158b41a057e89406685a4ddd31f9d8e04e\n",
+      "duration_seconds": 0.011260541854426265
+    },
+    {
+      "label": "privatefixturecommit_workspace-version-mismatch",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "ab28d6158b41a057e89406685a4ddd31f9d8e04e",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture workspace-version-mismatch"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "5da765b16c40ed2737b4b4116aca8baf0b9abaf4\n",
+      "duration_seconds": 0.011333666043356061
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/5f5823615ad11dcc2657c85e7cbd59d7228d0d0e7eaf8ce875c2228ae99fef42",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/9681d4d82882637d3bd616905a35fb75548cc053326cc409217b7aa37a2714d0",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/8f7a2e58a4d239bcbab315209f89d9435bee3131cfd9dd9d82dcad71a952db22",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/115b7239069681758d3bc24ebeaf956deb8b1ad7eefa3be1f73df81b72d98abf",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/85965cae5f32606e24ecc0acc8ac8dad0be2e36d99ca983cf56a54d8ab3c8454",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/2a807891c4e68fb498d5ea4c374eb387ebdf5e111a42beb52d6a06df9ababbcc"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b3c3305fc6cc9e7a2913b7404774bfb0539e49d3\n544843489cee63a4f235bfcd63b9b6e65002bf87\n9f4646b8d13f44ef8bb5ec27c72d09b7b2b6b7bc\n1d3c1766978b9185b2c14a2e9a92e08f5f1ae2ff\nbd0afae18b7fd5a1bd90e7b5e73ebcf9d2d0ac90\n4c9a48a696d144795b310ba9b5a147e7e2efe57a\n",
+      "duration_seconds": 0.013576125027611852
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/8aa952c4e907c8fed560c4e69f5e077a15d13a036cd09d34a1d1d73c85ca712b",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "83bc1e623e08129e0cee115ec6b90ba46573d7dc\n",
+      "duration_seconds": 0.01152720907703042
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/f3e32627a38dcc40f9c0c13cff260709b8c2a2198ef77c80213b1decf8224ede",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "f851cfb7569caa601148ba0ad8bbeba356c1df6d\n",
+      "duration_seconds": 0.011432374827563763
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/e9e0c4d9e3c24e5078eb67714c51c87b33246b8f1356a153e0ae4867f5ba8a5a",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "0a08caac1e92b53048c8dfd823d7f639a04f5aa6\n",
+      "duration_seconds": 0.011329750064760447
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/8a91fb8fce2717ecc79243e3358edd083b3e6548a61e0efdde46141fc16f4636",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "d93d8d7d4c544e535e30bbd09ecdd3b86c4e7aff\n",
+      "duration_seconds": 0.011204374954104424
+    },
+    {
+      "label": "privatefixturecommit_strict-version-decrease",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "d93d8d7d4c544e535e30bbd09ecdd3b86c4e7aff",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture strict-version-decrease"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "4ffba8d2694c3ec4f0fa86acadb35f73c80f9718\n",
+      "duration_seconds": 0.011256166966632009
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/2d7c56ffcd64fe87e9337157d754624419a3a4833bc3d9e2099b93408662068d",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/fe80517b7a7deacadebf53031ad0b70d27b96469d48a50bfe3b447f372d67834",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/510a818021e5e87d60268f49e639d1261f4491bd4fac3b15b6b236db1c16640a",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/a5308925a18dc620fb2f58d2b08ef76f37bc731992383914348b0b14fbf8204d",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/00fadf00fdcf915c1c5d6639176f3610268b29df9a77c680e1c2ef037a55f21a",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/f36b5c4fdfa1eb075c3063f7fe03cf9952db08be807e10cf06b1a170babcddfb"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "2d633cbeb95ebdc4289ad3d6bcfd6397a5f61402\nfa8e9d994b99cbab2a3cbad726dd4eee37cf8bc6\n1c6f4ca91a62cfd8a1cbc81d8f3fb23df3d7d8ef\nc787f43f8096dfe4aa42bab1a7d0c4f1ca7c3354\n6ba22a1552d9f33d05a639bee5674cb4f12088f9\nd318e10d3b683b2de00fb8fe071dd43f05dc6fd9\n",
+      "duration_seconds": 0.01400854205712676
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/49f617b61aa6b92051f9c1da420a8284c43b94504462a6f1774e1184cb18c663",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "14ded73486ec8a96da455cb1ad07ff6c124d7cd7\n",
+      "duration_seconds": 0.011553166899830103
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/4b24eaaff4a5fd4ed6c03e8d8fe0a00207db5ee250131c7d7236cf1f1cacca48",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "4153be3cb40e14e264bddffceb1d461089e27c27\n",
+      "duration_seconds": 0.011362832970917225
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/2c6957055a02f64411711ec530a67fc06f5d65b0288ab00d9b89ebe109140a80",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "32039e15d104313d6bf737688b39eeaf554bbbbb\n",
+      "duration_seconds": 0.010967416921630502
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/dcd92b83c2fb87efae449dafb2f93a5ac42b5431ddba98d23a387965503bc620",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b094f3fa10c1b5348870fbad8fd18bf924a8dd90\n",
+      "duration_seconds": 0.0109808340203017
+    },
+    {
+      "label": "privatefixturecommit_strict-leadingzero-version",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "b094f3fa10c1b5348870fbad8fd18bf924a8dd90",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture strict-leadingzero-version"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "d84cb2c0cd1556fd8cd1099d77813d3bc6eb9b11\n",
+      "duration_seconds": 0.011459541972726583
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/e3a0e6dcaa5c8197d837c5f8b4d26be57cd6983e2937815a149e56dffcb14a57"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "729c753935a9ec332379ebdbfee29a6136cbc002\n",
+      "duration_seconds": 0.018381124828010798
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/bd3fa2511b1ab65701fc6db27ecf5700ec53d17014fa9aba9e3131711cfb40f5",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "a849431a439af347bd9d4f6f2b8a56f078678c05\n",
+      "duration_seconds": 0.014665083028376102
+    },
+    {
+      "label": "privatefixturecommit_newline-shelllike-extra-path",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "a849431a439af347bd9d4f6f2b8a56f078678c05",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture newline-shelllike-extra-path"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "7aa54a4a6968479bb7fb5763244e4ec7ffcf1c25\n",
+      "duration_seconds": 0.012056374922394753
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/22f98ed27ad91a4e72a77589449acbe943ea7214be37577b1deba27b67e5f1a4",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "96b0bf7948b75235730c0f2c83d08cc29882ed4d\n",
+      "duration_seconds": 0.012151415925472975
+    },
+    {
+      "label": "privatefixturecommit_executable-metadata-mode",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "96b0bf7948b75235730c0f2c83d08cc29882ed4d",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture executable-metadata-mode"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "174d87156d110c4ceeaf6fa90f44965226e243ef\n",
+      "duration_seconds": 0.01204245793633163
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/d2618a0327794763053fe297b9502f2c04ea6e36853d3b623185c50521fa2750"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "7c7eea627959fec36fe50a842e7fb0639cdf2725\n",
+      "duration_seconds": 0.01194379199296236
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/ed9fc962fb44e659fb3cda0dbd63a83c524a448ff71cc27944837d4b9af60af7",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "b3f84b8ff009bde0d01fba79d732f32a64abe0fb\n",
+      "duration_seconds": 0.011365249985828996
+    },
+    {
+      "label": "privatefixturecommit_symlink-metadata-mode",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "b3f84b8ff009bde0d01fba79d732f32a64abe0fb",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture symlink-metadata-mode"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "35343bd1b618ea9005648d69120ba5bf2d9c2ca3\n",
+      "duration_seconds": 0.011895333183929324
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/f9fd1b916b3e934dfbe1484278b4d3fa50fcd9590996f18db106e8c760617a45",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "58dc0132f3044e7f2ba488afea94d3c0d42bd7e7\n",
+      "duration_seconds": 0.012244625017046928
+    },
+    {
+      "label": "privatefixturecommit_renamed-metadata-file",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "58dc0132f3044e7f2ba488afea94d3c0d42bd7e7",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture renamed-metadata-file"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "cc46c3653b5b92e736ddda7f2942be6dac6ff48f\n",
+      "duration_seconds": 0.012115499936044216
+    },
+    {
+      "label": "privateactualblobdata",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "hash-object",
+        "-w",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/bb6bb3ee7cb2ba20b5acb68e979d5f273582fb241a8eb5785d9cc94ca1447af6",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/50a86d25ae2d616235c99bcc7ea6a31de5ee0660e72e311197b9d0fcd7c2ac72",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/648634fc0f4b2fda40edfd0f346ff9b6f8175a0dfc338f7b3308e22d6a8db097",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/3bc18296d815d3963797b3669e049e74ad484a2a84f399731ad84ff4d3c8a28f",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/60515b2fdccc66b249530ee83162bc31978f197d3c891a966669f1e4beb547ed",
+        "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/blob-inputs/1f09b0cae1bf2d114845dc9688cf10e7d3321d31173824b657560bb6e5c8b3fb"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "32dbe0e2b0f372a28a992a38a9c6f8801b232ca4\n79afe10d7b2e4b14313b95739d6fb8ace8f6e593\n5cec593eb146aa6a57031cc3a29385b370e203bf\n208157d2a8a7bb719f8a06b73619cbc0036aa97c\n2239b37f713d452c98511e83b09c406bc8945aff\n4ff2f53b730ae3c0bbd71136a651c57d388872f4\n",
+      "duration_seconds": 0.014430833049118519
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/80353afca44fdaa1b9ae2129635845e178cbfe1a2daff6b55f3b7559065574d4",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "4bfac4364617134bb542c66e6fa5d57567b1552e\n",
+      "duration_seconds": 0.012080708984285593
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/c45cf27caf65328c4a209b73190334e219c1d292fc5b3c61dd3fb8ce160fcbb2",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "e5a20695a3df0489b41f790e162d9cb03a47caa0\n",
+      "duration_seconds": 0.011762959184125066
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/3ed6906cac90ee33e4ed1a80354d32e40182c4fd63655b8b2eaac7415da0c9ea",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "1c3889b8ad0417cbac16c8c4397313da1c937567\n",
+      "duration_seconds": 0.012147041969001293
+    },
+    {
+      "label": "privateactualNULtree",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "mktree",
+        "-z"
+      ],
+      "stdin": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/tree-inputs/0a8ca9cc0d4f9936ba1e26bdd7a4fc81c0301d359184f54c205c1de2f6139947",
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "c2d5d942a219b01b4e8b75fa6020ec1130814578\n",
+      "duration_seconds": 0.012871457962319255
+    },
+    {
+      "label": "privatefixturecommit_eligible-real-six-major",
+      "argv": [
+        "git",
+        "--git-dir=/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-independent-local/actual-cli-process/git-objects",
+        "commit-tree",
+        "c2d5d942a219b01b4e8b75fa6020ec1130814578",
+        "-p",
+        "4072d95949409430c656f02e701e6c5e2d2cb470",
+        "-m",
+        "COD108 independent fixture eligible-real-six-major"
+      ],
+      "stdin": null,
+      "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+      "exit_code": 0,
+      "stdout": "e6afb86970730cd72b4b1731c340726a4e70d26b\n",
+      "duration_seconds": 0.014955375110730529
+    }
+  ],
+  "versions_are_test_fixtures_not_actual_release": "Baseactual4.0.5 source to4.0.6/5.0.0positives plusinvalidnegatives; no finalversionselected"
+}

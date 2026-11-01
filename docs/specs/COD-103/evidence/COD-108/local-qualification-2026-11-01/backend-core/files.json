@@ -1,0 +1,27 @@
+{
+  "schema": "COD-108 private core-handoff files manifest",
+  "artifact_directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/core-handoff",
+  "total_file_count_including_manifest": 3,
+  "explicit_non_manifest_file_count": 2,
+  "raw_check_files_saved": 0,
+  "raw_check_source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/01a196de-89e6-7479-9883-1ff6993d2751.jsonl",
+  "transcript_snapshot": {
+    "label": "session transcript snapshot at artifact creation; tool results below are transcript-derived, not regenerated",
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/01a196de-89e6-7479-9883-1ff6993d2751.jsonl",
+    "bytes": 1724834,
+    "sha256": "9a7b6d98c445fe07434143ea1038818e3d7c89e825d6c7288033433f4c9ca499"
+  },
+  "files": [
+    {
+      "path": "report.md",
+      "bytes": 6198,
+      "sha256": "ce477f5a8d0cc4abd86c426ebd045ba3c2929312636105e75b35c371610ef1ba"
+    },
+    {
+      "path": "result.json",
+      "bytes": 28991,
+      "sha256": "eed37ad27ffdc3c7a66b8cb7ff1f6d695cf627a9cd48a8f2615d824e963f51f9"
+    }
+  ],
+  "manifest_note": "files.json is the third file; its own hash is intentionally not recorded to avoid a self-referential digest."
+}

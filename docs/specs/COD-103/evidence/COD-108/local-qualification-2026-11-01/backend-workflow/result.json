@@ -1,0 +1,404 @@
+{
+  "environment": {
+    "os": "Darwin 25.6.0 arm64",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+    "git": "git version 2.52.0"
+  },
+  "snapshot": {
+    "repo": "/private/tmp/codebasegraph-cod108-20261101",
+    "branch": "cod103-stack/cod-108",
+    "base_head": "90af76d3453a6f5cc0f032045ed48c4fd09c275c",
+    "main_rs": {
+      "bytes": 235135,
+      "sha256": "94e36cb3ceed27f45b552e42c9d6a52aa7cfef8dd70876f6e6ab4e562ec8891d"
+    },
+    "workflow_tests_rs": {
+      "bytes": 44385,
+      "sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450"
+    },
+    "ci_rs_frozen": {
+      "bytes": 48671,
+      "sha256": "b8971114c0ed2d79675b94cfb41133482c185c5ee8609a4282ed565c9136967f"
+    },
+    "ci_yaml_frozen": {
+      "bytes": 21095,
+      "sha256": "b59d7028101120f6885870cec054a65d9788f55d364dc0f2eb2b53bd4fd9c339"
+    },
+    "docs_release_frozen": {
+      "bytes": 22125,
+      "sha256": "90d84f6614be6cd74b8340dd73b1a2c1000457af319475cf8939b1c316ebf486"
+    }
+  },
+  "checks": [
+    {
+      "command": "cargo test -p xtask --locked",
+      "exit_status": 0,
+      "result": "102 passed; 0 failed",
+      "log": "raw/cargo-test-xtask-final-5.log"
+    },
+    {
+      "command": "cargo fmt --check",
+      "exit_status": 0,
+      "result": "passed",
+      "log": "raw/cargo-fmt-final.log"
+    },
+    {
+      "command": "cargo clippy -p xtask --all-targets --all-features --locked -- -D warnings",
+      "exit_status": 0,
+      "result": "passed, no warnings",
+      "log": "raw/cargo-clippy-final-4.log"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- check-workflows",
+      "exit_status": 0,
+      "result": "workflow policy passed",
+      "log": "raw/cargo-check-workflows-final.log"
+    },
+    {
+      "command": "cargo run -p xtask --locked -- release-gate",
+      "exit_status": 0,
+      "result": "release gate passed",
+      "log": "raw/cargo-release-gate-final.log"
+    }
+  ],
+  "new_test_names": [
+    "tests::ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership",
+    "tests::ci_identity_body_executes_trusted_release_pr_and_fails_closed",
+    "tests::ci_decision_body_executes_protected_classifier_and_falls_back_full",
+    "tests::required_executes_current_full_and_lightweight_bodies_with_eight_exact_results",
+    "tests::required_accepts_main_push_only_in_full_mode_and_rejects_stale_full_pr",
+    "tests::required_rejects_malformed_decision_schema_and_selector_output",
+    "tests::required_rejects_missing_malformed_or_wrong_mode_results_and_stale_identity"
+  ],
+  "fixture_assertions": [
+    "Identity actual body: pinned Bot ID/login/type; same repo/ref/label/open/non-draft/current base/head/main; labeled action; exact gh requests; untrusted mutations and API failure select full; malformed event repository fails before API.",
+    "Decision actual body: Git fetch and cargo process fakes with exact identity evidence; cargo recorded cwd in trusted-base and exact expanded argv to ci-mode using separate git-objects; compatible helper selects lightweight; missing trusted checkout, Git fetch failure and invalid helper output select valid full with unchanged SHAs.",
+    "Required actual body: full positive, trusted lightweight positive with heavy jobs exactly skipped, exact summary; missing classify/repository-policy/native_retention, malformed schema/mode/reason, common/heavy failures/cancellations/skips, unexpected keys/results, stale final identity in lightweight and full reject; main push requires full and can succeed.",
+    "Native retention current actual body suite remains and passes unchanged (COD-107-only selector).",
+    "No workflow_tests.rs edits; no new framework/file there; main.rs owns required Rust/policy fixture code."
+  ],
+  "editing_method_incident": "Disclosed to parent during resumed turn: prior agent used Path.write_text for initial ci.rs creation (allowed for new file) and one direct main.rs rewrite while removing a temporary diagnostic, contrary to existing-file exact edit procedure. Parent explicitly authorized resumption as procedural correction and requires future existing-file updates with edit only. All main.rs changes in this resumed turn used exact edit operations; no replay/rollback was done to imply retroactive compliance.",
+  "retained_fixture_oracle_failures": [
+    "identity-actual-1.log through identity-actual-3.log preserve early closed-fixture implementation/test oracle failures (PATH/stub matching investigation); identity-actual-4.log is passing current body test.",
+    "decision-actual-1.log through decision-actual-12.log preserve fixture construction and assertion-order failures; decision-actual-13.log is passing current actual-body test.",
+    "required-positive-1.log and required-positive-2.log preserve initial actual aggregate fixture failures; required-positive-3.log passes current aggregate positive.",
+    "required-push-identity-debug*.log preserve a fixture run_sha mismatch; required-push-identity-final.log passes push/current-identity test.",
+    "cargo-test-xtask-checkpoint.log is a failing intermediate run before the push fixture correction; cargo-test-xtask-final-5.log is the final 102-pass result."
+  ],
+  "scope_limits": [
+    "No source writes outside main.rs; workflow_tests.rs remains unchanged. No ci.rs/YAML/docs/release.rs/manifest/lock/native/release workflow/action/settings/dependency/Git/API/model writes.",
+    "Existing codebase graph server remains canonical-root navigation only; no graph rebuild/install/rebind. YAML/docs consumer bytes were read-only and frozen.",
+    "This is local Linux-independent/macOS fixture evidence only; not hosted rollout, protected branch policy, Windows qualification, independent verification/review, PR delivery or aggregate closure.",
+    "No JUnit was generated/ingested or Scryer claims folded; those gates remain with their recorded owners."
+  ],
+  "raw_log_directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw",
+  "raw_log_count": 61,
+  "raw_logs": [
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-check-workflows-final.log",
+      "bytes": 353,
+      "sha256": "3636ccd6c4709cef88d870a1af97731d9f91413108bd17fffd7ac7db39b99062"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-check-workflows.log",
+      "bytes": 353,
+      "sha256": "1cf3fb29dd52291cf689801ca39c9f2f68238002ed75cdd2e50c80d5f85bf969"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-clippy-final-2.log",
+      "bytes": 1526,
+      "sha256": "9dfb2893fa2d2510582f0665c163bc3471514dc17a60d580b38ee2269faa49cd"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-clippy-final-3.log",
+      "bytes": 308,
+      "sha256": "8d306b4950bffa4435b192e4b8c2f1500df495962f570ce28e9ab15d9f34f957"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-clippy-final-4.log",
+      "bytes": 308,
+      "sha256": "8d306b4950bffa4435b192e4b8c2f1500df495962f570ce28e9ab15d9f34f957"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-clippy-final.log",
+      "bytes": 308,
+      "sha256": "51780029e3e84629b66ef7897d032b8d3c54c59ec3017c40439829bc8f7ccb68"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-clippy-strict-2.log",
+      "bytes": 308,
+      "sha256": "31de2d6d58f176a8fc89b1dc98d931e9428451d6edfb2d7877d45dd2c91215b0"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-clippy-strict.log",
+      "bytes": 1132,
+      "sha256": "ea49dce5ab1c4d8c68c7ae3194448b48bed9c736f2caf2f79ee69b3d888e793b"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-fmt-check.log",
+      "bytes": 95,
+      "sha256": "5cc9ad0dfba2453ae3a0e5765f3a869193e950bc7300a0b3c8ded036bbbc9cbe"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-fmt-final.log",
+      "bytes": 95,
+      "sha256": "5cc9ad0dfba2453ae3a0e5765f3a869193e950bc7300a0b3c8ded036bbbc9cbe"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-release-gate-final.log",
+      "bytes": 260,
+      "sha256": "463086144541d170210a00c72a73d5d43531607059a8ad55c3109278b4bb281d"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-release-gate.log",
+      "bytes": 260,
+      "sha256": "463086144541d170210a00c72a73d5d43531607059a8ad55c3109278b4bb281d"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-test-xtask-checkpoint.log",
+      "bytes": 9083,
+      "sha256": "78c525312ce49278c937bc761c60236cfe7c7f3d306d73ab24843c7d637a5325"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-test-xtask-final-2.log",
+      "bytes": 9602,
+      "sha256": "1321ea140ad48d6610383d5269f5286cf8f90d438810b92f38da191ecf3a02a2"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-test-xtask-final-3.log",
+      "bytes": 9082,
+      "sha256": "1e218972371463204c92991acad642a5d7d73c1e28317382e6d411bd92b3f892"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-test-xtask-final-4.log",
+      "bytes": 9166,
+      "sha256": "7786736c78147d1e40109944d915d0ff561dc3d880657a9a8f5044e0329c7573"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-test-xtask-final-5.log",
+      "bytes": 9082,
+      "sha256": "9575692888bdbbcbe2bc00dd50455fd3b664c588e787ac899697e1f0af0a60f1"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/cargo-test-xtask-final.log",
+      "bytes": 8896,
+      "sha256": "c8f3989b01005462befd28e942fd65b1d5245e3f27f55441bf9bc570586dbe25"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-1.log",
+      "bytes": 1082,
+      "sha256": "15c091d5d1b612272124f355edfc6d9702a9124838b0cb136938aec3052714f7"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-10.log",
+      "bytes": 2355,
+      "sha256": "e72c2bdffea57afa9d6a2b2b7082e790f1c817c3a07b9bbfe494eb581866e188"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-11.log",
+      "bytes": 1530,
+      "sha256": "1bb058095840c27b45256ee2cd81a42bc5c36507efccdf2f583d3342853df56b"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-12.log",
+      "bytes": 2355,
+      "sha256": "41b70a5dd75953527e5d44d87ca3b3fbd550c4b99ee63f6a0e920a5b73123369"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-13.log",
+      "bytes": 642,
+      "sha256": "9e4661805bfd2507cc8c4a6ea27779b636075a581d0f528976c478b592a50812"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-2.log",
+      "bytes": 1345,
+      "sha256": "6136a4bf488e2bd36725a43cb91d71f473699ec88b3273ef7f5e22c3ce83124f"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-3.log",
+      "bytes": 1513,
+      "sha256": "179dba87e09cc56167aeb00e9711923858327601020f8061084c94790adf6bbb"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-4.log",
+      "bytes": 1513,
+      "sha256": "98e129ed170b8acb57710a54354e0eaf523a629abc3bc744dc79c7c8cebfe04b"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-5.log",
+      "bytes": 1530,
+      "sha256": "a750931622cf96435a4851fecdfa1a2b7c6b6f91624ab456a2d1ced611793da1"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-6.log",
+      "bytes": 1642,
+      "sha256": "99a8d1ce20a2d8e2ffb2602d1c0d476b82b894ac3ad630ab1050d5f7de96a42b"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-7.log",
+      "bytes": 1675,
+      "sha256": "dbd6c81552cc66edbd282f6ab46a3bed7d0d8e50ba2a5b1f20308911b256db66"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-8.log",
+      "bytes": 1409,
+      "sha256": "633cf7cf552012bdd2fafad6202b4b892758d046303dc0cf69db12d8ca750525"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-actual-9.log",
+      "bytes": 2355,
+      "sha256": "900c8d3f8b243cf577666a7816fccf990205ceaf8041ecdfd2ba9b5c3c6c92c2"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/decision-exact-argv.log",
+      "bytes": 643,
+      "sha256": "ddd3efc975f3b063b75b1a2240724c7b545ccf74af576855427616fbbd1ef9f8"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/environment.log",
+      "bytes": 330,
+      "sha256": "311a5c57111128971f010833e6e571c4b15b9546e2e6e0a5ce4d9aefa5d158e4"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/final-main-diff-review.log",
+      "bytes": 62019,
+      "sha256": "9a6bfa692214cbdf4f35c149d12d11d0a2f7ab696c558e857fabd2b97ccd6783"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/focused-workflow-test-list.log",
+      "bytes": 920,
+      "sha256": "6a0d2633e98ead0bf64fc1f88dc8847df5efe08e9132208b47d4bec51a2caa1e"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/identity-actual-1.log",
+      "bytes": 1490,
+      "sha256": "befa014ad818c1c50cc786ad0d05abe334b552b6998d8846021cd1df7ba27668"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/identity-actual-2.log",
+      "bytes": 1178,
+      "sha256": "0db2ce02282d20c7206f875b91efdd7c4fa4efa3188edd49620f9266b7c2a9cf"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/identity-actual-3.log",
+      "bytes": 1398,
+      "sha256": "88e8462caf8346469d0e3efceda2bd5006b4f1c0f776a8dfb5b0d05f3cefc1cd"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/identity-actual-4.log",
+      "bytes": 632,
+      "sha256": "5912e5b6660b2592ea3553ccf029808938006a9d7df08f6db05c66fcc07c051b"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/required-negative-1.log",
+      "bytes": 563,
+      "sha256": "7fe1c0c53e361685984f8ac6d0ceadd58bddaca34fe21147e0609749624db7a5"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/required-positive-1.log",
+      "bytes": 1149,
+      "sha256": "57900a584afdae571a6b662f23890c5ba868cf0137bedb8f5bc320c035bd9192"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/required-positive-2.log",
+      "bytes": 1268,
+      "sha256": "d08666499458462290bc6a0c257e2b8c042e784f8507b786fa77b6d79bd7e3e9"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/required-positive-3.log",
+      "bytes": 653,
+      "sha256": "ed2161b145f63bc88d673f92fa9eb6637fd94589b371768fed11f50f1a290675"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/required-push-identity-debug-2.log",
+      "bytes": 1096,
+      "sha256": "a8c18a6db66f843ca7f6ccb56411954bc1007171906844230d241ebd2c71cf70"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/required-push-identity-debug.log",
+      "bytes": 1076,
+      "sha256": "ef8a655252cc66723d441a19efe762db93425fa4d20cd5190e87eec88e98b68d"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/required-push-identity-final.log",
+      "bytes": 651,
+      "sha256": "2c586aad6237ff0086bacfea6877f7a9540dec7a3a1c4724920c17eb8e71f839"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_ci_decision_body_executes_protected_classifier_and_falls_back_full.log",
+      "bytes": 494,
+      "sha256": "876d7046b1b907d449e8255b5ca88897324c1ce4eb5ca82bf5aa8a2e1699f6c3"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_ci_identity_body_executes_trusted_release_pr_and_fails_closed.log",
+      "bytes": 484,
+      "sha256": "249d182afa607de0ecefe8f06ff88af85d06951bc9f423417167e2efd428e118"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_native_retention_actual_body_is_cod107_only.log",
+      "bytes": 448,
+      "sha256": "0b8eecb31f763e1a353d844c93c10bad63e7912ab63358292a3dde79e544e5f3"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_native_retention_invalid_input_cannot_succeed.log",
+      "bytes": 452,
+      "sha256": "158d0253d5142885ccb8b8481e6ee32e1dfe6dadf4c089aed189d6878e2ce4e7"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_required_executes_current_full_and_lightweight_bodies_with_eight_exact_results.log",
+      "bytes": 518,
+      "sha256": "ee7f80c67d6b8f1001db877dad1fba604c11da44a27f9a7a215ad568df5ac03e"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_required_rejects_missing_malformed_or_wrong_mode_results_and_stale_identity.log",
+      "bytes": 512,
+      "sha256": "3b78189dbebed347239f07d4c055d1e6724cbfc9a05fb75ffc5df2aeb0c38252"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_workflow_policy_accepts_exact_cod103_stack_bases.log",
+      "bytes": 458,
+      "sha256": "d5f95c9a1a4886e26b1a306220a3c2a5be57e59293b460c05460f085381781cc"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_workflow_policy_rejects_missing_crate_size_gates.log",
+      "bytes": 458,
+      "sha256": "d18f1eb01df487966ff4a07438eda516307cef5f712a2d93db488975c840ae0e"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_workflow_policy_rejects_missing_repository_release_gate.log",
+      "bytes": 472,
+      "sha256": "f5015eb21aaf1eca871c1201ec5e9aba395808cce8fb9ae0a42073d3c8a72cbb"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_workflow_policy_rejects_privileged_pr_event.log",
+      "bytes": 448,
+      "sha256": "8a9629b22ee78b89327f215ccc1550b994daa37b42fea3af892813e12a68bdb8"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_workflow_policy_rejects_unapproved_pull_request_activity.log",
+      "bytes": 474,
+      "sha256": "64c4bec8ac042900eafe45645f023ac0ecd3bb92440ee2eb1809fcb15fa8912e"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/tests_workflow_policy_rejects_unknown_stack_base_and_push_namespace.log",
+      "bytes": 484,
+      "sha256": "aa75228f89b57e74ef1134bd3bb9c79f5ede11522134ddd2141516b39b22ef3e"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/typed-policy-mutations-1.log",
+      "bytes": 1113,
+      "sha256": "7edf87aa9fbafa53f89ebc530c8412b17824a4c2e6b17c519801e3c5364359d9"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/typed-policy-mutations-2.log",
+      "bytes": 663,
+      "sha256": "3d2ef1a69623cb7ef09a3a7f68f1e77f24a34d562858b620cde6ab4a2f8e5caf"
+    },
+    {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/workflow-tests-handoff/raw/xtask-full-after-consumer-align.log",
+      "bytes": 8812,
+      "sha256": "f09ba0dc05b933f566fc37bba5ed7f86dc4ada9126a1e56108eeb0758a723a6b"
+    }
+  ]
+}

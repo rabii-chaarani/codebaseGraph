@@ -1,0 +1,2073 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index a2beaa6..1c9c2e3 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -7,12 +7,15 @@ on:
+       - synchronize
+       - reopened
+       - edited
++      - labeled
++      - unlabeled
+     branches:
+       - main
+       - cod103-stack/cod-105
+       - cod103-stack/cod-106
+       - cod103-stack/cod-56
+       - cod103-stack/cod-107
++      - cod103-stack/cod-108
+   push:
+     branches:
+       - main
+@@ -29,6 +32,165 @@ env:
+   CARGO_NET_RETRY: "10"
+ 
+ jobs:
++  classify:
++    name: classify CI mode
++    runs-on: ubuntu-latest
++    permissions:
++      contents: read
++      pull-requests: read
++    outputs:
++      mode: ${{ steps.decision.outputs.mode }}
++      decision: ${{ steps.decision.outputs.decision }}
++    steps:
++      - name: Read current CI identity
++        id: identity
++        env:
++          GH_TOKEN: ${{ github.token }}
++          REPOSITORY_ID: ${{ github.repository_id }}
++        shell: bash
++        run: |
++          set -euo pipefail
++          : "${GITHUB_EVENT_NAME:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${GITHUB_REF:?}" "${GITHUB_EVENT_PATH:?}" "${GITHUB_OUTPUT:?}" "${RUNNER_TEMP:?}" "${REPOSITORY_ID:?}"
++          [[ "$GITHUB_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
++          mkdir -p "$RUNNER_TEMP/cod108"
++          event="$GITHUB_EVENT_PATH"
++          jq -se --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" '
++            length == 1 and (.[0] | type == "object" and .repository.full_name == $repository and
++            (.repository.id | tostring) == $id)' "$event" >/dev/null
++          candidate=false
++          reason=ordinary-event
++          number=0
++          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
++            read -r base head number < <(jq -er '
++              [.pull_request.base.sha, .pull_request.head.sha, (.number | tostring)] |
++              if all(.[]; type == "string") then @tsv else error("Incomplete PR event") end' "$event")
++            [[ "$number" =~ ^[1-9][0-9]*$ ]]
++            if gh api "repos/$GITHUB_REPOSITORY/pulls/$number" > "$RUNNER_TEMP/cod108/pr.json" &&
++               gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" > "$RUNNER_TEMP/cod108/main.json"; then
++              if jq -se --slurpfile event "$event" --slurpfile main "$RUNNER_TEMP/cod108/main.json" \
++                --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" '
++                def trusted:
++                  .state == "open" and .draft == false and
++                  .user.id == 41898282 and .user.login == "github-actions[bot]" and .user.type == "Bot" and
++                  .base.ref == "main" and .head.ref == "release-please--branches--main--components--codebase-graph" and
++                  .base.repo.full_name == $repository and .head.repo.full_name == $repository and
++                  (.base.repo.id | tostring) == $id and (.head.repo.id | tostring) == $id and
++                  (.labels | type == "array" and any(.[]; .name == "autorelease: pending"));
++                length == 1 and (.[0] | ($event | length) == 1 and ($main | length) == 1 and
++                ($event[0].action | IN("opened", "synchronize", "reopened", "edited", "labeled", "unlabeled")) and
++                ($event[0].pull_request | trusted) and trusted and
++                .number == $event[0].number and
++                .base.sha == $event[0].pull_request.base.sha and .head.sha == $event[0].pull_request.head.sha and
++                $main[0].ref == "refs/heads/main" and $main[0].object.type == "commit" and
++                .base.sha == $main[0].object.sha)' "$RUNNER_TEMP/cod108/pr.json" >/dev/null; then
++                candidate=true
++                reason=eligibility-pending
++              else
++                reason=untrusted-or-stale-pr
++              fi
++            else
++              reason=identity-acquisition-failed
++            fi
++          elif [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/main ]]; then
++            read -r base head < <(jq -er '[.before, .after] | if all(.[]; type == "string") then @tsv else error("Incomplete push") end' "$event")
++            [[ "$head" == "$GITHUB_SHA" ]]
++            reason=main-push
++          else
++            echo 'Unsupported CI event' >&2
++            exit 1
++          fi
++          [[ "$base" =~ ^[0-9a-f]{40}$ && "$head" =~ ^[0-9a-f]{40}$ && "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
++          jq -cn --arg repository "$GITHUB_REPOSITORY" --arg repository_id "$REPOSITORY_ID" \
++            --arg event_name "$GITHUB_EVENT_NAME" --arg run_sha "$GITHUB_SHA" \
++            --arg base_sha "$base" --arg head_sha "$head" --arg reason_code "$reason" \
++            --argjson pr_number "$number" \
++            '{schema_version:1,mode:"full",reason_code:$reason_code,base_sha:$base_sha,head_sha:$head_sha,
++              repository:$repository,repository_id:$repository_id,event_name:$event_name,run_sha:$run_sha,
++              pr_number:$pr_number,positive_metadata:false}' > "$RUNNER_TEMP/cod108/decision.json"
++          printf 'candidate=%s\nbase_sha=%s\nhead_sha=%s\n' "$candidate" "$base" "$head" >> "$GITHUB_OUTPUT"
++      - name: Check out immutable protected base
++        id: trusted-base
++        if: steps.identity.outputs.candidate == 'true'
++        continue-on-error: true
++        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
++        with:
++          ref: ${{ steps.identity.outputs.base_sha }}
++          path: trusted-base
++          persist-credentials: false
++      - name: Check out separate Git object store
++        id: git-objects
++        if: steps.identity.outputs.candidate == 'true'
++        continue-on-error: true
++        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
++        with:
++          ref: ${{ steps.identity.outputs.base_sha }}
++          path: git-objects
++          persist-credentials: false
++      - name: Select verified CI mode
++        id: decision
++        env:
++          CANDIDATE: ${{ steps.identity.outputs.candidate }}
++          TRUSTED_BASE_OUTCOME: ${{ steps.trusted-base.outcome }}
++          OBJECT_STORE_OUTCOME: ${{ steps.git-objects.outcome }}
++        shell: bash
++        run: |
++          set -euo pipefail
++          : "${RUNNER_TEMP:?}" "${GITHUB_OUTPUT:?}" "${GITHUB_STEP_SUMMARY:?}" "${GITHUB_WORKSPACE:?}" "${CANDIDATE:?}"
++          decision="$RUNNER_TEMP/cod108/decision.json"
++          if [[ "$CANDIDATE" == true ]]; then
++            base="$(jq -er '.base_sha' "$decision")"
++            head="$(jq -er '.head_sha' "$decision")"
++            reason=classifier-unavailable
++            # Only protected B supplies executable code, manifests, lockfile and build context.
++            if [[ "$TRUSTED_BASE_OUTCOME" == success && "$OBJECT_STORE_OUTCOME" == success &&
++                  -f "$GITHUB_WORKSPACE/trusted-base/crates/xtask/src/ci.rs" ]]; then
++              if git -C "$GITHUB_WORKSPACE/git-objects" -c protocol.file.allow=never fetch --no-tags --no-recurse-submodules \
++                   "https://github.com/$GITHUB_REPOSITORY.git" "$head" &&
++                 (cd "$GITHUB_WORKSPACE/trusted-base" &&
++                  CARGO_TARGET_DIR="$RUNNER_TEMP/cod108/trusted-target" cargo run -p xtask --locked -- \
++                    ci-mode --repo "$GITHUB_WORKSPACE/git-objects" --base-sha "$base" --head-sha "$head") \
++                   > "$RUNNER_TEMP/cod108/classifier.json"; then
++                if jq -se --arg base "$base" --arg head "$head" '
++                  length == 1 and (.[0] |
++                    type == "object" and .schema_version == 1 and
++                    (.mode == "full" or .mode == "lightweight") and
++                    (.reason_code | type == "string" and test("^[a-z0-9-]{1,64}$")) and
++                    .base_sha == $base and .head_sha == $head and
++                    (.mode != "lightweight" or .reason_code == "metadata-only-version-bump"))' \
++                  "$RUNNER_TEMP/cod108/classifier.json" >/dev/null; then
++                  jq --slurpfile classified "$RUNNER_TEMP/cod108/classifier.json" '
++                    .mode = $classified[0].mode | .reason_code = $classified[0].reason_code |
++                    .positive_metadata = (.mode == "lightweight")' "$decision" > "$decision.next"
++                  mv "$decision.next" "$decision"
++                  reason=
++                else
++                  reason=classifier-invalid-output
++                fi
++              else
++                reason=classifier-acquisition-failed
++              fi
++            fi
++            if [[ -n "$reason" ]]; then
++              jq --arg reason "$reason" '.mode="full" | .positive_metadata=false | .reason_code=$reason' \
++                "$decision" > "$decision.next"
++              mv "$decision.next" "$decision"
++            fi
++          fi
++          jq -e '.schema_version == 1 and (.mode == "full" or .mode == "lightweight")' "$decision" >/dev/null
++          printf 'mode=%s\ndecision=%s\n' "$(jq -r '.mode' "$decision")" "$(jq -c . "$decision")" >> "$GITHUB_OUTPUT"
++          jq -r '"CI mode: \(.mode)\nBase: \(.base_sha)\nHead: \(.head_sha)\nReason: \(.reason_code)"' "$decision" >> "$GITHUB_STEP_SUMMARY"
++
++  repository-policy:
++    name: repository policy
++    runs-on: ubuntu-latest
++    steps:
++      - name: Check out repository
++        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
++      - name: Check repository release policy
++        run: cargo run -p xtask --locked -- release-gate
++      - name: Check classifier and workflow regressions
++        run: cargo test -p xtask --locked
++
+   fmt:
+     name: cargo fmt
+     runs-on: ubuntu-latest
+@@ -40,6 +202,8 @@ jobs:
+         run: cargo fmt --check
+ 
+   clippy:
++    needs: [classify]
++    if: needs.classify.outputs.mode == 'full'
+     name: cargo clippy
+     runs-on: ubuntu-latest
+     timeout-minutes: 20
+@@ -78,14 +242,14 @@ jobs:
+           cargo audit --ignore RUSTSEC-2026-0009
+ 
+   publish-dry-run:
++    needs: [classify]
++    if: needs.classify.outputs.mode == 'full'
+     name: cargo publish dry-run
+     runs-on: ubuntu-latest
+     timeout-minutes: 20
+     steps:
+       - name: Check out repository
+         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+-      - name: Check repository release policy
+-        run: cargo run -p xtask --locked -- release-gate
+       - name: Verify crates.io package
+         run: cargo publish --dry-run --locked
+       - name: Enforce crates.io package size limit
+@@ -134,7 +298,8 @@ jobs:
+ 
+   native:
+     name: native (${{ matrix.target }})
+-    needs: [native_retention]
++    needs: [classify, native_retention]
++    if: needs.classify.outputs.mode == 'full'
+     strategy:
+       fail-fast: false
+       matrix:
+@@ -155,22 +320,99 @@ jobs:
+     name: required
+     if: ${{ always() }}
+     needs:
++      - classify
+       - fmt
+-      - clippy
+       - supply-chain
++      - repository-policy
++      - clippy
+       - publish-dry-run
+       - native
+       - native_retention
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
++    permissions:
++      contents: read
++      pull-requests: read
+     steps:
+-      - name: Require every mandatory job
++      - name: Require current mode and mandatory jobs
++        id: aggregate
+         env:
+           RESULTS: ${{ toJSON(needs) }}
++          DECISION: ${{ needs.classify.outputs.decision }}
++          REPOSITORY_ID: ${{ github.repository_id }}
++          GH_TOKEN: ${{ github.token }}
+         shell: bash
+         run: |
+           set -euo pipefail
+-          if jq -e 'to_entries | any(.value.result != "success")' <<<"$RESULTS" >/dev/null; then
+-            echo "$RESULTS"
++          : "${RESULTS:?}" "${DECISION:?}" "${GITHUB_EVENT_NAME:?}" "${GITHUB_REPOSITORY:?}" "${GITHUB_SHA:?}" "${GITHUB_REF:?}" "${GITHUB_EVENT_PATH:?}" "${REPOSITORY_ID:?}" "${RUNNER_TEMP:?}" "${GITHUB_STEP_SUMMARY:?}"
++          [[ "$GITHUB_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]
++          jq -en --argjson jobs "$RESULTS" --argjson decision "$DECISION" \
++            --arg repository "$GITHUB_REPOSITORY" --arg repository_id "$REPOSITORY_ID" \
++            --arg event "$GITHUB_EVENT_NAME" --arg run_sha "$GITHUB_SHA" '
++            ($jobs | keys | sort) == (["classify","fmt","supply-chain","repository-policy","clippy","publish-dry-run","native","native_retention"] | sort) and
++            ($decision | type == "object" and .schema_version == 1 and
++              (.mode == "full" or .mode == "lightweight") and
++              (.reason_code | type == "string" and test("^[a-z0-9-]{1,64}$")) and
++              (.base_sha | type == "string" and test("^[0-9a-f]{40}$")) and
++              (.head_sha | type == "string" and test("^[0-9a-f]{40}$")) and
++              .repository == $repository and .repository_id == $repository_id and
++              .event_name == $event and .run_sha == $run_sha and
++              (.pr_number | type == "number" and . >= 0 and floor == .) and
++              (.positive_metadata | type == "boolean")) and
++            (["classify","fmt","supply-chain","repository-policy","native_retention"] | all(.[]; $jobs[.].result == "success")) and
++            (if $decision.mode == "full" then
++               $decision.positive_metadata == false and
++               (["clippy","publish-dry-run","native"] | all(.[]; $jobs[.].result == "success"))
++             else
++               $decision.positive_metadata == true and $decision.reason_code == "metadata-only-version-bump" and
++               $event == "pull_request" and
++               (["clippy","publish-dry-run","native"] | all(.[]; $jobs[.].result == "skipped"))
++             end)' >/dev/null
++          mkdir -p "$RUNNER_TEMP/cod108-required"
++          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
++            number="$(jq -er '.number | select(type == "number" and . > 0 and floor == .)' "$GITHUB_EVENT_PATH")"
++            [[ "$number" =~ ^[1-9][0-9]*$ ]]
++            gh api "repos/$GITHUB_REPOSITORY/pulls/$number" > "$RUNNER_TEMP/cod108-required/pr.json"
++            gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" > "$RUNNER_TEMP/cod108-required/main.json"
++            jq -se --argjson decision "$DECISION" --slurpfile event "$GITHUB_EVENT_PATH" \
++              --slurpfile main "$RUNNER_TEMP/cod108-required/main.json" \
++              --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" '
++              def trusted:
++                .state == "open" and .draft == false and
++                .user.id == 41898282 and .user.login == "github-actions[bot]" and .user.type == "Bot" and
++                .base.ref == "main" and .head.ref == "release-please--branches--main--components--codebase-graph" and
++                .base.repo.full_name == $repository and .head.repo.full_name == $repository and
++                (.base.repo.id | tostring) == $id and (.head.repo.id | tostring) == $id and
++                (.labels | type == "array" and any(.[]; .name == "autorelease: pending"));
++              length == 1 and (.[0] | ($event | length) == 1 and ($main | length) == 1 and
++              $event[0].repository.full_name == $repository and ($event[0].repository.id | tostring) == $id and
++              ($event[0].action | IN("opened", "synchronize", "reopened", "edited", "labeled", "unlabeled")) and
++              .state == "open" and .number == $event[0].number and .number == $decision.pr_number and
++              .base.repo.full_name == $repository and (.base.repo.id | tostring) == $id and
++              .base.repo.full_name == $event[0].pull_request.base.repo.full_name and
++              .base.repo.id == $event[0].pull_request.base.repo.id and
++              .base.ref == $event[0].pull_request.base.ref and
++              .head.repo.full_name == $event[0].pull_request.head.repo.full_name and
++              .head.repo.id == $event[0].pull_request.head.repo.id and
++              (.head.repo.full_name | type == "string" and length > 0) and (.head.repo.id | type == "number" and . > 0) and
++              .head.ref == $event[0].pull_request.head.ref and
++              .base.sha == $event[0].pull_request.base.sha and .base.sha == $decision.base_sha and
++              .head.sha == $event[0].pull_request.head.sha and .head.sha == $decision.head_sha and
++              $main[0].ref == "refs/heads/main" and $main[0].object.type == "commit" and
++              ($main[0].object.sha | type == "string" and test("^[0-9a-f]{40}$")) and
++              (if $decision.mode == "lightweight" then
++                 trusted and ($event[0].pull_request | trusted) and .base.sha == $main[0].object.sha
++               else true end))' "$RUNNER_TEMP/cod108-required/pr.json" >/dev/null
++          elif [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/main ]]; then
++            jq -se --argjson decision "$DECISION" --arg repository "$GITHUB_REPOSITORY" --arg id "$REPOSITORY_ID" \
++              --arg sha "$GITHUB_SHA" '
++              length == 1 and (.[0] | .repository.full_name == $repository and (.repository.id | tostring) == $id and
++              .ref == "refs/heads/main" and .before == $decision.base_sha and .after == $decision.head_sha and
++              .after == $sha and $decision.pr_number == 0 and $decision.mode == "full" and
++              $decision.positive_metadata == false)' "$GITHUB_EVENT_PATH" >/dev/null
++          else
++            echo 'Unsupported required-check event' >&2
+             exit 1
+           fi
++          jq -nr --argjson decision "$DECISION" --argjson jobs "$RESULTS" '
++            "Required CI: \($decision.mode)\nBase: \($decision.base_sha)\nHead: \($decision.head_sha)\nReason: \($decision.reason_code)\nIntentional skips: \([$jobs | to_entries[] | select(.value.result == "skipped") | .key] | join(", "))"' >> "$GITHUB_STEP_SUMMARY"
+diff --git a/crates/xtask/src/main.rs b/crates/xtask/src/main.rs
+index 955bcf3..f023e3f 100644
+--- a/crates/xtask/src/main.rs
++++ b/crates/xtask/src/main.rs
+@@ -13,6 +13,7 @@ use std::process::{Command, Stdio};
+ use std::time::{Duration, SystemTime, UNIX_EPOCH};
+ use yaml_serde::Value as YamlValue;
+ 
++mod ci;
+ mod macos;
+ #[cfg(test)]
+ mod macos_installer_tests;
+@@ -111,6 +112,7 @@ fn main() {
+ fn run() -> Result<(), String> {
+     let mut args = env::args().skip(1);
+     match args.next().as_deref() {
++        Some("ci-mode") => ci::run_ci_mode(args.collect()),
+         Some("release-gate") => release_gate(args.collect()),
+         Some("check-workflows") => check_workflows_command(),
+         Some("release-metadata") => release::metadata_command(args.collect()),
+@@ -143,7 +145,7 @@ fn run() -> Result<(), String> {
+         }
+         Some(command) => Err(format!("unknown xtask command: {command}")),
+         None => Err(
+-            "usage: cargo run -p xtask -- <release-gate|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version|verify-crate-size>"
++            "usage: cargo run -p xtask -- <ci-mode|release-gate|check-workflows|native-test|native-artifact|validate-native-artifacts|smoke-artifact|smoke-wiki-artifact|verify-release-version|verify-crate-size>"
+                 .to_string(),
+         ),
+     }
+@@ -1371,7 +1373,10 @@ fn native_retention_policy_valid(ci: &YamlValue, native: &YamlValue) -> bool {
+     let native_valid = yaml_path(native_job, &["uses"]).and_then(YamlValue::as_str)
+         == Some("./.github/workflows/native.yml")
+         && yaml_path(native_job, &["needs"]).and_then(yaml_string_set)
+-            == Some(BTreeSet::from(["native_retention".to_string()]))
++            == Some(BTreeSet::from([
++                "classify".to_string(),
++                "native_retention".to_string(),
++            ]))
+         && yaml_path(native_job, &["strategy", "matrix", "include"])
+             .and_then(YamlValue::as_sequence)
+             .is_some_and(|targets| {
+@@ -1393,7 +1398,8 @@ fn native_retention_policy_valid(ci: &YamlValue, native: &YamlValue) -> bool {
+                         yaml_path(target, &["run-tests"]).and_then(YamlValue::as_bool) == Some(true)
+                     })
+             })
+-        && native_job.get("if").is_none()
++        && yaml_path(native_job, &["if"]).and_then(YamlValue::as_str)
++            == Some("needs.classify.outputs.mode == 'full'")
+         && native_job.get("continue-on-error").is_none()
+         && yaml_path(native_with, &["target"]).and_then(YamlValue::as_str)
+             == Some("${{ matrix.target }}")
+@@ -1430,28 +1436,229 @@ fn native_retention_policy_valid(ci: &YamlValue, native: &YamlValue) -> bool {
+         .unwrap_or_default();
+     let required_step = yaml_step_by_name(
+         yaml_path(ci, &["jobs", "required"]).unwrap_or(&YamlValue::Null),
+-        "Require every mandatory job",
++        "Require current mode and mandatory jobs",
+     )
+     .unwrap_or(&YamlValue::Null);
+-    let expected_required_run = "set -euo pipefail\nif jq -e 'to_entries | any(.value.result != \"success\")' <<<\"$RESULTS\" >/dev/null; then\n  echo \"$RESULTS\"\n  exit 1\nfi\n";
+     let expected_required_needs = BTreeSet::from([
++        "classify".to_string(),
+         "fmt".to_string(),
+-        "clippy".to_string(),
+         "supply-chain".to_string(),
++        "repository-policy".to_string(),
++        "clippy".to_string(),
+         "publish-dry-run".to_string(),
+         "native".to_string(),
+         "native_retention".to_string(),
+     ]);
++    let required_run = yaml_path(required_step, &["run"])
++        .and_then(YamlValue::as_str)
++        .unwrap_or_default();
+     selector_valid
+         && native_valid
+         && required_needs == expected_required_needs
+         && yaml_path(ci, &["jobs", "required", "if"]).and_then(YamlValue::as_str)
+             == Some("${{ always() }}")
++        && yaml_path(required_step, &["name"]).and_then(YamlValue::as_str)
++            == Some("Require current mode and mandatory jobs")
+         && yaml_path(required_step, &["shell"]).and_then(YamlValue::as_str) == Some("bash")
+         && yaml_path(required_step, &["env", "RESULTS"]).and_then(YamlValue::as_str)
+             == Some("${{ toJSON(needs) }}")
+-        && yaml_path(required_step, &["run"]).and_then(YamlValue::as_str)
+-            == Some(expected_required_run)
++        && yaml_path(required_step, &["env", "DECISION"]).and_then(YamlValue::as_str)
++            == Some("${{ needs.classify.outputs.decision }}")
++        && yaml_path(required_step, &["env", "REPOSITORY_ID"]).and_then(YamlValue::as_str)
++            == Some("${{ github.repository_id }}")
++        && yaml_path(required_step, &["env", "GH_TOKEN"]).and_then(YamlValue::as_str)
++            == Some("${{ github.token }}")
++        && required_run.contains("positive_metadata")
++        && required_run.contains("git/ref/heads/main")
++        && required_run.contains("pulls/$number")
++        && required_run.contains("RESULTS")
++        && !required_run.contains("echo success")
++}
++
++fn workflow_step_id<'a>(job: &'a YamlValue, id: &str) -> Option<&'a YamlValue> {
++    yaml_step_by_id(job, id)
++}
++
++fn ci_mode_policy_valid(ci: &YamlValue, issues: &mut Vec<String>) {
++    let expected_bases = BTreeSet::from([
++        "main",
++        "cod103-stack/cod-105",
++        "cod103-stack/cod-106",
++        "cod103-stack/cod-56",
++        "cod103-stack/cod-107",
++        "cod103-stack/cod-108",
++    ])
++    .into_iter()
++    .map(str::to_string)
++    .collect::<BTreeSet<_>>();
++    let expected_events = BTreeSet::from([
++        "opened",
++        "synchronize",
++        "reopened",
++        "edited",
++        "labeled",
++        "unlabeled",
++    ])
++    .into_iter()
++    .map(str::to_string)
++    .collect::<BTreeSet<_>>();
++    if !yaml_matches_string_set(
++        yaml_path(ci, &["on", "pull_request", "branches"]),
++        &expected_bases,
++    ) || !yaml_matches_string_set(
++        yaml_path(ci, &["on", "pull_request", "types"]),
++        &expected_events,
++    ) || !yaml_matches_string_set(
++        yaml_path(ci, &["on", "push", "branches"]),
++        &BTreeSet::from(["main".to_string()]),
++    ) || yaml_mapping_key_set(yaml_path(ci, &["on"]))
++        != Some(BTreeSet::from([
++            "pull_request".to_string(),
++            "push".to_string(),
++        ]))
++    {
++        issues.push("FAIL: ci-mode-trigger-invalid: preserve main push and the exact approved pull request bases and activities.".to_string());
++    }
++
++    let jobs = yaml_path(ci, &["jobs"]).unwrap_or(&YamlValue::Null);
++    let classify = yaml_path(ci, &["jobs", "classify"]).unwrap_or(&YamlValue::Null);
++    let identity = workflow_step_id(classify, "identity").unwrap_or(&YamlValue::Null);
++    let trusted_base = workflow_step_id(classify, "trusted-base").unwrap_or(&YamlValue::Null);
++    let git_objects = workflow_step_id(classify, "git-objects").unwrap_or(&YamlValue::Null);
++    let decision = workflow_step_id(classify, "decision").unwrap_or(&YamlValue::Null);
++    let classify_outputs = yaml_path(classify, &["outputs"]).unwrap_or(&YamlValue::Null);
++    let classify_perms = yaml_path(classify, &["permissions"]).unwrap_or(&YamlValue::Null);
++    let trusted_run = yaml_path(trusted_base, &["with"]).unwrap_or(&YamlValue::Null);
++    let objects_run = yaml_path(git_objects, &["with"]).unwrap_or(&YamlValue::Null);
++    let identity_run = yaml_path(identity, &["run"])
++        .and_then(YamlValue::as_str)
++        .unwrap_or_default();
++    let decision_run = yaml_path(decision, &["run"])
++        .and_then(YamlValue::as_str)
++        .unwrap_or_default();
++    let expected_classify_outputs = BTreeSet::from(["mode".to_string(), "decision".to_string()]);
++    let classify_valid = yaml_path(classify, &["name"]).and_then(YamlValue::as_str)
++        == Some("classify CI mode")
++        && yaml_path(classify_perms, &["contents"]).and_then(YamlValue::as_str) == Some("read")
++        && yaml_path(classify_perms, &["pull-requests"]).and_then(YamlValue::as_str)
++            == Some("read")
++        && yaml_mapping_key_set(Some(classify_outputs)) == Some(expected_classify_outputs)
++        && yaml_path(classify_outputs, &["mode"]).and_then(YamlValue::as_str)
++            == Some("${{ steps.decision.outputs.mode }}")
++        && yaml_path(classify_outputs, &["decision"]).and_then(YamlValue::as_str)
++            == Some("${{ steps.decision.outputs.decision }}")
++        && yaml_path(identity, &["env", "GH_TOKEN"]).and_then(YamlValue::as_str)
++            == Some("${{ github.token }}")
++        && yaml_path(identity, &["env", "REPOSITORY_ID"]).and_then(YamlValue::as_str)
++            == Some("${{ github.repository_id }}")
++        && identity_run.contains(".user.id == 41898282")
++        && identity_run.contains("autorelease: pending")
++        && identity_run.contains("$main[0].object.sha")
++        && yaml_path(trusted_base, &["if"]).and_then(YamlValue::as_str)
++            == Some("steps.identity.outputs.candidate == 'true'")
++        && yaml_path(trusted_base, &["continue-on-error"]).and_then(YamlValue::as_bool)
++            == Some(true)
++        && yaml_path(trusted_run, &["ref"]).and_then(YamlValue::as_str)
++            == Some("${{ steps.identity.outputs.base_sha }}")
++        && yaml_path(trusted_run, &["path"]).and_then(YamlValue::as_str) == Some("trusted-base")
++        && yaml_path(trusted_run, &["persist-credentials"]).and_then(YamlValue::as_bool)
++            == Some(false)
++        && yaml_path(git_objects, &["if"]).and_then(YamlValue::as_str)
++            == Some("steps.identity.outputs.candidate == 'true'")
++        && yaml_path(git_objects, &["continue-on-error"]).and_then(YamlValue::as_bool)
++            == Some(true)
++        && yaml_path(objects_run, &["ref"]).and_then(YamlValue::as_str)
++            == Some("${{ steps.identity.outputs.base_sha }}")
++        && yaml_path(objects_run, &["path"]).and_then(YamlValue::as_str) == Some("git-objects")
++        && yaml_path(objects_run, &["persist-credentials"]).and_then(YamlValue::as_bool)
++            == Some(false)
++        && yaml_path(decision, &["env", "CANDIDATE"]).and_then(YamlValue::as_str)
++            == Some("${{ steps.identity.outputs.candidate }}")
++        && yaml_path(decision, &["env", "TRUSTED_BASE_OUTCOME"]).and_then(YamlValue::as_str)
++            == Some("${{ steps.trusted-base.outcome }}")
++        && yaml_path(decision, &["env", "OBJECT_STORE_OUTCOME"]).and_then(YamlValue::as_str)
++            == Some("${{ steps.git-objects.outcome }}")
++        && decision_run.contains("trusted-base/crates/xtask/src/ci.rs")
++        && decision_run.contains("git-objects")
++        && decision_run.contains("cargo run -p xtask --locked --")
++        && decision_run.contains("ci-mode --repo")
++        && decision_run.contains("classifier-invalid-output")
++        && decision_run.contains("positive_metadata");
++    if !classify_valid {
++        issues.push("FAIL: ci-mode-classifier-invalid: classify must bind current trusted identity, immutable B execution, separate H objects, and a validated full/lightweight decision.".to_string());
++    }
++
++    let policy = yaml_path(jobs, &["repository-policy"]).unwrap_or(&YamlValue::Null);
++    let policy_steps = yaml_path(policy, &["steps"]).and_then(YamlValue::as_sequence);
++    let policy_runs: Vec<&str> = policy_steps
++        .into_iter()
++        .flatten()
++        .filter_map(|step| yaml_path(step, &["run"]).and_then(YamlValue::as_str))
++        .collect();
++    let publication_job = yaml_path(jobs, &["publish-dry-run"]).unwrap_or(&YamlValue::Null);
++    let repository_policy_valid = policy_runs
++        .iter()
++        .filter(|run| **run == "cargo run -p xtask --locked -- release-gate")
++        .count()
++        == 1
++        && policy_runs.contains(&"cargo test -p xtask --locked")
++        && policy_runs.len() == 2
++        && !yaml_contains_string(
++            publication_job,
++            "cargo run -p xtask --locked -- release-gate",
++        );
++    if !repository_policy_valid {
++        issues.push("FAIL: repository-policy-job-invalid: repository-policy must own exactly one release-gate and the bounded xtask regression suite.".to_string());
++    }
++
++    let full_jobs_valid = ["clippy", "publish-dry-run", "native"].iter().all(|job| {
++        yaml_path(jobs, &[job, "needs"])
++            .and_then(yaml_string_set)
++            .is_some_and(|needs| needs.contains("classify"))
++            && yaml_path(jobs, &[job, "if"]).and_then(YamlValue::as_str)
++                == Some("needs.classify.outputs.mode == 'full'")
++    });
++    if !full_jobs_valid {
++        issues.push("FAIL: ci-mode-full-jobs-invalid: each heavy job must require the explicit full selector result.".to_string());
++    }
++
++    let required = yaml_path(jobs, &["required"]).unwrap_or(&YamlValue::Null);
++    let required_step = yaml_step_by_name(required, "Require current mode and mandatory jobs")
++        .unwrap_or(&YamlValue::Null);
++    let required_run = yaml_path(required_step, &["run"])
++        .and_then(YamlValue::as_str)
++        .unwrap_or_default();
++    let required_needs = BTreeSet::from([
++        "classify",
++        "fmt",
++        "supply-chain",
++        "repository-policy",
++        "clippy",
++        "publish-dry-run",
++        "native",
++        "native_retention",
++    ])
++    .into_iter()
++    .map(str::to_string)
++    .collect::<BTreeSet<_>>();
++    let needs = yaml_path(required, &["needs"]).and_then(yaml_string_set);
++    let required_valid = needs == Some(required_needs)
++        && yaml_path(required, &["if"]).and_then(YamlValue::as_str) == Some("${{ always() }}")
++        && yaml_path(required_step, &["env", "RESULTS"]).and_then(YamlValue::as_str)
++            == Some("${{ toJSON(needs) }}")
++        && yaml_path(required_step, &["env", "DECISION"]).and_then(YamlValue::as_str)
++            == Some("${{ needs.classify.outputs.decision }}")
++        && yaml_path(required_step, &["env", "GH_TOKEN"]).and_then(YamlValue::as_str)
++            == Some("${{ github.token }}")
++        && required_run.contains("repository-policy")
++        && required_run.contains("native_retention")
++        && required_run.contains("positive_metadata")
++        && required_run.contains("GITHUB_STEP_SUMMARY")
++        && required_run.contains("git/ref/heads/main")
++        && required_run.contains("pulls/$number");
++    if !required_valid {
++        issues.push("FAIL: ci-mode-required-invalid: required must check the exact eight result keys, decision identity, mode-specific results, and final PR freshness.".to_string());
++    }
+ }
+ 
+ fn check_workflow_policy(
+@@ -1460,12 +1667,14 @@ fn check_workflow_policy(
+     release: &YamlValue,
+     issues: &mut Vec<String>,
+ ) {
++    ci_mode_policy_valid(ci, issues);
+     let pull_request_bases = BTreeSet::from([
+         "main",
+         "cod103-stack/cod-105",
+         "cod103-stack/cod-106",
+         "cod103-stack/cod-56",
+         "cod103-stack/cod-107",
++        "cod103-stack/cod-108",
+     ])
+     .into_iter()
+     .map(str::to_string)
+@@ -1475,19 +1684,26 @@ fn check_workflow_policy(
+         &pull_request_bases,
+     ) {
+         issues.push(
+-            "FAIL: workflow-trigger-invalid: CI pull_request branches must contain exactly main and the four approved COD-103 stack bases.".to_string(),
++            "FAIL: workflow-trigger-invalid: CI pull_request branches must contain exactly main and the five approved COD-103 stack bases.".to_string(),
+         );
+     }
+-    let pull_request_types = BTreeSet::from(["opened", "synchronize", "reopened", "edited"])
+-        .into_iter()
+-        .map(str::to_string)
+-        .collect();
++    let pull_request_types = BTreeSet::from([
++        "opened",
++        "synchronize",
++        "reopened",
++        "edited",
++        "labeled",
++        "unlabeled",
++    ])
++    .into_iter()
++    .map(str::to_string)
++    .collect();
+     if !yaml_matches_string_set(
+         yaml_path(ci, &["on", "pull_request", "types"]),
+         &pull_request_types,
+     ) {
+         issues.push(
+-            "FAIL: workflow-trigger-invalid: CI pull_request activities must be opened, synchronize, reopened, and edited.".to_string(),
++            "FAIL: workflow-trigger-invalid: CI pull_request activities must be opened, synchronize, reopened, edited, labeled, and unlabeled.".to_string(),
+         );
+     }
+     let ci_events = yaml_mapping_key_set(yaml_path(ci, &["on"])).unwrap_or_default();
+@@ -1550,9 +1766,11 @@ fn check_workflow_policy(
+         .and_then(yaml_string_set)
+         .unwrap_or_default();
+     let expected_needs: BTreeSet<String> = [
++        "classify",
+         "fmt",
+-        "clippy",
+         "supply-chain",
++        "repository-policy",
++        "clippy",
+         "publish-dry-run",
+         "native",
+         "native_retention",
+@@ -1562,7 +1780,7 @@ fn check_workflow_policy(
+     .collect();
+     if required_needs != expected_needs {
+         issues.push(
+-            "FAIL: workflow-required-incomplete: required job must depend on every mandatory CI job."
++            "FAIL: workflow-required-incomplete: required job must depend on selector, every common job, and every full-mode job."
+                 .to_string(),
+         );
+     }
+@@ -1573,7 +1791,12 @@ fn check_workflow_policy(
+         );
+     }
+     let ci_publish = yaml_path(ci, &["jobs", "publish-dry-run"]).unwrap_or(&YamlValue::Null);
+-    if !yaml_contains_string(ci_publish, "cargo run -p xtask --locked -- release-gate") {
++    let repository_policy =
++        yaml_path(ci, &["jobs", "repository-policy"]).unwrap_or(&YamlValue::Null);
++    if !yaml_contains_string(
++        repository_policy,
++        "cargo run -p xtask --locked -- release-gate",
++    ) {
+         issues.push(
+             "FAIL: repository-release-gate-missing: CI must check repository release policy."
+                 .to_string(),
+@@ -3026,10 +3249,18 @@ mod tests {
+     use serde_json::{json, Value};
+     use std::collections::BTreeSet;
+     use std::fs;
++    #[cfg(unix)]
++    use std::os::unix::fs::PermissionsExt;
+     use std::path::{Path, PathBuf};
+     use std::process::{Command, ExitStatus, Output};
+ 
+     const GATE_FIXTURE_CHILD_MARKER: &str = ".cod107-gate-fixture-mode";
++    #[cfg(unix)]
++    const CI_REQUIRED_SHA: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
++    #[cfg(unix)]
++    const CI_REQUIRED_BASE: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
++    #[cfg(unix)]
++    const CI_REQUIRED_RUN_SHA: &str = "cccccccccccccccccccccccccccccccccccccccc";
+ 
+     fn release_gate_fixture() -> PathBuf {
+         let root = super::unique_temp_dir("cod107_release_gate_fixture").unwrap();
+@@ -3649,15 +3880,236 @@ mod tests {
+     }
+ 
+     #[cfg(unix)]
+-    fn run_required_result(run: &str, results: &Value) -> Output {
+-        Command::new("bash")
++    struct WorkflowStepRun {
++        output: Output,
++        calls: String,
++        stdout_files: Vec<(String, Vec<u8>)>,
++    }
++
++    #[cfg(unix)]
++    fn run_ci_step(
++        script: &str,
++        envs: &[(&str, &str)],
++        files: &[(&str, &[u8])],
++        gh_cases: &[(&str, &str, i32)],
++        git_cases: &[(&str, &str, i32)],
++        cargo_case: Option<(&str, &str, i32)>,
++    ) -> WorkflowStepRun {
++        let root = crate::unique_temp_dir("cod108_workflow_step").unwrap();
++        let bin = root.join("bin");
++        fs::create_dir_all(&bin).unwrap();
++        let calls_path = root.join("calls");
++        fs::write(&calls_path, "").unwrap();
++        fs::create_dir_all(root.join("cod108")).unwrap();
++        let write_stub = |name: &str, header: &str, cases: &[(&str, &str, i32)]| {
++            let mut body = header.to_string();
++            for (index, (request, response, exit)) in cases.iter().enumerate() {
++                let path = root.join(format!("{name}-response-{index}"));
++                fs::write(&path, response.as_bytes()).unwrap();
++                let _ = path;
++                if request.contains(' ') {
++                    body.push_str(&format!(
++                        "  '{request}') cat \"$RUNNER_TEMP/{name}-response-{index}\"; exit {exit} ;;\n"
++                    ));
++                } else {
++                    body.push_str(&format!(
++                        "  *{request}*) cat \"$RUNNER_TEMP/{name}-response-{index}\"; exit {exit} ;;\n"
++                    ));
++                }
++            }
++            body.push_str(&format!(
++                "  *) echo \"Unexpected {name} request: $*\" >&2; exit 97 ;;\nesac\n"
++            ));
++            let path = bin.join(name);
++            fs::write(&path, body).unwrap();
++            fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
++        };
++        write_stub("gh", "#!/bin/bash\nset -euo pipefail\nprintf 'gh %s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n", gh_cases);
++        write_stub("git", "#!/bin/bash\nset -euo pipefail\nprintf 'git %s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n", git_cases);
++        if let Some((request, response, exit)) = cargo_case {
++            write_stub("cargo", "#!/bin/bash\nset -euo pipefail\nprintf 'cargo cwd=%s argv=%s\\n' \"$PWD\" \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n", &[ (request,response,exit) ]);
++        } else {
++            write_stub("cargo", "#!/bin/bash\nset -euo pipefail\nprintf 'cargo cwd=%s argv=%s\\n' \"$PWD\" \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n", &[]);
++        }
++        let workspace = root.join("workspace");
++        fs::create_dir_all(workspace.join("trusted-base/crates/xtask/src")).unwrap();
++        fs::create_dir_all(workspace.join("git-objects")).unwrap();
++        fs::write(
++            workspace.join("trusted-base/crates/xtask/src/ci.rs"),
++            b"fixture trusted classifier path",
++        )
++        .unwrap();
++        for (relative, contents) in files {
++            let path = root.join(relative);
++            fs::create_dir_all(path.parent().unwrap()).unwrap();
++            fs::write(path, contents).unwrap();
++        }
++        let events_path = root.join("event.json");
++        let event = envs
++            .iter()
++            .find(|(key, _)| *key == "GITHUB_EVENT_JSON")
++            .map(|(_, value)| *value)
++            .unwrap_or("{}");
++        fs::write(&events_path, event).unwrap();
++        let mut command = Command::new("bash");
++        command
++            .arg("-c")
++            .arg(script)
++            .current_dir(&workspace)
++            .env_clear()
++            .env(
++                "PATH",
++                std::env::join_paths(
++                    std::iter::once(bin.clone())
++                        .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
++                )
++                .unwrap(),
++            )
++            .env("RUNNER_TEMP", &root)
++            .env("GITHUB_EVENT_PATH", &events_path)
++            .env("GITHUB_OUTPUT", root.join("output"))
++            .env("GITHUB_STEP_SUMMARY", root.join("summary"))
++            .env("GITHUB_WORKSPACE", &workspace)
++            .env("GITHUB_REPOSITORY", "owner/repo")
++            .env("GITHUB_REPOSITORY_ID", "12345")
++            .env("REPOSITORY_ID", "12345")
++            .env("GITHUB_EVENT_NAME", "pull_request")
++            .env("GITHUB_SHA", CI_REQUIRED_SHA)
++            .env("GITHUB_REF", "refs/pull/124/merge")
++            .env("BASH_ENV", "")
++            .env("GH_TOKEN", "fixture-token");
++        for (key, value) in envs {
++            if *key != "GITHUB_EVENT_JSON" {
++                command.env(key, value);
++            }
++        }
++        let output = command.output().unwrap();
++        let calls = fs::read_to_string(&calls_path).unwrap_or_default();
++        let stdout_files = [
++            "output",
++            "summary",
++            "cod108/decision.json",
++            "cod108/decision.next",
++            "cod108/pr.json",
++            "cod108/main.json",
++            "cod108/classifier.json",
++        ]
++        .into_iter()
++        .filter_map(|relative| {
++            fs::read(root.join(relative))
++                .ok()
++                .map(|bytes| (relative.to_string(), bytes))
++        })
++        .collect();
++        let _ = fs::remove_dir_all(root);
++        WorkflowStepRun {
++            output,
++            calls,
++            stdout_files,
++        }
++    }
++
++    #[cfg(unix)]
++    fn github_pr(number: u64, base_sha: &str, head_sha: &str, action: &str) -> Value {
++        json!({"action":action,"number":number,"repository":{"full_name":"owner/repo","id":12345},
++            "pull_request":{"number":number,"state":"open","draft":false,
++                "user":{"id":41898282,"login":"github-actions[bot]","type":"Bot"},
++                "base":{"ref":"main","sha":base_sha,"repo":{"full_name":"owner/repo","id":12345}},
++                "head":{"ref":"release-please--branches--main--components--codebase-graph","sha":head_sha,"repo":{"full_name":"owner/repo","id":12345}},
++                "labels":[{"name":"autorelease: pending"}]}})
++    }
++
++    #[cfg(unix)]
++    fn extract_ci_step<'a>(ci: &'a YamlValue, id: &str) -> &'a str {
++        yaml_step_by_id(yaml_path(ci, &["jobs", "classify"]).unwrap(), id)
++            .and_then(|step| yaml_path(step, &["run"]))
++            .and_then(YamlValue::as_str)
++            .unwrap()
++    }
++
++    #[cfg(unix)]
++    #[derive(Clone)]
++    struct ApiReply {
++        request: &'static str,
++        body: Vec<u8>,
++        exit: i32,
++    }
++
++    #[cfg(unix)]
++    struct RequiredRun {
++        output: Output,
++        calls: String,
++        summary: String,
++    }
++
++    #[cfg(unix)]
++    fn run_required_result(
++        run: &str,
++        results: &Value,
++        decision: &Value,
++        event_name: &str,
++        event: &Value,
++        github_ref: &str,
++        replies: &[ApiReply],
++    ) -> RequiredRun {
++        let root = super::unique_temp_dir("ci_required_body").unwrap();
++        let bin = root.join("bin");
++        fs::create_dir_all(&bin).unwrap();
++        fs::write(root.join("calls"), "").unwrap();
++        let mut gh = String::from("#!/bin/bash\nset -euo pipefail\nprintf '%s\\n' \"$*\" >> \"$RUNNER_TEMP/calls\"\ncase \"$*\" in\n");
++        for (index, reply) in replies.iter().enumerate() {
++            let response = root.join(format!("api-{index}.json"));
++            fs::write(&response, &reply.body).unwrap();
++            gh.push_str(&format!(
++                "  {:?}) cat \"{}\"; exit {} ;;\n",
++                reply.request,
++                response.display(),
++                reply.exit
++            ));
++        }
++        gh.push_str("  *) echo \"Unexpected GitHub request: $*\" >&2; exit 97 ;;\nesac\n");
++        fs::write(bin.join("gh"), gh).unwrap();
++        fs::set_permissions(bin.join("gh"), fs::Permissions::from_mode(0o755)).unwrap();
++        fs::write(root.join("event.json"), serde_json::to_vec(event).unwrap()).unwrap();
++        fs::write(root.join("summary"), "").unwrap();
++        let output = Command::new("bash")
+             .arg("-c")
+             .arg(run)
++            .current_dir(&root)
+             .env_clear()
+-            .env("PATH", std::env::var_os("PATH").unwrap())
++            .env(
++                "PATH",
++                std::env::join_paths(
++                    std::iter::once(bin)
++                        .chain(std::env::split_paths(&std::env::var_os("PATH").unwrap())),
++                )
++                .unwrap(),
++            )
++            .env("BASH_ENV", "")
+             .env("RESULTS", results.to_string())
++            .env("DECISION", decision.to_string())
++            .env("GITHUB_EVENT_NAME", event_name)
++            .env("GITHUB_REPOSITORY", "owner/repo")
++            .env(
++                "GITHUB_SHA",
++                decision["run_sha"].as_str().unwrap_or(CI_REQUIRED_SHA),
++            )
++            .env("GITHUB_REF", github_ref)
++            .env("GITHUB_EVENT_PATH", root.join("event.json"))
++            .env("REPOSITORY_ID", "12345")
++            .env("RUNNER_TEMP", &root)
++            .env("GITHUB_STEP_SUMMARY", root.join("summary"))
++            .env("GH_TOKEN", "fixture-token")
+             .output()
+-            .unwrap()
++            .unwrap();
++        let calls = fs::read_to_string(root.join("calls")).unwrap_or_default();
++        let summary = fs::read_to_string(root.join("summary")).unwrap_or_default();
++        fs::remove_dir_all(root).unwrap();
++        RequiredRun {
++            output,
++            calls,
++            summary,
++        }
+     }
+ 
+     #[test]
+@@ -4305,48 +4757,855 @@ mod tests {
+ 
+     #[cfg(unix)]
+     #[test]
+-    fn required_rejects_retention_selector_failure() {
++    fn ci_identity_body_executes_trusted_release_pr_and_fails_closed() {
+         let ci = valid_ci_workflow();
+-        let required = yaml_path(&ci, &["jobs", "required"]).unwrap();
+-        let step = yaml_step_by_name(required, "Require every mandatory job").unwrap();
+-        let run = yaml_path(step, &["run"])
+-            .and_then(YamlValue::as_str)
++        let script = extract_ci_step(&ci, "identity");
++        let base = CI_REQUIRED_BASE;
++        let head = CI_REQUIRED_SHA;
++        let event = github_pr(124, base, head, "labeled");
++        let event_text = event.to_string();
++        let live = event["pull_request"].to_string();
++        let main =
++            json!({"ref":"refs/heads/main","object":{"type":"commit","sha":base}}).to_string();
++        let requests = [
++            ("api repos/owner/repo/pulls/124", live.as_str(), 0),
++            ("api repos/owner/repo/git/ref/heads/main", main.as_str(), 0),
++        ];
++        let accepted = run_ci_step(
++            script,
++            &[("GITHUB_EVENT_JSON", event_text.as_str())],
++            &[],
++            &requests,
++            &[],
++            None,
++        );
++        assert!(
++            accepted.output.status.success(),
++            "{}{}",
++            String::from_utf8_lossy(&accepted.output.stdout),
++            String::from_utf8_lossy(&accepted.output.stderr)
++        );
++        assert_eq!(
++            accepted.calls.lines().collect::<Vec<_>>(),
++            [
++                "gh api repos/owner/repo/pulls/124",
++                "gh api repos/owner/repo/git/ref/heads/main"
++            ],
++            "calls={} stderr={}",
++            accepted.calls,
++            String::from_utf8_lossy(&accepted.output.stderr)
++        );
++        let outputs = String::from_utf8(
++            accepted
++                .stdout_files
++                .iter()
++                .find(|(path, _)| path == "output")
++                .unwrap()
++                .1
++                .clone(),
++        )
++        .unwrap();
++        assert!(outputs.contains("candidate=true\n"), "{outputs}");
++        assert!(outputs.contains(&format!("base_sha={base}\n")), "{outputs}");
++        assert!(outputs.contains(&format!("head_sha={head}\n")), "{outputs}");
++        let decision_bytes = &accepted
++            .stdout_files
++            .iter()
++            .find(|(path, _)| path == "cod108/decision.json")
++            .unwrap()
++            .1;
++        let decision: Value = serde_json::from_slice(decision_bytes).unwrap();
++        assert_eq!(decision["schema_version"], 1);
++        assert_eq!(decision["mode"], "full");
++        assert_eq!(decision["reason_code"], "eligibility-pending");
++        assert_eq!(decision["repository_id"], "12345");
++        assert_eq!(decision["pr_number"], 124);
++
++        for mutation in [
++            "draft", "creator", "label", "head_sha", "base_sha", "repo_id", "action",
++        ] {
++            let mut changed = serde_json::from_str::<Value>(&live).unwrap();
++            match mutation {
++                "draft" => changed["draft"] = json!(true),
++                "creator" => changed["user"]["id"] = json!(17),
++                "label" => changed["labels"] = json!([]),
++                "head_sha" => changed["head"]["sha"] = json!(CI_REQUIRED_BASE),
++                "base_sha" => changed["base"]["sha"] = json!(CI_REQUIRED_SHA),
++                "repo_id" => changed["head"]["repo"]["id"] = json!(77),
++                "action" => changed["state"] = json!("closed"),
++                _ => unreachable!(),
++            }
++            let changed_text = changed.to_string();
++            let changed_requests = [(requests[0].0, changed_text.as_str(), 0), requests[1]];
++            let rejected = run_ci_step(
++                script,
++                &[("GITHUB_EVENT_JSON", event_text.as_str())],
++                &[],
++                &changed_requests,
++                &[],
++                None,
++            );
++            assert!(
++                rejected.output.status.success(),
++                "untrusted {mutation} should select full: {}",
++                String::from_utf8_lossy(&rejected.output.stderr)
++            );
++            let output = String::from_utf8(
++                rejected
++                    .stdout_files
++                    .iter()
++                    .find(|(path, _)| path == "output")
++                    .unwrap()
++                    .1
++                    .clone(),
++            )
+             .unwrap();
+-        let successful = json!({
+-            "fmt":{"result":"success"}, "clippy":{"result":"success"},
+-            "supply-chain":{"result":"success"}, "publish-dry-run":{"result":"success"},
+-            "native":{"result":"success"}, "native_retention":{"result":"success","outputs":{"retain":"false"}}
+-        });
+-        assert!(run_required_result(run, &successful).status.success());
+-        let absent_selector = json!({
+-            "fmt":{"result":"success"}, "clippy":{"result":"success"},
+-            "supply-chain":{"result":"success"}, "publish-dry-run":{"result":"success"},
+-            "native":{"result":"success"}
+-        });
+-        assert!(run_required_result(run, &absent_selector).status.success());
++            assert!(
++                output.contains("candidate=false\n"),
++                "accepted {mutation}: {output}"
++            );
++            assert!(
++                output.contains("base_sha=") && output.contains("head_sha="),
++                "{output}"
++            );
++        }
++
++        let no_replies = run_ci_step(
++            script,
++            &[("GITHUB_EVENT_JSON", event_text.as_str())],
++            &[],
++            &[],
++            &[],
++            None,
++        );
++        assert!(
++            no_replies.output.status.success(),
++            "identity API failure must select full: {}",
++            String::from_utf8_lossy(&no_replies.output.stderr)
++        );
++        let failed_output = String::from_utf8(
++            no_replies
++                .stdout_files
++                .iter()
++                .find(|(path, _)| path == "output")
++                .unwrap()
++                .1
++                .clone(),
++        )
++        .unwrap();
++        assert!(
++            failed_output.contains("candidate=false\n"),
++            "{failed_output}"
++        );
++        let bad_event = event.to_string().replace("owner/repo", "fork/repo");
++        let rejected = run_ci_step(
++            script,
++            &[("GITHUB_EVENT_JSON", bad_event.as_str())],
++            &[],
++            &[],
++            &[],
++            None,
++        );
++        assert!(!rejected.output.status.success());
++        assert!(
++            rejected.calls.is_empty(),
++            "repository identity failure must precede API calls: {}",
++            rejected.calls
++        );
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn ci_decision_body_executes_protected_classifier_and_falls_back_full() {
++        let ci = valid_ci_workflow();
++        let script = extract_ci_step(&ci, "decision");
++        let base = CI_REQUIRED_BASE;
++        let head = CI_REQUIRED_SHA;
++        let initial = json!({
++            "schema_version": 1, "mode": "full", "reason_code": "eligibility-pending",
++            "base_sha": base, "head_sha": head, "repository": "owner/repo",
++            "repository_id": "12345", "event_name": "pull_request", "run_sha": head,
++            "pr_number": 124, "positive_metadata": false
++        })
++        .to_string();
++        let core = json!({"schema_version":1,"mode":"lightweight","reason_code":"metadata-only-version-bump","base_sha":base,"head_sha":head}).to_string();
++        let git_fetch = "protocol.file.allow=never";
++        let workspace_ci = "ci-mode";
++        let success = run_ci_step(
++            script,
++            &[
++                ("CANDIDATE", "true"),
++                ("TRUSTED_BASE_OUTCOME", "success"),
++                ("OBJECT_STORE_OUTCOME", "success"),
++            ],
++            &[
++                ("cod108/decision.json", initial.as_bytes()),
++                (
++                    "workspace/trusted-base/crates/xtask/src/ci.rs",
++                    b"trusted code",
++                ),
++            ],
++            &[],
++            &[(git_fetch, "", 0)],
++            Some((workspace_ci, &core, 0)),
++        );
++        assert!(
++            success.output.status.success(),
++            "{}{}",
++            String::from_utf8_lossy(&success.output.stdout),
++            String::from_utf8_lossy(&success.output.stderr)
++        );
++        assert_eq!(
++            success.calls.lines().count(),
++            2,
++            "calls={} stderr={}",
++            success.calls,
++            String::from_utf8_lossy(&success.output.stderr)
++        );
++        let git_calls: Vec<&str> = success
++            .calls
++            .lines()
++            .filter(|line| line.starts_with("git "))
++            .collect();
++        let cargo_calls: Vec<&str> = success
++            .calls
++            .lines()
++            .filter(|line| line.starts_with("cargo "))
++            .collect();
++        assert_eq!(git_calls.len(), 1, "{}", success.calls);
++        assert_eq!(cargo_calls.len(), 1, "{}", success.calls);
++        let object_store = git_calls[0].split_whitespace().nth(2).unwrap();
++        assert_eq!(
++            git_calls[0],
++            format!("git -C {object_store} -c protocol.file.allow=never fetch --no-tags --no-recurse-submodules https://github.com/owner/repo.git {head}")
++        );
++        let trusted_root = object_store
++            .strip_suffix("/git-objects")
++            .unwrap()
++            .to_string()
++            + "/trusted-base";
++        assert_eq!(
++            cargo_calls[0],
++            format!("cargo cwd={trusted_root} argv=run -p xtask --locked -- ci-mode --repo {object_store} --base-sha {base} --head-sha {head}")
++        );
++        let output = String::from_utf8(
++            success
++                .stdout_files
++                .iter()
++                .find(|(p, _)| p == "output")
++                .unwrap()
++                .1
++                .clone(),
++        )
++        .unwrap();
++        assert!(
++            output.contains("mode=lightweight\n"),
++            "{output}; calls={}; stderr={}",
++            success.calls,
++            String::from_utf8_lossy(&success.output.stderr)
++        );
++        let summary = String::from_utf8(
++            success
++                .stdout_files
++                .iter()
++                .find(|(p, _)| p == "summary")
++                .unwrap()
++                .1
++                .clone(),
++        )
++        .unwrap();
++        assert!(summary.contains("CI mode: lightweight"), "{summary}");
++        let final_decision: Value = serde_json::from_slice(
++            &success
++                .stdout_files
++                .iter()
++                .find(|(p, _)| p == "cod108/decision.json")
++                .unwrap()
++                .1,
++        )
++        .unwrap();
++        assert_eq!(final_decision["positive_metadata"], true);
++        assert_eq!(final_decision["base_sha"], base);
++        assert_eq!(final_decision["head_sha"], head);
+ 
+-        for state in ["failure", "cancelled", "skipped"] {
+-            let mut results = successful.clone();
+-            results["native_retention"]["result"] = json!(state);
++        for (label, base_outcome, object_outcome, git_cases, cargo_case) in [
++            ("B checkout failed", "failure", "success", Vec::new(), None),
++            (
++                "H fetch failed",
++                "success",
++                "success",
++                vec![(git_fetch, "failed", 1)],
++                None,
++            ),
++        ] {
++            let fallback = run_ci_step(
++                script,
++                &[
++                    ("CANDIDATE", "true"),
++                    ("TRUSTED_BASE_OUTCOME", base_outcome),
++                    ("OBJECT_STORE_OUTCOME", object_outcome),
++                ],
++                &[
++                    ("cod108/decision.json", initial.as_bytes()),
++                    (
++                        "workspace/trusted-base/crates/xtask/src/ci.rs",
++                        b"trusted code",
++                    ),
++                ],
++                &[],
++                &git_cases,
++                cargo_case,
++            );
++            assert!(
++                fallback.output.status.success(),
++                "{label}: {}{}",
++                String::from_utf8_lossy(&fallback.output.stdout),
++                String::from_utf8_lossy(&fallback.output.stderr)
++            );
+             assert!(
+-                !run_required_result(run, &results).status.success(),
+-                "accepted selector {state}"
++                !fallback.calls.contains("cargo "),
++                "{label} must not invoke compiler/helper: {}",
++                fallback.calls
+             );
++            let final_decision: Value = serde_json::from_slice(
++                &fallback
++                    .stdout_files
++                    .iter()
++                    .find(|(p, _)| p == "cod108/decision.json")
++                    .unwrap()
++                    .1,
++            )
++            .unwrap();
++            assert_eq!(final_decision["mode"], "full", "{label}");
++            assert_eq!(final_decision["positive_metadata"], false, "{label}");
++            assert_eq!(final_decision["base_sha"], base, "{label}");
++            assert_eq!(final_decision["head_sha"], head, "{label}");
+         }
+-        let mut missing_result = successful.clone();
+-        missing_result["native_retention"]
+-            .as_object_mut()
++
++        let invalid_core = json!({"schema_version":1,"mode":"lightweight","reason_code":"lightweight","base_sha":base,"head_sha":head}).to_string();
++        let invalid = run_ci_step(
++            script,
++            &[
++                ("CANDIDATE", "true"),
++                ("TRUSTED_BASE_OUTCOME", "success"),
++                ("OBJECT_STORE_OUTCOME", "success"),
++            ],
++            &[
++                ("cod108/decision.json", initial.as_bytes()),
++                (
++                    "workspace/trusted-base/crates/xtask/src/ci.rs",
++                    b"trusted code",
++                ),
++            ],
++            &[],
++            &[(git_fetch, "", 0)],
++            Some((workspace_ci, &invalid_core, 0)),
++        );
++        assert!(
++            invalid.output.status.success(),
++            "invalid helper output must fall back: {}",
++            String::from_utf8_lossy(&invalid.output.stderr)
++        );
++        let final_decision: Value = serde_json::from_slice(
++            &invalid
++                .stdout_files
++                .iter()
++                .find(|(p, _)| p == "cod108/decision.json")
++                .unwrap()
++                .1,
++        )
++        .unwrap();
++        assert_eq!(final_decision["mode"], "full");
++        assert_eq!(final_decision["reason_code"], "classifier-invalid-output");
++        assert!(!final_decision["positive_metadata"].as_bool().unwrap());
++    }
++
++    #[cfg(unix)]
++    fn required_body(ci: &YamlValue) -> &str {
++        let job = yaml_path(ci, &["jobs", "required"]).unwrap();
++        yaml_step_by_name(job, "Require current mode and mandatory jobs")
++            .and_then(|step| yaml_path(step, &["run"]))
++            .and_then(YamlValue::as_str)
+             .unwrap()
+-            .remove("result");
+-        assert!(!run_required_result(run, &missing_result).status.success());
+-        for job in ["fmt", "clippy", "supply-chain", "publish-dry-run", "native"] {
+-            let mut results = successful.clone();
+-            results[job]["result"] = json!("failure");
++    }
++
++    #[cfg(unix)]
++    fn required_decision(mode: &str, base: &str, head: &str, positive_metadata: bool) -> Value {
++        json!({
++            "schema_version":1,
++            "mode":mode,
++            "reason_code":if positive_metadata {"metadata-only-version-bump"} else {"changed-path-set"},
++            "base_sha":base,
++            "head_sha":head,
++            "repository":"owner/repo",
++            "repository_id":"12345",
++            "event_name":"pull_request",
++            "run_sha":CI_REQUIRED_RUN_SHA,
++            "pr_number":124,
++            "positive_metadata":positive_metadata
++        })
++    }
++
++    #[cfg(unix)]
++    fn required_results(mode: &str) -> Value {
++        let heavy = if mode == "full" { "success" } else { "skipped" };
++        json!({
++            "classify":{"result":"success"},
++            "fmt":{"result":"success"},
++            "supply-chain":{"result":"success"},
++            "repository-policy":{"result":"success"},
++            "clippy":{"result":heavy},
++            "publish-dry-run":{"result":heavy},
++            "native":{"result":heavy},
++            "native_retention":{"result":"success"}
++        })
++    }
++
++    #[cfg(unix)]
++    fn required_pr_event(base: &str, head: &str, action: &str) -> Value {
++        json!({
++            "action":action,
++            "number":124,
++            "repository":{"full_name":"owner/repo","id":12345},
++            "pull_request":{
++                "number":124,
++                "state":"open",
++                "draft":false,
++                "user":{"id":41898282,"login":"github-actions[bot]","type":"Bot"},
++                "base":{"ref":"main","sha":base,"repo":{"full_name":"owner/repo","id":12345}},
++                "head":{"ref":"release-please--branches--main--components--codebase-graph","sha":head,"repo":{"full_name":"owner/repo","id":12345}},
++                "labels":[{"name":"autorelease: pending"}]
++            }
++        })
++    }
++
++    #[cfg(unix)]
++    fn required_pr_api(base: &str, head: &str, state: &str, action: &str) -> (Value, Value) {
++        let event = required_pr_event(base, head, action);
++        let mut pr = event["pull_request"].clone();
++        pr["base"]["sha"] = json!(base);
++        pr["head"]["sha"] = json!(head);
++        pr["state"] = json!(state);
++        (
++            pr,
++            json!({"ref":"refs/heads/main","object":{"type":"commit","sha":base}}),
++        )
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn required_executes_current_full_and_lightweight_bodies_with_eight_exact_results() {
++        let ci = valid_ci_workflow();
++        let run = required_body(&ci);
++        let base = CI_REQUIRED_BASE;
++        let head = CI_REQUIRED_SHA;
++        let (pr, main) = required_pr_api(base, head, "open", "labeled");
++        let event = required_pr_event(base, head, "labeled");
++        let replies = [
++            ApiReply {
++                request: "api repos/owner/repo/pulls/124",
++                body: serde_json::to_vec(&pr).unwrap(),
++                exit: 0,
++            },
++            ApiReply {
++                request: "api repos/owner/repo/git/ref/heads/main",
++                body: serde_json::to_vec(&main).unwrap(),
++                exit: 0,
++            },
++        ];
++        let full_decision = required_decision("full", base, head, false);
++        let full = run_required_result(
++            run,
++            &required_results("full"),
++            &full_decision,
++            "pull_request",
++            &event,
++            "refs/pull/124/merge",
++            &replies,
++        );
++        assert!(
++            full.output.status.success(),
++            "full: {}{}",
++            String::from_utf8_lossy(&full.output.stdout),
++            String::from_utf8_lossy(&full.output.stderr)
++        );
++        assert_eq!(
++            full.calls.lines().collect::<Vec<_>>(),
++            [
++                "api repos/owner/repo/pulls/124",
++                "api repos/owner/repo/git/ref/heads/main"
++            ]
++        );
++        assert!(
++            full.summary.contains("Required CI: full"),
++            "{}",
++            full.summary
++        );
++        assert!(
++            full.summary.contains("Intentional skips:"),
++            "{}",
++            full.summary
++        );
++
++        let light_decision = required_decision("lightweight", base, head, true);
++        let mut trusted_pr = pr.clone();
++        trusted_pr["base"]["ref"] = json!("main");
++        trusted_pr["base"]["repo"]["full_name"] = json!("owner/repo");
++        trusted_pr["head"]["ref"] =
++            json!("release-please--branches--main--components--codebase-graph");
++        trusted_pr["head"]["repo"]["full_name"] = json!("owner/repo");
++        trusted_pr["labels"] = json!([{"name":"autorelease: pending"}]);
++        let light_replies = [
++            ApiReply {
++                request: "api repos/owner/repo/pulls/124",
++                body: serde_json::to_vec(&trusted_pr).unwrap(),
++                exit: 0,
++            },
++            ApiReply {
++                request: "api repos/owner/repo/git/ref/heads/main",
++                body: serde_json::to_vec(&main).unwrap(),
++                exit: 0,
++            },
++        ];
++        let light_event = required_pr_event(base, head, "labeled");
++        let light = run_required_result(
++            run,
++            &required_results("lightweight"),
++            &light_decision,
++            "pull_request",
++            &light_event,
++            "refs/pull/124/merge",
++            &light_replies,
++        );
++        assert!(
++            light.output.status.success(),
++            "lightweight: {}{}",
++            String::from_utf8_lossy(&light.output.stdout),
++            String::from_utf8_lossy(&light.output.stderr)
++        );
++        assert_eq!(
++            light.calls.lines().collect::<Vec<_>>(),
++            [
++                "api repos/owner/repo/pulls/124",
++                "api repos/owner/repo/git/ref/heads/main"
++            ]
++        );
++        assert!(
++            light.summary.contains("Required CI: lightweight"),
++            "{}",
++            light.summary
++        );
++        assert!(
++            light
++                .summary
++                .contains("Intentional skips: clippy, native, publish-dry-run"),
++            "{}",
++            light.summary
++        );
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn required_accepts_main_push_only_in_full_mode_and_rejects_stale_full_pr() {
++        let ci = valid_ci_workflow();
++        let run = required_body(&ci);
++        let base = CI_REQUIRED_BASE;
++        let head = CI_REQUIRED_SHA;
++        let push = json!({"before":base,"after":head,"ref":"refs/heads/main","repository":{"full_name":"owner/repo","id":12345}});
++        let full = required_decision("full", base, head, false);
++        let mut full = full;
++        full["event_name"] = json!("push");
++        full["run_sha"] = json!(head);
++        full["pr_number"] = json!(0);
++        let success = run_required_result(
++            run,
++            &required_results("full"),
++            &full,
++            "push",
++            &push,
++            "refs/heads/main",
++            &[],
++        );
++        assert!(
++            success.output.status.success(),
++            "main push full must succeed: stdout={} stderr={} calls={}",
++            String::from_utf8_lossy(&success.output.stdout),
++            String::from_utf8_lossy(&success.output.stderr),
++            success.calls
++        );
++        assert!(
++            success.calls.is_empty(),
++            "push must not call PR APIs: {}",
++            success.calls
++        );
++        assert!(
++            success.summary.contains("Required CI: full"),
++            "{}",
++            success.summary
++        );
++
++        let event = required_pr_event(base, head, "synchronize");
++        let (mut live, main) = required_pr_api(base, head, "open", "synchronize");
++        live["head"]["sha"] = json!(CI_REQUIRED_BASE);
++        let live_text = live.to_string();
++        let main_text = main.to_string();
++        let replies = [
++            ApiReply {
++                request: "api repos/owner/repo/pulls/124",
++                body: live_text.into_bytes(),
++                exit: 0,
++            },
++            ApiReply {
++                request: "api repos/owner/repo/git/ref/heads/main",
++                body: main_text.into_bytes(),
++                exit: 0,
++            },
++        ];
++        let stale = run_required_result(
++            run,
++            &required_results("full"),
++            &required_decision("full", base, head, false),
++            "pull_request",
++            &event,
++            "refs/pull/124/merge",
++            &replies,
++        );
++        assert!(
++            !stale.output.status.success(),
++            "full mode must fail when final current PR SHA differs from tested SHA"
++        );
++        assert_eq!(stale.calls.lines().count(), 2, "{}", stale.calls);
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn required_rejects_malformed_decision_schema_and_selector_output() {
++        let ci = valid_ci_workflow();
++        let run = required_body(&ci);
++        let base = CI_REQUIRED_BASE;
++        let head = CI_REQUIRED_SHA;
++        let event = required_pr_event(base, head, "synchronize");
++        let (live, main) = required_pr_api(base, head, "open", "synchronize");
++        let replies = [
++            ApiReply {
++                request: "api repos/owner/repo/pulls/124",
++                body: serde_json::to_vec(&live).unwrap(),
++                exit: 0,
++            },
++            ApiReply {
++                request: "api repos/owner/repo/git/ref/heads/main",
++                body: serde_json::to_vec(&main).unwrap(),
++                exit: 0,
++            },
++        ];
++        for decision in [
++            Value::Null,
++            json!({"schema_version":2}),
++            json!({"schema_version":1,"mode":"unknown"}),
++        ] {
++            let result = run_required_result(
++                run,
++                &required_results("full"),
++                &decision,
++                "pull_request",
++                &event,
++                "refs/pull/124/merge",
++                &replies,
++            );
++            assert!(
++                !result.output.status.success(),
++                "accepted malformed selector: {decision}"
++            );
++        }
++        let light = required_decision("lightweight", base, head, true);
++        let mut invalid_reason = light.clone();
++        invalid_reason["reason_code"] = json!("lightweight");
++        assert!(!run_required_result(
++            run,
++            &required_results("lightweight"),
++            &invalid_reason,
++            "pull_request",
++            &event,
++            "refs/pull/124/merge",
++            &replies
++        )
++        .output
++        .status
++        .success());
++    }
++
++    #[cfg(unix)]
++    #[test]
++    fn required_rejects_missing_malformed_or_wrong_mode_results_and_stale_identity() {
++        let ci = valid_ci_workflow();
++        let run = required_body(&ci);
++        let base = CI_REQUIRED_BASE;
++        let head = CI_REQUIRED_SHA;
++        let event = required_pr_event(base, head, "synchronize");
++        let (pr, main) = required_pr_api(base, head, "open", "synchronize");
++        let replies = [
++            ApiReply {
++                request: "api repos/owner/repo/pulls/124",
++                body: serde_json::to_vec(&pr).unwrap(),
++                exit: 0,
++            },
++            ApiReply {
++                request: "api repos/owner/repo/git/ref/heads/main",
++                body: serde_json::to_vec(&main).unwrap(),
++                exit: 0,
++            },
++        ];
++        let full_decision = required_decision("full", base, head, false);
++        let valid = required_results("full");
++        let pass = run_required_result(
++            run,
++            &valid,
++            &full_decision,
++            "pull_request",
++            &event,
++            "refs/pull/124/merge",
++            &replies,
++        );
++        assert!(
++            pass.output.status.success(),
++            "{}",
++            String::from_utf8_lossy(&pass.output.stderr)
++        );
++
++        for absent in ["classify", "repository-policy", "native_retention"] {
++            let mut results = valid.clone();
++            results.as_object_mut().unwrap().remove(absent);
++            let rejected = run_required_result(
++                run,
++                &results,
++                &full_decision,
++                "pull_request",
++                &event,
++                "refs/pull/124/merge",
++                &replies,
++            );
++            assert!(
++                !rejected.output.status.success(),
++                "accepted missing result {absent}: {}",
++                String::from_utf8_lossy(&rejected.output.stderr)
++            );
++        }
++        for (job, state) in [
++            ("classify", "skipped"),
++            ("fmt", "cancelled"),
++            ("supply-chain", "failure"),
++            ("repository-policy", "skipped"),
++            ("native_retention", "failure"),
++            ("clippy", "skipped"),
++            ("native", "cancelled"),
++        ] {
++            let mut results = valid.clone();
++            results[job]["result"] = json!(state);
++            let rejected = run_required_result(
++                run,
++                &results,
++                &full_decision,
++                "pull_request",
++                &event,
++                "refs/pull/124/merge",
++                &replies,
++            );
+             assert!(
+-                !run_required_result(run, &results).status.success(),
+-                "accepted failed {job}"
++                !rejected.output.status.success(),
++                "accepted {job}={state}: {}",
++                String::from_utf8_lossy(&rejected.output.stderr)
+             );
+         }
++        let mut extra = valid.clone();
++        extra["unexpected"] = json!({"result":"success"});
++        assert!(!run_required_result(
++            run,
++            &extra,
++            &full_decision,
++            "pull_request",
++            &event,
++            "refs/pull/124/merge",
++            &replies
++        )
++        .output
++        .status
++        .success());
++
++        let light = required_decision("lightweight", base, head, true);
++        for (job, state) in [
++            ("clippy", "success"),
++            ("publish-dry-run", "failure"),
++            ("native", "cancelled"),
++        ] {
++            let mut results = required_results("lightweight");
++            results[job]["result"] = json!(state);
++            assert!(
++                !run_required_result(
++                    run,
++                    &results,
++                    &light,
++                    "pull_request",
++                    &event,
++                    "refs/pull/124/merge",
++                    &replies
++                )
++                .output
++                .status
++                .success(),
++                "accepted unexpected {job}={state}"
++            );
++        }
++        for mutation in ["draft", "creator", "label", "head", "base"] {
++            let mut changed = pr.clone();
++            match mutation {
++                "draft" => changed["draft"] = json!(true),
++                "creator" => changed["user"]["id"] = json!(123),
++                "label" => changed["labels"] = json!([]),
++                "head" => changed["head"]["sha"] = json!(CI_REQUIRED_BASE),
++                "base" => changed["base"]["sha"] = json!(CI_REQUIRED_SHA),
++                _ => unreachable!(),
++            }
++            let changed_replies = [
++                ApiReply {
++                    request: "api repos/owner/repo/pulls/124",
++                    body: serde_json::to_vec(&changed).unwrap(),
++                    exit: 0,
++                },
++                replies[1].clone(),
++            ];
++            assert!(
++                !run_required_result(
++                    run,
++                    &required_results("lightweight"),
++                    &light,
++                    "pull_request",
++                    &event,
++                    "refs/pull/124/merge",
++                    &changed_replies
++                )
++                .output
++                .status
++                .success(),
++                "accepted stale/mutated {mutation}"
++            );
++        }
++        let unavailable = [ApiReply {
++            request: "api repos/owner/repo/pulls/124",
++            body: b"{}".to_vec(),
++            exit: 1,
++        }];
++        assert!(!run_required_result(
++            run,
++            &valid,
++            &full_decision,
++            "pull_request",
++            &event,
++            "refs/pull/124/merge",
++            &unavailable
++        )
++        .output
++        .status
++        .success());
+     }
+ 
+     fn valid_ci_workflow() -> YamlValue {
+@@ -4464,6 +5723,108 @@ mod tests {
+         issues
+     }
+ 
++    #[test]
++    fn ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership() {
++        let valid = valid_ci_workflow();
++        type CiMutation = (&'static str, Box<dyn Fn(&mut YamlValue)>);
++        let cases: Vec<CiMutation> = vec![
++            (
++                "missing selector",
++                Box::new(|ci| {
++                    ci["jobs"]
++                        .as_mapping_mut()
++                        .unwrap()
++                        .remove(YamlValue::String("classify".into()));
++                }),
++            ),
++            (
++                "unexpected event",
++                Box::new(|ci| {
++                    ci["on"]["workflow_dispatch"] = yaml_serde::from_str("{}").unwrap();
++                }),
++            ),
++            (
++                "wrong protected checkout ref",
++                Box::new(|ci| {
++                    ci["jobs"]["classify"]["steps"][1]["with"]["ref"] =
++                        YamlValue::String("github.sha".into());
++                }),
++            ),
++            (
++                "head helper path",
++                Box::new(|ci| {
++                    let step = ci["jobs"]["classify"]["steps"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .iter_mut()
++                        .find(|step| step.get("id").and_then(YamlValue::as_str) == Some("decision"))
++                        .unwrap();
++                    let run = step["run"].as_str().unwrap().replace(
++                        "trusted-base/crates/xtask/src/ci.rs",
++                        "git-objects/crates/xtask/src/ci.rs",
++                    );
++                    step["run"] = YamlValue::String(run);
++                }),
++            ),
++            (
++                "missing common policy gate",
++                Box::new(|ci| {
++                    ci["jobs"]["required"]["needs"]
++                        .as_sequence_mut()
++                        .unwrap()
++                        .retain(|need| need.as_str() != Some("repository-policy"));
++                }),
++            ),
++            (
++                "heavy job unconditional",
++                Box::new(|ci| {
++                    ci["jobs"]["native"]["if"] = YamlValue::String("always()".into());
++                }),
++            ),
++            (
++                "decision output unbound",
++                Box::new(|ci| {
++                    ci["jobs"]["classify"]["outputs"]["decision"] =
++                        YamlValue::String("${{ steps.identity.outputs.decision }}".into());
++                }),
++            ),
++            (
++                "required skips results",
++                Box::new(|ci| {
++                    ci["jobs"]["required"]["steps"][0]["run"] =
++                        YamlValue::String("echo success".into());
++                }),
++            ),
++        ];
++        for (label, mutate) in cases {
++            let mut changed = valid.clone();
++            mutate(&mut changed);
++            let issues = workflow_policy_issues_for_ci(&changed);
++            assert!(!issues.is_empty(), "accepted {label}");
++        }
++        let missing_release_gate = workflow_policy_issues_for_ci(&valid);
++        assert!(
++            missing_release_gate.is_empty(),
++            "actual consumer baseline rejected: {missing_release_gate:?}"
++        );
++        let mut without_gate = valid;
++        without_gate["jobs"]["repository-policy"]["steps"]
++            .as_sequence_mut()
++            .unwrap()
++            .retain(|step| {
++                step.get("name").and_then(YamlValue::as_str)
++                    != Some("Check repository release policy")
++            });
++        let issues = workflow_policy_issues_for_ci(&without_gate);
++        assert!(
++            issues
++                .iter()
++                .any(|issue| issue.contains("repository-release-gate-missing")
++                    || issue.contains("repository-policy-job-invalid")),
++            "missing repository gate not detected: {issues:?}"
++        );
++    }
++
+     #[test]
+     fn workflow_policy_accepts_exact_cod103_stack_bases() {
+         assert!(workflow_policy_issues_for_ci(&valid_ci_workflow()).is_empty());
+@@ -4472,7 +5833,7 @@ mod tests {
+     #[test]
+     fn workflow_policy_rejects_unknown_stack_base_and_push_namespace() {
+         for (event, branch) in [
+-            ("pull_request", "cod103-stack/cod-108"),
++            ("pull_request", "cod103-stack/cod-110"),
+             ("pull_request", "*"),
+             ("push", "cod103-stack/cod-105"),
+             ("push", "*"),
+@@ -4505,7 +5866,7 @@ mod tests {
+     #[test]
+     fn workflow_policy_rejects_unapproved_pull_request_activity() {
+         let mut ci = valid_ci_workflow();
+-        ci["on"]["pull_request"]["types"] = yaml_serde::from_str("[opened, labeled]").unwrap();
++        ci["on"]["pull_request"]["types"] = yaml_serde::from_str("[opened, closed]").unwrap();
+         let issues = workflow_policy_issues_for_ci(&ci);
+         assert!(
+             issues
+@@ -4687,7 +6048,7 @@ mod tests {
+     #[test]
+     fn workflow_policy_rejects_missing_repository_release_gate() {
+         let mut ci = valid_ci_workflow();
+-        let steps = ci["jobs"]["publish-dry-run"]["steps"]
++        let steps = ci["jobs"]["repository-policy"]["steps"]
+             .as_sequence_mut()
+             .unwrap();
+         steps.retain(|step| {
+diff --git a/docs/release.md b/docs/release.md
+index bf88256..db9e0b2 100644
+--- a/docs/release.md
++++ b/docs/release.md
+@@ -31,31 +31,63 @@ asset and crate publication. Never copy a local CLI login token into repository
+ 
+ ## CI
+ 
+-Pull requests targeting `main` and the approved COD-103 staging branches run the same full verification. The staged PR bases are exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`, `cod103-stack/cod-56`, and `cod103-stack/cod-107`; pull-request activities are opened, synchronize, reopened, and edited. Pushes remain restricted to `main`. Staging checks are full CI, not release qualification; a changed head/base needs a fresh event and result. No privileged PR trigger or PR artifact promotion/publication is added. The separate COD-107 A03 method permits internal retention of the already-built native archives, sidecars, and provenance only for its qualifying same-repository PR, so the exact-source payloads can be independently inventoried. It adds no public release authority or permissions and changes no unrelated PR retention. All other PR artifact retention remains disabled.
+-
+-Every qualifying pull request and every push to `main` runs:
+-
+-- `cargo fmt --check`
+-- platform-aligned workspace tests on macOS ARM64 and Windows x86_64
+-- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
+-- Rust advisory scanning with `cargo audit`
+-- `cargo run -p xtask --locked -- release-gate`, before the package dry-run, to reject repository-policy violations before release.
+-- `cargo publish --dry-run --locked`
+-- An exact-byte check that the generated `.crate` does not exceed crates.io's 10 MiB upload limit.
+-- `cargo package -p k-wiki --locked --no-verify` and the isolated Knowledge Wiki smoke. The
+-  unpublished wiki binary uses the in-tree codebase-graph registrar, while the preceding root
+-  package check verifies that publishable shared API in isolation.
+-- Release-ready package builds on macOS ARM64 and Windows x86_64. The normal COD-107 same-repository staging PR may
+-  retain both already-built archives, sidecars, and provenance for independent A03 inventory; other PRs upload none.
+-  `main` retains both artifacts for 90 days. Retention does not skip verification or promote PR artifacts for publication.
+-- The dedicated COD-107 selector controls only retention; native verification remains required on every PR, and the
+-  stable `required` aggregate still succeeds only when every mandatory job succeeds. Repository rules should require
+-  that check after it has appeared on `main` once.
+-
+-macOS ARM64 runs unit, generation-storage, and remaining integration/doctest cohorts independently. Windows uses four
+-serial groups per cohort, including generation-storage, so each case runs once. Groups are discovered from
+-Cargo's test inventories, with complete and selected inventories retained in diagnostic artifacts. Each runner executes
+-tests serially, and a target's release artifact is built only after all its test groups succeed.
++Normal pull requests target exactly `main`, `cod103-stack/cod-105`, `cod103-stack/cod-106`,
++`cod103-stack/cod-56`, `cod103-stack/cod-107`, or `cod103-stack/cod-108`. Activities are opened,
++synchronize, reopened, edited, labeled, and unlabeled. Pushes remain restricted to `main`.
++Staging checks are not release qualification; a changed head/base needs fresh qualification.
++No privileged PR trigger or PR artifact promotion/publication is added.
++
++Every event requires successful `classify`, `fmt`, `supply-chain`, `repository-policy`, and
++`native_retention` jobs. The policy job is the single ordinary `release-gate` invocation and runs
++`cargo test -p xtask --locked` for classifier/workflow regressions. Formatting stays `cargo fmt --check`;
++the existing advisory scan and time-parsing feature guard remain unchanged.
++
++Only a positively verified metadata-only release PR may use lightweight verification. Current API and
++event data must agree on the open, non-draft same-repository PR targeting current `main`, exact release
++branch `release-please--branches--main--components--codebase-graph`, `autorelease: pending` label, and
++creator ID41898282 / `github-actions[bot]` / Bot. Branch, label, author name, or token name alone is
++not admission. A different proposal principal stays full until separately verified and approved.
++
++The schema1 classifier runs code, manifests, lockfile, cwd, and build context from immutable protected
++main base B. A separate Git object checkout supplies B→H data; H is never checked out or executed for
++admission. Checkouts do not persist credentials, classifier builds use a private target directory, and
++no untrusted compiler cache or publication secret is shared. The complete generated six-file version/
++changelog form must pass the conservative semantic proof; other fields, dependencies, layouts, files,
++or uncertain acquisition select explicit full mode. Missing/incompatible protected-base helper also
++selects full: COD-108's own PR cannot use its head helper to admit itself.
++
++Ordinary/untrusted/non-main-base PRs and every main push run full verification, including:
++
++- `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`;
++- root `cargo publish --dry-run --locked`, exact-byte 10 MiB crate limit, and isolated wiki package checks;
++- platform-aligned workspace tests and release-ready packages on macOS ARM64 and Windows x86_64,
++  using the existing native CLI/profile/build/smoke recipes.
++
++Lightweight mode skips exactly those three heavy jobs (`clippy`, `publish-dry-run`, `native`), not the
++common policy/advisory/format/classification checks. It proves consistent metadata without building a
++package in disguise. The stable `required` job always runs and needs every selector/common/heavy job.
++It rejects missing, malformed, failed, cancelled, or unexpected results. Full requires all heavy jobs
++successful; lightweight requires all three exactly skipped plus fresh positive proof. Immediately before
++success, both PR modes re-read current identity and B/H; lightweight also rechecks current main and trust.
++API failure or stale identity fails required, even after a full fallback. Run summaries record mode,
++B/H, reason, and intentional skips. This final read is not a merge transaction: strict freshness through
++an authorized non-bypass actor remains required. PR-head-editable workflow YAML is not claimed tamper-proof.
++
++The separate COD-107 A03 selector is unchanged: only its qualifying same-repository head
++`cod103-stack/cod-107` targeting `cod103-stack/cod-56` or `main` on its original four activities may retain
++already-built native archives, sidecars, and provenance. Added bases/label events grant no COD-108 or
++other PR retention. Main pushes retain both artifacts for 90 days; existing 3-day diagnostic retention
++and native recipes are unchanged. Retention never skips required verification or promotes PR artifacts.
++
++macOS ARM64 runs unit, generation-storage, and remaining integration/doctest cohorts independently.
++Windows uses four serial groups per cohort, including generation-storage, so each case runs once.
++Groups come from Cargo inventories; complete/selected inventories remain in diagnostics. Tests run
++serially and release artifacts build only after all target test groups succeed.
++
++Actual hosted lightweight scheduling must be qualified after protected-main deployment and its own
++successful full main CI, before the final release-PR merge. Unit tests, configured jobs, and the full
++bootstrap PR do not establish that rollout evidence. Every release merge still runs full main-push CI
++and supplies its own exact-source native artifacts; there is no PR-artifact substitution.
+ 
+ ## Release Flow
+ 

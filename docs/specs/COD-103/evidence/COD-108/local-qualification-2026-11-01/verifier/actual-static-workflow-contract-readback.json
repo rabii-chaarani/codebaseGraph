@@ -1,0 +1,86 @@
+{
+  "actual_workflow_SHA256": "b59d7028101120f6885870cec054a65d9788f55d364dc0f2eb2b53bd4fd9c339",
+  "actual_job_keys": [
+    "classify",
+    "repository-policy",
+    "fmt",
+    "clippy",
+    "supply-chain",
+    "publish-dry-run",
+    "native_retention",
+    "native",
+    "required"
+  ],
+  "exact8required_needs": [
+    "classify",
+    "fmt",
+    "supply-chain",
+    "repository-policy",
+    "clippy",
+    "publish-dry-run",
+    "native",
+    "native_retention"
+  ],
+  "required_always_name": "required / ${{ always() }}",
+  "allowed_exact_PR_bases": [
+    "main",
+    "cod103-stack/cod-105",
+    "cod103-stack/cod-106",
+    "cod103-stack/cod-56",
+    "cod103-stack/cod-107",
+    "cod103-stack/cod-108"
+  ],
+  "actual6PRactivities": [
+    "opened",
+    "synchronize",
+    "reopened",
+    "edited",
+    "labeled",
+    "unlabeled"
+  ],
+  "push_main_only_no_privilegedtrigger": true,
+  "common_mandatory_jobs": [
+    "classify",
+    "repository-policy",
+    "fmt",
+    "supply-chain",
+    "native_retention"
+  ],
+  "full_only_heavy_jobs": [
+    "clippy",
+    "publish-dry-run",
+    "native"
+  ],
+  "one_repository_policy_owner_of_releasegate_andxtasktests": true,
+  "protectedB_checkouts": {
+    "trusted-base": {
+      "name": "Check out immutable protected base",
+      "id": "trusted-base",
+      "if": "steps.identity.outputs.candidate == 'true'",
+      "continue-on-error": "true",
+      "uses": "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+      "with": {
+        "ref": "${{ steps.identity.outputs.base_sha }}",
+        "path": "trusted-base",
+        "persist-credentials": "false"
+      }
+    },
+    "git-objects": {
+      "name": "Check out separate Git object store",
+      "id": "git-objects",
+      "if": "steps.identity.outputs.candidate == 'true'",
+      "continue-on-error": "true",
+      "uses": "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10",
+      "with": {
+        "ref": "${{ steps.identity.outputs.base_sha }}",
+        "path": "git-objects",
+        "persist-credentials": "false"
+      }
+    }
+  },
+  "classifier_target_isolated": "ActualdecisionbodyCARGO_TARGET_DIR=$RUNNER_TEMP/cod108/trusted-target; no headcompiler/shareduntrustedoutput path. Exactargv/cwdassertedbyexecutedtests.",
+  "native_sourceSHA_originalbuildrecipe_retention90_preserved": true,
+  "no_job_environment_or_secrets_inherit_or_publishcredentials": true,
+  "native_workflow_diagnostic3days": "Sourcefileunchanged; existingnativeinput/diagnosticscontract retained, no nativeexecutionclaim.",
+  "execution_vs_static": "ThisJSON recordsstructuralYAMLread/assertionsonly. Independent102JUnitexecutedtypedmutation+actualbodyfixtures, nothostedschedulingorjobcountproof."
+}

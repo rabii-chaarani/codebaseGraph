@@ -1,0 +1,17 @@
+{
+  "graph_search_request": {
+    "query": "check_workflow_policy",
+    "layer": "semantic",
+    "detail": "slim",
+    "context_limit": 1
+  },
+  "graph_search": "q check_workflow_policy layer=semantic\nfile path crates/xtask/src/main.rs\n- Function check_workflow_policy L1457-L1947 rank_score=0.96 id=Function:c7edaab0aa8955e0052b layer=semantic\n\nfile path docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/prepared-history/backend/cod107-final-main.rs\n- Function check_workflow_policy L1323-L1801 rank_score=0.89 id=Function:a3b94d1da3158bcd38bb layer=semantic\n\nfile path docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/prepared-history/backend/cod107-retention-final-main.rs\n- Function check_workflow_policy L1457-L1947 rank_score=0.89 id=Function:41beb4c7fd7c2bef6d36 layer=semantic\n",
+  "graph_context_request": {
+    "query": "check_workflow_policy",
+    "layer": "semantic",
+    "profile": "change_impact",
+    "detail": "slim",
+    "context_limit": 2
+  },
+  "graph_context": "q check_workflow_policy layer=semantic\nfile path crates/xtask/src/main.rs\n- Function check_workflow_policy L1457-L1947 rank_score=0.96 id=Function:c7edaab0aa8955e0052b layer=semantic\n\nfile path docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/prepared-history/backend/cod107-final-main.rs\n- Function check_workflow_policy L1323-L1801 rank_score=0.89 id=Function:a3b94d1da3158bcd38bb layer=semantic\n\nfile path docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/prepared-history/backend/cod107-retention-final-main.rs\n- Function check_workflow_policy L1457-L1947 rank_score=0.89 id=Function:41beb4c7fd7c2bef6d36 layer=semantic\n"
+}

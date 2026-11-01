@@ -1,0 +1,23 @@
+COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo fmt && cargo test -p xtask --locked tests::ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership -- --nocapture
+EXIT: 101
+OUTPUT:
+   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.66s
+     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)
+
+running 1 test
+test tests::ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership ... 
+thread 'tests::ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership' (40871671) panicked at crates/xtask/src/main.rs:5736:26:
+called `Option::unwrap()` on a `None` value
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    tests::ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 101 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `-p xtask --bin xtask`
+

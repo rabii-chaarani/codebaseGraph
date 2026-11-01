@@ -1,0 +1,219 @@
+{
+  "schema": "COD-108 private Backend core handoff result",
+  "created_at": "2026-11-01",
+  "artifact_source": {
+    "label": "session transcript snapshot at artifact creation; tool results below are transcript-derived, not regenerated",
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/01a196de-89e6-7479-9883-1ff6993d2751.jsonl",
+    "bytes": 1724834,
+    "sha256": "9a7b6d98c445fe07434143ea1038818e3d7c89e825d6c7288033433f4c9ca499"
+  },
+  "project": {
+    "branch": "cod103-stack/cod-108",
+    "baseline_head": "90af76d3453a6f5cc0f032045ed48c4fd09c275c",
+    "working_tree_scope": [
+      "crates/xtask/src/ci.rs (new)",
+      "crates/xtask/src/main.rs (modified)"
+    ],
+    "other_project_paths_changed": 0
+  },
+  "source_files": [
+    {
+      "path": "crates/xtask/src/ci.rs",
+      "kind": "new",
+      "bytes": 48671,
+      "sha256": "b8971114c0ed2d79675b94cfb41133482c185c5ee8609a4282ed565c9136967f"
+    },
+    {
+      "path": "crates/xtask/src/main.rs",
+      "kind": "modified",
+      "bytes": 183023,
+      "sha256": "c175e0df3591a195cb38e89167bec160a880951718c9c431b73bf01d9d392957"
+    }
+  ],
+  "environment": {
+    "os": "Darwin 25.6.0 arm64",
+    "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+    "git": "git version 2.52.0",
+    "project_version": "xtask 4.0.5",
+    "worktree": "/private/tmp/codebasegraph-cod108-20261101",
+    "target_graph_cli_fallback": "OS error 2; parent/Engineer later supplied identity proof and narrow authorization; no rebuild/install/config creation was done"
+  },
+  "checks": [
+    {
+      "name": "focused_ci_module_tests",
+      "command": "cd \"/private/tmp/codebasegraph-cod108-20261101\" && cargo fmt && cargo test -p xtask --locked ci::tests:: -- --nocapture",
+      "exit_status": 0,
+      "duration_ms": null,
+      "stdout_transcript_derived": "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.45s\n     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)\n\nrunning 13 tests\ntest ci::tests::classifier_requires_strictly_increasing_versions_and_new_changelog_section ... ok\ntest ci::tests::git_acquisition_failures_select_full_and_same_sha_is_full ... ok\ntest ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full ... ok\ntest ci::tests::immutable_git_diff_rejects_added_deleted_and_symlink_paths ... ok\ntest ci::tests::immutable_git_diff_rejects_executable_metadata_modes ... ok\ntest ci::tests::immutable_git_diff_rejects_submodule_mode ... ok\ntest ci::tests::immutable_git_diff_requires_ancestor_and_exact_metadata_paths ... ok\ntest ci::tests::metadata_classifier_rejects_duplicate_and_decoy_contexts ... ok\ntest ci::tests::metadata_classifier_rejects_partial_mismatch_external_lock_and_history_edits ... ok\ntest ci::tests::metadata_recognizers_reject_multiline_comment_context_and_duplicate_workspace_records ... ok\ntest ci::tests::pr165_shaped_complete_metadata_transition_is_lightweight ... ok\ntest ci::tests::pr167_shaped_complete_metadata_transition_is_lightweight ... ok\ntest ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records ... ok\n\ntest result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 83 filtered out; finished in 0.46s\n\n",
+      "stderr_transcript_derived": "(bash tool captures combined stdout/stderr; stderr stream not separately available for this command)",
+      "result": "13 passed; 0 failed"
+    },
+    {
+      "name": "xtask_package_tests",
+      "command": "cd \"/private/tmp/codebasegraph-cod108-20261101\" && cargo test -p xtask --locked",
+      "exit_status": 0,
+      "stdout_transcript_derived": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s\n     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)\n\nrunning 96 tests\ntest ci::tests::classifier_requires_strictly_increasing_versions_and_new_changelog_section ... ok\ntest ci::tests::git_acquisition_failures_select_full_and_same_sha_is_full ... ok\ntest ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full ... ok\ntest ci::tests::immutable_git_diff_rejects_added_deleted_and_symlink_paths ... ok\ntest ci::tests::immutable_git_diff_rejects_executable_metadata_modes ... ok\ntest ci::tests::immutable_git_diff_rejects_submodule_mode ... ok\ntest ci::tests::immutable_git_diff_requires_ancestor_and_exact_metadata_paths ... ok\ntest ci::tests::metadata_classifier_rejects_duplicate_and_decoy_contexts ... ok\ntest ci::tests::metadata_classifier_rejects_partial_mismatch_external_lock_and_history_edits ... ok\ntest ci::tests::metadata_recognizers_reject_multiline_comment_context_and_duplicate_workspace_records ... ok\ntest ci::tests::pr165_shaped_complete_metadata_transition_is_lightweight ... ok\ntest ci::tests::pr167_shaped_complete_metadata_transition_is_lightweight ... ok\ntest ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records ... ok\ntest macos::tests::dependency_parser_preserves_paths_with_spaces ... ok\ntest macos::tests::dylib_dependency_parser_filters_only_matching_install_id ... ok\ntest macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands ... ok\ntest macos::tests::rpath_parser_reads_and_rejects_malformed_entries ... ok\ntest macos::tests::source_archive_accepts_comment_metadata_without_extracting_it ... ok\ntest macos_installer_tests::dry_run_validates_all_payloads_without_creating_destination ... ok\ntest macos_installer_tests::invalid_inventory_rows_and_mixed_versions_preserve_destination ... ok\ntest macos_installer_tests::missing_corrupt_and_symlink_payloads_preserve_existing_destination_files ... ok\ntest macos_installer_tests::nonzero_binary_probe_preserves_existing_destination_files ... ok\ntest macos_installer_tests::real_install_places_verified_runtime_license_and_binaries_in_spaced_directory ... ok\ntest native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite ... ok\ntest native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases ... ok\ntest native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments ... ok\ntest native_tests::tests::captured_cli_survives_cargo_replacing_its_output ... ok\ntest native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets ... ok\ntest native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite ... ok\ntest release::tests::metadata_rejects_inconsistent_versions ... ok\ntest release::tests::notes_only_include_the_exact_release ... ok\ntest release::tests::notes_reject_missing_duplicate_and_empty_sections ... ok\ntest release::workflow_tests::accepted_writes_with_lost_responses_resume_without_replay ... ok\ntest release::workflow_tests::ci_run_recovery_dry_run_validates_without_authorizing_publication ... ok\ntest release::workflow_tests::draft_partial_upload_resumes_and_latest_is_selected_at_publication ... ok\ntest release::workflow_tests::existing_tag_mode_remains_assets_only_for_draft_mutable_and_immutable_releases ... ok\ntest release::workflow_tests::existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors ... ok\ntest release::workflow_tests::existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing ... ok\ntest release::workflow_tests::immutable_missing_or_mismatched_assets_fail_without_mutation ... ok\ntest release::workflow_tests::immutable_release_uploads_before_publication_and_retries_without_writes ... ok\ntest release::workflow_tests::legacy_dry_run_resolves_without_scheduling_the_publisher ... ok\ntest release::workflow_tests::legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement ... ok\ntest release::workflow_tests::legacy_publisher_rejects_late_history_and_tag_races_without_mutation ... ok\ntest release::workflow_tests::ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can ... ok\ntest release::workflow_tests::proposal_reports_pending_release_then_proceeds_after_finalization ... ok\ntest release::workflow_tests::published_mutable_partial_assets_can_resume_without_republishing ... ok\ntest release::workflow_tests::publisher_rejects_conflicting_tags_and_does_not_regress_latest ... ok\ntest release::workflow_tests::publisher_rejects_identity_metadata_prerelease_and_ambiguous_drafts_before_writes ... ok\ntest release::workflow_tests::publisher_targets_original_sha_and_is_idempotent ... ok\ntest release::workflow_tests::recovery_requires_one_target_and_forbids_ci_run_rebuilds ... ok\ntest release::workflow_tests::staged_assets_match_the_supported_native_targets ... ok\ntest release::workflow_tests::upload_or_remote_byte_failure_never_publishes ... ok\ntest release::workflow_tests::verified_release_rejects_failed_ci_and_untrusted_run_identity ... ok\ntest release::workflow_tests::verified_release_rejects_untrusted_prs_and_removed_history ... ok\ntest release::workflow_tests::verified_release_survives_main_advancing_and_ignores_other_pending_releases ... ok\ntest tests::archive_contract_rejects_unexpected_entries ... ok\ntest tests::complete_artifact_set_rejects_mixed_provenance ... ok\ntest tests::crate_size_validation_enforces_the_registry_limit ... ok\ntest tests::docs_python_exception_rejects_component_aliases_and_symlinks ... ok\ntest tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes ... ok\ntest tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python ... ok\ntest tests::installer_rejects_removed_hosts_before_reading_archives_or_writing_destinations ... ok\ntest tests::macos_smoke_commands_use_a_fixture_home_and_system_path ... ok\ntest tests::mcp_smoke_accepts_valid_initialize_and_tools ... ok\ntest tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses ... ok\ntest tests::mcp_smoke_rejects_nonzero_child_with_success_payload ... ok\ntest tests::native_capture_requires_unique_source_bound_normal_cli_artifact ... ok\ntest tests::native_capture_reuses_the_exact_test_profile_and_features ... ok\ntest tests::native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory ... ok\ntest tests::native_retention_actual_body_is_cod107_only ... ok\ntest tests::native_retention_invalid_input_cannot_succeed ... ok\ntest tests::native_target_contract_maps_names_and_binaries ... ok\ntest tests::native_test_failure_cannot_authorize_artifact_production ... ok\ntest tests::release_identity_validation_is_strict ... ok\ntest tests::required_rejects_retention_selector_failure ... ok\ntest tests::windows_native_tests_forward_bundled_extensions ... ok\ntest tests::workflow_policy_accepts_exact_cod103_stack_bases ... ok\ntest tests::workflow_policy_rejects_automatic_rebuild_recovery ... ok\ntest tests::workflow_policy_rejects_direct_release_push_trigger ... ok\ntest tests::workflow_policy_rejects_github_sha_for_release_identity ... ok\ntest tests::workflow_policy_rejects_missing_ci_success_guard ... ok\ntest tests::workflow_policy_rejects_missing_crate_publish_retry ... ok\ntest tests::workflow_policy_rejects_missing_crate_size_gates ... ok\ntest tests::workflow_policy_rejects_missing_repository_release_gate ... ok\ntest tests::workflow_policy_rejects_missing_triggering_run_binding ... ok\ntest tests::workflow_policy_rejects_privileged_pr_event ... ok\ntest tests::workflow_policy_rejects_release_queue_replacement ... ok\ntest tests::workflow_policy_rejects_unapproved_pull_request_activity ... ok\ntest tests::workflow_policy_rejects_unconditional_release_publication ... ok\ntest tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace ... ok\ntest tests::workflow_policy_rejects_unvalidated_publishers ... ok\ntest tests::workflow_policy_requires_ci_completion_release_trigger ... ok\ntest tests::workflow_policy_requires_publication_revalidation ... ok\ntest tests::workflow_policy_retention_wiring_is_closed ... ok\ntest tests::workflow_yaml_validation_rejects_unindented_heredoc_body ... ok\ntest tests::workflows_reject_removed_platform_targets ... ok\n\ntest result: ok. 96 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.20s\n\n",
+      "stderr_transcript_derived": "(bash tool captures combined stdout/stderr; stderr stream not separately available for this command)",
+      "result": "96 passed; 0 failed"
+    },
+    {
+      "name": "format_check",
+      "command": "cd \"/private/tmp/codebasegraph-cod108-20261101\" && cargo fmt --check",
+      "exit_status": 0,
+      "stdout_transcript_derived": "",
+      "stderr_transcript_derived": "(bash tool captures combined stdout/stderr; stderr stream not separately available for this command)",
+      "result": "passed; no output"
+    },
+    {
+      "name": "strict_clippy",
+      "command": "cd \"/private/tmp/codebasegraph-cod108-20261101\" && cargo clippy -p xtask --all-targets --all-features --locked -- -D warnings",
+      "exit_status": 0,
+      "stdout_transcript_derived": "    Checking xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.55s\n",
+      "stderr_transcript_derived": "(bash tool captures combined stdout/stderr; stderr stream not separately available for this command)",
+      "result": "passed; no warnings"
+    },
+    {
+      "name": "xtask_build",
+      "command": "cd \"/private/tmp/codebasegraph-cod108-20261101\" && cargo build -p xtask --locked",
+      "exit_status": 0,
+      "stdout_transcript_derived": "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.52s\n",
+      "stderr_transcript_derived": "(bash tool captures combined stdout/stderr; stderr stream not separately available for this command)",
+      "result": "passed",
+      "executable_path": "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+      "executable_sha256": "f04b82d9548c283de31da9b994000a4775952e6a8b69d40da1b2e9a70ef26be6"
+    }
+  ],
+  "cli_process_observations": [
+    {
+      "name": "eligible_generated_metadata",
+      "argv": [
+        "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+        "ci-mode",
+        "--repo",
+        "/private/tmp/cod108-real-layout-b0af51a183ba468b9be4ca384f410228",
+        "--base-sha",
+        "e71c436d0207c2b03269b17d6b1a3a784faba22f",
+        "--head-sha",
+        "12cb291412bb4417ece5961bdf41f38473c95c79"
+      ],
+      "exit_status": 0,
+      "stdout": {
+        "repr": "b'{\"schema_version\":1,\"mode\":\"lightweight\",\"reason_code\":\"metadata-only-version-bump\",\"base_sha\":\"e71c436d0207c2b03269b17d6b1a3a784faba22f\",\"head_sha\":\"12cb291412bb4417ece5961bdf41f38473c95c79\"}\\n'",
+        "utf8": "{\"schema_version\":1,\"mode\":\"lightweight\",\"reason_code\":\"metadata-only-version-bump\",\"base_sha\":\"e71c436d0207c2b03269b17d6b1a3a784faba22f\",\"head_sha\":\"12cb291412bb4417ece5961bdf41f38473c95c79\"}\n",
+        "base64": "eyJzY2hlbWFfdmVyc2lvbiI6MSwibW9kZSI6ImxpZ2h0d2VpZ2h0IiwicmVhc29uX2NvZGUiOiJtZXRhZGF0YS1vbmx5LXZlcnNpb24tYnVtcCIsImJhc2Vfc2hhIjoiZTcxYzQzNmQwMjA3YzJiMDMyNjliMTdkNmIxYTNhNzg0ZmFiYTIyZiIsImhlYWRfc2hhIjoiMTJjYjI5MTQxMmJiNDQxN2VjZTU5NjFiZGY0MWYzODQ3M2M5NWM3OSJ9Cg=="
+      },
+      "stderr": {
+        "repr": "b''",
+        "utf8": "",
+        "base64": ""
+      },
+      "fixture_repo": "/private/tmp/cod108-real-layout-b0af51a183ba468b9be4ca384f410228",
+      "base_sha": "e71c436d0207c2b03269b17d6b1a3a784faba22f",
+      "head_sha": "12cb291412bb4417ece5961bdf41f38473c95c79"
+    },
+    {
+      "name": "full_ordinary_code_change",
+      "argv": [
+        "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+        "ci-mode",
+        "--repo",
+        "/private/tmp/cod108-real-layout-b0af51a183ba468b9be4ca384f410228",
+        "--base-sha",
+        "e71c436d0207c2b03269b17d6b1a3a784faba22f",
+        "--head-sha",
+        "42450d3297a9673c59038f57e6256d5d29d979d6"
+      ],
+      "exit_status": 0,
+      "stdout": {
+        "repr": "b'{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"changed-path-set\",\"base_sha\":\"e71c436d0207c2b03269b17d6b1a3a784faba22f\",\"head_sha\":\"42450d3297a9673c59038f57e6256d5d29d979d6\"}\\n'",
+        "utf8": "{\"schema_version\":1,\"mode\":\"full\",\"reason_code\":\"changed-path-set\",\"base_sha\":\"e71c436d0207c2b03269b17d6b1a3a784faba22f\",\"head_sha\":\"42450d3297a9673c59038f57e6256d5d29d979d6\"}\n",
+        "base64": "eyJzY2hlbWFfdmVyc2lvbiI6MSwibW9kZSI6ImZ1bGwiLCJyZWFzb25fY29kZSI6ImNoYW5nZWQtcGF0aC1zZXQiLCJiYXNlX3NoYSI6ImU3MWM0MzZkMDIwN2MyYjAzMjY5YjE3ZDZiMWEzYTc4NGZhYmEyMmYiLCJoZWFkX3NoYSI6IjQyNDUwZDMyOTdhOTY3M2M1OTAzOGY1N2U2MjU2ZDVkMjlkOTc5ZDYifQo="
+      },
+      "stderr": {
+        "repr": "b''",
+        "utf8": "",
+        "base64": ""
+      },
+      "fixture_repo": "/private/tmp/cod108-real-layout-b0af51a183ba468b9be4ca384f410228",
+      "base_sha": "e71c436d0207c2b03269b17d6b1a3a784faba22f",
+      "head_sha": "42450d3297a9673c59038f57e6256d5d29d979d6"
+    },
+    {
+      "name": "invalid_sha",
+      "argv": [
+        "/private/tmp/codebasegraph-cod108-20261101/target/debug/xtask",
+        "ci-mode",
+        "--repo",
+        "/private/tmp/cod108-real-layout-b0af51a183ba468b9be4ca384f410228",
+        "--base-sha",
+        "bad",
+        "--head-sha",
+        "12cb291412bb4417ece5961bdf41f38473c95c79"
+      ],
+      "exit_status": 1,
+      "stdout": {
+        "repr": "b''",
+        "utf8": "",
+        "base64": ""
+      },
+      "stderr": {
+        "repr": "b'ci-mode requires full 40-character hexadecimal commit SHAs\\n'",
+        "utf8": "ci-mode requires full 40-character hexadecimal commit SHAs\n",
+        "base64": "Y2ktbW9kZSByZXF1aXJlcyBmdWxsIDQwLWNoYXJhY3RlciBoZXhhZGVjaW1hbCBjb21taXQgU0hBcwo="
+      },
+      "fixture_repo": "/private/tmp/cod108-real-layout-b0af51a183ba468b9be4ca384f410228",
+      "base_sha": "e71c436d0207c2b03269b17d6b1a3a784faba22f",
+      "head_sha": "12cb291412bb4417ece5961bdf41f38473c95c79"
+    }
+  ],
+  "prior_failed_attempts": [
+    {
+      "label": "early focused tests before parser correction",
+      "transcript_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/01a196de-89e6-7479-9883-1ff6993d2751.jsonl",
+      "transcript_event_index_zero_based": 54,
+      "transcript_message_id": "a95e7d59",
+      "timestamp": "2026-11-01T11:42:02.319Z",
+      "tool_result_status": "ok",
+      "combined_output_transcript_derived_verbatim": "   Compiling libc v0.2.189\n   Compiling proc-macro2 v1.0.106\n   Compiling version_check v0.9.5\n   Compiling unicode-ident v1.0.24\n   Compiling quote v1.0.45\n   Compiling cfg-if v1.0.4\n   Compiling typenum v1.20.1\n   Compiling serde_core v1.0.228\n   Compiling rustix v1.1.4\n   Compiling bitflags v2.13.0\n   Compiling zmij v1.0.21\n   Compiling serde v1.0.228\n   Compiling crc32fast v1.5.0\n   Compiling itoa v1.0.18\n   Compiling generic-array v0.14.7\n   Compiling hashbrown v0.15.5\n   Compiling serde_json v1.0.150\n   Compiling simd-adler32 v0.3.10\n   Compiling equivalent v1.0.2\n   Compiling adler2 v2.0.1\n   Compiling miniz_oxide v0.9.1\n   Compiling indexmap v2.7.1\n   Compiling memchr v2.8.2\n   Compiling libyaml-rs v0.3.0\n   Compiling ryu v1.0.23\n   Compiling flate2 v1.1.10\n   Compiling syn v2.0.117\n   Compiling errno v0.3.14\n   Compiling cpufeatures v0.2.17\n   Compiling filetime v0.2.29\n   Compiling crypto-common v0.1.7\n   Compiling block-buffer v0.10.4\n   Compiling digest v0.10.7\n   Compiling sha2 v0.10.9\n   Compiling serde_derive v1.0.228\n   Compiling xattr v1.6.1\n   Compiling tar v0.4.46\n   Compiling yaml_serde v0.10.7\n   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)\nerror[E0603]: function `run_ci_mode` is private\n   --> crates/xtask/src/main.rs:115:32\n    |\n115 |         Some(\"ci-mode\") => ci::run_ci_mode(args.collect()),\n    |                                ^^^^^^^^^^^ private function\n    |\nnote: the function `run_ci_mode` is defined here\n   --> crates/xtask/src/ci.rs:46:1\n    |\n 46 | fn run_ci_mode(args: Vec<String>) -> Result<(), String> {\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\nerror[E0308]: arguments to this function are incorrect\n   --> crates/xtask/src/ci.rs:192:163\n    |\n192 | ...ter().map(|item| item.0.as_str()).collect::<Vec<_>>() || !masked_equal(&base[path], &old, &head[path], &new) {\n    |                                                              ^^^^^^^^^^^^\n    |\nnote: expected `&[Span]`, found `&Vec<(String, Span)>`\n   --> crates/xtask/src/ci.rs:192:189\n    |\n192 | ...0.as_str()).collect::<Vec<_>>() || !masked_equal(&base[path], &old, &head[path], &new) {\n    |                                                                  ^^^^\n    = note: expected reference `&[Span]`\n               found reference `&Vec<(std::string::String, Span)>`\nnote: expected `&[Span]`, found `&Vec<(String, Span)>`\n   --> crates/xtask/src/ci.rs:192:208\n    |\n192 | ...::<Vec<_>>() || !masked_equal(&base[path], &old, &head[path], &new) {\n    |                                                                  ^^^^\n    = note: expected reference `&[Span]`\n               found reference `&Vec<(std::string::String, Span)>`\nnote: function defined here\n   --> crates/xtask/src/ci.rs:223:4\n    |\n223 | fn masked_equal(old: &[u8], old_spans: &[Span], new: &[u8], new_spans: &[Span]) -> bool {\n    |    ^^^^^^^^^^^^             ------------------              ------------------\n\nerror[E0308]: arguments to this function are incorrect\n   --> crates/xtask/src/ci.rs:207:9\n    |\n207 |     if !masked_equal(&base[\"Cargo.lock\"], &old_lock, &head[\"Cargo.lock\"], &new_lock) {\n    |         ^^^^^^^^^^^^\n    |\nnote: expected `&[Span]`, found `&Vec<(String, Span)>`\n   --> crates/xtask/src/ci.rs:207:43\n    |\n207 |     if !masked_equal(&base[\"Cargo.lock\"], &old_lock, &head[\"Cargo.lock\"], &new_lock) {\n    |                                           ^^^^^^^^^\n    = note: expected reference `&[Span]`\n               found reference `&Vec<(std::string::String, Span)>`\nnote: expected `&[Span]`, found `&Vec<(String, Span)>`\n   --> crates/xtask/src/ci.rs:207:75\n    |\n207 |     if !masked_equal(&base[\"Cargo.lock\"], &old_lock, &head[\"Cargo.lock\"], &new_lock) {\n    |                                                                           ^^^^^^^^^\n    = note: expected reference `&[Span]`\n               found reference `&Vec<(std::string::String, Span)>`\nnote: function defined here\n   --> crates/xtask/src/ci.rs:223:4\n    |\n223 | fn masked_equal(old: &[u8], old_spans: &[Span], new: &[u8], new_spans: &[Span]) -> bool {\n    |    ^^^^^^^^^^^^             ------------------              ------------------\n\nwarning: unused variable: `value`\n   --> crates/xtask/src/ci.rs:315:15\n    |\n315 |     let (key, value) = line.split_once('=')?;\n    |               ^^^^^ help: if this is intentional, prefix it with an underscore: `_value`\n    |\n    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default\n\nSome errors have detailed explanations: E0308, E0603.\nFor more information about an error, try `rustc --explain E0308`.\nwarning: `xtask` (bin \"xtask\" test) generated 1 warning\nerror: could not compile `xtask` (bin \"xtask\" test) due to 3 previous errors; 1 warning emitted\n\nexit= 101 running= False\n",
+      "note": "Historical failed attempt, retained as evidence; not a final check result. Transcript tool output was combined, not separately captured stdout/stderr."
+    },
+    {
+      "label": "invalid compile-time CARGO_BIN_EXE unit test",
+      "transcript_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/01a196de-89e6-7479-9883-1ff6993d2751.jsonl",
+      "transcript_event_index_zero_based": 112,
+      "transcript_message_id": "eaac66d5",
+      "timestamp": "2026-11-01T11:58:07.749Z",
+      "tool_result_status": "ok",
+      "combined_output_transcript_derived_verbatim": "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)\nerror: environment variable `CARGO_BIN_EXE_xtask` not defined at compile time\n   --> crates/xtask/src/ci.rs:913:26\n    |\n913 |         let executable = env!(\"CARGO_BIN_EXE_xtask\");\n    |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    |\n    = help: `CARGO_BIN_EXE_xtask` may not be available for the current Cargo target\n    = help: Cargo sets build script variables at run time. Use `std::env::var(\"CARGO_BIN_EXE_xtask\")` instead\n\nerror: could not compile `xtask` (bin \"xtask\" test) due to 1 previous error\n exit= 101\n",
+      "note": "Historical failed attempt, retained as evidence; not a final check result. Transcript tool output was combined, not separately captured stdout/stderr."
+    },
+    {
+      "label": "moved String test compile failure",
+      "transcript_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/01a196de-89e6-7479-9883-1ff6993d2751.jsonl",
+      "transcript_event_index_zero_based": 114,
+      "transcript_message_id": "5827f983",
+      "timestamp": "2026-11-01T11:58:10.844Z",
+      "tool_result_status": "ok",
+      "combined_output_transcript_derived_verbatim": "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)\nerror[E0382]: use of moved value: `executable`\n   --> crates/xtask/src/ci.rs:924:36\n    |\n913 | ...   let executable = std::env::var(\"CARGO_BIN_EXE_xtask\").unwrap();\n    |           ---------- move occurs because `executable` has type `std::string::String`, which does not implement the `Copy` trait\n914 | ...   let result = Command::new(executable)\n    |                                 ---------- value moved here\n...\n924 | ...   let invalid = Command::new(executable).args([\"ci-mode\", \"--repo\", &repo, \"--base-sha\", \"bad\", \"--head-sha\", &head_sha]).outpu...\n    |                                  ^^^^^^^^^^ value used here after move\n    |\nhelp: consider borrowing `executable`\n    |\n914 |         let result = Command::new(&executable)\n    |                                   +\n\nFor more information about this error, try `rustc --explain E0382`.\nerror: could not compile `xtask` (bin \"xtask\" test) due to 1 previous error\n exit= 101\n",
+      "note": "Historical failed attempt, retained as evidence; not a final check result. Transcript tool output was combined, not separately captured stdout/stderr."
+    },
+    {
+      "label": "runtime CARGO_BIN_EXE absent unit test",
+      "transcript_path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/01a196de-89e6-7479-9883-1ff6993d2751.jsonl",
+      "transcript_event_index_zero_based": 116,
+      "transcript_message_id": "4cc42022",
+      "timestamp": "2026-11-01T11:59:16.122Z",
+      "tool_result_status": "ok",
+      "combined_output_transcript_derived_verbatim": "   Compiling xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.68s\n     Running unittests src/main.rs (target/debug/deps/xtask-269d5b6e7ec16933)\n\nrunning 1 test\ntest ci::tests::cli_modes_emit_schema_one_and_invalid_inputs_fail_without_json ... \nthread 'ci::tests::cli_modes_emit_schema_one_and_invalid_inputs_fail_without_json' (40684140) panicked at crates/xtask/src/ci.rs:913:63:\ncalled `Result::unwrap()` on an `Err` value: NotPresent\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nFAILED\n\nfailures:\n\nfailures:\n    ci::tests::cli_modes_emit_schema_one_and_invalid_inputs_fail_without_json\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 89 filtered out; finished in 0.07s\n\nerror: test failed, to rerun pass `-p xtask --bin xtask`\n exit= 101\n",
+      "note": "Historical failed attempt, retained as evidence; not a final check result. Transcript tool output was combined, not separately captured stdout/stderr."
+    }
+  ],
+  "limits": [
+    "Local implementation evidence only; not hosted workflow/API trust/protected-base identity/aggregate required-state evidence.",
+    "No tests were rerun while packaging this handoff.",
+    "Raw command records are preserved verbatim from this session transcript; no standalone shell log was saved. Bash exposes combined stdout/stderr only for its commands.",
+    "CLI subprocess outputs were captured by the Python subprocess tool result as byte reprs; exact argv/output/status are reproduced below from transcript-derived content, not regenerated.",
+    "Earlier Cargo CLI-unit test attempts are failures retained for history; their final replacement coverage is the successful built-process CLI evidence."
+  ]
+}

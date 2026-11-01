@@ -1,0 +1,7 @@
+COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo run -p xtask --locked -- release-gate
+EXIT: 0
+OUTPUT:
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running `target/debug/xtask release-gate`
+release gate passed
+

@@ -1,0 +1,1 @@
+ci-mode requires full 40-character hexadecimal commit SHAs

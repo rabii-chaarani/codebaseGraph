@@ -1,0 +1,26 @@
+COMMAND: cd "/private/tmp/codebasegraph-cod108-20261101" && cargo clippy -p xtask --all-targets --all-features --locked -- -D warnings
+EXIT: 101
+OUTPUT:
+    Checking xtask v4.0.5 (/private/tmp/codebasegraph-cod108-20261101/crates/xtask)
+error: very complex type used. Consider factoring parts into `type` definitions
+    --> crates/xtask/src/main.rs:5711:24
+     |
+5711 |         let mut cases: Vec<(&str, Box<dyn Fn(&mut YamlValue)>)> = vec![
+     |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#type_complexity
+     = note: `-D clippy::type-complexity` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::type_complexity)]`
+
+error: the borrowed expression implements the required traits
+    --> crates/xtask/src/main.rs:5718:33
+     |
+5718 |                         .remove(&YamlValue::String("classify".into()));
+     |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: change this to: `YamlValue::String("classify".into())`
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#needless_borrows_for_generic_args
+     = note: `-D clippy::needless-borrows-for-generic-args` implied by `-D warnings`
+     = help: to override `-D warnings` add `#[allow(clippy::needless_borrows_for_generic_args)]`
+
+error: could not compile `xtask` (bin "xtask" test) due to 2 previous errors
+
