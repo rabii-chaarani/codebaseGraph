@@ -1,0 +1,92 @@
+{
+  "id": 124897498528,
+  "run_id": 41323156535,
+  "workflow_name": "CI",
+  "head_branch": "cod103-stack/cod-108",
+  "run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/runs/41323156535",
+  "run_attempt": 1,
+  "node_id": "CR_kwDOSZ0Wus8AAAAdFHiVoA",
+  "head_sha": "0413e543668f3e08003aa6a0d4ead350f49a61cc",
+  "url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/actions/jobs/124897498528",
+  "html_url": "https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41323156535/job/124897498528",
+  "status": "completed",
+  "conclusion": "failure",
+  "created_at": "2026-11-01T15:49:34Z",
+  "started_at": "2026-11-01T15:49:37Z",
+  "completed_at": "2026-11-01T16:31:29Z",
+  "name": "native (macos-arm64) / native tests (macos-arm64, unit)",
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 1,
+      "started_at": "2026-11-01T15:49:38Z",
+      "completed_at": "2026-11-01T15:49:39Z"
+    },
+    {
+      "name": "Check out source SHA",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 2,
+      "started_at": "2026-11-01T15:49:39Z",
+      "completed_at": "2026-11-01T15:49:45Z"
+    },
+    {
+      "name": "Set up native dependencies",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 3,
+      "started_at": "2026-11-01T15:49:45Z",
+      "completed_at": "2026-11-01T15:49:49Z"
+    },
+    {
+      "name": "Run platform tests",
+      "status": "completed",
+      "conclusion": "failure",
+      "number": 4,
+      "started_at": "2026-11-01T15:49:49Z",
+      "completed_at": "2026-11-01T16:31:18Z"
+    },
+    {
+      "name": "Upload native test diagnostics",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 5,
+      "started_at": "2026-11-01T16:31:18Z",
+      "completed_at": "2026-11-01T16:31:21Z"
+    },
+    {
+      "name": "Post Set up native dependencies",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 9,
+      "started_at": "2026-11-01T16:31:21Z",
+      "completed_at": "2026-11-01T16:31:21Z"
+    },
+    {
+      "name": "Post Check out source SHA",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 10,
+      "started_at": "2026-11-01T16:31:21Z",
+      "completed_at": "2026-11-01T16:31:22Z"
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 11,
+      "started_at": "2026-11-01T16:31:22Z",
+      "completed_at": "2026-11-01T16:31:27Z"
+    }
+  ],
+  "check_run_url": "https://api.github.com/repos/rabii-chaarani/codebaseGraph/check-runs/124897498528",
+  "labels": [
+    "macos-latest"
+  ],
+  "runner_id": 1000009312,
+  "runner_name": "GitHub Actions 1000009312",
+  "runner_group_id": 0,
+  "runner_group_name": "GitHub Actions"
+}

@@ -1,0 +1,80 @@
+{
+  "selected_test": "adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors",
+  "one_exact_named_case_line": "test adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors ... ok",
+  "actual_executed_selected_cases": 1,
+  "passed": 1,
+  "failed": 0,
+  "ignored": 0,
+  "all_other_test_harness_zero_cases": 4,
+  "filtered_cases": 960,
+  "actual_result_groups": [
+    {
+      "line": 5,
+      "status": "ok",
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 847,
+      "actual_test_seconds": 7.82
+    },
+    {
+      "line": 10,
+      "status": "ok",
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0,
+      "actual_test_seconds": 0.0
+    },
+    {
+      "line": 15,
+      "status": "ok",
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 10,
+      "actual_test_seconds": 0.0
+    },
+    {
+      "line": 20,
+      "status": "ok",
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0,
+      "actual_test_seconds": 0.0
+    },
+    {
+      "line": 25,
+      "status": "ok",
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 103,
+      "actual_test_seconds": 0.0
+    }
+  ],
+  "compiler_warning_count": 0,
+  "raw_logs": [
+    {
+      "path": "exact-native-test.stdout.log",
+      "bytes": 647,
+      "sha256": "afa9f027b3b37b6937a2056c19b9c75b90159bf65ff50a8898eae73cc2d2113a",
+      "all_warning_word_lines": [],
+      "compiler_warning_lines": 0
+    },
+    {
+      "path": "exact-native-test.stderr.log",
+      "bytes": 5842,
+      "sha256": "a0be724876a30740ec2718fdccf82a4a5d88e559441acacf7cf565401970f467",
+      "all_warning_word_lines": [],
+      "compiler_warning_lines": 0
+    }
+  ],
+  "real_Cargo_libtest_output_not_JUnit": "No XMLreportcreated/converted/ingested; onefilteredrunisnotawholeworkspacepassingtestcount."
+}

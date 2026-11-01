@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-108",
+  "status": "closed-focused-MCP-diagnostic-review",
+  "expected_closed_file_count": 5,
+  "closed_files": [
+    {
+      "path": "independent-diagnostic-evidence-readback.json",
+      "bytes": 2226,
+      "sha256": "be234e3ac2edba476009d495d0a5fb1e0a57ab20ad95d6fe7a9ebb64cb31a3a2"
+    },
+    {
+      "path": "report.md",
+      "bytes": 7964,
+      "sha256": "379fe3ee59c01b026c4f3adc8b92ebc1efd5abea63a603d980f8ef853693694b"
+    },
+    {
+      "path": "result.json",
+      "bytes": 3070,
+      "sha256": "20fc80186672968824d99183bcc59a0a31e8d02133a27209ac8fd4acc201ff58"
+    },
+    {
+      "path": "reviewed-diagnostic-only.diff",
+      "bytes": 895,
+      "sha256": "9b6811d37b6bef32c5a49e5f48db08f4459a0cefc762f81eebda65b50d1165d2"
+    },
+    {
+      "path": "static-diagnostic-scope-trace.json",
+      "bytes": 4869,
+      "sha256": "eb91eb871c2df5f9dec9dca72fc50f887c1830f75aaa18a25abe97de8650aa68"
+    }
+  ],
+  "excludes_self": "files.json",
+  "all_entries_nonempty": true,
+  "total_files_including_manifest": 6
+}

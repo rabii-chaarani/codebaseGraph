@@ -1,0 +1,14 @@
+[
+  {
+    "manifest": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint01/files.json",
+    "SHA256": "a89cd9fc2049bc3f9f6a4150ddb1e79d6faf579e7aa7a295d1a3b94c4d89a875",
+    "closed_entries": 29,
+    "all_fullbytes_unchanged": true
+  },
+  {
+    "manifest": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/files.json",
+    "SHA256": "85f2f7d3afb065a5207b62d1e1fbc0f2558be9228815f7e612d1b7d9e975e4d2",
+    "closed_entries": 16,
+    "all_fullbytes_unchanged": true
+  }
+]

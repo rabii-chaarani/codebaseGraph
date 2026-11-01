@@ -1,0 +1,23 @@
+ M src/adapters/cli/tests/mcp.rs
+0413e543668f3e08003aa6a0d4ead350f49a61cc
+5141d876f604bea22efaea7224f47d50b3a2b81a
+diff --git a/src/adapters/cli/tests/mcp.rs b/src/adapters/cli/tests/mcp.rs
+index 036619c..2e9fe13 100644
+--- a/src/adapters/cli/tests/mcp.rs
++++ b/src/adapters/cli/tests/mcp.rs
+@@ -217,7 +217,12 @@ fn mcp_stdio_serves_tools_and_tool_errors() {
+         .get("include_structured_content")
+         .is_some()));
+ 
+-    assert_eq!(responses[2]["result"]["isError"], false);
++    assert_eq!(
++        responses[2]["result"]["isError"],
++        false,
++        "unexpected graph_health MCP response: {}",
++        serde_json::to_string_pretty(&responses[2]).unwrap()
++    );
+     assert_eq!(responses[2]["result"]["structuredContent"]["ok"], true);
+     assert_eq!(
+         responses[2]["result"]["structuredContent"]["refresh"]["enabled"],
+0413e543668f3e08003aa6a0d4ead350f49a61cc
+5141d876f604bea22efaea7224f47d50b3a2b81a

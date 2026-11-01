@@ -1,0 +1,115 @@
+{
+  "compiler_warning_count": 0,
+  "logs": [
+    {
+      "path": "exact-native-test.stderr.log",
+      "bytes": 611,
+      "SHA256": "6aea24176dc0c2cbd32178d2233b13931f8c76b40168247401f8b0c212809ab4",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    },
+    {
+      "path": "exact-native-test.stdout.log",
+      "bytes": 647,
+      "SHA256": "f4248d9905803bc74ffe6341cb8c12cc7da3dc64d273901f6bbf1714d43a10b5",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    },
+    {
+      "path": "focused-nextest-inventory.stderr.log",
+      "bytes": 612,
+      "SHA256": "3d2fa646b606d7f6537c56893424e5f9dffd5949019a6f961870b647dae017dd",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    },
+    {
+      "path": "focused-nextest-run.stderr.log",
+      "bytes": 457,
+      "SHA256": "e97ede633674f1e12367636133c0705d9f5336fbee044e4421a8557554a60f90",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    },
+    {
+      "path": "focused-nextest-run.stdout.log",
+      "bytes": 0,
+      "SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    },
+    {
+      "path": "format.stderr.log",
+      "bytes": 0,
+      "SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    },
+    {
+      "path": "format.stdout.log",
+      "bytes": 0,
+      "SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    },
+    {
+      "path": "root-strict-clippy.stderr.log",
+      "bytes": 617,
+      "SHA256": "6406655b62651ce6d769d8e8736c06d4ca5164ee7854238fec09ac51f575db6d",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    },
+    {
+      "path": "root-strict-clippy.stdout.log",
+      "bytes": 0,
+      "SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "warning_word_lines": [],
+      "compiler_warning_count": 0
+    }
+  ],
+  "executed_checks": [
+    {
+      "method": "cargo fmt --all --check",
+      "exit": 0,
+      "test_executions": 0
+    },
+    {
+      "method": "exact Cargo native-tests libtest case",
+      "exit": 0,
+      "test_executions": 1,
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 960
+    },
+    {
+      "method": "root strict Clippy lib/tests all-features -D warnings",
+      "exit": 0,
+      "test_executions": 0,
+      "actual_lint_compilation": "Requestedrootpackage lib/tests all-features,devprofile; no libtest/nextest execution, so no numeric passing-testcount inferred."
+    },
+    {
+      "method": "nextest focused inventory",
+      "exit": 0,
+      "test_executions": 0,
+      "listed": 848,
+      "selected_unignored": 1,
+      "filtered": 847
+    },
+    {
+      "method": "focused nextest genuine JUnit",
+      "exit": 0,
+      "test_executions": 1,
+      "passed": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped_XML": 0,
+      "skipped_selection_outside_XML": 847,
+      "retries": 0
+    }
+  ],
+  "phase_totals": {
+    "actual_test_process_executions": 2,
+    "executions_passed": 2,
+    "unique_test_names": 1,
+    "scope": "One exact MCP case, not103 nor fullworkspace/hostedplatform qualification."
+  }
+}

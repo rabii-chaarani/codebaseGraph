@@ -1,0 +1,46 @@
+{
+  "schema": "COD108 read-only MCP diagnosis handoff",
+  "artifact_directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/cod108-macos-mcp-failure-diagnosis",
+  "total_file_count_including_manifest": 3,
+  "explicit_non_manifest_file_count": 2,
+  "files": [
+    {
+      "path": "report.md",
+      "bytes": 7862,
+      "sha256": "82dca505dd3596ef144ddd2b90ade2f7e8a02f56a7affa867200f2a3532a5e4b"
+    },
+    {
+      "path": "result.json",
+      "bytes": 11461,
+      "sha256": "68af7f523c1203c5db73efe92df549f2f9fb7372733230b674a7a82e68775f8d"
+    }
+  ],
+  "manifest_note": "files.json is the third artifact; self-hash omitted.",
+  "read_only_supporting_evidence": {
+    "hosted_job_log": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/job-124897498528.log",
+      "bytes": 196683,
+      "sha256": "821e580b5cdf8ce20a4a6871004568f033d8c300a69fec17df167b9749f4a374"
+    },
+    "diagnostic_zip": {
+      "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/artifact-13092100404-test-diagnostics-macos-arm64-unit-shard0-1.zip",
+      "bytes": 46954,
+      "sha256": "647fb6f9228a42aaaf2c74182e55c0bb3d3c676858a355238113280a0846de70",
+      "members": [
+        "platform-test.log",
+        "source-sha.txt",
+        "tests/macos-arm64-unit/0-ignored.txt",
+        "tests/macos-arm64-unit/0-inventory.txt",
+        "tests/macos-arm64-unit/report.json"
+      ],
+      "member_hashes": {
+        "platform-test.log": "99b2a19c75f3b7c13913954373921baf4bfe8dd55993ab6a094a4c63e91f1087",
+        "source-sha.txt": "8505b809269faf1f67f87e27eadb89e83be0abe6c642553c262718edc681ccae",
+        "tests/macos-arm64-unit/0-ignored.txt": "a2fe139178113df66bc675ffca2a4cfffd24fec3db1370378ba07d5973e1eb06",
+        "tests/macos-arm64-unit/0-inventory.txt": "423c7db08e9ac5903c6af8c49af77aaa71c02c022402e9c20a0dc533d0415bb2",
+        "tests/macos-arm64-unit/report.json": "ba35dd35a48fce859e73a7bfd78da741bac9dac3b1aedd928600989b892cb87b"
+      }
+    },
+    "artifact_downloaded_or_rewritten": false
+  }
+}

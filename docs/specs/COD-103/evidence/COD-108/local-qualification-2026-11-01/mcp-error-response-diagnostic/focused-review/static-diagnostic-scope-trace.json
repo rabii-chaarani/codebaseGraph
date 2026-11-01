@@ -1,0 +1,53 @@
+{
+  "work_id": "COD-108",
+  "scope": "Diagnostic-only assertion message review; not a causal fix or full integrated-review restart",
+  "status": "static-review-complete; corrected diagnostic independent execution closure awaited",
+  "snapshot": {
+    "root": "/private/tmp/codebasegraph-cod108-20261101",
+    "HEAD": "0413e543668f3e08003aa6a0d4ead350f49a61cc",
+    "tree": "5141d876f604bea22efaea7224f47d50b3a2b81a",
+    "only_dirty_file": "src/adapters/cli/tests/mcp.rs",
+    "bytes": 19557,
+    "sha256": "772e2d7c7ad22cc4155875b5cdbf5a480ab688891a7a29ebd563ea6e7349164a"
+  },
+  "exact_entire_file_change": "Whole new file equals old frozen22cd after substituting only pretty JSON failure-message assert back to original comparison. Same left result.isError, rightfalse; all earlier/later assertions,requests,fixtures,process setup/runtimes untouched.",
+  "actual_test_path": "In-process serve_mcp_stdio(&options,Cursor(input),&mutoutput); responses parsed into serde_json::Value; third response is requestid3 graph_health. New failure formatting serializes existing responses[2], not another tool call or subprocess.",
+  "strongest_safeguards": "Assertion still requiresisError=false and health ok=true/refresh/backend/text/search/query-error checks remain. No retry,timeout,fallback,ignore,method-echo request,additional assertion or child stderr machinery. Pretty serializer gets a parsed serde_json::Value rather than executing PR data.",
+  "old_failure": {
+    "report_SHA256": "8a01801b16948f693a682fac60f0435ed592246f7f7db7803db838f9c55cd2cc",
+    "closed_manifest_entries_verified": 22,
+    "manifest_mismatches": [],
+    "run": 41323156535,
+    "attempt": 1,
+    "job": 124897498528,
+    "actual_source_S": "1c1730dfd06f238a6f6546e7e842a3988e52d61e",
+    "observed": "thirdgraph_healthisErrortrue,expectedfalse;fullerrorJSONwasnotcaptured",
+    "raw_job_excerpts": [
+      {
+        "line": 756,
+        "text": "2026-11-01T15:59:32.0637950Z test adapters::cli::tests::mcp::mcp_stdio_refresh_policy_off_is_watcher_free ... ok\n2026-11-01T15:59:38.5420830Z test adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors ... \n2026-11-01T15:59:38.5425600Z thread 'adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors' (48268) panicked at src/adapters/cli/tests/mcp.rs:220:5:\n2026-11-01T15:59:38.5427110Z assertion `left == right` failed\n2026-11-01T15:59:38.5427900Z   left: Bool(true)\n2026-11-01T15:59:38.5428530Z  right: false"
+      },
+      {
+        "line": 758,
+        "text": "2026-11-01T15:59:38.5425600Z thread 'adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors' (48268) panicked at src/adapters/cli/tests/mcp.rs:220:5:\n2026-11-01T15:59:38.5427110Z assertion `left == right` failed\n2026-11-01T15:59:38.5427900Z   left: Bool(true)\n2026-11-01T15:59:38.5428530Z  right: false\n2026-11-01T15:59:38.5429370Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n2026-11-01T15:59:38.5430630Z FAILED"
+      },
+      {
+        "line": 759,
+        "text": "2026-11-01T15:59:38.5427110Z assertion `left == right` failed\n2026-11-01T15:59:38.5427900Z   left: Bool(true)\n2026-11-01T15:59:38.5428530Z  right: false\n2026-11-01T15:59:38.5429370Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n2026-11-01T15:59:38.5430630Z FAILED\n2026-11-01T15:59:45.5648460Z test adapters::cli::tests::watch::changed_build_recovers_when_manifest_loses_existing_file_entry ... ok"
+      },
+      {
+        "line": 1830,
+        "text": "2026-11-01T16:31:15.2560390Z     adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors\n2026-11-01T16:31:15.2561060Z \n2026-11-01T16:31:15.2561850Z test result: FAILED. 845 passed; 1 failed; 2 ignored; 0 measured; 0 filtered out; finished in 2054.92s\n2026-11-01T16:31:15.2562780Z \n2026-11-01T16:31:15.2871560Z error: test failed, to rerun pass `-p codebase-graph --lib`\n2026-11-01T16:31:15.2955770Z native test command 1 finished in 2055.227s: Err(\"native test failed with status exit status: 101\")"
+      }
+    ],
+    "root_cause": "undetermined; no newcausal findingID/prio assigned from Booleanalone"
+  },
+  "unchanged_local_observation": {
+    "report_SHA256": "42c3ef98193dd1b468b72d9a35ff2c6b7e38007b07f44df180f610e1e98dc00b",
+    "closed_entries_verified": 14,
+    "result": "oneunchangednativeexactcasePASS/0retry;notflake/baseline/rootcause/hostedclear"
+  },
+  "remaining_hosted_gate": "Actual freshfullCI after separatelyauthorized diagnosticpush. DiagnosticlocalPASS alone cannot resolve old actualMacfailure or qualify allCOD108.",
+  "claim_authority": "Existingtestresp50unchanged; proportionalemptyledgerchg-c6x8xk read,no newintent/modelwrite. Existingapproved316be+0e6008/Design8/108two claimsunchanged.",
+  "reviewer_mutations": "Onlyownnewprivateartifacts; noCargo/source/Git/API/model/tracker/wiki/watch"
+}

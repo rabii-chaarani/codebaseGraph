@@ -1,0 +1,34 @@
+[
+  {
+    "kind": "completed_job_log",
+    "job_id": 124897498528,
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/job-124897498528.log",
+    "stderr": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/job-124897498528.stderr.txt",
+    "command": "gh api --allow-escape-sequences 'repos/rabii-chaarani/codebaseGraph/actions/jobs/124897498528/logs' > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/job-124897498528.log' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/job-124897498528.stderr.txt' ",
+    "exit_code": 0,
+    "duration_seconds": 2.6693083751015365,
+    "bytes": 196683,
+    "sha256": "821e580b5cdf8ce20a4a6871004568f033d8c300a69fec17df167b9749f4a374"
+  },
+  {
+    "kind": "diagnostic_artifact_zip",
+    "artifact_id": 13092100404,
+    "name": "test-diagnostics-macos-arm64-unit-shard0-1",
+    "path": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/artifact-13092100404-test-diagnostics-macos-arm64-unit-shard0-1.zip",
+    "stderr": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/artifact-13092100404.stderr.txt",
+    "command": "gh api 'repos/rabii-chaarani/codebaseGraph/actions/artifacts/13092100404/zip' > '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/artifact-13092100404-test-diagnostics-macos-arm64-unit-shard0-1.zip' 2> '/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/artifact-13092100404.stderr.txt' ",
+    "exit_code": 0,
+    "duration_seconds": 2.1118753750342876,
+    "bytes": 46954,
+    "sha256": "647fb6f9228a42aaaf2c74182e55c0bb3d3c676858a355238113280a0846de70",
+    "API_size_digest_equal": true,
+    "API_expired": false,
+    "workflow_run": {
+      "id": 41323156535,
+      "repository_id": 1235031738,
+      "head_repository_id": 1235031738,
+      "head_branch": "cod103-stack/cod-108",
+      "head_sha": "0413e543668f3e08003aa6a0d4ead350f49a61cc"
+    }
+  }
+]

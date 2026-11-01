@@ -1,0 +1,86 @@
+{
+  "Cargo.toml": {
+    "bytes": 2320,
+    "sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "Cargo.lock": {
+    "bytes": 52538,
+    "sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "build.rs": {
+    "bytes": 1925,
+    "sha256": "cd2da95e498f02c64109bd91cf963ed7bfa502488cd99d658eadb896de35b8de",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  ".cargo/config.toml": {
+    "bytes": 99,
+    "sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "src/adapters/cli/tests/mcp.rs": {
+    "bytes": 19421,
+    "sha256": "22cd4cef51368a0f3050641e7e437d7fbc4d798e6337b87c3bf1b446cf3081bc",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "src/adapters/cli/tests/mod.rs": {
+    "bytes": 421,
+    "sha256": "4af78fca9d33196268b95f121bafe908771853e10c29bdac0e1dc3865bf2770d",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "src/adapters/cli/tests/fixtures.rs": {
+    "bytes": 5803,
+    "sha256": "63d2aa157ff043e5ccbf6e010074feb3e6ad1f9682d91603382f686eb676facd",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "src/adapters/mcp/stdio.rs": {
+    "bytes": 3615,
+    "sha256": "5b305dce4d89bb50c07699605b9114777933943694e9a2eb9cab5a2dabe55b38",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "src/api/context.rs": {
+    "bytes": 67931,
+    "sha256": "da07ae3b85d43d45c69cb89739c0f1ccc7d4234ed837fe1bd4fd05c07071a677",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "src/api/refresh.rs": {
+    "bytes": 141654,
+    "sha256": "2cbe8222d464e68baf6234a1ac9bcc61eb96c78a0b5a9fece815ee8ba6c3eaf6",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "src/coordinator.rs": {
+    "bytes": 59342,
+    "sha256": "a11b7ceb26cc38e7e331ec23e07c752fd00197fea2abede8f9dac6dfbd8d5879",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "crates/xtask/src/native_tests.rs": {
+    "bytes": 16415,
+    "sha256": "ada965856dbc889902c68a01c1e5fbe33c4a050dc84e915a5e07244162d7e5a4",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "crates/xtask/src/ci.rs": {
+    "bytes": 49894,
+    "sha256": "52595249047f49a2b8c9dece9fb48fbbafda6cd5e70849c5b8ffaf252c0f400c",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  },
+  "crates/xtask/src/main.rs": {
+    "bytes": 235135,
+    "sha256": "94e36cb3ceed27f45b552e42c9d6a52aa7cfef8dd70876f6e6ab4e562ec8891d",
+    "canonical_and_isolated_equal": true,
+    "unchanged_after_single_native_execution": true
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "actual_frozen_current_ci_SHA256": "52595249047f49a2b8c9dece9fb48fbbafda6cd5e70849c5b8ffaf252c0f400c",
+  "source_commit_binding": "0413/tree5141 closed4241; runreferencednativeworkflow+jobactualcheckout1c173source/diagnostic agrees/immutableGitAPIparents90af0413/tree5141",
+  "source3actual_definitions": [
+    {
+      "symbol": "git_path_names_are_nul_delimited_and_extra_paths_force_full",
+      "line": 1239,
+      "definition": "1239:     fn git_path_names_are_nul_delimited_and_extra_paths_force_full() {\n1240:         let fixture = Fixture::new();\n1241:         let base = base_files();\n1242:         let base_sha = fixture.commit(&base, \"base\");\n1243:         let head = bumped(&base, \"4.0.5\", \"4.0.6\");\n1244:         let head_sha = fixture.commit(&head, \"release\");\n1245:         let extra = fixture.root.join(\"unrelated-extra.txt\");\n1246:         fs::write(&extra, \"not metadata\\n\").unwrap();\n1247:         git(&fixture.root, [\"add\", \"--all\"]);\n1248:         git(\n1249:             &fixture.root,\n1250:             [\n1251:                 \"-c\",\n1252:                 \"user.name=COD-108 tests\",\n1253:                 \"-c\",\n1254:                 \"user.email=cod108@example.invalid\",\n1255:                 \"commit\",\n1256:                 \"--quiet\",\n1257:                 \"-m\",\n1258:                 \"extra portable path\",\n1259:             ],\n1260:         );\n1261:         let with_extra = String::from_utf8(git_output(&fixture.root, [\"rev-parse\", \"HEAD\"]).stdout)\n1262:             .unwrap()\n1263:             .trim()\n1264:             .to_string();\n1265:         assert_eq!(\n1266:             acquire_and_classify(&fixture.root, &head_sha, &with_extra),\n1267:             MetadataDecision::Full {\n1268:                 reason_code: \"changed-path-set\"\n1269:             }\n1270:         );\n1271:         assert_ne!(base_sha, head_sha);\n1272:     }\n1273: ",
+      "preceding_attributes": [
+        "        );",
+        "    }",
+        "    #[test]"
+      ]
+    },
+    {
+      "symbol": "git_newline_path_names_remain_nul_delimited",
+      "line": 1276,
+      "definition": "1276:     fn git_newline_path_names_remain_nul_delimited() {\n1277:         let fixture = Fixture::new();\n1278:         let base = base_files();\n1279:         fixture.commit(&base, \"base\");\n1280:         let head = bumped(&base, \"4.0.5\", \"4.0.6\");\n1281:         let head_sha = fixture.commit(&head, \"release\");\n1282:         let newline_path = fixture.root.join(\"unrelated name\\nwith newline.txt\");\n1283:         fs::write(&newline_path, \"not metadata\\n\").unwrap();\n1284:         git(&fixture.root, [\"add\", \"--all\"]);\n1285:         git(\n1286:             &fixture.root,\n1287:             [\n1288:                 \"-c\",\n1289:                 \"user.name=COD-108 tests\",\n1290:                 \"-c\",\n1291:                 \"user.email=cod108@example.invalid\",\n1292:                 \"commit\",\n1293:                 \"--quiet\",\n1294:                 \"-m\",\n1295:                 \"newline path\",\n1296:             ],\n1297:         );\n1298:         let with_newline =\n1299:             String::from_utf8(git_output(&fixture.root, [\"rev-parse\", \"HEAD\"]).stdout)\n1300:                 .unwrap()\n1301:                 .trim()\n1302:                 .to_string();\n1303:         assert_eq!(\n1304:             acquire_and_classify(&fixture.root, &head_sha, &with_newline),\n1305:             MetadataDecision::Full {\n1306:                 reason_code: \"changed-path-set\"\n1307:             }\n1308:         );\n1309:     }\n1310: ",
+      "preceding_attributes": [
+        "",
+        "    #[cfg(unix)]",
+        "    #[test]"
+      ]
+    },
+    {
+      "symbol": "raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records",
+      "line": 1337,
+      "definition": "1337:     fn raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records() {\n1338:         use super::parse_raw_diff;\n1339: \n1340:         let valid = b\":100644 100644 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 M\\0a\\nfile.txt\\0\";\n1341:         let parsed = parse_raw_diff(valid).unwrap();\n1342:         assert_eq!(parsed.len(), 1);\n1343:         assert_eq!(parsed[0].path, \"a\\nfile.txt\");\n1344:         assert!(matches!(parse_raw_diff(b\":100644 100644 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 Q\\0name\\0\"), Err(\"git-acquisition-failed\")));\n1345:         assert!(matches!(parse_raw_diff(b\":100644 100644 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 M\\0\"), Err(\"git-acquisition-failed\")));\n1346:         assert!(matches!(parse_raw_diff(b\":100644 100644 1111111111111111111111111111111111111111 2222222222222222222222222222222222222222 M\\0path\\0trailing\"), Err(\"git-acquisition-failed\")));\n1347:     }\n1348: ",
+      "preceding_attributes": [
+        "    }",
+        "",
+        "    #[test]"
+      ]
+    }
+  ],
+  "FR001_actual_Windows_portable_test_pass": [
+    {
+      "line": 555,
+      "name": "ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full",
+      "status": "ok"
+    }
+  ],
+  "same_oracle_preserved": "ActualfrozenportabletestcommitsWindows-validextra-path, callsacquire_and_classify thenassertsFull reasonchanged-path-set. Actualnamedcaseokafterwholejobcompileisnotjustsummary.",
+  "actual_Windows_source_unit_inventory_harness_counts": [
+    830,
+    0,
+    10,
+    0,
+    63
+  ],
+  "actual_Windows_xtask_discovered_count": 63,
+  "actual_Windows_full_xtask_names": [
+    "ci::tests::classifier_requires_strictly_increasing_versions_and_new_changelog_section",
+    "ci::tests::git_acquisition_failures_select_full_and_same_sha_is_full",
+    "ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full",
+    "ci::tests::immutable_git_diff_rejects_added_deleted_and_symlink_paths",
+    "ci::tests::immutable_git_diff_rejects_submodule_mode",
+    "ci::tests::immutable_git_diff_requires_ancestor_and_exact_metadata_paths",
+    "ci::tests::metadata_classifier_rejects_duplicate_and_decoy_contexts",
+    "ci::tests::metadata_classifier_rejects_partial_mismatch_external_lock_and_history_edits",
+    "ci::tests::metadata_recognizers_reject_multiline_comment_context_and_duplicate_workspace_records",
+    "ci::tests::pr165_shaped_complete_metadata_transition_is_lightweight",
+    "ci::tests::pr167_shaped_complete_metadata_transition_is_lightweight",
+    "ci::tests::raw_diff_parser_accepts_newline_names_and_rejects_unknown_or_truncated_records",
+    "macos::tests::dependency_parser_preserves_paths_with_spaces",
+    "macos::tests::dylib_dependency_parser_filters_only_matching_install_id",
+    "macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands",
+    "macos::tests::rpath_parser_reads_and_rejects_malformed_entries",
+    "macos::tests::source_archive_accepts_comment_metadata_without_extracting_it",
+    "native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite",
+    "native_tests::shards::tests::selected_exact_filters_execute_the_expected_real_harness_cases",
+    "native_tests::shards::tests::shards_cover_every_listed_case_once_and_bound_windows_arguments",
+    "native_tests::tests::captured_cli_survives_cargo_replacing_its_output",
+    "native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets",
+    "native_tests::tests::windows_regressions_precede_the_complete_unfiltered_suite",
+    "release::tests::metadata_rejects_inconsistent_versions",
+    "release::tests::notes_only_include_the_exact_release",
+    "release::tests::notes_reject_missing_duplicate_and_empty_sections",
+    "tests::archive_contract_rejects_unexpected_entries",
+    "tests::ci_mode_policy_rejects_missing_selector_wiring_and_repository_gate_ownership",
+    "tests::complete_artifact_set_rejects_mixed_provenance",
+    "tests::crate_size_validation_enforces_the_registry_limit",
+    "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+    "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+    "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+    "tests::mcp_smoke_accepts_valid_initialize_and_tools",
+    "tests::mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses",
+    "tests::mcp_smoke_rejects_nonzero_child_with_success_payload",
+    "tests::native_capture_requires_unique_source_bound_normal_cli_artifact",
+    "tests::native_capture_reuses_the_exact_test_profile_and_features",
+    "tests::native_payload_integrity_covers_runtime_files_and_preserves_windows_inventory",
+    "tests::native_target_contract_maps_names_and_binaries",
+    "tests::native_test_failure_cannot_authorize_artifact_production",
+    "tests::release_identity_validation_is_strict",
+    "tests::windows_native_tests_forward_bundled_extensions",
+    "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+    "tests::workflow_policy_rejects_automatic_rebuild_recovery",
+    "tests::workflow_policy_rejects_direct_release_push_trigger",
+    "tests::workflow_policy_rejects_github_sha_for_release_identity",
+    "tests::workflow_policy_rejects_missing_ci_success_guard",
+    "tests::workflow_policy_rejects_missing_crate_publish_retry",
+    "tests::workflow_policy_rejects_missing_crate_size_gates",
+    "tests::workflow_policy_rejects_missing_repository_release_gate",
+    "tests::workflow_policy_rejects_missing_triggering_run_binding",
+    "tests::workflow_policy_rejects_privileged_pr_event",
+    "tests::workflow_policy_rejects_release_queue_replacement",
+    "tests::workflow_policy_rejects_unapproved_pull_request_activity",
+    "tests::workflow_policy_rejects_unconditional_release_publication",
+    "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+    "tests::workflow_policy_rejects_unvalidated_publishers",
+    "tests::workflow_policy_requires_ci_completion_release_trigger",
+    "tests::workflow_policy_requires_publication_revalidation",
+    "tests::workflow_policy_retention_wiring_is_closed",
+    "tests::workflow_yaml_validation_rejects_unindented_heredoc_body",
+    "tests::workflows_reject_removed_platform_targets"
+  ],
+  "raw_parser_discovered_not_selected_unit2": true,
+  "raw_parser_execution_elsewhere": "PendingfinalotherWindowsdiagnostic; no otherartifactfetchauthorizednow,no inventedPASS fromdiscovery",
+  "addedUnix_newline_case": "ActuallyabsentWindowsinventorybycfg(unix), notignoredrequiredtest/Windows103pass",
+  "job_platform_environment": [
+    {
+      "line": 4,
+      "text": "2026-11-01T15:49:37.1162353Z Version: 20261021.618"
+    },
+    {
+      "line": 11,
+      "text": "2026-11-01T15:49:37.1166370Z ##[group]Operating System"
+    },
+    {
+      "line": 12,
+      "text": "2026-11-01T15:49:37.1166946Z Microsoft Windows Server 2022"
+    },
+    {
+      "line": 17,
+      "text": "2026-11-01T15:49:37.1169176Z Image: windows-2022"
+    },
+    {
+      "line": 18,
+      "text": "2026-11-01T15:49:37.1169606Z Version: 20261025.346.1"
+    },
+    {
+      "line": 380,
+      "text": "2026-11-01T15:55:20.5191314Z   LBUG_LIBRARY_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64"
+    },
+    {
+      "line": 382,
+      "text": "2026-11-01T15:55:20.5192667Z   RUST_TEST_NOCAPTURE: 1"
+    },
+    {
+      "line": 383,
+      "text": "2026-11-01T15:55:20.5192976Z   RUST_TEST_THREADS: 1"
+    },
+    {
+      "line": 384,
+      "text": "2026-11-01T15:55:20.5193330Z   SOURCE_SHA: 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+    },
+    {
+      "line": 1308,
+      "text": "2026-11-01T16:08:31.9933638Z   LBUG_LIBRARY_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64"
+    }
+  ],
+  "old_failed_job124880650882_sourceSc2e6": "OriginalInvalidFilename123atoldb8971246remainsrealhistory; thisnewactualWindowsportablecasecorrectsfixturebehavioronly, notretroclearsoldattempt."
+}

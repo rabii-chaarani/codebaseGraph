@@ -1,0 +1,1360 @@
+﻿2026-11-01T15:49:37.1140208Z Current runner version: '2.338.2'
+2026-11-01T15:49:37.1161185Z ##[group]Runner Image Provisioner
+2026-11-01T15:49:37.1161873Z Hosted Compute Agent
+2026-11-01T15:49:37.1162353Z Version: 20261021.618
+2026-11-01T15:49:37.1162827Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+2026-11-01T15:49:37.1163437Z Build Date: 2026-10-21T00:45:21Z
+2026-11-01T15:49:37.1163977Z Worker ID: {a8b7df70-403f-46b9-81b5-fe49a4feb49c}
+2026-11-01T15:49:37.1164554Z Region: westus3
+2026-11-01T15:49:37.1164967Z Cloud: Azure
+2026-11-01T15:49:37.1165374Z ##[endgroup]
+2026-11-01T15:49:37.1166370Z ##[group]Operating System
+2026-11-01T15:49:37.1166946Z Microsoft Windows Server 2022
+2026-11-01T15:49:37.1167426Z 10.0.20348
+2026-11-01T15:49:37.1167842Z Datacenter
+2026-11-01T15:49:37.1168249Z ##[endgroup]
+2026-11-01T15:49:37.1168702Z ##[group]Runner Image
+2026-11-01T15:49:37.1169176Z Image: windows-2022
+2026-11-01T15:49:37.1169606Z Version: 20261025.346.1
+2026-11-01T15:49:37.1171548Z Included Software: https://github.com/actions/runner-images/blob/win22/20261025.346/images/windows/Windows2022-Readme.md
+2026-11-01T15:49:37.1172822Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20261025.346
+2026-11-01T15:49:37.1173561Z ##[endgroup]
+2026-11-01T15:49:37.1174474Z ##[group]GITHUB_TOKEN Permissions
+2026-11-01T15:49:37.1176147Z Contents: read
+2026-11-01T15:49:37.1176570Z Metadata: read
+2026-11-01T15:49:37.1176972Z ##[endgroup]
+2026-11-01T15:49:37.1178698Z Secret source: Actions
+2026-11-01T15:49:37.1179349Z Cache mode: write
+2026-11-01T15:49:37.1179892Z Prepare workflow directory
+2026-11-01T15:49:37.1519605Z Prepare all required actions
+2026-11-01T15:49:37.1581556Z Getting action download info
+2026-11-01T15:49:37.5048089Z Download action repository 'actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10' (SHA:df4cb1c069e1874edd31b4311f1884172cec0e10)
+2026-11-01T15:49:37.5983660Z Download action repository 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' (SHA:043fb46d1a93c77aae656e7c1c64a875d1fc6a0a)
+2026-11-01T15:49:37.8049310Z Uses: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/175/merge (1c1730dfd06f238a6f6546e7e842a3988e52d61e)
+2026-11-01T15:49:37.8054261Z ##[group] Inputs
+2026-11-01T15:49:37.8054887Z   target: windows-x86_64
+2026-11-01T15:49:37.8055524Z   source-sha: 1c1730dfd06f238a6f6546e7e842a3988e52d61e
+2026-11-01T15:49:37.8056481Z   run-tests: true
+2026-11-01T15:49:37.8057013Z   upload-artifact: false
+2026-11-01T15:49:37.8057980Z   artifact-retention-days: 90
+2026-11-01T15:49:37.8058587Z ##[endgroup]
+2026-11-01T15:49:37.8059352Z Complete job name: native (windows-x86_64) / native tests (windows-x86_64, unit, shard 2)
+2026-11-01T15:49:37.9581783Z ##[group]Run actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+2026-11-01T15:49:37.9583306Z with:
+2026-11-01T15:49:37.9583832Z   ref: 1c1730dfd06f238a6f6546e7e842a3988e52d61e
+2026-11-01T15:49:37.9584500Z   repository: rabii-chaarani/codebaseGraph
+2026-11-01T15:49:37.9588759Z   token: ***
+2026-11-01T15:49:37.9589254Z   ssh-strict: true
+2026-11-01T15:49:37.9589699Z   ssh-user: git
+2026-11-01T15:49:37.9590161Z   persist-credentials: true
+2026-11-01T15:49:37.9590652Z   clean: true
+2026-11-01T15:49:37.9591467Z   sparse-checkout-cone-mode: true
+2026-11-01T15:49:37.9592004Z   fetch-depth: 1
+2026-11-01T15:49:37.9592446Z   fetch-tags: false
+2026-11-01T15:49:37.9592909Z   show-progress: true
+2026-11-01T15:49:37.9593354Z   lfs: false
+2026-11-01T15:49:37.9593793Z   submodules: false
+2026-11-01T15:49:37.9594253Z   set-safe-directory: true
+2026-11-01T15:49:37.9594973Z env:
+2026-11-01T15:49:37.9595433Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T15:49:37.9596059Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T15:49:37.9596608Z   CARGO_NET_RETRY: 10
+2026-11-01T15:49:37.9597057Z ##[endgroup]
+2026-11-01T15:49:38.1006661Z Syncing repository: rabii-chaarani/codebaseGraph
+2026-11-01T15:49:38.1008494Z ##[group]Getting Git version info
+2026-11-01T15:49:38.1009282Z Working directory is 'D:\a\codebaseGraph\codebaseGraph'
+2026-11-01T15:49:38.1987466Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-01T15:49:38.5214543Z git version 2.56.0.windows.3
+2026-11-01T15:49:38.5261565Z ##[endgroup]
+2026-11-01T15:49:38.5279479Z Temporarily overriding HOME='D:\a\_temp\7b1f3b40-fdae-4c81-9b44-175f28d57e20' before making global git config changes
+2026-11-01T15:49:38.5281243Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-01T15:49:38.5290366Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\codebaseGraph\codebaseGraph
+2026-11-01T15:49:38.5924146Z Deleting the contents of 'D:\a\codebaseGraph\codebaseGraph'
+2026-11-01T15:49:38.5929387Z ##[group]Determining repository object format
+2026-11-01T15:49:38.5932311Z ##[endgroup]
+2026-11-01T15:49:38.5933660Z ##[group]Initializing the repository
+2026-11-01T15:49:38.5942509Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\codebaseGraph\codebaseGraph
+2026-11-01T15:49:38.6657995Z Initialized empty Git repository in D:/a/codebaseGraph/codebaseGraph/.git/
+2026-11-01T15:49:38.6699242Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/rabii-chaarani/codebaseGraph
+2026-11-01T15:49:38.7299873Z ##[endgroup]
+2026-11-01T15:49:38.7303184Z ##[group]Disabling automatic garbage collection
+2026-11-01T15:49:38.7305167Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-11-01T15:49:38.7625526Z ##[endgroup]
+2026-11-01T15:49:38.7627222Z ##[group]Setting up auth
+2026-11-01T15:49:38.7628511Z Removing SSH command configuration
+2026-11-01T15:49:38.7637929Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-01T15:49:38.7927654Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-01T15:49:40.1515460Z Removing HTTP extra header
+2026-11-01T15:49:40.1526302Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-01T15:49:40.1827234Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-01T15:49:40.6430718Z Removing includeIf entries pointing to credentials config files
+2026-11-01T15:49:40.6448898Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-01T15:49:40.6730267Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-01T15:49:41.1315658Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-11-01T15:49:41.1609131Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path D:\a\_temp\git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T15:49:41.1874925Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path D:\a\_temp\git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T15:49:41.2211512Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T15:49:41.2473497Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T15:49:41.2747594Z ##[endgroup]
+2026-11-01T15:49:41.2748343Z ##[group]Fetching the repository
+2026-11-01T15:49:41.2761308Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 1c1730dfd06f238a6f6546e7e842a3988e52d61e
+2026-11-01T15:49:43.1216710Z From https://github.com/rabii-chaarani/codebaseGraph
+2026-11-01T15:49:43.1219540Z  * branch            1c1730dfd06f238a6f6546e7e842a3988e52d61e -> FETCH_HEAD
+2026-11-01T15:49:43.1263129Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse --verify --quiet 1c1730dfd06f238a6f6546e7e842a3988e52d61e^{object}
+2026-11-01T15:49:43.1579398Z 1c1730dfd06f238a6f6546e7e842a3988e52d61e
+2026-11-01T15:49:43.1611549Z ##[endgroup]
+2026-11-01T15:49:43.1612291Z ##[group]Determining the checkout info
+2026-11-01T15:49:43.1612957Z ##[endgroup]
+2026-11-01T15:49:43.1619748Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-11-01T15:49:43.1960702Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-11-01T15:49:43.2248347Z ##[group]Checking out the ref
+2026-11-01T15:49:43.2255110Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force 1c1730dfd06f238a6f6546e7e842a3988e52d61e
+2026-11-01T15:49:43.8231341Z Note: switching to '1c1730dfd06f238a6f6546e7e842a3988e52d61e'.
+2026-11-01T15:49:43.8231727Z 
+2026-11-01T15:49:43.8231935Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-01T15:49:43.8232539Z changes and commit them, and you can discard any commits you make in this
+2026-11-01T15:49:43.8233288Z state without impacting any branches by switching back to a branch.
+2026-11-01T15:49:43.8233706Z 
+2026-11-01T15:49:43.8234093Z If you want to create a new branch to retain commits you create, you may
+2026-11-01T15:49:43.8234819Z do so (now or later) by using -c with the switch command. Example:
+2026-11-01T15:49:43.8235195Z 
+2026-11-01T15:49:43.8235421Z   git switch -c <new-branch-name>
+2026-11-01T15:49:43.8235714Z 
+2026-11-01T15:49:43.8235876Z Or undo this operation with:
+2026-11-01T15:49:43.8236246Z 
+2026-11-01T15:49:43.8236342Z   git switch -
+2026-11-01T15:49:43.8236501Z 
+2026-11-01T15:49:43.8236728Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-01T15:49:43.8237149Z 
+2026-11-01T15:49:43.8237552Z HEAD is now at 1c1730d Merge 0413e543668f3e08003aa6a0d4ead350f49a61cc into 90af76d3453a6f5cc0f032045ed48c4fd09c275c
+2026-11-01T15:49:43.8852418Z ##[endgroup]
+2026-11-01T15:49:43.8860087Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-11-01T15:49:43.9138391Z 1c1730dfd06f238a6f6546e7e842a3988e52d61e
+2026-11-01T15:49:43.9605828Z Prepare all required actions
+2026-11-01T15:49:43.9606629Z Getting action download info
+2026-11-01T15:49:44.0834613Z Download action repository 'actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae' (SHA:27d5ce7f107fe9357f9df03efb73ab90386fccae)
+2026-11-01T15:49:44.2650315Z ##[group]Run ./.github/actions/setup-native
+2026-11-01T15:49:44.2650695Z with:
+2026-11-01T15:49:44.2651074Z   target: windows-x86_64
+2026-11-01T15:49:44.2651386Z env:
+2026-11-01T15:49:44.2651661Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T15:49:44.2652015Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T15:49:44.2652324Z   CARGO_NET_RETRY: 10
+2026-11-01T15:49:44.2652600Z ##[endgroup]
+2026-11-01T15:49:44.2718217Z ##[start-action display=Validate target host;id=__self.__run]
+2026-11-01T15:49:44.2843759Z ##[group]Run set -euo pipefail
+2026-11-01T15:49:44.2844261Z [36;1mset -euo pipefail[0m
+2026-11-01T15:49:44.2844690Z [36;1mcase "${NATIVE_TARGET}:${RUNNER_OS}:${RUNNER_ARCH}" in[0m
+2026-11-01T15:49:44.2845317Z [36;1m  macos-arm64:macOS:ARM64|windows-x86_64:Windows:X64) ;;[0m
+2026-11-01T15:49:44.2845722Z [36;1m  *)[0m
+2026-11-01T15:49:44.2846135Z [36;1m    echo "Target ${NATIVE_TARGET} does not match ${RUNNER_OS}/${RUNNER_ARCH}." >&2[0m
+2026-11-01T15:49:44.2846623Z [36;1m    exit 1[0m
+2026-11-01T15:49:44.2846911Z [36;1m    ;;[0m
+2026-11-01T15:49:44.2847168Z [36;1mesac[0m
+2026-11-01T15:49:44.2862849Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-11-01T15:49:44.2863353Z env:
+2026-11-01T15:49:44.2863642Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T15:49:44.2863974Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T15:49:44.2864322Z   CARGO_NET_RETRY: 10
+2026-11-01T15:49:44.2864616Z   NATIVE_TARGET: windows-x86_64
+2026-11-01T15:49:44.2864924Z ##[endgroup]
+2026-11-01T15:49:44.4491685Z ##[end-action id=__self.__run;outcome=success;conclusion=success;duration_ms=177]
+2026-11-01T15:49:44.4494818Z ##[start-action display=Prepare Windows OpenSSL static libraries;id=__self.__run_2]
+2026-11-01T15:49:44.4619233Z ##[group]Run $ErrorActionPreference = 'Stop'
+2026-11-01T15:49:44.4619743Z [36;1m$ErrorActionPreference = 'Stop'[0m
+2026-11-01T15:49:44.4620083Z [36;1m$triplet = 'x64-windows-static'[0m
+2026-11-01T15:49:44.4620467Z [36;1mvcpkg install "openssl:$triplet"[0m
+2026-11-01T15:49:44.4620969Z [36;1m$vcpkgRoot = if ($env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_INSTALLATION_ROOT } else { 'C:\vcpkg' }[0m
+2026-11-01T15:49:44.4621490Z [36;1m$libDir = Join-Path $vcpkgRoot "installed\$triplet\lib"[0m
+2026-11-01T15:49:44.4621995Z [36;1m$linkDir = Join-Path $env:RUNNER_TEMP 'lbug-openssl'[0m
+2026-11-01T15:49:44.4622454Z [36;1mNew-Item -ItemType Directory -Force -Path $linkDir | Out-Null[0m
+2026-11-01T15:49:44.4623042Z [36;1mCopy-Item -LiteralPath (Join-Path $libDir 'libssl.lib') -Destination (Join-Path $linkDir 'ssl.lib')[0m
+2026-11-01T15:49:44.4623709Z [36;1mCopy-Item -LiteralPath (Join-Path $libDir 'libcrypto.lib') -Destination (Join-Path $linkDir 'crypto.lib')[0m
+2026-11-01T15:49:44.4624296Z [36;1m"LIB=$linkDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append[0m
+2026-11-01T15:49:44.4741981Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-11-01T15:49:44.4742501Z env:
+2026-11-01T15:49:44.4742779Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T15:49:44.4743105Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T15:49:44.4743404Z   CARGO_NET_RETRY: 10
+2026-11-01T15:49:44.4743672Z ##[endgroup]
+2026-11-01T15:49:45.0771165Z Computing installation plan...
+2026-11-01T15:49:46.0324886Z A suitable version of cmake was not found (required v4.4.3).
+2026-11-01T15:49:46.0326039Z Downloading https://github.com/Kitware/CMake/releases/download/v4.4.3/cmake-4.4.3-windows-x86_64.zip -> cmake-4.4.3-windows-x86_64.zip
+2026-11-01T15:49:46.6938696Z Successfully downloaded cmake-4.4.3-windows-x86_64.zip
+2026-11-01T15:49:46.6939270Z Extracting cmake...
+2026-11-01T15:49:57.4100777Z The following packages will be built and installed:
+2026-11-01T15:49:57.4101356Z     openssl:x64-windows-static@3.6.5#2
+2026-11-01T15:49:57.4101702Z   * vcpkg-cmake:x64-windows@2025-08-07
+2026-11-01T15:49:57.4102050Z   * vcpkg-cmake-config:x64-windows@2026-07-21
+2026-11-01T15:49:57.4102449Z   * vcpkg-cmake-get-vars:x64-windows@2025-05-29
+2026-11-01T15:49:57.4102871Z Additional packages (*) will be modified to complete this operation.
+2026-11-01T15:49:57.8122314Z Detecting compiler hash for triplet x64-windows...
+2026-11-01T15:50:08.4388202Z Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+2026-11-01T15:50:08.4795695Z Detecting compiler hash for triplet x64-windows-static...
+2026-11-01T15:50:08.9998509Z Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+2026-11-01T15:50:09.0931953Z Restored 0 package(s) from C:\Users\runneradmin\AppData\Local\vcpkg\archives in 448 us. Use --debug to see more details.
+2026-11-01T15:50:09.0932909Z Installing 1/4 vcpkg-cmake:x64-windows@2025-08-07...
+2026-11-01T15:50:09.0933500Z vcpkg-cmake:x64-windows@2025-08-07 package ABI: 96e12192782de41946d81095f8f0dc3dc286f5009619287c531a4244edf2b870
+2026-11-01T15:50:09.0934299Z Building vcpkg-cmake:x64-windows@2025-08-07...
+2026-11-01T15:50:09.1203010Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_configure.cmake
+2026-11-01T15:50:09.1211217Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_build.cmake
+2026-11-01T15:50:09.1216724Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg_cmake_install.cmake
+2026-11-01T15:50:09.1239865Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/vcpkg-port-config.cmake
+2026-11-01T15:50:09.1252635Z -- Installing: C:/vcpkg/packages/vcpkg-cmake_x64-windows/share/vcpkg-cmake/copyright
+2026-11-01T15:50:09.1365334Z -- Performing post-build validation
+2026-11-01T15:50:09.1469376Z Starting submission of vcpkg-cmake:x64-windows@2025-08-07 to 1 binary cache(s) in the background
+2026-11-01T15:50:09.1470310Z Elapsed time to handle vcpkg-cmake:x64-windows: 53.8 ms
+2026-11-01T15:50:09.1470934Z Installing 2/4 vcpkg-cmake-config:x64-windows@2026-07-21...
+2026-11-01T15:50:09.1471833Z vcpkg-cmake-config:x64-windows@2026-07-21 package ABI: 00439fc42220b085e4826c48422682a1c437698d0723893c6bf84b66a22638a7
+2026-11-01T15:50:09.1472774Z Building vcpkg-cmake-config:x64-windows@2026-07-21...
+2026-11-01T15:50:09.1831454Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/vcpkg_cmake_config_fixup.cmake
+2026-11-01T15:50:09.1878828Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/vcpkg-port-config.cmake
+2026-11-01T15:50:09.1888236Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-config_x64-windows/share/vcpkg-cmake-config/copyright
+2026-11-01T15:50:09.2009112Z -- Skipping post-build validation due to VCPKG_POLICY_EMPTY_PACKAGE
+2026-11-01T15:50:09.2150819Z Starting submission of vcpkg-cmake-config:x64-windows@2026-07-21 to 1 binary cache(s) in the background
+2026-11-01T15:50:09.2152129Z Elapsed time to handle vcpkg-cmake-config:x64-windows: 68.1 ms
+2026-11-01T15:50:09.2152856Z Installing 3/4 vcpkg-cmake-get-vars:x64-windows@2025-05-29...
+2026-11-01T15:50:09.2153613Z vcpkg-cmake-get-vars:x64-windows@2025-05-29 package ABI: 552e45a21931757813ef25f0b6ba88fff746670acf7cb2fc702473be14699109
+2026-11-01T15:50:09.2154226Z Building vcpkg-cmake-get-vars:x64-windows@2025-05-29...
+2026-11-01T15:50:09.2458204Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/vcpkg_cmake_get_vars.cmake
+2026-11-01T15:50:09.2465362Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake_get_vars
+2026-11-01T15:50:09.2474991Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake_get_vars/CMakeLists.txt
+2026-11-01T15:50:09.2483830Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/cmake-get-vars.cmake.in
+2026-11-01T15:50:09.2509618Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/vcpkg-port-config.cmake
+2026-11-01T15:50:09.2542454Z -- Installing: C:/vcpkg/packages/vcpkg-cmake-get-vars_x64-windows/share/vcpkg-cmake-get-vars/copyright
+2026-11-01T15:50:09.2603859Z -- Performing post-build validation
+2026-11-01T15:50:09.2733740Z Starting submission of vcpkg-cmake-get-vars:x64-windows@2025-05-29 to 1 binary cache(s) in the background
+2026-11-01T15:50:09.2734599Z Elapsed time to handle vcpkg-cmake-get-vars:x64-windows: 58.3 ms
+2026-11-01T15:50:09.2735239Z Completed submission of vcpkg-cmake:x64-windows@2025-08-07 to 1 binary cache(s) in 73.1 ms
+2026-11-01T15:50:09.2735891Z Completed submission of vcpkg-cmake-config:x64-windows@2026-07-21 to 1 binary cache(s) in 46.7 ms
+2026-11-01T15:50:09.2736458Z Installing 4/4 openssl:x64-windows-static@3.6.5#2...
+2026-11-01T15:50:09.2737125Z openssl:x64-windows-static@3.6.5#2 package ABI: c1906a984f630b626b52edcb311eea6ae319d555f574ce5683a3be8215792375
+2026-11-01T15:50:09.2737710Z Building openssl:x64-windows-static@3.6.5#2...
+2026-11-01T15:50:09.3124619Z Downloading https://github.com/openssl/openssl/archive/openssl-3.6.5.tar.gz -> openssl-openssl-openssl-3.6.5.tar.gz
+2026-11-01T15:50:10.8838726Z Successfully downloaded openssl-openssl-openssl-3.6.5.tar.gz
+2026-11-01T15:50:11.0727172Z -- Extracting source C:/vcpkg/downloads/openssl-openssl-openssl-3.6.5.tar.gz
+2026-11-01T15:50:16.0875324Z -- Applying patch cmake-config.patch
+2026-11-01T15:50:16.1217540Z -- Applying patch command-line-length.patch
+2026-11-01T15:50:16.1496445Z -- Applying patch script-prefix.patch
+2026-11-01T15:50:16.1751829Z -- Applying patch windows/install-layout.patch
+2026-11-01T15:50:16.2014809Z -- Applying patch windows/install-pdbs.patch
+2026-11-01T15:50:16.2266008Z -- Applying patch windows/install-programs.diff
+2026-11-01T15:50:16.2546841Z -- Applying patch unix/android-cc.patch
+2026-11-01T15:50:16.2809450Z -- Applying patch unix/move-openssldir.patch
+2026-11-01T15:50:16.3074494Z -- Applying patch unix/no-empty-dirs.patch
+2026-11-01T15:50:16.3339296Z -- Applying patch unix/no-static-libs-for-shared.patch
+2026-11-01T15:50:16.3662185Z -- Using source at C:/vcpkg/buildtrees/openssl/src/nssl-3.6.5-c2a478abe6.clean
+2026-11-01T15:50:16.3862861Z -- Getting CMake variables for x64-windows-static
+2026-11-01T15:50:21.6842125Z -- Loading CMake variables from C:/vcpkg/buildtrees/openssl/cmake-get-vars_C_CXX-x64-windows-static.cmake.log
+2026-11-01T15:50:21.6978909Z Downloading https://github.com/StrawberryPerl/Perl-Dist-Strawberry/releases/download/SP_54221_64bit/strawberry-perl-5.42.2.1-64bit-portable.zip -> strawberry-perl-5.42.2.1-64bit-portable.zip
+2026-11-01T15:50:23.2802750Z Successfully downloaded strawberry-perl-5.42.2.1-64bit-portable.zip
+2026-11-01T15:50:45.5907848Z Downloading nasm-3.01-win64.zip, trying https://www.nasm.us/pub/nasm/releasebuilds/3.01/win64/nasm-3.01-win64.zip
+2026-11-01T15:50:46.3837266Z Successfully downloaded nasm-3.01-win64.zip
+2026-11-01T15:50:46.6637623Z -- Getting CMake variables for x64-windows-static
+2026-11-01T15:50:49.6629970Z Downloading jom_1_1_7.zip, trying https://download.qt.io/official_releases/jom/jom_1_1_7.zip
+2026-11-01T15:50:51.1003630Z Successfully downloaded jom_1_1_7.zip
+2026-11-01T15:50:58.5387948Z -- Prerunning x64-windows-static-dbg
+2026-11-01T15:51:14.9952622Z -- Building x64-windows-static-dbg
+2026-11-01T15:52:55.0305829Z -- Prerunning x64-windows-static-rel
+2026-11-01T15:53:11.5659967Z -- Building x64-windows-static-rel
+2026-11-01T15:55:06.3933036Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/libcrypto.pc
+2026-11-01T15:55:06.3939973Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/libssl.pc
+2026-11-01T15:55:06.3945898Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/lib/pkgconfig/openssl.pc
+2026-11-01T15:55:06.4136473Z Downloading msys2-mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst, trying https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst
+2026-11-01T15:55:07.3840797Z Successfully downloaded msys2-mingw-w64-x86_64-pkgconf-1~3.0.7-1-any.pkg.tar.zst
+2026-11-01T15:55:07.3946572Z Downloading msys2-msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst, trying https://mirror.msys2.org/msys/x86_64/msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst
+2026-11-01T15:55:08.1604693Z Successfully downloaded msys2-msys2-runtime-3.6.10-4-x86_64.pkg.tar.zst
+2026-11-01T15:55:08.2671264Z -- Using msys root at C:/vcpkg/downloads/tools/msys2/d5586eb050429df1
+2026-11-01T15:55:08.3015912Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/libcrypto.pc
+2026-11-01T15:55:08.3026349Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/libssl.pc
+2026-11-01T15:55:08.3032203Z -- Fixing pkgconfig file: C:/vcpkg/packages/openssl_x64-windows-static/debug/lib/pkgconfig/openssl.pc
+2026-11-01T15:55:08.3235146Z -- Installing: C:/vcpkg/packages/openssl_x64-windows-static/share/openssl/usage
+2026-11-01T15:55:08.3270732Z -- Installing: C:/vcpkg/packages/openssl_x64-windows-static/share/openssl/copyright
+2026-11-01T15:55:08.3337988Z -- Performing post-build validation
+2026-11-01T15:55:08.5743439Z Starting submission of openssl:x64-windows-static@3.6.5#2 to 1 binary cache(s) in the background
+2026-11-01T15:55:08.5745144Z Elapsed time to handle openssl:x64-windows-static: 5 min
+2026-11-01T15:55:08.5776720Z Total install time: 5 min
+2026-11-01T15:55:08.5777751Z Installed contents are licensed to you by owners. Microsoft is not responsible for, nor does it grant any licenses to, third-party packages.
+2026-11-01T15:55:08.5778790Z Packages installed in this vcpkg installation declare the following licenses:
+2026-11-01T15:55:08.5779322Z Apache-2.0
+2026-11-01T15:55:08.5779656Z MIT
+2026-11-01T15:55:08.5780084Z openssl is compatible with built-in CMake targets:
+2026-11-01T15:55:08.5780447Z 
+2026-11-01T15:55:08.5780590Z   find_package(OpenSSL REQUIRED)
+2026-11-01T15:55:08.5786959Z   target_link_libraries(main PRIVATE OpenSSL::SSL)
+2026-11-01T15:55:08.5787446Z   target_link_libraries(main PRIVATE OpenSSL::Crypto)
+2026-11-01T15:55:08.5787664Z 
+2026-11-01T15:55:08.5787981Z Completed submission of vcpkg-cmake-get-vars:x64-windows@2025-05-29 to 1 binary cache(s) in 46.2 ms
+2026-11-01T15:55:08.5788509Z Waiting for 1 remaining binary cache submissions...
+2026-11-01T15:55:14.7505270Z Completed submission of openssl:x64-windows-static@3.6.5#2 to 1 binary cache(s) in 6.2 s (1/1)
+2026-11-01T15:55:14.7506123Z All requested installations completed successfully in: 5 min
+2026-11-01T15:55:15.2607155Z ##[end-action id=__self.__run_2;outcome=success;conclusion=success;duration_ms=330824]
+2026-11-01T15:55:15.2618062Z ##[start-action display=Resolve Ladybug dependency;id=__self.ladybug]
+2026-11-01T15:55:15.2733615Z ##[group]Run set -euo pipefail
+2026-11-01T15:55:15.2734061Z [36;1mset -euo pipefail[0m
+2026-11-01T15:55:15.2734570Z [36;1mversion="$(awk '/^name = "lbug"/ { found=1 } found && /^version = / { gsub(/"/, "", $3); print $3; exit }' Cargo.lock)"[0m
+2026-11-01T15:55:15.2735120Z [36;1mcase "$NATIVE_TARGET" in[0m
+2026-11-01T15:55:15.2735748Z [36;1m  macos-arm64) archive='liblbug-static-osx-arm64.tar.gz' ;;[0m
+2026-11-01T15:55:15.2736336Z [36;1m  windows-x86_64) archive='liblbug-static-windows-x86_64.zip' ;;[0m
+2026-11-01T15:55:15.2736892Z [36;1m  *) echo "Unsupported native target: $NATIVE_TARGET" >&2; exit 1 ;;[0m
+2026-11-01T15:55:15.2737286Z [36;1mesac[0m
+2026-11-01T15:55:15.2737531Z [36;1m{[0m
+2026-11-01T15:55:15.2737808Z [36;1m  echo "version=$version"[0m
+2026-11-01T15:55:15.2738166Z [36;1m  echo "archive=$archive"[0m
+2026-11-01T15:55:15.2738619Z [36;1m  echo "cache-dir=$GITHUB_WORKSPACE/.cache/lbug-prebuilt/$version/$NATIVE_TARGET"[0m
+2026-11-01T15:55:15.2739279Z [36;1m} >> "$GITHUB_OUTPUT"[0m
+2026-11-01T15:55:15.2750075Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-11-01T15:55:15.2750537Z env:
+2026-11-01T15:55:15.2750819Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T15:55:15.2751167Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T15:55:15.2751495Z   CARGO_NET_RETRY: 10
+2026-11-01T15:55:15.2751768Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-01T15:55:15.2752122Z   NATIVE_TARGET: windows-x86_64
+2026-11-01T15:55:15.2752396Z ##[endgroup]
+2026-11-01T15:55:15.7041184Z ##[end-action id=__self.ladybug;outcome=success;conclusion=success;duration_ms=442]
+2026-11-01T15:55:15.7045887Z ##[start-action display=Restore Ladybug dependency;id=__self.ladybug-cache]
+2026-11-01T15:55:15.7201078Z ##[group]Run actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+2026-11-01T15:55:15.7201483Z with:
+2026-11-01T15:55:15.7201882Z   path: D:\a\codebaseGraph\codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-01T15:55:15.7202341Z   key: lbug-0.19.0-windows-x86_64-v1
+2026-11-01T15:55:15.7202673Z   enableCrossOsArchive: false
+2026-11-01T15:55:15.7202975Z   fail-on-cache-miss: false
+2026-11-01T15:55:15.7203294Z   lookup-only: false
+2026-11-01T15:55:15.7203552Z   save-always: false
+2026-11-01T15:55:15.7203788Z env:
+2026-11-01T15:55:15.7204043Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T15:55:15.7204407Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T15:55:15.7204871Z   CARGO_NET_RETRY: 10
+2026-11-01T15:55:15.7205163Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-01T15:55:15.7205430Z ##[endgroup]
+2026-11-01T15:55:16.1932044Z Cache hit for: lbug-0.19.0-windows-x86_64-v1
+2026-11-01T15:55:17.4192862Z Received 67108864 of 196298597 (34.2%), 63.7 MBs/sec
+2026-11-01T15:55:18.5654163Z Received 196298597 of 196298597 (100.0%), 87.0 MBs/sec
+2026-11-01T15:55:18.5658221Z Cache Size: ~187 MB (196298597 B)
+2026-11-01T15:55:18.5751671Z [command]"C:\Program Files\Git\usr\bin\tar.exe" -xf D:/a/_temp/15cb7746-c925-48d3-bb12-7cde6beb1636/cache.tzst -P -C D:/a/codebaseGraph/codebaseGraph --force-local --use-compress-program "zstd -d"
+2026-11-01T15:55:20.3798259Z Cache restored successfully
+2026-11-01T15:55:20.4072411Z Cache restored from key: lbug-0.19.0-windows-x86_64-v1
+2026-11-01T15:55:20.4251544Z ##[end-action id=__self.ladybug-cache;outcome=success;conclusion=success;duration_ms=4720]
+2026-11-01T15:55:20.4256673Z ##[start-action display=Download Ladybug dependency;id=__self.__run_3]
+2026-11-01T15:55:20.4266562Z ##[end-action id=__self.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-11-01T15:55:20.4269581Z ##[start-action display=Export Ladybug dependency;id=__self.__run_4]
+2026-11-01T15:55:20.4370679Z ##[group]Run set -euo pipefail
+2026-11-01T15:55:20.4371086Z [36;1mset -euo pipefail[0m
+2026-11-01T15:55:20.4371377Z [36;1mtest -f "$LBUG_CACHE_DIR/lbug.h"[0m
+2026-11-01T15:55:20.4371741Z [36;1mif [[ "$RUNNER_OS" == 'Windows' ]]; then[0m
+2026-11-01T15:55:20.4372118Z [36;1m  test -f "$LBUG_CACHE_DIR/lbug.lib"[0m
+2026-11-01T15:55:20.4372544Z [36;1m  library_dir="$(cygpath -m "$LBUG_CACHE_DIR")"[0m
+2026-11-01T15:55:20.4372878Z [36;1melse[0m
+2026-11-01T15:55:20.4373142Z [36;1m  test -f "$LBUG_CACHE_DIR/liblbug.a"[0m
+2026-11-01T15:55:20.4373535Z [36;1m  library_dir="$LBUG_CACHE_DIR"[0m
+2026-11-01T15:55:20.4373832Z [36;1mfi[0m
+2026-11-01T15:55:20.4374079Z [36;1m{[0m
+2026-11-01T15:55:20.4374349Z [36;1m  echo "LBUG_LIBRARY_DIR=$library_dir"[0m
+2026-11-01T15:55:20.4374733Z [36;1m  echo "LBUG_INCLUDE_DIR=$library_dir"[0m
+2026-11-01T15:55:20.4375077Z [36;1m} >> "$GITHUB_ENV"[0m
+2026-11-01T15:55:20.4386565Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-11-01T15:55:20.4387008Z env:
+2026-11-01T15:55:20.4387255Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T15:55:20.4387589Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T15:55:20.4387879Z   CARGO_NET_RETRY: 10
+2026-11-01T15:55:20.4388179Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-01T15:55:20.4389208Z   LBUG_CACHE_DIR: D:\a\codebaseGraph\codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-01T15:55:20.4389646Z ##[endgroup]
+2026-11-01T15:55:20.5030300Z ##[end-action id=__self.__run_4;outcome=success;conclusion=success;duration_ms=75]
+2026-11-01T15:55:20.5174334Z ##[group]Run set -o pipefail
+2026-11-01T15:55:20.5174791Z [36;1mset -o pipefail[0m
+2026-11-01T15:55:20.5175149Z [36;1mmkdir -p diagnostics[0m
+2026-11-01T15:55:20.5175635Z [36;1mprintf '%s\n' "$SOURCE_SHA" > diagnostics/source-sha.txt[0m
+2026-11-01T15:55:20.5176056Z [36;1mshard_args=()[0m
+2026-11-01T15:55:20.5176453Z [36;1mif [[ 'windows-x86_64' == 'windows-x86_64' ]]; then[0m
+2026-11-01T15:55:20.5176871Z [36;1m  export CGRAPH_CLEANUP_TRACE=1[0m
+2026-11-01T15:55:20.5177290Z [36;1m  shard_args=(--shard '2/4')[0m
+2026-11-01T15:55:20.5177609Z [36;1mfi[0m
+2026-11-01T15:55:20.5178205Z [36;1mcargo run -p xtask -- native-test --target "windows-x86_64" --cohort "unit" "${shard_args[@]}" 2>&1 | tee diagnostics/platform-test.log[0m
+2026-11-01T15:55:20.5188712Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-11-01T15:55:20.5189371Z env:
+2026-11-01T15:55:20.5189667Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T15:55:20.5190116Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T15:55:20.5190445Z   CARGO_NET_RETRY: 10
+2026-11-01T15:55:20.5190809Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-01T15:55:20.5191314Z   LBUG_LIBRARY_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-01T15:55:20.5192109Z   LBUG_INCLUDE_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-01T15:55:20.5192667Z   RUST_TEST_NOCAPTURE: 1
+2026-11-01T15:55:20.5192976Z   RUST_TEST_THREADS: 1
+2026-11-01T15:55:20.5193330Z   SOURCE_SHA: 1c1730dfd06f238a6f6546e7e842a3988e52d61e
+2026-11-01T15:55:20.5193701Z   TMP: D:\a\_temp
+2026-11-01T15:55:20.5194014Z   TEMP: D:\a\_temp
+2026-11-01T15:55:20.5194316Z ##[endgroup]
+2026-11-01T15:55:26.4321494Z     Updating crates.io index
+2026-11-01T15:55:28.0592250Z  Downloading crates ...
+2026-11-01T15:55:28.2156446Z   Downloaded adler2 v2.0.1
+2026-11-01T15:55:28.2312432Z   Downloaded block-buffer v0.10.4
+2026-11-01T15:55:28.2467936Z   Downloaded cfg-if v1.0.4
+2026-11-01T15:55:28.2623975Z   Downloaded crypto-common v0.1.7
+2026-11-01T15:55:28.2624491Z   Downloaded filetime v0.2.29
+2026-11-01T15:55:28.2937021Z   Downloaded hashbrown v0.15.5
+2026-11-01T15:55:28.3249225Z   Downloaded libyaml-rs v0.3.0
+2026-11-01T15:55:28.3562050Z   Downloaded proc-macro2 v1.0.106
+2026-11-01T15:55:28.3717595Z   Downloaded serde v1.0.228
+2026-11-01T15:55:28.4030634Z   Downloaded serde_json v1.0.150
+2026-11-01T15:55:28.4655488Z   Downloaded syn v2.0.117
+2026-11-01T15:55:28.5439054Z   Downloaded unicode-ident v1.0.24
+2026-11-01T15:55:28.5751017Z   Downloaded crc32fast v1.5.0
+2026-11-01T15:55:28.5751578Z   Downloaded zlib-rs v0.6.8
+2026-11-01T15:55:28.6220044Z   Downloaded flate2 v1.1.10
+2026-11-01T15:55:28.7158580Z   Downloaded itoa v1.0.18
+2026-11-01T15:55:28.7313875Z   Downloaded serde_derive v1.0.228
+2026-11-01T15:55:28.7469610Z   Downloaded quote v1.0.45
+2026-11-01T15:55:28.7783030Z   Downloaded tar v0.4.46
+2026-11-01T15:55:28.8095107Z   Downloaded version_check v0.9.5
+2026-11-01T15:55:28.8095600Z   Downloaded digest v0.10.7
+2026-11-01T15:55:28.8251237Z   Downloaded equivalent v1.0.2
+2026-11-01T15:55:28.8407434Z   Downloaded ryu v1.0.23
+2026-11-01T15:55:28.8563648Z   Downloaded simd-adler32 v0.3.10
+2026-11-01T15:55:28.8876313Z   Downloaded zmij v1.0.21
+2026-11-01T15:55:28.8876928Z   Downloaded indexmap v2.7.1
+2026-11-01T15:55:28.9188529Z   Downloaded serde_core v1.0.228
+2026-11-01T15:55:28.9501590Z   Downloaded yaml_serde v0.10.7
+2026-11-01T15:55:28.9818743Z   Downloaded memchr v2.8.2
+2026-11-01T15:55:29.0131602Z   Downloaded cpufeatures v0.2.17
+2026-11-01T15:55:29.0287497Z   Downloaded miniz_oxide v0.9.1
+2026-11-01T15:55:29.0443117Z   Downloaded generic-array v0.14.7
+2026-11-01T15:55:29.0599773Z   Downloaded sha2 v0.10.9
+2026-11-01T15:55:29.0764334Z   Downloaded typenum v1.20.1
+2026-11-01T15:55:29.6401487Z    Compiling version_check v0.9.5
+2026-11-01T15:55:29.6402600Z    Compiling proc-macro2 v1.0.106
+2026-11-01T15:55:29.6404829Z    Compiling quote v1.0.45
+2026-11-01T15:55:29.6405646Z    Compiling unicode-ident v1.0.24
+2026-11-01T15:55:39.0909616Z    Compiling typenum v1.20.1
+2026-11-01T15:55:39.2315587Z    Compiling generic-array v0.14.7
+2026-11-01T15:55:40.1322798Z    Compiling cfg-if v1.0.4
+2026-11-01T15:55:40.1336682Z    Compiling serde_core v1.0.228
+2026-11-01T15:55:40.3266271Z    Compiling serde v1.0.228
+2026-11-01T15:55:40.5610194Z    Compiling crc32fast v1.5.0
+2026-11-01T15:55:40.7797427Z    Compiling zmij v1.0.21
+2026-11-01T15:55:41.0768235Z    Compiling serde_json v1.0.150
+2026-11-01T15:55:41.2189377Z    Compiling itoa v1.0.18
+2026-11-01T15:55:41.3428427Z    Compiling block-buffer v0.10.4
+2026-11-01T15:55:41.4681126Z    Compiling crypto-common v0.1.7
+2026-11-01T15:55:41.5619121Z    Compiling simd-adler32 v0.3.10
+2026-11-01T15:55:41.5930907Z    Compiling hashbrown v0.15.5
+2026-11-01T15:55:42.0324671Z    Compiling equivalent v1.0.2
+2026-11-01T15:55:42.0933010Z    Compiling adler2 v2.0.1
+2026-11-01T15:55:42.1931627Z    Compiling miniz_oxide v0.9.1
+2026-11-01T15:55:42.3137293Z    Compiling syn v2.0.117
+2026-11-01T15:55:42.3138331Z    Compiling indexmap v2.7.1
+2026-11-01T15:55:43.0022822Z    Compiling digest v0.10.7
+2026-11-01T15:55:43.4850376Z    Compiling filetime v0.2.29
+2026-11-01T15:55:43.6425695Z    Compiling libyaml-rs v0.3.0
+2026-11-01T15:55:43.7049602Z    Compiling cpufeatures v0.2.17
+2026-11-01T15:55:43.7510181Z    Compiling memchr v2.8.2
+2026-11-01T15:55:43.9747713Z    Compiling ryu v1.0.23
+2026-11-01T15:55:44.1569543Z    Compiling sha2 v0.10.9
+2026-11-01T15:55:44.8790492Z    Compiling tar v0.4.46
+2026-11-01T15:55:44.9188216Z    Compiling flate2 v1.1.10
+2026-11-01T15:55:45.4552370Z    Compiling serde_derive v1.0.228
+2026-11-01T15:55:48.1140831Z    Compiling yaml_serde v0.10.7
+2026-11-01T15:55:49.3650686Z    Compiling xtask v4.0.5 (D:\a\codebaseGraph\codebaseGraph\crates\xtask)
+2026-11-01T15:55:52.1686258Z     Finished `dev` profile [unoptimized + debuginfo] target(s) in 30.59s
+2026-11-01T15:55:52.1996535Z      Running `target\debug\xtask.exe native-test --target windows-x86_64 --cohort unit --shard 2/4`
+2026-11-01T15:55:52.3872886Z  Downloading crates ...
+2026-11-01T15:55:52.4965251Z   Downloaded ammonia v4.1.8
+2026-11-01T15:55:52.5278560Z   Downloaded aho-corasick v1.1.4
+2026-11-01T15:55:52.5590608Z   Downloaded arrayvec v0.7.6
+2026-11-01T15:55:52.5740698Z   Downloaded axum v0.8.9
+2026-11-01T15:55:52.6527319Z   Downloaded byteorder v1.5.0
+2026-11-01T15:55:52.6683004Z   Downloaded cmake v0.1.58
+2026-11-01T15:55:52.6683607Z   Downloaded crc-catalog v2.5.0
+2026-11-01T15:55:52.6840506Z   Downloaded cxx v1.0.138
+2026-11-01T15:55:52.8732685Z   Downloaded cxxbridge-macro v1.0.138
+2026-11-01T15:55:52.9653113Z   Downloaded dtoa v1.0.11
+2026-11-01T15:55:52.9653842Z   Downloaded find-msvc-tools v0.1.9
+2026-11-01T15:55:52.9808851Z   Downloaded fs2 v0.4.3
+2026-11-01T15:55:52.9969546Z   Downloaded futures-task v0.3.32
+2026-11-01T15:55:52.9970357Z   Downloaded html5ever v0.39.0
+2026-11-01T15:55:53.0282160Z   Downloaded http-body-util v0.1.4
+2026-11-01T15:55:53.0594474Z   Downloaded hyper v1.11.0
+2026-11-01T15:55:53.1063761Z   Downloaded icu_locale_core v2.2.0
+2026-11-01T15:55:53.1844805Z   Downloaded icu_properties v2.2.0
+2026-11-01T15:55:53.2001481Z   Downloaded idna v1.1.0
+2026-11-01T15:55:53.2157100Z   Downloaded litemap v0.8.2
+2026-11-01T15:55:53.2313107Z   Downloaded libc v0.2.189
+2026-11-01T15:55:53.5126182Z   Downloaded lzma-rs v0.3.0
+2026-11-01T15:55:53.5438402Z   Downloaded matchit v0.8.4
+2026-11-01T15:55:53.5594658Z   Downloaded mio v1.2.1
+2026-11-01T15:55:53.6216936Z   Downloaded notify-types v2.0.0
+2026-11-01T15:55:53.6530543Z   Downloaded phf v0.13.1
+2026-11-01T15:55:53.6686345Z   Downloaded parking_lot v0.12.5
+2026-11-01T15:55:53.6842507Z   Downloaded phf_shared v0.13.1
+2026-11-01T15:55:53.6998149Z   Downloaded potential_utf v0.1.5
+2026-11-01T15:55:53.6998549Z   Downloaded pulldown-cmark-escape v0.11.0
+2026-11-01T15:55:53.7154845Z   Downloaded regex-syntax v0.8.11
+2026-11-01T15:55:53.7468282Z   Downloaded same-file v1.0.6
+2026-11-01T15:55:53.7468905Z   Downloaded serde_path_to_error v0.1.20
+2026-11-01T15:55:53.7623800Z   Downloaded slab v0.4.12
+2026-11-01T15:55:53.7624300Z   Downloaded stable_deref_trait v1.2.1
+2026-11-01T15:55:53.7780447Z   Downloaded string_cache_codegen v0.6.1
+2026-11-01T15:55:53.7781289Z   Downloaded synstructure v0.13.2
+2026-11-01T15:55:53.7936586Z   Downloaded time v0.3.36
+2026-11-01T15:55:53.8404755Z   Downloaded tower-layer v0.3.3
+2026-11-01T15:55:53.8561193Z   Downloaded tokio v1.53.1
+2026-11-01T15:55:54.2157802Z   Downloaded tree-sitter-c v0.24.2
+2026-11-01T15:55:54.2313621Z   Downloaded tree-sitter-javascript v0.25.0
+2026-11-01T15:55:54.2469423Z   Downloaded tree-sitter-fortran v0.6.0
+2026-11-01T15:55:54.5126385Z   Downloaded tree-sitter-rust v0.24.2
+2026-11-01T15:55:54.5281709Z   Downloaded unicode-width v0.1.14
+2026-11-01T15:55:54.5437275Z   Downloaded uuid v1.18.1
+2026-11-01T15:55:54.5594218Z   Downloaded winapi v0.3.9
+2026-11-01T15:55:54.8724096Z   Downloaded windows-sys v0.60.2
+2026-11-01T15:55:55.5761944Z   Downloaded windows_x86_64_msvc v0.53.1
+2026-11-01T15:55:55.6074955Z   Downloaded yoke-derive v0.8.2
+2026-11-01T15:55:55.6075865Z   Downloaded zerotrie v0.2.4
+2026-11-01T15:55:55.6388042Z   Downloaded atomic-waker v1.1.2
+2026-11-01T15:55:55.6543038Z   Downloaded bitflags v2.13.0
+2026-11-01T15:55:55.7011973Z   Downloaded codespan-reporting v0.11.1
+2026-11-01T15:55:55.7793464Z   Downloaded cty v0.2.2
+2026-11-01T15:55:55.7793827Z   Downloaded deranged v0.3.11
+2026-11-01T15:55:55.7949369Z   Downloaded fastrand v2.5.0
+2026-11-01T15:55:55.8105217Z   Downloaded futures-channel v0.3.32
+2026-11-01T15:55:55.8105933Z   Downloaded getrandom v0.3.4
+2026-11-01T15:55:55.8418937Z   Downloaded httparse v1.10.1
+2026-11-01T15:55:55.8730402Z   Downloaded icu_collections v2.2.0
+2026-11-01T15:55:55.9199183Z   Downloaded icu_properties_data v2.2.0
+2026-11-01T15:55:56.0145959Z   Downloaded lock_api v0.4.14
+2026-11-01T15:55:56.0303088Z   Downloaded markup5ever v0.39.0
+2026-11-01T15:55:57.9861298Z   Downloaded lbug v0.19.0
+2026-11-01T15:55:57.9861918Z   Downloaded new_debug_unreachable v1.0.6
+2026-11-01T15:55:57.9956073Z   Downloaded num-traits v0.2.19
+2026-11-01T15:55:58.0174646Z   Downloaded phf_codegen v0.13.1
+2026-11-01T15:55:58.0175239Z   Downloaded powerfmt v0.2.0
+2026-11-01T15:55:58.0331028Z   Downloaded regex v1.12.4
+2026-11-01T15:55:58.0642714Z   Downloaded rustversion v1.0.22
+2026-11-01T15:55:58.0956238Z   Downloaded shlex v2.0.1
+2026-11-01T15:55:58.1112258Z   Downloaded socket2 v0.6.5
+2026-11-01T15:55:58.1112748Z   Downloaded syn v3.0.3
+2026-11-01T15:55:58.1893443Z   Downloaded termcolor v1.4.1
+2026-11-01T15:55:58.1894041Z   Downloaded tokio-macros v2.7.2
+2026-11-01T15:55:58.2048720Z   Downloaded tree-sitter v0.25.10
+2026-11-01T15:55:58.2518566Z   Downloaded tree-sitter-go v0.25.0
+2026-11-01T15:55:58.2675017Z   Downloaded tree-sitter-python v0.25.0
+2026-11-01T15:55:58.2830709Z   Downloaded url v2.5.8
+2026-11-01T15:55:58.2986972Z   Downloaded web_atoms v0.2.6
+2026-11-01T15:55:58.2989771Z   Downloaded yoke v0.8.3
+2026-11-01T15:55:58.3143858Z   Downloaded windows-sys v0.61.2
+2026-11-01T15:55:58.5957695Z   Downloaded zerovec v0.11.6
+2026-11-01T15:55:58.6426245Z   Downloaded axum-core v0.5.6
+2026-11-01T15:55:58.6582182Z   Downloaded crc v3.4.0
+2026-11-01T15:55:58.6738337Z   Downloaded cxxbridge-flags v1.0.138
+2026-11-01T15:55:58.6738838Z   Downloaded foldhash v0.1.5
+2026-11-01T15:55:58.6894020Z   Downloaded futures-util v0.3.32
+2026-11-01T15:55:58.7988120Z   Downloaded httpdate v1.0.3
+2026-11-01T15:55:58.8144883Z   Downloaded icu_normalizer_data v2.2.0
+2026-11-01T15:55:58.8301763Z   Downloaded libmimalloc-sys v0.1.49
+2026-11-01T15:55:58.9394452Z   Downloaded maplit v1.0.2
+2026-11-01T15:55:58.9395112Z   Downloaded percent-encoding v2.3.2
+2026-11-01T15:55:58.9395470Z   Downloaded notify v8.2.0
+2026-11-01T15:55:58.9551073Z   Downloaded precomputed-hash v0.1.1
+2026-11-01T15:55:58.9707166Z   Downloaded regex-automata v0.4.14
+2026-11-01T15:55:59.0493530Z   Downloaded siphasher v1.0.3
+2026-11-01T15:55:59.0649487Z   Downloaded string_cache v0.9.0
+2026-11-01T15:55:59.0649858Z   Downloaded time-core v0.1.2
+2026-11-01T15:55:59.0805864Z   Downloaded tower-service v0.3.3
+2026-11-01T15:55:59.0806248Z   Downloaded tree-sitter-html v0.23.2
+2026-11-01T15:55:59.0961553Z   Downloaded unicase v2.9.0
+2026-11-01T15:55:59.1117729Z   Downloaded winapi-util v0.1.11
+2026-11-01T15:55:59.1274552Z   Downloaded writeable v0.6.3
+2026-11-01T15:55:59.1430249Z   Downloaded cc v1.2.64
+2026-11-01T15:55:59.1586379Z   Downloaded zerovec-derive v0.11.3
+2026-11-01T15:55:59.1743563Z   Downloaded displaydoc v0.2.7
+2026-11-01T15:55:59.1899450Z   Downloaded futures-core v0.3.32
+2026-11-01T15:55:59.2055625Z   Downloaded hyper-util v0.1.20
+2026-11-01T15:55:59.2368061Z   Downloaded idna_adapter v1.2.2
+2026-11-01T15:55:59.2368784Z   Downloaded mimalloc v0.1.52
+2026-11-01T15:55:59.2524932Z   Downloaded parking_lot_core v0.9.12
+2026-11-01T15:55:59.2679885Z   Downloaded pulldown-cmark v0.13.5
+2026-11-01T15:55:59.2993101Z   Downloaded scratch v1.0.9
+2026-11-01T15:55:59.3149118Z   Downloaded tower v0.5.3
+2026-11-01T15:55:59.3930802Z   Downloaded sync_wrapper v1.0.2
+2026-11-01T15:55:59.3931791Z   Downloaded tree-sitter-language v0.1.8
+2026-11-01T15:55:59.4086669Z   Downloaded walkdir v2.5.0
+2026-11-01T15:55:59.4242795Z   Downloaded zerofrom v0.1.8
+2026-11-01T15:55:59.4399468Z   Downloaded bytes v1.12.1
+2026-11-01T15:55:59.4554840Z   Downloaded dtoa-short v0.3.5
+2026-11-01T15:55:59.4713725Z   Downloaded http-body v1.1.0
+2026-11-01T15:55:59.4714322Z   Downloaded link-cplusplus v1.0.12
+2026-11-01T15:55:59.4870641Z   Downloaded num-conv v0.1.0
+2026-11-01T15:55:59.4871265Z   Downloaded rust_decimal v1.42.1
+2026-11-01T15:55:59.5339478Z   Downloaded streaming-iterator v0.1.9
+2026-11-01T15:55:59.5495830Z   Downloaded utf8_iter v1.0.4
+2026-11-01T15:55:59.5496413Z   Downloaded tree-sitter-cpp v0.23.4
+2026-11-01T15:55:59.5965330Z   Downloaded zerofrom-derive v0.1.7
+2026-11-01T15:55:59.5965846Z   Downloaded cxx-build v1.0.138
+2026-11-01T15:55:59.6277238Z   Downloaded icu_normalizer v2.2.0
+2026-11-01T15:55:59.6590932Z   Downloaded mime v0.3.17
+2026-11-01T15:55:59.6690844Z   Downloaded scopeguard v1.2.0
+2026-11-01T15:55:59.6751637Z   Downloaded tinystr v0.8.3
+2026-11-01T15:55:59.6912396Z   Downloaded windows-link v0.2.1
+2026-11-01T15:55:59.7069159Z   Downloaded cssparser v0.37.0
+2026-11-01T15:55:59.7225859Z   Downloaded icu_provider v2.2.0
+2026-11-01T15:55:59.7381371Z   Downloaded pin-project-lite v0.2.17
+2026-11-01T15:55:59.8007192Z   Downloaded tree-sitter-css v0.25.0
+2026-11-01T15:55:59.8162623Z   Downloaded autocfg v1.5.1
+2026-11-01T15:55:59.8319529Z   Downloaded log v0.4.32
+2026-11-01T15:55:59.8475886Z   Downloaded tendril v0.5.1
+2026-11-01T15:55:59.8630906Z   Downloaded form_urlencoded v1.2.2
+2026-11-01T15:55:59.8631503Z   Downloaded smallvec v1.15.2
+2026-11-01T15:55:59.8791272Z   Downloaded http v1.5.0
+2026-11-01T15:56:00.0985116Z   Downloaded windows-targets v0.53.5
+2026-11-01T15:56:00.1141272Z   Downloaded phf_generator v0.13.1
+2026-11-01T15:56:00.1141766Z   Downloaded tree-sitter-typescript v0.23.2
+2026-11-01T15:56:00.6982230Z    Compiling shlex v2.0.1
+2026-11-01T15:56:00.6984827Z    Compiling find-msvc-tools v0.1.9
+2026-11-01T15:56:00.7039278Z    Compiling proc-macro2 v1.0.106
+2026-11-01T15:56:00.7040169Z    Compiling quote v1.0.45
+2026-11-01T15:56:00.8909243Z    Compiling unicode-ident v1.0.24
+2026-11-01T15:56:00.9749992Z    Compiling tree-sitter-language v0.1.8
+2026-11-01T15:56:00.9752736Z    Compiling windows-link v0.2.1
+2026-11-01T15:56:01.1037488Z    Compiling cfg-if v1.0.4
+2026-11-01T15:56:01.1336965Z    Compiling itoa v1.0.18
+2026-11-01T15:56:01.1535425Z    Compiling zmij v1.0.21
+2026-11-01T15:56:01.3500318Z    Compiling cc v1.2.64
+2026-11-01T15:56:01.6793611Z    Compiling windows-sys v0.61.2
+2026-11-01T15:56:02.2759101Z    Compiling serde_core v1.0.228
+2026-11-01T15:56:02.4788799Z    Compiling syn v2.0.117
+2026-11-01T15:56:02.5274340Z    Compiling memchr v2.8.2
+2026-11-01T15:56:03.1356744Z    Compiling version_check v0.9.5
+2026-11-01T15:56:04.7160026Z    Compiling generic-array v0.14.7
+2026-11-01T15:56:05.0561912Z    Compiling rustversion v1.0.22
+2026-11-01T15:56:05.7774540Z    Compiling winapi-util v0.1.11
+2026-11-01T15:56:06.1252772Z    Compiling link-cplusplus v1.0.12
+2026-11-01T15:56:06.4823710Z    Compiling equivalent v1.0.2
+2026-11-01T15:56:06.4961340Z    Compiling typenum v1.20.1
+2026-11-01T15:56:06.5320757Z    Compiling hashbrown v0.15.5
+2026-11-01T15:56:07.1885757Z    Compiling serde_json v1.0.150
+2026-11-01T15:56:07.3628470Z    Compiling scratch v1.0.9
+2026-11-01T15:56:07.5619520Z    Compiling indexmap v2.7.1
+2026-11-01T15:56:08.2474821Z    Compiling termcolor v1.4.1
+2026-11-01T15:56:08.8808269Z    Compiling windows_x86_64_msvc v0.53.1
+2026-11-01T15:56:08.9600785Z    Compiling unicode-width v0.1.14
+2026-11-01T15:56:09.0632817Z    Compiling autocfg v1.5.1
+2026-11-01T15:56:09.2025601Z    Compiling cxxbridge-flags v1.0.138
+2026-11-01T15:56:09.4764687Z    Compiling cxx v1.0.138
+2026-11-01T15:56:09.5195289Z    Compiling num-traits v0.2.19
+2026-11-01T15:56:09.6199373Z    Compiling codespan-reporting v0.11.1
+2026-11-01T15:56:09.7988528Z    Compiling libmimalloc-sys v0.1.49
+2026-11-01T15:56:10.0702681Z    Compiling log v0.4.32
+2026-11-01T15:56:10.1252328Z    Compiling serde v1.0.228
+2026-11-01T15:56:10.2873870Z    Compiling cxx-build v1.0.138
+2026-11-01T15:56:13.4445524Z    Compiling tree-sitter v0.25.10
+2026-11-01T15:56:13.8510229Z    Compiling serde_derive v1.0.228
+2026-11-01T15:56:14.4005633Z    Compiling crypto-common v0.1.7
+2026-11-01T15:56:14.4940258Z    Compiling block-buffer v0.10.4
+2026-11-01T15:56:15.3694133Z    Compiling aho-corasick v1.1.4
+2026-11-01T15:56:15.5864747Z    Compiling cmake v0.1.58
+2026-11-01T15:56:16.0349484Z    Compiling regex-syntax v0.8.11
+2026-11-01T15:56:16.1561790Z    Compiling libc v0.2.189
+2026-11-01T15:56:16.4958838Z    Compiling rust_decimal v1.42.1
+2026-11-01T15:56:16.7671456Z    Compiling winapi v0.3.9
+2026-11-01T15:56:17.1883534Z    Compiling powerfmt v0.2.0
+2026-11-01T15:56:17.4965728Z    Compiling deranged v0.3.11
+2026-11-01T15:56:18.5145102Z    Compiling regex-automata v0.4.14
+2026-11-01T15:56:18.5836063Z    Compiling lbug v0.19.0
+2026-11-01T15:56:19.2285489Z    Compiling same-file v1.0.6
+2026-11-01T15:56:19.4079235Z    Compiling digest v0.10.7
+2026-11-01T15:56:24.4297791Z    Compiling windows-targets v0.53.5
+2026-11-01T15:56:24.4776705Z    Compiling cxxbridge-macro v1.0.138
+2026-11-01T15:56:27.1310292Z    Compiling tree-sitter-python v0.25.0
+2026-11-01T15:56:27.3306227Z    Compiling tree-sitter-go v0.25.0
+2026-11-01T15:56:27.5460752Z    Compiling tree-sitter-rust v0.24.2
+2026-11-01T15:56:27.7628492Z    Compiling tree-sitter-fortran v0.6.0
+2026-11-01T15:56:27.9717661Z    Compiling tree-sitter-html v0.23.2
+2026-11-01T15:56:28.1852119Z    Compiling tree-sitter-typescript v0.23.2
+2026-11-01T15:56:28.4035750Z    Compiling tree-sitter-cpp v0.23.4
+2026-11-01T15:56:28.4043738Z    Compiling tree-sitter-javascript v0.25.0
+2026-11-01T15:56:28.6237043Z    Compiling tree-sitter-css v0.25.0
+2026-11-01T15:56:28.6237917Z    Compiling tree-sitter-c v0.24.2
+2026-11-01T15:56:28.8722548Z    Compiling syn v3.0.3
+2026-11-01T15:56:28.8876771Z    Compiling crc-catalog v2.5.0
+2026-11-01T15:56:28.9689618Z    Compiling cpufeatures v0.2.17
+2026-11-01T15:56:28.9980787Z    Compiling time-core v0.1.2
+2026-11-01T15:56:29.0966723Z    Compiling getrandom v0.3.4
+2026-11-01T15:56:29.3797721Z    Compiling cty v0.2.2
+2026-11-01T15:56:29.4266169Z    Compiling num-conv v0.1.0
+2026-11-01T15:56:29.5522902Z    Compiling arrayvec v0.7.6
+2026-11-01T15:56:29.7964409Z    Compiling foldhash v0.1.5
+2026-11-01T15:56:31.6757554Z    Compiling time v0.3.36
+2026-11-01T15:56:33.7788022Z    Compiling sha2 v0.10.9
+2026-11-01T15:56:34.3074143Z    Compiling crc v3.4.0
+2026-11-01T15:56:41.2501399Z    Compiling windows-sys v0.60.2
+2026-11-01T15:56:42.0221210Z    Compiling regex v1.12.4
+2026-11-01T15:56:42.4605431Z    Compiling walkdir v2.5.0
+2026-11-01T15:56:44.6458439Z    Compiling synstructure v0.13.2
+2026-11-01T15:56:45.3132547Z    Compiling codebase-graph v4.0.5 (D:\a\codebaseGraph\codebaseGraph)
+2026-11-01T15:56:45.3576934Z    Compiling notify-types v2.0.0
+2026-11-01T15:56:45.5507342Z    Compiling streaming-iterator v0.1.9
+2026-11-01T15:56:45.5752076Z    Compiling uuid v1.18.1
+2026-11-01T15:56:45.8106595Z    Compiling byteorder v1.5.0
+2026-11-01T15:56:46.0714955Z    Compiling lzma-rs v0.3.0
+2026-11-01T15:56:46.9172773Z    Compiling fs2 v0.4.3
+2026-11-01T15:56:47.1661250Z    Compiling notify v8.2.0
+2026-11-01T15:56:49.1833626Z    Compiling mimalloc v0.1.52
+2026-11-01T15:56:49.2867850Z    Compiling zerofrom-derive v0.1.7
+2026-11-01T15:56:49.4516519Z    Compiling smallvec v1.15.2
+2026-11-01T15:56:49.7247667Z    Compiling yoke-derive v0.8.2
+2026-11-01T15:56:50.9058230Z    Compiling zerofrom v0.1.8
+2026-11-01T15:56:51.0205663Z    Compiling stable_deref_trait v1.2.1
+2026-11-01T15:56:51.0639366Z    Compiling yoke v0.8.3
+2026-11-01T15:56:51.0853401Z    Compiling zerovec-derive v0.11.3
+2026-11-01T15:56:51.2822462Z    Compiling displaydoc v0.2.7
+2026-11-01T15:56:52.1135988Z    Compiling siphasher v1.0.3
+2026-11-01T15:56:52.3056183Z    Compiling phf_shared v0.13.1
+2026-11-01T15:56:52.3710795Z    Compiling zerovec v0.11.6
+2026-11-01T15:56:52.6309641Z    Compiling fastrand v2.5.0
+2026-11-01T15:56:52.7155325Z    Compiling bytes v1.12.1
+2026-11-01T15:56:53.1988680Z    Compiling tinystr v0.8.3
+2026-11-01T15:56:53.3985752Z    Compiling phf_generator v0.13.1
+2026-11-01T15:56:54.6255862Z    Compiling parking_lot_core v0.9.12
+2026-11-01T15:56:54.8666012Z    Compiling writeable v0.6.3
+2026-11-01T15:56:55.0338889Z    Compiling pin-project-lite v0.2.17
+2026-11-01T15:56:55.0847623Z    Compiling futures-core v0.3.32
+2026-11-01T15:56:55.1526506Z    Compiling litemap v0.8.2
+2026-11-01T15:56:55.2430847Z    Compiling potential_utf v0.1.5
+2026-11-01T15:56:55.3500430Z    Compiling icu_locale_core v2.2.0
+2026-11-01T15:56:55.3826065Z    Compiling zerotrie v0.2.4
+2026-11-01T15:56:56.7976547Z    Compiling utf8_iter v1.0.4
+2026-11-01T15:56:56.9484066Z    Compiling icu_normalizer_data v2.2.0
+2026-11-01T15:56:57.1239563Z    Compiling icu_properties_data v2.2.0
+2026-11-01T15:56:57.5489016Z    Compiling scopeguard v1.2.0
+2026-11-01T15:56:57.6054325Z    Compiling lock_api v0.4.14
+2026-11-01T15:56:58.2831929Z    Compiling icu_collections v2.2.0
+2026-11-01T15:56:59.3158743Z    Compiling icu_provider v2.2.0
+2026-11-01T15:57:00.1727569Z    Compiling phf_codegen v0.13.1
+2026-11-01T15:57:00.2693260Z    Compiling string_cache_codegen v0.6.1
+2026-11-01T15:57:00.5981606Z    Compiling http v1.5.0
+2026-11-01T15:57:00.7448164Z    Compiling new_debug_unreachable v1.0.6
+2026-11-01T15:57:00.7805392Z    Compiling web_atoms v0.2.6
+2026-11-01T15:57:01.2806430Z    Compiling parking_lot v0.12.5
+2026-11-01T15:57:02.7203428Z    Compiling http-body v1.1.0
+2026-11-01T15:57:02.9860579Z    Compiling tokio-macros v2.7.2
+2026-11-01T15:57:03.6122137Z    Compiling mio v1.2.1
+2026-11-01T15:57:03.6273012Z    Compiling socket2 v0.6.5
+2026-11-01T15:57:04.9095747Z    Compiling httparse v1.10.1
+2026-11-01T15:57:05.2032918Z    Compiling precomputed-hash v0.1.1
+2026-11-01T15:57:05.2506905Z    Compiling string_cache v0.9.0
+2026-11-01T15:57:05.5683632Z    Compiling tokio v1.53.1
+2026-11-01T15:57:05.9375731Z    Compiling icu_properties v2.2.0
+2026-11-01T15:57:08.1800908Z    Compiling icu_normalizer v2.2.0
+2026-11-01T15:57:10.3261463Z    Compiling phf v0.13.1
+2026-11-01T15:57:10.4665000Z    Compiling tower-service v0.3.3
+2026-11-01T15:57:10.5281437Z    Compiling percent-encoding v2.3.2
+2026-11-01T15:57:11.4324975Z    Compiling idna_adapter v1.2.2
+2026-11-01T15:57:11.7220953Z    Compiling tendril v0.5.1
+2026-11-01T15:57:12.1117271Z    Compiling futures-channel v0.3.32
+2026-11-01T15:57:12.2679880Z    Compiling httpdate v1.0.3
+2026-11-01T15:57:12.3826611Z    Compiling futures-task v0.3.32
+2026-11-01T15:57:12.5257475Z    Compiling atomic-waker v1.1.2
+2026-11-01T15:57:12.6105070Z    Compiling slab v0.4.12
+2026-11-01T15:57:12.7994522Z    Compiling dtoa v1.0.11
+2026-11-01T15:57:12.8044236Z    Compiling sync_wrapper v1.0.2
+2026-11-01T15:57:12.9233670Z    Compiling tower-layer v0.3.3
+2026-11-01T15:57:13.1310274Z    Compiling dtoa-short v0.3.5
+2026-11-01T15:57:13.2864454Z    Compiling futures-util v0.3.32
+2026-11-01T15:57:14.6396560Z    Compiling hyper v1.11.0
+2026-11-01T15:57:15.6484755Z    Compiling markup5ever v0.39.0
+2026-11-01T15:57:16.1336703Z    Compiling idna v1.1.0
+2026-11-01T15:57:20.0696445Z    Compiling form_urlencoded v1.2.2
+2026-11-01T15:57:20.3813904Z    Compiling http-body-util v0.1.4
+2026-11-01T15:57:20.4484778Z    Compiling libyaml-rs v0.3.0
+2026-11-01T15:57:20.6903659Z    Compiling pulldown-cmark v0.13.5
+2026-11-01T15:57:20.6904765Z    Compiling ryu v1.0.23
+2026-11-01T15:57:20.8490081Z    Compiling mime v0.3.17
+2026-11-01T15:57:21.2066467Z    Compiling axum-core v0.5.6
+2026-11-01T15:57:21.5873523Z    Compiling yaml_serde v0.10.7
+2026-11-01T15:57:24.2991626Z    Compiling url v2.5.8
+2026-11-01T15:57:24.2992736Z    Compiling html5ever v0.39.0
+2026-11-01T15:57:26.7030661Z    Compiling hyper-util v0.1.20
+2026-11-01T15:57:27.1353873Z    Compiling tower v0.5.3
+2026-11-01T15:57:27.6591343Z    Compiling cssparser v0.37.0
+2026-11-01T15:57:28.3719566Z    Compiling serde_path_to_error v0.1.20
+2026-11-01T15:57:28.6706421Z    Compiling pulldown-cmark-escape v0.11.0
+2026-11-01T15:57:28.7648349Z    Compiling bitflags v2.13.0
+2026-11-01T15:57:28.9762142Z    Compiling maplit v1.0.2
+2026-11-01T15:57:29.0129619Z    Compiling matchit v0.8.4
+2026-11-01T15:57:29.2337030Z    Compiling unicase v2.9.0
+2026-11-01T15:57:30.0623484Z    Compiling axum v0.8.9
+2026-11-01T15:57:30.0792330Z    Compiling ammonia v4.1.8
+2026-11-01T15:57:37.5304051Z    Compiling k-wiki v4.0.5 (D:\a\codebaseGraph\codebaseGraph\crates\k-wiki)
+2026-11-01T15:57:38.0771350Z    Compiling crc32fast v1.5.0
+2026-11-01T15:57:38.3447175Z    Compiling simd-adler32 v0.3.10
+2026-11-01T15:57:39.1159662Z    Compiling adler2 v2.0.1
+2026-11-01T15:57:39.2644551Z    Compiling miniz_oxide v0.9.1
+2026-11-01T15:57:42.1355592Z    Compiling filetime v0.2.29
+2026-11-01T15:57:42.2985182Z    Compiling tar v0.4.46
+2026-11-01T15:57:45.5287115Z    Compiling flate2 v1.1.10
+2026-11-01T15:57:46.7506409Z    Compiling xtask v4.0.5 (D:\a\codebaseGraph\codebaseGraph\crates\xtask)
+2026-11-01T16:03:43.4672982Z     Finished `native-tests` profile [optimized] target(s) in 7m 51s
+2026-11-01T16:03:46.5971128Z native-test CLI compiler artifact: D:\a\_temp\native-test-cli-7044-1793549023509216000\codebase-graph.exe sha256=cd8ce08b4f4fe1462fe26b65a04ef345fd712e9dd7d388ac8dc065000ffb833d
+2026-11-01T16:03:47.7103924Z native test command 1: cargo test --workspace --locked --profile native-tests --features codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions --lib --bins --examples --no-fail-fast -- --exact adapters::cli::graph::options::maintenance_tests::health_quiescence_confirmation_is_opt_in_and_documented adapters::cli::tests::dispatch_materialize::materialize_css_source_root_without_profiles adapters::cli::tests::dispatch_materialize::materialize_honors_config_excludes adapters::cli::tests::dispatch_materialize::materialize_python_source_root_without_python_request adapters::cli::tests::dispatch_materialize::old_command_names_are_rejected adapters::cli::tests::dispatch_materialize::prints_top_level_help adapters::cli::tests::dispatch_materialize::retired_semantic_options_are_rejected_by_each_affected_parser adapters::cli::tests::dispatch_materialize::setup_parses_agent_hook_selection adapters::cli::tests::graph::graph_context_explicit_node_reads_neighbors adapters::cli::tests::graph::graph_layer_help_documents_supported_values adapters::cli::tests::graph::graph_query_reads_native_database adapters::cli::tests::graph::graph_search_default_output_is_block adapters::cli::tests::install::install_agent_hooks_provisions_daemon_when_mcp_registration_is_skipped_or_stdio adapters::cli::tests::install::install_writes_schema_v3_managed_config_without_static_database_or_manifest_paths adapters::cli::tests::install::mcp_install_writes_generic_client_config adapters::cli::tests::install::reinstall_rejects_custom_mcp_entry_without_changing_it adapters::cli::tests::install::uninstall_removes_repo_state_instruction_blocks_and_matching_mcp_entry adapters::cli::tests::mcp::mcp_http_rejects_remote_bind_without_auth_token adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors adapters::cli::tests::watch::watch_backend_parser_accepts_native_without_fallback adapters::cli::tests::watch::watch_batch_directory_remove_and_rename_force_full_rescan adapters::cli::tests::watch::watch_filter_accepts_relative_notify_paths adapters::cli::tests::watch::watch_filter_ignores_excluded_parts_and_access_events adapters::cli::tests::watch::watch_materialize_options_default_to_parallel_builds adapters::cli::tests::watch::watch_poll_snapshot_detects_create_modify_and_delete adapters::cli::tests::watch::watch_probe_falls_back_after_timeout adapters::install::tests::failed_post_install_migration_keeps_the_install_payload_and_recovery adapters::mcp::daemon::tests::launchd_status_parser_reports_running_and_failed_jobs adapters::mcp::daemon::tests::stable_ports_and_service_ids_are_repository_scoped adapters::mcp::dispatcher::tests::header_parser_rejects_malformed_content_length adapters::mcp::dispatcher::tests::slow_reader_does_not_block_other_responses_and_is_released adapters::mcp::http::tests::session_id_collision_returns_internal_error_without_overwriting_session adapters::mcp::state::tests::generated_session_ids_are_random_ascii_and_unique_across_state_instances agent_hooks::tests::auto_selection_maps_supported_clients_and_ignores_other_mcp_targets agent_hooks::tests::copilot_cache_claim_skips_a_busy_lock_without_consuming_the_cache agent_hooks::tests::input_bounds_are_utf8_safe_and_malformed_input_fails_open api::boundary_tests::api_does_not_import_transport_adapters api::boundary_tests::only_graph_writer_submits_database_updates api::catalog::tests::shared_ontology_and_query_catalogs_remain_available api::catalog::tests::syntax_catalog_describes_javascript_and_jsx_nodes api::catalog::tests::syntax_catalog_retains_named_tree_sitter_nodes_and_fields api::context::tests::bind_repo_selector_uses_config_root_before_cwd_discovery api::context::tests::direct_recovery_restores_real_graph_and_search_after_sidecar_rename api::context::tests::repository_identity_rejects_storage_root_rebind api::context::tests::resolve_runtime_selects_configured_graph_and_manifest_paths api::core::tests::duplicate_operations_are_rejected_in_registration api::core::tests::legacy_setup_returns_structured_reinstall_error api::core::tests::resolve_mcp_operation_uses_registered_operation_metadata api::core::tests::unknown_operation_request_is_rejected api::graph_read::tests::manifest_without_backend_metadata_uses_legacy_ladybug_fts api::lifecycle::tests::codex_toml_reject_different_leaves_existing_file_byte_identical api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments api::lifecycle::tests::http_registration_shapes_match_every_loopback_harness api::lifecycle::tests::matching_entries_remain_idempotent_across_json_codex_and_hermes_configs api::lifecycle::tests::registration_rename_deduplicates_matching_json_destination_atomically api::lifecycle::tests::remove_mcp_server_dry_run_reports_previous_without_writing_and_write_removes_entry api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths api::materialization::tests::committed_managed_graph_survives_deferred_artifact_collection api::materialization::tests::managed_committed_native_result_survives_real_run_disposal_failure api::materialization::tests::materialization_option_limits_override_install_config api::materialization::tests::refresh_noop_aborts_prepared_writer_when_storage_identity_rebinds api::normalization::tests::normalize_request_applies_canonical_defaults api::normalization::tests::validate_request_rejects_unsupported_mcp_clients_and_scopes api::refresh::owned_refresh_tests::refresh_owned_join_ignores_retained_core_clones_and_has_no_cycle api::refresh::owned_refresh_tests::refresh_owned_terminal_disposition_survives_stop_disable_failure_and_panic_races api::refresh::tests::native_refresh_startup_reports_native_after_reconciliation api::refresh::tests::refresh_retry_policy_retries_transient_errors_before_success api::refresh::tests::refresh_service_disables_legacy_v1_auto_refresh_with_remediation api::refresh::tests::sustained_path_events_still_force_a_due_full_reconciliation artifact_store::tests::artifact_key_changes_when_inputs_change artifact_store::tests::artifact_store_roundtrips_raw_partition_and_reuses_existing_payload artifact_store::tests::dc_origin_completed_receipt_remains_origin_only_for_nonfinite_loader_failure artifact_store::tests::dc_origin_optional_busy_publisher_still_writes_rooted_untracked_payload artifact_store::tests::dc_s3_artifact_producing_guard_covers_write_reuse_replace_and_failure artifact_store::tests::transient_partition_loads_only_actual_created_file_and_preserves_replacement ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full ci::tests::metadata_classifier_rejects_duplicate_and_decoy_contexts ci::tests::pr167_shaped_complete_metadata_transition_is_lightweight coordinator::tests::concurrent_clients_share_one_repository_coordinator coordinator::tests::expired_request_received_as_trickled_bytes_never_dispatches coordinator::tests::joined_maintenance_driver::dc_joined_driver_rebind_and_stop_during_preparation_prevent_mutation coordinator::tests::maintenance_cannot_bypass_queued_or_active_real_execution coordinator::tests::managed_coordinator_acquisition_preserves_real_fresh_root_enrollment coordinator::tests::refresh_owned_join::refresh_monitor_final_self_drop_exits_before_another_wait_or_work coordinator::tests::retryable_receive_failure_retries_the_same_owner db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit db_writer::phase::tests::phase_protocol_requires_v2_containment_contract db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader db_writer::rss::tests::allocator_pressure_relief_is_safe_at_phase_boundaries db_writer::schema::tests::extension_setup_is_always_pre_copy db_writer::tests::guarded_database_native_path_rejects_unsupported_windows_prefixes db_writer::tests::guarded_database_windows_encoding_policy_checks_the_complete_native_path db_writer::tests::native_writer_loads_json_staging_through_ladybug_copy
+2026-11-01T16:03:47.8794823Z     Finished `native-tests` profile [optimized] target(s) in 0.15s
+2026-11-01T16:03:47.8951116Z      Running unittests src\lib.rs (target\native-tests\deps\codebase_graph-b49f34bc229d6476.exe)
+2026-11-01T16:03:47.8951716Z 
+2026-11-01T16:03:47.8961061Z running 89 tests
+2026-11-01T16:03:47.8961753Z test adapters::cli::graph::options::maintenance_tests::health_quiescence_confirmation_is_opt_in_and_documented ... ok
+2026-11-01T16:03:51.4329667Z test adapters::cli::tests::dispatch_materialize::materialize_css_source_root_without_profiles ... ok
+2026-11-01T16:03:51.4330649Z test adapters::cli::tests::dispatch_materialize::materialize_honors_config_excludes ... ok
+2026-11-01T16:03:53.8426947Z test adapters::cli::tests::dispatch_materialize::materialize_python_source_root_without_python_request ... ok
+2026-11-01T16:03:53.8428019Z test adapters::cli::tests::dispatch_materialize::old_command_names_are_rejected ... ok
+2026-11-01T16:03:53.8428909Z test adapters::cli::tests::dispatch_materialize::prints_top_level_help ... ok
+2026-11-01T16:03:53.8429930Z test adapters::cli::tests::dispatch_materialize::retired_semantic_options_are_rejected_by_each_affected_parser ... ok
+2026-11-01T16:03:53.8430999Z test adapters::cli::tests::dispatch_materialize::setup_parses_agent_hook_selection ... ok
+2026-11-01T16:03:57.9189867Z test adapters::cli::tests::graph::graph_context_explicit_node_reads_neighbors ... terminal candidate selected output: \\?\D:\a\_temp\codebase-graph-rust-context-4940-1793549033831320400\.codebaseGraph\storage\runs\run-4940-1793549033873734600-2
+2026-11-01T16:03:58.3567998Z ok
+2026-11-01T16:03:58.3568791Z test adapters::cli::tests::graph::graph_layer_help_documents_supported_values ... ok
+2026-11-01T16:04:01.3135761Z test adapters::cli::tests::graph::graph_query_reads_native_database ... terminal candidate selected output: \\?\D:\a\_temp\codebase-graph-rust-query-4940-1793549038356591200\.codebaseGraph\storage\runs\run-4940-1793549038410541300-4
+2026-11-01T16:04:01.3291018Z ok
+2026-11-01T16:04:04.5671477Z test adapters::cli::tests::graph::graph_search_default_output_is_block ... terminal candidate selected output: \\?\D:\a\_temp\codebase-graph-rust-search-block-4940-1793549041314770100\.codebaseGraph\storage\runs\run-4940-1793549041370114900-6
+2026-11-01T16:04:04.5840586Z ok
+2026-11-01T16:04:09.0591499Z test adapters::cli::tests::install::install_agent_hooks_provisions_daemon_when_mcp_registration_is_skipped_or_stdio ... ok
+2026-11-01T16:04:11.3281483Z test adapters::cli::tests::install::install_writes_schema_v3_managed_config_without_static_database_or_manifest_paths ... ok
+2026-11-01T16:04:14.1929412Z test adapters::cli::tests::install::mcp_install_writes_generic_client_config ... terminal candidate selected output: \\?\D:\a\_temp\codebase-graph-rust-mcp-install-4940-1793549051312647400\.codebaseGraph\storage\runs\run-4940-1793549051368440800-14
+2026-11-01T16:04:14.2084928Z ok
+2026-11-01T16:04:16.5391921Z test adapters::cli::tests::install::reinstall_rejects_custom_mcp_entry_without_changing_it ... terminal candidate selected output: \\?\D:\a\_temp\codebase-graph-rust-reinstall-mcp-4940-1793549054196491700\.codebaseGraph\storage\runs\run-4940-1793549054248080900-16
+2026-11-01T16:04:16.5547189Z ok
+2026-11-01T16:04:18.8080265Z test adapters::cli::tests::install::uninstall_removes_repo_state_instruction_blocks_and_matching_mcp_entry ... ok
+2026-11-01T16:04:18.8080997Z test adapters::cli::tests::mcp::mcp_http_rejects_remote_bind_without_auth_token ... ok
+2026-11-01T16:04:22.0930605Z test adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors ... terminal candidate selected output: \\?\D:\a\_temp\codebase-graph-rust-mcp-4940-1793549058804963100\.codebaseGraph\storage\runs\run-4940-1793549058860095100-20
+2026-11-01T16:04:23.2723812Z ok
+2026-11-01T16:04:23.2724701Z test adapters::cli::tests::watch::watch_backend_parser_accepts_native_without_fallback ... ok
+2026-11-01T16:04:23.2725354Z test adapters::cli::tests::watch::watch_batch_directory_remove_and_rename_force_full_rescan ... ok
+2026-11-01T16:04:23.2725935Z test adapters::cli::tests::watch::watch_filter_accepts_relative_notify_paths ... ok
+2026-11-01T16:04:23.2726505Z test adapters::cli::tests::watch::watch_filter_ignores_excluded_parts_and_access_events ... ok
+2026-11-01T16:04:23.2727093Z test adapters::cli::tests::watch::watch_materialize_options_default_to_parallel_builds ... ok
+2026-11-01T16:04:23.2727645Z test adapters::cli::tests::watch::watch_poll_snapshot_detects_create_modify_and_delete ... ok
+2026-11-01T16:04:23.3037365Z test adapters::cli::tests::watch::watch_probe_falls_back_after_timeout ... ok
+2026-11-01T16:04:23.3038434Z test adapters::mcp::daemon::tests::launchd_status_parser_reports_running_and_failed_jobs ... ok
+2026-11-01T16:04:23.3040032Z test adapters::mcp::daemon::tests::stable_ports_and_service_ids_are_repository_scoped ... ok
+2026-11-01T16:04:23.3041486Z test adapters::mcp::dispatcher::tests::header_parser_rejects_malformed_content_length ... ok
+2026-11-01T16:04:25.3199423Z test adapters::mcp::dispatcher::tests::slow_reader_does_not_block_other_responses_and_is_released ... ok
+2026-11-01T16:04:25.3200346Z test adapters::mcp::http::tests::session_id_collision_returns_internal_error_without_overwriting_session ... ok
+2026-11-01T16:04:25.3201223Z test adapters::mcp::state::tests::generated_session_ids_are_random_ascii_and_unique_across_state_instances ... ok
+2026-11-01T16:04:25.3201936Z test agent_hooks::tests::auto_selection_maps_supported_clients_and_ignores_other_mcp_targets ... ok
+2026-11-01T16:04:25.3203212Z test agent_hooks::tests::copilot_cache_claim_skips_a_busy_lock_without_consuming_the_cache ... ok
+2026-11-01T16:04:25.3203795Z test agent_hooks::tests::input_bounds_are_utf8_safe_and_malformed_input_fails_open ... ok
+2026-11-01T16:04:25.3204381Z test api::boundary_tests::api_does_not_import_transport_adapters ... ok
+2026-11-01T16:04:25.3204881Z test api::boundary_tests::only_graph_writer_submits_database_updates ... ok
+2026-11-01T16:04:25.3205401Z test api::catalog::tests::shared_ontology_and_query_catalogs_remain_available ... ok
+2026-11-01T16:04:25.3205930Z test api::catalog::tests::syntax_catalog_describes_javascript_and_jsx_nodes ... ok
+2026-11-01T16:04:25.3206497Z test api::catalog::tests::syntax_catalog_retains_named_tree_sitter_nodes_and_fields ... ok
+2026-11-01T16:04:25.3360796Z test api::context::tests::bind_repo_selector_uses_config_root_before_cwd_discovery ... ok
+2026-11-01T16:04:25.3673675Z test api::context::tests::direct_recovery_restores_real_graph_and_search_after_sidecar_rename ... artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:25.3674882Z artifact origin publication lease unavailable
+2026-11-01T16:04:29.5426766Z ok
+2026-11-01T16:04:29.5427926Z test api::context::tests::repository_identity_rejects_storage_root_rebind ... ok
+2026-11-01T16:04:29.5428927Z test api::context::tests::resolve_runtime_selects_configured_graph_and_manifest_paths ... ok
+2026-11-01T16:04:29.5429895Z test api::core::tests::duplicate_operations_are_rejected_in_registration ... 
+2026-11-01T16:04:29.5431065Z thread 'api::core::tests::duplicate_operations_are_rejected_in_registration' (6152) panicked at src\api\core.rs:578:13:
+2026-11-01T16:04:29.5431937Z duplicate operation registration: health
+2026-11-01T16:04:29.5432612Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2026-11-01T16:04:29.5433264Z ok
+2026-11-01T16:04:29.5433777Z test api::core::tests::legacy_setup_returns_structured_reinstall_error ... ok
+2026-11-01T16:04:29.5434648Z test api::core::tests::resolve_mcp_operation_uses_registered_operation_metadata ... ok
+2026-11-01T16:04:29.5435453Z test api::core::tests::unknown_operation_request_is_rejected ... ok
+2026-11-01T16:04:33.2671932Z test api::graph_read::tests::manifest_without_backend_metadata_uses_legacy_ladybug_fts ... ok
+2026-11-01T16:04:33.2672932Z test api::lifecycle::tests::codex_toml_reject_different_leaves_existing_file_byte_identical ... ok
+2026-11-01T16:04:33.2673991Z test api::lifecycle::tests::hermes_managed_block_round_trips_windows_style_arguments ... ok
+2026-11-01T16:04:33.2675011Z test api::lifecycle::tests::http_registration_shapes_match_every_loopback_harness ... ok
+2026-11-01T16:04:33.2676000Z test api::lifecycle::tests::matching_entries_remain_idempotent_across_json_codex_and_hermes_configs ... ok
+2026-11-01T16:04:33.2826935Z test api::lifecycle::tests::registration_rename_deduplicates_matching_json_destination_atomically ... ok
+2026-11-01T16:04:33.2828218Z test api::lifecycle::tests::remove_mcp_server_dry_run_reports_previous_without_writing_and_write_removes_entry ... ok
+2026-11-01T16:04:33.2829299Z test api::lifecycle::tests::resolve_mcp_target_uses_expected_default_locality_and_paths ... ok
+2026-11-01T16:04:38.2720760Z test api::materialization::tests::committed_managed_graph_survives_deferred_artifact_collection ... ok
+2026-11-01T16:04:43.2167084Z test api::materialization::tests::managed_committed_native_result_survives_real_run_disposal_failure ... ok
+2026-11-01T16:04:43.2168150Z test api::materialization::tests::materialization_option_limits_override_install_config ... ok
+2026-11-01T16:04:43.2479423Z test api::materialization::tests::refresh_noop_aborts_prepared_writer_when_storage_identity_rebinds ... ok
+2026-11-01T16:04:43.2480573Z test api::normalization::tests::normalize_request_applies_canonical_defaults ... ok
+2026-11-01T16:04:43.2481247Z test api::normalization::tests::validate_request_rejects_unsupported_mcp_clients_and_scopes ... ok
+2026-11-01T16:04:43.2482306Z test api::refresh::owned_refresh_tests::refresh_owned_join_ignores_retained_core_clones_and_has_no_cycle ... ok
+2026-11-01T16:04:43.2483415Z test api::refresh::owned_refresh_tests::refresh_owned_terminal_disposition_survives_stop_disable_failure_and_panic_races ... {"event":"repository.refresh_error","message":"primary failure witness"}
+2026-11-01T16:04:43.2484066Z 
+2026-11-01T16:04:43.2484282Z thread 'codebase-graph-refresh' (6800) panicked at src\api\refresh.rs:3881:26:
+2026-11-01T16:04:43.2484774Z primary panic witness
+2026-11-01T16:04:43.2485068Z ok
+2026-11-01T16:04:46.9353533Z test api::refresh::tests::native_refresh_startup_reports_native_after_reconciliation ... ok
+2026-11-01T16:04:46.9354245Z test api::refresh::tests::refresh_retry_policy_retries_transient_errors_before_success ... ok
+2026-11-01T16:04:46.9509005Z test api::refresh::tests::refresh_service_disables_legacy_v1_auto_refresh_with_remediation ... ok
+2026-11-01T16:04:46.9985829Z test api::refresh::tests::sustained_path_events_still_force_a_due_full_reconciliation ... ok
+2026-11-01T16:04:46.9986772Z test artifact_store::tests::artifact_key_changes_when_inputs_change ... ok
+2026-11-01T16:04:47.0297737Z test artifact_store::tests::artifact_store_roundtrips_raw_partition_and_reuses_existing_payload ... artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:47.0298805Z artifact origin publication lease unavailable
+2026-11-01T16:04:47.0299323Z artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:47.0299813Z artifact origin publication lease unavailable
+2026-11-01T16:04:47.0300199Z ok
+2026-11-01T16:04:47.0766168Z test artifact_store::tests::dc_origin_completed_receipt_remains_origin_only_for_nonfinite_loader_failure ... ok
+2026-11-01T16:04:47.1080050Z test artifact_store::tests::dc_origin_optional_busy_publisher_still_writes_rooted_untracked_payload ... cleanup control lock contended: identity=Ok(FileIdentity { volume: 3535216580, index: 47006321110686006 }) mode=exclusive
+2026-11-01T16:04:47.1081534Z artifact origin publication lease unavailable
+2026-11-01T16:04:47.1235325Z ok
+2026-11-01T16:04:47.1703357Z test artifact_store::tests::dc_s3_artifact_producing_guard_covers_write_reuse_replace_and_failure ... ok
+2026-11-01T16:04:47.1736149Z test artifact_store::tests::transient_partition_loads_only_actual_created_file_and_preserves_replacement ... ok
+2026-11-01T16:04:48.4027299Z test coordinator::tests::concurrent_clients_share_one_repository_coordinator ... ok
+2026-11-01T16:04:48.4819228Z test coordinator::tests::expired_request_received_as_trickled_bytes_never_dispatches ... ok
+2026-11-01T16:04:48.4820166Z test coordinator::tests::joined_maintenance_driver::dc_joined_driver_rebind_and_stop_during_preparation_prevent_mutation ... ok
+2026-11-01T16:04:48.4821009Z test coordinator::tests::maintenance_cannot_bypass_queued_or_active_real_execution ... ok
+2026-11-01T16:04:48.5294313Z test coordinator::tests::managed_coordinator_acquisition_preserves_real_fresh_root_enrollment ... cleanup admission rejected: Io(Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." })
+2026-11-01T16:04:48.5295345Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:04:48.5411070Z cleanup admission rejected: Io(Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." })
+2026-11-01T16:04:48.5411936Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:04:49.5304507Z ok
+2026-11-01T16:04:50.5181391Z test coordinator::tests::refresh_owned_join::refresh_monitor_final_self_drop_exits_before_another_wait_or_work ... ok
+2026-11-01T16:04:50.5636134Z test coordinator::tests::retryable_receive_failure_retries_the_same_owner ... ok
+2026-11-01T16:04:50.5637207Z test db_writer::phase::tests::error_tail_reader_requests_no_more_than_the_limit ... ok
+2026-11-01T16:04:50.5638602Z test db_writer::phase::tests::phase_protocol_requires_v2_containment_contract ... ok
+2026-11-01T16:04:50.5639619Z test db_writer::phase::tests::phase_test_allocation_is_scoped_to_the_ready_loader ... ok
+2026-11-01T16:04:50.5640656Z test db_writer::rss::tests::allocator_pressure_relief_is_safe_at_phase_boundaries ... ok
+2026-11-01T16:04:50.5641592Z test db_writer::schema::tests::extension_setup_is_always_pre_copy ... ok
+2026-11-01T16:04:50.5642622Z test db_writer::tests::guarded_database_native_path_rejects_unsupported_windows_prefixes ... ok
+2026-11-01T16:04:50.5643720Z test db_writer::tests::guarded_database_windows_encoding_policy_checks_the_complete_native_path ... ok
+2026-11-01T16:04:50.6575716Z test db_writer::tests::native_writer_loads_json_staging_through_ladybug_copy ... ok
+2026-11-01T16:04:50.6576389Z 
+2026-11-01T16:04:50.6576846Z test result: ok. 89 passed; 0 failed; 0 ignored; 0 measured; 741 filtered out; finished in 62.76s
+2026-11-01T16:04:50.6577475Z 
+2026-11-01T16:04:50.6729606Z      Running unittests src\bin\codebase-graph.rs (target\native-tests\deps\codebase_graph-20a8c8fbf8f56c28.exe)
+2026-11-01T16:04:50.6887752Z 
+2026-11-01T16:04:50.6889306Z running 0 tests
+2026-11-01T16:04:50.6889886Z 
+2026-11-01T16:04:50.6890351Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-11-01T16:04:50.6890868Z 
+2026-11-01T16:04:50.6893155Z      Running unittests src\lib.rs (target\native-tests\deps\k_wiki-d131d41cce8e34e4.exe)
+2026-11-01T16:04:50.7041439Z 
+2026-11-01T16:04:50.7042054Z running 1 test
+2026-11-01T16:04:50.7042724Z test adapters::install::tests::failed_post_install_migration_keeps_the_install_payload_and_recovery ... ok
+2026-11-01T16:04:50.7047280Z 
+2026-11-01T16:04:50.7344348Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+2026-11-01T16:04:50.7345036Z 
+2026-11-01T16:04:50.7345363Z      Running unittests src\bin\k-wiki.rs (target\native-tests\deps\k_wiki-4ab980c6f94d44f1.exe)
+2026-11-01T16:04:50.7345743Z 
+2026-11-01T16:04:50.7345868Z running 0 tests
+2026-11-01T16:04:50.7345986Z 
+2026-11-01T16:04:50.7346228Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-11-01T16:04:50.7346539Z 
+2026-11-01T16:04:50.7346756Z      Running unittests src\main.rs (target\native-tests\deps\xtask-92468b75ac7ec042.exe)
+2026-11-01T16:04:50.7347038Z 
+2026-11-01T16:04:50.7347150Z running 3 tests
+2026-11-01T16:04:51.1418511Z test ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full ... ok
+2026-11-01T16:04:51.1419108Z test ci::tests::metadata_classifier_rejects_duplicate_and_decoy_contexts ... ok
+2026-11-01T16:04:51.1419558Z test ci::tests::pr167_shaped_complete_metadata_transition_is_lightweight ... ok
+2026-11-01T16:04:51.1419799Z 
+2026-11-01T16:04:51.1420012Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.43s
+2026-11-01T16:04:51.1420286Z 
+2026-11-01T16:04:51.1574828Z native test command 1 finished in 63.456s: Ok(())
+2026-11-01T16:04:51.6444631Z native test command 2: cargo test --workspace --locked --profile native-tests --features codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions --lib --bins --examples --no-fail-fast -- --exact db_writer::write::tests::isolated_phase_schedule_stops_after_first_error_without_replay execution::parallel::tests::execution_plan_uses_scanned_source_after_repository_is_removed execution::run::tests::cached_and_clean_builds_stage_identical_rows execution::run::tests::digest_only_build_changes_can_reuse_all_raw_artifacts execution::run::tests::unchanged_partitions_reuse_artifacts_without_reparsing hash::tests::sha256_file_streams_file_content macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands materialization_worker::tests::empty_worker_cancellation_and_setup_failure_publish_terminal_owner materialization_worker::tests::progress_drain_discards_oversized_frames_and_continues_bounded materialization_worker::tests::worker_request_ignores_retired_semantic_keys mcp_client::tests::trickled_response_cannot_extend_the_elapsed_deadline native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets parser::tests::css_tree_sitter_parser_preserves_stylesheet_structure parser::tests::javascript_tree_sitter_parser_marks_profile_captures_and_jsx parser::tests::tsx_tree_sitter_parser_uses_the_tsx_grammar partition_builder::tests::graph_partition_roundtrips_through_json process_lifecycle::tests::retired_startup_rejects_late_guardian_before_child_creation process_lifecycle::windows::tests::filesystem_paths_support_unc_long_paths_and_utf16 process_lifecycle::windows::tests::recovery_probe_does_not_terminate_a_nonempty_job protocol::maintenance_summary_tests::unobserved_maintenance_keeps_all_measurements_unknown protocol::tests::language_profile_requires_grammar_version_when_deserialized protocol::tests::native_materialization_request_preserves_explicit_parallel_false protocol::tests::v4_manifest_remains_readable_for_one_upgrade_rebuild scan::tests::candidate_paths_do_not_hide_other_changed_or_deleted_files scan::tests::scan_excludes_generated_output_unless_explicitly_included scan::tests::snapshot_hashing_keeps_the_exclusive_creator_open_until_publication search_index::tests::checksum_validation_rejects_corrupt_postings search_index::tests::sidecar_build_and_search_use_deterministic_bm25_ties source_selection::tests::generated_paths_require_explicit_inclusion_and_preserve_descendants staging_writer::accumulator::output_tests::final_output_limits_include_json_framing_and_csv_header staging_writer::accumulator::output_tests::registered_spool_drop_preserves_unreceipted_injected_child_for_terminal_collection staging_writer::spill::tests::metrics_preserve_concurrent_charges_and_written_totals staging_writer::spill::tests::multi_level_merge_removes_consumed_runs_and_stays_heap_bounded staging_writer::tests::copy_path_strips_windows_extended_prefix_for_ladybug staging_writer::tests::single_record_larger_than_chunk_target_roundtrips storage::atomic::tests::atomic_temp_paths_are_scoped_to_the_writer_process storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations storage::inventory::tests::dc_s1_windows_prefix_only_available_unc_root_requires_directory_metadata storage::inventory::tests::existing_live_lease_is_observed_without_recovery storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage storage::locks::fixed_control_tests::dc_fixed_stamp_open_read_and_recheck_are_noncreating_and_bounded storage::locks::fixed_control_tests::dc_fixed_stamp_scratch_uses_shared_reservation_and_releases_it storage::locks::rooted_directory_tests::dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity storage::locks::rooted_directory_tests::directory_queries_align_nested_byte_scratch_and_remove_pinned_empty_names storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor storage::maintenance::tests::dc_cursor_wrap_and_all_categories storage::maintenance_admission::tests::canonical_large_registry_is_bounded_nonmutating_and_unknown_siblings_survive storage::maintenance_admission::tests::canonical_small_grant_and_panic_drop_actual_authority_before_work storage::maintenance_admission::tests::local_epoch_invalidates_current_counter_while_unrelated_shared_producer_stays_live storage::maintenance_admission::tests::private_metadata_partial_frame_and_reset_preserve_unknown_bytes storage::maintenance_admission::tests::target_binding_duplicate_retains_actual_legacy_objects_and_same_challenge storage::maintenance_backup::tests::historical_backup_address_is_exact_and_lossless storage::maintenance_budget::tests::dc_memory_box_fieldwise_large_initialization_is_charged_and_drops_once storage::maintenance_budget::tests::dc_memory_split_failure_and_account_lifetime storage::maintenance_candidate::tests::managed_confirmation_remains_pending_until_legacy_enrollment storage::maintenance_collector_tests::dc_s5_canonical_only_durable_detach_interruption_resumes_without_source_edit storage::maintenance_collector_tests::dc_s5_existing_old_current_managed_store_requires_one_confirmation_then_retires_old_generation storage::maintenance_collector_tests::dc_s5_incomplete_copied_orphan_staging_is_preserved_even_with_confirmation storage::maintenance_collector_tests::dc_s5_real_owner_cancel_joins_paused_preparation_before_fixture_reuse storage::maintenance_collector_tests::dc_s5_real_referenced_backup_payload_restore_interruption_resumes_without_edit storage::maintenance_collector_tests::dc_s5_terminal_absent_barrier_rejects_appeared_entries_under_real_dispatcher storage::maintenance_controls::tests::dc_control_independent_regions_recover_every_partial_write_cut storage::maintenance_generations::legacy_final_tests::dc_generation_actual_verified_successor_closes_unreceipted_predecessor_without_minting_origin storage::maintenance_generations::tests::generation_preparation_keeps_admission_images_out_of_fixed_owner_layout storage::maintenance_journal::runtime_retirement_tests::runtime_leaf_tombstone_and_corruption_never_alias_new_operation storage::maintenance_json::tests::dc_json_differential_producer_whitespace_hash storage::maintenance_json::tests::dc_json_rejects_malformed_trailing_utf8_and_matches_loader_depth storage::maintenance_legacy_association::tests::dc_legacy_cache_change_after_certification_invalidates_final_join storage::maintenance_legacy_association::tests::dc_legacy_original_epoch_cancellation_and_cap_fail_closed storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_commit_recovers_without_another_confirmation storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_closes_and_aborts_only_staging_scope storage::maintenance_legacy_guard::tests::dc_legacy_staging_closed_record_refuses_new_actual_producer storage::maintenance_legacy_staging::tests::dc_staging_filenames_select_only_exact_known_profiles storage::maintenance_native_projection::selected_tests::dc_native_logical_long_utf8_metadata_empty_and_late_errors storage::maintenance_native_projection::selected_tests::dc_native_visibility_deleted_early_vector_and_implicit_tail storage::maintenance_native_projection::tests::dc_native_header43_exact_layout_ranges_and_account storage::maintenance_origin::tests::dc_origin_actual_creation_frames_interrupted_publication_and_torn_prefix storage::maintenance_origin::workspace_origin_tests::workspace_frames_bind_exact_creation_and_completed_bytes
+2026-11-01T16:04:51.8297592Z     Finished `native-tests` profile [optimized] target(s) in 0.15s
+2026-11-01T16:04:51.8454043Z      Running unittests src\lib.rs (target\native-tests\deps\codebase_graph-b49f34bc229d6476.exe)
+2026-11-01T16:04:51.8454670Z 
+2026-11-01T16:04:51.8454782Z running 80 tests
+2026-11-01T16:04:51.8455388Z test db_writer::write::tests::isolated_phase_schedule_stops_after_first_error_without_replay ... ok
+2026-11-01T16:04:51.8767894Z test execution::parallel::tests::execution_plan_uses_scanned_source_after_repository_is_removed ... artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:51.8768841Z artifact origin publication lease unavailable
+2026-11-01T16:04:51.8769179Z ok
+2026-11-01T16:04:51.9079559Z test execution::run::tests::cached_and_clean_builds_stage_identical_rows ... artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:51.9080682Z artifact origin publication lease unavailable
+2026-11-01T16:04:51.9081420Z artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:51.9082183Z artifact origin publication lease unavailable
+2026-11-01T16:04:53.5498216Z artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:53.5498967Z artifact origin publication lease unavailable
+2026-11-01T16:04:55.1758886Z artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:55.1759605Z artifact origin publication lease unavailable
+2026-11-01T16:04:55.1914416Z artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:55.1915678Z artifact origin publication lease unavailable
+2026-11-01T16:04:56.8349136Z ok
+2026-11-01T16:04:56.8661991Z test execution::run::tests::digest_only_build_changes_can_reuse_all_raw_artifacts ... artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:56.8663168Z artifact origin publication lease unavailable
+2026-11-01T16:04:56.8663926Z artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:04:56.8664610Z artifact origin publication lease unavailable
+2026-11-01T16:05:00.1038824Z ok
+2026-11-01T16:05:00.1351710Z test execution::run::tests::unchanged_partitions_reuse_artifacts_without_reparsing ... artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:05:00.1353241Z artifact origin publication lease unavailable
+2026-11-01T16:05:00.1353931Z artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:05:00.1354650Z artifact origin publication lease unavailable
+2026-11-01T16:05:01.8085836Z artifact origin capability unavailable: Some("reference_epoch_missing")
+2026-11-01T16:05:01.8087189Z artifact origin publication lease unavailable
+2026-11-01T16:05:03.4349553Z ok
+2026-11-01T16:05:03.4350212Z test hash::tests::sha256_file_streams_file_content ... ok
+2026-11-01T16:05:03.5130345Z test materialization_worker::tests::empty_worker_cancellation_and_setup_failure_publish_terminal_owner ... ok
+2026-11-01T16:05:03.5131026Z test materialization_worker::tests::progress_drain_discards_oversized_frames_and_continues_bounded ... ok
+2026-11-01T16:05:03.5131636Z test materialization_worker::tests::worker_request_ignores_retired_semantic_keys ... ok
+2026-11-01T16:05:03.8437745Z test mcp_client::tests::trickled_response_cannot_extend_the_elapsed_deadline ... ok
+2026-11-01T16:05:03.8438392Z test parser::tests::css_tree_sitter_parser_preserves_stylesheet_structure ... ok
+2026-11-01T16:05:03.8438957Z test parser::tests::javascript_tree_sitter_parser_marks_profile_captures_and_jsx ... ok
+2026-11-01T16:05:03.8439481Z test parser::tests::tsx_tree_sitter_parser_uses_the_tsx_grammar ... ok
+2026-11-01T16:05:03.8440049Z test partition_builder::tests::graph_partition_roundtrips_through_json ... ok
+2026-11-01T16:05:03.8440630Z test process_lifecycle::tests::retired_startup_rejects_late_guardian_before_child_creation ... ok
+2026-11-01T16:05:03.8441249Z test process_lifecycle::windows::tests::filesystem_paths_support_unc_long_paths_and_utf16 ... ok
+2026-11-01T16:05:03.8595108Z test process_lifecycle::windows::tests::recovery_probe_does_not_terminate_a_nonempty_job ... ok
+2026-11-01T16:05:03.8595837Z test protocol::maintenance_summary_tests::unobserved_maintenance_keeps_all_measurements_unknown ... ok
+2026-11-01T16:05:03.8596535Z test protocol::tests::language_profile_requires_grammar_version_when_deserialized ... ok
+2026-11-01T16:05:03.8597160Z test protocol::tests::native_materialization_request_preserves_explicit_parallel_false ... ok
+2026-11-01T16:05:03.8597780Z test protocol::tests::v4_manifest_remains_readable_for_one_upgrade_rebuild ... ok
+2026-11-01T16:05:03.8598323Z test scan::tests::candidate_paths_do_not_hide_other_changed_or_deleted_files ... ok
+2026-11-01T16:05:03.8750843Z test scan::tests::scan_excludes_generated_output_unless_explicitly_included ... ok
+2026-11-01T16:05:03.8751860Z test scan::tests::snapshot_hashing_keeps_the_exclusive_creator_open_until_publication ... ok
+2026-11-01T16:05:03.8752450Z test search_index::tests::checksum_validation_rejects_corrupt_postings ... ok
+2026-11-01T16:05:03.8753277Z test search_index::tests::sidecar_build_and_search_use_deterministic_bm25_ties ... ok
+2026-11-01T16:05:03.8753983Z test source_selection::tests::generated_paths_require_explicit_inclusion_and_preserve_descendants ... ok
+2026-11-01T16:05:03.8754908Z test staging_writer::accumulator::output_tests::final_output_limits_include_json_framing_and_csv_header ... ok
+2026-11-01T16:05:04.0471006Z test staging_writer::accumulator::output_tests::registered_spool_drop_preserves_unreceipted_injected_child_for_terminal_collection ... ok
+2026-11-01T16:05:04.0472220Z test staging_writer::spill::tests::metrics_preserve_concurrent_charges_and_written_totals ... ok
+2026-11-01T16:05:04.0782162Z test staging_writer::spill::tests::multi_level_merge_removes_consumed_runs_and_stays_heap_bounded ... ok
+2026-11-01T16:05:04.0783372Z test staging_writer::tests::copy_path_strips_windows_extended_prefix_for_ladybug ... ok
+2026-11-01T16:05:04.0784349Z test staging_writer::tests::single_record_larger_than_chunk_target_roundtrips ... ok
+2026-11-01T16:05:04.0785381Z test storage::atomic::tests::atomic_temp_paths_are_scoped_to_the_writer_process ... ok
+2026-11-01T16:05:04.0786374Z test storage::inventory::tests::busy_writer_is_reported_without_waiting_or_mutation ... ok
+2026-11-01T16:05:04.0938551Z test storage::inventory::tests::dc_s1_a3_constant_pointer_does_not_hide_artifact_and_run_mutations ... ok
+2026-11-01T16:05:04.0939771Z test storage::inventory::tests::dc_s1_windows_prefix_only_available_unc_root_requires_directory_metadata ... ok
+2026-11-01T16:05:04.0940838Z test storage::inventory::tests::existing_live_lease_is_observed_without_recovery ... ok
+2026-11-01T16:05:04.1094265Z test storage::inventory::tests::review_complete_root_reconciliation_is_insertion_order_independent ... ok
+2026-11-01T16:05:04.1095140Z test storage::inventory::tests::review_direct_cache_inside_managed_root_is_rejected ... ok
+2026-11-01T16:05:04.1250513Z test storage::inventory::tests::review_managed_config_makes_unselected_default_direct_former ... ok
+2026-11-01T16:05:04.1251450Z test storage::inventory::tests::review_scope_rejects_source_state_and_unregistered_external_storage ... ok
+2026-11-01T16:05:04.1252135Z test storage::locks::fixed_control_tests::dc_fixed_stamp_open_read_and_recheck_are_noncreating_and_bounded ... ok
+2026-11-01T16:05:04.1252869Z test storage::locks::fixed_control_tests::dc_fixed_stamp_scratch_uses_shared_reservation_and_releases_it ... ok
+2026-11-01T16:05:04.1253574Z test storage::locks::rooted_directory_tests::dc_rooted_file_rename_is_no_replace_and_checks_exact_source_identity ... ok
+2026-11-01T16:05:04.1254309Z test storage::locks::rooted_directory_tests::directory_queries_align_nested_byte_scratch_and_remove_pinned_empty_names ... ok
+2026-11-01T16:05:04.2659980Z test storage::locks::rooted_directory_tests::nested_directory_scans_do_not_consume_the_outer_cursor ... ok
+2026-11-01T16:05:04.2660675Z test storage::maintenance::tests::dc_cursor_wrap_and_all_categories ... ok
+2026-11-01T16:05:04.3596545Z test storage::maintenance_admission::tests::canonical_large_registry_is_bounded_nonmutating_and_unknown_siblings_survive ... ok
+2026-11-01T16:05:04.4065402Z test storage::maintenance_admission::tests::canonical_small_grant_and_panic_drop_actual_authority_before_work ... 
+2026-11-01T16:05:04.4067276Z thread 'storage::maintenance_admission::tests::canonical_small_grant_and_panic_drop_actual_authority_before_work' (7916) panicked at src\storage\maintenance_admission.rs:1092:29:
+2026-11-01T16:05:04.4068042Z fixture callback unwind
+2026-11-01T16:05:04.4068465Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2026-11-01T16:05:04.4068991Z ok
+2026-11-01T16:05:04.4377825Z test storage::maintenance_admission::tests::local_epoch_invalidates_current_counter_while_unrelated_shared_producer_stays_live ... ok
+2026-11-01T16:05:04.4848710Z test storage::maintenance_admission::tests::private_metadata_partial_frame_and_reset_preserve_unknown_bytes ... cleanup stamp changed at src\storage\maintenance_admission.rs:92:42: expected FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12103423998564688 }, kind: File, len: 512, links: 1, modified: [134380227044531621, 0], changed: [134380227044531621, 0] }, actual FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12103423998564688 }, kind: File, len: 524, links: 1, modified: [134380227044687655, 0], changed: [134380227044687655, 0] }
+2026-11-01T16:05:04.5158359Z ok
+2026-11-01T16:05:04.5474983Z test storage::maintenance_admission::tests::target_binding_duplicate_retains_actual_legacy_objects_and_same_challenge ... cleanup stamp changed at src\storage\maintenance_admission.rs:92:42: expected FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12666373951985996 }, kind: File, len: 0, links: 1, modified: [134380227045312706, 0], changed: [134380227045312706, 0] }, actual FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12666373951985996 }, kind: File, len: 20, links: 1, modified: [134380227045312706, 0], changed: [134380227045312706, 0] }
+2026-11-01T16:05:04.5478728Z cleanup stamp changed at src\storage\maintenance_admission.rs:92:42: expected FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12666373951985996 }, kind: File, len: 0, links: 1, modified: [134380227045312706, 0], changed: [134380227045312706, 0] }, actual FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12666373951985996 }, kind: File, len: 20, links: 1, modified: [134380227045312706, 0], changed: [134380227045312706, 0] }
+2026-11-01T16:05:04.5481488Z cleanup stamp changed at src\storage\maintenance_admission.rs:92:42: expected FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12666373951985996 }, kind: File, len: 0, links: 1, modified: [134380227045312706, 0], changed: [134380227045312706, 0] }, actual FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12666373951985996 }, kind: File, len: 20, links: 1, modified: [134380227045312706, 0], changed: [134380227045312706, 0] }
+2026-11-01T16:05:04.5482919Z ok
+2026-11-01T16:05:04.5483345Z test storage::maintenance_backup::tests::historical_backup_address_is_exact_and_lossless ... ok
+2026-11-01T16:05:04.5484106Z test storage::maintenance_budget::tests::dc_memory_box_fieldwise_large_initialization_is_charged_and_drops_once ... ok
+2026-11-01T16:05:04.5484779Z test storage::maintenance_budget::tests::dc_memory_split_failure_and_account_lifetime ... ok
+2026-11-01T16:05:04.5940523Z test storage::maintenance_candidate::tests::managed_confirmation_remains_pending_until_legacy_enrollment ... ok
+2026-11-01T16:05:08.3023063Z test storage::maintenance_collector_tests::dc_s5_canonical_only_durable_detach_interruption_resumes_without_source_edit ... terminal candidate selected output: \\?\D:\a\_temp\cgraph-s5-collector-2544-0000000000000000\repository\.codebaseGraph\storage\runs\run-2544-1793549104634678300-14
+2026-11-01T16:05:08.3177874Z canonical-only fixture preparation: 1 known completed run(s) removed by established compatibility cleanup; this does not qualify terminal GC
+2026-11-01T16:05:10.8828215Z cleanup artifact detach mutation rejected: Io(Kind(Interrupted))
+2026-11-01T16:05:11.2121117Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:13.3237950Z ok
+2026-11-01T16:05:16.8293152Z test storage::maintenance_collector_tests::dc_s5_existing_old_current_managed_store_requires_one_confirmation_then_retires_old_generation ... terminal candidate selected output: \\?\D:\a\_temp\cgraph-s5-collector-2544-0000000000000001\repository\.codebaseGraph\storage\runs\run-2544-1793549113371154900-16
+2026-11-01T16:05:22.3814578Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:22.5219471Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:22.6469022Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:22.7875876Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:22.9291622Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:23.0541983Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:23.1952491Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:23.3357834Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:23.4618725Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:23.6025123Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:23.7275627Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:23.8690243Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:23.9941582Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:24.1189682Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:24.2600322Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:24.3851155Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:24.5100886Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:24.6509245Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:24.7758246Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:24.9170397Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:25.0421795Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:25.1669234Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:25.2991515Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:25.4336168Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:25.5899506Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:25.7150927Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:25.8560876Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:25.9810740Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:26.1218945Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:26.2627510Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:26.4032095Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:26.5439848Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:05:26.6687811Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:06:26.9810839Z cleanup admission rejected: Invalid(Changed)
+2026-11-01T16:06:34.6311574Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:06:42.6373328Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:06:43.3250925Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:06:43.8255902Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:06:44.2327755Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:06:44.2638918Z ok
+2026-11-01T16:06:47.6886052Z test storage::maintenance_collector_tests::dc_s5_incomplete_copied_orphan_staging_is_preserved_even_with_confirmation ... terminal candidate selected output: \\?\D:\a\_temp\cgraph-s5-collector-2544-0000000000000003\repository\.codebaseGraph\storage\runs\run-2544-1793549204308304300-20
+2026-11-01T16:06:48.8928105Z terminal candidate selected output: \\?\D:\a\_temp\cgraph-s5-collector-2544-0000000000000003\repository\.codebaseGraph\storage\runs\run-2544-1793549204308304300-20
+2026-11-01T16:06:49.5647053Z terminal candidate selected output: \\?\D:\a\_temp\cgraph-s5-collector-2544-0000000000000003\repository\.codebaseGraph\storage\runs\run-2544-1793549204308304300-20
+2026-11-01T16:07:50.8806029Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:50.8806667Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:50.8807300Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:51.0529048Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:51.0529997Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:51.0530859Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:51.2247777Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:51.2248525Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:51.2248983Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:51.3813922Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:51.3814803Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:51.3815592Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:51.5535527Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:51.5536533Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:51.5537494Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:51.7097334Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:51.7098257Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:51.7099050Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:51.8821141Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:51.8822071Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:51.8822885Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:52.0383673Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:52.0384674Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:52.2101855Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:52.2102333Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:52.2102788Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:52.2103539Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:52.3823852Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:52.3824664Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:52.3825414Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:52.5386065Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:52.5387057Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:52.5387750Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:53.1951592Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:53.1952451Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:53.1953208Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:53.6800514Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:53.6801053Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:53.6801506Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:54.1021332Z legacy staging validation rejected: Unknown
+2026-11-01T16:07:54.1022265Z legacy preparation invalid at src\storage\maintenance_legacy_engine.rs:544:14
+2026-11-01T16:07:54.1023029Z cleanup admission rejected: Invalid(InvalidRecord)
+2026-11-01T16:07:54.1023408Z ok
+2026-11-01T16:07:57.6692933Z test storage::maintenance_collector_tests::dc_s5_real_owner_cancel_joins_paused_preparation_before_fixture_reuse ... terminal candidate selected output: \\?\D:\a\_temp\cgraph-s5-collector-2544-0000000000000004\repository\.codebaseGraph\storage\runs\run-2544-1793549274151531700-22
+2026-11-01T16:07:57.6848435Z canonical-only fixture preparation: 1 known completed run(s) removed by established compatibility cleanup; this does not qualify terminal GC
+2026-11-01T16:08:02.5255733Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:08:04.6515643Z ok
+2026-11-01T16:08:08.0781635Z test storage::maintenance_collector_tests::dc_s5_real_referenced_backup_payload_restore_interruption_resumes_without_edit ... terminal candidate selected output: \\?\D:\a\_temp\cgraph-s5-collector-2544-0000000000000005\repository\.codebaseGraph\storage\runs\run-2544-1793549284690855900-24
+2026-11-01T16:08:08.0935442Z canonical-only fixture preparation: 1 known completed run(s) removed by established compatibility cleanup; this does not qualify terminal GC
+2026-11-01T16:08:11.3603695Z 
+2026-11-01T16:08:11.3605425Z thread '<unnamed>' (2008) panicked at src\storage\maintenance_backup.rs:1808:13:
+2026-11-01T16:08:11.3606117Z fixture backup restore cut: AfterPayloadRestore
+2026-11-01T16:08:12.5350621Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:08:13.5675560Z cleanup candidate filesystem error: Os { code: 2, kind: NotFound, message: "The system cannot find the file specified." }
+2026-11-01T16:08:13.5830502Z ok
+2026-11-01T16:08:17.1471605Z test storage::maintenance_collector_tests::dc_s5_terminal_absent_barrier_rejects_appeared_entries_under_real_dispatcher ... terminal candidate selected output: \\?\D:\a\_temp\cgraph-s5-collector-2544-0000000000000006\repository\.codebaseGraph\storage\runs\run-2544-1793549293621909900-26
+2026-11-01T16:08:17.1938524Z ok
+2026-11-01T16:08:17.2095896Z test storage::maintenance_controls::tests::dc_control_independent_regions_recover_every_partial_write_cut ... ok
+2026-11-01T16:08:22.1812394Z test storage::maintenance_generations::legacy_final_tests::dc_generation_actual_verified_successor_closes_unreceipted_predecessor_without_minting_origin ... ok
+2026-11-01T16:08:22.1813761Z test storage::maintenance_generations::tests::generation_preparation_keeps_admission_images_out_of_fixed_owner_layout ... ok
+2026-11-01T16:08:22.1815196Z test storage::maintenance_journal::runtime_retirement_tests::runtime_leaf_tombstone_and_corruption_never_alias_new_operation ... ok
+2026-11-01T16:08:22.1816147Z test storage::maintenance_json::tests::dc_json_differential_producer_whitespace_hash ... ok
+2026-11-01T16:08:22.1817123Z test storage::maintenance_json::tests::dc_json_rejects_malformed_trailing_utf8_and_matches_loader_depth ... ok
+2026-11-01T16:08:24.0107707Z test storage::maintenance_legacy_association::tests::dc_legacy_cache_change_after_certification_invalidates_final_join ... cleanup stamp changed at src\storage\maintenance_legacy_association.rs:2239:35: expected FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12666373951986033 }, kind: File, len: 46091, links: 1, modified: [134380229022121301, 0], changed: [134380229022121301, 0] }, actual FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12666373951986033 }, kind: File, len: 46092, links: 1, modified: [134380229039477268, 0], changed: [134380229039477268, 0] }
+2026-11-01T16:08:24.0109811Z ok
+2026-11-01T16:08:25.7321388Z test storage::maintenance_legacy_association::tests::dc_legacy_original_epoch_cancellation_and_cap_fail_closed ... ok
+2026-11-01T16:08:25.8414857Z test storage::maintenance_legacy_bootstrap::source_recovery_tests::dc_legacy_staging_owned_commit_recovers_without_another_confirmation ... ok
+2026-11-01T16:08:25.9348261Z test storage::maintenance_legacy_bootstrap::tests::dc_legacy_real_dispatcher_claim_closes_and_aborts_only_staging_scope ... ok
+2026-11-01T16:08:25.9349232Z test storage::maintenance_legacy_guard::tests::dc_legacy_staging_closed_record_refuses_new_actual_producer ... ok
+2026-11-01T16:08:25.9350020Z test storage::maintenance_legacy_staging::tests::dc_staging_filenames_select_only_exact_known_profiles ... ok
+2026-11-01T16:08:25.9350794Z test storage::maintenance_native_projection::selected_tests::dc_native_logical_long_utf8_metadata_empty_and_late_errors ... ok
+2026-11-01T16:08:25.9351605Z test storage::maintenance_native_projection::selected_tests::dc_native_visibility_deleted_early_vector_and_implicit_tail ... ok
+2026-11-01T16:08:25.9352396Z test storage::maintenance_native_projection::tests::dc_native_header43_exact_layout_ranges_and_account ... ok
+2026-11-01T16:08:25.9816446Z test storage::maintenance_origin::tests::dc_origin_actual_creation_frames_interrupted_publication_and_torn_prefix ... ok
+2026-11-01T16:08:25.9817432Z test storage::maintenance_origin::workspace_origin_tests::workspace_frames_bind_exact_creation_and_completed_bytes ... ok
+2026-11-01T16:08:25.9817871Z 
+2026-11-01T16:08:25.9818133Z test result: ok. 80 passed; 0 failed; 0 ignored; 0 measured; 750 filtered out; finished in 214.15s
+2026-11-01T16:08:25.9818488Z 
+2026-11-01T16:08:26.0129142Z      Running unittests src\bin\codebase-graph.rs (target\native-tests\deps\codebase_graph-20a8c8fbf8f56c28.exe)
+2026-11-01T16:08:26.0129917Z 
+2026-11-01T16:08:26.0130070Z running 0 tests
+2026-11-01T16:08:26.0130306Z 
+2026-11-01T16:08:26.0130672Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-11-01T16:08:26.0131177Z 
+2026-11-01T16:08:26.0131510Z      Running unittests src\lib.rs (target\native-tests\deps\k_wiki-d131d41cce8e34e4.exe)
+2026-11-01T16:08:26.0284426Z 
+2026-11-01T16:08:26.0284953Z running 0 tests
+2026-11-01T16:08:26.0285244Z 
+2026-11-01T16:08:26.0286384Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+2026-11-01T16:08:26.0287158Z 
+2026-11-01T16:08:26.0287605Z      Running unittests src\bin\k-wiki.rs (target\native-tests\deps\k_wiki-4ab980c6f94d44f1.exe)
+2026-11-01T16:08:26.0440857Z 
+2026-11-01T16:08:26.0441324Z running 0 tests
+2026-11-01T16:08:26.0441618Z 
+2026-11-01T16:08:26.0442000Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-11-01T16:08:26.0442559Z 
+2026-11-01T16:08:26.0442952Z      Running unittests src\main.rs (target\native-tests\deps\xtask-92468b75ac7ec042.exe)
+2026-11-01T16:08:26.0443416Z 
+2026-11-01T16:08:26.0443593Z running 3 tests
+2026-11-01T16:08:26.0444502Z test macos::tests::minimum_version_parser_reads_macos_build_and_legacy_commands ... ok
+2026-11-01T16:08:26.0445351Z test native_tests::shards::tests::empty_shard_never_runs_an_unfiltered_suite ... ok
+2026-11-01T16:08:26.0446377Z test native_tests::tests::partitions_every_test_target_and_keeps_new_integration_targets ... ok
+2026-11-01T16:08:26.0446922Z 
+2026-11-01T16:08:26.0447367Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.00s
+2026-11-01T16:08:26.0447923Z 
+2026-11-01T16:08:26.0597734Z native test command 2 finished in 214.414s: Ok(())
+2026-11-01T16:08:26.5619593Z native test command 3: cargo test --workspace --locked --profile native-tests --features codebase-graph/bundled-windows-extensions,k-wiki/bundled-windows-extensions --lib --bins --examples --no-fail-fast -- --exact storage::maintenance_ownership::tests::dc_epoch_collector_composes_owned_exclusive_root_without_reacquisition storage::maintenance_ownership::tests::dc_epoch_initial_creator_excludes_fresh_coverage_until_effects_finish storage::maintenance_ownership::tests::dc_epoch_missing_or_unwritable_control_never_repairs_recognized_proof storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue storage::maintenance_ownership::tests::dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate storage::maintenance_ownership::tests::dc_fixed_epoch_cohort_or_control_replacement_rejects_before_effect storage::maintenance_ownership::tests::dc_fixed_epoch_preparation_delay_does_not_consume_fresh_mutation_grant storage::maintenance_ownership::tests::dc_fixed_epoch_stale_preparation_never_adopts_an_unrelated_increment storage::maintenance_ownership::tests::dc_s2_cohort_unknown_or_corrupt_creation_header_never_repairs_on_use_or_observation storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity storage::maintenance_ownership::tests::dc_s2_optional_producer_capability_never_repairs_untracked_or_corrupt_proof storage::maintenance_ownership::tests::dc_s2_producer_capability_borrows_live_tracked_root_and_activity storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained storage::maintenance_ownership::tests::dc_s2_workspace_live_output_prevents_terminal_and_preserves_root storage::maintenance_ownership::tests::dc_workspace_root_removal_unknown_sibling_never_starts_intent storage::maintenance_projection::tests::dc_projection_requires_complete_object_and_preserves_loader_depth_errors storage::maintenance_projection::tests::projection_rejects_changed_content_when_the_metadata_stamp_matches storage::maintenance_references::tests::dc_references_duplicate_schema_fields_are_unknown storage::maintenance_references::tests::dc_references_live_producer_and_changed_epoch_never_prove_absence storage::maintenance_references::tests::dc_references_recovery_runs_and_unknown_generations_remain_incomplete storage::maintenance_retirement::tests::direct_marker_record_generation_and_corruption_are_checked storage::maintenance_scheduler::independent_review_probes::independent_outer_panic_preserves_prior_success storage::maintenance_scheduler::tests::dc_driver_confirmation_arriving_inflight_survives_prior_completion storage::maintenance_scheduler::tests::dc_scheduler_idle_busy_error_and_continuation_are_paced storage::maintenance_validation::projected_key_tests::projected_key_never_truncates_or_skips_invalid_suffix storage::maintenance_validation::tests::dc_validation_borrowed_fd_schema_replay_without_payload_copy storage::maintenance_validation::tests::dc_validation_cross_source_rejects_invalid_utf8_and_incomplete_spans storage::maintenance_validation::tests::dc_validation_hash_prefix_replay_and_capacity_one_collision_progress storage::maintenance_validation::tests::dc_validation_oracle_schema_hash_numeric_and_nonfinite storage::maintenance_validation::witness_tests::dc_witness_each_field_chooses_first_nonempty_and_allocation_failure storage::managed::transaction_janitor_tests::managed_read_recovery_closes_registered_run_without_replaying storage::managed::transaction_janitor_tests::managed_typed_generation_issue_never_preempts_required_replay_or_its_error storage::managed::transaction_janitor_tests::managed_typed_required_corrupt_or_missing_evidence_is_not_an_absent_alternative storage::run_workspace::tests::unanchored_persisted_barrier_cannot_authorize_orphan_cleanup syntax_materializer::tests::syntax_materializer_builds_python_class_and_method_rows syntax_materializer::tests::syntax_materializer_materializes_ordered_grammar_tree_with_provenance tests::crate_size_validation_enforces_the_registry_limit tests::mcp_smoke_accepts_valid_initialize_and_tools tests::native_capture_reuses_the_exact_test_profile_and_features tests::release_identity_validation_is_strict tests::workflow_policy_rejects_direct_release_push_trigger tests::workflow_policy_rejects_missing_crate_size_gates tests::workflow_policy_rejects_release_queue_replacement tests::workflow_policy_rejects_unvalidated_publishers tests::workflow_yaml_validation_rejects_unindented_heredoc_body
+2026-11-01T16:08:26.7476943Z     Finished `native-tests` profile [optimized] target(s) in 0.15s
+2026-11-01T16:08:26.7477646Z      Running unittests src\lib.rs (target\native-tests\deps\codebase_graph-b49f34bc229d6476.exe)
+2026-11-01T16:08:26.7633309Z 
+2026-11-01T16:08:26.7634038Z running 41 tests
+2026-11-01T16:08:26.7945740Z test storage::maintenance_ownership::tests::dc_epoch_collector_composes_owned_exclusive_root_without_reacquisition ... ok
+2026-11-01T16:08:26.8570901Z test storage::maintenance_ownership::tests::dc_epoch_initial_creator_excludes_fresh_coverage_until_effects_finish ... ok
+2026-11-01T16:08:26.9195833Z test storage::maintenance_ownership::tests::dc_epoch_missing_or_unwritable_control_never_repairs_recognized_proof ... ok
+2026-11-01T16:08:28.0916397Z test storage::maintenance_ownership::tests::dc_epoch_optional_managed_cleanup_preserves_committed_read_and_residue ... ok
+2026-11-01T16:08:28.3422694Z test storage::maintenance_ownership::tests::dc_epoch_scoped_run_lifetime_and_orphan_removal_invalidate ... ok
+2026-11-01T16:08:28.4364769Z test storage::maintenance_ownership::tests::dc_fixed_epoch_cohort_or_control_replacement_rejects_before_effect ... cleanup stamp changed at src\storage\maintenance_ownership.rs:818:18: expected FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 14073748835539301 }, kind: File, len: 304, links: 1, modified: [134380229084203580, 0], changed: [134380229084203580, 0] }, actual FixedFileStamp { identity: FileIdentity { volume: 3535216580, index: 12103423998564725 }, kind: File, len: 304, links: 1, modified: [134380229084203580, 0], changed: [134380229084203580, 0] }
+2026-11-01T16:08:28.4366640Z ok
+2026-11-01T16:08:28.6087043Z test storage::maintenance_ownership::tests::dc_fixed_epoch_preparation_delay_does_not_consume_fresh_mutation_grant ... ok
+2026-11-01T16:08:28.6712791Z test storage::maintenance_ownership::tests::dc_fixed_epoch_stale_preparation_never_adopts_an_unrelated_increment ... ok
+2026-11-01T16:08:28.7340464Z test storage::maintenance_ownership::tests::dc_s2_cohort_unknown_or_corrupt_creation_header_never_repairs_on_use_or_observation ... ok
+2026-11-01T16:08:28.7650277Z test storage::maintenance_ownership::tests::dc_s2_exact_borrowed_writer_requires_exclusive_exact_destination ... ok
+2026-11-01T16:08:28.7962279Z test storage::maintenance_ownership::tests::dc_s2_family_group_deduplicates_same_parent_and_retains_all_guards ... ok
+2026-11-01T16:08:28.8275558Z test storage::maintenance_ownership::tests::dc_s2_family_replaced_parent_incarnation_invalidates_held_use ... ok
+2026-11-01T16:08:28.8429970Z test storage::maintenance_ownership::tests::dc_s2_inventory_cohort_observer_is_noncreating_and_validates_lock_identity ... ok
+2026-11-01T16:08:28.9057083Z test storage::maintenance_ownership::tests::dc_s2_optional_producer_capability_never_repairs_untracked_or_corrupt_proof ... ok
+2026-11-01T16:08:28.9682229Z test storage::maintenance_ownership::tests::dc_s2_producer_capability_borrows_live_tracked_root_and_activity ... ok
+2026-11-01T16:08:28.9994474Z test storage::maintenance_ownership::tests::dc_s2_replaced_writer_inode_does_not_validate_borrowed_authority ... ok
+2026-11-01T16:08:29.0936501Z test storage::maintenance_ownership::tests::dc_s2_review_publication_proof_does_not_bless_legacy_destination_or_sibling ... ok
+2026-11-01T16:08:29.1405348Z test storage::maintenance_ownership::tests::dc_s2_shared_manifest_registration_across_database_parents_is_retained ... ok
+2026-11-01T16:08:29.2812521Z test storage::maintenance_ownership::tests::dc_s2_workspace_live_output_prevents_terminal_and_preserves_root ... cleanup control lock contended: identity=Ok(FileIdentity { volume: 3535216580, index: 14636698788960636 }) mode=exclusive
+2026-11-01T16:08:29.2967361Z ok
+2026-11-01T16:08:29.4531933Z test storage::maintenance_ownership::tests::dc_workspace_root_removal_unknown_sibling_never_starts_intent ... ok
+2026-11-01T16:08:29.4532997Z test storage::maintenance_projection::tests::dc_projection_requires_complete_object_and_preserves_loader_depth_errors ... ok
+2026-11-01T16:08:29.4534016Z test storage::maintenance_projection::tests::projection_rejects_changed_content_when_the_metadata_stamp_matches ... ok
+2026-11-01T16:08:29.4534820Z test storage::maintenance_references::tests::dc_references_duplicate_schema_fields_are_unknown ... ok
+2026-11-01T16:08:29.4845409Z test storage::maintenance_references::tests::dc_references_live_producer_and_changed_epoch_never_prove_absence ... cleanup control lock contended: identity=Ok(FileIdentity { volume: 3535216580, index: 16888498602645859 }) mode=exclusive
+2026-11-01T16:08:29.4846650Z ok
+2026-11-01T16:08:29.5157004Z test storage::maintenance_references::tests::dc_references_recovery_runs_and_unknown_generations_remain_incomplete ... ok
+2026-11-01T16:08:29.5158103Z test storage::maintenance_retirement::tests::direct_marker_record_generation_and_corruption_are_checked ... ok
+2026-11-01T16:08:29.5471371Z test storage::maintenance_scheduler::independent_review_probes::independent_outer_panic_preserves_prior_success ... 
+2026-11-01T16:08:29.5472316Z thread '<unnamed>' (4392) panicked at src\storage\maintenance_scheduler.rs:1669:13:
+2026-11-01T16:08:29.5472951Z independent prepare failure
+2026-11-01T16:08:29.5473455Z note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+2026-11-01T16:08:29.5475637Z prior_success_before=DriverSnapshot { binding: TargetBinding([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), generation: 0, requested: false, pending: false, running: true, liveness: Running, last_attempt: Some(AttemptRecord { binding: TargetBinding([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), generation: 0, request_sequence: 0, triggers: 1, outcome: Complete }), failure: None }
+2026-11-01T16:08:29.5477985Z after_different_generation_prepare_panic=DriverSnapshot { binding: TargetBinding([2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]), generation: 1, requested: false, pending: true, running: false, liveness: Failed, last_attempt: Some(AttemptRecord { binding: TargetBinding([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]), generation: 0, request_sequence: 0, triggers: 1, outcome: Complete }), failure: Some(Panicked) }
+2026-11-01T16:08:29.5479154Z ok
+2026-11-01T16:08:29.5782458Z test storage::maintenance_scheduler::tests::dc_driver_confirmation_arriving_inflight_survives_prior_completion ... ok
+2026-11-01T16:08:29.5783760Z test storage::maintenance_scheduler::tests::dc_scheduler_idle_busy_error_and_continuation_are_paced ... ok
+2026-11-01T16:08:29.5785021Z test storage::maintenance_validation::projected_key_tests::projected_key_never_truncates_or_skips_invalid_suffix ... ok
+2026-11-01T16:08:29.5786388Z test storage::maintenance_validation::tests::dc_validation_borrowed_fd_schema_replay_without_payload_copy ... ok
+2026-11-01T16:08:29.5787653Z test storage::maintenance_validation::tests::dc_validation_cross_source_rejects_invalid_utf8_and_incomplete_spans ... ok
+2026-11-01T16:08:29.6250672Z test storage::maintenance_validation::tests::dc_validation_hash_prefix_replay_and_capacity_one_collision_progress ... ok
+2026-11-01T16:08:29.6252376Z test storage::maintenance_validation::tests::dc_validation_oracle_schema_hash_numeric_and_nonfinite ... pinned scalar oracle: 0.9966544878724392; bits=3fefe497f3da5c33
+2026-11-01T16:08:29.6253549Z ok
+2026-11-01T16:08:29.6254342Z test storage::maintenance_validation::witness_tests::dc_witness_each_field_chooses_first_nonempty_and_allocation_failure ... ok
+2026-11-01T16:08:29.8125431Z test storage::managed::transaction_janitor_tests::managed_read_recovery_closes_registered_run_without_replaying ... cleanup terminal preparation terminal_control: Invalid(InvalidRecord)
+2026-11-01T16:08:29.8127886Z cleanup terminal preparation frame: Invalid(InvalidRecord)
+2026-11-01T16:08:30.0161388Z cleanup terminal preparation terminal_control: Invalid(InvalidRecord)
+2026-11-01T16:08:30.0162263Z cleanup terminal preparation frame: Invalid(InvalidRecord)
+2026-11-01T16:08:30.0629157Z ok
+2026-11-01T16:08:30.4080614Z test storage::managed::transaction_janitor_tests::managed_typed_generation_issue_never_preempts_required_replay_or_its_error ... ok
+2026-11-01T16:08:30.7517155Z test storage::managed::transaction_janitor_tests::managed_typed_required_corrupt_or_missing_evidence_is_not_an_absent_alternative ... ok
+2026-11-01T16:08:30.7518527Z test storage::run_workspace::tests::unanchored_persisted_barrier_cannot_authorize_orphan_cleanup ... ok
+2026-11-01T16:08:30.7519267Z test syntax_materializer::tests::syntax_materializer_builds_python_class_and_method_rows ... ok
+2026-11-01T16:08:30.7520056Z test syntax_materializer::tests::syntax_materializer_materializes_ordered_grammar_tree_with_provenance ... ok
+2026-11-01T16:08:30.7520529Z 
+2026-11-01T16:08:30.7520861Z test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 789 filtered out; finished in 3.99s
+2026-11-01T16:08:30.7521233Z 
+2026-11-01T16:08:30.7521652Z      Running unittests src\bin\codebase-graph.rs (target\native-tests\deps\codebase_graph-20a8c8fbf8f56c28.exe)
+2026-11-01T16:08:30.7671702Z 
+2026-11-01T16:08:30.7672117Z running 0 tests
+2026-11-01T16:08:30.7672399Z 
+2026-11-01T16:08:30.7672849Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-11-01T16:08:30.7673421Z 
+2026-11-01T16:08:30.7673856Z      Running unittests src\lib.rs (target\native-tests\deps\k_wiki-d131d41cce8e34e4.exe)
+2026-11-01T16:08:30.7674450Z 
+2026-11-01T16:08:30.7674627Z running 0 tests
+2026-11-01T16:08:30.7674814Z 
+2026-11-01T16:08:30.7675261Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s
+2026-11-01T16:08:30.7675847Z 
+2026-11-01T16:08:30.7676254Z      Running unittests src\bin\k-wiki.rs (target\native-tests\deps\k_wiki-4ab980c6f94d44f1.exe)
+2026-11-01T16:08:30.7828027Z 
+2026-11-01T16:08:30.7828439Z running 0 tests
+2026-11-01T16:08:30.7828654Z 
+2026-11-01T16:08:30.7828943Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-11-01T16:08:30.7829263Z 
+2026-11-01T16:08:30.7829558Z      Running unittests src\main.rs (target\native-tests\deps\xtask-92468b75ac7ec042.exe)
+2026-11-01T16:08:30.7829900Z 
+2026-11-01T16:08:30.7829993Z running 9 tests
+2026-11-01T16:08:30.7830383Z test tests::crate_size_validation_enforces_the_registry_limit ... ok
+2026-11-01T16:08:30.7831016Z test tests::mcp_smoke_accepts_valid_initialize_and_tools ... ok
+2026-11-01T16:08:30.7831480Z test tests::native_capture_reuses_the_exact_test_profile_and_features ... ok
+2026-11-01T16:08:30.7831944Z test tests::release_identity_validation_is_strict ... ok
+2026-11-01T16:08:30.7984887Z test tests::workflow_policy_rejects_direct_release_push_trigger ... ok
+2026-11-01T16:08:30.7985650Z test tests::workflow_policy_rejects_missing_crate_size_gates ... ok
+2026-11-01T16:08:30.7986370Z test tests::workflow_policy_rejects_release_queue_replacement ... ok
+2026-11-01T16:08:30.7987114Z test tests::workflow_policy_rejects_unvalidated_publishers ... ok
+2026-11-01T16:08:30.7987835Z test tests::workflow_yaml_validation_rejects_unindented_heredoc_body ... ok
+2026-11-01T16:08:30.7988266Z 
+2026-11-01T16:08:30.7988613Z test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 54 filtered out; finished in 0.02s
+2026-11-01T16:08:30.7989104Z 
+2026-11-01T16:08:30.8140475Z native test command 3 finished in 4.252s: Ok(())
+2026-11-01T16:08:31.9929918Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+2026-11-01T16:08:31.9930326Z with:
+2026-11-01T16:08:31.9930725Z   name: test-diagnostics-windows-x86_64-unit-shard2-1
+2026-11-01T16:08:31.9931001Z   path: diagnostics/
+2026-11-01T16:08:31.9931222Z   if-no-files-found: warn
+2026-11-01T16:08:31.9931429Z   retention-days: 3
+2026-11-01T16:08:31.9931624Z   compression-level: 6
+2026-11-01T16:08:31.9931816Z   overwrite: false
+2026-11-01T16:08:31.9932022Z   include-hidden-files: false
+2026-11-01T16:08:31.9932230Z   archive: true
+2026-11-01T16:08:31.9932421Z env:
+2026-11-01T16:08:31.9932599Z   MACOSX_DEPLOYMENT_TARGET: 13.3
+2026-11-01T16:08:31.9932825Z   CARGO_HTTP_MULTIPLEXING: false
+2026-11-01T16:08:31.9933059Z   CARGO_NET_RETRY: 10
+2026-11-01T16:08:31.9933269Z   LIB: D:\a\_temp\lbug-openssl;
+2026-11-01T16:08:31.9933638Z   LBUG_LIBRARY_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-01T16:08:31.9934202Z   LBUG_INCLUDE_DIR: D:/a/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/windows-x86_64
+2026-11-01T16:08:31.9934567Z ##[endgroup]
+2026-11-01T16:08:32.1820549Z With the provided path, there will be 12 files uploaded
+2026-11-01T16:08:32.1825230Z Artifact name is valid!
+2026-11-01T16:08:32.1826871Z Root directory input is valid!
+2026-11-01T16:08:32.5821686Z Uploading artifact: test-diagnostics-windows-x86_64-unit-shard2-1.zip
+2026-11-01T16:08:32.5863986Z Beginning upload of artifact content to blob storage
+2026-11-01T16:08:32.9465831Z Uploaded bytes 55491
+2026-11-01T16:08:33.0008719Z Finished uploading artifact content to blob storage!
+2026-11-01T16:08:33.0009909Z SHA256 digest of uploaded artifact is 219e732b86caeacf1c7223d6f9c12659fcbfedb0bf7841f4485ea08f6d06c787
+2026-11-01T16:08:33.0010674Z Finalizing artifact upload
+2026-11-01T16:08:33.5849086Z Artifact test-diagnostics-windows-x86_64-unit-shard2-1 successfully finalized. Artifact ID 13090159684
+2026-11-01T16:08:33.5849912Z Artifact test-diagnostics-windows-x86_64-unit-shard2-1 has been successfully uploaded! Final size is 55491 bytes. Artifact ID is 13090159684
+2026-11-01T16:08:33.5855014Z Artifact download URL: https://github.com/rabii-chaarani/codebaseGraph/actions/runs/41323156535/artifacts/13090159684
+2026-11-01T16:08:33.6320329Z Post job cleanup.
+2026-11-01T16:08:33.6325247Z ##[start-action display=Restore Ladybug dependency;id=__35b5c832-1375-4038-8f17-81f35f24d646.ladybug-cache]
+2026-11-01T16:08:33.6446170Z Post job cleanup.
+2026-11-01T16:08:33.7840175Z Cache hit occurred on the primary key lbug-0.19.0-windows-x86_64-v1, not saving cache.
+2026-11-01T16:08:33.7949555Z ##[end-action id=__35b5c832-1375-4038-8f17-81f35f24d646.ladybug-cache;outcome=success;conclusion=success;duration_ms=162]
+2026-11-01T16:08:33.8120776Z Post job cleanup.
+2026-11-01T16:08:33.9889821Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-11-01T16:08:34.0147017Z git version 2.56.0.windows.3
+2026-11-01T16:08:34.0214389Z Temporarily overriding HOME='D:\a\_temp\ec879fbd-c520-4c67-a903-e5f5adb1e755' before making global git config changes
+2026-11-01T16:08:34.0215216Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-01T16:08:34.0224915Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\codebaseGraph\codebaseGraph
+2026-11-01T16:08:34.0509508Z Removing SSH command configuration
+2026-11-01T16:08:34.0520090Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-11-01T16:08:34.0802720Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-11-01T16:08:34.5629098Z Removing HTTP extra header
+2026-11-01T16:08:34.5640308Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-01T16:08:34.5920433Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-11-01T16:08:35.0599770Z Removing includeIf entries pointing to credentials config files
+2026-11-01T16:08:35.0612109Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-01T16:08:35.0852227Z includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path
+2026-11-01T16:08:35.0853027Z includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path
+2026-11-01T16:08:35.0853663Z includeif.gitdir:/github/workspace/.git.path
+2026-11-01T16:08:35.0854305Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-11-01T16:08:35.0889645Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path
+2026-11-01T16:08:35.1127615Z D:\a\_temp\git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T16:08:35.1163645Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git.path D:\a\_temp\git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T16:08:35.1438658Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path
+2026-11-01T16:08:35.1675109Z D:\a\_temp\git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T16:08:35.1708203Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/codebaseGraph/codebaseGraph/.git/worktrees/*.path D:\a\_temp\git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T16:08:35.1981055Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-11-01T16:08:35.2221428Z /github/runner_temp/git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T16:08:35.2252077Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T16:08:35.2520932Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-11-01T16:08:35.2772341Z /github/runner_temp/git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T16:08:35.2804984Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config
+2026-11-01T16:08:35.3084184Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-11-01T16:08:35.7948344Z Removing credentials config 'D:\a\_temp\git-credentials-db62028f-13f4-4f8e-97d3-135d1cbbcc30.config'
+2026-11-01T16:08:35.8171619Z Cleaning up orphan processes

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="COD108-772-MCP-diagnostic-independent" tests="1" failures="0" errors="0" uuid="2b95310d-9221-42ba-8c04-1b52933c5288" timestamp="2026-11-02T02:44:02.767+09:30" time="6.812">
+    <testsuite name="codebase-graph" tests="1" disabled="0" errors="0" failures="0">
+        <testcase name="adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors" classname="codebase-graph" timestamp="2026-11-02T02:44:02.768+09:30" time="6.810">
+            <system-out>
+running 1 test
+test adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 847 filtered out; finished in 6.80s
+
+</system-out>
+            <system-err></system-err>
+        </testcase>
+    </testsuite>
+</testsuites>

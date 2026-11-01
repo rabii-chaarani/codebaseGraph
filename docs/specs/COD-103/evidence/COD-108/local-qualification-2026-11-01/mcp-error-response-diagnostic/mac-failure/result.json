@@ -1,0 +1,595 @@
+{
+  "schema_version": 1,
+  "work_id": "COD-108",
+  "role": "Evidence Verifier",
+  "scope": "Bounded corrected-run macOS unit failure audit only",
+  "status": "CONFIRMED_REAL_MACOS_MCP_GRAPH_HEALTH_FAILURE_UNDERLYING_ERROR_PAYLOAD_UNAVAILABLE_ACCEPTANCE_BLOCKED",
+  "completed_at_utc": "2026-11-01T16:42:09.118396+00:00",
+  "actual_source_binding": {
+    "run_id": 41323156535,
+    "attempt": 1,
+    "PR": 175,
+    "head_metadata": "0413e543668f3e08003aa6a0d4ead350f49a61cc",
+    "base": "90af76d3453a6f5cc0f032045ed48c4fd09c275c",
+    "event": "pull_request",
+    "workflow": ".github/workflows/ci.yml",
+    "actual_native_checkout_source_S": "1c1730dfd06f238a6f6546e7e842a3988e52d61e",
+    "actual_job_checkout_log_and_source_sha_report_agree": true,
+    "immutable_S_parents": [
+      "90af76d3453a6f5cc0f032045ed48c4fd09c275c",
+      "0413e543668f3e08003aa6a0d4ead350f49a61cc"
+    ],
+    "immutable_S_head_same_tree": "5141d876f604bea22efaea7224f47d50b3a2b81a",
+    "exact_mcp_test_source": {
+      "source_file": "src/adapters/cli/tests/mcp.rs",
+      "actual_SHA256": "22cd4cef51368a0f3050641e7e437d7fbc4d798e6337b87c3bf1b446cf3081bc",
+      "actual_bytes": 19421,
+      "known_baseline90af_blob": "036619cf5b36ab0317b5d92af7ea8e990337a7ba",
+      "same_file_bytes_mode_as90af_157a_0413": true,
+      "actual_file_not_changed_by_COD108_source_or_fixturefix": true,
+      "not_baseline_failure_classification": "UnchangedfiledoesNOTprovethisbehaviorpreexisting/flaky/unrelated, source/fixture/environment/executiondifferencesnotcausallyisolated. No comparablebaselinefailureorpassingretrycreated.",
+      "immutable_run_source_S": "1c1730dfd06f238a6f6546e7e842a3988e52d61e",
+      "runS_parents": [
+        "90af76d3453a6f5cc0f032045ed48c4fd09c275c",
+        "0413e543668f3e08003aa6a0d4ead350f49a61cc"
+      ],
+      "runS_head_same_tree": "5141d876f604bea22efaea7224f47d50b3a2b81a",
+      "actualcheckout_report_source_S_verified": true,
+      "test_oracle": "responses[2] isthirdresponse/id3graph_health; expectedresult.isErrorfalse, observedBooltrue. Initialize/list/count assertionsprecedingline220passed; healthstructuredContent/search/forbiddenquery assertionsnotreached.",
+      "payload_visibility": "Assertdidnotincludeoutput/responsevaluebeyondbool; actualid3content/structuredContenterrorbodyabsentfromwholelog/diagnosticfiles. Cannotassignretryability/type/cause.",
+      "frozen_source_copy": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/frozen-current-mcp-test.rs"
+    },
+    "not_S_as_head_relabel": true
+  },
+  "actual_observed_state": {
+    "run_status_at_single_read": "in_progress",
+    "run_conclusion_at_single_read": null,
+    "actual_failed_job_id": 124897498528,
+    "actual_job_name": "native (macos-arm64) / native tests (macos-arm64, unit)",
+    "status": "completed",
+    "conclusion": "failure",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1
+      },
+      {
+        "name": "Check out source SHA",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 2
+      },
+      {
+        "name": "Set up native dependencies",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 3
+      },
+      {
+        "name": "Run platform tests",
+        "status": "completed",
+        "conclusion": "failure",
+        "number": 4
+      },
+      {
+        "name": "Upload native test diagnostics",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 5
+      },
+      {
+        "name": "Post Set up native dependencies",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 9
+      },
+      {
+        "name": "Post Check out source SHA",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 10
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 11
+      }
+    ],
+    "no_final_global_run_or_other_job_conclusions_predicted": true
+  },
+  "factual_cause_classification": {
+    "kind": "Real application/test runtime failure at graph_health tool response; not setup/transport/compiler failure",
+    "confirmed_observable_cause": "Expected first graph_health tool result isError=false, observed Bool(true); assertion at mcp.rs220 aborts test.",
+    "underlying_health_error_root_cause": "UNDETERMINED: actual response content/structuredContent.error payload was not emitted or archived, so readiness/storage/environment/runtime hypothesis cannot be selected.",
+    "test": "adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors",
+    "actual_job_failure_line": 756,
+    "actual_platform_failure_line": 504,
+    "static_reach": "Third response is id3 graph_health; initialize/tools-list/response-count checks precede assertion; later health ok/refresh/search/forbidden-query assertions not reached.",
+    "source_unchanged_not_waiver": "mcp.rs exact source is unchanged from90af/157a/0413; this fact alone does not prove baseline/flaky/unrelated failure. No comparable baseline replay or causal isolation performed.",
+    "not_expected_or_ignored": "Named case is real FAILED; intentional storage-fault panic outputs elsewhere ending ok do not reinterpret this failure.",
+    "compiler_status": "Entire failed job and platform log have zero compiler-warning lines.",
+    "next_owner": "Engineer assigns bounded diagnosis to MCP/runtime test owner; no implementation ownership transfer by verifier.",
+    "small_safe_followup_recommendation": "Under a separate grant, run only the exact named codebase-graph native-tests case in the normal native environment and capture the full id3 graph_health JSON response plus relevant stderr/refresh state before deciding cause. Preserve current assertion; do not add retries/waive isError or change resource policy based on the boolean alone.",
+    "candidate_command_NOT_EXECUTED": "cargo test --offline --locked --profile native-tests -p codebase-graph --lib adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors -- --exact --nocapture",
+    "no_test_weakening_or_speculative_fix": "No source/test edit, sleep, retry policy, ignore or failed-state normalization proposed as an established fix."
+  },
+  "actual_job_execution": {
+    "actual_command": [
+      "test",
+      "--workspace",
+      "--locked",
+      "--profile",
+      "native-tests",
+      "--lib",
+      "--bins",
+      "--examples"
+    ],
+    "actual_executions": [
+      {
+        "command": 0,
+        "error": "native test failed with status exit status: 101",
+        "seconds": 2055.227469333
+      }
+    ],
+    "command_count": 1,
+    "actual_native_test_CLI_SHA256": "1f0292a797fc9175cf0a8c9d28b1d1b79cefc182a5a5438b75e71c49f32327e9",
+    "CLIunchanged": true,
+    "actual_profile": "native-tests optimized/locked",
+    "actual_libtest_exit": 101,
+    "actual_wrapper_exit": 1,
+    "actual_root_library_outer_cases": {
+      "listed": 848,
+      "passed": 845,
+      "failed": 1,
+      "ignored": 2,
+      "filtered": 0
+    },
+    "raw_nested_child_summary": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 847
+    },
+    "not_counted_as_new_unique_coverage": true,
+    "all961workspace_inventory_cases": "Discovery only: harnesses848/0/10/0/103. Cargo stopped after failing root library; no actual Wiki/xtask103 run recorded in this job.",
+    "actual_ignored": [
+      {
+        "line": 1346,
+        "text": "test storage::maintenance_native_projection::selected_oracle_tests::dc_native_actual_producer187_selected_strings_and_support_rows ... ignored, requires separately generated actual public-producer187 synthetic fixtures"
+      },
+      {
+        "line": 1352,
+        "text": "test storage::maintenance_native_projection::tests::dc_native_actual_producer187_catalog_metadata_checkpoint ... ignored, requires separately generated synthetic public-producer fixture directory"
+      }
+    ],
+    "raw_log_not_JUnit_no_conversion": true
+  },
+  "actual_artifact": {
+    "artifact_id": 13092100404,
+    "name": "test-diagnostics-macos-arm64-unit-shard0-1",
+    "API_expired": false,
+    "actual_ZIP_bytes": 46954,
+    "actual_ZIP_SHA256": "647fb6f9228a42aaaf2c74182e55c0bb3d3c676858a355238113280a0846de70",
+    "API_size_digest_run_head_exact": true,
+    "actual_source_sha_file_and_report": "1c1730dfd06f238a6f6546e7e842a3988e52d61e",
+    "actual_member_count": 5,
+    "members": [
+      {
+        "path": "platform-test.log",
+        "type": "regular",
+        "mode": "0o100644",
+        "bytes": 124037,
+        "sha256": "99b2a19c75f3b7c13913954373921baf4bfe8dd55993ab6a094a4c63e91f1087",
+        "CRC32": "a5654b07"
+      },
+      {
+        "path": "source-sha.txt",
+        "type": "regular",
+        "mode": "0o100644",
+        "bytes": 41,
+        "sha256": "8505b809269faf1f67f87e27eadb89e83be0abe6c642553c262718edc681ccae",
+        "CRC32": "70f01198"
+      },
+      {
+        "path": "tests/macos-arm64-unit/0-ignored.txt",
+        "type": "regular",
+        "mode": "0o100644",
+        "bytes": 353,
+        "sha256": "a2fe139178113df66bc675ffca2a4cfffd24fec3db1370378ba07d5973e1eb06",
+        "CRC32": "c07628b4"
+      },
+      {
+        "path": "tests/macos-arm64-unit/0-inventory.txt",
+        "type": "regular",
+        "mode": "0o100644",
+        "bytes": 93390,
+        "sha256": "423c7db08e9ac5903c6af8c49af77aaa71c02c022402e9c20a0dc533d0415bb2",
+        "CRC32": "50bf9e1c"
+      },
+      {
+        "path": "tests/macos-arm64-unit/report.json",
+        "type": "regular",
+        "mode": "0o100644",
+        "bytes": 5034,
+        "sha256": "ba35dd35a48fce859e73a7bfd78da741bac9dac3b1aedd928600989b892cb87b",
+        "CRC32": "f5bc1248"
+      }
+    ],
+    "all_member_bytes_types_paths_duplicates_links_special_CRC_hash_checks_pass": true,
+    "actual_platform_report": {
+      "capture_seconds": 404.684164625,
+      "cli": "/var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/native-test-cli-1310-1793548602847551000/codebase-graph",
+      "cli_sha256": "1f0292a797fc9175cf0a8c9d28b1d1b79cefc182a5a5438b75e71c49f32327e9",
+      "cli_unchanged": true,
+      "cohort": "unit",
+      "commands": [
+        [
+          "test",
+          "--workspace",
+          "--locked",
+          "--profile",
+          "native-tests",
+          "--lib",
+          "--bins",
+          "--examples"
+        ]
+      ],
+      "compiler_artifact": "/Users/runner/work/codebaseGraph/codebaseGraph/target/native-tests/codebase-graph",
+      "executions": [
+        {
+          "command": 0,
+          "error": "native test failed with status exit status: 101",
+          "seconds": 2055.227469333
+        }
+      ],
+      "inventory": [
+        {
+          "cohort": "unit",
+          "kind": "lib",
+          "package": "codebase-graph",
+          "target": "codebase_graph"
+        },
+        {
+          "cohort": "integration",
+          "kind": "doctest",
+          "package": "codebase-graph",
+          "target": "codebase_graph"
+        },
+        {
+          "cohort": "unit",
+          "kind": "bin",
+          "package": "codebase-graph",
+          "target": "codebase-graph"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "agent_hooks_process"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "auto_repo_root"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "coordinator_process"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "copy_phase_process"
+        },
+        {
+          "cohort": "generation",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "generation_storage"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "http_admission_process"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "http_daemon_process"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "native_request_identity"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "refresh_recovery_process"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "storage_foundation"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "codebase-graph",
+          "target": "storage_maintenance"
+        },
+        {
+          "cohort": "unit",
+          "kind": "lib",
+          "package": "k-wiki",
+          "target": "k_wiki"
+        },
+        {
+          "cohort": "integration",
+          "kind": "doctest",
+          "package": "k-wiki",
+          "target": "k_wiki"
+        },
+        {
+          "cohort": "unit",
+          "kind": "bin",
+          "package": "k-wiki",
+          "target": "k-wiki"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "api_integration"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "authoring"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "bundle_reader"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "compilation"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "conformance"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "diagnostic_transports"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "diagnostics"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "memory"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "projection"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "refresh"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "rendering"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "search"
+        },
+        {
+          "cohort": "integration",
+          "kind": "test",
+          "package": "k-wiki",
+          "target": "transports"
+        },
+        {
+          "cohort": "unit",
+          "kind": "bin",
+          "package": "xtask",
+          "target": "xtask"
+        }
+      ],
+      "shard": null,
+      "source_sha": "1c1730dfd06f238a6f6546e7e842a3988e52d61e",
+      "target": "macos-arm64",
+      "total_seconds": 2461.943391166,
+      "unsharded_commands": [
+        [
+          "test",
+          "--workspace",
+          "--locked",
+          "--profile",
+          "native-tests",
+          "--lib",
+          "--bins",
+          "--examples"
+        ]
+      ]
+    },
+    "raw_job_log_SHA256": "821e580b5cdf8ce20a4a6871004568f033d8c300a69fec17df167b9749f4a374",
+    "no_artifact_code_execution": true
+  },
+  "warnings_and_runtime_visibility": {
+    "whole_job_compiler_warning_lines": [],
+    "platform_compiler_warning_lines": [],
+    "actual_compiler_warning_count": 0,
+    "full_id3_graph_health_response_or_error_body": "Not present in actual whole job log or diagnostic ZIP; test assertion prints only Bool(true)/false.",
+    "memory_recall": "Advisory old startup/readiness case recalled; not evidence that this Mac failure has that cause. No retryability inferred.",
+    "source_navigation_tool_error": {
+      "tool": "codebase_graph.graph_search",
+      "queries": [
+        "setup_search_fixture_repo",
+        "serve_mcp_stdio"
+      ],
+      "result": "At leastoneconcurrentreadreturnedgraph executor isbusy;retrytherequest.",
+      "classification": "Observer/source-indextoolbusy, NOTCI/applicationfailure. Existinginitialgraphmcp_stdio_serves_tools_and_tool_errors+runtimecontextsuccessfullyfoundmcp.rstest. No retry/rebuild/configchange.",
+      "scope_limit": "Exactcausalhealtherrorpayloadisnotlogged; boundedstatictracecanidentifyfailedhealthresponsebutcannotdistinguishasynchronousreadiness/storage/runtimefailurewithoutresponseornewrepro."
+    },
+    "observer_error_not_product_failure": true,
+    "runtime_environment_lines": [
+      {
+        "line": 4,
+        "text": "2026-11-01T15:49:38.2584690Z Version: 20261021.618"
+      },
+      {
+        "line": 11,
+        "text": "2026-11-01T15:49:38.2589940Z ##[group]Operating System"
+      },
+      {
+        "line": 12,
+        "text": "2026-11-01T15:49:38.2590500Z macOS"
+      },
+      {
+        "line": 17,
+        "text": "2026-11-01T15:49:38.2592740Z Image: macos-26-arm64"
+      },
+      {
+        "line": 18,
+        "text": "2026-11-01T15:49:38.2593320Z Version: 20261026.0455.2"
+      },
+      {
+        "line": 59,
+        "text": "2026-11-01T15:49:40.0547970Z   MACOSX_DEPLOYMENT_TARGET: 13.3"
+      },
+      {
+        "line": 137,
+        "text": "2026-11-01T15:49:45.6364240Z   MACOSX_DEPLOYMENT_TARGET: 13.3"
+      },
+      {
+        "line": 153,
+        "text": "2026-11-01T15:49:45.6763960Z   MACOSX_DEPLOYMENT_TARGET: 13.3"
+      },
+      {
+        "line": 177,
+        "text": "2026-11-01T15:49:45.7554560Z   MACOSX_DEPLOYMENT_TARGET: 13.3"
+      },
+      {
+        "line": 193,
+        "text": "2026-11-01T15:49:45.8295640Z   MACOSX_DEPLOYMENT_TARGET: 13.3"
+      },
+      {
+        "line": 224,
+        "text": "2026-11-01T15:49:48.8534340Z   MACOSX_DEPLOYMENT_TARGET: 13.3"
+      },
+      {
+        "line": 242,
+        "text": "2026-11-01T15:49:49.0481240Z   MACOSX_DEPLOYMENT_TARGET: 13.3"
+      },
+      {
+        "line": 245,
+        "text": "2026-11-01T15:49:49.0483000Z   LBUG_LIBRARY_DIR: /Users/runner/work/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/macos-arm64"
+      },
+      {
+        "line": 247,
+        "text": "2026-11-01T15:49:49.0484440Z   RUST_TEST_NOCAPTURE: 1"
+      },
+      {
+        "line": 248,
+        "text": "2026-11-01T15:49:49.0484830Z   RUST_TEST_THREADS: 1"
+      },
+      {
+        "line": 249,
+        "text": "2026-11-01T15:49:49.0485190Z   SOURCE_SHA: 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+      },
+      {
+        "line": 1847,
+        "text": "2026-11-01T16:31:18.5601850Z   MACOSX_DEPLOYMENT_TARGET: 13.3"
+      },
+      {
+        "line": 1850,
+        "text": "2026-11-01T16:31:18.5602650Z   LBUG_LIBRARY_DIR: /Users/runner/work/codebaseGraph/codebaseGraph/.cache/lbug-prebuilt/0.19.0/macos-arm64"
+      }
+    ],
+    "rustc_compiler_version": "Not explicitly emitted by this job; not borrowed from local verification as hosted compiler identity."
+  },
+  "preserved_checkpoints": [
+    {
+      "manifest": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint01/files.json",
+      "SHA256": "a89cd9fc2049bc3f9f6a4150ddb1e79d6faf579e7aa7a295d1a3b94c4d89a875",
+      "closed_entries": 29,
+      "all_fullbytes_unchanged": true
+    },
+    {
+      "manifest": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/files.json",
+      "SHA256": "85f2f7d3afb065a5207b62d1e1fbc0f2558be9228815f7e612d1b7d9e975e4d2",
+      "closed_entries": 16,
+      "all_fullbytes_unchanged": true
+    }
+  ],
+  "prior_windows_history": {
+    "closed_corrected_unit2_report_SHA256": "a9c8e625991f4b3f9b3c3ed26d52a6fb24824a722cfe805a15d2e98e5b8a085b",
+    "closed_corrected_unit2_all16_files_unchanged": true,
+    "corrected_Portable_FR001_Windows_PASS_remains_true": true,
+    "raw_NUL_parser_pending_other_shard_not_passed_unit2": true,
+    "old_157a_Sc2e6_Windows_InvalidFilename123_failure_remains_history": true,
+    "new_Mac_failure_not_mixed_with_old_Windows_defect": true
+  },
+  "consequences_and_limits": [
+    "This real Mac failure blocks current full CI, COD108 hosted acceptance/handoff, COD110 progression and merge. Other jobs may continue normally; no cancel/rerun/ignore or false green.",
+    "Underlying graph_health error cause is unresolved until its full response/stderr is captured under a separate diagnosis grant. Unchanged mcp.rs alone does not prove baseline, flake or unrelated failure; no assertion weakening is justified.",
+    "No new source/test fix, Cargo repro, dependency/timeout/retry/resource or settings change was performed. Only a focused repro recommendation is recorded, not executed.",
+    "Current CID108 PR native product uploads are not expected under unchanged COD107-only retentionFALSE. Missing non-retained product archives are not the failure or a new gate; native scheduling consequences not predicted.",
+    "Same required reviewer and all later exact-head full native/CI qualification/model-fold/post-protected-main lightweight rollout gates remain pending; no A04A05 full handoff/110/Done/merge/main/release/aggregate claim."
+  ],
+  "operations": {
+    "bounded_exact_run_API_reads": 4,
+    "actual_failed_job_whole_log_downloads": 1,
+    "actual_single_Mac_unit_diagnostic_ZIP_downloads": 1,
+    "prior_or_other_job_logs_ZIPs_redownloaded": 0,
+    "initial_graph_source_lookup_and_runtime_context": "Succeeded; later helper lookup busy, no retry/rebuild/config change.",
+    "source_reads": "Only graph-found failing test and already preserved exact input hashes for source binding.",
+    "source_Git_Cargo_model_tracker_wiki_settings_APIwrites_CIactions": false,
+    "second_watch_poll_sleep_rerun_cancel_dispatch": false,
+    "Production14755solewatcher": true,
+    "private_writes_only": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure"
+  },
+  "settings": "Existing accepted openai-codex EvidenceVerifier inherit/inherit; no provider/model/effort override, substitution or delegation; runtime metadata unexposed.",
+  "assumptions_constants": "No constants/config/oracle/resource changes. Actual error payload remains unavailable; no speculative cause or normalized failure.",
+  "memory_assessment": "Run-specific failure evidence; no reusable memory write warranted or authorized without verified root cause.",
+  "next_owner": "Engineer assigns bounded MCP/runtime diagnosis and exact full-response evidence capture; verifier remains stopped until a separate grant.",
+  "STOP": "All API/private writes STOP after closed factual failure handoff."
+}

@@ -1,0 +1,19 @@
+{
+  "source_file": "src/adapters/cli/tests/mcp.rs",
+  "actual_SHA256": "22cd4cef51368a0f3050641e7e437d7fbc4d798e6337b87c3bf1b446cf3081bc",
+  "actual_bytes": 19421,
+  "known_baseline90af_blob": "036619cf5b36ab0317b5d92af7ea8e990337a7ba",
+  "same_file_bytes_mode_as90af_157a_0413": true,
+  "actual_file_not_changed_by_COD108_source_or_fixturefix": true,
+  "not_baseline_failure_classification": "UnchangedfiledoesNOTprovethisbehaviorpreexisting/flaky/unrelated, source/fixture/environment/executiondifferencesnotcausallyisolated. No comparablebaselinefailureorpassingretrycreated.",
+  "immutable_run_source_S": "1c1730dfd06f238a6f6546e7e842a3988e52d61e",
+  "runS_parents": [
+    "90af76d3453a6f5cc0f032045ed48c4fd09c275c",
+    "0413e543668f3e08003aa6a0d4ead350f49a61cc"
+  ],
+  "runS_head_same_tree": "5141d876f604bea22efaea7224f47d50b3a2b81a",
+  "actualcheckout_report_source_S_verified": true,
+  "test_oracle": "responses[2] isthirdresponse/id3graph_health; expectedresult.isErrorfalse, observedBooltrue. Initialize/list/count assertionsprecedingline220passed; healthstructuredContent/search/forbiddenquery assertionsnotreached.",
+  "payload_visibility": "Assertdidnotincludeoutput/responsevaluebeyondbool; actualid3content/structuredContenterrorbodyabsentfromwholelog/diagnosticfiles. Cannotassignretryability/type/cause.",
+  "frozen_source_copy": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/frozen-current-mcp-test.rs"
+}

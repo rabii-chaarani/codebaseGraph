@@ -1,0 +1,33 @@
+{
+  "discovery_only": true,
+  "test_execution_count": 0,
+  "selected_unignored_count": 1,
+  "exact_selection_expression": "test(=adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors)",
+  "source_test_SHA256": "772e2d7c7ad22cc4155875b5cdbf5a480ab688891a7a29ebd563ea6e7349164a",
+  "inventory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/focused-nextest-inventory.json",
+  "actual_selected_inventory": [
+    {
+      "suite_id": "codebase-graph",
+      "suite": {
+        "package-name": "codebase-graph",
+        "binary-id": "codebase-graph",
+        "binary-name": "codebase_graph",
+        "package-id": "path+file:///private/tmp/codebasegraph-cod108-20261101#codebase-graph@4.0.5",
+        "kind": "lib",
+        "binary-path": "/private/tmp/codebasegraph-cod108-20261101/target/native-tests/deps/codebase_graph-3b349a504aecf5e2",
+        "build-platform": "target",
+        "cwd": "/private/tmp/codebasegraph-cod108-20261101",
+        "status": "listed"
+      },
+      "test_name": "adapters::cli::tests::mcp::mcp_stdio_serves_tools_and_tool_errors",
+      "case": {
+        "kind": "test",
+        "ignored": false,
+        "filter-match": {
+          "status": "matches"
+        }
+      }
+    }
+  ],
+  "compiler_warning_count": 0
+}

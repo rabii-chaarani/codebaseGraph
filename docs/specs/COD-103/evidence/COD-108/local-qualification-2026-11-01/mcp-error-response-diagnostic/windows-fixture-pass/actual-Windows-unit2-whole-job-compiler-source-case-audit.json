@@ -1,0 +1,169 @@
+{
+  "job_id": 124897498696,
+  "whole_job_log_SHA256": "b0d56a94bdaceb61d45b92d6a6b5461129e3b91536eb1986ac7a1a7f2fb3310b",
+  "whole_job_log_lines": 1360,
+  "raw_compiler_warning_lines": [],
+  "actual_source_case_profile_exit_upload_lines": [
+    {
+      "line": 33,
+      "text": "2026-11-01T15:49:37.8049310Z Uses: rabii-chaarani/codebaseGraph/.github/workflows/native.yml@refs/pull/175/merge (1c1730dfd06f238a6f6546e7e842a3988e52d61e)"
+    },
+    {
+      "line": 36,
+      "text": "2026-11-01T15:49:37.8055524Z   source-sha: 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+    },
+    {
+      "line": 44,
+      "text": "2026-11-01T15:49:37.9583832Z   ref: 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+    },
+    {
+      "line": 100,
+      "text": "2026-11-01T15:49:41.2761308Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+    },
+    {
+      "line": 102,
+      "text": "2026-11-01T15:49:43.1219540Z  * branch            1c1730dfd06f238a6f6546e7e842a3988e52d61e -> FETCH_HEAD"
+    },
+    {
+      "line": 103,
+      "text": "2026-11-01T15:49:43.1263129Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" rev-parse --verify --quiet 1c1730dfd06f238a6f6546e7e842a3988e52d61e^{object}"
+    },
+    {
+      "line": 104,
+      "text": "2026-11-01T15:49:43.1579398Z 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+    },
+    {
+      "line": 111,
+      "text": "2026-11-01T15:49:43.2255110Z [command]\"C:\\Program Files\\Git\\bin\\git.exe\" checkout --progress --force 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+    },
+    {
+      "line": 112,
+      "text": "2026-11-01T15:49:43.8231341Z Note: switching to '1c1730dfd06f238a6f6546e7e842a3988e52d61e'."
+    },
+    {
+      "line": 132,
+      "text": "2026-11-01T15:49:43.9138391Z 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+    },
+    {
+      "line": 382,
+      "text": "2026-11-01T15:55:20.5192667Z   RUST_TEST_NOCAPTURE: 1"
+    },
+    {
+      "line": 383,
+      "text": "2026-11-01T15:55:20.5192976Z   RUST_TEST_THREADS: 1"
+    },
+    {
+      "line": 384,
+      "text": "2026-11-01T15:55:20.5193330Z   SOURCE_SHA: 1c1730dfd06f238a6f6546e7e842a3988e52d61e"
+    },
+    {
+      "line": 457,
+      "text": "2026-11-01T15:55:49.3650686Z    Compiling xtask v4.0.5 (D:\\a\\codebaseGraph\\codebaseGraph\\crates\\xtask)"
+    },
+    {
+      "line": 794,
+      "text": "2026-11-01T15:57:46.7506409Z    Compiling xtask v4.0.5 (D:\\a\\codebaseGraph\\codebaseGraph\\crates\\xtask)"
+    },
+    {
+      "line": 795,
+      "text": "2026-11-01T16:03:43.4672982Z     Finished `native-tests` profile [optimized] target(s) in 7m 51s"
+    },
+    {
+      "line": 798,
+      "text": "2026-11-01T16:03:47.8794823Z     Finished `native-tests` profile [optimized] target(s) in 0.15s"
+    },
+    {
+      "line": 918,
+      "text": "2026-11-01T16:04:50.6576846Z test result: ok. 89 passed; 0 failed; 0 ignored; 0 measured; 741 filtered out; finished in 62.76s"
+    },
+    {
+      "line": 924,
+      "text": "2026-11-01T16:04:50.6890351Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 931,
+      "text": "2026-11-01T16:04:50.7344348Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 937,
+      "text": "2026-11-01T16:04:50.7346228Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 942,
+      "text": "2026-11-01T16:04:51.1418511Z test ci::tests::git_path_names_are_nul_delimited_and_extra_paths_force_full ... ok"
+    },
+    {
+      "line": 946,
+      "text": "2026-11-01T16:04:51.1420012Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.43s"
+    },
+    {
+      "line": 948,
+      "text": "2026-11-01T16:04:51.1574828Z native test command 1 finished in 63.456s: Ok(())"
+    },
+    {
+      "line": 950,
+      "text": "2026-11-01T16:04:51.8297592Z     Finished `native-tests` profile [optimized] target(s) in 0.15s"
+    },
+    {
+      "line": 1166,
+      "text": "2026-11-01T16:08:25.9818133Z test result: ok. 80 passed; 0 failed; 0 ignored; 0 measured; 750 filtered out; finished in 214.15s"
+    },
+    {
+      "line": 1172,
+      "text": "2026-11-01T16:08:26.0130672Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 1178,
+      "text": "2026-11-01T16:08:26.0286384Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 1184,
+      "text": "2026-11-01T16:08:26.0442000Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 1193,
+      "text": "2026-11-01T16:08:26.0447367Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 60 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 1195,
+      "text": "2026-11-01T16:08:26.0597734Z native test command 2 finished in 214.414s: Ok(())"
+    },
+    {
+      "line": 1197,
+      "text": "2026-11-01T16:08:26.7476943Z     Finished `native-tests` profile [optimized] target(s) in 0.15s"
+    },
+    {
+      "line": 1257,
+      "text": "2026-11-01T16:08:30.7520861Z test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 789 filtered out; finished in 3.99s"
+    },
+    {
+      "line": 1263,
+      "text": "2026-11-01T16:08:30.7672849Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 1269,
+      "text": "2026-11-01T16:08:30.7675261Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 1275,
+      "text": "2026-11-01T16:08:30.7828943Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "line": 1290,
+      "text": "2026-11-01T16:08:30.7988613Z test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 54 filtered out; finished in 0.02s"
+    },
+    {
+      "line": 1292,
+      "text": "2026-11-01T16:08:30.8140475Z native test command 3 finished in 4.252s: Ok(())"
+    },
+    {
+      "line": 1320,
+      "text": "2026-11-01T16:08:33.5849086Z Artifact test-diagnostics-windows-x86_64-unit-shard2-1 successfully finalized. Artifact ID 13090159684"
+    },
+    {
+      "line": 1321,
+      "text": "2026-11-01T16:08:33.5849912Z Artifact test-diagnostics-windows-x86_64-unit-shard2-1 has been successfully uploaded! Final size is 55491 bytes. Artifact ID is 13090159684"
+    }
+  ],
+  "conclusion": "success"
+}

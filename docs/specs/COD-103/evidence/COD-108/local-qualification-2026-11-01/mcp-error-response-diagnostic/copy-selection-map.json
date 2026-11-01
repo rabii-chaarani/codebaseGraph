@@ -1,0 +1,784 @@
+{
+  "author_bytes": 1257763,
+  "author_count": 84,
+  "copies": [
+    {
+      "bytes": 1069,
+      "destination": "mac-failure/API-read-receipts.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "d5ac94e4cf8c8cbe4977458c4c6830521923777985cba3d01ad742775d318544",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/API-read-receipts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 119056,
+      "destination": "mac-failure/actual-Mac-diagnostic-member-report-results-and-counts.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "decae13e738bda64ccc8a2c0ba00c7bdc02a07825552269af036a3440215c86b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/actual-Mac-diagnostic-member-report-results-and-counts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 5780,
+      "destination": "mac-failure/actual-failed-job-first-failure-excerpts.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "29c658a66e8ae6a56dcf7897422947545ba61f87fcb8051f1577cc9e35f4ace3",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/actual-failed-job-first-failure-excerpts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 5129,
+      "destination": "mac-failure/actual-failing-test-source-and-oracle.txt",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "e2b2e9b89b418c1d092503dd6d63794b083cd116ce2dafe035b8b011618b6a14",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/actual-failing-test-source-and-oracle.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "mac-failure/artifact-13092100404.stderr.txt",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/artifact-13092100404.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2786,
+      "destination": "mac-failure/available-download-receipts.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "cd287c9e88d79650f4bfba2cb637a5e4f3c73ac798d8702442d1425d59274362",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/available-download-receipts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2161,
+      "destination": "mac-failure/factual-cause-classification-and-next-owner.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "c1417f819249228d23270f7799dcf68ac39d448e0915e4e539c01b8242a3f0de",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/factual-cause-classification-and-next-owner.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2844,
+      "destination": "mac-failure/failed-macos-unit-job.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "52575bc8a88df495df298f24182cfbc1b89eedbf60bab5e3db7b28c6f36fbfee",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/failed-macos-unit-job.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1548,
+      "destination": "mac-failure/frozen-source-binding-and-causal-limit.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "fde46a0047ce4334a36055540f38b22aaaaee8064cf4b95e183e7c12d29562d9",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/frozen-source-binding-and-causal-limit.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 196683,
+      "destination": "mac-failure/job-124897498528.log",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "821e580b5cdf8ce20a4a6871004568f033d8c300a69fec17df167b9749f4a374",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/job-124897498528.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "mac-failure/job-124897498528.stderr.txt",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/job-124897498528.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 700,
+      "destination": "mac-failure/prior-checkpoint01-and02-closed-preservation.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "93013de1cdfdc41913fb068c0a052cd604b80c135c05b1f7293e802dd5776a56",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/prior-checkpoint01-and02-closed-preservation.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 4770,
+      "destination": "mac-failure/report.md",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "8a01801b16948f693a682fac60f0435ed592246f7f7db7803db838f9c55cd2cc",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 23574,
+      "destination": "mac-failure/result.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "10d44f184bf7fb6e21d1fdcf42c3e9ceea8c865e1bef160f3808918430d005b5",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 4238,
+      "destination": "mac-failure/files.json",
+      "mode": "100644",
+      "role": "mac-failure",
+      "sha256": "c1bf348ec990ef742ba83431a94879f98b9a0ab8c147038929601b0915506feb",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint03-macos-failure/files.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1076,
+      "destination": "windows-fixture-pass/API-read-receipts.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "f27699296f65ba237558e90a8689ba05c7d6e87e225a8af8bea24dc61765910f",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/API-read-receipts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 11998,
+      "destination": "windows-fixture-pass/actual-FR001-source-oracle-and-Windows-cfg-disposition.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "ba4282f9ca003ed07cf6548c25ab98290372b1b2ff6356c22085ade2627f27bd",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/actual-FR001-source-oracle-and-Windows-cfg-disposition.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 6674,
+      "destination": "windows-fixture-pass/actual-Windows-unit2-whole-job-compiler-source-case-audit.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "0b1960e85d069c394ef426881c6380c404985864567413d44d1da283b6f9ab71",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/actual-Windows-unit2-whole-job-compiler-source-case-audit.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 250990,
+      "destination": "windows-fixture-pass/actual-unit2-full-diagnostic-member-report-case-audit.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "94685b45ff5d0b984de2a93943da8e70f659a07672c046317dfb5dba8ea547c3",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/actual-unit2-full-diagnostic-member-report-case-audit.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "windows-fixture-pass/artifact-13090159684.stderr.txt",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/artifact-13090159684.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3288,
+      "destination": "windows-fixture-pass/available-download-receipts.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "e5f1dd87470d1220fc901bacfc70954ada2f3328005664546f40ce48ea0b142f",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/available-download-receipts.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2859,
+      "destination": "windows-fixture-pass/completed-Windows-unit2-job.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "067dbd7e4b5d3de44d38e8224fbfeafb4fc0054c3ebd46433d1c35df52e01b26",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/completed-Windows-unit2-job.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 146415,
+      "destination": "windows-fixture-pass/job-124897498696.log",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "b0d56a94bdaceb61d45b92d6a6b5461129e3b91536eb1986ac7a1a7f2fb3310b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/job-124897498696.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "windows-fixture-pass/job-124897498696.stderr.txt",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/job-124897498696.stderr.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 560,
+      "destination": "windows-fixture-pass/prior-initial-checkpoint-preservation.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "aff16830ec5c527ac321cd84b9f866eefa9b07b8ff21a85230b6b213c14fb3d4",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/prior-initial-checkpoint-preservation.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3410,
+      "destination": "windows-fixture-pass/report.md",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "a9c8e625991f4b3f9b3c3ed26d52a6fb24824a722cfe805a15d2e98e5b8a085b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 35595,
+      "destination": "windows-fixture-pass/result.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "869ccaa8d76e2aa2e6d6395eaedf0efa8742ad5d02e632e42f3f780cf5cdbf70",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3189,
+      "destination": "windows-fixture-pass/files.json",
+      "mode": "100644",
+      "role": "windows-fixture-pass",
+      "sha256": "85f2f7d3afb065a5207b62d1e1fbc0f2558be9228815f7e612d1b7d9e975e4d2",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-hosted-41323156535-attempt1/availability-checkpoint02-windows-fixture-pass/files.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 28658,
+      "destination": "unchanged-baseline/actual-compiler-harness-native-feature-provenance.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "abdb542dd188e594dd40c9431dd5c10c2c5d0160d5afef62ac7dc275997359da",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/actual-compiler-harness-native-feature-provenance.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1976,
+      "destination": "unchanged-baseline/actual-warning-and-selected-case-count-audit.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "f3bc8c471480575ea7a17f682e95fd537cc812ea77182e7bac1b07dda590b0c5",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/actual-warning-and-selected-case-count-audit.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3305,
+      "destination": "unchanged-baseline/commands.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "c8fae99b872647beba0c1a13ac7dddffd5f1a2e72c3237d252a8d007bf4aee4d",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/commands.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2057,
+      "destination": "unchanged-baseline/environment-and-native-profile.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "93276178068a6146d2e946e664ac473e5a7ec51f68f1d2afad9b2170423b6a93",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/environment-and-native-profile.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 5842,
+      "destination": "unchanged-baseline/exact-native-test.stderr.log",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "a0be724876a30740ec2718fdccf82a4a5d88e559441acacf7cf565401970f467",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/exact-native-test.stderr.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 647,
+      "destination": "unchanged-baseline/exact-native-test.stdout.log",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "afa9f027b3b37b6937a2056c19b9c75b90159bf65ff50a8898eae73cc2d2113a",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/exact-native-test.stdout.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1346,
+      "destination": "unchanged-baseline/hosted-failure-and-Windows-pass-history-preserved.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "2733ff211e51efea98e25aea54c83659e7ba0ffe59f8c15d41d60deb47c81255",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/hosted-failure-and-Windows-pass-history-preserved.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3857,
+      "destination": "unchanged-baseline/report.md",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "42c3ef98193dd1b468b72d9a35ff2c6b7e38007b07f44df180f610e1e98dc00b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 25526,
+      "destination": "unchanged-baseline/result.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "27c7d46fee076bdf9b54dea4faab220e893ca906720017856d80bd97c515a497",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 396,
+      "destination": "unchanged-baseline/runtime-versions.txt",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "d8cba44e5f44ee0f5eb63cc4d0061d637128643e6478ce64d81723f8c0e32cce",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/runtime-versions.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 228,
+      "destination": "unchanged-baseline/source-identity-after.txt",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "8d6857f100bc235a6e2e5822ff8c134e872b2bb84da7aa3d70fbca3826481ca4",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/source-identity-after.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 228,
+      "destination": "unchanged-baseline/source-identity-before.txt",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "8d6857f100bc235a6e2e5822ff8c134e872b2bb84da7aa3d70fbca3826481ca4",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/source-identity-before.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3217,
+      "destination": "unchanged-baseline/source-input-hashes-after.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "a78f4d6d7eba99840153551fe00e55d71eb967796e3affc92d76d261d8af2d1c",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/source-input-hashes-after.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2475,
+      "destination": "unchanged-baseline/source-input-hashes-before.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "3dbccd51b16a97e89c63391f77117ecd0c1d30cb7e7bbe07c2ae3c06a9382800",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/source-input-hashes-before.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2851,
+      "destination": "unchanged-baseline/files.json",
+      "mode": "100644",
+      "role": "unchanged-baseline",
+      "sha256": "7dbb2a3bdcda3dee2583079209a1dca9abaeb026ac19bf671549a3f405372b05",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-unchanged-native-reproduction/files.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 7862,
+      "destination": "backend-diagnosis/report.md",
+      "mode": "100644",
+      "role": "backend-diagnosis",
+      "sha256": "82dca505dd3596ef144ddd2b90ade2f7e8a02f56a7affa867200f2a3532a5e4b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/cod108-macos-mcp-failure-diagnosis/report.md",
+      "source_mode": "0o600"
+    },
+    {
+      "bytes": 11461,
+      "destination": "backend-diagnosis/result.json",
+      "mode": "100644",
+      "role": "backend-diagnosis",
+      "sha256": "68af7f523c1203c5db73efe92df549f2f9fb7372733230b674a7a82e68775f8d",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/cod108-macos-mcp-failure-diagnosis/result.json",
+      "source_mode": "0o600"
+    },
+    {
+      "bytes": 2301,
+      "destination": "backend-diagnosis/files.json",
+      "mode": "100644",
+      "role": "backend-diagnosis",
+      "sha256": "ae2dccb2552553c4c330665ed05c2cf378b17e2d50cc3b29a4e1b8fcfc4a6126",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-7f3e2b93/cod108-macos-mcp-failure-diagnosis/files.json",
+      "source_mode": "0o600"
+    },
+    {
+      "bytes": 1489,
+      "destination": "independent-after/actual-Cargo-selected-case-result.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "6b6c030f9fda09e5e98101394f44714bebcbddcd6ae19a7b84b67df242572a09",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/actual-Cargo-selected-case-result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 34600,
+      "destination": "independent-after/actual-native-method-binaries-fingerprints-and-provenance.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "5b8c2e6a257714235dba8b96e388f4bade96954119b1db953fed65a880e51f8b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/actual-native-method-binaries-fingerprints-and-provenance.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3353,
+      "destination": "independent-after/all-actual-check-warning-and-result-accounting.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "07459110e353e10e149e9f38322ae2cc40956939a0d2cd6d70f56799889aa921",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/all-actual-check-warning-and-result-accounting.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2065,
+      "destination": "independent-after/closed-history-preservation.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "a6bd9660ee5520ae0d09cf6fa88ea0d3c4663c92777c1f71e4fc6db123aa72b8",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/closed-history-preservation.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 9280,
+      "destination": "independent-after/commands.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "a7c69f3a89460f741e415f735eeae09bd1fa15ac06affdde1fcc3d0b9bc84d12",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/commands.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1957,
+      "destination": "independent-after/environment-and-native-profile.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "ec94aad9d7773ff464174c43216d85116657ce6749d85d16e65a39f1e258ccd5",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/environment-and-native-profile.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 611,
+      "destination": "independent-after/exact-native-test.stderr.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "6aea24176dc0c2cbd32178d2233b13931f8c76b40168247401f8b0c212809ab4",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/exact-native-test.stderr.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 647,
+      "destination": "independent-after/exact-native-test.stdout.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "f4248d9905803bc74ffe6341cb8c12cc7da3dc64d273901f6bbf1714d43a10b5",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/exact-native-test.stdout.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 160190,
+      "destination": "independent-after/focused-nextest-inventory.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "82686d94910d551e06a34ae900b9da498882d808ff07fd2f3cf0f19121ddebda",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/focused-nextest-inventory.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 612,
+      "destination": "independent-after/focused-nextest-inventory.stderr.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "3d2fa646b606d7f6537c56893424e5f9dffd5949019a6f961870b647dae017dd",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/focused-nextest-inventory.stderr.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 457,
+      "destination": "independent-after/focused-nextest-run.stderr.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "e97ede633674f1e12367636133c0705d9f5336fbee044e4421a8557554a60f90",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/focused-nextest-run.stderr.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "independent-after/focused-nextest-run.stdout.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/focused-nextest-run.stdout.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1335,
+      "destination": "independent-after/focused-one-name-inventory-proof.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "c58b2354d8feba650fcca6560ac36419bbfa0e10a2c0e3565a7b0754e228edd8",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/focused-one-name-inventory-proof.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "independent-after/format.stderr.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/format.stderr.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "independent-after/format.stdout.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/format.stdout.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2080,
+      "destination": "independent-after/genuine-one-case-JUnit-result.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "1e5098a61214c099d93e23a62727283773eb1f6330e8e3f8339837f77033cbe4",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/genuine-one-case-JUnit-result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 808,
+      "destination": "independent-after/mcp-diagnostic-junit.xml",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "ff64e0c40547145a28223304455e55973f24e809420742080fccf302f602c6cc",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/mcp-diagnostic-junit.xml",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 373,
+      "destination": "independent-after/nextest.toml",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "00fdf5d97d744f17353008f31a97f70d68a7f9409631a79a2e6ac9a3cf160588",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/nextest.toml",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 8077,
+      "destination": "independent-after/report.md",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "cbc299544472f8c8b5ac846c4039e2f1593ac3f87e5a0da1043fdfa5d12b8e4b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1615,
+      "destination": "independent-after/resp50-actual-stored-verdict-and-pending-new-source-reconciliation.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "45d95f0deb1348fedac82de457453993a60913eee3543276d38296389e720910",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/resp50-actual-stored-verdict-and-pending-new-source-reconciliation.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 24989,
+      "destination": "independent-after/result.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "a5af4c433d7f2a724997ab59fffe3461090b5265bc766bc279d84294a51c06f0",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 617,
+      "destination": "independent-after/root-strict-clippy.stderr.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "6406655b62651ce6d769d8e8736c06d4ca5164ee7854238fec09ac51f575db6d",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/root-strict-clippy.stderr.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 0,
+      "destination": "independent-after/root-strict-clippy.stdout.log",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/root-strict-clippy.stdout.log",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 544,
+      "destination": "independent-after/runtime-and-existing-nextest-versions.txt",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "6e8bd86fc2eacce6910fb21276ad41773bf98b5fa369e767b9b515a278891528",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/runtime-and-existing-nextest-versions.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1472,
+      "destination": "independent-after/same-oracle-message-only-scope-and-attachment-disposition.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "370c30eda4df89a8ba04039887b97b9047eb1e837bab2c0e7f6beecf52017742",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/same-oracle-message-only-scope-and-attachment-disposition.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 936,
+      "destination": "independent-after/source-identity-and-diagnostic-diff-after.txt",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "95333514c8d525bdfc4223dc3bd2971d24863e398c343dbb6b1c02f8dcfbbf7e",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/source-identity-and-diagnostic-diff-after.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1000,
+      "destination": "independent-after/source-identity-and-diagnostic-diff-before.txt",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "4413166f48c6939e83d2ad18177def4cc113df212b0ea47fe56ea5d82f3db751",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/source-identity-and-diagnostic-diff-before.txt",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1078,
+      "destination": "independent-after/supplemental-focused-JUnit-authorization.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "fe7272e9b8a246d3c1def05ca3e7811a003b8f52ae84be7e56fa83b1d3607061",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/supplemental-focused-JUnit-authorization.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 6715,
+      "destination": "independent-after/files.json",
+      "mode": "100644",
+      "role": "independent-after",
+      "sha256": "ba984981a75a0044032e7e738a9dfe84f21c811e153425f9951ad4b2e6f61381",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod108-mcp-diagnostic-independent/files.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 2226,
+      "destination": "focused-review/independent-diagnostic-evidence-readback.json",
+      "mode": "100644",
+      "role": "focused-review",
+      "sha256": "be234e3ac2edba476009d495d0a5fb1e0a57ab20ad95d6fe7a9ebb64cb31a3a2",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-mcp-error-response-focused-review/independent-diagnostic-evidence-readback.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 7964,
+      "destination": "focused-review/report.md",
+      "mode": "100644",
+      "role": "focused-review",
+      "sha256": "379fe3ee59c01b026c4f3adc8b92ebc1efd5abea63a603d980f8ef853693694b",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-mcp-error-response-focused-review/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 3070,
+      "destination": "focused-review/result.json",
+      "mode": "100644",
+      "role": "focused-review",
+      "sha256": "20fc80186672968824d99183bcc59a0a31e8d02133a27209ac8fd4acc201ff58",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-mcp-error-response-focused-review/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 895,
+      "destination": "focused-review/reviewed-diagnostic-only.diff",
+      "mode": "100644",
+      "role": "focused-review",
+      "sha256": "9b6811d37b6bef32c5a49e5f48db08f4459a0cefc762f81eebda65b50d1165d2",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-mcp-error-response-focused-review/reviewed-diagnostic-only.diff",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 4869,
+      "destination": "focused-review/static-diagnostic-scope-trace.json",
+      "mode": "100644",
+      "role": "focused-review",
+      "sha256": "eb91eb871c2df5f9dec9dca72fc50f887c1830f75aaa18a25abe97de8650aa68",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-mcp-error-response-focused-review/static-diagnostic-scope-trace.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1067,
+      "destination": "focused-review/files.json",
+      "mode": "100644",
+      "role": "focused-review",
+      "sha256": "c31c9abf7a2e1b497a69f4d7612e1c76a645d73256b5fa8f76cf7170f13fafe5",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-85e8e92c/cod108-mcp-error-response-focused-review/files.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 1701,
+      "destination": "production-final-run/report.md",
+      "mode": "100644",
+      "role": "production-final-run",
+      "sha256": "185029373fb5b10b165b7f3255c8e86bb9a58f63f50bf544558a0fb60229fe77",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-53acb188/cod108-mac-diagnostic-persistence-ready/report.md",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 27861,
+      "destination": "production-final-run/result.json",
+      "mode": "100644",
+      "role": "production-final-run",
+      "sha256": "0c310f64cdcf15f027534beda4a8464b81a4996293c28771546d5732d38d9ac0",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-53acb188/cod108-mac-diagnostic-persistence-ready/result.json",
+      "source_mode": "0o644"
+    },
+    {
+      "bytes": 585,
+      "destination": "production-final-run/manifest.json",
+      "mode": "100644",
+      "role": "production-final-run",
+      "sha256": "1b1cd24f1fb7851552583bf53d7b0829ddd992761d38d4b43c0f9a05b8b4d624",
+      "source": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-53acb188/cod108-mac-diagnostic-persistence-ready/manifest.json",
+      "source_mode": "0o644"
+    }
+  ],
+  "exclusions": {
+    "backend": "Only original closed82dca report/68af result/ae2d manifest copied. Scope narrowed by explicit later author addendum relayed in Engineer assignment; no invented addendumfile or alteration of original report.",
+    "general": "Physical ZIP/native/binary/NUL/cache/model/fullsourceinventory/redundantfrozenfiles/privateunrelatedAPI/memory dumps omitted. Original report/result/manifests kept unchanged, absolutepaths/CRLF/whitespace/emptylogs preserved; original manifests describe entire author closure, not copy completeness.",
+    "independent_after": "Omit all2371before/after inventories, NULtree, canonicalfullmodel/locate/rules/graph snapshots; retain actualoracle/sourcehash/diff/provenance/commands/nativeJUnit/caseaccounting/resp50pendingdisposition.",
+    "production_final_run": "Closed preparatory report/result/manifest retained as historical artifact, their thenpendinginputs not interpreted as currentpass; fullAPIpayload omitted with explicit selection."
+  },
+  "new_local_results": "One Cargo selected-case pass and one nextest genuineJUnit pass are same1uniqueMCPcase, NOT2cases; failure-onlypayloadnotemittedbecausepass. OldMacCIstillfailedcauseunknown.",
+  "preserved": {
+    "README_paths": 17,
+    "all2370otherprior_blob_modes": true,
+    "canonical_old0413_unchanged": true,
+    "prior0413_evidence_index_authors_unchanged": true
+  },
+  "readback": {
+    "all_UTF8_NULfree": true,
+    "all_destinations_100644": true,
+    "all_selected_hashes_sizes_equal": true,
+    "credential_pattern_matches": 0,
+    "empty_original_files_preserved": 8
+  },
+  "scope": "Single diagnostic assertion message + faithful closed evidence. No root-cause fix, runtime change or hosted waiver.",
+  "work_id": "COD-108"
+}
