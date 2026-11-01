@@ -1,0 +1,103 @@
+{
+  "project": "/Users/rabii/Projects/Repositories/codebaseGraph",
+  "entries": [
+    {
+      "responsibility_id": "resp-14",
+      "locations": [
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "check_rust_only_files"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "is_docs_helper_path"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "has_generated_component"
+        }
+      ]
+    },
+    {
+      "responsibility_id": "resp-15",
+      "locations": [
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "check_workflows"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "check_workflow_policy"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "native_retention_policy_valid"
+        }
+      ]
+    }
+  ],
+  "test_entries": [
+    {
+      "responsibility_id": "resp-14",
+      "locations": [
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "docs_python_gate_accepts_root_and_nested_helpers_in_both_modes"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "docs_python_exception_rejects_component_aliases_and_symlinks"
+        }
+      ]
+    },
+    {
+      "responsibility_id": "resp-15",
+      "locations": [
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "workflow_policy_rejects_unconditional_release_publication"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "workflow_policy_accepts_exact_cod103_stack_bases"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "workflow_policy_rejects_unknown_stack_base_and_push_namespace"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "workflow_policy_rejects_privileged_pr_event"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "workflow_policy_rejects_unapproved_pull_request_activity"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "workflow_policy_retention_wiring_is_closed"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "native_retention_actual_body_is_cod107_only"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "native_retention_invalid_input_cannot_succeed"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "required_rejects_retention_selector_failure"
+        },
+        {
+          "pattern": "crates/xtask/src/main.rs",
+          "symbol": "docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "canonical_project": "/Users/rabii/Projects/Repositories/codebaseGraph",
+  "source_commit": "944925856ca942d4f628fc6eec0dfcc671602f16",
+  "tree": "0a6d14a8f5c959e1d99b0c61404085fd112958c4",
+  "report": "report.md",
+  "result": "result.json",
+  "closed_files": [
+    {
+      "file": "actual-source-test-spans.json",
+      "bytes": 83279,
+      "sha256": "802223da6fd1161edbaf8c17134be8c21484c9c9b5d3c3163095c3368a3e0818"
+    },
+    {
+      "file": "bind-existing-change.txt",
+      "bytes": 6181,
+      "sha256": "a4f2c214cf5579afa84cf59ba99e02ebcfb46e9cdb62c495cdc5a8305e6942fa"
+    },
+    {
+      "file": "canonical-source-after.txt",
+      "bytes": 131,
+      "sha256": "78149fde056da7ccb60cff3a435ec56129ae7568cf28518f0d3770b2b0735483"
+    },
+    {
+      "file": "canonical-source-before.txt",
+      "bytes": 131,
+      "sha256": "78149fde056da7ccb60cff3a435ec56129ae7568cf28518f0d3770b2b0735483"
+    },
+    {
+      "file": "governing-rules.txt",
+      "bytes": 15325,
+      "sha256": "75ee7b70bfc9a6d17b1fb0e56a922ee4f5cabedc5d9030b57b981302d30b70bd"
+    },
+    {
+      "file": "graph-discovery.json",
+      "bytes": 52015,
+      "sha256": "b735bda2038a711710f54c44b9dd19e527e71de38a65345bed0ce2e4d415191c"
+    },
+    {
+      "file": "health-after.txt",
+      "bytes": 5160,
+      "sha256": "d41d0086d27e454971c411596af7f437e9473118bc5fe3ba29aa841764d7529c"
+    },
+    {
+      "file": "health-before.txt",
+      "bytes": 5159,
+      "sha256": "91e3be67479bb04d6713aaa0ca408095349b9e84699f8c6e11b58f4a3f7e9eb1"
+    },
+    {
+      "file": "ingest-once-request.json",
+      "bytes": 773,
+      "sha256": "555f14fb2e08867787f82ad4fc493cedf1722c300514d76570d5f68d07f759b4"
+    },
+    {
+      "file": "ingest-once-response.json",
+      "bytes": 2665,
+      "sha256": "7912ce60ee68406912abaf6a6b2b95a53c842a0ee74da780ab4a1927a6174aff"
+    },
+    {
+      "file": "locate-after-ingest.json",
+      "bytes": 158242,
+      "sha256": "84c6389120f12486d518f6d3c67ef94b9605a2b55c72cb88e9f6894d3f0823e8"
+    },
+    {
+      "file": "locate-after-map.json",
+      "bytes": 158242,
+      "sha256": "84c6389120f12486d518f6d3c67ef94b9605a2b55c72cb88e9f6894d3f0823e8"
+    },
+    {
+      "file": "locate-before.json",
+      "bytes": 378777,
+      "sha256": "603eda06d72c96fe06639462aa1d47a12ec6136751381cf4a8bb40c993bcfb14"
+    },
+    {
+      "file": "original83-report-reuse-proof.json",
+      "bytes": 6153,
+      "sha256": "80b1822e403b9aa666fe9bb09f7c300c5bc991b0730f9b3e697aafa13230fb14"
+    },
+    {
+      "file": "pending107-after.txt",
+      "bytes": 62678,
+      "sha256": "59f3f0a276a21b174461e4801d98ca7ccad3a96807bc2106e5e6513102b05406"
+    },
+    {
+      "file": "pending107-before.txt",
+      "bytes": 62649,
+      "sha256": "49a6b21e7a79b387c9004f250ded3f5306e93e4393fdcea67e4ad717af69632f"
+    },
+    {
+      "file": "pending108-after.txt",
+      "bytes": 63274,
+      "sha256": "435e21784d740d6f9bfd0bfed0db6aa4bb9b8148ccdb17bbab175931b1569535"
+    },
+    {
+      "file": "pending108-before.txt",
+      "bytes": 63245,
+      "sha256": "a154ba94e7d018aa6bcca16e16177ba0e6269515183fedccdb1d9e9d215841d5"
+    },
+    {
+      "file": "pendingParent-after.txt",
+      "bytes": 139843,
+      "sha256": "5faaf1fd990c7647a4c2709789ed263d3411dda3f72b6afb242459940d791ef5"
+    },
+    {
+      "file": "pendingParent-before.txt",
+      "bytes": 139814,
+      "sha256": "d5595e2524157cf9aeafe4caf8f64967ff854a69cfee0ffa50ca03595d3cb204"
+    },
+    {
+      "file": "preservation-after.json",
+      "bytes": 427,
+      "sha256": "4725061359b357004fdb57df1f75b4206b4b24796d6ed52029c8c30d8e7db0b3"
+    },
+    {
+      "file": "radius-after.txt",
+      "bytes": 1900,
+      "sha256": "f991c10ddaa5fa26611bc917274a6b015fe1b37804220d2cf27baba132a9c085"
+    },
+    {
+      "file": "radius-before.txt",
+      "bytes": 1900,
+      "sha256": "af7b11aa88308dab6d07d32ddd199e3256e4b97134682fd52cae8b01ae0d16f7"
+    },
+    {
+      "file": "recorded-verdict-fingerprints.json",
+      "bytes": 16841,
+      "sha256": "377ce533b297a2b1b237688eae142bde622947281c959281b5a1bd75655ff038"
+    },
+    {
+      "file": "report.md",
+      "bytes": 6571,
+      "sha256": "f09dfda6360272ba96e4c636ed558fb6da4c1b117d3bb61a5f44375bd1567ad9"
+    },
+    {
+      "file": "result.json",
+      "bytes": 34979,
+      "sha256": "d6756be79ff0eb979d987a7188c8884c02b2ae2ef73b45ee541f6cb25b9dc525"
+    },
+    {
+      "file": "scoped-verdicts-before.json",
+      "bytes": 818,
+      "sha256": "2ff751a3eab41c48d3e79dc7611d47fac92d22d1cbc1b3beb549ec7dc2d2d432"
+    },
+    {
+      "file": "source-hash-proof-before.json",
+      "bytes": 1322,
+      "sha256": "d5c68c7baf35a2120c3a2300194ff4603144846c2295cdae9cccf7a6d3444afe"
+    },
+    {
+      "file": "source-hashes-after.json",
+      "bytes": 5726,
+      "sha256": "2a0dcb8828f48ba1faa89e4c1c7dbad03049ab317a1ab1d968091fd363324cf3"
+    },
+    {
+      "file": "supported-tool-schemas.json",
+      "bytes": 8217,
+      "sha256": "9ef7c6ac792da7b2ceec6c780871fa7c56fd7b3159014af8c78ad37a5fa7e934"
+    },
+    {
+      "file": "update-source-map-request.json",
+      "bytes": 3016,
+      "sha256": "5fdbde36290e63f43ccf6214f0fb0a2b0f07e06e61a3b236d5371137c0c16829"
+    },
+    {
+      "file": "update-source-map-response.txt",
+      "bytes": 166,
+      "sha256": "42143f111499f5970403ab064cc999bb97fd30c4b4408cdc4bc5f48f512a9340"
+    }
+  ],
+  "self_hash": "externalhandoffonly"
+}

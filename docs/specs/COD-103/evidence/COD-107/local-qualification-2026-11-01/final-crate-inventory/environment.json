@@ -1,0 +1,21 @@
+{
+  "command_env": {
+    "LBUG_LIBRARY_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_INCLUDE_DIR": "/private/tmp/codebasegraph-copy153-evidence/native019",
+    "LBUG_VERSION": "0.19.0",
+    "OPENSSL_LIB_DIR": "/opt/homebrew/Cellar/openssl@3/3.6.2/lib",
+    "MACOSX_DEPLOYMENT_TARGET": "13.3",
+    "CARGO_BUILD_JOBS": "2"
+  },
+  "unset": {
+    "CARGO_TARGET_DIR": null,
+    "LBUG_SHARED": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "LBUG_BUILD_FROM_SOURCE": null,
+    "LBUG_RUST_BUILD_FROM_SOURCE": null
+  },
+  "project_config": "[env]\nRUST_TEST_THREADS = \"1\"\nHOME = { value = \"target/test-home\", relative = true, force = true }\n",
+  "known_environment": "Normal previously verified macOS26.6.2ARM64,Cargo/Rust1.96.0; no dependency/tool install/newprofile/features",
+  "scope": "Package --no-verify archiveinventory, no compiler/packagecode/runtime invocation"
+}

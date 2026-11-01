@@ -1,0 +1,16 @@
+{
+  "root": {
+    "path": "/private/tmp/codebasegraph-cod107-20261031/target/package/codebase-graph-4.0.5.crate",
+    "exists": true,
+    "bytes": 8485616,
+    "sha256": "d5c5da36855c8d5ea7084cf29ab2bebb8107fa35852b8b130a860320c10c211e",
+    "mtime_ns": 1793493914627234328
+  },
+  "wiki": {
+    "path": "/private/tmp/codebasegraph-cod107-20261031/target/package/k-wiki-4.0.5.crate",
+    "exists": true,
+    "bytes": 140437,
+    "sha256": "45ca763a9899074799ccb2366b7239969570a0e01bf4eee5dfa782b8b477b2fd",
+    "mtime_ns": 1793493922804514418
+  }
+}

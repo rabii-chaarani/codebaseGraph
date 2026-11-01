@@ -1,0 +1,339 @@
+{
+  "metadata_source": "Read-only actual same-model .scryer/.test-results.json after one successful supported ingestion",
+  "recordedAt": 1793502686,
+  "records_this_ingest": [
+    {
+      "respId": "resp-15",
+      "outcome": "passed",
+      "cases": 10,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-15|crates/xtask/src/main.rs|check_workflow_policy": "bec38d8062ea4ce1",
+        "resp-15|crates/xtask/src/main.rs|check_workflows": "612b4412f18d6097",
+        "resp-15|crates/xtask/src/main.rs|native_retention_policy_valid": "32b98afd39df4b88",
+        "test:resp-15|crates/xtask/src/main.rs|docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python": "53037f5e19e06222",
+        "test:resp-15|crates/xtask/src/main.rs|native_retention_actual_body_is_cod107_only": "88cc4df988c40086",
+        "test:resp-15|crates/xtask/src/main.rs|native_retention_invalid_input_cannot_succeed": "bf442f3b064409b0",
+        "test:resp-15|crates/xtask/src/main.rs|required_rejects_retention_selector_failure": "2d1f0069125e33d3",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_accepts_exact_cod103_stack_bases": "4d125b8d8091f6fe",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_privileged_pr_event": "11c29ca1bb4d771a",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unapproved_pull_request_activity": "01c62298d02e7574",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unconditional_release_publication": "eecf2f8529e26d36",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unknown_stack_base_and_push_namespace": "0797e43835e0c53f",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_retention_wiring_is_closed": "a42bf3d379adc58c"
+      }
+    },
+    {
+      "respId": "resp-254",
+      "outcome": "passed",
+      "cases": 1,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-254|crates/xtask/src/main.rs|native_test": "6fd1c356a11083b4",
+        "test:resp-254|crates/xtask/src/main.rs|windows_native_tests_forward_bundled_extensions": "549fc2ef5476957d"
+      }
+    },
+    {
+      "respId": "resp-255",
+      "outcome": "passed",
+      "cases": 1,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-255|crates/xtask/src/main.rs|native_artifact": "991afaa5f4609a49",
+        "test:resp-255|crates/xtask/src/main.rs|complete_artifact_set_rejects_mixed_provenance": "8fdee1cfdd77a197"
+      }
+    },
+    {
+      "respId": "resp-256",
+      "outcome": "passed",
+      "cases": 1,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-256|crates/xtask/src/main.rs|build_and_smoke_native_archive": "8f977046a8a659f6",
+        "test:resp-256|crates/xtask/src/main.rs|archive_contract_rejects_unexpected_entries": "abc0ed31995b40bb"
+      }
+    },
+    {
+      "respId": "resp-257",
+      "outcome": "passed",
+      "cases": 1,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-257|crates/xtask/src/main.rs|validate_native_artifacts": "a69f24bd1787acea",
+        "test:resp-257|crates/xtask/src/main.rs|complete_artifact_set_rejects_mixed_provenance": "8fdee1cfdd77a197"
+      }
+    },
+    {
+      "respId": "resp-258",
+      "outcome": "passed",
+      "cases": 1,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-258|crates/xtask/src/main.rs|validate_native_artifacts": "a69f24bd1787acea",
+        "test:resp-258|crates/xtask/src/main.rs|complete_artifact_set_rejects_mixed_provenance": "8fdee1cfdd77a197"
+      }
+    },
+    {
+      "respId": "resp-259",
+      "outcome": "passed",
+      "cases": 7,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-259|.github/actions/verified-release/action.yml|": "9ee08cf9ec5dcf0e",
+        "resp-259|.github/workflows/release.yml|": "2f89c2674c4a4102",
+        "test:resp-259|crates/xtask/src/release/workflow_tests.rs|existing_tag_resolver_accepts_historical_lightweight_and_annotated_ancestors": "e3a0e46ad07703c1",
+        "test:resp-259|crates/xtask/src/release/workflow_tests.rs|existing_tag_resolver_rejects_nonancestors_and_bad_identity_before_authorizing": "0bf004d938b667e9",
+        "test:resp-259|crates/xtask/src/release/workflow_tests.rs|legacy_dry_run_resolves_without_scheduling_the_publisher": "a9e80ae04403aa91",
+        "test:resp-259|crates/xtask/src/release/workflow_tests.rs|legacy_publisher_rechecks_fresh_tag_and_main_before_upload_and_allows_advancement": "10e1b9e357185e6b",
+        "test:resp-259|crates/xtask/src/release/workflow_tests.rs|legacy_publisher_rejects_late_history_and_tag_races_without_mutation": "013bc324c1303626",
+        "test:resp-259|crates/xtask/src/release/workflow_tests.rs|publisher_targets_original_sha_and_is_idempotent": "7157a2e161277aff",
+        "test:resp-259|crates/xtask/src/release/workflow_tests.rs|verified_release_survives_main_advancing_and_ignores_other_pending_releases": "5c754134ed7ddce1"
+      }
+    },
+    {
+      "respId": "resp-276",
+      "outcome": "passed",
+      "cases": 2,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-276|.github/workflows/release.yml|": "2f89c2674c4a4102",
+        "test:resp-276|crates/xtask/src/release/workflow_tests.rs|ordinary_commit_cannot_authorize_release_and_tagged_retry_still_can": "ec3e1ae32c6f2707",
+        "test:resp-276|crates/xtask/src/release/workflow_tests.rs|proposal_reports_pending_release_then_proceeds_after_finalization": "ca16a11be0428fb8"
+      }
+    },
+    {
+      "respId": "resp-ew32yv",
+      "outcome": "passed",
+      "cases": 2,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-ew32yv|crates/xtask/src/release.rs|release_notes": "fa7cae11ac19f58e",
+        "test:resp-ew32yv|crates/xtask/src/release.rs|notes_only_include_the_exact_release": "d9deec182eac0937",
+        "test:resp-ew32yv|crates/xtask/src/release.rs|notes_reject_missing_duplicate_and_empty_sections": "9add3f860e058937"
+      }
+    },
+    {
+      "respId": "resp-trgvnp",
+      "outcome": "passed",
+      "cases": 1,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-trgvnp|crates/xtask/src/release.rs|read_metadata": "4332aff54def26dd",
+        "test:resp-trgvnp|crates/xtask/src/release.rs|metadata_rejects_inconsistent_versions": "4f379a334261d282"
+      }
+    },
+    {
+      "respId": "resp-17",
+      "outcome": "passed",
+      "cases": 3,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-17|crates/xtask/src/main.rs|smoke_mcp_stdio": "ded4cf433be5937d",
+        "resp-17|crates/xtask/src/main.rs|smoke_wiki_mcp_stdio": "92139be99a2145b9",
+        "resp-17|crates/xtask/src/main.rs|validate_mcp_smoke_output": "2582a2563a999a37",
+        "test:resp-17|crates/xtask/src/main.rs|mcp_smoke_accepts_valid_initialize_and_tools": "a35cc1ba191c8679",
+        "test:resp-17|crates/xtask/src/main.rs|mcp_smoke_rejects_errors_missing_malformed_duplicate_and_decoy_responses": "45c716c85a0f34aa",
+        "test:resp-17|crates/xtask/src/main.rs|mcp_smoke_rejects_nonzero_child_with_success_payload": "64689acd291aa127"
+      }
+    },
+    {
+      "respId": "resp-14",
+      "outcome": "passed",
+      "cases": 3,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-14|crates/xtask/src/main.rs|check_rust_only_files": "acf8f890d1aeae3c",
+        "resp-14|crates/xtask/src/main.rs|has_generated_component": "e908cf4a31a4057d",
+        "resp-14|crates/xtask/src/main.rs|is_docs_helper_path": "adc8ac0602679e18",
+        "test:resp-14|crates/xtask/src/main.rs|docs_python_exception_rejects_component_aliases_and_symlinks": "80c2497937b9f19f",
+        "test:resp-14|crates/xtask/src/main.rs|docs_python_gate_accepts_root_and_nested_helpers_in_both_modes": "908ff3da9b9db708",
+        "test:resp-14|crates/xtask/src/main.rs|docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python": "53037f5e19e06222"
+      }
+    }
+  ],
+  "assigned_14_15_current_records": {
+    "resp-15": {
+      "respId": "resp-15",
+      "outcome": "passed",
+      "cases": 10,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-15|crates/xtask/src/main.rs|check_workflow_policy": "bec38d8062ea4ce1",
+        "resp-15|crates/xtask/src/main.rs|check_workflows": "612b4412f18d6097",
+        "resp-15|crates/xtask/src/main.rs|native_retention_policy_valid": "32b98afd39df4b88",
+        "test:resp-15|crates/xtask/src/main.rs|docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python": "53037f5e19e06222",
+        "test:resp-15|crates/xtask/src/main.rs|native_retention_actual_body_is_cod107_only": "88cc4df988c40086",
+        "test:resp-15|crates/xtask/src/main.rs|native_retention_invalid_input_cannot_succeed": "bf442f3b064409b0",
+        "test:resp-15|crates/xtask/src/main.rs|required_rejects_retention_selector_failure": "2d1f0069125e33d3",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_accepts_exact_cod103_stack_bases": "4d125b8d8091f6fe",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_privileged_pr_event": "11c29ca1bb4d771a",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unapproved_pull_request_activity": "01c62298d02e7574",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unconditional_release_publication": "eecf2f8529e26d36",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unknown_stack_base_and_push_namespace": "0797e43835e0c53f",
+        "test:resp-15|crates/xtask/src/main.rs|workflow_policy_retention_wiring_is_closed": "a42bf3d379adc58c"
+      }
+    },
+    "resp-14": {
+      "respId": "resp-14",
+      "outcome": "passed",
+      "cases": 3,
+      "recordedAt": 1793502686,
+      "fingerprints": {
+        "resp-14|crates/xtask/src/main.rs|check_rust_only_files": "acf8f890d1aeae3c",
+        "resp-14|crates/xtask/src/main.rs|has_generated_component": "e908cf4a31a4057d",
+        "resp-14|crates/xtask/src/main.rs|is_docs_helper_path": "adc8ac0602679e18",
+        "test:resp-14|crates/xtask/src/main.rs|docs_python_exception_rejects_component_aliases_and_symlinks": "80c2497937b9f19f",
+        "test:resp-14|crates/xtask/src/main.rs|docs_python_gate_accepts_root_and_nested_helpers_in_both_modes": "908ff3da9b9db708",
+        "test:resp-14|crates/xtask/src/main.rs|docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python": "53037f5e19e06222"
+      }
+    }
+  },
+  "every_assigned_attachment_fingerprint": [
+    {
+      "responsibility_id": "resp-14",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+      "XMLname": "tests::docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-14|crates/xtask/src/main.rs|docs_python_gate_accepts_root_and_nested_helpers_in_both_modes",
+      "fingerprint": "908ff3da9b9db708"
+    },
+    {
+      "responsibility_id": "resp-14",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "XMLname": "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-14|crates/xtask/src/main.rs|docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "fingerprint": "53037f5e19e06222"
+    },
+    {
+      "responsibility_id": "resp-14",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "docs_python_exception_rejects_component_aliases_and_symlinks",
+      "XMLname": "tests::docs_python_exception_rejects_component_aliases_and_symlinks",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-14|crates/xtask/src/main.rs|docs_python_exception_rejects_component_aliases_and_symlinks",
+      "fingerprint": "80c2497937b9f19f"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "workflow_policy_rejects_unconditional_release_publication",
+      "XMLname": "tests::workflow_policy_rejects_unconditional_release_publication",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unconditional_release_publication",
+      "fingerprint": "eecf2f8529e26d36"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "workflow_policy_accepts_exact_cod103_stack_bases",
+      "XMLname": "tests::workflow_policy_accepts_exact_cod103_stack_bases",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|workflow_policy_accepts_exact_cod103_stack_bases",
+      "fingerprint": "4d125b8d8091f6fe"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+      "XMLname": "tests::workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unknown_stack_base_and_push_namespace",
+      "fingerprint": "0797e43835e0c53f"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "workflow_policy_rejects_privileged_pr_event",
+      "XMLname": "tests::workflow_policy_rejects_privileged_pr_event",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_privileged_pr_event",
+      "fingerprint": "11c29ca1bb4d771a"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "workflow_policy_rejects_unapproved_pull_request_activity",
+      "XMLname": "tests::workflow_policy_rejects_unapproved_pull_request_activity",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|workflow_policy_rejects_unapproved_pull_request_activity",
+      "fingerprint": "01c62298d02e7574"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "workflow_policy_retention_wiring_is_closed",
+      "XMLname": "tests::workflow_policy_retention_wiring_is_closed",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|workflow_policy_retention_wiring_is_closed",
+      "fingerprint": "a42bf3d379adc58c"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "native_retention_actual_body_is_cod107_only",
+      "XMLname": "tests::native_retention_actual_body_is_cod107_only",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|native_retention_actual_body_is_cod107_only",
+      "fingerprint": "88cc4df988c40086"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "native_retention_invalid_input_cannot_succeed",
+      "XMLname": "tests::native_retention_invalid_input_cannot_succeed",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|native_retention_invalid_input_cannot_succeed",
+      "fingerprint": "bf442f3b064409b0"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "required_rejects_retention_selector_failure",
+      "XMLname": "tests::required_rejects_retention_selector_failure",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|required_rejects_retention_selector_failure",
+      "fingerprint": "2d1f0069125e33d3"
+    },
+    {
+      "responsibility_id": "resp-15",
+      "path": "crates/xtask/src/main.rs",
+      "symbol": "docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "XMLname": "tests::docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "recorded_outcome": "passed",
+      "fingerprint_key": "test:resp-15|crates/xtask/src/main.rs|docs_python_gate_rejects_neighbors_root_tooling_and_workflow_python",
+      "fingerprint": "53037f5e19e06222"
+    }
+  ],
+  "attachment_matches": 13,
+  "unique_assigned_case_names": 12,
+  "pending_preservation": {
+    "pending107": {
+      "pending_changes_equal": true,
+      "before_ids": [],
+      "after_ids": []
+    },
+    "pendingParent": {
+      "pending_changes_equal": true,
+      "before_ids": [
+        "container-release-verifier"
+      ],
+      "after_ids": [
+        "container-release-verifier"
+      ]
+    },
+    "pending108": {
+      "pending_changes_equal": true,
+      "before_ids": [
+        "resp-1rnbs9",
+        "resp-tddbkj"
+      ],
+      "after_ids": [
+        "resp-1rnbs9",
+        "resp-tddbkj"
+      ]
+    }
+  }
+}

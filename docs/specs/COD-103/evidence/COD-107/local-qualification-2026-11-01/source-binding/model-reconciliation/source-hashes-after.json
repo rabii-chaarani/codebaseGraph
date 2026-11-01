@@ -1,0 +1,111 @@
+{
+  "crates/xtask/src/main.rs": {
+    "canonical_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+    "isolated_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+    "original_tested_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+    "unchanged": true
+  },
+  "docs/release.md": {
+    "canonical_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+    "isolated_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+    "original_tested_sha256": "1e67f4949647c10a48f9184db230454572d666a756b68c203690398f525c7954",
+    "unchanged": true
+  },
+  ".github/workflows/ci.yml": {
+    "canonical_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+    "isolated_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+    "original_tested_sha256": "3e76687feaff8021d1edc6e0d91b77444b2196e1430bd346bb232b87049cbda9",
+    "unchanged": true
+  },
+  ".github/workflows/native.yml": {
+    "canonical_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+    "isolated_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+    "original_tested_sha256": "cc4d668cb0dbc0d164e3f7a687f76f4020aeb5ef02b36eb56591521c75c3d683",
+    "unchanged": true
+  },
+  "Cargo.toml": {
+    "canonical_sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+    "isolated_sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+    "original_tested_sha256": "5a08eb5f34916f35ee3e3964d6ab4c9a5c6f80b7fe374f6cf2d44daf441aeaa4",
+    "unchanged": true
+  },
+  "Cargo.lock": {
+    "canonical_sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+    "isolated_sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+    "original_tested_sha256": "63d868f91aa52acbddf0eb7e9385a101c3a59c02f7e527ced82d1993299f5afb",
+    "unchanged": true
+  },
+  "crates/xtask/Cargo.toml": {
+    "canonical_sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+    "isolated_sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+    "original_tested_sha256": "206d3a9af5953963659c0cc292e1356c8905f44288c417568bb7f146c4716198",
+    "unchanged": true
+  },
+  "crates/k-wiki/Cargo.toml": {
+    "canonical_sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+    "isolated_sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+    "original_tested_sha256": "20cf87fbc1693f525064af701ac64153fa7a45f76b0e31851aae9e59b2a97572",
+    "unchanged": true
+  },
+  ".cargo/config.toml": {
+    "canonical_sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+    "isolated_sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+    "original_tested_sha256": "388ad5407d7e78cae8dacd1c3c556f8c97f43d998c4e09273dcf8fca00eb0f82",
+    "unchanged": true
+  },
+  "SECURITY.md": {
+    "canonical_sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+    "isolated_sha256": "a838500eac12bd53304f485c21052df40435b4ed37cb2823fe63f3ae225e44e5",
+    "unchanged": true
+  },
+  "release-please-config.json": {
+    "canonical_sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+    "isolated_sha256": "aee0cc12299ec52e26f56bf7621a7e48a50445f0105041da9fed5eea178f5497",
+    "unchanged": true
+  },
+  "src/lib.rs": {
+    "canonical_sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+    "isolated_sha256": "509f314907f3860c8408f1ed32f8e94867ba79d906b01d7de2e7cc253910d751",
+    "unchanged": true
+  },
+  "src/adapters/cli/mod.rs": {
+    "canonical_sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+    "isolated_sha256": "c574c9f1e30d211fee7ad12d8675c5f52bc87dc2a1d1b2985fe5f030f9f5bd43",
+    "unchanged": true
+  },
+  ".github/workflows/release.yml": {
+    "canonical_sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+    "isolated_sha256": "e11c179705340bea6230dfac1a50c055d34fb7137d20f2c271e335c589653117",
+    "unchanged": true
+  },
+  "crates/xtask/src/macos.rs": {
+    "canonical_sha256": "810255a2714e8aed31b77b26ac5260747fb68d5c6c5f85bc3e17757a97c1f0cf",
+    "isolated_sha256": "810255a2714e8aed31b77b26ac5260747fb68d5c6c5f85bc3e17757a97c1f0cf",
+    "unchanged": true
+  },
+  "crates/xtask/src/macos_installer_tests.rs": {
+    "canonical_sha256": "10646723ce3db83a5a70e51769957214801d4ef7533362eab1035c31ce7fab17",
+    "isolated_sha256": "10646723ce3db83a5a70e51769957214801d4ef7533362eab1035c31ce7fab17",
+    "unchanged": true
+  },
+  "crates/xtask/src/native_tests.rs": {
+    "canonical_sha256": "ada965856dbc889902c68a01c1e5fbe33c4a050dc84e915a5e07244162d7e5a4",
+    "isolated_sha256": "ada965856dbc889902c68a01c1e5fbe33c4a050dc84e915a5e07244162d7e5a4",
+    "unchanged": true
+  },
+  "crates/xtask/src/native_tests/shards.rs": {
+    "canonical_sha256": "7420672dcfb926caf3e12c6483e3f0349e11ef11cb37a4d603811f43797c42f3",
+    "isolated_sha256": "7420672dcfb926caf3e12c6483e3f0349e11ef11cb37a4d603811f43797c42f3",
+    "unchanged": true
+  },
+  "crates/xtask/src/release.rs": {
+    "canonical_sha256": "dc74317037a68df27c98c24678d2b46589ef64fc1ef0d484b415cae33435ebd7",
+    "isolated_sha256": "dc74317037a68df27c98c24678d2b46589ef64fc1ef0d484b415cae33435ebd7",
+    "unchanged": true
+  },
+  "crates/xtask/src/release/workflow_tests.rs": {
+    "canonical_sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450",
+    "isolated_sha256": "66c2921315dae1dad20a1cfd4eed620019d702da6c0e7e6ec3c1c43ff8ab0450",
+    "unchanged": true
+  }
+}

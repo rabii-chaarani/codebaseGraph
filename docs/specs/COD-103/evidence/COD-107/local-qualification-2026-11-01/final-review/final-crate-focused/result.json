@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "status": "closed",
+  "verdict": "PASS_FINAL_CLEAN_944_CRATE_INVENTORY_FOCUSED_REVIEW",
+  "scope": "Parent-authorized bounded acceptance of newly closed final-clean .crate evidence. No new entire review or implementation stage; original integrated technical review preserved unchanged.",
+  "snapshot": {
+    "commit": "944925856ca942d4f628fc6eec0dfcc671602f16",
+    "tree": "0a6d14a8f5c959e1d99b0c61404085fd112958c4",
+    "main_sha256": "076dd22a1da16a6d651016b7227536f1d65de766ff6c09a3dcb02631c51af5da",
+    "source_reported_clean_before_after": true,
+    "source_inputs_equal_before_after": true
+  },
+  "execution_settings": {
+    "role": "Final Reviewer",
+    "map_path": "/Users/rabii/Projects/Repositories/skills/codebasegraph-engineer/models.toml",
+    "map_entry": "agents.final_reviewer",
+    "mapped_model": "gpt-6.1-sol",
+    "mapped_reasoning_effort": "max",
+    "host_accepted": {
+      "name": "cod107-final-review-complete",
+      "model": "openai-codex/gpt-6.1-sol",
+      "thinking": "max",
+      "rlm_child_id": "sub-dfdeb22a"
+    },
+    "host_context": "native fresh default; no conversation fork; only prompt supplied",
+    "runtime_self_metadata": "unexposed",
+    "known_mismatch_or_rejection": false,
+    "method": "/Users/rabii/.codex/skills/adversarial-review-engineer/SKILL.md",
+    "independence": "Fresh reviewer; did not implement; no nested dispatch; no substitutions."
+  },
+  "original_integrated_review": {
+    "directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-dfdeb22a/cod107-integrated-final-review",
+    "closed_hashes": {
+      "cod107-integrated-final-review.md": "f7753690e3f058d14472e716e78289e0acd4e7e51c5235e49cf6919c57a29465",
+      "result.json": "c1012ca04c00db1c25d933dd281a8e1ffa1b5c8703fdf617cf52b3e4dfb66004",
+      "files.json": "d908d686372923cc92377c5d6858515c70444279dfc955e5e486441ae6973898"
+    },
+    "all_three_unchanged": true
+  },
+  "independent_verifier_evidence": {
+    "directory": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-final-clean-crate-inventories",
+    "top_level_audit": {
+      "report.md": {
+        "sha256": "55d77a67b57d18d3698427f38c67d8493a52fcbc2044e0a10d4f7766843e5ca9",
+        "matches_expected": true
+      },
+      "result.json": {
+        "sha256": "bad27a6a7e28a6e2b6d41ec7f43fbe1a04c6ad6c9fa96ff4c3af02d674f49990",
+        "matches_expected": true
+      },
+      "files.json": {
+        "sha256": "9ec1fb9487b5b3b4cfc4c4cb135708930eb648ab41b705d71f71e14521a31e5a",
+        "matches_expected": true
+      }
+    },
+    "manifest_entries": 22,
+    "all_closed_entries_match": true,
+    "actual_command_log": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-final-clean-crate-inventories/commands.json",
+    "command_exits": [
+      0,
+      0,
+      0
+    ],
+    "commands_reviewer_executed": []
+  },
+  "reviewer_actual_read_only_checks": {
+    "archives": {
+      "root": {
+        "archive": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-final-clean-crate-inventories/codebase-graph-4.0.5.crate",
+        "bytes": 8487100,
+        "sha256": "e24e2b12ce046eedc6e4bf97c3230c8ea3d733e2c3ba989203ef85317b69ab3a",
+        "member_count": 220,
+        "all_regular_safe_unique": true,
+        "all_member_bytes_read": true,
+        "python_like": [],
+        "docs_readme_count": 16,
+        "vcs": {
+          "git": {
+            "sha1": "944925856ca942d4f628fc6eec0dfcc671602f16"
+          },
+          "path_in_vcs": ""
+        },
+        "added": [],
+        "removed": [],
+        "changed_from_2c4": [
+          ".cargo_vcs_info.json",
+          "docs/specs/COD-103/evidence/COD-107/local-qualification-2026-11-01/README.md"
+        ],
+        "unchanged_from_2c4": 218
+      },
+      "wiki": {
+        "archive": "/Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-a2a991d7/cod107-final-clean-crate-inventories/k-wiki-4.0.5.crate",
+        "bytes": 140439,
+        "sha256": "958d370cebe2d4be7d027bcc983beb5f28cfaf2059341848db04c7172a61e3a7",
+        "member_count": 64,
+        "all_regular_safe_unique": true,
+        "all_member_bytes_read": true,
+        "python_like": [],
+        "docs_readme_count": 0,
+        "vcs": {
+          "git": {
+            "sha1": "944925856ca942d4f628fc6eec0dfcc671602f16"
+          },
+          "path_in_vcs": "crates/k-wiki"
+        },
+        "added": [],
+        "removed": [],
+        "changed_from_2c4": [
+          ".cargo_vcs_info.json"
+        ],
+        "unchanged_from_2c4": 63
+      }
+    },
+    "all_actual_member_bytes_read": 284,
+    "no_python_like_members": true,
+    "root_10MiB_gate_pass": true,
+    "both_actual_vcs_clean944": true,
+    "metadata_comparison": "Actual new Cargo.toml/Cargo.toml.orig/Cargo.lock member hashes equal prior2c4 in both; only VCS and selected root README change."
+  },
+  "unresolved_confirmed_findings": [],
+  "conditional_risks": [],
+  "supersedes_only_pending_evidence_statement": "Original report remaining-gate1 (final944 actual root/wiki inventory) is now satisfied for this exact clean944 source. Original historical2c4 package evidence stays exact/history. No original review artifact was edited.",
+  "limits": [
+    "--no-verify package inventory is not extracted-source compilation, runtime or registry-publication qualification.",
+    "16nested README root members remain; no blanket docs exclusion.",
+    "No VCS944 relabelled to later head. Later evidence-only head requires exact unchanged selected payload-input proof and truthful944VCS disclosure.",
+    "No actual Windows/native archive/hosted CI/current-model acceptance added by this appendix."
+  ],
+  "remaining_gates": [
+    "Real current-head/current-base all applicable successful CI and supported-target evidence, including Windows branches/privilege accounting.",
+    "Both actual same-source retained native archives/sidecars/provenance downloaded and member/hash verified for A03.",
+    "Applicable exact-current-source SAME canonical model claim/test/report/verdict reconciliation, focused final-head/native acceptance and permitted handoff/merge/serial own-main-CI gates."
+  ],
+  "assumptions_constants": "No constants, payload rules or source changed. Existing root10MiB gate retained; no wiki limit invented.",
+  "writes": "Only this new private focused directory. No original closed artifact, repository, Git, Cargo/build/test, model/wiki/tracker/CI/API mutation; no nested dispatch.",
+  "knowledge_assessment": "Transient source-specific payload evidence only; no new durable policy or authorized memory write.",
+  "next_owner": "Engineer/Production for authorized PR/evidence persistence; Evidence Verifier for later native/hosted/current-model acceptance. No A03complete/107\u2192108/Done/main/release/aggregate closure.",
+  "stop": "All focused review writes stop after closed handoff."
+}

@@ -1,0 +1,13 @@
+# COD-107 canonical same-model root transition — complete
+
+Canonicalroot is **detached at944925856ca942d4f628fc6eec0dfcc671602f16/tree0a6d14a8f5c959e1d99b0c61404085fd112958c4**, nonignoredstatusclean. All**1818trackedworkingfile/linkGitblobs+modes** independentlymatchexacttarget. IsolatedCOD107944worktree/tree/statusremainsclean/unchanged.
+
+BeforeordinarysingleNONFORCEswitch, freshf69HEAD/status/index and19currentauthoritativeScryerhashes/config/AGENTSwerecheckedagainstacceptedpreflight.448additions/6modified/0deleted had0untracked/ignoredcollisions. Sixcurrentf69overwrittenfiles+11affectedexistingdirectories were nativearchived with exactNUL/no-recursion/macmetadata/ACL/xattr/flags/numericowner semantics: **current-f69-overwrite-macos-metadata.tar.gz**, 74559bytes, SHA256**0fda58138869c6063ee283cc9f26cef8f1766d16c046d9cd0c2bef949e788b06**. All17private-roundtripobjects'bytes/mode/uid/gid/mtime/flags,7xattrvaluehashes and17ACLobjecthashes match. Rawmetadata/ACLidentitiesnotlogged; noexternal-linktarget/model/runtimecopy.
+
+`git switch --detach 944925856ca942d4f628fc6eec0dfcc671602f16` exit0,1attempt/0retries. No newstash/pop/reset/clean/force/refrewrite/fetch/push/API/CI/Cargo operation. Originaldirtyuserbranchcodex/fix-k-wiki-diagnostics stays6aa5; priornamedstash3e5f871bc42091244183cf97324034eceb2cf77f/original9+388/nativebackups/indexreceipts untouched. Scratch-firstrecovery: inspectthispreimagearchive plus priororiginal6aa5backups/stash, restore only underseparateexactgrant/privateverification, neverblindstashpoponto944.
+
+All19current`.scryer`filehashes—includinghistory/model/planned/build/teststate—are**unchanged atsameoriginalcanonicalpath**. `.codebaseGraph`leftinplace/configexactunchanged; userAGENTSunchanged/notintarget. Automaticwatchmayobservefuturechange; no graphfreshnessclaim/rebuild/daemonrestart. No modelcopy/fork/rebind/reconcile/testattachment/ingest/fold/signoff/globaldrift. Prior11passing/53curatedunmatched/345unseen/68unrelatedstalescontextretained, notnewverdict.
+
+`result.json`, native-metadata-proof.json, pre/postreceipts and all1818workingblobproof bindactualoperation. OnlylocalcanonicalGit+assignedprivatepreservationwritesperformed. No productbehaviorauthorship, CIpass, PR/push/merge/release/stage/Donepermission follows. AllapplicableworkflowsmustbeSUCCESSatexactreviewedhead/currentbasebeforeANYlatermerge; existingreview/nonbypass/serialownmain/fullqueue/payload/closuregatesremain.
+
+**ProductionSTOPallcanonicalGit/privatewrites. Engineer'snextseparateindependentVerifiergrantmaymaptheSAMEauthoritative107sourcefingerprint/attachtests/ingestgenuineJUnitwithselectiveclaims,notoldrootborrowedstate.**

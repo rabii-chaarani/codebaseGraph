@@ -1,0 +1,173 @@
+{
+  "method": "Exact current unchanged ci.yml required.run; actual Bash; absence-of-whole-selector intentionally succeeds, not a promised runtime rejection.",
+  "cases": [
+    {
+      "id": "all-success-retain-false",
+      "results": {
+        "fmt": {
+          "result": "success"
+        },
+        "clippy": {
+          "result": "success"
+        },
+        "supply-chain": {
+          "result": "success"
+        },
+        "publish-dry-run": {
+          "result": "success"
+        },
+        "native": {
+          "result": "success"
+        },
+        "native_retention": {
+          "result": "success",
+          "outputs": {
+            "retain": "false"
+          }
+        }
+      },
+      "expected_success": true,
+      "command": "env -i PATH=/Users/rabii/.local/bin:/Users/rabii/Library/pnpm/bin:/Users/rabii/.nvm/versions/node/v24.16.0/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/usr/local/opt/postgresql@16/bin:/opt/homebrew/opt/postgresql@16/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/opt/homebrew/bin:/Users/rabii/.cargo/bin:/Users/rabii/.lmstudio/bin 'RESULTS={\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {\"result\": \"success\", \"outputs\": {\"retain\": \"false\"}}}' /bin/bash /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-dfdeb22a/cod107-integrated-final-review/reproductions/required.sh",
+      "exit_code": 0,
+      "stdout_stderr": "",
+      "passed": true
+    },
+    {
+      "id": "selector-failure",
+      "results": {
+        "fmt": {
+          "result": "success"
+        },
+        "clippy": {
+          "result": "success"
+        },
+        "supply-chain": {
+          "result": "success"
+        },
+        "publish-dry-run": {
+          "result": "success"
+        },
+        "native": {
+          "result": "success"
+        },
+        "native_retention": {
+          "result": "failure"
+        }
+      },
+      "expected_success": false,
+      "command": "env -i PATH=/Users/rabii/.local/bin:/Users/rabii/Library/pnpm/bin:/Users/rabii/.nvm/versions/node/v24.16.0/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/usr/local/opt/postgresql@16/bin:/opt/homebrew/opt/postgresql@16/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/opt/homebrew/bin:/Users/rabii/.cargo/bin:/Users/rabii/.lmstudio/bin 'RESULTS={\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {\"result\": \"failure\"}}' /bin/bash /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-dfdeb22a/cod107-integrated-final-review/reproductions/required.sh",
+      "exit_code": 1,
+      "stdout_stderr": "{\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {\"result\": \"failure\"}}\n",
+      "passed": true
+    },
+    {
+      "id": "selector-cancelled",
+      "results": {
+        "fmt": {
+          "result": "success"
+        },
+        "clippy": {
+          "result": "success"
+        },
+        "supply-chain": {
+          "result": "success"
+        },
+        "publish-dry-run": {
+          "result": "success"
+        },
+        "native": {
+          "result": "success"
+        },
+        "native_retention": {
+          "result": "cancelled"
+        }
+      },
+      "expected_success": false,
+      "command": "env -i PATH=/Users/rabii/.local/bin:/Users/rabii/Library/pnpm/bin:/Users/rabii/.nvm/versions/node/v24.16.0/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/usr/local/opt/postgresql@16/bin:/opt/homebrew/opt/postgresql@16/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/opt/homebrew/bin:/Users/rabii/.cargo/bin:/Users/rabii/.lmstudio/bin 'RESULTS={\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {\"result\": \"cancelled\"}}' /bin/bash /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-dfdeb22a/cod107-integrated-final-review/reproductions/required.sh",
+      "exit_code": 1,
+      "stdout_stderr": "{\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {\"result\": \"cancelled\"}}\n",
+      "passed": true
+    },
+    {
+      "id": "selector-skipped",
+      "results": {
+        "fmt": {
+          "result": "success"
+        },
+        "clippy": {
+          "result": "success"
+        },
+        "supply-chain": {
+          "result": "success"
+        },
+        "publish-dry-run": {
+          "result": "success"
+        },
+        "native": {
+          "result": "success"
+        },
+        "native_retention": {
+          "result": "skipped"
+        }
+      },
+      "expected_success": false,
+      "command": "env -i PATH=/Users/rabii/.local/bin:/Users/rabii/Library/pnpm/bin:/Users/rabii/.nvm/versions/node/v24.16.0/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/usr/local/opt/postgresql@16/bin:/opt/homebrew/opt/postgresql@16/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/opt/homebrew/bin:/Users/rabii/.cargo/bin:/Users/rabii/.lmstudio/bin 'RESULTS={\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {\"result\": \"skipped\"}}' /bin/bash /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-dfdeb22a/cod107-integrated-final-review/reproductions/required.sh",
+      "exit_code": 1,
+      "stdout_stderr": "{\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {\"result\": \"skipped\"}}\n",
+      "passed": true
+    },
+    {
+      "id": "selector-missing-result",
+      "results": {
+        "fmt": {
+          "result": "success"
+        },
+        "clippy": {
+          "result": "success"
+        },
+        "supply-chain": {
+          "result": "success"
+        },
+        "publish-dry-run": {
+          "result": "success"
+        },
+        "native": {
+          "result": "success"
+        },
+        "native_retention": {}
+      },
+      "expected_success": false,
+      "command": "env -i PATH=/Users/rabii/.local/bin:/Users/rabii/Library/pnpm/bin:/Users/rabii/.nvm/versions/node/v24.16.0/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/usr/local/opt/postgresql@16/bin:/opt/homebrew/opt/postgresql@16/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/opt/homebrew/bin:/Users/rabii/.cargo/bin:/Users/rabii/.lmstudio/bin 'RESULTS={\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {}}' /bin/bash /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-dfdeb22a/cod107-integrated-final-review/reproductions/required.sh",
+      "exit_code": 1,
+      "stdout_stderr": "{\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}, \"native_retention\": {}}\n",
+      "passed": true
+    },
+    {
+      "id": "entire-selector-absent-known-runtime-limit",
+      "results": {
+        "fmt": {
+          "result": "success"
+        },
+        "clippy": {
+          "result": "success"
+        },
+        "supply-chain": {
+          "result": "success"
+        },
+        "publish-dry-run": {
+          "result": "success"
+        },
+        "native": {
+          "result": "success"
+        }
+      },
+      "expected_success": true,
+      "command": "env -i PATH=/Users/rabii/.local/bin:/Users/rabii/Library/pnpm/bin:/Users/rabii/.nvm/versions/node/v24.16.0/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/Users/rabii/.antigravity/antigravity/bin:/usr/local/opt/postgresql@16/bin:/opt/homebrew/opt/postgresql@16/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/opt/homebrew/bin:/Users/rabii/.cargo/bin:/Users/rabii/.lmstudio/bin 'RESULTS={\"fmt\": {\"result\": \"success\"}, \"clippy\": {\"result\": \"success\"}, \"supply-chain\": {\"result\": \"success\"}, \"publish-dry-run\": {\"result\": \"success\"}, \"native\": {\"result\": \"success\"}}' /bin/bash /Users/rabii/.prime/agent/session-artifacts/01a18f18-3db0-73ba-a45a-f25faf5369ad/sub-dfdeb22a/cod107-integrated-final-review/reproductions/required.sh",
+      "exit_code": 0,
+      "stdout_stderr": "",
+      "passed": true
+    }
+  ],
+  "passed": 6,
+  "total": 6
+}
